@@ -1,6 +1,6 @@
-import { ProfileWithMetaData, Strategy as TwitterStrategy } from '@superfaceai/passport-twitter-oauth2';
-import passport, { Profile } from 'passport';
-import { ExtendedProfile } from '../utils/types';
+import { Strategy as TwitterStrategy } from '@superfaceai/passport-twitter-oauth2';
+import passport from 'passport';
+import types, { ExtendedProfile } from '../utils/types';
 
 passport.use(new TwitterStrategy({
     clientType: 'confidential',
@@ -11,12 +11,11 @@ passport.use(new TwitterStrategy({
     },
     async (accessToken, refreshToken, profile, done) => {
         try {
-            const user: ExtendedProfile = {
+            const user: Express.User = {
                 ...profile,
-                accessToken,
-                refreshToken,
-                // follows twitter's expiration time
-                expiresIn: 7200
+                twitterAccessToken: accessToken,
+                twitterRefreshToken: refreshToken,
+                twitterExpiresIn: 7200,
             }
 
             return done(null, user);
