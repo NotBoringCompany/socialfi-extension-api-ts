@@ -29,8 +29,10 @@ app.use(passport.session());
 
 /** ROUTE IMPORTS */
 import twitterAuth from './routes/auth/twitter';
+import jwt from './routes/jwt';
 
 app.use('/auth/twitter', twitterAuth);
+app.use('/jwt', jwt);
 
 app.listen(port, async () => {
     console.log(`Server running on port ${port}`);
