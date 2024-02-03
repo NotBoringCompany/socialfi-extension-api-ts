@@ -9,6 +9,7 @@ const port = process.env.PORT!;
 
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
+// temporarily allowing all cors requests
 app.use(cors());
 
 app.listen(port, async () => {
