@@ -15,7 +15,8 @@ passport.use(new TwitterStrategy({
                 ...profile,
                 twitterAccessToken: accessToken,
                 twitterRefreshToken: refreshToken,
-                twitterExpiresIn: 7200,
+                // get the current unix timestamp, add 7200
+                twitterExpiryDate: Math.floor(Date.now() / 1000) + 7200,
             }
 
             return done(null, user);

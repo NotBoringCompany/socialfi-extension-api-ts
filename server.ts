@@ -18,6 +18,11 @@ app.use(cors());
 app.use(passport.initialize());
 app.use(passport.session());
 
+/** ROUTE IMPORTS */
+import twitterAuth from './routes/auth/twitter';
+
+app.use('/auth/twitter', twitterAuth);
+
 app.listen(port, async () => {
     console.log(`Server running on port ${port}`);
 
