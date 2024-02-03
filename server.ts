@@ -4,6 +4,7 @@ import * as dotenv from 'dotenv';
 import passport from 'passport';
 import mongoose from 'mongoose';
 import session from 'express-session';
+import MongoStore from 'connect-mongo';
 
 dotenv.config();
 
@@ -28,7 +29,6 @@ app.use(passport.session());
 
 /** ROUTE IMPORTS */
 import twitterAuth from './routes/auth/twitter';
-import MongoStore from 'connect-mongo';
 
 app.use('/auth/twitter', twitterAuth);
 
