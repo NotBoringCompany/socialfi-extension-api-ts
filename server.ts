@@ -2,11 +2,13 @@ import express from 'express';
 import cors from 'cors';
 import * as dotenv from 'dotenv';
 import passport from 'passport';
+import mongoose from 'mongoose';
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT!;
+const mongoUri = process.env.MONGODB_URI!;
 
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
@@ -18,4 +20,6 @@ app.use(passport.session());
 
 app.listen(port, async () => {
     console.log(`Server running on port ${port}`);
+
+    await mongoose.connect(mongoUri);
 });
