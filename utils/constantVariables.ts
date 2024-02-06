@@ -1,4 +1,5 @@
 import { BitRarity } from '../models/bit';
+import { FoodType } from '../models/food';
 
 /** max level for any island type */
 export const MAX_ISLAND_LEVEL = 20;
@@ -22,5 +23,19 @@ export const MAX_BIT_LEVEL = (rarity: BitRarity) => {
             return 50;
         case BitRarity.LEGENDARY:
             return 65;
+    }
+}
+
+/** gets the amount of energy replenished from a food */
+export const FOOD_ENERGY_REPLENISHMENT = (food: FoodType) => {
+    switch (food) {
+        case FoodType.APPLE:
+            return 10;
+        case FoodType.CHOCOLATE:
+            return 25;
+        case FoodType.JUICE:
+            return 50;
+        case FoodType.BURGER:
+            return 100;
     }
 }
