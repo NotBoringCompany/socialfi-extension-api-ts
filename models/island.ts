@@ -23,8 +23,8 @@ export interface Island {
     currentLevel: number;
     /** current tax for this particular island (resulting cookies claimed will be reduced by this tax) */
     currentTax: number;
-    /** the bits that are placed (tied down) into this island to gather and earn */
-    placedBits: Bit;
+    /** the IDs of the bits that are placed (tied down) into this island to gather and earn */
+    placedBitIds: number[];
     /** resource stats related to the island, such as gathering rate */
     islandResourceStats: IslandResourceStats;
     /** earning stats related to the island, such as earning rate */
