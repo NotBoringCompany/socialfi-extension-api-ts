@@ -35,11 +35,37 @@ export interface Island {
 /**
  * Represents the type of island.
  */
-enum IslandType {
+export enum IslandType {
     RAFT = 'Raft',
     PRIMAL_ISLES = 'Primal Isles',
     VERDANT_ISLES = 'Verdant Isles',
     EXOTIC_ISLES = 'Exotic Isles',
     CRYSTAL_ISLES = 'Crystal Isles',
     CELESTIAL_ISLES = 'Celestial Isles',
+}
+
+export interface IslandResourceStats {
+    /** base amount of resources available to be gathered from this island, excluding deductions */
+    baseResourceCap: number;
+    /** total resources gathered, incl. ones claimed already */
+    resourcesGathered: Resource[];
+    /** gathered resources that are claimable but not claimed to the inventory yet (pending) */
+    claimableResources: Resource[];
+    /** start timestamp of gathering; 0 if not started yet */
+    gatheringStart: number;
+    /** end timestamp of gathering; 0 if not ended yet */
+    gatheringEnd: number;
+    /** timestamp of when `claimableResources` were last claimed */
+    lastClaimed: number;
+    /** current chances to earn each resource (already incl. base chance + level modifiers) */
+    islandResourceChances: IslandResourceChances;
+    /** current gathering rate for resources in % of total resources/hour
+     * (excl. boosts/modifiers but incl. base gathering rate + level modifiers from bits) 
+     */
+    currentGatheringRate: number;
+    /** gathering progress to gather 1 RESOURCE (not all resources); will be from 0 to 100
+     * once progress goes > 100, it will gather 1 resource and reset back to 0 + any overflow of %
+     * (UPDATED PER HOUR)
+     */
+    gatheringProgress: number;
 }
