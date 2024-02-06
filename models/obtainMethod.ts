@@ -5,6 +5,6 @@ export enum ObtainMethod {
     MARKETPLACE = 'Marketplace',
     TERRA_CAP = 'Terra Cap',
     BIT_ORB = 'Bit Orb',
-    /** staking benefit obtained from Blast */
+    /** staking benefits obtained from Blast or other staking protocols */
     STAKING = 'Staking',
 }
