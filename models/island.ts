@@ -1,3 +1,4 @@
+import { Modifier } from './modifier';
 import { ObtainMethod } from './obtainMethod';
 
 /****************
@@ -91,4 +92,16 @@ export interface IslandEarningStats {
      * (excl. boosts/modifiers but incl. base earning rate + level modifiers from bits)
      */
     currentEarningRate: number;
+}
+
+/** 
+ * Represents the modifiers for both resource and earning stats.
+ * 
+ * NOTE: Calculating the final gathering and earning rates will be as follows:
+ * current gathering/earning rate * modifier 1 * modifier 2 and so on... (same with resource cap)
+ */
+export interface IslandStatsModifiers {
+    resourceCapModifiers: Modifier[];
+    gatheringRateModifiers: Modifier[];
+    earningRateModifiers: Modifier[];
 }
