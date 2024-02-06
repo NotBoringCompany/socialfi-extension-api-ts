@@ -1,5 +1,6 @@
 import { Modifier } from './modifier';
 import { ObtainMethod } from './obtainMethod';
+import { Resource } from './resource';
 
 /****************
  * ISLAND-RELATED MODELS
