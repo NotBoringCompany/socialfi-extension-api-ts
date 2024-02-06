@@ -44,6 +44,9 @@ export enum IslandType {
     CELESTIAL_ISLES = 'Celestial Isles',
 }
 
+/**
+ * Represents the gathering and resource stats of an island.
+ */
 export interface IslandResourceStats {
     /** base amount of resources available to be gathered from this island, excluding deductions */
     baseResourceCap: number;
@@ -57,8 +60,6 @@ export interface IslandResourceStats {
     gatheringEnd: number;
     /** timestamp of when `claimableResources` were last claimed */
     lastClaimed: number;
-    /** current chances to earn each resource (already incl. base chance + level modifiers) */
-    islandResourceChances: IslandResourceChances;
     /** current gathering rate for resources in % of total resources/hour
      * (excl. boosts/modifiers but incl. base gathering rate + level modifiers from bits) 
      */
@@ -68,4 +69,26 @@ export interface IslandResourceStats {
      * (UPDATED PER HOUR)
      */
     gatheringProgress: number;
+}
+
+/**
+ * Represents the earning stats of an island.
+ */
+export interface IslandEarningStats {
+    /** total cookies spent on this island (INCL. BITS!); will keep increasing when upgrading the island and bits placed inside */
+    totalCookiesSpent: number;
+    /** total cookies earned, incl. ones claimed already. end amount should equal total cookies spent (even with tax since it's not calc. here) */
+    totalCookiesEarned: number;
+    /** claimable cookies that haven't been claimed yet to the inventory */
+    claimableCookies: number;
+    /** start timestamp of earning; 0 if not started yet */
+    earningStart: number;
+    /** end timestamp of earning; 0 if not ended yet */
+    earningEnd: number;
+    /** timestamp of when `claimableCookies` were last claimed */
+    lastClaimed: number;
+    /** the current earning rate for cookies in % of total cookies spent/hour
+     * (excl. boosts/modifiers but incl. base earning rate + level modifiers from bits)
+     */
+    currentEarningRate: number;
 }
