@@ -101,7 +101,10 @@ export interface IslandEarningStats {
  * current gathering/earning rate * modifier 1 * modifier 2 and so on... (same with resource cap)
  */
 export interface IslandStatsModifiers {
+    /** resource cap modifiers */
     resourceCapModifiers: Modifier[];
+    /** gathering rate modifiers */
     gatheringRateModifiers: Modifier[];
+    /** earning rate modifiers */
     earningRateModifiers: Modifier[];
 }

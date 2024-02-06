@@ -1,3 +1,4 @@
+import { Modifier } from './modifier';
 import { ObtainMethod } from './obtainMethod';
 
 /****************
@@ -47,4 +48,42 @@ export enum BitRarity {
 export enum BitGender {
     MALE = 'Male',
     FEMALE = 'Female',
+}
+
+/**
+ * Represents the farming stats of a Bit.
+ */
+export interface BitFarmingStats {
+    /** base gathering rate for the bit (at level 1), calculated at % of total resources/hour */
+    baseGatheringRate: number;
+    /** growth of base gathering rate when level increases, currently a fixed percentage */
+    gatheringRateGrowth: number;
+    /** current gathering rate for the bit (at current level), incl. base gathering rate + gathering rate growth */
+    currentGatheringRate: number;
+    /** base earning rate for the bit (at level 1), calculated at % of total cookies/hour */
+    baseEarningRate: number;
+    /** growth of base earning rate when level increases, currently a fixed percentage */
+    earningRateGrowth: number;
+    /** current earning rate for the bit (at current level), incl. base earning rate + earning rate growth */
+    currentEarningRate: number;
+    /** base energy depletion rate for the bit (at level 1), calculated at % of total energy/hour */
+    baseEnergyDepletionRate: number;
+    /** reduction of base energy depletion rate when level increases, currently a fixed percentage */
+    energyDepletionRateReduction: number;
+    /** current energy depletion rate for the bit (at current level), incl. base energy depletion rate - energy depletion rate reduction */
+    currentEnergyDepletionRate: number;
+    /** current energy of the bit */
+    currentEnergy: number;
+}
+
+/**
+ * Represents the stat modifiers for a Bit's farming stats.
+ * 
+ * NOTE: Calculating the final gathering and earning rates will be as follows:
+ * current gathering/earning rate * modifier 1 * modifier 2 and so on...
+ */
+export interface BitStatsModifiers {
+    gatheringRateModifiers: Modifier[];
+    earningRateModifiers: Modifier[];
+    energyRateModifiers: Modifier[];
 }
