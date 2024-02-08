@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
 import { UserSchema } from '../schemas/User';
+import { ethers } from 'ethers';
 
 /**
  * Twitter login logic. Creates a new user or simply log them in if they already exist.
@@ -42,6 +43,25 @@ export const handleTwitterLogin = async (twitterId: string): Promise<ReturnValue
         return {
             status: Status.ERROR,
             message: err.message
+        }
+    }
+}
+
+/**
+ * Creates a wallet for a user, returning both private and public keys.
+ */
+export const createUserWallet = (): ReturnValue => {
+    const wallet = ethers.Wallet.createRandom();
+
+    const privateKey = wallet.privateKey;
+    const publicKey = wallet.address;
+    
+    return {
+        status: Status.SUCCESS,
+        message: 'Wallet created.',
+        data: {
+            privateKey,
+            publicKey
         }
     }
 }

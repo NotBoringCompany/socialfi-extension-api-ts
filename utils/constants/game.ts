@@ -1,5 +1,5 @@
-import { BitRarity } from '../models/bit';
-import { FoodType } from '../models/food';
+import { BitRarity } from '../../models/bit';
+import { FoodType } from '../../models/food';
 
 /** max level for any island type */
 export const MAX_ISLAND_LEVEL = 20;
