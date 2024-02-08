@@ -23,8 +23,8 @@ export interface Bit {
     obtainMethod: ObtainMethod;
     /** total cookies spent for the bit (excl. purchase price). when evolving, this number will increase */
     totalCookiesSpent: number;
-    /** current level of the bit */
-    currentLevel: number;
+    /** current farming level of the bit; pvx level will start from level 1 */
+    currentFarmingLevel: number;
     /** farming stats of the bit, such as gathering rate, earning rate and energy */
     farmingStats: BitFarmingStats;
     /** stat modifiers for the bit's farming stats */
