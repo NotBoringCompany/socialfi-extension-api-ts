@@ -1,8 +1,8 @@
+import { Resource } from './resource';
+
 /****************
  * RAFT-RELATED MODELS
  ****************/
-
-import { Resource } from './resource';
 
 /**
  * Represents a raft.
