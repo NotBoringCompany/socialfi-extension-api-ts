@@ -18,6 +18,7 @@ export interface Resource {
  * Represents the type of resource.
  */
 export enum ResourceType {
+    SEAWEED = 'Seaweed', // only available for raft, not islands
     SILVER = 'Silver',
     EMERALD = 'Emerald',
     DIAMOND = 'Diamond',
