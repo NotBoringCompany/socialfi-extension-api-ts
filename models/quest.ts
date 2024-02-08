@@ -31,6 +31,8 @@ export interface Quest {
     rewards: QuestReward[];
     /** completed by (database user IDs) */
     completedBy: string[];
+    /** requirements to complete the quest */
+    requirements: QuestRequirement[];
 }
 
 /**
@@ -69,4 +71,37 @@ export interface QuestReward {
     minReceived: number,
     /** maximum amount of the reward received */
     maxReceived: number,
+}
+
+/**
+ * Represents a single requirement of a Quest.
+ */
+export interface QuestRequirement {
+    /** type of the quest requirement */
+    type: QuestRequirementType;
+    /** parameters of the quest requirement (such as having to follow this user, retweet this post and so on) */
+    parameters: QuestRequirementParameters;
+}
+
+/**
+ * Represents the type of a Quest Requirement.
+ */
+export enum QuestRequirementType {
+    FOLLOW_USER = 'Follow User',
+    // requires the tweet ID
+    LIKE_AND_RETWEET = 'Like and Retweet',
+    // requires the tweet ID
+    REPLY_WITH_TEXT = 'Reply with Text',
+}
+
+/**
+ * Represents the parameters of a Quest Requirement.
+ */
+export interface QuestRequirementParameters {
+    /** the username of the user to follow */
+    twitterUsername?: string;
+    /** the tweet ID of the tweet to like, retweet and/or reply on */
+    tweetId?: string;
+    /** requires to text 'wonderbits' and 16 characters at least (exact requirements may vary later) */
+    requiredText?: string;
 }
