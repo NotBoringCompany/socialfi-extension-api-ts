@@ -1,4 +1,5 @@
 import { Food } from './food';
+import { Item } from './item';
 import { Resource } from './resource';
 
 /****************
@@ -38,9 +39,11 @@ export interface UserInventory {
     /** the amount of in-game cookies (users are required to convert from blockchain cookies first) */
     xCookies: number;
     /** a list of resources owned */
-    resources: Resource[];
+    ownedResources: Resource[];
+    /** a list of items owned */
+    ownedItems: Item[];
     /** a list of foods owned */
-    foods: Food[];
+    ownedFoods: Food[];
     /** the owned raft ID */
     ownedRaftId: number;
     /** a list of owned island IDs */
