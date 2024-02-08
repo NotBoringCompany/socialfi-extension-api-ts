@@ -22,7 +22,7 @@ export interface Quest {
     /** quest type */
     type: QuestType;
     /** quest image URL */
-    imageUrl?: string;
+    imageUrl: string;
     /** start timestamp of the quest */
     start: number;
     /** end timestamp of the quest */
@@ -69,5 +69,4 @@ export interface QuestReward {
     minReceived: number,
     /** maximum amount of the reward received */
     maxReceived: number,
-
 }
