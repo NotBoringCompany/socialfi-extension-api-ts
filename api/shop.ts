@@ -147,7 +147,14 @@ export const purchaseShopAsset = async (
                 break;
         }
 
-        await User.updateOne({ twitterId }, updateOperation);
+        const result = await User.updateOne({ twitterId }, updateOperation);
+
+        if (result.modifiedCount === 0) {
+            return {
+                status: Status.ERROR,
+                message: `(purchaseShopAsset) Error while updating. User's xCookies not deducted.`
+            }
+        }
 
         return {
             status: Status.SUCCESS,
