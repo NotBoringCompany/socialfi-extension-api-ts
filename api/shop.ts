@@ -126,6 +126,8 @@ export const purchaseShopAsset = async (
             }
         }
 
+        console.log('user inventory: ', user.inventory);
+
         // Prepare the update operation to deduct the asset price from the user's xCookies
         const updateOperation: any = {
             $set: { 'inventory.xCookies': xCookies - assetPrice }
