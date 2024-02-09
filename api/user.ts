@@ -49,8 +49,8 @@ export const handleTwitterLogin = async (twitterId: string): Promise<ReturnValue
                     raftId: data.raft.raftId,
                     islandIds: [],
                     bitIds: [],
-                    bitOrbIds: [],
-                    terraCapsulatorIds: []
+                    totalBitOrbs: 0,
+                    totalTerraCapulators: 0
                 }
             });
 
