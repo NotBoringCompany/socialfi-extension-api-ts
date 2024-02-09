@@ -131,30 +131,26 @@ export const purchaseShopAsset = async (
             $inc: { 'inventory.xCookies': -assetPrice }
         };
 
-        // update the user's inventory based on the asset type
+        // Update the user's inventory based on the asset type
         switch (asset) {
             case ShopAsset.FOOD:
-                // check if the user already has the food in their inventory
-                const foodInInventory = user.inventory.foods.find((f: Food) => f.type === foodType);
-
-                console.log('food in inventory already: ', foodInInventory);
-
-                if (foodInInventory) {
-                    // increment the amount of the food in the user's inventory
-                    updateOperation.$inc['inventory.foods.$.amount'] = 1;
+                // Check if the user already has the specified food type in their inventory
+                const existingFood = user.inventory.foods.find((food: Food) => food.type === foodType);
+                if (existingFood) {
+                    // If the food type exists, increment the amount property of the existing food instance
+                    updateOperation.$inc = { [`inventory.foods.$[food].amount`]: 1 };
                 } else {
-                    // add the purchased food to the user's inventory
+                    // Otherwise, add a new food instance to the inventory
                     updateOperation.$push = { 'inventory.foods': { type: foodType, amount: 1 } };
                 }
-
                 break;
             case ShopAsset.BIT_ORB:
                 // Increment the totalBitOrbs count in the user's inventory
-                updateOperation.$inc['inventory.totalBitOrbs'] = 1;
+                updateOperation.$inc = { 'inventory.totalBitOrbs': 1 };
                 break;
             case ShopAsset.TERRA_CAPSULATOR:
                 // Increment the totalTerraCapulators count in the user's inventory
-                updateOperation.$inc['inventory.totalTerraCapulators'] = 1;
+                updateOperation.$inc = { 'inventory.totalTerraCapulators': 1 };
                 break;
         }
 
