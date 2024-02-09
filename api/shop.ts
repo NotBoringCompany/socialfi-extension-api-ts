@@ -44,3 +44,34 @@ export const createShop = async (
         }
     }
 }
+
+/**
+ * Fetches the shop.
+ */
+export const getShop = async (): Promise<ReturnValue> => {
+    const Shop = mongoose.model('Shop', ShopSchema, 'Shop');
+
+    try {
+        const shop = await Shop.findOne();
+
+        if (!shop) {
+            return {
+                status: Status.ERROR,
+                message: `(getShop) No shop found.`
+            }
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getShop) Shop fetched.`,
+            data: {
+                shop
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getShop) ${err.message}`
+        }
+    }
+}
