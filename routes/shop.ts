@@ -1,13 +1,11 @@
 import express from 'express';
-import { createShop, getShop } from '../api/shop';
+import { getShop, purchaseShopAsset } from '../api/shop';
 
 const router = express.Router();
 
-router.post('/create_shop', async (req, res) => {
-    const { bitOrbs, terraCapsulators, foods, adminKey } = req.body;
-
+router.get('/get_shop', async (_, res) => {
     try {
-        const { status, message, data } = await createShop(bitOrbs, terraCapsulators, foods, adminKey);
+        const { status, message, data } = getShop();
 
         return res.status(status).json({
             status,
@@ -22,9 +20,12 @@ router.post('/create_shop', async (req, res) => {
     }
 });
 
-router.get('/get_shop', async (_, res) => {
+// temporarily without authentication for testing purposes
+router.post('/purchase_shop_asset', async (req, res) => {
+    const { twitterId, asset, foodType } = req.body;
+
     try {
-        const { status, message, data } = await getShop();
+        const { status, message, data } = await purchaseShopAsset(twitterId, asset, foodType);
 
         return res.status(status).json({
             status,

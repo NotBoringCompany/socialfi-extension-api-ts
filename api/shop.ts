@@ -1,77 +1,166 @@
 import mongoose from 'mongoose';
-import { ShopBitOrb, ShopFood, ShopTerraCapsulator } from '../models/shop';
+import { FoodType } from '../models/food';
+import { ShopAsset, ShopFood } from '../models/shop';
 import { ReturnValue, Status } from '../utils/retVal';
-import { ShopSchema } from '../schemas/Shop';
+import { shop } from '../utils/shop';
+import { getOwnedXCookies } from './cookies';
+import { UserSchema } from '../schemas/User';
+import { User } from '../models/user';
 
 /**
- * Creates a new shop. Should only be called once. Requires admin key.
+ * Fetches the shop.
  */
-export const createShop = async (
-    bitOrbs: ShopBitOrb,
-    terraCapsulators: ShopTerraCapsulator,
-    foods: ShopFood[],
-    adminKey: string
-): Promise<ReturnValue> => {
-    if (adminKey !== process.env.ADMIN_KEY) {
-        return {
-            status: Status.UNAUTHORIZED,
-            message: `(createShop) Unauthorized. Wrong admin key.`
-        }
-    }
-
-    const Shop = mongoose.model('Shop', ShopSchema, 'Shop');
-
-    try {
-        const shop = new Shop({
-            bitOrbs,
-            terraCapsulators,
-            foods
-        });
-
-        await shop.save();
-
-        return {
-            status: Status.SUCCESS,
-            message: `(createShop) Shop created.`,
-            data: {
-                shop
-            }
-        }
-    } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(createShop) ${err.message}`
+export const getShop = (): ReturnValue => {
+    return {
+        status: Status.SUCCESS,
+        message: `(getShop) Shop fetched.`,
+        data: {
+            shop
         }
     }
 }
 
 /**
- * Fetches the shop.
+ * (User) Purchases a shop asset. Requires enough xCookies.
  */
-export const getShop = async (): Promise<ReturnValue> => {
-    const Shop = mongoose.model('Shop', ShopSchema, 'Shop');
+export const purchaseShopAsset = async (
+    twitterId: string,
+    asset: ShopAsset,
+    foodType?: FoodType
+): Promise<ReturnValue> => {
+    if (!twitterId) {
+        return {
+            status: Status.UNAUTHORIZED,
+            message: `(purchaseShopAsset) No twitterId provided.`
+        }
+    }
+
+    if (!asset) {
+        return {
+            status: Status.ERROR,
+            message: `(purchaseShopAsset) No asset provided.`
+        }
+    }
+
+    if (asset === ShopAsset.FOOD && !foodType) {
+        return {
+            status: Status.ERROR,
+            message: `(purchaseShopAsset) No foodType provided.`
+        }
+    }
 
     try {
-        const shop = await Shop.findOne();
+        // fetch user's xCookies
+        const { status, message, data } = await getOwnedXCookies(twitterId);
 
-        if (!shop) {
+        if (status !== Status.SUCCESS) {
             return {
-                status: Status.ERROR,
-                message: `(getShop) No shop found.`
+                status,
+                message: `(purchaseShopAsset) Error from getOwnedXCookies: ${message}`
             }
         }
+
+        const xCookies = data.xCookies;
+        // fetch the price via the switch statement
+        let assetPrice = 0;
+
+        // check if user has enough xCookies by checking the price of the asset
+        switch (asset) {
+            // food will be handled differently because it has different prices for different foods
+            case ShopAsset.FOOD:
+                // find the food instance that matches `foodType`
+                const food = shop.foods.find((f: ShopFood) => f.type === foodType);
+
+                // if food is not found, return an error
+                if (!food) {
+                    return {
+                        status: Status.ERROR,
+                        message: `(purchaseShopAsset) Food not found.`
+                    }
+                }
+
+                assetPrice = food.xCookies;
+
+                // if user doesn't have enough xCookies, return an error
+                if (xCookies < food.xCookies) {
+                    return {
+                        status: Status.ERROR,
+                        message: `(purchaseShopAsset) Not enough xCookies.`
+                    }
+                }
+
+                break;
+            case ShopAsset.BIT_ORB:
+                assetPrice = shop.bitOrbs.xCookies;
+
+                if (xCookies < shop.bitOrbs.xCookies) {
+                    return {
+                        status: Status.ERROR,
+                        message: `(purchaseShopAsset) Not enough xCookies.`
+                    }
+                }
+
+                break;
+            case ShopAsset.TERRA_CAPSULATOR:
+                assetPrice = shop.terraCapsulators.xCookies;
+
+                if (xCookies < shop.terraCapsulators.xCookies) {
+                    return {
+                        status: Status.ERROR,
+                        message: `(purchaseShopAsset) Not enough xCookies.`
+                    }
+                }
+
+                break;
+        }
+
+        // deduct the price of the asset from the user's xCookies
+        const User = mongoose.model<User>('Users', UserSchema, 'Users');
+
+        const user = await User.findOne({ twitterId });
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(purchaseShopAsset) User not found.`
+            }
+        }
+
+        // update operation preparation to deduct the asset price from user's xCookies
+        let updateOperation: any = {
+            $inc: { 'inventory.xCookies': -assetPrice }
+        };
+
+        // update the user's inventory based on the asset type
+        switch (asset) {
+            case ShopAsset.FOOD:
+                // Add the purchased food to the user's inventory
+                updateOperation.$push = { 'inventory.foods': { type: foodType, amount: 1 } };
+                break;
+            case ShopAsset.BIT_ORB:
+                // Increment the totalBitOrbs count in the user's inventory
+                updateOperation.$inc = { 'inventory.totalBitOrbs': 1 };
+                break;
+            case ShopAsset.TERRA_CAPSULATOR:
+                // Increment the totalTerraCapulators count in the user's inventory
+                updateOperation.$inc = { 'inventory.totalTerraCapulators': 1 };
+                break;
+        }
+
+        await User.updateOne({ twitterId }, updateOperation);
 
         return {
             status: Status.SUCCESS,
-            message: `(getShop) Shop fetched.`,
+            message: `(purchaseShopAsset) Asset purchased and xCookies deducted.`,
             data: {
-                shop
+                asset
             }
         }
+
     } catch (err: any) {
         return {
             status: Status.ERROR,
-            message: `(getShop) ${err.message}`
+            message: `(purchaseShopAsset) ${err.message}`
         }
     }
 }

@@ -41,3 +41,14 @@ export interface ShopFood {
     /** the price of one of this food type in xCookies */
     xCookies: number;
 }
+
+/**
+ * Represents the type of shop asset.
+ * 
+ * Used to determine which asset the user is purchasing from the shop.
+ */
+export enum ShopAsset {
+    BIT_ORB = 'Bit Orb',
+    TERRA_CAPSULATOR = 'Terra Capsulator',
+    FOOD = 'Food',
+}
