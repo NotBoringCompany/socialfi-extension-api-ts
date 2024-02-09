@@ -1,8 +1,10 @@
 import mongoose from 'mongoose';
-import { QuestRequirement, QuestReward, QuestType } from '../models/quest';
+import { QuestRequirement, QuestReward, QuestRewardType, QuestType } from '../models/quest';
 import { ReturnValue, Status } from '../utils/retVal';
 import { QuestSchema } from '../schemas/Quest';
 import { generateObjectId } from '../utils/crypto';
+import { User, UserInventory } from '../models/user';
+import { UserSchema } from '../schemas/User';
 
 /**
  * Adds a quest to the database. Requires admin key.
@@ -21,7 +23,7 @@ export const addQuest = async (
     if (adminKey !== process.env.ADMIN_KEY) {
         return {
             status: Status.UNAUTHORIZED,
-            message: 'Unauthorized. Wrong admin key.'
+            message: `(addQuest) Unauthorized. Wrong admin key.`
         }
     }
 
@@ -48,7 +50,7 @@ export const addQuest = async (
 
         return {
             status: Status.SUCCESS,
-            message: 'Quest added.',
+            message: `(addQuest) Quest added.`,
             data: {
                 quest: newQuest
             }
@@ -56,7 +58,72 @@ export const addQuest = async (
     } catch (err: any) {
         return {
             status: Status.ERROR,
-            message: err.message
+            message: `(addQuest) ${err.message}`
+        }
+    }
+}
+
+/**
+ * Completes a quest for a user and obtain the rewards.
+ */
+export const completeQuest = async (twitterId: string, questId: number): Promise<ReturnValue> => {
+    const Quest = mongoose.model('Quests', QuestSchema, 'Quests');
+    const User = mongoose.model('Users', UserSchema, 'Users');
+
+    try {
+        const quest = await Quest.findOne({ questId });
+
+        if (!quest) {
+            return {
+                status: Status.ERROR,
+                message: `(completeQuest) Quest not found. Quest ID: ${questId}`
+            }
+        }
+
+        const user = await User.findOne({ twitterId });
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(completeQuest) User not found. Twitter ID: ${twitterId}`
+            }
+        }
+
+        // check if the user has already completed this quest
+        const userHasCompletedQuest = quest.completedBy.find((user: User) => user.twitterId === twitterId);
+
+        if (userHasCompletedQuest) {
+            return {
+                status: Status.ERROR,
+                message: `(completeQuest) User has already completed this quest. Quest ID: ${questId}`
+            }
+        }
+
+        // add the user to the `completedBy` array
+        await Quest.updateOne({ id: questId }, { $push: { completedBy: twitterId } });
+
+        // loop through the rewards and add them to the user's inventory
+        const rewards: QuestReward[] = quest.rewards;
+
+        for (let i = 0; i < rewards.length; i++) {
+            const reward = rewards[i];
+            const amount = Math.floor(Math.random() * (reward.maxReceived - reward.minReceived + 1) + reward.minReceived);
+
+            // get the reward type and see if the user has the following asset in their inventory
+            const rewardType: QuestRewardType = reward.rewardType;
+            const userInventory: UserInventory = user.inventory;
+
+            switch (rewardType) {
+                case QuestRewardType.COOKIES:
+                    
+            }
+
+        }
+
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(completeQuest) ${err.message}`
         }
     }
 }

@@ -8,7 +8,7 @@ export const QuestSchema = new mongoose.Schema({
         type: String,
         default: new mongoose.Types.ObjectId()
     },
-    id: Number,
+    questId: Number,
     name: String,
     description: String,
     type: String,

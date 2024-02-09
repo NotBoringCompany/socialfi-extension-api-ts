@@ -11,7 +11,7 @@ import { Resource } from './resource';
  */
 export interface Island {
     /** unique id to distinguish the island, starts from 1 */
-    id: number;
+    islandId: number;
     /** type of island; Raft is also included as an island type when the user has no island */
     type: IslandType;
     /** owner of this island; equates to the user's object ID in the database */

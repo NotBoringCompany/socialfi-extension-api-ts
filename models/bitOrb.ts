@@ -9,7 +9,7 @@ import { ObtainMethod } from './obtainMethod';
  */
 export interface BitOrb {
     /** unique id to distinguish the bit orb, starts from 1 */
-    id: number;
+    bitOrbId: number;
     /** owner of this bit orb; equates to the user's object ID in the database */
     owner: string;
     /** obtain method of the bit orb */

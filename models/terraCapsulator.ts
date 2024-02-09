@@ -9,7 +9,7 @@ import { ObtainMethod } from './obtainMethod';
  */
 export interface TerraCapsulator {
     /** unique id to distinguish the terra capsulator, starts from 1 */
-    id: number;
+    terraCapsulatorId: number;
     /** owner of this terra capsulator; equates to the user's object ID in the database */
     owner: string;
     /** obtain method of the terra capsulator */

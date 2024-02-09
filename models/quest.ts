@@ -2,19 +2,12 @@
  * QUEST-RELATED MODELS
  ****************/
 
-import { Bit } from './bit';
-import { BitOrb } from './bitOrb';
-import { Food } from './food';
-import { Item } from './item';
-import { Resource } from './resource';
-import { TerraCapsulator } from './terraCapsulator';
-
 /**
  * Represents a Quest.
  */
 export interface Quest {
     /** unique id to distinguish the quest, starts from 1 */
-    id: number;
+    questId: number;
     /** quest name */
     name: string;
     /** quest description */
@@ -53,24 +46,21 @@ export enum QuestType {
  * NOTE: If `minReceived` and `maxReceived` is equal, the reward is fixed; otherwise, it will be randomized between those ranges.
  */
 export interface QuestReward {
-    /** if this reward consists of resource(s) */
-    resource?: Resource,
-    /** if this reward consists of item(s) */
-    item?: Item,
-    /** if this reward consists of food(s) */
-    food?: Food,
-    /** if this reward consists of bit(s) */
-    bit?: Bit,
-    /** if this reward consists of bit orb(s) */
-    bitOrb?: BitOrb,
-    /** if this reward consists of terra capsulator(s) */
-    terraCapsulator?: TerraCapsulator,
-    /** if this reward consists of cookies */
-    xCookie?: number,
+    /** the asset that represents the reward (such as xCookies, food, resources etc) */
+    rewardType: QuestRewardType,
     /** minimum amount of the reward received */
     minReceived: number,
     /** maximum amount of the reward received */
     maxReceived: number,
+}
+
+/**
+ * Represents the type of a Quest Reward.
+ */
+export enum QuestRewardType {
+    COOKIES = 'xCookies',
+    FOOD = 'Food',
+    RESOURCE = 'Resource',
 }
 
 /**

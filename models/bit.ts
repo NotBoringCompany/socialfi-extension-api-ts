@@ -10,7 +10,7 @@ import { ObtainMethod } from './obtainMethod';
  */
 export interface Bit {
     /** unique id to distinguish the bit, starts from 1 */
-    id: number;
+    bitId: number;
     /** bit rarity */
     rarity: BitRarity;
     /** bit gender */
