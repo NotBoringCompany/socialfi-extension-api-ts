@@ -8,9 +8,12 @@ import { FoodType } from './food';
  * Represents the in-game shop.
  */
 export interface Shop {
+    /** the bit orbs in the shop */
     bitOrbs: ShopBitOrb;
+    /** the terra capsulators in the shop */
     terraCapsulators: ShopTerraCapsulator;
-    food: ShopFood[];
+    /** the foods in the shop */
+    foods: ShopFood[];
 }
 
 /**
