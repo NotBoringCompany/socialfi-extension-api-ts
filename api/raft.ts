@@ -1,6 +1,7 @@
 import mongoose from 'mongoose'
 import { RaftSchema } from '../schemas/Raft'
 import { ReturnValue, Status } from '../utils/retVal';
+import { generateObjectId } from '../utils/crypto';
 
 /**
  * Creates a new Raft for new users.
@@ -20,6 +21,7 @@ export const createRaft = async (userId: string): Promise<ReturnValue> => {
         }
 
         const newRaft = new Raft({
+            _id: generateObjectId(),
             raftId: data.latestRaftId + 1,
             owner: userId,
             placedBitIds: [],

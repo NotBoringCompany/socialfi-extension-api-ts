@@ -243,7 +243,7 @@ export const getUserCompletedQuests = async (twitterId: string): Promise<ReturnV
     try {
         const completedQuests = await Quest.find({ completedBy: twitterId });
 
-        if (quests.length === 0 || !quests) {
+        if (completedQuests.length === 0 || !completedQuests) {
             return {
                 status: Status.ERROR,
                 message: `(getUserCompletedQuests) No quests found.`

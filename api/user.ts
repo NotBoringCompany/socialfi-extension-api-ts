@@ -4,6 +4,7 @@ import { UserSchema } from '../schemas/User';
 import { ethers } from 'ethers';
 import { createUserWallet } from '../utils/wallet';
 import { createRaft } from './raft';
+import { generateObjectId } from '../utils/crypto';
 
 /**
  * Twitter login logic. Creates a new user or simply log them in if they already exist.
@@ -17,10 +18,10 @@ export const handleTwitterLogin = async (twitterId: string): Promise<ReturnValue
         // if user doesn't exist, create a new user
         if (!user) {
             // generates a new object id for the user
-            const userObjectId = new mongoose.Types.ObjectId();
+            const userObjectId = generateObjectId();
 
             // creates a new raft for the user with the generated user object id
-            const { status, message, data } = await createRaft(userObjectId.toString());
+            const { status, message, data } = await createRaft(userObjectId);
 
             if (status !== Status.SUCCESS) {
                 return {
