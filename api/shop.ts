@@ -126,9 +126,6 @@ export const purchaseShopAsset = async (
             }
         }
 
-        // array filter preparation for updating the user's inventory
-        const arrayFilter = { 'food.type': foodType };
-
         // Deduct the asset price from the user's xCookies
         const updatedXCookies = xCookies - assetPrice;
 
@@ -140,27 +137,29 @@ export const purchaseShopAsset = async (
         // Update the user's inventory based on the asset type
         switch (asset) {
             case ShopAsset.FOOD:
-                // Check if the user already has the specified food type in their inventory
-                const existingFood = user.inventory.foods.find((food: Food) => food.type === foodType);
-                if (existingFood) {
-                    // Prepare the array filter
-                    const arrayFilter = { 'food.type': foodType };
-                    // Increment the amount property of the existing food instance
-                    updateOperation.$inc = { 'inventory.foods.$[food].amount': 1 };
-                    // Execute the update operation with the array filter
-                    await User.updateOne({ twitterId }, updateOperation, { arrayFilters: [arrayFilter] });
+                // Prepare the update operation to add the food item to the inventory
+                const foodUpdateOperation: any = {
+                    $push: { 'inventory.foods': { type: foodType, amount: 1 } }
+                };
+
+                // Increment the amount property of the existing food instance if it exists
+                if (user.inventory.foods.some(f => f.type === foodType)) {
+                    foodUpdateOperation.$inc = { 'inventory.foods.$[food].amount': 1 };
+                    await User.updateOne({ twitterId }, foodUpdateOperation, { arrayFilters: [{ 'food.type': foodType }] });
                 } else {
-                    // Otherwise, add a new food instance to the inventory
-                    await User.updateOne({ twitterId }, { $push: { 'inventory.foods': { type: foodType, amount: 1 } } });
+                    // Otherwise, add the food item to the inventory
+                    await User.updateOne({ twitterId }, foodUpdateOperation);
                 }
                 break;
             case ShopAsset.BIT_ORB:
-                // Increment the totalBitOrbs count in the user's inventory
-                await User.updateOne({ twitterId }, { $inc: { 'inventory.totalBitOrbs': 1 } });
+                // Deduct the price of the bit orb from the user's xCookies and increment totalBitOrbs count
+                updateOperation.$inc['inventory.totalBitOrbs'] = 1;
+                await User.updateOne({ twitterId }, updateOperation);
                 break;
             case ShopAsset.TERRA_CAPSULATOR:
-                // Increment the totalTerraCapulators count in the user's inventory
-                await User.updateOne({ twitterId }, { $inc: { 'inventory.totalTerraCapulators': 1 } });
+                // Deduct the price of the terra capsulator from the user's xCookies and increment totalTerraCapulators count
+                updateOperation.$inc['inventory.totalTerraCapulators'] = 1;
+                await User.updateOne({ twitterId }, updateOperation);
                 break;
         }
 
