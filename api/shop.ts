@@ -148,14 +148,14 @@ export const purchaseShopAsset = async (
                 break;
             case ShopAsset.BIT_ORB:
                 // Increment totalBitOrbs count
-                updateOperation.$inc['inventory.totalBitOrbs'] = 1;
+                updateOperation.$inc = { 'inventory.totalBitOrbs': 1 };
                 break;
             case ShopAsset.TERRA_CAPSULATOR:
-                // Increment totalTerraCapsulators count
-                updateOperation.$inc['inventory.totalTerraCapsulators'] = 1;
+                // Increment totalTerraCapulators count
+                updateOperation.$inc = { 'inventory.totalTerraCapulators': 1 };
                 break;
         }
-        
+
         console.log('updateOperation', updateOperation);
 
         // Execute the update operation

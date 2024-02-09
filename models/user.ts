@@ -58,5 +58,5 @@ export interface UserInventory {
     /** total amount of bit orbs owned */
     totalBitOrbs: number;
     /** total amount of terra caps owned */
-    totalTerraCapulators: number;
+    totalTerraCapsulators: number;
 }
