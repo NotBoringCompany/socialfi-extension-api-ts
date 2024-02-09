@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { FoodType } from '../models/food';
+import { Food, FoodType } from '../models/food';
 import { ShopAsset, ShopFood } from '../models/shop';
 import { ReturnValue, Status } from '../utils/retVal';
 import { shop } from '../utils/shop';
@@ -135,7 +135,9 @@ export const purchaseShopAsset = async (
         switch (asset) {
             case ShopAsset.FOOD:
                 // check if the user already has the food in their inventory
-                const foodInInventory = user.inventory.foods.find((f: any) => f.type === foodType);
+                const foodInInventory = user.inventory.foods.find((f: Food) => f.type === foodType);
+
+                console.log('food in inventory already: ', foodInInventory);
 
                 if (foodInInventory) {
                     // increment the amount of the food in the user's inventory
@@ -155,6 +157,8 @@ export const purchaseShopAsset = async (
                 updateOperation.$inc['inventory.totalTerraCapulators'] = 1;
                 break;
         }
+
+        console.log('update operation: ', updateOperation);
 
         const result = await User.updateOne({ twitterId }, updateOperation);
 
