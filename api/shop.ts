@@ -134,8 +134,17 @@ export const purchaseShopAsset = async (
         // update the user's inventory based on the asset type
         switch (asset) {
             case ShopAsset.FOOD:
-                // Add the purchased food to the user's inventory
-                updateOperation.$push = { 'inventory.foods': { type: foodType, amount: 1 } };
+                // check if the user already has the food in their inventory
+                const foodInInventory = user.inventory.foods.find((f: any) => f.type === foodType);
+
+                if (foodInInventory) {
+                    // increment the amount of the food in the user's inventory
+                    updateOperation.$inc['inventory.foods.$.amount'] = 1;
+                } else {
+                    // add the purchased food to the user's inventory
+                    updateOperation.$push = { 'inventory.foods': { type: foodType, amount: 1 } };
+                }
+
                 break;
             case ShopAsset.BIT_ORB:
                 // Increment the totalBitOrbs count in the user's inventory
@@ -146,8 +155,6 @@ export const purchaseShopAsset = async (
                 updateOperation.$inc['inventory.totalTerraCapulators'] = 1;
                 break;
         }
-
-        console.log('updateOperation:', updateOperation);
 
         const result = await User.updateOne({ twitterId }, updateOperation);
 
@@ -162,7 +169,8 @@ export const purchaseShopAsset = async (
             status: Status.SUCCESS,
             message: `(purchaseShopAsset) Asset purchased and xCookies deducted.`,
             data: {
-                asset
+                asset,
+                foodType
             }
         }
 
