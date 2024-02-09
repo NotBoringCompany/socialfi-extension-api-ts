@@ -153,7 +153,9 @@ export const purchaseShopAsset = async (
                 updateOperation.$inc['inventory.totalTerraCapulators'] = 1;
                 break;
         }
-
+        
+        console.log('updateOperation', updateOperation);
+        
         // Execute the update operation
         await User.updateOne({ twitterId }, updateOperation);
 
