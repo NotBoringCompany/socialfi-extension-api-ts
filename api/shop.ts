@@ -137,29 +137,23 @@ export const purchaseShopAsset = async (
         // Update the user's inventory based on the asset type
         switch (asset) {
             case ShopAsset.FOOD:
-                // Prepare the update operation to add the food item to the inventory
-                const foodUpdateOperation: any = {
-                    $push: { 'inventory.foods': { type: foodType, amount: 1 } }
-                };
+                const existingFoodIndex = user.inventory.foods.findIndex(f => f.type === foodType);
 
-                // Increment the amount property of the existing food instance if it exists
-                if (user.inventory.foods.some(f => f.type === foodType)) {
-                    foodUpdateOperation.$inc = { 'inventory.foods.$[food].amount': 1 };
-                    await User.updateOne({ twitterId }, foodUpdateOperation, { arrayFilters: [{ 'food.type': foodType }] });
+                if (existingFoodIndex !== -1) {
+                    // If the food already exists, increment its amount
+                    updateOperation.$inc = { [`inventory.foods.${existingFoodIndex}.amount`]: 1 };
                 } else {
-                    // Otherwise, add the food item to the inventory
-                    await User.updateOne({ twitterId }, foodUpdateOperation);
+                    // If the food doesn't exist, push a new food item
+                    updateOperation.$push = { 'inventory.foods': { type: foodType, amount: 1 } };
                 }
                 break;
             case ShopAsset.BIT_ORB:
-                // Deduct the price of the bit orb from the user's xCookies and increment totalBitOrbs count
-                updateOperation.$inc['inventory.totalBitOrbs'] = 1;
-                await User.updateOne({ twitterId }, updateOperation);
+                // Increment totalBitOrbs count
+                updateOperation.$inc = { 'inventory.totalBitOrbs': 1 };
                 break;
             case ShopAsset.TERRA_CAPSULATOR:
-                // Deduct the price of the terra capsulator from the user's xCookies and increment totalTerraCapulators count
-                updateOperation.$inc['inventory.totalTerraCapulators'] = 1;
-                await User.updateOne({ twitterId }, updateOperation);
+                // Increment totalTerraCapulators count
+                updateOperation.$inc = { 'inventory.totalTerraCapulators': 1 };
                 break;
         }
 
