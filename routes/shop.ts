@@ -4,10 +4,10 @@ import { createShop } from '../api/shop';
 const router = express.Router();
 
 router.post('/create_shop', async (req, res) => {
-    const { shopBitOrbs, shopTerraCapsulators, shopFoods, adminKey } = req.body;
+    const { bitOrbs, terraCapsulators, foods, adminKey } = req.body;
 
     try {
-        const { status, message, data } = await createShop(shopBitOrbs, shopTerraCapsulators, shopFoods, adminKey);
+        const { status, message, data } = await createShop(bitOrbs, terraCapsulators, foods, adminKey);
 
         return res.status(status).json({
             status,
