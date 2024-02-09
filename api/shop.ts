@@ -126,6 +126,9 @@ export const purchaseShopAsset = async (
             }
         }
 
+        // array filter preparation for updating the user's inventory
+        const arrayFilter = { 'food.type': foodType };
+
         // update operation preparation to deduct the asset price from user's xCookies
         let updateOperation: any = {
             $inc: { 'inventory.xCookies': -assetPrice }
@@ -137,32 +140,28 @@ export const purchaseShopAsset = async (
                 // Check if the user already has the specified food type in their inventory
                 const existingFood = user.inventory.foods.find((food: Food) => food.type === foodType);
                 if (existingFood) {
-                    // If the food type exists, increment the amount property of the existing food instance
-                    updateOperation.$inc = { [`inventory.foods.$[food].amount`]: 1 };
+                    // Prepare the array filter
+                    const arrayFilter = { 'food.type': foodType };
+                    // Increment the amount property of the existing food instance
+                    updateOperation.$inc = { 'inventory.foods.$[food].amount': 1 };
+                    // Execute the update operation with the array filter
+                    await User.updateOne({ twitterId }, updateOperation, { arrayFilters: [arrayFilter] });
                 } else {
                     // Otherwise, add a new food instance to the inventory
                     updateOperation.$push = { 'inventory.foods': { type: foodType, amount: 1 } };
+                    await User.updateOne({ twitterId }, updateOperation);
                 }
                 break;
             case ShopAsset.BIT_ORB:
                 // Increment the totalBitOrbs count in the user's inventory
                 updateOperation.$inc = { 'inventory.totalBitOrbs': 1 };
+                await User.updateOne({ twitterId }, updateOperation);
                 break;
             case ShopAsset.TERRA_CAPSULATOR:
                 // Increment the totalTerraCapulators count in the user's inventory
                 updateOperation.$inc = { 'inventory.totalTerraCapulators': 1 };
+                await User.updateOne({ twitterId }, updateOperation);
                 break;
-        }
-
-        console.log('update operation: ', updateOperation);
-
-        const result = await User.updateOne({ twitterId }, updateOperation);
-
-        if (result.modifiedCount === 0) {
-            return {
-                status: Status.ERROR,
-                message: `(purchaseShopAsset) Error while updating. User's xCookies not deducted.`
-            }
         }
 
         return {
