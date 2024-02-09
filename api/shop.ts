@@ -147,6 +147,8 @@ export const purchaseShopAsset = async (
                 break;
         }
 
+        console.log('updateOperation:', updateOperation);
+
         const result = await User.updateOne({ twitterId }, updateOperation);
 
         if (result.modifiedCount === 0) {
