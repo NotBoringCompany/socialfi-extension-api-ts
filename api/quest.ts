@@ -193,3 +193,43 @@ export const getQuests = async (): Promise<ReturnValue> => {
         }
     }
 }
+
+/**
+ * Deletes a quest from the database. Requires admin key.
+ */
+export const deleteQuest = async (questId: number, adminKey: string): Promise<ReturnValue> => {
+    const Quest = mongoose.model('Quests', QuestSchema, 'Quests');
+
+    try {
+        if (adminKey !== process.env.ADMIN_KEY) {
+            return {
+                status: Status.UNAUTHORIZED,
+                message: `(deleteQuest) Unauthorized. Wrong admin key.`
+            }
+        }
+
+        const quest = await Quest.findOne({ questId });
+
+        if (!quest) {
+            return {
+                status: Status.ERROR,
+                message: `(deleteQuest) Quest not found. Quest ID: ${questId}`
+            }
+        }
+
+        await Quest.deleteOne({ questId });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(deleteQuest) Quest deleted.`,
+            data: {
+                questId
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(deleteQuest) ${err.message}`
+        }
+    }
+}
