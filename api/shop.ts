@@ -131,14 +131,14 @@ export const purchaseShopAsset = async (
 
         // Prepare the update operation to deduct the asset price from the user's xCookies
         const updateOperation: any = {
-            $set: { 'inventory.xCookies': updatedXCookies }
+            $set: { 'inventory.xCookies': xCookies - assetPrice }
         };
 
         // Update the user's inventory based on the asset type
         switch (asset) {
             case ShopAsset.FOOD:
+                // Prepare the update operation to add the food item to the inventory or increment its amount
                 const existingFoodIndex = user.inventory.foods.findIndex(f => f.type === foodType);
-
                 if (existingFoodIndex !== -1) {
                     // If the food already exists, increment its amount
                     updateOperation.$inc = { [`inventory.foods.${existingFoodIndex}.amount`]: 1 };
@@ -149,11 +149,11 @@ export const purchaseShopAsset = async (
                 break;
             case ShopAsset.BIT_ORB:
                 // Increment totalBitOrbs count
-                updateOperation.$inc = { 'inventory.totalBitOrbs': 1 };
+                updateOperation.$inc['inventory.totalBitOrbs'] = 1;
                 break;
             case ShopAsset.TERRA_CAPSULATOR:
                 // Increment totalTerraCapulators count
-                updateOperation.$inc = { 'inventory.totalTerraCapulators': 1 };
+                updateOperation.$inc['inventory.totalTerraCapulators'] = 1;
                 break;
         }
 
