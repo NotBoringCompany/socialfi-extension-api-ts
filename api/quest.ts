@@ -5,6 +5,8 @@ import { QuestSchema } from '../schemas/Quest';
 import { generateObjectId } from '../utils/crypto';
 import { User, UserInventory } from '../models/user';
 import { UserSchema } from '../schemas/User';
+import { GET_QUEST_FOOD } from '../utils/constants/game';
+import { Food } from '../models/food';
 
 /**
  * Adds a quest to the database. Requires admin key.
@@ -65,6 +67,8 @@ export const addQuest = async (
 
 /**
  * Completes a quest for a user and obtain the rewards.
+ * 
+ * TO DO: implement quest requirements check
  */
 export const completeQuest = async (twitterId: string, questId: number): Promise<ReturnValue> => {
     const Quest = mongoose.model('Quests', QuestSchema, 'Quests');
@@ -114,12 +118,43 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
             const userInventory: UserInventory = user.inventory;
 
             switch (rewardType) {
-                case QuestRewardType.COOKIES:
-                    
-            }
+                // add the cookie count into the user's inventory
+                case QuestRewardType.X_COOKIES:
+                    await User.updateOne({ twitterId }, { $inc: { 'inventory.xCookies': amount } });
+                    break;
+                // add the food into the user's inventory
+                case QuestRewardType.FOOD:
+                    // randomize a number between 0 - 1
+                    const rand = Math.random();
+                    // get the corresponding food type
+                    const food = GET_QUEST_FOOD(rand);
+                    // check if the food already exists in the user's inventory of `foods`
+                    const foodIndex = userInventory.foods.findIndex((f: Food) => f.type === food);
+                    // if the food exists, increment the amount; otherwise, push the food into the inventory
+                    if (foodIndex !== -1) {
+                        await User.updateOne({ twitterId }, { $inc: { [`inventory.foods.${foodIndex}.amount`]: amount } });
+                    } else {
+                        await User.updateOne({ twitterId }, { $push: { 'inventory.foods': { type: food, amount } } });
+                    }
 
+                    break;
+                // if default, return an error (shouldn't happen)
+                default:
+                    return {
+                        status: Status.ERROR,
+                        message: `(completeQuest) Unknown reward type: ${rewardType}`
+                    }
+            }
         }
 
+        return {
+            status: Status.SUCCESS,
+            message: `(completeQuest) Quest completed. Rewards received and added to user's inventory.`,
+            data: {
+                questId,
+                rewards
+            }
+        }
     } catch (err: any) {
         return {
             status: Status.ERROR,

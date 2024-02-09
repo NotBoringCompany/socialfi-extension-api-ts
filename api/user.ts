@@ -16,9 +16,6 @@ export const handleTwitterLogin = async (twitterId: string): Promise<ReturnValue
 
         // if user doesn't exist, create a new user
         if (!user) {
-            // creates the wallet for the user
-            const { privateKey, publicKey } = createUserWallet();
-
             // generates a new object id for the user
             const userObjectId = new mongoose.Types.ObjectId();
 
@@ -32,6 +29,9 @@ export const handleTwitterLogin = async (twitterId: string): Promise<ReturnValue
                 }
             }
 
+            // creates the wallet for the user
+            const { privateKey, publicKey } = createUserWallet();
+
             const newUser = new User({
                 _id: userObjectId,
                 twitterId,
@@ -42,14 +42,14 @@ export const handleTwitterLogin = async (twitterId: string): Promise<ReturnValue
                 openedTweetIdsToday: [],
                 inventory: {
                     xCookies: 0,
-                    ownedResources: [],
-                    ownedItems: [],
-                    ownedFoods: [],
-                    ownedRaftId: data.raft.raftId,
-                    ownedIslandIds: [],
-                    ownedBitIds: [],
-                    ownedBitOrbIds: [],
-                    ownedTerraCapsulatorIds: []
+                    resources: [],
+                    items: [],
+                    foods: [],
+                    raftId: data.raft.raftId,
+                    islandIds: [],
+                    bitIds: [],
+                    bitOrbIds: [],
+                    terraCapsulatorIds: []
                 }
             });
 

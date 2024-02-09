@@ -39,19 +39,19 @@ export interface UserInventory {
     /** the amount of in-game cookies (users are required to convert from blockchain cookies first) */
     xCookies: number;
     /** a list of resources owned */
-    ownedResources: Resource[];
+    resources: Resource[];
     /** a list of items owned */
-    ownedItems: Item[];
+    items: Item[];
     /** a list of foods owned */
-    ownedFoods: Food[];
+    foods: Food[];
     /** the owned raft ID */
-    ownedRaftId: number;
+    raftId: number;
     /** a list of owned island IDs */
-    ownedIslandIds: number[];
+    islandIds: number[];
     /** a list of owned bit IDs */
-    ownedBitIds: number[];
+    bitIds: number[];
     /** a list of owned bit orb IDs */
-    ownedBitOrbIds: number[];
+    bitOrbIds: number[];
     /** a list of owned terra capsulator IDs */
-    ownedTerraCapsulatorIds: number[];
+    terraCapsulatorIds: number[];
 }

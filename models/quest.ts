@@ -58,9 +58,8 @@ export interface QuestReward {
  * Represents the type of a Quest Reward.
  */
 export enum QuestRewardType {
-    COOKIES = 'xCookies',
+    X_COOKIES = 'xCookies',
     FOOD = 'Food',
-    RESOURCE = 'Resource',
 }
 
 /**
