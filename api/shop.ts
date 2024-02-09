@@ -126,9 +126,6 @@ export const purchaseShopAsset = async (
             }
         }
 
-        // Deduct the asset price from the user's xCookies
-        const updatedXCookies = xCookies - assetPrice;
-
         // Prepare the update operation to deduct the asset price from the user's xCookies
         const updateOperation: any = {
             $set: { 'inventory.xCookies': xCookies - assetPrice }
@@ -156,6 +153,9 @@ export const purchaseShopAsset = async (
                 updateOperation.$inc['inventory.totalTerraCapulators'] = 1;
                 break;
         }
+
+        // Execute the update operation
+        await User.updateOne({ twitterId }, updateOperation);
 
         return {
             status: Status.SUCCESS,
