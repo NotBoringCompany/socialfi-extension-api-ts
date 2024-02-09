@@ -129,9 +129,12 @@ export const purchaseShopAsset = async (
         // array filter preparation for updating the user's inventory
         const arrayFilter = { 'food.type': foodType };
 
-        // update operation preparation to deduct the asset price from user's xCookies
-        let updateOperation: any = {
-            $inc: { 'inventory.xCookies': -assetPrice }
+        // Deduct the asset price from the user's xCookies
+        const updatedXCookies = xCookies - assetPrice;
+
+        // Prepare the update operation to deduct the asset price from the user's xCookies
+        const updateOperation: any = {
+            $set: { 'inventory.xCookies': updatedXCookies }
         };
 
         // Update the user's inventory based on the asset type
@@ -148,19 +151,16 @@ export const purchaseShopAsset = async (
                     await User.updateOne({ twitterId }, updateOperation, { arrayFilters: [arrayFilter] });
                 } else {
                     // Otherwise, add a new food instance to the inventory
-                    updateOperation.$push = { 'inventory.foods': { type: foodType, amount: 1 } };
-                    await User.updateOne({ twitterId }, updateOperation);
+                    await User.updateOne({ twitterId }, { $push: { 'inventory.foods': { type: foodType, amount: 1 } } });
                 }
                 break;
             case ShopAsset.BIT_ORB:
                 // Increment the totalBitOrbs count in the user's inventory
-                updateOperation.$inc = { 'inventory.totalBitOrbs': 1 };
-                await User.updateOne({ twitterId }, updateOperation);
+                await User.updateOne({ twitterId }, { $inc: { 'inventory.totalBitOrbs': 1 } });
                 break;
             case ShopAsset.TERRA_CAPSULATOR:
                 // Increment the totalTerraCapulators count in the user's inventory
-                updateOperation.$inc = { 'inventory.totalTerraCapulators': 1 };
-                await User.updateOne({ twitterId }, updateOperation);
+                await User.updateOne({ twitterId }, { $inc: { 'inventory.totalTerraCapulators': 1 } });
                 break;
         }
 
