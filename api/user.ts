@@ -50,7 +50,7 @@ export const handleTwitterLogin = async (twitterId: string): Promise<ReturnValue
                     islandIds: [],
                     bitIds: [],
                     totalBitOrbs: 0,
-                    totalTerraCapulators: 0
+                    totalTerraCapsulators: 0
                 }
             });
 
