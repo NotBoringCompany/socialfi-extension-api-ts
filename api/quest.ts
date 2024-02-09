@@ -233,3 +233,34 @@ export const deleteQuest = async (questId: number, adminKey: string): Promise<Re
         }
     }
 }
+
+/**
+ * Gets all quests that a user has completed.
+ */
+export const getUserCompletedQuests = async (twitterId: string): Promise<ReturnValue> => {
+    const Quest = mongoose.model('Quests', QuestSchema, 'Quests');
+
+    try {
+        const completedQuests = await Quest.find({ completedBy: twitterId });
+
+        if (quests.length === 0 || !quests) {
+            return {
+                status: Status.ERROR,
+                message: `(getUserCompletedQuests) No quests found.`
+            }
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getUserCompletedQuests) Quests fetched.`,
+            data: {
+                completedQuests
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getUserCompletedQuests) ${err.message}`
+        }
+    }
+}
