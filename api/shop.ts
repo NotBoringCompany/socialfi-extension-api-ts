@@ -7,9 +7,9 @@ import { ShopSchema } from '../schemas/Shop';
  * Creates a new shop. Should only be called once. Requires admin key.
  */
 export const createShop = async (
-    shopBitOrbs: ShopBitOrb,
-    shopTerraCapsulators: ShopTerraCapsulator,
-    shopFoods: ShopFood[],
+    bitOrbs: ShopBitOrb,
+    terraCapsulators: ShopTerraCapsulator,
+    foods: ShopFood[],
     adminKey: string
 ): Promise<ReturnValue> => {
     if (adminKey !== process.env.ADMIN_KEY) {
@@ -23,9 +23,9 @@ export const createShop = async (
 
     try {
         const shop = new Shop({
-            bitOrbs: shopBitOrbs,
-            terraCapsulators: shopTerraCapsulators,
-            foods: shopFoods
+            bitOrbs,
+            terraCapsulators,
+            foods
         });
 
         await shop.save();
