@@ -162,3 +162,34 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
         }
     }
 }
+
+/**
+ * Fetches all quests from the database.
+ */
+export const getQuests = async (): Promise<ReturnValue> => {
+    const Quest = mongoose.model('Quests', QuestSchema, 'Quests');
+
+    try {
+        const quests = await Quest.find();
+
+        if (quests.length === 0 || !quests) {
+            return {
+                status: Status.ERROR,
+                message: `(getQuests) No quests found.`
+            }
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getQuests) Quests fetched.`,
+            data: {
+                quests
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getQuests) ${err.message}`
+        }
+    }
+}
