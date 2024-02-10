@@ -127,3 +127,11 @@ export interface ResourceDropChance {
  * Exact same as `ResourceDropChance`, but is used just to differentiate the two in the code.
  */
 export interface ResourceDropChanceDiff extends ResourceDropChance {}
+
+/**
+ * Used to determine whether to calculate effective earning or gathering rates for both bit and island.
+ */
+export enum RateType {
+    GATHERING = 'Gathering',
+    EARNING = 'Earning',
+}
