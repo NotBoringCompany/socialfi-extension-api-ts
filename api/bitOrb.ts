@@ -1,9 +1,71 @@
-import { Bit, BitFarmingStats, BitRarity } from '../models/bit';
+import mongoose from 'mongoose';
+import { Bit } from '../models/bit';
 import { ObtainMethod } from '../models/obtainMethod';
-import { BASE_ENERGY_DEPLETION_RATE, DEFAULT_EARNING_RATE, DEFAULT_EARNING_RATE_GROWTH, DEFAULT_GATHERING_RATE, DEFAULT_GATHERING_RATE_GROWTH, RANDOMIZE_GENDER } from '../utils/constants/bit';
+import { RANDOMIZE_GENDER } from '../utils/constants/bit';
 import { RANDOMIZE_RARITY_FROM_ORB } from '../utils/constants/bitOrb';
 import { ReturnValue, Status } from '../utils/retVal';
-import { getLatestBitId } from './bit';
+import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
+import { UserSchema } from '../schemas/User';
+
+/**
+ * (User) Consumes a Bit Orb to obtain a Bit.
+ */
+export const consumeBitOrb = async (twitterId: string): Promise<ReturnValue> => {
+    const User = mongoose.model('Users', UserSchema, 'Users');
+
+    try {
+        const user = await User.findOne({ twitterId });
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(consumeBitOrb) User not found.`
+            }
+        }
+
+        // check if the user has at least 1 Bit Orb to consume
+        if (user.inventory?.totalBitOrbs < 1) {
+            return {
+                status: Status.ERROR,
+                message: `(consumeBitOrb) Not enough Bit Orbs to consume.`
+            }
+        }
+
+        // consume the Bit Orb
+        await User.updateOne({ twitterId }, { $inc: { 'inventory.totalBitOrbs': -1 } });
+
+        // call `summonBit` to summon a Bit
+        const { status: summonBitStatus, message: summonBitMessage, data: summonBitData } = await summonBit(user._id, ObtainMethod.BIT_ORB, 0);
+
+        if (summonBitStatus !== Status.SUCCESS) {
+            return {
+                status: summonBitStatus,
+                message: `(consumeBitOrb) Error from summonBit: ${summonBitMessage}`
+            }
+        }
+
+        const bit = summonBitData?.bit as Bit;
+
+        // save the Bit to the database
+        const { status: addBitStatus, message: addBitMessage } = await addBitToDatabase(bit);
+
+        if (addBitStatus !== Status.SUCCESS) {
+            return {
+                status: addBitStatus,
+                message: `(consumeBitOrb) Error from addBitToDatabase: ${addBitMessage}`
+            }
+        }
+
+        // add the bit ID to the user's inventory
+        await User.updateOne({ twitterId }, { $push: { 'inventory.bitIds': bit.bitId } });  
+
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(consumeBitOrb) Error: ${err.message}`
+        }
+    }
+}
 
 /**
  * Summons a Bit obtained from a Bit Orb.
@@ -63,53 +125,5 @@ export const summonBit = async (
             message: `(summonBit) Error: ${err.message}`
         }
 
-    }
-}
-
-/**
- * Randomizes the farming stats of a Bit.
- */
-export const randomizeFarmingStats = (rarity: BitRarity): BitFarmingStats => {
-    // get the default gathering rate
-    const defaultGatheringRate = DEFAULT_GATHERING_RATE(rarity);
-    // get the default gathering rate growth
-    const defaultGatheringRateGrowth = DEFAULT_GATHERING_RATE_GROWTH(rarity);
-    // get the default earning rate
-    const defaultEarningRate = DEFAULT_EARNING_RATE(rarity);
-    // get the default earning rate growth
-    const defaultEarningRateGrowth = DEFAULT_EARNING_RATE_GROWTH(rarity);
-    // get the base energy depletion rate
-    const baseEnergyDepletionRate = BASE_ENERGY_DEPLETION_RATE;
-
-    // rand from 0.9 to 1.1 to determine base gathering rate (and also current gathering rate since it's at level 1)
-    const randGatheringRate = Math.random() * 0.2 + 0.9;
-    const baseGatheringRate = defaultGatheringRate * randGatheringRate;
-
-    // rand from 0.9 to 1.1 to determine gathering rate growth
-    const randGatheringRateGrowth = Math.random() * 0.2 + 0.9;
-    const gatheringRateGrowth = defaultGatheringRateGrowth * randGatheringRateGrowth;
-
-    // rand from 0.9 to 1.1 to determine base earning rate (and also current earning rate since it's at level 1)
-    const randEarningRate = Math.random() * 0.2 + 0.9;
-    const baseEarningRate = defaultEarningRate * randEarningRate;
-
-    // rand from 0.9 to 1.1 to determine earning rate growth
-    const randEarningRateGrowth = Math.random() * 0.2 + 0.9;
-    const earningRateGrowth = defaultEarningRateGrowth * randEarningRateGrowth;
-
-    // rand from 0.75 to 1.25 to determine current energy depletion rate
-    const randEnergyDepletionRate = Math.random() * 0.5 + 0.75;
-    const currentEnergyDepletionRate = baseEnergyDepletionRate * randEnergyDepletionRate;
-
-
-    return {
-        baseGatheringRate,
-        gatheringRateGrowth,
-        currentGatheringRate: baseGatheringRate,
-        baseEarningRate,
-        earningRateGrowth,
-        currentEarningRate: baseEarningRate,
-        currentEnergyDepletionRate,
-        currentEnergy: 100
     }
 }
