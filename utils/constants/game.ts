@@ -40,16 +40,18 @@ export const FOOD_ENERGY_REPLENISHMENT = (food: FoodType) => {
     }
 }
 
-/** gets the corresponding food based on the probability of obtaining it, depending on `rand`, which is a number from 0 to 1 */
+/** gets the corresponding food based on the probability of obtaining it, depending on `rand`, which is a number from 1 to 100 */
 export const GET_QUEST_FOOD = (rand: number): FoodType => {
     switch (true) {
-        case rand < 0.3:
-            return FoodType.APPLE;
-        case rand < 0.6:
-            return FoodType.CHOCOLATE;
-        case rand < 0.8:
-            return FoodType.JUICE;
+        case rand < 46:
+            return FoodType.APPLE; // 45% chance
+        case rand < 76:
+            return FoodType.CHOCOLATE; // 30% chance
+        case rand < 91:
+            return FoodType.JUICE; // 15% chance
+        case rand < 101:
+            return FoodType.BURGER; // 10% chance
         default:
-            return FoodType.BURGER;
+            throw new Error(`(GET_QUEST_FOOD) Invalid rand: ${rand}`);
     }
 }
