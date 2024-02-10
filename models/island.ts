@@ -108,3 +108,14 @@ export interface IslandStatsModifiers {
     /** earning rate modifiers */
     earningRateModifiers: Modifier[];
 }
+
+/**
+ * Represents the chances to drop each of the resources when gathering 1 resource from an island.
+ */
+export interface DefaultResourceDropChance {
+    silver: number;
+    emerald: number;
+    diamond: number;
+    tanzanite: number;
+    relic: number;
+}
