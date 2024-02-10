@@ -66,11 +66,11 @@ export interface BitFarmingStats {
     earningRateGrowth: number;
     /** current earning rate for the bit (at current level), incl. base earning rate + earning rate growth */
     currentEarningRate: number;
-    /** base energy depletion rate for the bit (at level 1), calculated at % of total energy/hour */
-    baseEnergyDepletionRate: number;
-    /** reduction of base energy depletion rate when level increases, currently a fixed percentage */
-    energyDepletionRateReduction: number;
-    /** current energy depletion rate for the bit (at current level), incl. base energy depletion rate - energy depletion rate reduction */
+    /** 
+     * current energy depletion rate for the bit (at level 1), calculated at % of total energy/hour 
+     * 
+     * NOTE: base energy depletion rate is always constant, see `BASE_ENERGY_DEPLETION_RATE`
+     */
     currentEnergyDepletionRate: number;
     /** current energy of the bit */
     currentEnergy: number;
