@@ -111,11 +111,19 @@ export interface IslandStatsModifiers {
 
 /**
  * Represents the chances to drop each of the resources when gathering 1 resource from an island.
+ *
  */
-export interface DefaultResourceDropChance {
+export interface ResourceDropChance {
     silver: number;
     emerald: number;
     diamond: number;
     tanzanite: number;
     relic: number;
 }
+
+/**
+ * Represents the differences in resource drop chances when gathering 1 resource from an island as the island levels up.
+ * 
+ * Exact same as `ResourceDropChance`, but is used just to differentiate the two in the code.
+ */
+export interface ResourceDropChanceDiff extends ResourceDropChance {}
