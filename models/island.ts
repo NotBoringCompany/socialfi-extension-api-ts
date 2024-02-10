@@ -38,7 +38,6 @@ export interface Island {
  * Represents the type of island.
  */
 export enum IslandType {
-    RAFT = 'Raft',
     PRIMAL_ISLES = 'Primal Isles',
     VERDANT_ISLES = 'Verdant Isles',
     EXOTIC_ISLES = 'Exotic Isles',

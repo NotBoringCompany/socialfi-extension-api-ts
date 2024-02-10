@@ -35,7 +35,7 @@ export const consumeBitOrb = async (twitterId: string): Promise<ReturnValue> => 
         await User.updateOne({ twitterId }, { $inc: { 'inventory.totalBitOrbs': -1 } });
 
         // call `summonBit` to summon a Bit
-        const { status: summonBitStatus, message: summonBitMessage, data: summonBitData } = await summonBit(user._id, ObtainMethod.BIT_ORB, 0);
+        const { status: summonBitStatus, message: summonBitMessage, data: summonBitData } = await summonBit(user._id);
 
         if (summonBitStatus !== Status.SUCCESS) {
             return {
@@ -59,6 +59,13 @@ export const consumeBitOrb = async (twitterId: string): Promise<ReturnValue> => 
         // add the bit ID to the user's inventory
         await User.updateOne({ twitterId }, { $push: { 'inventory.bitIds': bit.bitId } });  
 
+        return {
+            status: Status.SUCCESS,
+            message: `(consumeBitOrb) Bit Orb consumed and Bit obtained.`,
+            data: {
+                bit
+            }
+        }
     } catch (err: any) {
         return {
             status: Status.ERROR,
@@ -72,8 +79,6 @@ export const consumeBitOrb = async (twitterId: string): Promise<ReturnValue> => 
  */
 export const summonBit = async (
     owner: string,
-    obtainMethod: ObtainMethod,
-    totalCookiesSpent: number
 ): Promise<ReturnValue> => {
     try {
         // get the latest bit id from the database
@@ -85,14 +90,13 @@ export const summonBit = async (
                 message: `(randomizeBit) Error from getLatestBitId: ${message}`
             }
         }
-        const latestBitId = data?.latestBitId;
+        const latestBitId = data?.latestBitId as number;
 
         // get the Bit's rarity based on the probability of obtaining it
         const rarity = RANDOMIZE_RARITY_FROM_ORB();
 
         // randomize the gender 
         const gender = RANDOMIZE_GENDER();
-
 
         // summon and return the Bit. DOESN'T SAVE TO DATABASE YET.
         const bit: Bit = {
@@ -101,8 +105,8 @@ export const summonBit = async (
             gender,
             owner,
             purchaseDate: Math.floor(Date.now() / 1000),
-            obtainMethod,
-            totalCookiesSpent,
+            obtainMethod: ObtainMethod.BIT_ORB,
+            totalCookiesSpent: 0,
             currentFarmingLevel: 1,
             farmingStats: randomizeFarmingStats(rarity),
             bitStatsModifiers: {
