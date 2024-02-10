@@ -15,9 +15,9 @@ export const RANDOMIZE_GENDER = (): BitGender => {
 }
 
 /**
- * Gets the base gathering rate (in % of total resources/hour) for a Bit based on its rarity.
+ * Gets the default gathering rate (excl. +-10%; in % of total resources/hour) for a Bit based on its rarity.
  */
-export const BASE_GATHERING_RATE = (rarity: BitRarity) => {
+export const DEFAULT_GATHERING_RATE = (rarity: BitRarity) => {
     switch (rarity) {
         case BitRarity.COMMON:
             return 0.02;
@@ -35,9 +35,9 @@ export const BASE_GATHERING_RATE = (rarity: BitRarity) => {
 }
 
 /**
- * Gets the gathering rate growth (fixed increase in % of total resources/hour for every level increase) for a Bit based on its rarity.
+ * Gets the default gathering rate growth (excl. +-10%; fixed increase in % of total resources/hour for every level increase) for a Bit based on its rarity.
  */
-export const GATHERING_RATE_GROWTH = (rarity: BitRarity) => {
+export const DEFAULT_GATHERING_RATE_GROWTH = (rarity: BitRarity) => {
     switch (rarity) {
         case BitRarity.COMMON:
             return 0.0002;
@@ -55,9 +55,9 @@ export const GATHERING_RATE_GROWTH = (rarity: BitRarity) => {
 }
 
 /**
- * Gets the base earning rate (in % of total cookies spent/hour) for a Bit based on its rarity.
+ * Gets the default earning rate (excl. +-10%; in % of total cookies spent/hour) for a Bit based on its rarity.
  */
-export const BASE_EARNING_RATE = (rarity: BitRarity) => {
+export const DEFAULT_EARNING_RATE = (rarity: BitRarity) => {
     switch (rarity) {
         case BitRarity.COMMON:
             return 0.03;
@@ -75,9 +75,9 @@ export const BASE_EARNING_RATE = (rarity: BitRarity) => {
 }
 
 /**
- * Gets the earning rate growth (fixed increase in % of total cookies spent/hour for every level increase) for a Bit based on its rarity.
+ * Gets the default earning rate growth (excl. +-10%; fixed increase in % of total cookies spent/hour for every level increase) for a Bit based on its rarity.
  */
-export const EARNING_RATE_GROWTH = (rarity: BitRarity) => {
+export const DEFAULT_EARNING_RATE_GROWTH = (rarity: BitRarity) => {
     switch (rarity) {
         case BitRarity.COMMON:
             return 0.00025;
@@ -94,5 +94,5 @@ export const EARNING_RATE_GROWTH = (rarity: BitRarity) => {
     }
 }
 
-/** base energy depletion rate of bits in % of energy bar/hour (regardless of rarity). actual energy depletion rate will be +-25% of this value. */
+/** base energy depletion rate of bits in % of energy bar/hour (regardless of rarity). actual depletion rate will include +-25% */
 export const BASE_ENERGY_DEPLETION_RATE = 5;
