@@ -10,6 +10,12 @@ export const RESOURCES_CLAIM_COOLDOWN = 86400;
 /** claim cooldown for claiming cookies (in seconds) */
 export const COOKIE_CLAIM_COOLDOWN = 86400;
 
+/** exponential decay for gathering rate calculation */
+export const GATHERING_RATE_EXPONENTIAL_DECAY = 0.03;
+
+/** exponential decay for earning rate calculation */
+export const EARNING_RATE_EXPONENTIAL_DECAY = 0.03;
+
 /** gets the max level for a bit given their rarity */
 export const MAX_BIT_LEVEL = (rarity: BitRarity) => {
     switch (rarity) {

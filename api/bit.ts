@@ -3,6 +3,7 @@ import { ReturnValue, Status } from '../utils/retVal';
 import { BitSchema } from '../schemas/Bit';
 import { Bit, BitFarmingStats, BitRarity } from '../models/bit';
 import { BASE_ENERGY_DEPLETION_RATE, DEFAULT_EARNING_RATE, DEFAULT_EARNING_RATE_GROWTH, DEFAULT_GATHERING_RATE, DEFAULT_GATHERING_RATE_GROWTH } from '../utils/constants/bit';
+import { GATHERING_RATE_EXPONENTIAL_DECAY } from '../utils/constants/game';
 
 /**
  * Adds a bit (e.g. when summoned via Bit Orb) to the database.
@@ -100,4 +101,15 @@ export const randomizeFarmingStats = (rarity: BitRarity): BitFarmingStats => {
         currentEnergyDepletionRate,
         currentEnergy: 100
     }
+}
+
+/**
+ * Calculates the current gathering rate of the bit (at level `bitLevel`).
+ */
+export const calcCurrentGatheringRate = (
+    baseGatheringRate: number,
+    bitLevel: number,
+    initialGrowthRate: number
+): number => {
+    return baseGatheringRate + ((bitLevel - 1) * initialGrowthRate) * Math.exp(-GATHERING_RATE_EXPONENTIAL_DECAY * (bitLevel - 1));
 }
