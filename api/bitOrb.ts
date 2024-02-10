@@ -1,6 +1,6 @@
-import { Bit } from '../models/bit';
+import { Bit, BitRarity } from '../models/bit';
 import { ObtainMethod } from '../models/obtainMethod';
-import { RANDOMIZE_GENDER } from '../utils/constants/bit';
+import { BASE_GATHERING_RATE, GATHERING_RATE_GROWTH, RANDOMIZE_GENDER } from '../utils/constants/bit';
 import { RANDOMIZE_RARITY_FROM_ORB } from '../utils/constants/bitOrb';
 import { ReturnValue, Status } from '../utils/retVal';
 import { getLatestBitId } from './bit';
@@ -49,4 +49,21 @@ export const randomizeBit = async (
     }
 
 
+}
+
+/**
+ * Randomizes the farming stats of a Bit.
+ */
+export const randomizeFarmingStats = (rarity: BitRarity) => {
+    // get the base gathering rate
+    const baseGatheringRate = BASE_GATHERING_RATE(rarity);
+
+    // get the gathering rate growth
+    const gatheringRateGrowth = GATHERING_RATE_GROWTH(rarity);
+
+    // rand from 0.9 to 1.1 as a multiplier for the base gathering rate to get the current gathering rate from base gathering rate
+    const randMultiplier = Math.random() * 0.2 + 0.9;
+    const currentGatheringRate = baseGatheringRate * randMultiplier;
+
+    // get the base earning rate
 }
