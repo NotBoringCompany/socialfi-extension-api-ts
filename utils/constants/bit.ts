@@ -1,5 +1,21 @@
 import { BitGender, BitRarity } from '../../models/bit';
 
+/** gets the max level for a bit given their rarity */
+export const MAX_BIT_LEVEL = (rarity: BitRarity) => {
+    switch (rarity) {
+        case BitRarity.COMMON:
+            return 20;
+        case BitRarity.UNCOMMON:
+            return 30;
+        case BitRarity.RARE:
+            return 40;
+        case BitRarity.EPIC:
+            return 50;
+        case BitRarity.LEGENDARY:
+            return 65;
+    }
+}
+
 /**
  * Randomizes a Bit's gender. 
  */

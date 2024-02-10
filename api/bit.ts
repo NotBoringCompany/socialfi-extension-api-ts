@@ -104,12 +104,16 @@ export const randomizeFarmingStats = (rarity: BitRarity): BitFarmingStats => {
 }
 
 /**
- * Calculates the current gathering rate of the bit (at level `bitLevel`).
+ * Calculates the current gathering OR earning rate of the bit (at level `bitLevel`).
+ * 
+ * Since both rates use the same formula, only the parameters need to be adjusted according to which rate wants to be calculated.
  */
-export const calcCurrentGatheringRate = (
-    baseGatheringRate: number,
+export const calcCurrentRate = (
+    // base gathering/earning rate
+    baseRate: number,
     bitLevel: number,
+    // initial gathering/earning growth rate
     initialGrowthRate: number
 ): number => {
-    return baseGatheringRate + ((bitLevel - 1) * initialGrowthRate) * Math.exp(-GATHERING_RATE_EXPONENTIAL_DECAY * (bitLevel - 1));
+    return baseRate + ((bitLevel - 1) * initialGrowthRate) * Math.exp(-GATHERING_RATE_EXPONENTIAL_DECAY * (bitLevel - 1));
 }

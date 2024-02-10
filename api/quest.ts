@@ -5,8 +5,8 @@ import { QuestSchema } from '../schemas/Quest';
 import { generateObjectId } from '../utils/crypto';
 import { User, UserInventory } from '../models/user';
 import { UserSchema } from '../schemas/User';
-import { GET_QUEST_FOOD } from '../utils/constants/game';
 import { Food } from '../models/food';
+import { RANDOMIZE_FOOD_FROM_QUEST } from '../utils/constants/quest';
 
 /**
  * Adds a quest to the database. Requires admin key.
@@ -124,10 +124,8 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                     break;
                 // add the food into the user's inventory
                 case QuestRewardType.FOOD:
-                    // randomize a number between 0 - 1
-                    const rand = Math.random();
-                    // get the corresponding food type
-                    const food = GET_QUEST_FOOD(rand);
+                    // get the corresponding food type by probability
+                    const food = RANDOMIZE_FOOD_FROM_QUEST();
                     // check if the food already exists in the user's inventory of `foods`
                     const foodIndex = userInventory.foods.findIndex((f: Food) => f.type === food);
                     // if the food exists, increment the amount; otherwise, push the food into the inventory

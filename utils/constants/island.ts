@@ -1,5 +1,26 @@
 import { IslandType, ResourceDropChance, ResourceDropChanceDiff } from '../../models/island';
 
+/** max level for any island type */
+export const MAX_ISLAND_LEVEL = 20;
+
+/** claim cooldown for claiming resources (in seconds) */
+export const RESOURCES_CLAIM_COOLDOWN = 86400;
+
+/** claim cooldown for claiming cookies (in seconds) */
+export const COOKIE_CLAIM_COOLDOWN = 86400;
+
+/** reduction modifier for effective gathering rate for having multiple bits on an island */
+export const GATHERING_RATE_REDUCTION_MODIFIER = 0.1;
+
+/** reduction modifier for effective earning rate for having multiple bits on an island */
+export const EARNING_RATE_REDUCTION_MODIFIER = 0.1;
+
+/** exponential decay for gathering rate calculation (both bit and island) */
+export const GATHERING_RATE_EXPONENTIAL_DECAY = 0.03;
+
+/** exponential decay for earning rate calculation (both bit and island) */
+export const EARNING_RATE_EXPONENTIAL_DECAY = 0.03;
+
 /**
  * Gets the default resource cap for an Island based on its type.
  */

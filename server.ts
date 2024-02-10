@@ -31,7 +31,6 @@ app.use(passport.session());
 import twitterAuth from './routes/auth/twitter';
 import jwt from './routes/jwt';
 import shop from './routes/shop';
-import { calcCurrentGatheringRate } from './api/bit';
 
 app.use('/auth/twitter', twitterAuth);
 app.use('/jwt', jwt);
@@ -41,9 +40,4 @@ app.listen(port, async () => {
     console.log(`Server running on port ${port}`);
 
     await mongoose.connect(mongoUri);
-
-    // test current gathering rate
-    const rate = calcCurrentGatheringRate(0.02, 20, 0.0002);
-
-    console.log('rate: ', rate)
 });
