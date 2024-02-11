@@ -31,6 +31,8 @@ app.use(passport.session());
 import twitterAuth from './routes/auth/twitter';
 import jwt from './routes/jwt';
 import shop from './routes/shop';
+import { randomizeResourceFromChances } from './api/island';
+import { IslandType } from './models/island';
 
 app.use('/auth/twitter', twitterAuth);
 app.use('/jwt', jwt);
@@ -40,4 +42,10 @@ app.listen(port, async () => {
     console.log(`Server running on port ${port}`);
 
     await mongoose.connect(mongoUri);
+
+    // loop 100 times to test the resource returned
+    for (let i = 0; i < 100; i++) {
+        const calc = randomizeResourceFromChances(IslandType.PRIMAL_ISLES, 20);
+        console.log('calc: ', calc);
+    }
 });

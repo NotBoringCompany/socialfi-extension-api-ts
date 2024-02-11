@@ -1,10 +1,135 @@
 import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
 import { IslandSchema } from '../schemas/Island';
-import { Island, IslandType, RateType } from '../models/island';
-import { DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER } from '../utils/constants/island';
-import { Bit } from '../models/bit';
+import { Island, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
+import { COOKIE_CLAIM_COOLDOWN, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF } from '../utils/constants/island';
 import { calcCurrentRate } from './bit';
+import { Resource, ResourceType } from '../models/resource';
+
+/**
+ * Drops a resource for a user's island. 
+ * 
+ * Should only be called when gathering progress has reached >= 100% (and then reset back to 0%); scheduler should check this.
+ * 
+ * Also assumes that resources can still be dropped. Additional scheduler is needed to check if resources left is still > 0 to drop resource.
+ */
+export const dropResource = async (twitterId: string, islandId: number): Promise<ReturnValue> => {
+    const Island = mongoose.model('Islands', IslandSchema, 'Islands');
+
+    try {
+        const island = await Island.findOne({ islandId });
+
+        if (!island) {
+            return {
+                status: Status.ERROR,
+                message: `(dropResource) Island not found.`
+            }
+        }
+
+        // randomize the resource from the effective drop chances based on the island's type and level
+        const resourceType: ResourceType = randomizeResourceFromChances(<IslandType>island.type, island.currentLevel);
+
+        // firstly check if `claimableResources` is empty.
+        const claimableResources: Resource[] = island.islandResourceStats?.claimableResources;
+
+        if (claimableResources.length === 0 || !claimableResources) {
+            // if empty, create a new resource and add it to the island's `claimableResources`
+            const newResource: Resource = {
+                type: resourceType,
+                amount: 1
+            }
+
+            // add the new resource to the island's `claimableResources`
+            await Island.updateOne({ islandId }, { $push: { 'islandResourceStats.claimableResources': newResource } });
+        } else {
+            // if not empty, check if the resource already exists in `claimableResources`
+            const existingResourceIndex = claimableResources.findIndex(r => r.type === resourceType);
+
+            // if the resource already exists, increment its amount
+            if (existingResourceIndex !== -1) {
+                await Island.updateOne({ islandId }, { $inc: { [`islandResourceStats.claimableResources.${existingResourceIndex}.amount`]: 1 } });
+            } else {
+                // if the resource doesn't exist, push a new resource
+                const newResource: Resource = {
+                    type: resourceType,
+                    amount: 1
+                }
+
+                // add the new resource to the island's `claimableResources`
+                await Island.updateOne({ islandId }, { $push: { 'islandResourceStats.claimableResources': newResource } });
+            }
+        }
+
+        // then, check if `resourcesGathered` is empty.
+        const resourcesGathered: Resource[] = island.islandResourceStats?.resourcesGathered;
+
+        if (resourcesGathered.length === 0 || !resourcesGathered) {
+            // if empty, create a new resource and add it to the island's `resourcesGathered`
+            const newResource: Resource = {
+                type: resourceType,
+                amount: 1
+            }
+
+            // add the new resource to the island's `resourcesGathered`
+            await Island.updateOne({ islandId }, { $push: { 'islandResourceStats.resourcesGathered': newResource } });
+        } else {
+            // if not empty, check if the resource already exists in `resourcesGathered`
+            const existingResourceIndex = resourcesGathered.findIndex(r => r.type === resourceType);
+
+            // if the resource already exists, increment its amount
+            if (existingResourceIndex !== -1) {
+                await Island.updateOne({ islandId }, { $inc: { [`islandResourceStats.resourcesGathered.${existingResourceIndex}.amount`]: 1 } });
+            } else {
+                // if the resource doesn't exist, push a new resource
+                const newResource: Resource = {
+                    type: resourceType,
+                    amount: 1
+                }
+
+                // add the new resource to the island's `resourcesGathered`
+                await Island.updateOne({ islandId }, { $push: { 'islandResourceStats.resourcesGathered': newResource } });
+            }
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(dropResource) Island ID ${islandId} has dropped a resource: ${resourceType}.`,
+            data: {
+                resourceType
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(dropResource) Error: ${err.message}`
+        }
+    }
+}
+
+/**
+ * Randomizes a resource from the effective drop chances based on the island's type and level.
+ */
+export const randomizeResourceFromChances = (type: IslandType, level: number): ResourceType => {
+    // calculate the effective drop chance rates based on the island's type and level
+    const effectiveDropChances: ResourceDropChance = calcEffectiveResourceDropChances(type, level);
+
+    // rand between 1 to 100 to determine which resource to drop
+    const rand = Math.random() * 100 + 1;
+
+    // calculate the cumulative probability for each resource and see if the rand falls within the range
+    let cumulativeProbability = 0;
+
+    for (let [resource, probability] of Object.entries(effectiveDropChances)) {
+        cumulativeProbability += probability;
+
+        if (rand <= cumulativeProbability) {
+            // capitalize the first letter of the resource to match the ResourceType enum
+            resource = resource.charAt(0).toUpperCase() + resource.slice(1);
+
+            return <ResourceType>resource;
+        }
+    }
+}
 
 /**
  * Adds an island (e.g. when obtained via Terra Capsulator) to the database.
@@ -106,5 +231,39 @@ export const calcEffectiveRate = (
         return sum * (1 - (reductionModifier * (n - 1)));
     } else {
         throw new Error(`(calcEffectiveRate) Arrays are not of the same length.`);
+    }
+}
+
+/**
+ * Calculates the effective resource drop chances after including the resource drop chance diff based on the island's level.
+ */
+export const calcEffectiveResourceDropChances = (type: IslandType, level: number): ResourceDropChance => {
+    // get the base resource drop chances for the island type
+    const dropChances = RESOURCE_DROP_CHANCES(type);
+
+    // get the resource drop chance diff based on the island's level
+    const resourceDiff = calcResourceDropChanceDiff(type, level);
+
+    return {
+        silver: dropChances.silver + resourceDiff.silver,
+        emerald: dropChances.emerald + resourceDiff.emerald,
+        diamond: dropChances.diamond + resourceDiff.diamond,
+        tanzanite: dropChances.tanzanite + resourceDiff.tanzanite,
+        relic: dropChances.relic + resourceDiff.relic
+    }
+}
+
+/**
+ * Gets the base resource modifier/diff based on the island type and multiply the values by the island's level - 1 (since level 1 uses base resource drop chances).
+ */
+export const calcResourceDropChanceDiff = (type: IslandType, level: number): ResourceDropChanceDiff => {
+    const resourceDiff = RESOURCE_DROP_CHANCES_LEVEL_DIFF(type);
+
+    return {
+        silver: resourceDiff.silver * (level - 1),
+        emerald: resourceDiff.emerald * (level - 1),
+        diamond: resourceDiff.diamond * (level - 1),
+        tanzanite: resourceDiff.tanzanite * (level - 1),
+        relic: resourceDiff.relic * (level - 1)
     }
 }
