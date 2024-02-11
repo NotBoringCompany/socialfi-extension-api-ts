@@ -5,6 +5,7 @@ import { Island, IslandType, RateType, ResourceDropChance, ResourceDropChanceDif
 import { COOKIE_CLAIM_COOLDOWN, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF } from '../utils/constants/island';
 import { calcCurrentRate } from './bit';
 import { Resource, ResourceType } from '../models/resource';
+import { UserSchema } from '../schemas/User';
 
 /**
  * Drops a resource for a user's island. 
@@ -12,11 +13,31 @@ import { Resource, ResourceType } from '../models/resource';
  * Should only be called when gathering progress has reached >= 100% (and then reset back to 0%); scheduler should check this.
  * 
  * Also assumes that resources can still be dropped. Additional scheduler is needed to check if resources left is still > 0 to drop resource.
+ * 
+ * NOTE: Requires `twitterId` which is fetched via `req.user`, automatically giving us the user's Twitter ID. This will check if the user who calls this function owns the twitter ID that owns the island.
  */
 export const dropResource = async (twitterId: string, islandId: number): Promise<ReturnValue> => {
     const Island = mongoose.model('Islands', IslandSchema, 'Islands');
+    const User = mongoose.model('Users', UserSchema, 'Users');
 
     try {
+        // firstly, check if the user owns the island
+        const user = await User.findOne({ twitterId });
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(dropResource) User not found.`
+            }
+        }
+
+        // check if the islandId is in the user's islandIds; if not, return unauthorized
+        if (!user.inventory?.islandIds.includes(islandId)) {
+            return {
+                status: Status.UNAUTHORIZED,
+                message: `(dropResource) User does not own Island ID ${islandId}.`
+            }
+        }
+
         const island = await Island.findOne({ islandId });
 
         if (!island) {
