@@ -3,12 +3,12 @@ import { ReturnValue, Status } from '../utils/retVal';
 import { IslandSchema } from '../schemas/Island';
 import { Island, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
 import { BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, RARITY_DEVIATION_REDUCTIONS, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF } from '../utils/constants/island';
-import { calcBitCurrentRate } from './bit';
+import { calcBitCurrentRate, getBits } from './bit';
 import { Resource, ResourceType } from '../models/resource';
 import { UserSchema } from '../schemas/User';
 import { Modifier } from '../models/modifier';
 import { BitSchema } from '../schemas/Bit';
-import { BitRarity, BitRarityNumeric } from '../models/bit';
+import { Bit, BitRarity, BitRarityNumeric } from '../models/bit';
 
 /**
  * (User) Places a bit on an island. Once placed, the bit is locked and cannot be removed until further notice.
@@ -145,6 +145,11 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
             await Island.updateOne({ islandId }, { $set: { [`islandStatsModifiers.resourceCapModifiers.${resourceCapModifierIndex}.value`]: newValue } });
         }
 
+        // firstly, check if the to-be-put bit is the first one; if yes, start the `gatheringStart` timestamp
+        if (island.placedBitIds.length === 0) {
+            await Island.updateOne({ islandId }, { 'islandResourceStats.gatheringStart': Math.floor(Date.now() / 1000) });
+        }
+
         // place the bit on the island
         await Island.updateOne({ islandId }, { $push: { placedBitIds: bitId } });
 
@@ -195,6 +200,7 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
 
         if (islands.length === 0 || !islands) {
             console.error(`(updateGatheringProgressAndDropResource) No islands found.`);
+            return;
         }
 
         for (let island of islands) {
@@ -202,8 +208,31 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
             // check current gathering progress
             const gatheringProgress = island.islandResourceStats?.gatheringProgress;
 
-            // check current gathering rate
-            const gatheringRate = island.islandResourceStats?.currentGatheringRate;
+            // get the bits placed on the island to calculate the current gathering rate
+            const { status, message, data } = await getBits(island.placedBitIds);
+
+            // if error, just console log and continue to the next island
+            if (status !== Status.SUCCESS) {
+                console.error(`(updateGatheringProgressAndDropResource) Error For island ID ${island.islandId} from getBits: ${message}`);
+                continue;
+            }
+
+            const bits = data?.bits as Bit[];
+            // get the base gathering rates, bit levels, initial gathering growth rates and bit modifiers
+            const baseRates = bits.map(bit => bit.farmingStats.baseGatheringRate);
+            const bitLevels = bits.map(bit => bit.currentFarmingLevel);
+            const initialGrowthRates = bits.map(bit => bit.farmingStats.gatheringRateGrowth);
+            const bitModifiers = bits.map(bit => bit.bitStatsModifiers.gatheringRateModifiers);
+
+            // calculate current island gathering rate
+            const gatheringRate = calcIslandCurrentRate(
+                RateType.GATHERING,
+                baseRates,
+                bitLevels,
+                initialGrowthRates,
+                bitModifiers,
+                island.islandStatsModifiers?.gatheringRateModifiers as Modifier[]
+            );
 
             // check if the island's gathering progress + gathering rate is >= 100
             // if not, just update the gathering progress
@@ -252,6 +281,14 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
             return {
                 status: Status.ERROR,
                 message: `(dropResource) Island not found.`
+            }
+        }
+
+        // check if the `resourcesLeft` is at least 1, if not, return an error.
+        if (island.islandResourceStats?.resourcesLeft < 1) {
+            return {
+                status: Status.ERROR,
+                message: `(dropResource) No resources left to drop.`
             }
         }
 
@@ -429,7 +466,7 @@ export const randomizeBaseResourceCap = (type: IslandType): number => {
  * 
  * NOTE: to prevent miscalculations, ensure that:
  * 
- * 1. `baseRates`, `bitLevels`, and `initialGrowthRates` are all of the same length.
+ * 1. `baseRates` (referring to the base gathering/earning rates of the bits), `bitLevels`, and `initialGrowthRates` are all of the same length.
  * 
  * 2. the indexes of each array correspond to the same bit; for example, if `baseRates[0]` = 0.025, `bitLevels[0]` = 3 and `initialGrowthRates[0]` = 0.0002,
  * this should mean that Bit #1 has a base gathering/earning rate of 0.025, is at level 3, and has an initial growth rate of 0.0002.
@@ -439,8 +476,8 @@ export const calcIslandCurrentRate = (
     baseRates: number[],
     bitLevels: number[],
     initialGrowthRates: number[],
-    // gathering OR earning rate modifiers from `BitStatsModifiers`
-    bitModifiers: Modifier[],
+    // gathering OR earning rate modifiers from `BitStatsModifiers` for each bit (each bit will have Modifier[], so multiple bits will be an array of Modifier[], thus Modifier[][])
+    bitModifiers: Modifier[][],
     // gathering OR earning rate modifiers from `IslandStatsModifiers`
     modifiers: Modifier[]
 ): number => {
@@ -452,7 +489,7 @@ export const calcIslandCurrentRate = (
 
         for (let i = 0; i < n; i++) {
             // get the current rate for each bit
-            const currentRate = calcBitCurrentRate(type, baseRates[i], bitLevels[i], initialGrowthRates[i], bitModifiers);
+            const currentRate = calcBitCurrentRate(type, baseRates[i], bitLevels[i], initialGrowthRates[i], bitModifiers[i]);
 
             // add the current rate to the sum
             sum += currentRate;

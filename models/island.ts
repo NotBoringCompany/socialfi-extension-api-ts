@@ -47,6 +47,8 @@ export enum IslandType {
 
 /**
  * Represents the gathering and resource stats of an island.
+ * 
+ * Gathering rate will not be calculated here due to complexity.
  */
 export interface IslandResourceStats {
     /** base amount of resources available to be gathered from this island, excluding deductions */
@@ -61,10 +63,6 @@ export interface IslandResourceStats {
     gatheringEnd: number;
     /** timestamp of when `claimableResources` were last claimed */
     lastClaimed: number;
-    /** current gathering rate for resources in % of total resources/hour
-     * (incl. base gathering rate + level modifiers from bits + exp. decay + reduction from multiple bits on the island + modifiers) 
-     */
-    currentGatheringRate: number;
     /** gathering progress to gather 1 RESOURCE (not all resources); will be from 0 to 100
      * once progress goes > 100, it will gather 1 resource and reset back to 0 + any overflow of %
      * (UPDATED PER HOUR)
@@ -74,6 +72,8 @@ export interface IslandResourceStats {
 
 /**
  * Represents the earning stats of an island.
+ * 
+ * Earning rate will not be calculated here due to complexity.
  */
 export interface IslandEarningStats {
     /** total cookies spent on this island (INCL. BITS!); will keep increasing when upgrading the island and bits placed inside */
@@ -88,10 +88,6 @@ export interface IslandEarningStats {
     earningEnd: number;
     /** timestamp of when `claimableCookies` were last claimed */
     lastClaimed: number;
-    /** the current earning rate for cookies in % of total cookies spent/hour
-     * (incl. base earning rate + level modifiers from bits + exp. decay + reduction from multiple bits on the island + modifiers)
-     */
-    currentEarningRate: number;
 }
 
 /** 

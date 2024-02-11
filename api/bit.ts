@@ -134,3 +134,27 @@ export const calcBitCurrentRate = (
 
     return (baseRate + ((bitLevel - 1) * initialGrowthRate) * Math.exp(-expDecay * (bitLevel - 1))) * modifierMultiplier;
 }
+
+/**
+ * Gets one or multiple bits based on their bit ids.
+ */
+export const getBits = async (bitIds: number[]): Promise<ReturnValue> => {
+    const Bit = mongoose.model('Bits', BitSchema, 'Bits');
+
+    try {
+        const bits = await Bit.find({ bitId: { $in: bitIds } });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getBits) Bits fetched.`,
+            data: {
+                bits
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getBits) Error: ${err.message}`
+        }
+    }
+}
