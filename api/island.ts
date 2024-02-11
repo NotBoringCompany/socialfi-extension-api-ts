@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
 import { IslandSchema } from '../schemas/Island';
 import { Island, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
-import { COOKIE_CLAIM_COOLDOWN, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF } from '../utils/constants/island';
+import { DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF } from '../utils/constants/island';
 import { calcCurrentRate } from './bit';
 import { Resource, ResourceType } from '../models/resource';
 import { UserSchema } from '../schemas/User';
@@ -266,10 +266,10 @@ export const calcEffectiveResourceDropChances = (type: IslandType, level: number
     const resourceDiff = calcResourceDropChanceDiff(type, level);
 
     return {
+        stone: dropChances.stone + resourceDiff.stone,
+        keratin: dropChances.keratin + resourceDiff.keratin,
         silver: dropChances.silver + resourceDiff.silver,
-        emerald: dropChances.emerald + resourceDiff.emerald,
         diamond: dropChances.diamond + resourceDiff.diamond,
-        tanzanite: dropChances.tanzanite + resourceDiff.tanzanite,
         relic: dropChances.relic + resourceDiff.relic
     }
 }
@@ -281,10 +281,10 @@ export const calcResourceDropChanceDiff = (type: IslandType, level: number): Res
     const resourceDiff = RESOURCE_DROP_CHANCES_LEVEL_DIFF(type);
 
     return {
+        stone: resourceDiff.stone * (level - 1),
+        keratin: resourceDiff.keratin * (level - 1),
         silver: resourceDiff.silver * (level - 1),
-        emerald: resourceDiff.emerald * (level - 1),
         diamond: resourceDiff.diamond * (level - 1),
-        tanzanite: resourceDiff.tanzanite * (level - 1),
         relic: resourceDiff.relic * (level - 1)
     }
 }

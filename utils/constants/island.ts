@@ -46,42 +46,42 @@ export const RESOURCE_DROP_CHANCES = (type: IslandType): ResourceDropChance => {
     switch (type) {
         case IslandType.PRIMAL_ISLES:
             return {
-                silver: 77.5,
-                emerald: 18.5,
-                diamond: 4,
-                tanzanite: 0,
+                stone: 77.5,
+                keratin: 18.5,
+                silver: 4,
+                diamond: 0,
                 relic: 0
             }
         case IslandType.VERDANT_ISLES:
             return {
-                silver: 62.5,
-                emerald: 28.7,
-                diamond: 8.6,
-                tanzanite: 0.2,
+                stone: 62.5,
+                keratin: 28.7,
+                silver: 8.6,
+                diamond: 0.2,
                 relic: 0
             }
         case IslandType.EXOTIC_ISLES:
             return {
-                silver: 50,
-                emerald: 33.745,
-                diamond: 15,
-                tanzanite: 1.25,
+                stone: 50,
+                keratin: 33.745,
+                silver: 15,
+                diamond: 1.25,
                 relic: 0.005
             }
         case IslandType.CRYSTAL_ISLES:
             return {
-                silver: 35.5,
-                emerald: 34,
-                diamond: 25,
-                tanzanite: 5,
+                stone: 35.5,
+                keratin: 34,
+                silver: 25,
+                diamond: 5,
                 relic: 0.5
             }
         case IslandType.CELESTIAL_ISLES:
             return {
-                silver: 17.5,
-                emerald: 20,
-                diamond: 45,
-                tanzanite: 15,
+                stone: 17.5,
+                keratin: 20,
+                silver: 45,
+                diamond: 15,
                 relic: 2.5
             }
     }
@@ -94,42 +94,42 @@ export const RESOURCE_DROP_CHANCES_LEVEL_DIFF = (type: IslandType): ResourceDrop
     switch (type) {
         case IslandType.PRIMAL_ISLES:
             return {
-                silver: -0.13,
-                emerald: 0.12,
-                diamond: 0.01,
-                tanzanite: 0,
+                stone: -0.13,
+                keratin: 0.12,
+                silver: 0.01,
+                diamond: 0,
                 relic: 0
             }
         case IslandType.VERDANT_ISLES:
             return {
-                silver: -0.21001,
-                emerald: 0.155,
-                diamond: 0.05,
-                tanzanite: 0.005,
+                stone: -0.21001,
+                keratin: 0.155,
+                silver: 0.05,
+                diamond: 0.005,
                 relic: 0
             }
         case IslandType.EXOTIC_ISLES:
             return {
-                silver: -0.44825,
-                emerald: 0.175,
-                diamond: 0.25,
-                tanzanite: 0.0225,
+                stone: -0.44825,
+                keratin: 0.175,
+                silver: 0.25,
+                diamond: 0.0225,
                 relic: 0.00075
             }
         case IslandType.CRYSTAL_ISLES:
             return {
-                silver: -0.429,
-                emerald: 0.02,
-                diamond: 0.3,
-                tanzanite: 0.1,
+                stone: -0.429,
+                keratin: 0.02,
+                silver: 0.3,
+                diamond: 0.1,
                 relic: 0.009
             }
         case IslandType.CELESTIAL_ISLES:
             return {
-                silver: -0.4875,
-                emerald: -0.1,
+                stone: -0.4875,
+                keratin: -0.1,
+                silver: 0.25,
                 diamond: 0.25,
-                tanzanite: 0.25,
                 relic: 0.0875
             }
     }

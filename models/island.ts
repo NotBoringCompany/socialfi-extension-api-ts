@@ -114,10 +114,15 @@ export interface IslandStatsModifiers {
  *
  */
 export interface ResourceDropChance {
+    /** the chance to drop stone */
+    stone: number;
+    /** the chance to drop keratin */
+    keratin: number;
+    /** the chance to drop silver */
     silver: number;
-    emerald: number;
+    /** the chance to drop diamond */
     diamond: number;
-    tanzanite: number;
+    /** the chance to drop relic */
     relic: number;
 }
 
