@@ -1,5 +1,5 @@
 import { BitRarity } from '../../models/bit';
-import { IslandType, ResourceDropChance, ResourceDropChanceDiff } from '../../models/island';
+import { IslandType, RarityDeviationReduction, ResourceDropChance, ResourceDropChanceDiff } from '../../models/island';
 
 /** max level for any island type */
 export const MAX_ISLAND_LEVEL = 20;
@@ -151,5 +151,88 @@ export const BIT_PLACEMENT_MIN_RARITY_REQUIREMENT = (type: IslandType): BitRarit
             return BitRarity.UNCOMMON;
         case IslandType.CELESTIAL_ISLES:
             return BitRarity.RARE;
+    }
+}
+
+/**
+ * Shows the different negative modifiers when the bit's rarity deviates from the island's type (in rarity format).
+ * 
+ * For instance, if a common Bit is placed on Verdant Isles (in rarity format: uncommon), there will be a negative modifier for gathering rate and resource cap.
+ */
+export const RARITY_DEVIATION_REDUCTIONS = (type: IslandType, rarity: BitRarity): RarityDeviationReduction => {
+    switch (type) {
+        // for primal isles, all bits from common to legendary will NOT receive any reductions
+        case IslandType.PRIMAL_ISLES:
+            return {
+                gatheringRateReduction: 0,
+                resourceCapReduction: 0
+            }
+        // for verdant isles, only common bits will get reductions.
+        case IslandType.VERDANT_ISLES:
+            switch (rarity) {
+                case BitRarity.COMMON:
+                    return {
+                        gatheringRateReduction: 2,
+                        resourceCapReduction: 5
+                    }
+                default:
+                    return {
+                        gatheringRateReduction: 0,
+                        resourceCapReduction: 0
+                    }
+            }
+        // for exotic isles, only common and uncommon bits will get reductions.
+        case IslandType.EXOTIC_ISLES:
+            switch (rarity) {
+                case BitRarity.COMMON:
+                    return {
+                        gatheringRateReduction: 5,
+                        resourceCapReduction: 7.75
+                    }
+                case BitRarity.UNCOMMON:
+                    return {
+                        gatheringRateReduction: 3,
+                        resourceCapReduction: 6
+                    }
+            }
+        // for crystal isles, commons cannot be placed, so technically only uncommons and rares will get reductions.
+        case IslandType.CRYSTAL_ISLES:
+            switch (rarity) {
+                case BitRarity.COMMON:
+                    throw new Error(`(RARITY_DEVIATION_REDUCTIONS) Common bits are not allowed to be placed on Crystal Isles.`)
+                case BitRarity.UNCOMMON:
+                    return {
+                        gatheringRateReduction: 5.75,
+                        resourceCapReduction: 10
+                    }
+                case BitRarity.RARE:
+                    return {
+                        gatheringRateReduction: 4,
+                        resourceCapReduction: 7
+                    }
+            }
+        // for celestial isles, commons and uncommons cannot be placed, so technically only rares and epics will get reductions.
+        case IslandType.CELESTIAL_ISLES:
+            switch (rarity) {
+                case BitRarity.COMMON:
+                    throw new Error(`(RARITY_DEVIATION_REDUCTIONS) Common bits are not allowed to be placed on Celestial Isles.`)
+                case BitRarity.UNCOMMON:
+                    throw new Error(`(RARITY_DEVIATION_REDUCTIONS) Uncommon bits are not allowed to be placed on Celestial Isles.`)
+                case BitRarity.RARE:
+                    return {
+                        gatheringRateReduction: 7.5,
+                        resourceCapReduction: 11.5
+                    }
+                case BitRarity.EPIC:
+                    return {
+                        gatheringRateReduction: 5.25,
+                        resourceCapReduction: 8.25
+                    }
+                case BitRarity.LEGENDARY:
+                    return {
+                        gatheringRateReduction: 0,
+                        resourceCapReduction: 0
+                    }
+            }
     }
 }
