@@ -1,3 +1,4 @@
+import { BitRarity } from '../../models/bit';
 import { IslandType, ResourceDropChance, ResourceDropChanceDiff } from '../../models/island';
 
 /** max level for any island type */
@@ -132,5 +133,23 @@ export const RESOURCE_DROP_CHANCES_LEVEL_DIFF = (type: IslandType): ResourceDrop
                 diamond: 0.25,
                 relic: 0.0875
             }
+    }
+}
+
+/**
+ * Returrns the minimum rarity the bit needs to be to be placed on an island based on its type.
+ */
+export const BIT_PLACEMENT_MIN_RARITY_REQUIREMENT = (type: IslandType): BitRarity => {
+    switch (type) {
+        case IslandType.PRIMAL_ISLES:
+            return BitRarity.COMMON;
+        case IslandType.VERDANT_ISLES:
+            return BitRarity.COMMON;
+        case IslandType.EXOTIC_ISLES:
+            return BitRarity.COMMON;
+        case IslandType.CRYSTAL_ISLES:
+            return BitRarity.UNCOMMON;
+        case IslandType.CELESTIAL_ISLES:
+            return BitRarity.RARE;
     }
 }
