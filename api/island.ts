@@ -267,9 +267,7 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
 /**
  * Drops a resource for a user's island. 
  * 
- * Should only be called when gathering progress has reached >= 100% (and then reset back to 0%); scheduler should check this.
- * 
- * Also assumes that resources can still be dropped. Additional scheduler is needed to check if resources left is still > 0 to drop resource.
+ * Should only be called when gathering progress has reached >= 100% (and then reset back to 0%). Scheduler/parent function will check this.
  */
 export const dropResource = async (islandId: number): Promise<ReturnValue> => {
     const Island = mongoose.model('Islands', IslandSchema, 'Islands');
@@ -356,6 +354,9 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
                 await Island.updateOne({ islandId }, { $push: { 'islandResourceStats.resourcesGathered': newResource } });
             }
         }
+
+        // finally, decrement the `resourcesLeft` by 1
+        await Island.updateOne({ islandId }, { $inc: { 'islandResourceStats.resourcesLeft': -1 } });
 
         return {
             status: Status.SUCCESS,
