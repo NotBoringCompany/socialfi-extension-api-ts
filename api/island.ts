@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
 import { IslandSchema } from '../schemas/Island';
 import { Island, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
-import { BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF } from '../utils/constants/island';
+import { BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, RARITY_DEVIATION_REDUCTIONS, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF } from '../utils/constants/island';
 import { calcBitCurrentRate } from './bit';
 import { Resource, ResourceType } from '../models/resource';
 import { UserSchema } from '../schemas/User';
@@ -87,7 +87,78 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
         // check if the bit's rarity is allowed for it to be placed on the island
         const bitRarity = <BitRarity>bit.rarity;
         const minRarityRequired = BIT_PLACEMENT_MIN_RARITY_REQUIREMENT(<IslandType>island.type);
+        const bitRarityAllowed = checkBitRarityAllowed(bitRarity, minRarityRequired);
 
+        if (!bitRarityAllowed) {
+            return {
+                status: Status.ERROR,
+                message: `(placeBit) Bit rarity is too low to be placed on the island.`
+            }
+        }
+
+        // check for any limitations/negative modifiers from rarity deviation (if bit rarity is lower than the island's type)
+        const rarityDeviationReductions = RARITY_DEVIATION_REDUCTIONS(<IslandType>island.type, bitRarity);
+
+        // check for previous `gatheringRateModifiers` from the island's `IslandStatsModifiers`
+        // by searching for an origin of `Rarity Deviation` on `gatheringRateModifiers`
+        // if not found, create; if found, reduce 1 by the reduction amount
+        const gatheringRateModifierIndex = (island.islandStatsModifiers?.gatheringRateModifiers as Modifier[]).findIndex(modifier => modifier.origin === 'Rarity Deviation');
+
+        if (gatheringRateModifierIndex === -1) {
+            // create a new modifier
+            const newGatheringRateModifier: Modifier = {
+                origin: 'Rarity Deviation',
+                // since the value is based on a scale of 0 - 1 (multiplier), divide the reduction amount by 100
+                value: 1 - (rarityDeviationReductions.gatheringRateReduction / 100)
+            }
+
+            // add the new modifier to the island's `gatheringRateModifiers`
+            await Island.updateOne({ islandId }, { $push: { 'islandStatsModifiers.gatheringRateModifiers': newGatheringRateModifier } });
+        } else {
+            const currentValue = island.islandStatsModifiers?.gatheringRateModifiers[gatheringRateModifierIndex].value;
+            const newValue = currentValue - (rarityDeviationReductions.gatheringRateReduction / 100);
+
+            // reduce the value by the reduction amount
+            await Island.updateOne({ islandId }, { $set: { [`islandStatsModifiers.gatheringRateModifiers.${gatheringRateModifierIndex}.value`]: newValue } });
+        }
+
+        // check for previous `resourceCapModifiers` from the island's `IslandStatsModifiers`
+        // by searching for an origin of `Rarity Deviation` on `resourceCapModifiers`
+        // if not found, create; if found, reduce the value by the reduction amount
+        const resourceCapModifierIndex = (island.islandStatsModifiers?.resourceCapModifiers as Modifier[]).findIndex(modifier => modifier.origin === 'Rarity Deviation');
+
+        if (resourceCapModifierIndex === -1) {
+            // create a new modifier
+            const newResourceCapModifier: Modifier = {
+                origin: 'Rarity Deviation',
+                // since the value is based on a scale of 0 - 1 (multiplier), divide the reduction amount by 100
+                value: 1 - (rarityDeviationReductions.resourceCapReduction / 100)
+            }
+
+            // add the new modifier to the island's `resourceCapModifiers`
+            await Island.updateOne({ islandId }, { $push: { 'islandStatsModifiers.resourceCapModifiers': newResourceCapModifier } });
+        } else {
+            const currentValue = island.islandStatsModifiers?.resourceCapModifiers[resourceCapModifierIndex].value;
+            const newValue = currentValue - (rarityDeviationReductions.resourceCapReduction / 100);
+
+            // reduce the value by the reduction amount
+            await Island.updateOne({ islandId }, { $set: { [`islandStatsModifiers.resourceCapModifiers.${resourceCapModifierIndex}.value`]: newValue } });
+        }
+
+        // place the bit on the island
+        await Island.updateOne({ islandId }, { $push: { placedBitIds: bitId } });
+
+        // update the bit to include `placedIslandId`
+        await Bit.updateOne({ bitId }, { placedIslandId: islandId });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(placeBit) Bit placed on the island.`,
+            data: {
+                bitId,
+                islandId
+            }
+        }
     } catch (err: any) {
         return {
             status: Status.ERROR,
@@ -96,8 +167,10 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
     }
 }
 
-// test
-export const bitRarityisAllowed = (bitRarity: BitRarity, minRarityRequired: BitRarity): boolean => {
+/** 
+ * Checks if the bit's rarity is allowed for it to be placed on the island.
+ */
+export const checkBitRarityAllowed = (bitRarity: BitRarity, minRarityRequired: BitRarity): boolean => {
     return BitRarityNumeric[bitRarity] >= BitRarityNumeric[minRarityRequired];
 }
 
