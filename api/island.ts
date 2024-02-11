@@ -2,11 +2,13 @@ import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
 import { IslandSchema } from '../schemas/Island';
 import { Island, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
-import { DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF } from '../utils/constants/island';
+import { BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF } from '../utils/constants/island';
 import { calcBitCurrentRate } from './bit';
 import { Resource, ResourceType } from '../models/resource';
 import { UserSchema } from '../schemas/User';
 import { Modifier } from '../models/modifier';
+import { BitSchema } from '../schemas/Bit';
+import { BitRarity, BitRarityNumeric } from '../models/bit';
 
 /**
  * (User) Places a bit on an island. Once placed, the bit is locked and cannot be removed until further notice.
@@ -16,15 +18,87 @@ import { Modifier } from '../models/modifier';
 export const placeBit = async (twitterId: string, islandId: number, bitId: number): Promise<ReturnValue> => {
     const User = mongoose.model('Users', UserSchema, 'Users');
     const Island = mongoose.model('Islands', IslandSchema, 'Islands');
+    const Bit = mongoose.model('Bits', BitSchema, 'Bits');
 
     try {
-        // firstly, check if the 
+        // firstly, check if the twitter ID owns the island
+        const user = await User.findOne({ twitterId });
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(placeBit) User not found.`
+            }
+        }
+
+        const islandIndex = (user.inventory?.islandIds as number[]).findIndex(id => id === islandId);
+
+        if (islandIndex === -1) {
+            return {
+                status: Status.UNAUTHORIZED,
+                message: `(placeBit) User does not own the island.`
+            }
+        }
+
+        // then, check if the user owns the bit to be placed
+        const bitIndex = (user.inventory?.bitIds as number[]).findIndex(id => id === bitId);
+
+        if (bitIndex === -1) {
+            return {
+                status: Status.UNAUTHORIZED,
+                message: `(placeBit) User does not own the bit.`
+            }
+        }
+
+        // query the island and the bit
+        const bit = await Bit.findOne({ bitId });
+        const island = await Island.findOne({ islandId });
+
+        if (!bit) {
+            return {
+                status: Status.ERROR,
+                message: `(placeBit) Bit not found.`
+            }
+        }
+
+        if (!island) {
+            return {
+                status: Status.ERROR,
+                message: `(placeBit) Island not found.`
+            }
+        }
+
+        // check if the bit is already placed on an island (by checking if `placedIslandId` is not 0)
+        if (bit.placedIslandId !== 0) {
+            return {
+                status: Status.ERROR,
+                message: `(placeBit) Bit is already placed on an island.`
+            }
+        }
+
+        // check if the island has reached its bit cap (5)
+        if (island.placedBitIds.length >= 5) {
+            return {
+                status: Status.ERROR,
+                message: `(placeBit) Island has reached its bit cap.`
+            }
+        }
+
+        // check if the bit's rarity is allowed for it to be placed on the island
+        const bitRarity = <BitRarity>bit.rarity;
+        const minRarityRequired = BIT_PLACEMENT_MIN_RARITY_REQUIREMENT(<IslandType>island.type);
+
     } catch (err: any) {
         return {
             status: Status.ERROR,
             message: `(placeBit) Error: ${err.message}`
         }
     }
+}
+
+// test
+export const bitRarityisAllowed = (bitRarity: BitRarity, minRarityRequired: BitRarity): boolean => {
+    return BitRarityNumeric[bitRarity] >= BitRarityNumeric[minRarityRequired];
 }
 
 /**

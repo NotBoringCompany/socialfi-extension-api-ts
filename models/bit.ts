@@ -23,6 +23,8 @@ export interface Bit {
     obtainMethod: ObtainMethod;
     /** total cookies spent for the bit (excl. purchase price). when evolving, this number will increase */
     totalCookiesSpent: number;
+    /** if the bit is placed in an island, the island ID will be shown here. If not, this will be 0. */
+    placedIslandId: number;
     /** current farming level of the bit; pvx level will start from level 1 */
     currentFarmingLevel: number;
     /** farming stats of the bit, such as gathering rate, earning rate and energy */
@@ -40,6 +42,15 @@ export enum BitRarity {
     RARE = 'Rare',
     EPIC = 'Epic',
     LEGENDARY = 'Legendary',
+}
+
+/** numeric representation of `BitRarity` */
+export const BitRarityNumeric: { [key in BitRarity]: number } = {
+    [BitRarity.COMMON]: 0,
+    [BitRarity.UNCOMMON]: 1,
+    [BitRarity.RARE]: 2,
+    [BitRarity.EPIC]: 3,
+    [BitRarity.LEGENDARY]: 4
 }
 
 /**
