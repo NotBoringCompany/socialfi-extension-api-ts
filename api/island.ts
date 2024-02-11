@@ -3,9 +3,90 @@ import { ReturnValue, Status } from '../utils/retVal';
 import { IslandSchema } from '../schemas/Island';
 import { Island, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
 import { DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF } from '../utils/constants/island';
-import { calcCurrentRate } from './bit';
+import { calcBitCurrentRate } from './bit';
 import { Resource, ResourceType } from '../models/resource';
 import { UserSchema } from '../schemas/User';
+import { Modifier } from '../models/modifier';
+
+/**
+ * (User) Places a bit on an island. Once placed, the bit is locked and cannot be removed until further notice.
+ * 
+ * NOTE: Requires `twitterId` which is fetched via `req.user`, automatically giving us the user's Twitter ID. This will check if the user who calls this function owns the twitter ID that owns the island and the bit ID.
+ */
+export const placeBit = async (twitterId: string, islandId: number, bitId: number): Promise<ReturnValue> => {
+    const User = mongoose.model('Users', UserSchema, 'Users');
+    const Island = mongoose.model('Islands', IslandSchema, 'Islands');
+
+    try {
+        // firstly, check if the 
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(placeBit) Error: ${err.message}`
+        }
+    }
+}
+
+/**
+ * (Called by scheduler, hourly) Loops through all islands and updates the gathering progress for each island.
+ * 
+ * For islands that have reached >= 100% gathering progress, it should drop a resource and reset the gathering progress back to 0% + the remaining overflow of %.
+ */
+export const updateGatheringProgressAndDropResource = async (): Promise<void> => {
+    const Island = mongoose.model('Islands', IslandSchema, 'Islands');
+
+    try {
+        // find islands only where (in `islandResourceStats`):
+        // 1. `gatheringStart` is not 0
+        // 2. `gatheringEnd` is 0
+        // 3. `placedBitIds` has at least a length of 1 (i.e. at least 1 placed bit inside)
+        const islands = await Island.find({
+            'islandResourceStats.gatheringStart': { $ne: 0 },
+            'islandResourceStats.gatheringEnd': 0,
+            'placedBitIds.0': { $exists: true }
+        });
+
+        if (islands.length === 0 || !islands) {
+            console.error(`(updateGatheringProgressAndDropResource) No islands found.`);
+        }
+
+        for (let island of islands) {
+            let finalGatheringProgress = 0;
+            // check current gathering progress
+            const gatheringProgress = island.islandResourceStats?.gatheringProgress;
+
+            // check current gathering rate
+            const gatheringRate = island.islandResourceStats?.currentGatheringRate;
+
+            // check if the island's gathering progress + gathering rate is >= 100
+            // if not, just update the gathering progress
+            if (gatheringProgress + gatheringRate < 100) {
+                await Island.updateOne({ islandId: island.islandId }, { $inc: { 'islandResourceStats.gatheringProgress': gatheringRate } });
+
+                console.log(`(updateGatheringProgressAndDropResource) Island ID ${island.islandId} has updated its gathering progress to ${gatheringProgress + gatheringRate}.`);
+            } else {
+                // if >= 100, drop a resource and reset the gathering progress back to 0 + the remaining overflow of %
+                const { status, message } = await dropResource(island.islandId);
+                if (status !== Status.SUCCESS) {
+                    console.error(`(updateGatheringProgressAndDropResource) Error For island ID ${island.islandId} from dropResource: ${message}`);
+                }
+
+                // calculate the remaining overflow of %
+                finalGatheringProgress = (gatheringProgress + gatheringRate) - 100;
+
+                // reset the gathering progress back to 0 + the remaining overflow of %
+                await Island.updateOne({ islandId: island.islandId }, { $set: { 'islandResourceStats.gatheringProgress': finalGatheringProgress } });
+
+                console.log(`(updateGatheringProgressAndDropResource) Island ID ${island.islandId} has dropped a resource and reset its gathering progress to ${finalGatheringProgress}.`);
+            }
+        }
+
+        console.log(`(updateGatheringProgressAndDropResource) All islands have been updated.`);
+    } catch (err: any) {
+        // only console logging; this shouldn't stop the entire process
+        console.error(`(updateGatheringProgressAndDropResource) Error: ${err.message}`);
+    }
+}
 
 /**
  * Drops a resource for a user's island. 
@@ -13,31 +94,11 @@ import { UserSchema } from '../schemas/User';
  * Should only be called when gathering progress has reached >= 100% (and then reset back to 0%); scheduler should check this.
  * 
  * Also assumes that resources can still be dropped. Additional scheduler is needed to check if resources left is still > 0 to drop resource.
- * 
- * NOTE: Requires `twitterId` which is fetched via `req.user`, automatically giving us the user's Twitter ID. This will check if the user who calls this function owns the twitter ID that owns the island.
  */
-export const dropResource = async (twitterId: string, islandId: number): Promise<ReturnValue> => {
+export const dropResource = async (islandId: number): Promise<ReturnValue> => {
     const Island = mongoose.model('Islands', IslandSchema, 'Islands');
-    const User = mongoose.model('Users', UserSchema, 'Users');
 
     try {
-        // firstly, check if the user owns the island
-        const user = await User.findOne({ twitterId });
-        if (!user) {
-            return {
-                status: Status.ERROR,
-                message: `(dropResource) User not found.`
-            }
-        }
-
-        // check if the islandId is in the user's islandIds; if not, return unauthorized
-        if (!user.inventory?.islandIds.includes(islandId)) {
-            return {
-                status: Status.UNAUTHORIZED,
-                message: `(dropResource) User does not own Island ID ${islandId}.`
-            }
-        }
-
         const island = await Island.findOne({ islandId });
 
         if (!island) {
@@ -217,7 +278,7 @@ export const randomizeBaseResourceCap = (type: IslandType): number => {
 }
 
 /**
- * Calculates the effective gathering/earning rate of the island, based on the amount of bits placed on the island.
+ * Calculates the current gathering/earning rate of the island, based on the amount of bits placed on the island.
  * 
  * NOTE: to prevent miscalculations, ensure that:
  * 
@@ -226,11 +287,15 @@ export const randomizeBaseResourceCap = (type: IslandType): number => {
  * 2. the indexes of each array correspond to the same bit; for example, if `baseRates[0]` = 0.025, `bitLevels[0]` = 3 and `initialGrowthRates[0]` = 0.0002,
  * this should mean that Bit #1 has a base gathering/earning rate of 0.025, is at level 3, and has an initial growth rate of 0.0002.
  */
-export const calcEffectiveRate = (
+export const calcIslandCurrentRate = (
     type: RateType,
     baseRates: number[],
     bitLevels: number[],
-    initialGrowthRates: number[]
+    initialGrowthRates: number[],
+    // gathering OR earning rate modifiers from `BitStatsModifiers`
+    bitModifiers: Modifier[],
+    // gathering OR earning rate modifiers from `IslandStatsModifiers`
+    modifiers: Modifier[]
 ): number => {
     // check if all arrays have the same length, else throw an error.
     if (baseRates.length === bitLevels.length && bitLevels.length === initialGrowthRates.length) {
@@ -240,7 +305,7 @@ export const calcEffectiveRate = (
 
         for (let i = 0; i < n; i++) {
             // get the current rate for each bit
-            const currentRate = calcCurrentRate(type, baseRates[i], bitLevels[i], initialGrowthRates[i]);
+            const currentRate = calcBitCurrentRate(type, baseRates[i], bitLevels[i], initialGrowthRates[i], bitModifiers);
 
             // add the current rate to the sum
             sum += currentRate;
@@ -249,7 +314,16 @@ export const calcEffectiveRate = (
         // multiply the sum with the reduction modifier part of the formula
         const reductionModifier = type === RateType.GATHERING ? GATHERING_RATE_REDUCTION_MODIFIER : EARNING_RATE_REDUCTION_MODIFIER;
 
-        return sum * (1 - (reductionModifier * (n - 1)));
+        // finally, check for IslandStatsModifiers for the island; if not empty, multiply each modifier's amount to the modifierMultiplier
+        let modifierMultiplier = 1;
+
+        if (modifiers.length > 0) {
+            for (let modifier of modifiers) {
+                modifierMultiplier *= modifier.value;
+            }
+        }
+
+        return (sum * (1 - (reductionModifier * (n - 1)))) * modifierMultiplier;
     } else {
         throw new Error(`(calcEffectiveRate) Arrays are not of the same length.`);
     }

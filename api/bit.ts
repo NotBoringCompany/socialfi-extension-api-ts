@@ -5,6 +5,7 @@ import { Bit, BitFarmingStats, BitRarity } from '../models/bit';
 import { BASE_ENERGY_DEPLETION_RATE, DEFAULT_EARNING_RATE, DEFAULT_EARNING_RATE_GROWTH, DEFAULT_GATHERING_RATE, DEFAULT_GATHERING_RATE_GROWTH } from '../utils/constants/bit';
 import { EARNING_RATE_EXPONENTIAL_DECAY, GATHERING_RATE_EXPONENTIAL_DECAY } from '../utils/constants/island';
 import { RateType } from '../models/island';
+import { Modifier } from '../models/modifier';
 
 /**
  * Adds a bit (e.g. when summoned via Bit Orb) to the database.
@@ -109,16 +110,27 @@ export const randomizeFarmingStats = (rarity: BitRarity): BitFarmingStats => {
  * 
  * Since both rates use the same formula, only the parameters need to be adjusted according to which rate wants to be calculated.
  */
-export const calcCurrentRate = (
+export const calcBitCurrentRate = (
     type: RateType,
     // base gathering/earning rate
     baseRate: number,
     bitLevel: number,
     // initial gathering/earning growth rate
-    initialGrowthRate: number
+    initialGrowthRate: number,
+    // gathering OR earning rate modifiers from `BitStatsModifiers`
+    modifiers: Modifier[],
 ): number => {
+    let modifierMultiplier = 1;
+
+    // check if modifiers is not empty; if not empty, multiply each modifier's amount to the modifierMultiplier
+    if (modifiers.length > 0) {
+        modifiers.forEach(modifier => {
+            modifierMultiplier *= modifier.value;
+        });
+    }
+
     // choose which exponential decay to use
     const expDecay = type === RateType.GATHERING ? GATHERING_RATE_EXPONENTIAL_DECAY : EARNING_RATE_EXPONENTIAL_DECAY;
 
-    return baseRate + ((bitLevel - 1) * initialGrowthRate) * Math.exp(-expDecay * (bitLevel - 1));
+    return (baseRate + ((bitLevel - 1) * initialGrowthRate) * Math.exp(-expDecay * (bitLevel - 1))) * modifierMultiplier;
 }

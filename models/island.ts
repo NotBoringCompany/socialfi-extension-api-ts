@@ -62,7 +62,7 @@ export interface IslandResourceStats {
     /** timestamp of when `claimableResources` were last claimed */
     lastClaimed: number;
     /** current gathering rate for resources in % of total resources/hour
-     * (excl. boosts/modifiers but incl. base gathering rate + level modifiers from bits) 
+     * (incl. base gathering rate + level modifiers from bits + exp. decay + reduction from multiple bits on the island + modifiers) 
      */
     currentGatheringRate: number;
     /** gathering progress to gather 1 RESOURCE (not all resources); will be from 0 to 100
@@ -89,7 +89,7 @@ export interface IslandEarningStats {
     /** timestamp of when `claimableCookies` were last claimed */
     lastClaimed: number;
     /** the current earning rate for cookies in % of total cookies spent/hour
-     * (excl. boosts/modifiers but incl. base earning rate + level modifiers from bits)
+     * (incl. base earning rate + level modifiers from bits + exp. decay + reduction from multiple bits on the island + modifiers)
      */
     currentEarningRate: number;
 }
