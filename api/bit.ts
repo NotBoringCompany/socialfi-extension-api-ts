@@ -96,10 +96,8 @@ export const randomizeFarmingStats = (rarity: BitRarity): BitFarmingStats => {
     return {
         baseGatheringRate,
         gatheringRateGrowth,
-        currentGatheringRate: baseGatheringRate,
         baseEarningRate,
         earningRateGrowth,
-        currentEarningRate: baseEarningRate,
         currentEnergyDepletionRate,
         currentEnergy: 100
     }

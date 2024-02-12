@@ -1,7 +1,7 @@
 import { BitGender, BitRarity } from '../../models/bit';
 
 /** gets the max level for a bit given their rarity */
-export const MAX_BIT_LEVEL = (rarity: BitRarity) => {
+export const MAX_BIT_LEVEL = (rarity: BitRarity): number => {
     switch (rarity) {
         case BitRarity.COMMON:
             return 20;
@@ -13,6 +13,34 @@ export const MAX_BIT_LEVEL = (rarity: BitRarity) => {
             return 50;
         case BitRarity.LEGENDARY:
             return 65;
+    }
+}
+
+/** gets the cost (in cookies) of levelling a bit, based on its current level */
+export const BIT_LEVELLING_COST = (currentLevel: number): number => {
+    // level once upgraded = 2 to 9
+    if (currentLevel >= 1 && currentLevel <= 8) {
+        return 30;
+    // level once upgraded = 10 to 19
+    } else if (currentLevel >= 9 && currentLevel <= 18) {
+        return 60; // 2x of prev level range
+    // level once upgraded = 20 to 29
+    } else if (currentLevel >= 19 && currentLevel <= 28) {
+        return 120; // 2x of prev level range
+    // level once upgraded = 30 to 39
+    } else if (currentLevel >= 29 && currentLevel <= 38) {
+        return 360; // 3x of prev level range
+    // level once upgraded = 40 to 49
+    } else if (currentLevel >= 39 && currentLevel <= 48) {
+        return 1080; // 3x of prev level range
+    // level once upgraded = 50 to 59
+    } else if (currentLevel >= 49 && currentLevel <= 58) {
+        return 3240; // 3x of prev level range
+    // level once upgraded = 60 to 65
+    } else if (currentLevel >= 59 && currentLevel <= 64) {
+        return 12960; // 4x of prev level range
+    } else {
+        throw new Error(`(BIT_LEVELLING_COST) Current level invalid.`);
     }
 }
 
@@ -33,7 +61,7 @@ export const RANDOMIZE_GENDER = (): BitGender => {
 /**
  * Gets the default gathering rate (excl. +-10%; in % of total resources/hour) for a Bit based on its rarity.
  */
-export const DEFAULT_GATHERING_RATE = (rarity: BitRarity) => {
+export const DEFAULT_GATHERING_RATE = (rarity: BitRarity): number => {
     switch (rarity) {
         case BitRarity.COMMON:
             return 0.02;
@@ -53,7 +81,7 @@ export const DEFAULT_GATHERING_RATE = (rarity: BitRarity) => {
 /**
  * Gets the default gathering rate growth (excl. +-10%; fixed increase in % of total resources/hour for every level increase) for a Bit based on its rarity.
  */
-export const DEFAULT_GATHERING_RATE_GROWTH = (rarity: BitRarity) => {
+export const DEFAULT_GATHERING_RATE_GROWTH = (rarity: BitRarity): number => {
     switch (rarity) {
         case BitRarity.COMMON:
             return 0.0002;
@@ -73,7 +101,7 @@ export const DEFAULT_GATHERING_RATE_GROWTH = (rarity: BitRarity) => {
 /**
  * Gets the default earning rate (excl. +-10%; in % of total cookies spent/hour) for a Bit based on its rarity.
  */
-export const DEFAULT_EARNING_RATE = (rarity: BitRarity) => {
+export const DEFAULT_EARNING_RATE = (rarity: BitRarity): number => {
     switch (rarity) {
         case BitRarity.COMMON:
             return 0.03;
@@ -93,7 +121,7 @@ export const DEFAULT_EARNING_RATE = (rarity: BitRarity) => {
 /**
  * Gets the default earning rate growth (excl. +-10%; fixed increase in % of total cookies spent/hour for every level increase) for a Bit based on its rarity.
  */
-export const DEFAULT_EARNING_RATE_GROWTH = (rarity: BitRarity) => {
+export const DEFAULT_EARNING_RATE_GROWTH = (rarity: BitRarity): number => {
     switch (rarity) {
         case BitRarity.COMMON:
             return 0.00025;
@@ -111,4 +139,4 @@ export const DEFAULT_EARNING_RATE_GROWTH = (rarity: BitRarity) => {
 }
 
 /** base energy depletion rate of bits in % of energy bar/hour (regardless of rarity). actual depletion rate will include +-25% */
-export const BASE_ENERGY_DEPLETION_RATE = 5;
+export const BASE_ENERGY_DEPLETION_RATE: number = 5;

@@ -116,7 +116,6 @@ export const summonIsland = async (
                 gatheringStart: 0,
                 gatheringEnd: 0,
                 lastClaimed: 0,
-                currentGatheringRate: 0,
                 gatheringProgress: 0
             },
             islandEarningStats: {
@@ -126,7 +125,6 @@ export const summonIsland = async (
                 earningStart: 0,
                 earningEnd: 0,
                 lastClaimed: 0,
-                currentEarningRate: 0,
             },
             islandStatsModifiers: {
                 resourceCapModifiers: [],

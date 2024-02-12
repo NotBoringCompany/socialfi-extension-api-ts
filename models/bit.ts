@@ -63,20 +63,18 @@ export enum BitGender {
 
 /**
  * Represents the farming stats of a Bit.
+ * 
+ * NOTE: the current gathering and earning rates will NOT be added here due to complexity, but is available in `calcBitCurrentRate`.
  */
 export interface BitFarmingStats {
     /** base gathering rate for the bit (at level 1), calculated at % of total resources/hour */
     baseGatheringRate: number;
     /** growth of base gathering rate when level increases, currently a fixed percentage */
     gatheringRateGrowth: number;
-    /** current gathering rate for the bit (at current level), incl. base gathering rate + gathering rate growth + bit stats modifiers + exp. decay */
-    currentGatheringRate: number;
     /** base earning rate for the bit (at level 1), calculated at % of total cookies/hour */
     baseEarningRate: number;
     /** growth of base earning rate when level increases, currently a fixed percentage */
     earningRateGrowth: number;
-    /** current earning rate for the bit (at current level), incl. base earning rate + earning rate growth + bit stats modifiers + exp. decay */
-    currentEarningRate: number;
     /** 
      * current energy depletion rate for the bit (at level 1), calculated at % of total energy/hour 
      * 

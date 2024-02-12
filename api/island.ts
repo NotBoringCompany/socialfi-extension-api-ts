@@ -145,9 +145,9 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
             await Island.updateOne({ islandId }, { $set: { [`islandStatsModifiers.resourceCapModifiers.${resourceCapModifierIndex}.value`]: newValue } });
         }
 
-        // firstly, check if the to-be-put bit is the first one; if yes, start the `gatheringStart` timestamp
+        // check if the to-be-put bit is the first one; if yes, start the `gatheringStart` timestamp
         if (island.placedBitIds.length === 0) {
-            await Island.updateOne({ islandId }, { 'islandResourceStats.gatheringStart': Math.floor(Date.now() / 1000) });
+            await Island.updateOne({ islandId }, { $set: { 'islandResourceStats.gatheringStart': Math.floor(Date.now() / 1000) } });
         }
 
         // place the bit on the island
@@ -155,6 +155,11 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
 
         // update the bit to include `placedIslandId`
         await Bit.updateOne({ bitId }, { placedIslandId: islandId });
+
+        // check if the bit has `totalCookiesSpent` > 0. if yes, increment the island's `totalCookiesSpent` by this amount.
+        if (bit.totalCookiesSpent > 0) {
+            await Island.updateOne({ island }, { $inc: { 'islandEarningStats.totalCookiesSpent': bit.totalCookiesSpent } })
+        }
 
         return {
             status: Status.SUCCESS,
