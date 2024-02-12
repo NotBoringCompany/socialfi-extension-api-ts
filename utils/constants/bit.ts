@@ -1,4 +1,5 @@
 import { BitGender, BitRarity } from '../../models/bit';
+import { EnergyThresholdReduction } from '../../models/island';
 
 /** gets the max level for a bit given their rarity */
 export const MAX_BIT_LEVEL = (rarity: BitRarity): number => {
@@ -138,3 +139,26 @@ export const DEFAULT_EARNING_RATE_GROWTH = (rarity: BitRarity): number => {
 
 /** base energy depletion rate of bits in % of energy bar/hour (regardless of rarity). actual depletion rate will include +-25% */
 export const BASE_ENERGY_DEPLETION_RATE: number = 5;
+
+/** returns the reductions in earning and gathering rate (by a fixed %) if the bit's energy goes below a certain threshold */
+export const ENERGY_THRESHOLD_REDUCTIONS = (energy: number): EnergyThresholdReduction => {
+    switch (true) {
+        case energy < 25:
+            return {
+                gatheringRateReduction: 50,
+                earningRateReduction: 50
+            }
+        case energy < 50:
+            return {
+                gatheringRateReduction: 20,
+                earningRateReduction: 20,
+            }
+        default: {
+            return {
+                gatheringRateReduction: 0,
+                earningRateReduction: 0
+            }
+        }
+
+    }
+}

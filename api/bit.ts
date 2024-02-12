@@ -212,6 +212,8 @@ export const randomizeFarmingStats = (rarity: BitRarity): BitFarmingStats => {
  * Calculates the current gathering OR earning rate of the bit (at level `bitLevel`).
  * 
  * Since both rates use the same formula, only the parameters need to be adjusted according to which rate wants to be calculated.
+ * 
+ * Note that bits with 0 energy will have a reduction of 100% in the gathering/earning rate per being added via `modifiers`, so the overall rate returned will be 0.
  */
 export const calcBitCurrentRate = (
     type: RateType,
