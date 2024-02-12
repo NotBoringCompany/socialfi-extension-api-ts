@@ -16,7 +16,7 @@ export const MAX_BIT_LEVEL = (rarity: BitRarity): number => {
     }
 }
 
-/** gets the cost (in cookies) of evolving a bit, based on its current level */
+/** gets the cost (in xCookies) of evolving a bit, based on its current level */
 export const BIT_EVOLVING_COST = (currentLevel: number): number => {
     // level once upgraded = 2 to 9
     if (currentLevel >= 1 && currentLevel <= 8) {
@@ -97,7 +97,7 @@ export const DEFAULT_GATHERING_RATE_GROWTH = (rarity: BitRarity): number => {
 }
 
 /**
- * Gets the default earning rate (excl. +-10%; in % of total cookies spent/hour) for a Bit based on its rarity.
+ * Gets the default earning rate (excl. +-10%; in % of total xCookies spent/hour) for a Bit based on its rarity.
  */
 export const DEFAULT_EARNING_RATE = (rarity: BitRarity): number => {
     switch (rarity) {
@@ -117,7 +117,7 @@ export const DEFAULT_EARNING_RATE = (rarity: BitRarity): number => {
 }
 
 /**
- * Gets the default earning rate growth (excl. +-10%; fixed increase in % of total cookies spent/hour for every level increase) for a Bit based on its rarity.
+ * Gets the default earning rate growth (excl. +-10%; fixed increase in % of total xCookies spent/hour for every level increase) for a Bit based on its rarity.
  */
 export const DEFAULT_EARNING_RATE_GROWTH = (rarity: BitRarity): number => {
     switch (rarity) {

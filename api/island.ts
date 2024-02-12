@@ -2,13 +2,123 @@ import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
 import { IslandSchema } from '../schemas/Island';
 import { Island, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
-import { BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, RARITY_DEVIATION_REDUCTIONS, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF } from '../utils/constants/island';
+import { BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLVING_COST, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF } from '../utils/constants/island';
 import { calcBitCurrentRate, getBits } from './bit';
 import { Resource, ResourceType } from '../models/resource';
 import { UserSchema } from '../schemas/User';
 import { Modifier } from '../models/modifier';
 import { BitSchema } from '../schemas/Bit';
 import { Bit, BitRarity, BitRarityNumeric } from '../models/bit';
+
+/**
+ * (User) Evolves an island (levelling it up).
+ * 
+ * NOTE: Requires `twitterId` which is fetched via `req.user`, automatically giving us the user's Twitter ID. This will check if the user who calls this function owns the twitter ID that owns the island and the bit ID.
+ */
+export const evolveIsland = async (twitterId: string, islandId: number): Promise<ReturnValue> => {
+    const User = mongoose.model('Users', UserSchema, 'Users');
+    const Island = mongoose.model('Islands', IslandSchema, 'Islands');
+
+    try {
+        // firstly, check if the user owns the island
+        const user = await User.findOne({ twitterId });
+        
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(evolveIsland) User not found.`
+            }
+        }
+
+        const islandIndex = (user.inventory?.islandIds as number[]).findIndex(id => id === islandId);
+
+        if (islandIndex === -1) {
+            return {
+                status: Status.UNAUTHORIZED,
+                message: `(placeBit) User does not own the island.`
+            }
+        }
+
+        // query the island
+        const island = await Island.findOne({ islandId });
+
+        if (!island) {
+            return {
+                status: Status.ERROR,
+                message: `(evolveIsland) Island not found.`
+            }
+        }
+
+        // check if the island is already max level, if it is, return an error.
+        if (island.currentLevel >= MAX_ISLAND_LEVEL) {
+            return {
+                status: Status.ERROR,
+                message: `(evolveIsland) Island is already at max level.`
+            }
+        }
+
+        // check if the user has enough xCookies
+        const userXCookies = user.inventory?.xCookies;
+
+        // calculate the cost to evolve the island based on its current level
+        const requiredXCookies = ISLAND_EVOLVING_COST(<IslandType>island.type, island.currentLevel);
+
+        // if not enough, return an error.
+        if (userXCookies < requiredXCookies) {
+            return {
+                status: Status.ERROR,
+                message: `(evolveIsland) Not enough cookies to evolve island.`
+            }
+        }
+
+        // deduct the xCookies from the user
+        await User.updateOne({ twitterId }, { $inc: { 'inventory.xCookies': -requiredXCookies } });
+
+        // firstly, check if at this moment, the totalXCookiesSpent is 0.
+        // because if it is, it means that earning hasn't started yet, meaning that after evolving the island, `earningStart` will be set to current timestamp, and earning will start.
+        const totalXCookiesSpentIsZero = island.islandEarningStats?.totalXCookiesSpent === 0;
+
+        // if totalXCookies spent is 0, evolve the island, increment the totalXCookiesSpent of the island by `requiredXCookies` and also set the `earningStart` to now.
+        if (totalXCookiesSpentIsZero) {
+            await Island.updateOne(
+                { islandId },
+                { 
+                    $inc: { 
+                        'currentLevel': 1,
+                        'islandEarningStats.totalXCookiesSpent': requiredXCookies
+                    },
+                    $set: {
+                        'islandEarningStats.earningStart': totalXCookiesSpentIsZero ? Math.floor(Date.now() / 1000) : undefined
+                    }
+                }
+            );
+        // otherwise, only evolve the island and increment the totalXCookiesSpent.
+        } else {
+            await Island.updateOne(
+                { islandId },
+                { 
+                    $inc: { 
+                        'currentLevel': 1,
+                        'islandEarningStats.totalXCookiesSpent': requiredXCookies
+                    }
+                }
+            );
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(evolveIsland) Island with ID ${islandId} successfully evolved.`,
+            data: {
+                islandId
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(evolveIsland) Error: ${err.message}`
+        }
+    }
+}
 
 /**
  * (User) Places a bit on an island. Once placed, the bit is locked and cannot be removed until further notice.
@@ -156,9 +266,9 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
         // update the bit to include `placedIslandId`
         await Bit.updateOne({ bitId }, { placedIslandId: islandId });
 
-        // check if the bit has `totalCookiesSpent` > 0. if yes, increment the island's `totalCookiesSpent` by this amount.
-        if (bit.totalCookiesSpent > 0) {
-            await Island.updateOne({ island }, { $inc: { 'islandEarningStats.totalCookiesSpent': bit.totalCookiesSpent } })
+        // check if the bit has `totalXCookiesSpent` > 0. if yes, increment the island's `totalXCookiesSpent` by this amount.
+        if (bit.totalXCookiesSpent > 0) {
+            await Island.updateOne({ island }, { $inc: { 'islandEarningStats.totalXCookiesSpent': bit.totalXCookiesSpent } })
         }
 
         return {

@@ -119,9 +119,9 @@ export const summonIsland = async (
                 gatheringProgress: 0
             },
             islandEarningStats: {
-                totalCookiesSpent: 0,
-                totalCookiesEarned: 0,
-                claimableCookies: 0,
+                totalXCookiesSpent: 0,
+                totalXCookiesEarned: 0,
+                claimableXCookies: 0,
                 earningStart: 0,
                 earningEnd: 0,
                 lastClaimed: 0,

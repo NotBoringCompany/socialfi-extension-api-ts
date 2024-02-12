@@ -106,7 +106,7 @@ export const summonBit = async (
             owner,
             purchaseDate: Math.floor(Date.now() / 1000),
             obtainMethod: ObtainMethod.BIT_ORB,
-            totalCookiesSpent: 0,
+            totalXCookiesSpent: 0,
             placedIslandId: 0,
             currentFarmingLevel: 1,
             farmingStats: randomizeFarmingStats(rarity),

@@ -22,7 +22,7 @@ export interface Island {
     obtainMethod: ObtainMethod;
     /** current level of the island */
     currentLevel: number;
-    /** current tax for this particular island (resulting cookies claimed will be reduced by this tax) */
+    /** current tax for this particular island (resulting xCookies claimed will be reduced by this tax) */
     currentTax: number;
     /** the IDs of the bits that are placed (tied down) into this island to gather and earn */
     placedBitIds: number[];
@@ -76,17 +76,17 @@ export interface IslandResourceStats {
  * Earning rate will not be calculated here due to complexity.
  */
 export interface IslandEarningStats {
-    /** total cookies spent on this island (INCL. BITS!); will keep increasing when upgrading the island and bits placed inside */
-    totalCookiesSpent: number;
-    /** total cookies earned, incl. ones claimed already. end amount should equal total cookies spent (even with tax since it's not calc. here) */
-    totalCookiesEarned: number;
-    /** claimable cookies that haven't been claimed yet to the inventory */
-    claimableCookies: number;
+    /** total xCookies spent on this island (INCL. BITS!); will keep increasing when upgrading the island and bits placed inside */
+    totalXCookiesSpent: number;
+    /** total xCookies earned, incl. ones claimed already. end amount should equal total xCookies spent (even with tax since it's not calc. here) */
+    totalXCookiesEarned: number;
+    /** claimable xCookies that haven't been claimed yet to the inventory */
+    claimableXCookies: number;
     /** start timestamp of earning; 0 if not started yet */
     earningStart: number;
     /** end timestamp of earning; 0 if not ended yet */
     earningEnd: number;
-    /** timestamp of when `claimableCookies` were last claimed */
+    /** timestamp of when `claimableXCookies` were last claimed */
     lastClaimed: number;
 }
 

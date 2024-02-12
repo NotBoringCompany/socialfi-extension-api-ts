@@ -21,8 +21,8 @@ export interface Bit {
     purchaseDate: number;
     /** method of obtaining the bit */
     obtainMethod: ObtainMethod;
-    /** total cookies spent for the bit (excl. purchase price). when evolving, this number will increase */
-    totalCookiesSpent: number;
+    /** total xCookies spent for the bit (excl. purchase price). when evolving, this number will increase */
+    totalXCookiesSpent: number;
     /** if the bit is placed in an island, the island ID will be shown here. If not, this will be 0. */
     placedIslandId: number;
     /** current farming level of the bit; pvx level will start from level 1 */
@@ -71,7 +71,7 @@ export interface BitFarmingStats {
     baseGatheringRate: number;
     /** growth of base gathering rate when level increases, currently a fixed percentage */
     gatheringRateGrowth: number;
-    /** base earning rate for the bit (at level 1), calculated at % of total cookies/hour */
+    /** base earning rate for the bit (at level 1), calculated at % of total xCookies/hour */
     baseEarningRate: number;
     /** growth of base earning rate when level increases, currently a fixed percentage */
     earningRateGrowth: number;

@@ -7,7 +7,7 @@ export const MAX_ISLAND_LEVEL = 20;
 /** claim cooldown for claiming resources (in seconds) */
 export const RESOURCES_CLAIM_COOLDOWN = 86400;
 
-/** claim cooldown for claiming cookies (in seconds) */
+/** claim cooldown for claiming xCookies (in seconds) */
 export const COOKIE_CLAIM_COOLDOWN = 86400;
 
 /** reduction modifier for effective gathering rate for having multiple bits on an island */
@@ -22,7 +22,7 @@ export const GATHERING_RATE_EXPONENTIAL_DECAY = 0.03;
 /** exponential decay for earning rate calculation (both bit and island) */
 export const EARNING_RATE_EXPONENTIAL_DECAY = 0.03;
 
-/** cost to evolve an island (in cookies) based on the island type and the island's current level */
+/** cost to evolve an island (in xCookies) based on the island type and the island's current level */
 export const ISLAND_EVOLVING_COST = (type: IslandType, currentLevel: number) => {
     // higher rarity islands will cost more each time it levels up
     switch (type) {

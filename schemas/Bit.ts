@@ -14,7 +14,7 @@ export const BitSchema = new mongoose.Schema({
     owner: String,
     purchaseDate: Number,
     obtainMethod: String,
-    totalCookiesSpent: Number,
+    totalXCookiesSpent: Number,
     placedIslandId: Number,
     currentFarmingLevel: Number,
     farmingStats: Object,
