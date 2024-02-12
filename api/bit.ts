@@ -2,10 +2,115 @@ import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
 import { BitSchema } from '../schemas/Bit';
 import { Bit, BitFarmingStats, BitRarity } from '../models/bit';
-import { BASE_ENERGY_DEPLETION_RATE, DEFAULT_EARNING_RATE, DEFAULT_EARNING_RATE_GROWTH, DEFAULT_GATHERING_RATE, DEFAULT_GATHERING_RATE_GROWTH } from '../utils/constants/bit';
+import { BASE_ENERGY_DEPLETION_RATE, BIT_EVOLVING_COST, DEFAULT_EARNING_RATE, DEFAULT_EARNING_RATE_GROWTH, DEFAULT_GATHERING_RATE, DEFAULT_GATHERING_RATE_GROWTH, MAX_BIT_LEVEL } from '../utils/constants/bit';
 import { EARNING_RATE_EXPONENTIAL_DECAY, GATHERING_RATE_EXPONENTIAL_DECAY } from '../utils/constants/island';
 import { RateType } from '../models/island';
 import { Modifier } from '../models/modifier';
+import { UserSchema } from '../schemas/User';
+import { IslandSchema } from '../schemas/Island';
+
+/**
+ * (User) Evolves a bit to the next level (levelling it up).
+ * 
+ * NOTE: Requires `twitterId` which is fetched via `req.user`, automatically giving us the user's Twitter ID. This will check if the user who calls this function owns the twitter ID that owns the bit ID.
+ */
+export const evolveBit = async (twitterId: string, bitId: number): Promise<ReturnValue> => {
+    const User = mongoose.model('Users', UserSchema, 'Users');
+    const Bit = mongoose.model('Bits', BitSchema, 'Bits');
+    const Island = mongoose.model('Islands', IslandSchema, 'Islands');
+
+    try {
+        // first, check if the user owns the bit
+        const user = await User.findOne({ twitterId });
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(evolveBit) User not found.`
+            }
+        }
+
+        if (!(user.inventory?.bitIds as number[]).includes(bitId)) {
+            return {
+                status: Status.ERROR,
+                message: `(evolveBit) User does not own the bit.`
+            }
+        }
+
+        // ensure that the bit exists
+        const bit = await Bit.findOne({ bitId });
+
+        if (!bit) {
+            return {
+                status: Status.ERROR,
+                message: `(evolveBit) Bit not found.`
+            }
+        }
+
+        // check if the bit is already at max level
+        if (bit.currentFarmingLevel >= MAX_BIT_LEVEL(<BitRarity>bit.rarity)) {
+            return {
+                status: Status.ERROR,
+                message: `(evolveBit) Bit is already at max level.`
+            }
+        }
+
+        // check if the user has enough xCookies to evolve the bit
+        const userXCookies = user.inventory?.xCookies;
+
+        // calculate the cost to evolve the bit to the next level
+        const requiredXCookies = BIT_EVOLVING_COST(bit.currentFarmingLevel);
+
+        // if not enough xCookies, return an error
+        if (userXCookies < requiredXCookies) {
+            return {
+                status: Status.ERROR,
+                message: `(evolveBit) Not enough xCookies to evolve the bit.`
+            }
+        }
+
+        // deduct the required xCookies from the user's inventory
+        await User.updateOne({ twitterId }, { $inc: { 'inventory.xCookies': -requiredXCookies } });
+
+        // increase the bit's current farming level by 1 and increment the `totalXCookiesSpent` by `requiredXCookies`
+        await Bit.updateOne({ bitId }, { $inc: { 'currentFarmingLevel': 1, 'totalXCookiesSpent': requiredXCookies } });
+
+        // check if the bit has a `placedIslandId`. if yes, update the island's `totalXCookiesSpent` by `requiredXCookies` and if required, start the `earningStart` if the island previously has 0 totalXCookiesSpent.
+        if (bit.placedIslandId !== 0) {
+            const island = await Island.findOne({ islandId: bit.placedIslandId });
+
+            if (!island) {
+                return {
+                    status: Status.ERROR,
+                    message: `(evolveBit) Island not found.`
+                }
+            }
+
+            const islandTotalXCookiesSpentIsZero = island.islandEarningStats?.totalXCookiesSpent === 0;
+
+            // if island's total xCookiesSpent is zero, update the `totalXCookiesSpent` AND start the `earningStart`
+            if (islandTotalXCookiesSpentIsZero) {
+                await Island.updateOne({ islandId: bit.placedIslandId }, { $inc: { 'islandEarningStats.totalXCookiesSpent': requiredXCookies }, 'islandEarningStats.earningStart': Math.floor(Date.now() / 1000) });
+            // otherwise, just update the `totalXCookiesSpent`
+            } else {
+                await Island.updateOne({ islandId: bit.placedIslandId }, { $inc: { 'islandEarningStats.totalXCookiesSpent': requiredXCookies } });
+            }
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(evolveBit) Bit evolved to the next level.`,
+            data: {
+                bitId: bitId
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(evolveBit) Error: ${err.message}`
+        }
+    }
+}
 
 /**
  * Adds a bit (e.g. when summoned via Bit Orb) to the database.

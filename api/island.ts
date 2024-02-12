@@ -13,7 +13,7 @@ import { Bit, BitRarity, BitRarityNumeric } from '../models/bit';
 /**
  * (User) Evolves an island (levelling it up).
  * 
- * NOTE: Requires `twitterId` which is fetched via `req.user`, automatically giving us the user's Twitter ID. This will check if the user who calls this function owns the twitter ID that owns the island and the bit ID.
+ * NOTE: Requires `twitterId` which is fetched via `req.user`, automatically giving us the user's Twitter ID. This will check if the user who calls this function owns the twitter ID that owns the island.
  */
 export const evolveIsland = async (twitterId: string, islandId: number): Promise<ReturnValue> => {
     const User = mongoose.model('Users', UserSchema, 'Users');
@@ -30,12 +30,10 @@ export const evolveIsland = async (twitterId: string, islandId: number): Promise
             }
         }
 
-        const islandIndex = (user.inventory?.islandIds as number[]).findIndex(id => id === islandId);
-
-        if (islandIndex === -1) {
+        if (!(user.inventory?.islandIds as number[]).includes(islandId)) {
             return {
-                status: Status.UNAUTHORIZED,
-                message: `(placeBit) User does not own the island.`
+                status: Status.ERROR,
+                message: `(evolveIsland) User does not own the island.`
             }
         }
 
@@ -141,9 +139,7 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
             }
         }
 
-        const islandIndex = (user.inventory?.islandIds as number[]).findIndex(id => id === islandId);
-
-        if (islandIndex === -1) {
+        if (!(user.inventory?.islandIds as number[]).includes(islandId)) {
             return {
                 status: Status.UNAUTHORIZED,
                 message: `(placeBit) User does not own the island.`
@@ -151,11 +147,9 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
         }
 
         // then, check if the user owns the bit to be placed
-        const bitIndex = (user.inventory?.bitIds as number[]).findIndex(id => id === bitId);
-
-        if (bitIndex === -1) {
+        if (!(user.inventory?.bitIds as number[]).includes(bitId)) {
             return {
-                status: Status.UNAUTHORIZED,
+                status: Status.ERROR,
                 message: `(placeBit) User does not own the bit.`
             }
         }
