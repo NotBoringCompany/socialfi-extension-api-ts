@@ -16,8 +16,8 @@ export const MAX_BIT_LEVEL = (rarity: BitRarity): number => {
     }
 }
 
-/** gets the cost (in cookies) of levelling a bit, based on its current level */
-export const BIT_LEVELLING_COST = (currentLevel: number): number => {
+/** gets the cost (in cookies) of evolving a bit, based on its current level */
+export const BIT_EVOLVING_COST = (currentLevel: number): number => {
     // level once upgraded = 2 to 9
     if (currentLevel >= 1 && currentLevel <= 8) {
         return 30;
@@ -39,8 +39,6 @@ export const BIT_LEVELLING_COST = (currentLevel: number): number => {
     // level once upgraded = 60 to 65
     } else if (currentLevel >= 59 && currentLevel <= 64) {
         return 12960; // 4x of prev level range
-    } else {
-        throw new Error(`(BIT_LEVELLING_COST) Current level invalid.`);
     }
 }
 

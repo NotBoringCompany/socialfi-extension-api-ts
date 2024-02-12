@@ -22,6 +22,43 @@ export const GATHERING_RATE_EXPONENTIAL_DECAY = 0.03;
 /** exponential decay for earning rate calculation (both bit and island) */
 export const EARNING_RATE_EXPONENTIAL_DECAY = 0.03;
 
+/** cost to evolve an island (in cookies) based on the island type and the island's current level */
+export const ISLAND_EVOLVING_COST = (type: IslandType, currentLevel: number) => {
+    // higher rarity islands will cost more each time it levels up
+    switch (type) {
+        case IslandType.PRIMAL_ISLES:
+            if (currentLevel === 1) {
+                return 50;
+            } else {
+                return 50 + (15 * (currentLevel - 1));
+            }
+        case IslandType.VERDANT_ISLES:
+            if (currentLevel === 1) {
+                return 100;
+            } else {
+                return 100 + (30 * (currentLevel - 1));
+            }
+        case IslandType.EXOTIC_ISLES:
+            if (currentLevel === 1) {
+                return 250;
+            } else {
+                return 250 + (75 * (currentLevel - 1));
+            }
+        case IslandType.CRYSTAL_ISLES:
+            if (currentLevel === 1) {
+                return 700;
+            } else {
+                return 700 + (210 * (currentLevel - 1));
+            }
+        case IslandType.CELESTIAL_ISLES:
+            if (currentLevel === 1) {
+                return 1500;
+            } else {
+                return 1500 + (450 * (currentLevel - 1));
+            }
+    }
+}
+
 /**
  * Gets the default resource cap for an Island based on its type.
  */
