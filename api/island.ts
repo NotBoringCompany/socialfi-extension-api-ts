@@ -289,7 +289,7 @@ export const checkBitRarityAllowed = (bitRarity: BitRarity, minRarityRequired: B
 }
 
 /**
- * (Called by scheduler, hourly) Loops through all islands and updates the gathering progress for each island.
+ * (Called by scheduler, EVERY 10 MINUTES) Loops through all islands and updates the gathering progress for each island.
  * 
  * For islands that have reached >= 100% gathering progress, it should drop a resource and reset the gathering progress back to 0% + the remaining overflow of %.
  */
@@ -343,12 +343,14 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
                 island.islandStatsModifiers?.gatheringRateModifiers as Modifier[]
             );
 
-            // check if the island's gathering progress + gathering rate is >= 100
+            // because this function is called every 10 minutes, we will increment the gathering progress by `gatheringRate/6` (since gathering rate is per hour)
+            // check if the island's gathering progress + tenMinGatheringRate is >= 100
             // if not, just update the gathering progress
-            if (gatheringProgress + gatheringRate < 100) {
-                await Island.updateOne({ islandId: island.islandId }, { $inc: { 'islandResourceStats.gatheringProgress': gatheringRate } });
+            const tenMinGatheringRate = gatheringRate / 6;
+            if (gatheringProgress + tenMinGatheringRate < 100) {
+                await Island.updateOne({ islandId: island.islandId }, { $inc: { 'islandResourceStats.gatheringProgress': tenMinGatheringRate } });
 
-                console.log(`(updateGatheringProgressAndDropResource) Island ID ${island.islandId} has updated its gathering progress to ${gatheringProgress + gatheringRate}.`);
+                console.log(`(updateGatheringProgressAndDropResource) Island ID ${island.islandId} has updated its gathering progress to ${gatheringProgress + tenMinGatheringRate}.`);
             } else {
                 // if >= 100, drop a resource and reset the gathering progress back to 0 + the remaining overflow of %
                 const { status, message } = await dropResource(island.islandId);
@@ -357,7 +359,7 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
                 }
 
                 // calculate the remaining overflow of %
-                finalGatheringProgress = (gatheringProgress + gatheringRate) - 100;
+                finalGatheringProgress = (gatheringProgress + tenMinGatheringRate) - 100;
 
                 // reset the gathering progress back to 0 + the remaining overflow of %
                 await Island.updateOne({ islandId: island.islandId }, { $set: { 'islandResourceStats.gatheringProgress': finalGatheringProgress } });
