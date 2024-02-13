@@ -143,10 +143,3 @@ export interface RarityDeviationReduction {
     /** the reduction in resource cap (by a fixed %) */
     resourceCapReduction: number;
 }
-
-export interface EnergyThresholdReduction {
-    /** the reduction in gathering rate (by a fixed %) */
-    gatheringRateReduction: number;
-    /** the reduction in earning rate (by a fixed %) */
-    earningRateReduction: number;
-}

@@ -1,5 +1,4 @@
-import { BitGender, BitRarity } from '../../models/bit';
-import { EnergyThresholdReduction } from '../../models/island';
+import { BitGender, BitRarity, EnergyThresholdReduction } from '../../models/bit';
 
 /** gets the max level for a bit given their rarity */
 export const MAX_BIT_LEVEL = (rarity: BitRarity): number => {

@@ -2,12 +2,141 @@ import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
 import { BitSchema } from '../schemas/Bit';
 import { Bit, BitFarmingStats, BitRarity } from '../models/bit';
-import { BASE_ENERGY_DEPLETION_RATE, BIT_EVOLVING_COST, DEFAULT_EARNING_RATE, DEFAULT_EARNING_RATE_GROWTH, DEFAULT_GATHERING_RATE, DEFAULT_GATHERING_RATE_GROWTH, MAX_BIT_LEVEL } from '../utils/constants/bit';
+import { BASE_ENERGY_DEPLETION_RATE, BIT_EVOLVING_COST, DEFAULT_EARNING_RATE, DEFAULT_EARNING_RATE_GROWTH, DEFAULT_GATHERING_RATE, DEFAULT_GATHERING_RATE_GROWTH, ENERGY_THRESHOLD_REDUCTIONS, MAX_BIT_LEVEL } from '../utils/constants/bit';
 import { EARNING_RATE_EXPONENTIAL_DECAY, GATHERING_RATE_EXPONENTIAL_DECAY } from '../utils/constants/island';
 import { RateType } from '../models/island';
 import { Modifier } from '../models/modifier';
 import { UserSchema } from '../schemas/User';
 import { IslandSchema } from '../schemas/Island';
+import { Food, FoodType } from '../models/food';
+import { FOOD_ENERGY_REPLENISHMENT } from '../utils/constants/food';
+
+/**
+ * (User) Feeds a bit some food and replenishes its energy.
+ */
+export const feedBit = async (twitterId: string, bitId: number, foodType: FoodType): Promise<ReturnValue> => {
+    const User = mongoose.model('Users', UserSchema, 'Users');
+    const Bit = mongoose.model('Bits', BitSchema, 'Bits');
+
+    try {
+        // first, check if the user owns the bit
+        const user = await User.findOne({ twitterId });
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(feedBit) User not found.`
+            }
+        }
+
+        if (!(user.inventory?.bitIds as number[]).includes(bitId)) {
+            return {
+                status: Status.ERROR,
+                message: `(feedBit) User does not own the bit.`
+            }
+        }
+
+        // check if the user has at least 1 of the specified `food` by checking if:
+        // 1. the food type exists in `foods`
+        // 2. the `amount` of the food type is at least 1
+        const userFood = (user.inventory?.foods as Food[]).find(food => food.type === foodType);
+        if (!userFood) {
+            return {
+                status: Status.ERROR,
+                message: `(feedBit) User does not have the specified food.`
+            }
+        }
+
+        if (userFood.amount < 1) {
+            return {
+                status: Status.ERROR,
+                message: `(feedBit) User does not have enough of the specified food.`
+            }
+        }
+
+        // ensure that the bit exists
+        const bit = await Bit.findOne({ bitId });
+
+        if (!bit) {
+            return {
+                status: Status.ERROR,
+                message: `(feedBit) Bit not found.`
+            }
+        }
+
+        // check if the bit's energy is already at max (100)
+        if (bit.farmingStats?.currentEnergy === 100) {
+            return {
+                status: Status.ERROR,
+                message: `(feedBit) Bit's energy is already at max.`
+            }
+        }
+
+        // calculate the amount of energy to replenish
+        const toReplenish = FOOD_ENERGY_REPLENISHMENT(foodType);
+
+        // if the amount of energy to replenish is more than the amount of energy needed to reach 100, set the amount to replenish to the amount needed to reach 100
+        const energyNeededToReach100 = 100 - bit.farmingStats?.currentEnergy;
+        const actualToReplenish = toReplenish > energyNeededToReach100 ? energyNeededToReach100 : toReplenish;
+
+        // search for the food type (in string format) in the `foods` array and decrement the `amount` by `1`
+        await User.updateOne({ twitterId, 'inventory.foods.type': foodType }, { $inc: { 'inventory.foods.$.amount': -1 } });
+
+        // increment the bit's current energy by `actualToReplenish`
+        await Bit.updateOne({ bitId }, { $inc: { 'farmingStats.currentEnergy': actualToReplenish } });
+
+        // check if the current energy is above the thresholds defined by `ENERGY_THRESHOLD_REDUCTIONS`. if so, check for prev. negative modifiers and update them.
+        // here, we assume that `currentEnergy` is still the same because it was called before updating it, so we use `currentEnergy` instead of `currentEnergy + actualToReplenish`
+        const currentEnergy: number = bit.farmingStats?.currentEnergy + actualToReplenish;
+
+        const {gatheringRateReduction, earningRateReduction} = ENERGY_THRESHOLD_REDUCTIONS(currentEnergy);
+
+        // update the modifiers of the bit regardless based on the energy thresholds
+        const gatheringRateModifier: Modifier = {
+            origin: 'Energy Threshold Reduction',
+            value: 1 - (gatheringRateReduction / 100)
+        }
+
+        const earningRateModifier: Modifier = {
+            origin: 'Energy Threshold Reduction',
+            value: 1 - (earningRateReduction / 100)
+        }
+
+        // update the bit's `statsModifiers` with the new modifiers. check first if the `bitStatsModifiers` already has modifiers called `Energy Threshold Reduction`
+        const gatheringRateModifiers = bit.bitStatsModifiers?.gatheringRateModifiers;
+        const earningRateModifiers = bit.bitStatsModifiers?.earningRateModifiers;
+
+        // check if the `gatheringRateModifiers` already has a modifier called `Energy Threshold Reduction`
+        const gatheringRateModifierIndex = gatheringRateModifiers?.findIndex((modifier: Modifier) => modifier.origin === 'Energy Threshold Reduction');
+        const earningRateModifierIndex = earningRateModifiers?.findIndex((modifier: Modifier) => modifier.origin === 'Energy Threshold Reduction');
+
+        // if the modifier exists, update it; if not, push it
+        if (gatheringRateModifierIndex !== -1) {
+            await Bit.updateOne({ bitId }, { $set: { 'bitStatsModifiers.gatheringRateModifiers.$[elem].value': gatheringRateModifier.value } }, { arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }] });
+        } else {
+            await Bit.updateOne({ bitId }, { $push: { 'bitStatsModifiers.gatheringRateModifiers': gatheringRateModifier } });
+        }
+
+        if (earningRateModifierIndex !== -1) {
+            await Bit.updateOne({ bitId }, { $set: { 'bitStatsModifiers.earningRateModifiers.$[elem].value': earningRateModifier.value } }, { arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }] });
+        } else {
+            await Bit.updateOne({ bitId }, { $push: { 'bitStatsModifiers.earningRateModifiers': earningRateModifier } });
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(feedBit) Bit fed and energy replenished.`,
+            data: {
+                bitId: bitId
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(feedBit) Error: ${err.message}`
+        }
+    }
+}
 
 /**
  * (User) Evolves a bit to the next level (levelling it up).

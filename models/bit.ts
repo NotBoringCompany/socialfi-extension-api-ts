@@ -96,3 +96,13 @@ export interface BitStatsModifiers {
     earningRateModifiers: Modifier[];
     energyRateModifiers: Modifier[];
 }
+
+/**
+ * Reductions in gathering rate and earning rate when the bit's energy is lower than a certain amount.
+ */
+export interface EnergyThresholdReduction {
+    /** the reduction in gathering rate (by a fixed %) */
+    gatheringRateReduction: number;
+    /** the reduction in earning rate (by a fixed %) */
+    earningRateReduction: number;
+}
