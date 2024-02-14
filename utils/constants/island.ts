@@ -7,7 +7,7 @@ export const MAX_ISLAND_LEVEL = 20;
 /** claim cooldown for claiming resources (in seconds) */
 export const RESOURCES_CLAIM_COOLDOWN = 86400;
 
-/** claim cooldown for claiming xCookies (in seconds) */
+/** claim cooldown for claiming xCookies [FROM THE ISLAND] (in seconds) */
 export const COOKIE_CLAIM_COOLDOWN = 86400;
 
 /** reduction modifier for effective gathering rate for having multiple bits on an island */
@@ -116,11 +116,11 @@ export const RESOURCE_DROP_CHANCES = (type: IslandType): ResourceDropChance => {
             }
         case IslandType.CELESTIAL_ISLES:
             return {
-                stone: 17.5,
+                stone: 15,
                 keratin: 20,
-                silver: 45,
-                diamond: 15,
-                relic: 2.5
+                silver: 40,
+                diamond: 20,
+                relic: 5
             }
     }
 }
@@ -164,11 +164,11 @@ export const RESOURCE_DROP_CHANCES_LEVEL_DIFF = (type: IslandType): ResourceDrop
             }
         case IslandType.CELESTIAL_ISLES:
             return {
-                stone: -0.4875,
-                keratin: -0.1,
-                silver: 0.25,
+                stone: -0.55,
+                keratin: -0.175,
+                silver: 0.3,
                 diamond: 0.25,
-                relic: 0.0875
+                relic: 0.175
             }
     }
 }
