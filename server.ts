@@ -31,6 +31,8 @@ app.use(passport.session());
 import twitterAuth from './routes/auth/twitter';
 import jwt from './routes/jwt';
 import shop from './routes/shop';
+import { generateDrawSeed, generateServerSeed } from './utils/crypto';
+import { generateWinningNumbers } from './api/lottery';
 
 app.use('/auth/twitter', twitterAuth);
 app.use('/jwt', jwt);
@@ -40,4 +42,16 @@ app.listen(port, async () => {
     console.log(`Server running on port ${port}`);
 
     await mongoose.connect(mongoUri);
+
+    // // get server seed
+    // const serverSeed = generateServerSeed();
+    // console.log(serverSeed);
+
+    // // get draw seed
+    // const { status, message, data} = await generateDrawSeed();
+    // console.log(status === 200 && data.drawSeed);
+
+    // // get winning numbers
+    // const winningNumbers = generateWinningNumbers(serverSeed, data.drawSeed);
+    // console.log(winningNumbers);
 });
