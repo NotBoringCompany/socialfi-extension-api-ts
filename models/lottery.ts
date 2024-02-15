@@ -1,7 +1,33 @@
 /**
+ * Represents a lottery draw.
+ */
+export interface Lottery {
+    /** unique ID for the draw, increments by 1 on every new draw */
+    drawId: number;
+    /** the timestamp of the draw was created */
+    createdTimestamp: number;
+    /** the timestamp of when the draw will be/was finalized (where winners will be chosen) */
+    finalizationTimestamp: number;
+    /** the tickets that are purchased for this draw by users */
+    tickets: Ticket[];
+    /** the winning numbers for the current draw; 1st to 5th number is 1-69, 6th number is 1-26 */
+    winningNumbers: number[];
+    /** the merkle root representing the winners and their equivalent prizes */
+    merkleRoot: string;
+    /** the server seed used to determine the winning numbers (IMPORTANT TO NOT SHOW UNTIL DRAW IS FINALIZED) */
+    serverSeed: string;
+    /** the hashed server seed used to determine the winning numbers (this one can be shown to the public) */
+    hashedServerSeed: string;
+    /** client seed obtained by various blockchain data during creation of the draw */
+    clientSeed: string;
+    /** the winners of the current draw; added once draw is finalized */
+    winners: Winner[];
+}
+
+/**
  * Represents a lottery ticket.
  */
-export interface LotteryTicket {
+export interface Ticket {
     /** unique ID for the ticket, increments by 1 on every new purchase */
     ticketId: number;
     /** the draw ID that the ticket is valid for */
@@ -15,35 +41,11 @@ export interface LotteryTicket {
 }
 
 /**
- * Represents a lottery draw.
- */
-export interface LotteryDraw {
-    /** unique ID for the draw, increments by 1 on every new draw */
-    drawId: number;
-    /** the timestamp of the draw was created */
-    createdTimestamp: number;
-    /** the timestamp of when the draw will be/was finalized (where winners will be chosen) */
-    finalizationTimestamp: number;
-    /** the winning numbers for the current draw; 1st to 5th number is 1-69, 6th number is 1-26 */
-    winningNumbers: number[];
-    /** the merkle root representing the winners and their equivalent prizes */
-    merkleRoot: string;
-    /** the server seed used to determine the winning numbers (IMPORTANT TO NOT SHOW UNTIL DRAW IS FINALIZED) */
-    serverSeed: string;
-    /** the hashed server seed used to determine the winning numbers (this one can be shown to the public) */
-    hashedServerSeed: string;
-    /** client seed obtained by various blockchain data during creation of the draw */
-    clientSeed: string;
-    /** the winners of the current draw; added once draw is finalized */
-    winners: LotteryWinner[];
-}
-
-/**
  * Represents a lottery winner.
  * 
  * This is technically available from the `merkleRoot` field in `LotteryDraw`, but this is used to simplify backend operations.
  */
-export interface LotteryWinner {
+export interface Winner {
     /** the database ID of the winner */
     winner: string;
     /** the wallet address of the winner */
