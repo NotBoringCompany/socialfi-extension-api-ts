@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 /**
  * Lottery schema. Represents closely to the `Lottery` interface in `models/lottery.ts`.
  */
-export const QuestSchema = new mongoose.Schema({
+export const LotterySchema = new mongoose.Schema({
     _id: {
         type: String,
         default: new mongoose.Types.ObjectId()

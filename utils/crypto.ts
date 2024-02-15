@@ -23,7 +23,7 @@ export const generateServerSeed = (): string => {
 /**
  * Hashes a server seed from `generateServerSeed` using SHA-256.
  */
-export const hashedServerSeed = (seed: string): string => {
+export const hashServerSeed = (seed: string): string => {
     return CryptoJS.SHA256(seed).toString();
 }
 
