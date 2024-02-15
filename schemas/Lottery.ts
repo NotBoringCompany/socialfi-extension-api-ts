@@ -16,6 +16,6 @@ export const QuestSchema = new mongoose.Schema({
     merkleRoot: String,
     serverSeed: String,
     hashedServerSeed: String,
-    clientSeed: String,
+    drawSeed: String,
     winners: Array
 })

@@ -18,8 +18,8 @@ export interface Lottery {
     serverSeed: string;
     /** the hashed server seed used to determine the winning numbers (this one can be shown to the public) */
     hashedServerSeed: string;
-    /** client seed obtained by various blockchain data during creation of the draw */
-    clientSeed: string;
+    /** draw seed obtained by various blockchain data during creation of the draw */
+    drawSeed: string;
     /** the winners of the current draw; added once draw is finalized */
     winners: Winner[];
 }
