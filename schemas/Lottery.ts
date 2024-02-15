@@ -1,0 +1,21 @@
+import mongoose from 'mongoose';
+
+/**
+ * Lottery schema. Represents closely to the `Lottery` interface in `models/lottery.ts`.
+ */
+export const QuestSchema = new mongoose.Schema({
+    _id: {
+        type: String,
+        default: new mongoose.Types.ObjectId()
+    },
+    drawId: Number,
+    createdTimestamp: Number,
+    finalizationTimestamp: Number,
+    tickets: Array,
+    winningNumbers: Array,
+    merkleRoot: String,
+    serverSeed: String,
+    hashedServerSeed: String,
+    clientSeed: String,
+    winners: Array
+})
