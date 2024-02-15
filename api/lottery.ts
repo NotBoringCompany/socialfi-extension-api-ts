@@ -1,5 +1,9 @@
 import CryptoJS from 'crypto-js';
+import { areSetsEqual } from '../utils/lottery';
 
+/**
+ * Generates the winning numbers for a lottery draw given the `serverSeed` and `drawSeed`.
+ */
 export const generateWinningNumbers =  (serverSeed: string, drawSeed: string): Set<number> => {
     const combinedSeed = CryptoJS.SHA256(serverSeed + drawSeed).toString();
 
@@ -20,4 +24,15 @@ export const generateWinningNumbers =  (serverSeed: string, drawSeed: string): S
     numbers.add(specialNumber);
 
     return numbers;
+}
+
+/**
+ * Verifies if the winning numbers match the generated winning numbers from the server and draw seeds.
+ * 
+ * If this function returns true, then the draw is considered valid.
+ */
+export const verifyWinningNumbers = (serverSeed: string, drawSeed: string, winningNumbers: Set<number>): boolean => {
+    const generatedNumbers = generateWinningNumbers(serverSeed, drawSeed);
+
+    return areSetsEqual(generatedNumbers, winningNumbers);
 }
