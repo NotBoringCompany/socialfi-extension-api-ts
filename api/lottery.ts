@@ -92,6 +92,8 @@ export const finalizeDraw = async (): Promise<ReturnValue> => {
         const drawSeed = lottery.drawSeed;
 
         const winningNumbers = generateWinningNumbers(serverSeed, drawSeed);
+
+        
     } catch (err: any) {
         return {
             status: Status.ERROR,
