@@ -71,6 +71,36 @@ export const startNewDraw = async (): Promise<ReturnValue> => {
 }
 
 /**
+ * Finalizes the current lottery draw. 
+ */
+export const finalizeDraw = async (): Promise<ReturnValue> => {
+    const Lottery = mongoose.model('Lottery', LotterySchema, 'Lottery');
+    
+    try {
+        // find the lottery with the latest ID (since we will currently only have 1 draw at a time each week; this is fine)
+        const lottery = await Lottery.findOne().sort({ drawId: -1 });
+
+        if (!lottery) {
+            return {
+                status: Status.ERROR,
+                message: '(finalizeDraw) No lottery found.'
+            }
+        }
+
+        // generate the winning numbers
+        const serverSeed = lottery.serverSeed;
+        const drawSeed = lottery.drawSeed;
+
+        const winningNumbers = generateWinningNumbers(serverSeed, drawSeed);
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(finalizeDraw) ${err.message}`
+        }
+    }
+}
+
+/**
  * Generates the winning numbers for a lottery draw given the `serverSeed` and `drawSeed`.
  */
 export const generateWinningNumbers =  (serverSeed: string, drawSeed: string): Set<number> => {

@@ -1,3 +1,5 @@
+import { Resource } from './resource';
+
 /**
  * Represents a lottery draw.
  */
@@ -38,6 +40,8 @@ export interface Ticket {
     pickedNumbers: number[];
     /** the timestamp of when the ticket was purchased */
     purchaseTimestamp: number;
+    // the resource used to purchase the ticket
+    resourceSpent: Resource;
 }
 
 /**
