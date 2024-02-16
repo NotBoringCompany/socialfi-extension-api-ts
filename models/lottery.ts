@@ -13,7 +13,7 @@ export interface Lottery {
     /** the tickets that are purchased for this draw by users */
     tickets: Ticket[];
     /** the winning numbers for the current draw; 1st to 5th number is 1-69, 6th number is 1-26 */
-    winningNumbers: number[];
+    winningNumbers: Set<number>;
     /** the merkle root representing the winners and their equivalent prizes */
     merkleRoot: string;
     /** the server seed used to determine the winning numbers (IMPORTANT TO NOT SHOW UNTIL DRAW IS FINALIZED) */
@@ -47,7 +47,7 @@ export interface Ticket {
 /**
  * Represents a lottery winner.
  * 
- * This is technically available from the `merkleRoot` field in `LotteryDraw`, but this is used to simplify backend operations.
+ * This is technically available from the `merkleRoot` field in `Lottery`, but this is used to simplify backend operations.
  */
 export interface Winner {
     /** the database ID of the winner */
@@ -56,8 +56,9 @@ export interface Winner {
     winnerAddress: string;
     /** the IDs of the tickets that won at least the lowest prize */
     ticketsWon: number[];
-    /** the total prize won (in wei; will be converted to eth later) */
-    totalPrizeWon: number;
+    /** the total prize won (final prize amount will be calculated from this) */
+    totalPrizeWon: Prize;
+    finalPrize: number;
 }
 
 /**

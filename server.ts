@@ -31,6 +31,7 @@ app.use(passport.session());
 import twitterAuth from './routes/auth/twitter';
 import jwt from './routes/jwt';
 import shop from './routes/shop';
+import { getLotteryContractBalance } from './utils/web3';
 
 app.use('/auth/twitter', twitterAuth);
 app.use('/jwt', jwt);
@@ -40,4 +41,8 @@ app.listen(port, async () => {
     console.log(`Server running on port ${port}`);
 
     await mongoose.connect(mongoUri);
+
+    // test balance
+    const balance = await getLotteryContractBalance();
+    console.log('Lottery contract balance:', balance);
 });

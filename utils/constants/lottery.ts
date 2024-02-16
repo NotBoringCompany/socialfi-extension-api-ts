@@ -31,6 +31,8 @@ export const lotteryTicketCost = (resourceType: ResourceType): number => {
  * 
  * If both `fixedAmount` and `points` are > 0, the lowest value out of the two after calculation will be the prize.
  * Prizes that use `points` will be calculated as follows: points / total points from all tickets * total prize pool.
+ * 
+ * `fixedAmount` is in ETH; assuming 1 ETH = $2800.
  */
 export const lotteryPrizeTier = (pickedNumbers: number[], winningNumbers: Set<number>): Prize => {
     const matchingNormalCount = countMatchingNormalNumbers(pickedNumbers, winningNumbers);
@@ -38,47 +40,47 @@ export const lotteryPrizeTier = (pickedNumbers: number[], winningNumbers: Set<nu
 
     if (matchingNormalCount === 0 && specialCorrect) {
         return {
-            fixedAmount: 2,
+            fixedAmount: 0.001,
             points: 1
         }
     } else if (matchingNormalCount === 1 && specialCorrect) {
         return {
-            fixedAmount: 2,
+            fixedAmount: 0.001,
             points: 1
         }
     } else if (matchingNormalCount === 2 && specialCorrect) {
         return {
-            fixedAmount: 4,
+            fixedAmount: 0.002,
             points: 2
         }
     } else if (matchingNormalCount === 3 && !specialCorrect) {
         return {
-            fixedAmount: 4,
+            fixedAmount: 0.002,
             points: 2
         }
     } else if (matchingNormalCount === 3 && specialCorrect) {
         return {
-            fixedAmount: 50,
+            fixedAmount: 0.0025,
             points: 25
         }
     } else if (matchingNormalCount === 4 && !specialCorrect) {
         return {
-            fixedAmount: 50,
+            fixedAmount: 0.0025,
             points: 25
         }
     } else if (matchingNormalCount === 4 && specialCorrect) {
         return {
-            fixedAmount: 25000,
+            fixedAmount: 8.9,
             points: 12500
         }
     } else if (matchingNormalCount === 5 && !specialCorrect) {
         return {
-            fixedAmount: 500000,
+            fixedAmount: 175,
             points: 250000
         }
     } else if (matchingNormalCount === 5 && specialCorrect) {
         return {
-            fixedAmount: 15000000,
+            fixedAmount: 5350,
             points: 7500000
         }
     } else {

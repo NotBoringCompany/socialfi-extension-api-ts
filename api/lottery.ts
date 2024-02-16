@@ -4,6 +4,9 @@ import { ReturnValue, Status } from '../utils/retVal';
 import mongoose from 'mongoose';
 import { LotterySchema } from '../schemas/Lottery';
 import { generateDrawSeed, generateObjectId, generateServerSeed, hashServerSeed } from '../utils/crypto';
+import { Prize, Ticket, Winner } from '../models/lottery';
+import { lotteryPrizeTier } from '../utils/constants/lottery';
+import { UserSchema } from '../schemas/User';
 
 /**
  * Starts a new lottery draw, usually a bit after the previous draw is finalized.
@@ -75,6 +78,7 @@ export const startNewDraw = async (): Promise<ReturnValue> => {
  */
 export const finalizeDraw = async (): Promise<ReturnValue> => {
     const Lottery = mongoose.model('Lottery', LotterySchema, 'Lottery');
+    const User = mongoose.model('Users', UserSchema, 'Users');
     
     try {
         // find the lottery with the latest ID (since we will currently only have 1 draw at a time each week; this is fine)
@@ -93,7 +97,59 @@ export const finalizeDraw = async (): Promise<ReturnValue> => {
 
         const winningNumbers = generateWinningNumbers(serverSeed, drawSeed);
 
+        let winners: Winner[] = [];
+
+        // loop through all tickets and calculate the prize for each, adding the winner to `winners`.
+        const tickets = lottery.tickets as Ticket[];
+        for (let ticket of tickets) {
+            const pickedNumbers = ticket.pickedNumbers;
+            const prize: Prize = lotteryPrizeTier(pickedNumbers, winningNumbers);
+
+            // if no prize, continue to the next ticket
+            if (prize.fixedAmount === 0 && prize.points === 0) continue;
+
+            // if there is a prize (fixed amount or points), add the winner to the list
+            // check first if the winner already exists in the list, if so, add the prize to the existing winner.
+            let winner = winners.find(w => w.winner === ticket.owner);
+
+            if (winner) {
+                winner.ticketsWon.push(ticket.ticketId);
+                // increment the `fixedAmount` and `points` of the winner based on this ticket's prize
+                winner.totalPrizeWon.fixedAmount += prize.fixedAmount;
+                winner.totalPrizeWon.points += prize.points;
+            // if the winner doesn't exist, create a new winner
+            } else {
+                const user = await User.findOne({ _id: ticket.owner });
+
+                // if user isn't found, don't return, just log the error and continue to the next ticket
+                if (!user) {
+                    console.error(`(finalizeDraw) User not found: ${ticket.owner}`);
+                    continue;
+                }
+
+                // get the wallet address of the user
+                const walletAddress = user.wallet?.publicKey;
+
+                winners.push({
+                    winner: ticket.owner,
+                    winnerAddress: walletAddress,
+                    ticketsWon: [ticket.ticketId],
+                    totalPrizeWon: prize,
+                    // final prize will be calculated after this based on `totalPrizeWon`
+                    finalPrize: 0,
+                });
+            }
+        }
+
+        // calculate the total amount of points obtained from each winner's `totalPrizeWon`
+        const totalPoints = winners.reduce((acc, winner) => acc + winner.totalPrizeWon.points, 0);
+
+        // calculate the current total prize pool (by checking the balance of the lottery contract)
         
+
+
+        // for each winner, finalize the `finalPrize` based on which value is lower from `fixedAmount` and `points` in `totalPrizeWon`
+
     } catch (err: any) {
         return {
             status: Status.ERROR,

@@ -1,7 +1,7 @@
 import CryptoJS from 'crypto-js';
-import { solidityPackedKeccak256 } from 'ethers';
 import { BLAST_TESTNET_PROVIDER } from './constants/web3';
 import { ReturnValue, Status } from './retVal';
+import { ethers } from 'ethers';
 
 /**
  * Generates a random Object ID for MongoDB collections.
@@ -44,7 +44,7 @@ export const generateDrawSeed = async (): Promise<ReturnValue> => {
         }
 
         // combine block hash and timestamp
-        const drawSeed = solidityPackedKeccak256(
+        const drawSeed = ethers.utils.solidityKeccak256(
             ['bytes32', 'uint256'],
             [block.hash, block.timestamp]
         );
