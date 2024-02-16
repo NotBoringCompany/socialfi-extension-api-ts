@@ -1,5 +1,5 @@
 import CryptoJS from 'crypto-js';
-import { areSetsEqual } from '../utils/lottery';
+import { areSetsEqual, calcWinnerLeafNodes, calcWinnerMerkleRoot, calcWinnerMerkleTree } from '../utils/lottery';
 import { ReturnValue, Status } from '../utils/retVal';
 import mongoose from 'mongoose';
 import { LotterySchema } from '../schemas/Lottery';
@@ -7,6 +7,8 @@ import { generateDrawSeed, generateObjectId, generateServerSeed, hashServerSeed 
 import { Prize, Ticket, Winner } from '../models/lottery';
 import { lotteryPrizeTier } from '../utils/constants/lottery';
 import { UserSchema } from '../schemas/User';
+import { getLotteryContractBalance } from '../utils/web3';
+import { LOTTERY_CONTRACT } from '../utils/constants/web3';
 
 /**
  * Starts a new lottery draw, usually a bit after the previous draw is finalized.
@@ -79,7 +81,7 @@ export const startNewDraw = async (): Promise<ReturnValue> => {
 export const finalizeDraw = async (): Promise<ReturnValue> => {
     const Lottery = mongoose.model('Lottery', LotterySchema, 'Lottery');
     const User = mongoose.model('Users', UserSchema, 'Users');
-    
+
     try {
         // find the lottery with the latest ID (since we will currently only have 1 draw at a time each week; this is fine)
         const lottery = await Lottery.findOne().sort({ drawId: -1 });
@@ -117,7 +119,7 @@ export const finalizeDraw = async (): Promise<ReturnValue> => {
                 // increment the `fixedAmount` and `points` of the winner based on this ticket's prize
                 winner.totalPrizeWon.fixedAmount += prize.fixedAmount;
                 winner.totalPrizeWon.points += prize.points;
-            // if the winner doesn't exist, create a new winner
+                // if the winner doesn't exist, create a new winner
             } else {
                 const user = await User.findOne({ _id: ticket.owner });
 
@@ -144,12 +146,59 @@ export const finalizeDraw = async (): Promise<ReturnValue> => {
         // calculate the total amount of points obtained from each winner's `totalPrizeWon`
         const totalPoints = winners.reduce((acc, winner) => acc + winner.totalPrizeWon.points, 0);
 
-        // calculate the current total prize pool (by checking the balance of the lottery contract)
-        
-
+        // calculate the current total prize pool in ETH (by checking the balance of the lottery contract)
+        const lotteryBalance = await getLotteryContractBalance();
 
         // for each winner, finalize the `finalPrize` based on which value is lower from `fixedAmount` and `points` in `totalPrizeWon`
+        for (let winner of winners) {
+            const fixedAmountPrize = winner.totalPrizeWon.fixedAmount;
+            const pointsPrize = winner.totalPrizeWon.points / totalPoints * lotteryBalance;
 
+            winner.finalPrize = Math.min(fixedAmountPrize, pointsPrize);
+        }
+
+        // create a merkle tree and fetch its root from the winners with their respective prizes
+        const leafNodes = calcWinnerLeafNodes(winners);
+        const merkleTree = calcWinnerMerkleTree(leafNodes);
+        const merkleRoot = calcWinnerMerkleRoot(merkleTree);
+
+        // create a packed uint instance consisting of the winning numbers and the draw timestamp (which is now)
+        let packedData = 0;
+        const drawTimestamp = Math.floor(Date.now() / 1000);
+
+        const SECOND_NUMBER_BITPOS = 8;
+        const THIRD_NUMBER_BITPOS = 16;
+        const FOURTH_NUMBER_BITPOS = 24;
+        const FIFTH_NUMBER_BITPOS = 32;
+        const SPECIAL_NUMBER_BITPOS = 40;
+        const TIMESTAMP_BITPOS = 48;
+
+        packedData |= winningNumbers[0];
+        packedData |= winningNumbers[1] << SECOND_NUMBER_BITPOS;
+        packedData |= winningNumbers[2] << THIRD_NUMBER_BITPOS;
+        packedData |= winningNumbers[3] << FOURTH_NUMBER_BITPOS;
+        packedData |= winningNumbers[4] << FIFTH_NUMBER_BITPOS;
+        packedData |= winningNumbers[5] << SPECIAL_NUMBER_BITPOS;
+        packedData |= drawTimestamp << TIMESTAMP_BITPOS;
+
+        // call `finalizeDraw` in the lottery contract with the packed data and the merkle root
+        const finalizeDrawTx = await LOTTERY_CONTRACT.finalizeDraw(
+            serverSeed,
+            drawSeed,
+            merkleRoot,
+            packedData
+        );
+
+        await finalizeDrawTx.wait();
+
+        return {
+            status: Status.SUCCESS,
+            message: '(finalizeDraw) Draw finalized successfully.',
+            data: {
+                winningNumbers,
+                merkleRoot
+            }
+        }
     } catch (err: any) {
         return {
             status: Status.ERROR,
@@ -161,7 +210,7 @@ export const finalizeDraw = async (): Promise<ReturnValue> => {
 /**
  * Generates the winning numbers for a lottery draw given the `serverSeed` and `drawSeed`.
  */
-export const generateWinningNumbers =  (serverSeed: string, drawSeed: string): Set<number> => {
+export const generateWinningNumbers = (serverSeed: string, drawSeed: string): Set<number> => {
     const combinedSeed = CryptoJS.SHA256(serverSeed + drawSeed).toString();
 
     let numbers: Set<number> = new Set();

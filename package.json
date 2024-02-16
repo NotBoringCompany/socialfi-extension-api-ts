@@ -20,6 +20,8 @@
     "express-session": "^1.17.3",
     "fs": "^0.0.1-security",
     "jsonwebtoken": "^9.0.2",
+    "keccak256": "^1.0.6",
+    "merkletreejs": "^0.3.11",
     "mongoose": "^8.1.1",
     "passport": "^0.7.0",
     "path": "^0.12.7",
