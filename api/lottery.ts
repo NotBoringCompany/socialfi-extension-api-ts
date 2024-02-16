@@ -5,10 +5,164 @@ import mongoose from 'mongoose';
 import { LotterySchema } from '../schemas/Lottery';
 import { generateDrawSeed, generateObjectId, generateServerSeed, hashServerSeed } from '../utils/crypto';
 import { Prize, Ticket, Winner } from '../models/lottery';
-import { lotteryPrizeTier } from '../utils/constants/lottery';
+import { lotteryPrizeTier, lotteryTicketCost } from '../utils/constants/lottery';
 import { UserSchema } from '../schemas/User';
 import { getLotteryContractBalance } from '../utils/web3';
 import { LOTTERY_CONTRACT } from '../utils/constants/web3';
+import { Resource, ResourceType } from '../models/resource';
+
+/**
+ * (User) purchases a new ticket for the current lottery draw using a `resourceType`.
+ * 
+ * If the user doesn't provide the `pickedNumbers`, the system will automatically generate random numbers for the user.
+ */
+export const purchaseTicket = async (
+    twitterId: string, 
+    resourceType: ResourceType,
+    pickedNumbers: number[] | null | undefined
+) => {
+    const Lottery = mongoose.model('Lottery', LotterySchema, 'Lottery');
+    const User = mongoose.model('Users', UserSchema, 'Users');
+
+    try {
+        // check if user exists
+        const user = await User.findOne({ twitterId });
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(purchaseTicket) User not found: ${twitterId}`
+            }
+        }
+
+        // check price of the ticket
+        const ticketCost = lotteryTicketCost(resourceType);
+
+        // check if user has enough resources
+        const userResources: Resource[] = user.inventory?.resources;
+
+        // find the resource that matches the `resourceType`
+        const resource = userResources?.find(r => r.type === resourceType);
+
+        if (!resource) {
+            return {
+                status: Status.ERROR,
+                message: `(purchaseTicket) User doesn't have enough resources: ${resourceType}`
+            }
+        }
+
+        // check if the user has enough resources to purchase the ticket
+        if (resource.amount < ticketCost) {
+            return {
+                status: Status.ERROR,
+                message: `(purchaseTicket) User doesn't have enough resources: ${resourceType}`
+            }
+        }
+
+        // get the latest lottery draw
+        const lottery = await Lottery.findOne().sort({ drawId: -1 });
+
+        if (!lottery) {
+            return {
+                status: Status.ERROR,
+                message: '(purchaseTicket) No lottery found.'
+            }
+        }
+
+        // check if the lottery is still open
+        if (!lottery.open) {
+            return {
+                status: Status.ERROR,
+                message: '(purchaseTicket) Current draw round is already closed. Please wait for the next one to open.'
+            }
+        }
+
+        // check if `pickedNumbers` is empty; if yes, generate random numbers for the user (1st to 5th number = 1 - 69, 6th number = 1 - 26)
+        if (!pickedNumbers) {
+            // generate 5 unique numbers each between 1 - 69 (cannot be repeated)
+            pickedNumbers = new Array(5).fill(0).map(() => {
+                let number: number;
+
+                do {
+                    number = Math.floor(Math.random() * 69) + 1;
+                } while (pickedNumbers.includes(number));
+
+                return number;
+            });
+
+            // generate a special number between 1 - 26 and add it to the `pickedNumbers`
+            pickedNumbers.push(Math.floor(Math.random() * 26) + 1);
+        // if `pickedNumbers` is provided, check if it's valid
+        } else {
+            if (pickedNumbers.length !== 6) {
+                return {
+                    status: Status.ERROR,
+                    message: '(purchaseTicket) Invalid amount of picked numbers.'
+                }
+            }
+
+            const normalNumbers = pickedNumbers.slice(0, 5);
+            const specialNumber = pickedNumbers[5];
+
+            // check if the normal numbers are within 1 - 69 and the special number is within 1 - 26
+            if (normalNumbers.some(n => n < 1 || n > 69) || specialNumber < 1 || specialNumber > 26) {
+                return {
+                    status: Status.ERROR,
+                    message: '(purchaseTicket) Invalid picked numbers.'
+                }
+            }
+        }
+
+        // deduct the cost of the ticket from the user's resources
+        const existingResourceIndex = (user.inventory.resources as Resource[]).findIndex(r => r.type === resourceType);
+
+        // at this point, the resource should exist, given that we've checked this before, but we'll check again just in case
+        if (existingResourceIndex === -1) {
+            return {
+                status: Status.ERROR,
+                message: `(purchaseTicket) Resource not found: ${resourceType}`
+            }
+        }
+
+        await User.updateOne(
+            { twitterId }, 
+            { $inc: { [`inventory.resources.${existingResourceIndex}.amount`]: -ticketCost } },
+        );
+
+        // add the ticket to the current lottery draw
+        // check the current amount of tickets for the current draw (by checking the length of the `tickets` array) and increment it by 1
+        const ticketId = lottery.tickets.length + 1;
+
+        const ticket: Ticket = {
+            ticketId,
+            drawId: lottery.drawId,
+            owner: user._id,
+            pickedNumbers,
+            purchaseTimestamp: Math.floor(Date.now() / 1000),
+            resourcesSpent: {
+                type: resourceType,
+                amount: ticketCost
+            }
+        }
+
+        // add the ticket to the lottery
+        await Lottery.updateOne({ _id: lottery._id }, { $push: { tickets: ticket } });
+
+        return {
+            status: Status.SUCCESS,
+            message: '(purchaseTicket) Ticket purchased successfully.',
+            data: {
+                drawId: lottery.drawId,
+                ticketId
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(purchaseTicket) ${err.message}`
+        }
+    }
+}
 
 /**
  * Starts a new lottery draw, usually a bit after the previous draw is finalized.
@@ -46,6 +200,7 @@ export const startNewDraw = async (): Promise<ReturnValue> => {
         // create the new draw
         const newDraw = new Lottery({
             _id: generateObjectId(),
+            open: true,
             drawId: latestDrawId + 1,
             createdTimestamp,
             finalizationTimestamp,
@@ -180,6 +335,16 @@ export const finalizeDraw = async (): Promise<ReturnValue> => {
         packedData |= winningNumbers[4] << FIFTH_NUMBER_BITPOS;
         packedData |= winningNumbers[5] << SPECIAL_NUMBER_BITPOS;
         packedData |= drawTimestamp << TIMESTAMP_BITPOS;
+
+        // update the lottery instance with the finalization timestamp, winning numbers, merkle root and winners
+        // also disable the lottery from being open to ticket purchases anymore
+        await Lottery.updateOne({ _id: lottery._id }, { $set: { 
+            open: false,
+            finalizationTimestamp: drawTimestamp, 
+            winningNumbers: winningNumbers, 
+            merkleRoot: merkleRoot,
+            winners: winners
+        }});
 
         // call `finalizeDraw` in the lottery contract with the packed data and the merkle root
         const finalizeDrawTx = await LOTTERY_CONTRACT.finalizeDraw(

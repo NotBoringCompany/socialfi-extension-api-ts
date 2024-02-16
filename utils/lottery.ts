@@ -57,3 +57,4 @@ export const calcWinnerMerkleTree = (leafNodes: Buffer[]): MerkleTree => {
 export const calcWinnerMerkleRoot = (merkleTree: MerkleTree): string => {
     return merkleTree.getHexRoot();
 }
+

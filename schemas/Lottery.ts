@@ -9,6 +9,7 @@ export const LotterySchema = new mongoose.Schema({
         default: new mongoose.Types.ObjectId()
     },
     drawId: Number,
+    open: Boolean,
     createdTimestamp: Number,
     finalizationTimestamp: Number,
     tickets: Array,

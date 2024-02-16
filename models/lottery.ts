@@ -6,6 +6,8 @@ import { Resource } from './resource';
 export interface Lottery {
     /** unique ID for the draw, increments by 1 on every new draw */
     drawId: number;
+    /** if ticket purchases are still allowed (draw is still open) */
+    open: boolean;
     /** the timestamp of the draw was created */
     createdTimestamp: number;
     /** the timestamp of when the draw will be/was finalized (where winners will be chosen) */
@@ -41,7 +43,7 @@ export interface Ticket {
     /** the timestamp of when the ticket was purchased */
     purchaseTimestamp: number;
     // the resource used to purchase the ticket
-    resourceSpent: Resource;
+    resourcesSpent: Resource;
 }
 
 /**
