@@ -61,18 +61,10 @@ export interface Winner {
 }
 
 /**
- * Represents a prize tier for the lottery.
+ * Represents a lottery prize.
  */
-export enum PrizeTier {
-    NO_PRIZE = 'No Prize',
-    MATCH_SPECIAL_ONLY = 'Match Special Only',
-    MATCH_1_PLUS_SPECIAL = 'Match 1 + Special',
-    MATCH_2_PLUS_SPECIAL = 'Match 2 + Special',
-    MATCH_3_ONLY = 'Match 3 Only',
-    MATCH_3_PLUS_SPECIAL = 'Match 3 + Special',
-    MATCH_4_ONLY = 'Match 4 Only',
-    MATCH_4_PLUS_SPECIAL = 'Match 4 + Special',
-    MATCH_5_ONLY = 'Match 5 Only',
-    // match 5 + special
-    JACKPOT = 'Jackpot'
+export interface Prize {
+    fixedAmount: number;
+    // the total points earned from this prize
+    points: number;
 }

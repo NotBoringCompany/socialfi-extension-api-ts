@@ -1,4 +1,4 @@
-import { PrizeTier } from '../../models/lottery';
+import { Prize } from '../../models/lottery';
 import { ResourceType } from '../../models/resource';
 import { countMatchingNormalNumbers, isSpecialNumberCorrect } from '../lottery';
 
@@ -26,20 +26,65 @@ export const lotteryTicketCost = (resourceType: ResourceType): number => {
 
 /**
  * Returns the prize tier for a ticket given the `pickedNumbers` and `winningNumbers` of that draw.
+ * 
+ *  If both `fixedAmount` and `points` are 0, then there is no prize.
+ * 
+ * If both `fixedAmount` and `points` are > 0, the lowest value out of the two after calculation will be the prize.
+ * Prizes that use `points` will be calculated as follows: points / total points from all tickets * total prize pool.
  */
-export const lotteryPrizeTier = (pickedNumbers: number[], winningNumbers: Set<number>): PrizeTier => {
+export const lotteryPrizeTier = (pickedNumbers: number[], winningNumbers: Set<number>): Prize => {
     const matchingNormalCount = countMatchingNormalNumbers(pickedNumbers, winningNumbers);
     const specialCorrect = isSpecialNumberCorrect(pickedNumbers, winningNumbers);
 
-    if (matchingNormalCount === 0 && specialCorrect) return PrizeTier.MATCH_SPECIAL_ONLY;
-    if (matchingNormalCount === 1 && specialCorrect) return PrizeTier.MATCH_1_PLUS_SPECIAL;
-    if (matchingNormalCount === 2 && specialCorrect) return PrizeTier.MATCH_2_PLUS_SPECIAL;
-    if (matchingNormalCount === 3 && !specialCorrect) return PrizeTier.MATCH_3_ONLY;
-    if (matchingNormalCount === 3 && specialCorrect) return PrizeTier.MATCH_3_PLUS_SPECIAL;
-    if (matchingNormalCount === 4 && !specialCorrect) return PrizeTier.MATCH_4_ONLY;
-    if (matchingNormalCount === 4 && specialCorrect) return PrizeTier.MATCH_4_PLUS_SPECIAL;
-    if (matchingNormalCount === 5 && !specialCorrect) return PrizeTier.MATCH_5_ONLY;
-    if (matchingNormalCount === 5 && specialCorrect) return PrizeTier.JACKPOT;
-
-    return PrizeTier.NO_PRIZE;
+    if (matchingNormalCount === 0 && specialCorrect) {
+        return {
+            fixedAmount: 2,
+            points: 1
+        }
+    } else if (matchingNormalCount === 1 && specialCorrect) {
+        return {
+            fixedAmount: 2,
+            points: 1
+        }
+    } else if (matchingNormalCount === 2 && specialCorrect) {
+        return {
+            fixedAmount: 4,
+            points: 2
+        }
+    } else if (matchingNormalCount === 3 && !specialCorrect) {
+        return {
+            fixedAmount: 4,
+            points: 2
+        }
+    } else if (matchingNormalCount === 3 && specialCorrect) {
+        return {
+            fixedAmount: 50,
+            points: 25
+        }
+    } else if (matchingNormalCount === 4 && !specialCorrect) {
+        return {
+            fixedAmount: 50,
+            points: 25
+        }
+    } else if (matchingNormalCount === 4 && specialCorrect) {
+        return {
+            fixedAmount: 25000,
+            points: 12500
+        }
+    } else if (matchingNormalCount === 5 && !specialCorrect) {
+        return {
+            fixedAmount: 500000,
+            points: 250000
+        }
+    } else if (matchingNormalCount === 5 && specialCorrect) {
+        return {
+            fixedAmount: 15000000,
+            points: 7500000
+        }
+    } else {
+        return {
+            fixedAmount: 0,
+            points: 0
+        }
+    }
 }
