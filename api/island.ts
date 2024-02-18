@@ -376,6 +376,82 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
 }
 
 /**
+ * Claims all claimable resources from an island and adds them to the user's inventory.
+ * 
+ * NOTE: Requires `twitterId` which is fetched via `req.user`, automatically giving us the user's Twitter ID. This will check if the user who calls this function owns the twitter ID that owns the island.
+ */
+export const claimResources = async (twitterId: string, islandId: number): Promise<ReturnValue> => {
+    const User = mongoose.model('Users', UserSchema, 'Users');
+    const Island = mongoose.model('Islands', IslandSchema, 'Islands');
+
+    try {
+        // check if user exists
+        const user = await User.findOne({ twitterId });
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(claimResources) User not found.`
+            }
+        }
+
+        // check if island with `islandId` exists
+        const island = await Island.findOne({ islandId });
+
+        if (!island) {
+            return {
+                status: Status.ERROR,
+                message: `(claimResources) Island not found.`
+            }
+        }
+
+        // check if the user owns the island
+        if (!(user.inventory?.islandIds as number[]).includes(islandId)) {
+            return {
+                status: Status.UNAUTHORIZED,
+                message: `(claimResources) User does not own the island.`
+            }
+        }
+
+        // check all claimable resources 
+        const claimableResources = island.islandResourceStats?.claimableResources as Resource[];
+
+        if (claimableResources.length === 0 || !claimableResources) {
+            return {
+                status: Status.ERROR,
+                message: `(claimResources) No claimable resources found.`
+            }
+        }
+
+        // add all claimable resources to the user's inventory
+        // loop through each resource and check if the resource already exists in the user's inventory
+        // if it does, increment the amount; if not, push a new resource
+        for (let resource of claimableResources) {
+            const existingResourceIndex = (user.inventory?.resources as Resource[]).findIndex(r => r.type === resource.type);
+
+            if (existingResourceIndex !== -1) {
+                await User.updateOne({ twitterId }, { $inc: { [`inventory.resources.${existingResourceIndex}.amount`]: resource.amount } });
+            } else {
+                await User.updateOne({ twitterId }, { $push: { 'inventory.resources': resource } });
+            }
+        }
+
+        // clear the island's `claimableResources`
+        await Island.updateOne({ islandId }, { $set: { 'islandResourceStats.claimableResources': [] }});
+
+        return {
+            status: Status.SUCCESS,
+            message: `(claimResources) Claimed all resources from island ID ${islandId}.`
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(claimResources) Error: ${err.message}`
+        }
+    }
+}
+
+/**
  * Drops a resource for a user's island. 
  * 
  * Should only be called when gathering progress has reached >= 100% (and then reset back to 0%). Scheduler/parent function will check this.
