@@ -8,8 +8,9 @@ import { Prize, Ticket, Winner } from '../models/lottery';
 import { lotteryPrizeTier, lotteryTicketCost } from '../utils/constants/lottery';
 import { UserSchema } from '../schemas/User';
 import { getLotteryContractBalance } from '../utils/web3';
-import { LOTTERY_CONTRACT } from '../utils/constants/web3';
+import { LOTTERY_CONTRACT, LOTTERY_CONTRACT_USER } from '../utils/constants/web3';
 import { Resource, ResourceType } from '../models/resource';
+import { ethers } from 'ethers';
 
 /**
  * (User) purchases a new ticket for the current lottery draw using a `resourceType`.
@@ -165,6 +166,88 @@ export const purchaseTicket = async (
 }
 
 /**
+ * Claims the winnings for a user from a specific draw. If no `drawId` is provided, the system will claim the winnings from the latest draw (if applicable).
+ */
+export const claimWinnings = async (twitterId: string, drawId?: number) => {
+    const Lottery = mongoose.model('Lottery', LotterySchema, 'Lottery');
+    const User = mongoose.model('Users', UserSchema, 'Users');
+
+    try {
+        const lottery = drawId && drawId !== 0 ? await Lottery.findOne({ drawId }) : await Lottery.findOne().sort({ drawId: -1 });
+
+        if (!lottery) {
+            return {
+                status: Status.ERROR,
+                message: '(claimWinnings) No lottery found.'
+            }
+        }
+
+        // check if user exists
+        const user = await User.findOne({ twitterId });
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(claimWinnings) User not found: ${twitterId}`
+            }
+        }
+
+        // check in `lottery` if the `winners` contain the user's ID
+        const winner: Winner = lottery.winners.find((w: Winner) => w.winner === user._id);
+
+        if (!winner) {
+            return {
+                status: Status.ERROR,
+                message: '(claimWinnings) User is not a winner for this draw.'
+            }
+        }
+
+        // check if the user has already claimed the winnings for this draw
+        if (winner.claimedPrize) {
+            return {
+                status: Status.ERROR,
+                message: '(claimWinnings) User has already claimed the winnings for this draw.'
+            }
+        }
+
+        // check if the user has a wallet address (they should; but this should return an error if they somehow don't)
+        if (!user.wallet?.publicKey) {
+            return {
+                status: Status.ERROR,
+                message: '(claimWinnings) User does not have a wallet address.'
+            }
+        }
+
+        // call the `claimWinnings` function in the lottery contract using the user's pvt key and the `finalPrize` amount
+        const lotteryContract = LOTTERY_CONTRACT_USER(user.wallet?.privateKey);
+
+        // since prize is in ETH format, we need to convert it to wei
+        const claimWinningsTx = await lotteryContract.claimWinnings(
+            drawId || lottery.drawId,
+            ethers.utils.parseEther(winner.finalPrize.toString())
+        );
+        await claimWinningsTx.wait();
+
+        // if no errors, update the `claimedPrize` field in the `winners` array in the lottery
+        await Lottery.updateOne({ _id: lottery._id, 'winners.winner': user._id }, { $set: { 'winners.$.claimedPrize': true } });
+
+        return {
+            status: Status.SUCCESS,
+            message: '(claimWinnings) Winnings claimed successfully.',
+            data: {
+                drawId: lottery.drawId,
+                prize: winner.finalPrize
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(claimWinnings) ${err.message}`
+        }
+    }
+}
+
+/**
  * Starts a new lottery draw, usually a bit after the previous draw is finalized.
  * 
  * Called by a scheduler.
@@ -294,6 +377,7 @@ export const finalizeDraw = async (): Promise<ReturnValue> => {
                     totalPrizeWon: prize,
                     // final prize will be calculated after this based on `totalPrizeWon`
                     finalPrize: 0,
+                    claimedPrize: false
                 });
             }
         }

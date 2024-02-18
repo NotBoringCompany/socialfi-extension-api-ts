@@ -60,13 +60,17 @@ export interface Winner {
     ticketsWon: number[];
     /** the total prize won (final prize amount will be calculated from this) */
     totalPrizeWon: Prize;
+    /** the final prize won by the winner; either the fixed amount or via points after calculation */
     finalPrize: number;
+    /** if the prize is already claimed by the winner */
+    claimedPrize: boolean;
 }
 
 /**
  * Represents a lottery prize.
  */
 export interface Prize {
+    // fixed amount of the prize in ETH
     fixedAmount: number;
     // the total points earned from this prize
     points: number;
