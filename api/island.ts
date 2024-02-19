@@ -621,7 +621,7 @@ export const claimXCookies = async (twitterId: string, islandId: number): Promis
         }
 
         // check if the island has any xCookies to claim
-        const xCookies = island.islandEarningStats?.claimableXCookies;
+        const xCookies: number = island.islandEarningStats?.claimableXCookies;
 
         if (xCookies === 0 || !xCookies) {
             return {
@@ -630,19 +630,37 @@ export const claimXCookies = async (twitterId: string, islandId: number): Promis
             }
         }
 
+        // check how much tax the user has to pay
+        const { status, message, data } = await checkCurrentTax(<IslandType>island.type, islandId);
+
+        if (status !== Status.SUCCESS) {
+            return {
+                status: Status.ERROR,
+                message: `(claimXCookies) Error from checkCurrentTax: ${message}`
+            }
+        }
+
+        const tax = data?.tax as number;
+
+        // reduce the xCookies by the tax amount
+        const xCookiesAfterTax = tax / 100 * xCookies;
+
+
         // add the xCookies to the user's inventory
-        await User.updateOne({ twitterId }, { $inc: { 'inventory.xCookies': xCookies } });
+        await User.updateOne({ twitterId }, { $inc: { 'inventory.xCookies': xCookiesAfterTax } });
 
         // do a few things:
         // 1. set the island's `claimableXCookies` to 0
         // 2. set the island's `lastClaimed` to the current time
-        // 3. increment the island's `totalXCookiesEarned` by the amount of xCookies claimed
+        // 3. set the island's `currentTax` to `tax`
+        // 4. increment the island's `totalXCookiesEarned` by the amount of xCookies claimed
         await Island.updateOne(
             { islandId }, 
             { 
                 $set: { 
                     'islandEarningStats.claimableXCookies': 0, 
-                    'islandEarningStats.lastClaimed': currentTime 
+                    'islandEarningStats.lastClaimed': currentTime,
+                    'currentTax': tax
                 },
                 $inc: { 'islandEarningStats.totalXCookiesEarned': xCookies }
             }
