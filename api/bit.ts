@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
 import { BitSchema } from '../schemas/Bit';
 import { Bit, BitFarmingStats, BitRarity } from '../models/bit';
-import { BASE_ENERGY_DEPLETION_RATE, BIT_EVOLVING_COST, DEFAULT_EARNING_RATE, DEFAULT_EARNING_RATE_GROWTH, DEFAULT_GATHERING_RATE, DEFAULT_GATHERING_RATE_GROWTH, ENERGY_THRESHOLD_REDUCTIONS, MAX_BIT_LEVEL } from '../utils/constants/bit';
+import { BASE_ENERGY_DEPLETION_RATE, BIT_EVOLVING_COST, BIT_EVOLVING_COST_RAFT, DEFAULT_EARNING_RATE, DEFAULT_EARNING_RATE_GROWTH, DEFAULT_GATHERING_RATE, DEFAULT_GATHERING_RATE_GROWTH, ENERGY_THRESHOLD_REDUCTIONS, MAX_BIT_LEVEL, MAX_BIT_LEVEL_RAFT } from '../utils/constants/bit';
 import { EARNING_RATE_EXPONENTIAL_DECAY, GATHERING_RATE_EXPONENTIAL_DECAY } from '../utils/constants/island';
 import { RateType } from '../models/island';
 import { Modifier } from '../models/modifier';
@@ -10,6 +10,7 @@ import { UserSchema } from '../schemas/User';
 import { IslandSchema } from '../schemas/Island';
 import { Food, FoodType } from '../models/food';
 import { FOOD_ENERGY_REPLENISHMENT } from '../utils/constants/food';
+import { Resource, ResourceType } from '../models/resource';
 
 /**
  * (User) Feeds a bit some food and replenishes its energy.
@@ -328,6 +329,102 @@ export const evolveBit = async (twitterId: string, bitId: number): Promise<Retur
         return {
             status: Status.ERROR,
             message: `(evolveBit) Error: ${err.message}`
+        }
+    }
+}
+
+/**
+ * (User) Evolves a bit to the next level (levelling it up). !!!ONLY FOR LEVELLING UP IN RAFTS!!!
+ * 
+ * NOTE: Requires `twitterId` which is fetched via `req.user`, automatically giving us the user's Twitter ID. This will check if the user who calls this function owns the twitter ID that owns the bit ID.
+ */
+export const evolveBitInRaft = async (twitterId: string, bitId: number): Promise<ReturnValue> => {
+    const User = mongoose.model('Users', UserSchema, 'Users');
+    const Bit = mongoose.model('Bits', BitSchema, 'Bits');
+
+    try {
+        // first, check if the user owns the bit
+        const user = await User.findOne({ twitterId });
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(evolveBitInRaft) User not found.`
+            }
+        }
+
+        // check if the user owns the bit
+        if (!(user.inventory?.bitIds as number[]).includes(bitId)) {
+            return {
+                status: Status.ERROR,
+                message: `(evolveBitInRaft) User does not own the bit.`
+            }
+        }
+
+        // ensure that the bit exists
+        const bit = await Bit.findOne({ bitId });
+
+        if (!bit) {
+            return {
+                status: Status.ERROR,
+                message: `(evolveBitInRaft) Bit not found.`
+            }
+        }
+
+        // check if the bit is already placed in the raft to start evolving
+        if (bit.placedRaftId === 0) {
+            return {
+                status: Status.ERROR,
+                message: `(evolveBitInRaft) Bit is not placed in a raft.`
+            }
+        }
+
+        // check if the bit is already at max level
+        if (bit.currentFarmingLevel >= MAX_BIT_LEVEL_RAFT) {
+            return {
+                status: Status.ERROR,
+                message: `(evolveBitInRaft) Bit is already at max level.`
+            }
+        }
+
+        // check if the user has enough seaweed to evolve the bit
+        const userSeaweed = (user.inventory?.resources as Resource[]).find(resource => resource.type === ResourceType.SEAWEED);
+
+        if (!userSeaweed || userSeaweed.amount === 0) {
+            return {
+                status: Status.ERROR,
+                message: `(evolveBitInRaft) Not enough seaweed to evolve the bit.`
+            }
+        }
+
+        // calculate the cost to evolve the bit to the next level
+        const requiredSeaweed = BIT_EVOLVING_COST_RAFT(bit.currentFarmingLevel);
+
+        // if not enough seaweed, return an error
+        if (userSeaweed.amount < requiredSeaweed) {
+            return {
+                status: Status.ERROR,
+                message: `(evolveBitInRaft) Not enough seaweed to evolve the bit.`
+            }
+        }
+
+        // deduct the required seaweed from the user's inventory
+        await User.updateOne({ twitterId, 'inventory.resources.type': ResourceType.SEAWEED }, { $inc: { 'inventory.resources.$.amount': -requiredSeaweed } });
+
+        // increase the bit's current farming level by 1
+        await Bit.updateOne({ bitId }, { $inc: { 'currentFarmingLevel': 1 } });
+        
+        return {
+            status: Status.SUCCESS,
+            message: `(evolveBitInRaft) Bit evolved to the next level.`,
+            data: {
+                bitId: bitId
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(evolveBitInRaft) Error: ${err.message}`
         }
     }
 }

@@ -16,6 +16,9 @@ export const MAX_BIT_LEVEL = (rarity: BitRarity): number => {
     }
 }
 
+/** regardless of rarity, the max level bits can be in a raft is 30 */
+export const MAX_BIT_LEVEL_RAFT = 30;
+
 /** gets the cost (in xCookies) of evolving a bit, based on its current level */
 export const BIT_EVOLVING_COST = (currentLevel: number): number => {
     // level once upgraded = 2 to 9
@@ -40,6 +43,12 @@ export const BIT_EVOLVING_COST = (currentLevel: number): number => {
     } else if (currentLevel >= 59 && currentLevel <= 64) {
         return 12960; // 4x of prev level range
     }
+}
+
+/** gets the cost (in seaweed) of evolving a bit in a raft, based on its current level */
+export const BIT_EVOLVING_COST_RAFT = (currentLevel: number): number => {
+    // if current level is 1, cost is 10 seaweed. every level after is 1.125x the previous level
+    return 10 * (1.125 ** (currentLevel - 1));
 }
 
 /**
