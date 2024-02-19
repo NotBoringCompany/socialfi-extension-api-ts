@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
 import { IslandSchema } from '../schemas/Island';
 import { Island, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
-import { BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLVING_COST, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF } from '../utils/constants/island';
+import { BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLVING_COST, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, X_COOKIE_CLAIM_COOLDOWN } from '../utils/constants/island';
 import { calcBitCurrentRate, getBits } from './bit';
 import { Resource, ResourceType } from '../models/resource';
 import { UserSchema } from '../schemas/User';
@@ -413,7 +413,7 @@ export const claimResources = async (twitterId: string, islandId: number): Promi
             }
         }
 
-        // check if the claim time has passed `RESOURCE_CLAIM_COOLDOWN` from the last `claimedTime`
+        // check if the `RESOURCES_CLAIM_COOLDOWN` has passed from the last claimed time
         const currentTime = Math.floor(Date.now() / 1000);
         const lastClaimedTime = island.islandResourceStats?.lastClaimed as number;
 
@@ -480,6 +480,93 @@ export const claimResources = async (twitterId: string, islandId: number): Promi
         return {
             status: Status.ERROR,
             message: `(claimResources) Error: ${err.message}`
+        }
+    }
+}
+
+/**
+ * Claims all claimable xCookies from an island and adds them to the user's inventory.
+ */
+export const claimXCookies = async (twitterId: string, islandId: number): Promise<ReturnValue> => {
+    const User = mongoose.model('Users', UserSchema, 'Users');
+    const Island = mongoose.model('Islands', IslandSchema, 'Islands');
+
+    try {
+        // check if user exists
+        const user = await User.findOne({ twitterId });
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(claimXCookies) User not found.`
+            }
+        }
+
+        // check if island with `islandId` exists
+        const island = await Island.findOne({ islandId });
+
+        if (!island) {
+            return {
+                status: Status.ERROR,
+                message: `(claimXCookies) Island not found.`
+            }
+        }
+
+        // check if the user owns the island
+        if (!(user.inventory?.islandIds as number[]).includes(islandId)) {
+            return {
+                status: Status.UNAUTHORIZED,
+                message: `(claimXCookies) User does not own the island.`
+            }
+        }
+
+        // check if the `X_COOKIE_CLAIM_COOLDOWN` has passed from the last claimed time
+        const currentTime = Math.floor(Date.now() / 1000);
+        const lastClaimedTime = island.islandEarningStats?.lastClaimed as number;
+        
+        if (currentTime - lastClaimedTime < X_COOKIE_CLAIM_COOLDOWN) {
+            return {
+                status: Status.ERROR,
+                message: `(claimXCookies) Cooldown not yet passed.`
+            }
+        }
+
+        // check if the island has any xCookies to claim
+        const xCookies = island.islandEarningStats?.claimableXCookies;
+
+        if (xCookies === 0 || !xCookies) {
+            return {
+                status: Status.ERROR,
+                message: `(claimXCookies) No xCookies to claim.`
+            }
+        }
+
+        // add the xCookies to the user's inventory
+        await User.updateOne({ twitterId }, { $inc: { 'inventory.xCookies': xCookies } });
+
+        // do a few things:
+        // 1. set the island's `claimableXCookies` to 0
+        // 2. set the island's `lastClaimed` to the current time
+        // 3. increment the island's `totalXCookiesEarned` by the amount of xCookies claimed
+        await Island.updateOne(
+            { islandId }, 
+            { 
+                $set: { 
+                    'islandEarningStats.claimableXCookies': 0, 
+                    'islandEarningStats.lastClaimed': currentTime 
+                },
+                $inc: { 'islandEarningStats.totalXCookiesEarned': xCookies }
+            }
+        );
+
+        return {
+            status: Status.SUCCESS,
+            message: `(claimXCookies) Claimed ${xCookies} xCookies from island ID ${islandId}.`
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(claimXCookies) Error: ${err.message}`
         }
     }
 }
