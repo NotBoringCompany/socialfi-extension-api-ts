@@ -28,6 +28,7 @@ export const createRaft = async (userId: string): Promise<ReturnValue> => {
             raftResourceStats: {
                 seaweedGathered: [],
                 claimableSeaweed: [],
+                // gathering start will essentially start when the first bit is added
                 gatheringStart: 0,
                 lastClaimed: 0,
                 currentGatheringRate: 0,
@@ -51,6 +52,10 @@ export const createRaft = async (userId: string): Promise<ReturnValue> => {
         }
     }
 }
+
+// export const placeBit = async (twitterId: string, bitId: number): Promise<ReturnValue> => {
+
+// }
 
 /**
  * Returns the latest (i.e. max) Raft ID that exists in the database.

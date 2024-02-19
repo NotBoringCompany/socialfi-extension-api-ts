@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
 import { IslandSchema } from '../schemas/Island';
 import { Island, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
-import { BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLVING_COST, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, X_COOKIE_CLAIM_COOLDOWN } from '../utils/constants/island';
+import { BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLVING_COST, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, X_COOKIE_CLAIM_COOLDOWN } from '../utils/constants/island';
 import { calcBitCurrentRate, getBits } from './bit';
 import { Resource, ResourceType } from '../models/resource';
 import { UserSchema } from '../schemas/User';
@@ -180,8 +180,8 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
             }
         }
 
-        // check if the island has reached its bit cap (5)
-        if (island.placedBitIds.length >= 5) {
+        // check if the island has reached its bit cap
+        if (island.placedBitIds.length >= BIT_PLACEMENT_CAP) {
             return {
                 status: Status.ERROR,
                 message: `(placeBit) Island has reached its bit cap.`

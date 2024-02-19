@@ -22,6 +22,9 @@ export const GATHERING_RATE_EXPONENTIAL_DECAY = 0.03;
 /** exponential decay for earning rate calculation (both bit and island) */
 export const EARNING_RATE_EXPONENTIAL_DECAY = 0.03;
 
+/** the amount of bits that can be placed in an island */
+export const BIT_PLACEMENT_CAP = 5;
+
 /** cost to evolve an island (in xCookies) based on the island type and the island's current level */
 export const ISLAND_EVOLVING_COST = (type: IslandType, currentLevel: number) => {
     // higher rarity islands will cost more each time it levels up
