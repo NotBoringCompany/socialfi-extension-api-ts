@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
 import { IslandSchema } from '../schemas/Island';
 import { Island, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
-import { BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLVING_COST, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN } from '../utils/constants/island';
+import { BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLVING_COST, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN, X_COOKIE_TAX } from '../utils/constants/island';
 import { calcBitCurrentRate, getBits } from './bit';
 import { Resource, ResourceType } from '../models/resource';
 import { UserSchema } from '../schemas/User';
@@ -311,6 +311,70 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
  */
 export const checkBitRarityAllowed = (bitRarity: BitRarity, minRarityRequired: BitRarity): boolean => {
     return BitRarityNumeric[bitRarity] >= BitRarityNumeric[minRarityRequired];
+}
+
+/**
+ * Checks how much tax the user has to pay when claiming xCookies based on the island type and the amount of active islands the user has.
+ */
+export const checkCurrentTax = async (twitterId: string, islandId: number): Promise<ReturnValue> => {
+    const User = mongoose.model('Users', UserSchema, 'Users');
+    const Island = mongoose.model('Islands', IslandSchema, 'Islands');
+
+    try {
+        // check if user exists
+        const user = await User.findOne({ twitterId });
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(checkCurrentTax) User not found.`
+            }
+        }
+
+        // get the island ids from the user's inventory
+        const islandIds = user.inventory?.islandIds as number[];
+
+        if (islandIds.length === 0 || !islandIds) {
+            return {
+                status: Status.SUCCESS,
+                message: `(checkCurrentTax) User has no islands.`
+            }
+        }
+
+        // check if the user owns the island
+        if (!islandIds.includes(islandId)) {
+            return {
+                status: Status.UNAUTHORIZED,
+                message: `(checkCurrentTax) User does not own the island.`
+            }
+        }
+
+        // filter out the islands that have bits placed by querying the `Islands` collection to get the total amount of active islands
+        const activeIslands = await Island.find(
+            { islandId: 
+                { $in: islandIds }, 
+                placedBitIds: { $exists: true, $ne: [] } 
+            });
+
+        // get the island from the `islandId` within the `activeIslands` array
+        const island = activeIslands.find(island => island.islandId === islandId);
+
+        // calculate the tax based on the amount of active islands
+        const tax = X_COOKIE_TAX(<IslandType>island.type, activeIslands.length);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(checkCurrentTax) Tax calculated.`,
+            data: {
+                tax
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(checkCurrentTax) Error: ${err.message}`
+        }
+    }
 }
 
 /**
