@@ -222,7 +222,7 @@ export const depleteEnergy = async (bitId: number): Promise<ReturnValue> => {
 }
 
 /**
- * (User) Evolves a bit to the next level (levelling it up).
+ * (User) Evolves a bit to the next level (levelling it up). !!!ONLY FOR LEVELLING UP IN ISLANDS!!!
  * 
  * NOTE: Requires `twitterId` which is fetched via `req.user`, automatically giving us the user's Twitter ID. This will check if the user who calls this function owns the twitter ID that owns the bit ID.
  */
@@ -256,6 +256,14 @@ export const evolveBit = async (twitterId: string, bitId: number): Promise<Retur
             return {
                 status: Status.ERROR,
                 message: `(evolveBit) Bit not found.`
+            }
+        }
+
+        // check if the bit is already placed in an island to start evolving
+        if (bit.placedIslandId === 0) {
+            return {
+                status: Status.ERROR,
+                message: `(evolveBit) Bit is not placed in an island.`
             }
         }
 

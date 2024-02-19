@@ -2,6 +2,9 @@ import mongoose from 'mongoose'
 import { RaftSchema } from '../schemas/Raft'
 import { ReturnValue, Status } from '../utils/retVal';
 import { generateObjectId } from '../utils/crypto';
+import { UserSchema } from '../schemas/User';
+import { BitSchema } from '../schemas/Bit';
+import { RAFT_BIT_PLACEMENT_CAP } from '../utils/constants/raft';
 
 /**
  * Creates a new Raft for new users.
@@ -31,7 +34,6 @@ export const createRaft = async (userId: string): Promise<ReturnValue> => {
                 // gathering start will essentially start when the first bit is added
                 gatheringStart: 0,
                 lastClaimed: 0,
-                currentGatheringRate: 0,
                 gatheringProgress: 0
             }
         });
@@ -53,9 +55,108 @@ export const createRaft = async (userId: string): Promise<ReturnValue> => {
     }
 }
 
-// export const placeBit = async (twitterId: string, bitId: number): Promise<ReturnValue> => {
+/**
+ * Places a Bit into a Raft.
+ */
+export const placeBit = async (twitterId: string, bitId: number): Promise<ReturnValue> => {
+    const Raft = mongoose.model('Rafts', RaftSchema, 'Rafts');
+    const User = mongoose.model('Users', UserSchema, 'Users');
+    const Bit = mongoose.model('Bits', BitSchema, 'Bits');
 
-// }
+    try {
+        // check if user exists
+        const user = await User.findOne({ twitterId });
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(placeBit) User not found.`
+            }
+        }
+
+        // then, check if the user owns the bit to be placed
+        if (!(user.inventory?.bitIds as number[]).includes(bitId)) {
+            return {
+                status: Status.ERROR,
+                message: `(placeBit) User doesn't own the bit.`
+            }
+        }
+
+        // get the raft id of the user
+        const raftId: number = user.inventory?.raftId;
+
+        // this shouldn't happen, but just in case
+        if (!raftId) {
+            return {
+                status: Status.ERROR,
+                message: `(placeBit) User doesn't have a raft.`
+            }
+        }
+
+        // query the raft and the bit
+        const raft = await Raft.findOne({ raftId });
+        const bit = await Bit.findOne({ bitId });
+
+        if (!raft) {
+            return {
+                status: Status.ERROR,
+                message: `(placeBit) Raft not found.`
+            }
+        }
+
+        if (!bit) {
+            return {
+                status: Status.ERROR,
+                message: `(placeBit) Bit not found.`
+            }
+        }
+
+        // check if the bit is already placed
+        if (bit.placedIslandId !== 0 && bit.placedRaftId !== 0) {
+            return {
+                status: Status.ERROR,
+                message: `(placeBit) Bit already placed.`
+            }
+        }
+
+        // check if the raft has reached its bit cap
+        if (raft.placedBitIds.length >= RAFT_BIT_PLACEMENT_CAP) {
+            return {
+                status: Status.ERROR,
+                message: `(placeBit) Raft has reached its bit cap.`
+            }
+        }
+
+        // update these things to the raft:
+        // 1. if it's the first bit, update the `gatheringStart` to the current timestamp (unix)
+        // 2. if it's the first bit, add `bitId` to `placedBitIds`. if not, just push `bitId` to `placedBitIds`
+        if (raft.placedBitIds.length === 0) {
+            await Raft.updateOne({ raftId }, {
+                $set: { 'raftResourceStats.gatheringStart': Math.floor(Date.now() / 1000) },
+                $push: { placedBitIds: bitId }
+            });
+        } else {
+            await Raft.updateOne({ raftId }, { $push: { placedBitIds: bitId } });
+        }
+
+        // update the bit's placedRaftId
+        await Bit.updateOne({ bitId }, { $set: { placedRaftId: raftId } });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(placeBit) Bit placed in the raft.`,
+            data: {
+                bitId,
+                raftId
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(placeBit) ${err.message}`
+        }
+    }
+}
 
 /**
  * Returns the latest (i.e. max) Raft ID that exists in the database.

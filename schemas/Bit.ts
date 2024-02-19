@@ -11,11 +11,13 @@ export const BitSchema = new mongoose.Schema({
     bitId: Number,
     rarity: String,
     gender: String,
+    premium: Boolean,
     owner: String,
     purchaseDate: Number,
     obtainMethod: String,
     totalXCookiesSpent: Number,
     placedIslandId: Number,
+    placedRaftId: Number,
     currentFarmingLevel: Number,
     farmingStats: Object,
     bitStatsModifiers: Object

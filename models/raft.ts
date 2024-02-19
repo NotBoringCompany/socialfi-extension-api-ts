@@ -32,10 +32,6 @@ export interface RaftResourceStats {
     gatheringStart: number;
     /** the last timestamp of when `claimableSeaweed` was claimed */
     lastClaimed: number;
-    /** current gathering rate for seaweed in AMOUNT PER HOUR (note that this isn't like the island's gathering rate, which is in %/HOUR)
-     * (excl. boosts/modifiers but incl. base gathering rate + level modifiers from bits) 
-     */
-    currentGatheringRate: number;
     /** gathering progress to gather 1 SEAWEED; will be from 0 to 100
      * once progress goes > 100, it will gather 1 resource and reset back to 0 + any overflow of %
      * (UPDATED PER HOUR)

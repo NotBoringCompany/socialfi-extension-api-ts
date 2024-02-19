@@ -15,6 +15,8 @@ export interface Bit {
     rarity: BitRarity;
     /** bit gender */
     gender: BitGender;
+    /** if this bit is a premium bit or not (which will allow them to be placed on islands. otherwise they can only be placed inside the raft) */
+    premium: boolean;
     /** owner of this bit; equates to the user's object ID in the database */
     owner: string;
     /** purchase date of this bit (currently limited to when it was obtained from the bit orb) */
@@ -25,6 +27,8 @@ export interface Bit {
     totalXCookiesSpent: number;
     /** if the bit is placed in an island, the island ID will be shown here. If not, this will be 0. */
     placedIslandId: number;
+    /** if the bit is placed in the user's raft, the raft ID will be shown here. if not, this will be 0. */
+    placedRaftId: number;
     /** current farming level of the bit; pvx level will start from level 1 */
     currentFarmingLevel: number;
     /** farming stats of the bit, such as gathering rate, earning rate and energy */

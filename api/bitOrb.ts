@@ -103,11 +103,13 @@ export const summonBit = async (
             bitId: latestBitId + 1,
             rarity,
             gender,
+            premium: true,
             owner,
             purchaseDate: Math.floor(Date.now() / 1000),
             obtainMethod: ObtainMethod.BIT_ORB,
             totalXCookiesSpent: 0,
             placedIslandId: 0,
+            placedRaftId: 0,
             currentFarmingLevel: 1,
             farmingStats: randomizeFarmingStats(rarity),
             bitStatsModifiers: {

@@ -172,8 +172,16 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
             }
         }
 
-        // check if the bit is already placed on an island (by checking if `placedIslandId` is not 0)
-        if (bit.placedIslandId !== 0) {
+        // check if this bit is premium
+        if (!bit.premium) {
+            return {
+                status: Status.ERROR,
+                message: `(placeBit) Non-premium bits cannot be placed on islands.`
+            }
+        }
+
+        // check if the bit is already placed on an island or a raft
+        if (bit.placedIslandId !== 0 && bit.placedRaftId !== 0) {
             return {
                 status: Status.ERROR,
                 message: `(placeBit) Bit is already placed on an island.`
