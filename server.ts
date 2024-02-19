@@ -31,6 +31,8 @@ app.use(passport.session());
 import twitterAuth from './routes/auth/twitter';
 import jwt from './routes/jwt';
 import shop from './routes/shop';
+import { X_COOKIE_TAX } from './utils/constants/island';
+import { IslandType } from './models/island';
 
 app.use('/auth/twitter', twitterAuth);
 app.use('/jwt', jwt);
@@ -40,4 +42,8 @@ app.listen(port, async () => {
     console.log(`Server running on port ${port}`);
 
     await mongoose.connect(mongoUri);
+
+    // check
+    const tax = X_COOKIE_TAX(IslandType.CELESTIAL_ISLES, 26);
+    console.log(tax);
 });

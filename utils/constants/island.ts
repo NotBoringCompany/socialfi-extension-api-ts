@@ -284,9 +284,83 @@ export const RARITY_DEVIATION_REDUCTIONS = (type: IslandType, rarity: BitRarity)
     }
 }
 
-// /**
-//  * Shows the tax for a specific island based on the amount of active islands the user has.
-//  */
-// export const ISLAND_OWNERSHIP_TAXES = (type: IslandType): number => {
+/**
+ * Shows the tax the user has to pay to claim xCookies from a specific island type given the amount of active islands the user has.
+ */
+export const X_COOKIE_TAX = (type: IslandType, activeIslands: number): number => {
+    if (activeIslands === 0) return 0;
 
-// }
+    switch (type) {
+        case IslandType.PRIMAL_ISLES:
+            if (activeIslands >= 1 && activeIslands <= 4) {
+                return 0;
+            } else if (activeIslands >= 5 && activeIslands <= 10) {
+                // 1% 
+                return 1 * (1.15 ** (activeIslands - 5));
+            } else if (activeIslands >= 11 && activeIslands <= 20) {
+                // 1.05x increase each active island amount increase
+                return (1 * (1.15 ** 5)) * (1.05 ** (activeIslands - 10));
+            } else if (activeIslands >= 21 && activeIslands <= 30) {
+                // 1.025x increase each active island amount increase
+                return (1 * (1.15 ** 5)) * (1.05 ** 10) * (1.025 ** (activeIslands - 20));
+            } else {
+                throw new Error(`(X_COOKIE_TAX) Invalid active islands: ${activeIslands}`);
+            }
+        case IslandType.VERDANT_ISLES:
+            if (activeIslands >= 1 && activeIslands <= 3) {
+                return 0;
+            } else if (activeIslands >= 4 && activeIslands <= 10) {
+                // 1% at 4 active islands; 1.175x increase each active island amount increase
+                return 1 * (1.175 ** (activeIslands - 4));
+            } else if (activeIslands >= 11 && activeIslands <= 20) {
+                // 1.05x increase each active island amount increase
+                return (1 * (1.175 ** 6)) * (1.05 ** (activeIslands - 10));
+            } else if (activeIslands >= 21 && activeIslands <= 30) {
+                // 1.025x increase each active island amount increase
+                return (1 * (1.175 ** 6)) * (1.05 ** 10) * (1.025 ** (activeIslands - 20));
+            } else {
+                throw new Error(`(X_COOKIE_TAX) Invalid active islands: ${activeIslands}`);
+            }
+        case IslandType.EXOTIC_ISLES:
+            if (activeIslands >= 1 && activeIslands <= 2) {
+                return 0;
+            } else if (activeIslands >= 3 && activeIslands <= 10) {
+                // 1% at 4 active islands; 1.2x increase each active island amount increase
+                return 1 * (1.2 ** (activeIslands - 3));
+            } else if (activeIslands >= 11 && activeIslands <= 20) {
+                // 1.05x increase each active island amount increase
+                return (1 * (1.2 ** 7)) * (1.05 ** (activeIslands - 10));
+            } else if (activeIslands >= 21 && activeIslands <= 30) {
+                // 1.025x increase each active island amount increase
+                return (1 * (1.2 ** 7)) * (1.05 ** 10) * (1.025 ** (activeIslands - 20));
+            } else {
+                throw new Error(`(X_COOKIE_TAX) Invalid active islands: ${activeIslands}`);
+            }
+        case IslandType.CRYSTAL_ISLES:
+            if (activeIslands === 1) {
+                return 0;
+            } else if (activeIslands >= 2 && activeIslands <= 10) {
+                // 1% at 2 active islands; 1.225x increase each active island amount increase
+                return 1 * (1.225 ** (activeIslands - 2));
+            } else if (activeIslands >= 11 && activeIslands <= 20) {
+                // 1.05x increase each active island amount increase
+                return (1 * (1.225 ** 8)) * (1.05 ** (activeIslands - 10));
+            } else if (activeIslands >= 21 && activeIslands <= 30) {
+                // 1.025x increase each active island amount increase
+                return (1 * (1.225 ** 8)) * (1.05 ** 10) * (1.025 ** (activeIslands - 20));
+            } else {
+                throw new Error(`(X_COOKIE_TAX) Invalid active islands: ${activeIslands}`);
+            }
+        case IslandType.CELESTIAL_ISLES:
+            if (activeIslands >= 1 && activeIslands <= 10) {
+                // 1% at 1 active island; 1.25x increase each active island amount increase
+                return 1 * (1.25 ** (activeIslands - 1));
+            } else if (activeIslands >= 11 && activeIslands <= 20) {
+                // 1.05x increase each active island amount increase
+                return (1 * (1.25 ** 9)) * (1.05 ** (activeIslands - 10));
+            } else if (activeIslands >= 21 && activeIslands <= 30) {
+                // 1.025x increase each active island amount increase
+                return (1 * (1.25 ** 9)) * (1.05 ** 10) * (1.025 ** (activeIslands - 20));
+            }
+    }
+}
