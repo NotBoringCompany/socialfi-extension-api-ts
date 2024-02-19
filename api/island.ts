@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
 import { IslandSchema } from '../schemas/Island';
 import { Island, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
-import { BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLVING_COST, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, X_COOKIE_CLAIM_COOLDOWN } from '../utils/constants/island';
+import { BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLVING_COST, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN } from '../utils/constants/island';
 import { calcBitCurrentRate, getBits } from './bit';
 import { Resource, ResourceType } from '../models/resource';
 import { UserSchema } from '../schemas/User';
@@ -169,6 +169,23 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
             return {
                 status: Status.ERROR,
                 message: `(placeBit) Island not found.`
+            }
+        }
+
+        // check if the user has more than TOTAL_ACTIVE_ISLANDS_ALLOWED active islands. if yes, return an error.
+        const ownedIslands = user.inventory?.islandIds as number[];
+
+        // filter out the islands that have bits placed by querying the `Islands` collection to get the total amount of active islands
+        const activeIslands = await Island.find(
+            { islandId: 
+                { $in: ownedIslands }, 
+                placedBitIds: { $exists: true, $ne: [] } 
+            });
+        
+        if (activeIslands.length >= TOTAL_ACTIVE_ISLANDS_ALLOWED) {
+            return {
+                status: Status.ERROR,
+                message: `(placeBit) User has reached the maximum amount of islands with bits placed.`
             }
         }
 

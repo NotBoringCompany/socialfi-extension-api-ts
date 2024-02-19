@@ -25,6 +25,13 @@ export const EARNING_RATE_EXPONENTIAL_DECAY = 0.03;
 /** the amount of bits that can be placed in an island */
 export const BIT_PLACEMENT_CAP = 5;
 
+/** 
+ * the amount of islands the user can have at a time to farm resources/earn back cookies. 
+ * 
+ * however, the user is of course still allowed to have more islands in their inventory.
+ */
+export const TOTAL_ACTIVE_ISLANDS_ALLOWED = 30;
+
 /** cost to evolve an island (in xCookies) based on the island type and the island's current level */
 export const ISLAND_EVOLVING_COST = (type: IslandType, currentLevel: number) => {
     // higher rarity islands will cost more each time it levels up
@@ -276,3 +283,10 @@ export const RARITY_DEVIATION_REDUCTIONS = (type: IslandType, rarity: BitRarity)
             }
     }
 }
+
+// /**
+//  * Shows the tax for a specific island based on the amount of active islands the user has.
+//  */
+// export const ISLAND_OWNERSHIP_TAXES = (type: IslandType): number => {
+
+// }
