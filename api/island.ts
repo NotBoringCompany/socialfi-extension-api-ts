@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
 import { IslandSchema } from '../schemas/Island';
 import { Island, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
-import { BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLVING_COST, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF } from '../utils/constants/island';
+import { BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLVING_COST, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF } from '../utils/constants/island';
 import { calcBitCurrentRate, getBits } from './bit';
 import { Resource, ResourceType } from '../models/resource';
 import { UserSchema } from '../schemas/User';
@@ -413,6 +413,17 @@ export const claimResources = async (twitterId: string, islandId: number): Promi
             }
         }
 
+        // check if the claim time has passed `RESOURCE_CLAIM_COOLDOWN` from the last `claimedTime`
+        const currentTime = Math.floor(Date.now() / 1000);
+        const lastClaimedTime = island.islandResourceStats?.lastClaimed as number;
+
+        if (currentTime - lastClaimedTime < RESOURCES_CLAIM_COOLDOWN) {
+            return {
+                status: Status.ERROR,
+                message: `(claimResources) Cooldown not yet passed.`
+            }
+        }
+
         // check all claimable resources 
         const claimableResources = island.islandResourceStats?.claimableResources as Resource[];
 
@@ -436,8 +447,30 @@ export const claimResources = async (twitterId: string, islandId: number): Promi
             }
         }
 
-        // clear the island's `claimableResources`
-        await Island.updateOne({ islandId }, { $set: { 'islandResourceStats.claimableResources': [] }});
+        // do a few things:
+        // 1. clear the island's `claimableResources`
+        // 2. set the island's `lastClaimed` to the current time
+        // 3. add the claimed resources into `resourcesGathered`. if the resource already exists, increment its amount; if not, push the new resource into `resourcesGathered`
+        await Island.updateOne(
+            { islandId }, 
+            { 
+                $set: { 
+                    'islandResourceStats.claimableResources': [], 
+                    'islandResourceStats.lastClaimed': currentTime 
+                },
+                $push: { 
+                    'islandResourceStats.resourcesGathered': { 
+                        $each: claimableResources.map(resource => ({ 
+                            $cond: [
+                                { $eq: ["$$type", resource.type] },
+                                { $inc: { 'amount': resource.amount } },
+                                resource
+                            ]
+                        }))
+                    }
+                } 
+            }
+        );        
 
         return {
             status: Status.SUCCESS,
