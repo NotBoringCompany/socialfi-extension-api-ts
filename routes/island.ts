@@ -1,54 +1,14 @@
 import express from 'express';
-import { addQuest, completeQuest, deleteQuest, getQuests, getUserCompletedQuests } from '../api/quest';
+import { checkCurrentTax, claimResources, claimXCookies, evolveIsland, placeBit } from '../api/island';
 
 const router = express.Router();
 
-router.post('/add_quest', async (req, res) => {
-    const {
-        name,
-        description,
-        type,
-        imageUrl,
-        start,
-        end,
-        rewards,
-        requirements,
-        adminKey
-    } = req.body;
-
-    try {
-        const { status, message, data } = await addQuest(
-            name,
-            description,
-            type,
-            imageUrl,
-            start,
-            end,
-            rewards,
-            requirements,
-            adminKey
-        );
-
-        return res.status(status).json({
-            status,
-            message,
-            data
-        });
-    
-    } catch (err: any) {
-        return res.status(500).json({
-            status: 500,
-            message: err.message
-        })
-    }
-});
-
 // temporarily without authentication for testing purposes
-router.post('/complete_quest', async (req, res) => {
-    const { twitterId, questId } = req.body;
+router.post('/place_bit', async (req, res) => {
+    const { twitterId, islandId, bitId } = req.body;
 
     try {
-        const { status, message, data } = await completeQuest(twitterId, questId);
+        const { status, message, data } = await placeBit(twitterId, islandId, bitId);
 
         return res.status(status).json({
             status,
@@ -63,28 +23,11 @@ router.post('/complete_quest', async (req, res) => {
     }
 });
 
-router.get('/get_quests', async (_, res) => {
-    try {
-        const { status, message, data } = await getQuests();
-
-        return res.status(status).json({
-            status,
-            message,
-            data
-        });
-    } catch (err: any) {
-        return res.status(500).json({
-            status: 500,
-            message: err.message
-        })
-    }
-});
-
-router.post('/delete_quest', async (req, res) => {
-    const { questId, adminKey } = req.body;
+router.get('check_current_tax/:twitterId/:islandId', async (req, res) => {
+    const { twitterId, islandId } = req.params;
 
     try {
-        const { status, message, data } = await deleteQuest(questId, adminKey);
+        const { status, message, data } = await checkCurrentTax(twitterId, parseInt(islandId));
 
         return res.status(status).json({
             status,
@@ -100,11 +43,11 @@ router.post('/delete_quest', async (req, res) => {
 });
 
 // temporarily without authentication for testing purposes
-router.get('/get_user_completed_quests/:twitterId', async (req, res) => {
-    const { twitterId } = req.params;
+router.post('evolve_island', async (req, res) => {
+    const { twitterId, islandId } = req.body;
 
     try {
-        const { status, message, data } = await getUserCompletedQuests(twitterId);
+        const { status, message, data } = await evolveIsland(twitterId, islandId);
 
         return res.status(status).json({
             status,
@@ -117,6 +60,46 @@ router.get('/get_user_completed_quests/:twitterId', async (req, res) => {
             message: err.message
         })
     }
-})
+});
+
+// temporarily without authentication for testing purposes
+router.post('claim_xcookies', async (req, res) => {
+    const { twitterId, islandId } = req.body;
+
+    try {
+        const { status, message, data } = await claimXCookies(twitterId, islandId);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+});
+
+// temporarily without authentication for testing purposes
+router.post('claim_resources', async (req, res) => {
+    const { twitterId, islandId } = req.body;
+
+    try {
+        const { status, message, data } = await claimResources(twitterId, islandId);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+});
 
 export default router;
