@@ -36,6 +36,7 @@ import terraCapsulator from './routes/terraCapsulator';
 import raft from './routes/raft';
 import island from './routes/island';
 import bitOrb from './routes/bitOrb';
+import bit from './routes/bit';
 
 app.use('/auth/twitter', twitterAuth);
 app.use('/jwt', jwt);
@@ -45,6 +46,7 @@ app.use('terra_capsulator', terraCapsulator);
 app.use('/raft', raft);
 app.use('/island', island);
 app.use('/bit_orb', bitOrb);
+app.use('/bit', bit);
 
 app.listen(port, async () => {
     console.log(`Server running on port ${port}`);
