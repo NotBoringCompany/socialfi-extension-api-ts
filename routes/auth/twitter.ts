@@ -15,15 +15,21 @@ router.get('/login', async (req, res, next) => {
         // check for validation
         const { status } = validateJWT(token);
         if (status === Status.SUCCESS) {
+            console.log('token is valid');
+
             // token is valid, redirect to Twitter with the token
             return res.redirect(`https://twitter.com?jwt=${token}`);
         } else {
+            console.log('token is invalid (token found)');
+
             // token is invalid, redirect to Twitter for authentication
             passport.authenticate('twitter', {
                 scope: ['tweet.read', 'users.read', 'offline.access']
             })(req, res, next);
         }
     } else {
+        console.log('token is invalid (token not found)');
+
         // token doesn't exist, redirect to Twitter for authentication
         passport.authenticate('twitter', {
             scope: ['tweet.read', 'users.read', 'offline.access']
@@ -42,6 +48,8 @@ router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/' 
     try {
         // when logged in via twitter, `id` will be the user's twitter id
         const { id: twitterId, twitterAccessToken, twitterRefreshToken, twitterExpiryDate } = req.user as ExtendedProfile;
+
+        console.log('req user: ', req.user as ExtendedProfile);
 
         const { status, message } = await handleTwitterLogin(twitterId);
 
