@@ -82,3 +82,34 @@ export const handleTwitterLogin = async (twitterId: string): Promise<ReturnValue
         }
     }
 }
+
+/**
+ * Fetches the user's inventory.
+ */
+export const getInventory = async (twitterId: string): Promise<ReturnValue> => {
+    const User = mongoose.model('Users', UserSchema, 'Users');
+
+    try {
+        const user = await User.findOne({ twitterId });
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(getInventory) User not found.`
+            }
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getInventory) Inventory fetched.`,
+            data: {
+                inventory: user.inventory
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getInventory) ${err.message}`
+        }
+    }
+}
