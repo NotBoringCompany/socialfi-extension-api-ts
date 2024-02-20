@@ -23,7 +23,7 @@ router.post('/place_bit', async (req, res) => {
     }
 });
 
-router.get('check_current_tax/:twitterId/:islandId', async (req, res) => {
+router.get('/check_current_tax/:twitterId/:islandId', async (req, res) => {
     const { twitterId, islandId } = req.params;
 
     try {
@@ -43,7 +43,7 @@ router.get('check_current_tax/:twitterId/:islandId', async (req, res) => {
 });
 
 // temporarily without authentication for testing purposes
-router.post('evolve_island', async (req, res) => {
+router.post('/evolve_island', async (req, res) => {
     const { twitterId, islandId } = req.body;
 
     try {
@@ -63,7 +63,7 @@ router.post('evolve_island', async (req, res) => {
 });
 
 // temporarily without authentication for testing purposes
-router.post('claim_xcookies', async (req, res) => {
+router.post('/claim_xcookies', async (req, res) => {
     const { twitterId, islandId } = req.body;
 
     try {
@@ -83,7 +83,7 @@ router.post('claim_xcookies', async (req, res) => {
 });
 
 // temporarily without authentication for testing purposes
-router.post('claim_resources', async (req, res) => {
+router.post('/claim_resources', async (req, res) => {
     const { twitterId, islandId } = req.body;
 
     try {

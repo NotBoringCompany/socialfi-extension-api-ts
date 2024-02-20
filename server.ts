@@ -42,7 +42,7 @@ app.use('/auth/twitter', twitterAuth);
 app.use('/jwt', jwt);
 app.use('/shop', shop);
 app.use('/quest', quest);
-app.use('terra_capsulator', terraCapsulator);
+app.use('/terra_capsulator', terraCapsulator);
 app.use('/raft', raft);
 app.use('/island', island);
 app.use('/bit_orb', bitOrb);
