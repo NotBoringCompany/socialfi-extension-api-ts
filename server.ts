@@ -33,12 +33,14 @@ import jwt from './routes/jwt';
 import shop from './routes/shop';
 import quest from './routes/quest';
 import terraCapsulator from './routes/terraCapsulator';
+import raft from './routes/raft';
 
 app.use('/auth/twitter', twitterAuth);
 app.use('/jwt', jwt);
 app.use('/shop', shop);
 app.use('/quest', quest);
 app.use('terra_capsulator', terraCapsulator);
+app.use('/raft', raft);
 
 app.listen(port, async () => {
     console.log(`Server running on port ${port}`);
