@@ -241,17 +241,11 @@ export const getUserCompletedQuests = async (twitterId: string): Promise<ReturnV
     try {
         const completedQuests = await Quest.find({ completedBy: twitterId });
 
-        if (completedQuests.length === 0 || !completedQuests) {
-            return {
-                status: Status.ERROR,
-                message: `(getUserCompletedQuests) No quests found.`
-            }
-        }
-
         return {
             status: Status.SUCCESS,
             message: `(getUserCompletedQuests) Quests fetched.`,
             data: {
+                // even if the user hasn't completed any quests, return an empty array
                 completedQuests
             }
         }
