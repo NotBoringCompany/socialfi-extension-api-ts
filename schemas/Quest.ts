@@ -16,5 +16,6 @@ export const QuestSchema = new mongoose.Schema({
     start: Number,
     end: Number,
     rewards: Array,
-    completedBy: Array
+    completedBy: Array,
+    requirements: Array
 })

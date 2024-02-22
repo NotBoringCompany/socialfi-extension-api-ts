@@ -45,6 +45,7 @@ export const addQuest = async (
             start,
             end,
             rewards,
+            completedBy: [],
             requirements
         });
 
