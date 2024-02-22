@@ -46,7 +46,6 @@ export const validateJWT = (token: string): ReturnValue => {
                 status: Status.SUCCESS,
                 message: 'Token is valid.',
                 data: {
-                    jwtToken: token,
                     twitterId: decoded.twitterId,
                     twitterAccessToken: decoded.twitterAccessToken,
                     twitterRefreshToken: decoded.twitterRefreshToken,
