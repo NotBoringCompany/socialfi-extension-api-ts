@@ -9,6 +9,7 @@ import { UserSchema } from '../schemas/User';
 import { Modifier } from '../models/modifier';
 import { BitSchema } from '../schemas/Bit';
 import { Bit, BitRarity, BitRarityNumeric } from '../models/bit';
+import { generateObjectId } from '../utils/crypto';
 
 /**
  * (User) Evolves an island (levelling it up).
@@ -819,7 +820,10 @@ export const addIslandToDatabase = async (island: Island): Promise<ReturnValue> 
     const Island = mongoose.model('Islands', IslandSchema, 'Islands');
 
     try {
-        const newIsland = new Island(island);
+        const newIsland = new Island({
+            _id: generateObjectId(),
+            ...island
+        });
 
         await newIsland.save();
 

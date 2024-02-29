@@ -11,6 +11,7 @@ import { IslandSchema } from '../schemas/Island';
 import { Food, FoodType } from '../models/food';
 import { FOOD_ENERGY_REPLENISHMENT } from '../utils/constants/food';
 import { Resource, ResourceType } from '../models/resource';
+import { generateObjectId } from '../utils/crypto';
 
 /**
  * (User) Feeds a bit some food and replenishes its energy.
@@ -436,7 +437,10 @@ export const addBitToDatabase = async (bit: Bit): Promise<ReturnValue> => {
     const Bit = mongoose.model('Bits', BitSchema, 'Bits');
 
     try {
-        const newBit = new Bit(bit);
+        const newBit = new Bit({
+            _id: generateObjectId(),
+            ...bit
+        });
 
         await newBit.save();
 
