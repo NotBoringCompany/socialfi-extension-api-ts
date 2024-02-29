@@ -1,5 +1,5 @@
 import express from 'express';
-import { checkCurrentTax, claimResources, claimXCookies, evolveIsland, placeBit } from '../api/island';
+import { checkCurrentTax, claimResources, claimXCookies, evolveIsland, getIslands, placeBit } from '../api/island';
 
 const router = express.Router();
 
@@ -101,5 +101,27 @@ router.post('/claim_resources', async (req, res) => {
         })
     }
 });
+
+router.get('/get_islands', async (req, res) => {
+    const islandIdsParam = req.query.islandIds as string;
+
+    // convert string to array
+    const islandIds = islandIdsParam.split(',').map(id => parseInt(id.trim(), 10)).filter(id => !isNaN(id));
+
+    try {
+        const { status, message, data } = await getIslands(islandIds);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
 
 export default router;

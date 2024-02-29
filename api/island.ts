@@ -12,6 +12,30 @@ import { Bit, BitRarity, BitRarityNumeric } from '../models/bit';
 import { generateObjectId } from '../utils/crypto';
 
 /**
+ * Gets one or multiple islands based on their IDs.
+ */
+export const getIslands = async (islandIds: number[]): Promise<ReturnValue> => {
+    const Island = mongoose.model('Islands', IslandSchema, 'Islands');
+
+    try {
+        const islands = await Island.find({ islandId: { $in: islandIds } });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getIsland) Island found.`,
+            data: {
+                islands
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getIsland) Error: ${err.message}`
+        }
+    }
+}
+
+/**
  * (User) Evolves an island (levelling it up).
  * 
  * NOTE: Requires `twitterId` which is fetched via `req.user`, automatically giving us the user's Twitter ID. This will check if the user who calls this function owns the twitter ID that owns the island.

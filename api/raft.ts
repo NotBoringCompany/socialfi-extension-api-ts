@@ -180,3 +180,57 @@ export const getLatestRaftId = async (): Promise<ReturnValue> => {
         }
     }
 }
+
+/**
+ * Returns the Raft of the user.
+ */
+export const getRaft = async (twitterId: string): Promise<ReturnValue> => {
+    const Raft = mongoose.model('Rafts', RaftSchema, 'Rafts');
+    const User = mongoose.model('Users', UserSchema, 'Users');
+
+    try {
+        // check if user exists
+        const user = await User.findOne({ twitterId });
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(getRaft) User not found.`
+            }
+        }
+
+        // get the raft id of the user
+        const raftId: number = user.inventory?.raftId;
+
+        // this shouldn't happen, but just in case
+        if (!raftId) {
+            return {
+                status: Status.ERROR,
+                message: `(getRaft) User doesn't have a raft.`
+            }
+        }
+
+        // query the raft
+        const raft = await Raft.findOne({ raftId });
+
+        if (!raft) {
+            return {
+                status: Status.ERROR,
+                message: `(getRaft) Raft not found.`
+            }
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getRaft) Successfully retrieved the user's raft.`,
+            data: {
+                raft
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getRaft) ${err.message}`
+        }
+    }
+}

@@ -562,7 +562,7 @@ export const calcBitCurrentRate = (
 }
 
 /**
- * Gets one or multiple bits based on their bit ids.
+ * Gets one or multiple bits based on the IDs.
  */
 export const getBits = async (bitIds: number[]): Promise<ReturnValue> => {
     const Bit = mongoose.model('Bits', BitSchema, 'Bits');
