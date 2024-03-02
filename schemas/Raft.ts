@@ -11,5 +11,5 @@ export const RaftSchema = new mongoose.Schema({
     raftId: Number,
     owner: String,
     placedBitIds: Array,
-    raftResourceStats: Array,
+    raftResourceStats: Object,
 })
