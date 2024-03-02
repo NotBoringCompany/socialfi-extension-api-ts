@@ -1,14 +1,24 @@
 import express from 'express';
 import { getRaft, placeBit } from '../api/raft';
+import { validateRequestAuth } from '../utils/auth';
+import { Status } from '../utils/retVal';
 
 const router = express.Router();
 
-// temporarily without authentication for testing purposes
 router.post('/place_bit', async (req, res) => {
-    const { twitterId, bitId } = req.body;
+    const { bitId } = req.body;
+
+    const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'place_bit');
+
+    if (validateStatus !== Status.SUCCESS) {
+        return res.status(validateStatus).json({
+            status: validateStatus,
+            message: validateMessage
+        })
+    }
 
     try {
-        const { status, message, data } = await placeBit(twitterId, bitId);
+        const { status, message, data } = await placeBit(validateData?.twitterId, bitId);
 
         return res.status(status).json({
             status,

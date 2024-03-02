@@ -110,7 +110,6 @@ router.post('/delete_quest', async (req, res) => {
     }
 });
 
-// temporarily without authentication for testing purposes
 router.get('/get_user_completed_quests/:twitterId', async (req, res) => {
     const { twitterId } = req.params;
 
