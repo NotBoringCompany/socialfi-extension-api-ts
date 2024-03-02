@@ -27,16 +27,11 @@ export interface Raft {
  */
 export interface RaftResourceStats {
     /** total seaweed gathered, incl. ones claimed already */
-    seaweedGathered: Resource[];
+    seaweedGathered: number;
     /** gathered seaweed that are claimable but not claimed to the inventory yet (pending) */
-    claimableSeaweed: Resource[];
+    claimableSeaweed: number;
     /** start timestamp of gathering; will essentially equate to when the first bit is added */
     gatheringStart: number;
     /** the last timestamp of when `claimableSeaweed` was claimed */
     lastClaimed: number;
-    /** gathering progress to gather 1 SEAWEED; will be from 0 to 100
-     * once progress goes > 100, it will gather 1 resource and reset back to 0 + any overflow of %
-     * (UPDATED PER HOUR)
-     */
-    gatheringProgress: number;
 }

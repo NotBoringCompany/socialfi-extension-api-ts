@@ -1,5 +1,5 @@
 import express from 'express';
-import { evolveRaft, getRaft, placeBit } from '../api/raft';
+import { claimSeaweed, evolveRaft, getRaft, placeBit } from '../api/raft';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 
@@ -64,6 +64,32 @@ router.post('/evolve_raft', async (req, res) => {
 
     try {
         const { status, message, data } = await evolveRaft(validateData?.twitterId);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
+
+router.post('/claim_seaweed', async (req, res) => {
+    const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'claim_seaweed');
+
+    if (validateStatus !== Status.SUCCESS) {
+        return res.status(validateStatus).json({
+            status: validateStatus,
+            message: validateMessage
+        })
+    }
+
+    try {
+        const { status, message, data } = await claimSeaweed(validateData?.twitterId);
 
         return res.status(status).json({
             status,

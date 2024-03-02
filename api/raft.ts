@@ -31,12 +31,11 @@ export const createRaft = async (userId: string): Promise<ReturnValue> => {
             currentLevel: 1,
             placedBitIds: [],
             raftResourceStats: {
-                seaweedGathered: [],
-                claimableSeaweed: [],
+                seaweedGathered: 0,
+                claimableSeaweed: 0,
                 // gathering start will essentially start when the first bit is added
                 gatheringStart: 0,
                 lastClaimed: 0,
-                gatheringProgress: 0
             }
         });
 
@@ -332,6 +331,103 @@ export const getRaft = async (twitterId: string): Promise<ReturnValue> => {
         return {
             status: Status.ERROR,
             message: `(getRaft) ${err.message}`
+        }
+    }
+}
+
+/**
+ * Claims the current amount of claimable seaweed from the user's raft and adds it to the user's inventory.
+ * 
+ * NOTE: Requires `twitterId` which is fetched via `req.user`, automatically giving us the user's Twitter ID. This will check if the user who calls this function owns the twitter ID that owns the island.
+ */
+export const claimSeaweed = async (twitterId: string): Promise<ReturnValue> => {
+    const User = mongoose.model('Users', UserSchema, 'Users');
+    const Raft = mongoose.model('Rafts', RaftSchema, 'Rafts');
+
+    try {
+        const user = await User.findOne({ twitterId });
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(claimSeaweed) User not found.`
+            }
+        }
+
+        // get the user's raft id
+        const raftId: number = user.inventory?.raftId;
+
+        // this shouldn't happen, but just in case
+        if (!raftId) {
+            return {
+                status: Status.ERROR,
+                message: `(claimSeaweed) User doesn't have a raft.`
+            }
+        }
+
+        // query the raft
+        const raft = await Raft.findOne({ raftId });
+
+        if (!raft) {
+            return {
+                status: Status.ERROR,
+                message: `(claimSeaweed) Raft not found.`
+            }
+        }
+
+        // check if the user has any claimable seaweed via its `raftResourceStats`
+        const claimableSeaweed = raft.raftResourceStats?.claimableSeaweed as number;
+
+        if (claimableSeaweed === 0) {
+            return {
+                status: Status.ERROR,
+                message: `(claimSeaweed) No claimable seaweed.`
+            }
+        }
+
+        // do a few things:
+        // 1. add the claimable seaweed to the user's inventory
+        // 2. set the `claimableSeaweed` to 0
+        // 3. set the `lastClaimed` to the current timestamp (unix)
+        const seaweedIndex = (user.inventory?.resources as Resource[]).findIndex(resource => resource.type === ResourceType.SEAWEED);
+
+        // if index doesn't exist, we add the seaweed to the user's inventory
+        if (seaweedIndex === -1) {
+            await User.updateOne({ twitterId }, {
+                $push: {
+                    'inventory.resources': {
+                        type: ResourceType.SEAWEED,
+                        amount: claimableSeaweed
+                    }
+                }
+            })
+        } else {
+            await User.updateOne({ twitterId }, {
+                $inc: {
+                    [`inventory.resources.${seaweedIndex}.amount`]: claimableSeaweed
+                }
+            })
+        }
+
+        // update the raft
+        await Raft.updateOne({ raftId }, {
+            $set: { 
+                'raftResourceStats.claimableSeaweed': 0, 
+                'raftResourceStats.lastClaimed': Math.floor(Date.now() / 1000) 
+            }
+        });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(claimSeaweed) Successfully claimed seaweed from user's raft.`,
+            data: {
+                claimableSeaweed
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(claimSeaweed) ${err.message}`
         }
     }
 }
