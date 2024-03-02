@@ -1,14 +1,23 @@
 import express from 'express';
 import { consumeTerraCapsulator } from '../api/terraCapsulator';
+import { validateRequestAuth } from '../utils/auth';
+import { Status } from '../utils/retVal';
 
 const router = express.Router();
 
-// temporarily without authentication for testing purposes
 router.post('/consume', async (req, res) => {
-    const { twitterId } = req.body;
+
+    const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'consume_terra_capsulator');
+
+    if (validateStatus !== Status.SUCCESS) {
+        return res.status(validateStatus).json({
+            status: validateStatus,
+            message: validateMessage
+        })
+    }
 
     try {
-        const { status, message, data } = await consumeTerraCapsulator(twitterId);
+        const { status, message, data } = await consumeTerraCapsulator(validateData?.twitterId);
 
         return res.status(status).json({
             status,
