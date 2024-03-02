@@ -1,14 +1,24 @@
 import express from 'express';
 import { checkCurrentTax, claimResources, claimXCookies, evolveIsland, getIslands, placeBit } from '../api/island';
+import { validateRequestAuth } from '../utils/auth';
+import { Status } from '../utils/retVal';
 
 const router = express.Router();
 
-// temporarily without authentication for testing purposes
 router.post('/place_bit', async (req, res) => {
-    const { twitterId, islandId, bitId } = req.body;
+    const { islandId, bitId } = req.body;
+
+    const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'place_bit');
+
+    if (validateStatus !== Status.SUCCESS) {
+        return res.status(validateStatus).json({
+            status: validateStatus,
+            message: validateMessage
+        })
+    }
 
     try {
-        const { status, message, data } = await placeBit(twitterId, islandId, bitId);
+        const { status, message, data } = await placeBit(validateData?.twitterId, islandId, bitId);
 
         return res.status(status).json({
             status,
@@ -42,12 +52,20 @@ router.get('/check_current_tax/:twitterId/:islandId', async (req, res) => {
     }
 });
 
-// temporarily without authentication for testing purposes
 router.post('/evolve_island', async (req, res) => {
-    const { twitterId, islandId } = req.body;
+    const { islandId } = req.body;
+
+    const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'evolve_island');
+
+    if (validateStatus !== Status.SUCCESS) {
+        return res.status(validateStatus).json({
+            status: validateStatus,
+            message: validateMessage
+        })
+    }
 
     try {
-        const { status, message, data } = await evolveIsland(twitterId, islandId);
+        const { status, message, data } = await evolveIsland(validateData?.twitterId, islandId);
 
         return res.status(status).json({
             status,
@@ -62,12 +80,20 @@ router.post('/evolve_island', async (req, res) => {
     }
 });
 
-// temporarily without authentication for testing purposes
 router.post('/claim_xcookies', async (req, res) => {
-    const { twitterId, islandId } = req.body;
+    const { islandId } = req.body;
+
+    const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'claim_xcookies');
+
+    if (validateStatus !== Status.SUCCESS) {
+        return res.status(validateStatus).json({
+            status: validateStatus,
+            message: validateMessage
+        })
+    }
 
     try {
-        const { status, message, data } = await claimXCookies(twitterId, islandId);
+        const { status, message, data } = await claimXCookies(validateData?.twitterId, islandId);
 
         return res.status(status).json({
             status,
@@ -82,12 +108,20 @@ router.post('/claim_xcookies', async (req, res) => {
     }
 });
 
-// temporarily without authentication for testing purposes
 router.post('/claim_resources', async (req, res) => {
-    const { twitterId, islandId } = req.body;
+    const { islandId } = req.body;
+
+    const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'claim_resources');
+
+    if (validateStatus !== Status.SUCCESS) {
+        return res.status(validateStatus).json({
+            status: validateStatus,
+            message: validateMessage
+        })
+    }
 
     try {
-        const { status, message, data } = await claimResources(twitterId, islandId);
+        const { status, message, data } = await claimResources(validateData?.twitterId, islandId);
 
         return res.status(status).json({
             status,
