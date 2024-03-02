@@ -1,14 +1,22 @@
 import express from 'express';
 import { consumeBitOrb } from '../api/bitOrb';
+import { validateRequestAuth } from '../utils/auth';
+import { Status } from '../utils/retVal';
 
 const router = express.Router();
 
-// temporarily without authentication for testing purposes
 router.post('/consume', async (req, res) => {
-    const { twitterId } = req.body;
+    const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'consume_bit_orb');
+
+    if (validateStatus !== Status.SUCCESS) {
+        return res.status(validateStatus).json({
+            status: validateStatus,
+            message: validateMessage
+        })
+    }
 
     try {
-        const { status, message, data } = await consumeBitOrb(twitterId);
+        const { status, message, data } = await consumeBitOrb(validateData?.twitterId);
 
         return res.status(status).json({
             status,
