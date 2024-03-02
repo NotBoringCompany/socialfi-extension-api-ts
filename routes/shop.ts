@@ -1,5 +1,7 @@
 import express from 'express';
 import { getShop, purchaseShopAsset } from '../api/shop';
+import { validateRequestAuth } from '../utils/auth';
+import { Status } from '../utils/retVal';
 
 const router = express.Router();
 
@@ -20,12 +22,20 @@ router.get('/get_shop', async (_, res) => {
     }
 });
 
-// temporarily without authentication for testing purposes
 router.post('/purchase_shop_asset', async (req, res) => {
-    const { twitterId, asset, foodType } = req.body;
+    const { asset, foodType } = req.body;
+
+    const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'purchase_shop_asset');
+
+    if (validateStatus !== Status.SUCCESS) {
+        return res.status(validateStatus).json({
+            status: validateStatus,
+            message: validateMessage
+        })
+    }
 
     try {
-        const { status, message, data } = await purchaseShopAsset(twitterId, asset, foodType);
+        const { status, message, data } = await purchaseShopAsset(validateData?.twitterId, asset, foodType);
 
         return res.status(status).json({
             status,
