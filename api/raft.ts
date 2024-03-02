@@ -4,8 +4,10 @@ import { ReturnValue, Status } from '../utils/retVal';
 import { generateObjectId } from '../utils/crypto';
 import { UserSchema } from '../schemas/User';
 import { BitSchema } from '../schemas/Bit';
-import { RAFT_BIT_PLACEMENT_CAP, MAX_RAFT_LEVEL, RAFT_EVOLUTION_COST } from '../utils/constants/raft';
+import { RAFT_BIT_PLACEMENT_CAP } from '../utils/constants/raft';
 import { Resource, ResourceType } from '../models/resource';
+import { BIT_EVOLVING_COST_RAFT, MAX_BIT_LEVEL_RAFT } from '../utils/constants/bit';
+import { Bit } from '../models/bit';
 
 /**
  * Creates a new Raft for new users.
@@ -52,105 +54,6 @@ export const createRaft = async (userId: string): Promise<ReturnValue> => {
         return {
             status: Status.ERROR,
             message: `(createRaft) ${err.message}`
-        }
-    }
-}
-
-/**
- * (User) Evolves the user's raft (levelling it up).
- * 
- * NOTE: Requires `twitterId` which is fetched via `req.user`, automatically giving us the user's Twitter ID. This will check if the user who calls this function owns the twitter ID that owns the island.
- */
-export const evolveRaft = async (twitterId: string): Promise<ReturnValue> => {
-    const User = mongoose.model('Users', UserSchema, 'Users');
-    const Raft = mongoose.model('Rafts', RaftSchema, 'Rafts');
-
-    try {
-        const user = await User.findOne({ twitterId });
-
-        if (!user) {
-            return {
-                status: Status.ERROR,
-                message: `(evolveRaft) User not found.`
-            }
-        }
-
-        // this shouldn't happen, but if the user's raftId is 0, then throw an error
-        if (user.inventory?.raftId === 0) {
-            return {
-                status: Status.ERROR,
-                message: `(evolveRaft) User doesn't have a raft.`
-            }
-        }
-
-        // get the user's raft id
-        const raftId: number = user.inventory?.raftId;
-
-        // query the raft
-        const raft = await Raft.findOne({ raftId });
-
-        if (!raft) {
-            return {
-                status: Status.ERROR,
-                message: `(evolveRaft) Raft not found.`
-            }
-        }
-
-        // check if the raft is already at max level, if it is, throw an error
-        if (raft.currentLevel >= MAX_RAFT_LEVEL) {
-            return {
-                status: Status.ERROR,
-                message: `(evolveRaft) Raft is already at max level.`
-            }
-        }
-
-        // check if the user has enough seaweed to evolve the raft
-        const userSeaweed = (user.inventory?.resources as Resource[]).find(resource => resource.type === ResourceType.SEAWEED)?.amount ?? 0;
-
-        // calculate the cost to evolve the raft
-        const requiredSeaweed = RAFT_EVOLUTION_COST(raft.currentLevel);
-
-        // if the user doesn't have enough seaweed, throw an error
-        if (userSeaweed < requiredSeaweed) {
-            return {
-                status: Status.ERROR,
-                message: `(evolveRaft) User doesn't have enough seaweed to evolve the raft.`
-            }
-        }
-
-        const seaweedIndex = (user.inventory?.resources as Resource[]).findIndex(resource => resource.type === ResourceType.SEAWEED);
-
-        // this shouldn't happen, but just in case
-        if (seaweedIndex === -1) {
-            return {
-                status: Status.ERROR,
-                message: `(evolveRaft) Seaweed not found in user's inventory.`
-            }
-        }
-
-        // deduct the seaweed from the user's inventory
-        await User.updateOne({ twitterId }, {
-            $inc: {
-                [`inventory.resources.${seaweedIndex}.amount`]: -requiredSeaweed
-            }
-        });
-
-        // evolve the raft
-        await Raft.updateOne({ raftId }, {
-            $inc: { currentLevel: 1 }
-        });
-
-        return {
-            status: Status.SUCCESS,
-            message: `(evolveRaft) Raft evolved.`,
-            data: {
-                raftId: raftId,
-            }
-        }
-    } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(evolveRaft) ${err.message}`
         }
     }
 }
@@ -430,4 +333,51 @@ export const claimSeaweed = async (twitterId: string): Promise<ReturnValue> => {
             message: `(claimSeaweed) ${err.message}`
         }
     }
+}
+
+/**
+ * (Called by scheduler, EVERY 10 MINUTES) Updates the amount of claimable seaweed of all users' rafts that are eligible to gather seaweed.
+ */
+export const updateClaimableSeaweed = async (): Promise<ReturnValue> => {
+    const Raft = mongoose.model('Rafts', RaftSchema, 'Rafts');
+
+    try {
+        // get all rafts that have `gatheringStart` that is not equal to 0 and `placedBitIds` length > 0
+        const rafts = await Raft.find({ 'raftResourceStats.gatheringStart': { $ne: 0 }, 'placedBitIds.0': { $exists: true } });
+
+        for (const raft of rafts) {
+            // calculate the amount of claimable seaweed within the last 10 minutes based on the gathering rate
+            const gatheringRate = calcSeaweedGatheringRate(raft.placedBitIds as Bit[]);
+
+            // divide the gathering rate by 6 to get the rate per 10 minutes
+            const claimableSeaweed = gatheringRate / 6;
+
+            // update the `claimableSeaweed` in the raft
+            await Raft.updateOne({ raftId: raft.raftId }, { $inc: { 'raftResourceStats.claimableSeaweed': claimableSeaweed } });
+
+            // log the update
+            console.log(`(updateClaimableSeaweed) Updated claimable seaweed for user with raft ID ${raft.raftId}.`);
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(updateClaimableSeaweed) ${err.message}`
+        }
+    }
+}
+
+/**
+ * Calculates the seaweed gathering rate of the user's raft per hour based on the bit's levels.
+ */
+export const calcSeaweedGatheringRate = (bits: Bit[]): number => {
+    if (bits.length === 0) return 0;
+
+    // at level 1, the gathering rate is 1 seaweed per hour. every level increase is 1.04x the rate of the previous level
+    let gatheringRate = 0;
+
+    for (const bit of bits) {
+        gatheringRate += 1 * (1.04 ** (bit.currentFarmingLevel - 1));
+    }
+
+    return gatheringRate;
 }

@@ -1,7 +1,5 @@
 /** the maximum amount of bits allowed in a raft */
 export const RAFT_BIT_PLACEMENT_CAP = 5;
-/** the maximum level of a raft */
-export const MAX_RAFT_LEVEL = 30;
 
 /**
  * Gets the gathering rate of seaweed per hour given the bit's level.
@@ -20,14 +18,4 @@ export const SEAWEED_GATHERING_RATE = (level: number): number => {
  */
 export const SEAWEED_GATHERING_RATES = (levels: number[]): number => {
     return levels.reduce((acc, level) => acc + SEAWEED_GATHERING_RATE(level), 0);
-}
-
-/**
- * Calculates the cost (in seaweed) to evolve a user's raft to the next level.
- */
-export const RAFT_EVOLUTION_COST = (currentLevel: number): number => {
-    if (currentLevel === 30) throw new Error(`(RAFT_EVOLUTION_COST) Raft is already at max level: ${currentLevel}`);
-
-    // level 1 starts with 10 seaweed, and every level after is 1.125x the previous level
-    return 10 * (1.125 ** (currentLevel - 1)); 
 }

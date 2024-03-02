@@ -1,7 +1,8 @@
 import express from 'express';
-import { claimSeaweed, evolveRaft, getRaft, placeBit } from '../api/raft';
+import { claimSeaweed, getRaft, placeBit } from '../api/raft';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
+import { evolveBitInRaft } from '../api/bit';
 
 const router = express.Router();
 
@@ -52,7 +53,9 @@ router.get('/get_raft/:twitterId', async (req, res) => {
     }
 });
 
-router.post('/evolve_raft', async (req, res) => {
+router.post('/evolve_bit', async (req, res) => {
+    const { bitId } = req.body;
+
     const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'evolve_raft');
 
     if (validateStatus !== Status.SUCCESS) {
@@ -63,7 +66,7 @@ router.post('/evolve_raft', async (req, res) => {
     }
 
     try {
-        const { status, message, data } = await evolveRaft(validateData?.twitterId);
+        const { status, message, data } = await evolveBitInRaft(validateData?.twitterId, bitId);
 
         return res.status(status).json({
             status,

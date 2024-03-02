@@ -45,6 +45,18 @@ export const BIT_EVOLVING_COST = (currentLevel: number): number => {
     }
 }
 
+/**
+ * Calculates the cost (in seaweed) to evolve a bit placed in a user's raft given the current level of the bit.
+ * 
+ * Unlike bit evolution in islands, the cost to evolve a bit in a raft uses seaweed.
+ */
+export const BIT_RAFT_EVOLUTION_COST = (currentLevel: number): number => {
+    if (currentLevel === 30) throw new Error(`(RAFT_EVOLUTION_COST) Raft is already at max level: ${currentLevel}`);
+
+    // level 1 starts with 10 seaweed, and every level after is 1.125x the previous level
+    return 10 * (1.125 ** (currentLevel - 1)); 
+}
+
 /** gets the cost (in seaweed) of evolving a bit in a raft, based on its current level */
 export const BIT_EVOLVING_COST_RAFT = (currentLevel: number): number => {
     // if current level is 1, cost is 10 seaweed. every level after is 1.125x the previous level
