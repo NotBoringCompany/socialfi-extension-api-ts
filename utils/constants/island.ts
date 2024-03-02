@@ -33,7 +33,7 @@ export const BIT_PLACEMENT_CAP = 5;
 export const TOTAL_ACTIVE_ISLANDS_ALLOWED = 30;
 
 /** cost to evolve an island (in xCookies) based on the island type and the island's current level */
-export const ISLAND_EVOLVING_COST = (type: IslandType, currentLevel: number) => {
+export const ISLAND_EVOLUTION_COST = (type: IslandType, currentLevel: number) => {
     // higher rarity islands will cost more each time it levels up
     switch (type) {
         case IslandType.PRIMAL_ISLES:

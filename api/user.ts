@@ -1,7 +1,6 @@
 import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
 import { UserSchema } from '../schemas/User';
-import { ethers } from 'ethers';
 import { createUserWallet } from '../utils/wallet';
 import { createRaft } from './raft';
 import { generateObjectId } from '../utils/crypto';

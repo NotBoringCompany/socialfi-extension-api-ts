@@ -1,5 +1,5 @@
 import express from 'express';
-import { getRaft, placeBit } from '../api/raft';
+import { evolveRaft, getRaft, placeBit } from '../api/raft';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 
@@ -51,5 +51,31 @@ router.get('/get_raft/:twitterId', async (req, res) => {
         })
     }
 });
+
+router.post('/evolve_raft', async (req, res) => {
+    const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'evolve_raft');
+
+    if (validateStatus !== Status.SUCCESS) {
+        return res.status(validateStatus).json({
+            status: validateStatus,
+            message: validateMessage
+        })
+    }
+
+    try {
+        const { status, message, data } = await evolveRaft(validateData?.twitterId);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
 
 export default router;

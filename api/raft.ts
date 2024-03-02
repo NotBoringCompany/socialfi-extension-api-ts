@@ -4,7 +4,8 @@ import { ReturnValue, Status } from '../utils/retVal';
 import { generateObjectId } from '../utils/crypto';
 import { UserSchema } from '../schemas/User';
 import { BitSchema } from '../schemas/Bit';
-import { RAFT_BIT_PLACEMENT_CAP } from '../utils/constants/raft';
+import { RAFT_BIT_PLACEMENT_CAP, MAX_RAFT_LEVEL, RAFT_EVOLUTION_COST } from '../utils/constants/raft';
+import { Resource, ResourceType } from '../models/resource';
 
 /**
  * Creates a new Raft for new users.
@@ -27,6 +28,7 @@ export const createRaft = async (userId: string): Promise<ReturnValue> => {
             _id: generateObjectId(),
             raftId: data.latestRaftId + 1,
             owner: userId,
+            currentLevel: 1,
             placedBitIds: [],
             raftResourceStats: {
                 seaweedGathered: [],
@@ -51,6 +53,105 @@ export const createRaft = async (userId: string): Promise<ReturnValue> => {
         return {
             status: Status.ERROR,
             message: `(createRaft) ${err.message}`
+        }
+    }
+}
+
+/**
+ * (User) Evolves the user's raft (levelling it up).
+ * 
+ * NOTE: Requires `twitterId` which is fetched via `req.user`, automatically giving us the user's Twitter ID. This will check if the user who calls this function owns the twitter ID that owns the island.
+ */
+export const evolveRaft = async (twitterId: string): Promise<ReturnValue> => {
+    const User = mongoose.model('Users', UserSchema, 'Users');
+    const Raft = mongoose.model('Rafts', RaftSchema, 'Rafts');
+
+    try {
+        const user = await User.findOne({ twitterId });
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(evolveRaft) User not found.`
+            }
+        }
+
+        // this shouldn't happen, but if the user's raftId is 0, then throw an error
+        if (user.inventory?.raftId === 0) {
+            return {
+                status: Status.ERROR,
+                message: `(evolveRaft) User doesn't have a raft.`
+            }
+        }
+
+        // get the user's raft id
+        const raftId: number = user.inventory?.raftId;
+
+        // query the raft
+        const raft = await Raft.findOne({ raftId });
+
+        if (!raft) {
+            return {
+                status: Status.ERROR,
+                message: `(evolveRaft) Raft not found.`
+            }
+        }
+
+        // check if the raft is already at max level, if it is, throw an error
+        if (raft.currentLevel >= MAX_RAFT_LEVEL) {
+            return {
+                status: Status.ERROR,
+                message: `(evolveRaft) Raft is already at max level.`
+            }
+        }
+
+        // check if the user has enough seaweed to evolve the raft
+        const userSeaweed = (user.inventory?.resources as Resource[]).find(resource => resource.type === ResourceType.SEAWEED)?.amount ?? 0;
+
+        // calculate the cost to evolve the raft
+        const requiredSeaweed = RAFT_EVOLUTION_COST(raft.currentLevel);
+
+        // if the user doesn't have enough seaweed, throw an error
+        if (userSeaweed < requiredSeaweed) {
+            return {
+                status: Status.ERROR,
+                message: `(evolveRaft) User doesn't have enough seaweed to evolve the raft.`
+            }
+        }
+
+        const seaweedIndex = (user.inventory?.resources as Resource[]).findIndex(resource => resource.type === ResourceType.SEAWEED);
+
+        // this shouldn't happen, but just in case
+        if (seaweedIndex === -1) {
+            return {
+                status: Status.ERROR,
+                message: `(evolveRaft) Seaweed not found in user's inventory.`
+            }
+        }
+
+        // deduct the seaweed from the user's inventory
+        await User.updateOne({ twitterId }, {
+            $inc: {
+                [`inventory.resources.${seaweedIndex}.amount`]: -requiredSeaweed
+            }
+        });
+
+        // evolve the raft
+        await Raft.updateOne({ raftId }, {
+            $inc: { currentLevel: 1 }
+        });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(evolveRaft) Raft evolved.`,
+            data: {
+                raftId: raftId,
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(evolveRaft) ${err.message}`
         }
     }
 }
