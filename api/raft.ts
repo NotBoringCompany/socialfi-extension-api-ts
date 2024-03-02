@@ -132,7 +132,9 @@ export const placeBit = async (twitterId: string, bitId: number): Promise<Return
         // 2. if it's the first bit, add `bitId` to `placedBitIds`. if not, just push `bitId` to `placedBitIds`
         if (raft.placedBitIds.length === 0) {
             await Raft.updateOne({ raftId }, {
-                $set: { 'raftResourceStats.gatheringStart': Math.floor(Date.now() / 1000) },
+                $set: {
+                    'raftResourceStats.gatheringStart': Math.floor(Date.now() / 1000),
+                },
                 $push: { placedBitIds: bitId }
             });
         } else {
