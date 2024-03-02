@@ -38,6 +38,7 @@ import island from './routes/island';
 import bitOrb from './routes/bitOrb';
 import bit from './routes/bit';
 import user from './routes/user';
+import chest from './routes/chest';
 
 app.use('/auth/twitter', twitterAuth);
 app.use('/jwt', jwt);
@@ -49,6 +50,7 @@ app.use('/island', island);
 app.use('/bit_orb', bitOrb);
 app.use('/bit', bit);
 app.use('/user', user);
+app.use('/chest', chest);
 
 app.listen(port, async () => {
     console.log(`Server running on port ${port}`);
