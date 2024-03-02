@@ -1,15 +1,25 @@
 import express from 'express';
 import { evolveBit, evolveBitInRaft, feedBit, getBits } from '../api/bit';
 import { FoodType } from '../models/food';
+import { validateRequestAuth } from '../utils/auth';
+import { Status } from '../utils/retVal';
 
 const router = express.Router();
 
-// temporarily without authentication for testing purposes
 router.post('/evolve_bit_in_raft', async (req, res) => {
-    const { twitterId, bitId } = req.body;
+    const { bitId } = req.body;
+
+    const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'evolve_bit_in_raft');
+
+    if (validateStatus !== Status.SUCCESS) {
+        return res.status(validateStatus).json({
+            status: validateStatus,
+            message: validateMessage
+        })
+    }
 
     try {
-        const { status, message, data } = await evolveBitInRaft(twitterId, bitId);
+        const { status, message, data } = await evolveBitInRaft(validateData?.twitterId, bitId);
 
         return res.status(status).json({
             status,
@@ -24,12 +34,20 @@ router.post('/evolve_bit_in_raft', async (req, res) => {
     }
 });
 
-// temporarily without authentication for testing purposes
 router.post('/evolve_bit', async (req, res) => {
-    const { twitterId, bitId } = req.body;
+    const { bitId } = req.body;
+
+    const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'evolve_bit');
+
+    if (validateStatus !== Status.SUCCESS) {
+        return res.status(validateStatus).json({
+            status: validateStatus,
+            message: validateMessage
+        })
+    }
 
     try {
-        const { status, message, data } = await evolveBit(twitterId, bitId);
+        const { status, message, data } = await evolveBit(validateData?.twitterId, bitId);
 
         return res.status(status).json({
             status,
@@ -44,12 +62,20 @@ router.post('/evolve_bit', async (req, res) => {
     }
 });
 
-// temporarily without authentication for testing purposes
 router.post('/feed_bit', async (req, res) => {
-    const { twitterId, bitId, foodType } = req.body;
+    const { bitId, foodType } = req.body;
+
+    const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'feed_bit');
+
+    if (validateStatus !== Status.SUCCESS) {
+        return res.status(validateStatus).json({
+            status: validateStatus,
+            message: validateMessage
+        })
+    }
 
     try {
-        const { status, message, data } = await feedBit(twitterId, bitId, <FoodType>foodType);
+        const { status, message, data } = await feedBit(validateData?.twitterId, bitId, <FoodType>foodType);
 
         return res.status(status).json({
             status,
