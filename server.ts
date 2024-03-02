@@ -19,8 +19,8 @@ app.use(cors());
 
 app.use(session({
     secret: process.env.SESSION_SECRET,
-    resave: true,
-    saveUninitialized: true,
+    resave: false,
+    saveUninitialized: false,
     store: MongoStore.create({ mongoUrl: mongoUri, collectionName: 'Sessions' })
 }));
 
