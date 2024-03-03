@@ -6,7 +6,6 @@ import { UserSchema } from '../schemas/User';
 import { BitSchema } from '../schemas/Bit';
 import { RAFT_BIT_PLACEMENT_CAP } from '../utils/constants/raft';
 import { Resource, ResourceType } from '../models/resource';
-import { BIT_EVOLVING_COST_RAFT, MAX_BIT_LEVEL_RAFT } from '../utils/constants/bit';
 import { Bit } from '../models/bit';
 
 /**
