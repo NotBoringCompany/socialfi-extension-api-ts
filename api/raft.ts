@@ -290,6 +290,7 @@ export const claimSeaweed = async (twitterId: string): Promise<ReturnValue> => {
         // do a few things:
         // 1. add the claimable seaweed to the user's inventory
         // 2. set the `claimableSeaweed` to 0
+        // 3. increment the `seaweedGathered` by the amount of claimable seaweed
         // 3. set the `lastClaimed` to the current timestamp (unix)
         const seaweedIndex = (user.inventory?.resources as Resource[]).findIndex(resource => resource.type === ResourceType.SEAWEED);
 
@@ -313,9 +314,10 @@ export const claimSeaweed = async (twitterId: string): Promise<ReturnValue> => {
 
         // update the raft
         await Raft.updateOne({ raftId }, {
-            $set: { 
-                'raftResourceStats.claimableSeaweed': 0, 
-                'raftResourceStats.lastClaimed': Math.floor(Date.now() / 1000) 
+            $set: { 'raftResourceStats.claimableSeaweed': 0 },
+            $inc: {
+                'raftResourceStats.seaweedGathered': claimableSeaweed,
+                'raftResourceStats.lastClaimed': Math.floor(Date.now() / 1000)
             }
         });
 
