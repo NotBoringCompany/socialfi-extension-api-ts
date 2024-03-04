@@ -176,8 +176,9 @@ export const depleteEnergy = async (): Promise<void> => {
 
             // calculate the new energy (can go negative)
             // if current energy is already 0 or lower, `newEnergy` will be the same.
-            const newEnergy = currentEnergy <= 0 ? currentEnergy : currentEnergy - depletionRate;
+            const newEnergy = currentEnergy <= 0 ? currentEnergy : (currentEnergy - depletionRate);
 
+            console.log(`(depleteEnergy) Bit ${bit.bitId} - current energy is less than 0? ${currentEnergy <= 0} - depletion rate: ${depletionRate}`);
             console.log(`(depleteEnergy) Bit ${bit.bitId} - Current Energy: ${currentEnergy}, New Energy: ${newEnergy}`);
 
             // check if the new energy goes below a certain threshold
