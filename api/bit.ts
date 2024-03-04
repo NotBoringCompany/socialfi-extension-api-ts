@@ -175,7 +175,8 @@ export const depleteEnergy = async (): Promise<void> => {
             const depletionRate = bit.farmingStats?.currentEnergyDepletionRate / 6;
 
             // calculate the new energy (can go negative)
-            const newEnergy = currentEnergy - depletionRate;
+            // if current energy is already 0 or lower, `newEnergy` will be the same.
+            const newEnergy = currentEnergy <= 0 ? currentEnergy : currentEnergy - depletionRate;
 
             console.log(`(depleteEnergy) Bit ${bit.bitId} - Current Energy: ${currentEnergy}, New Energy: ${newEnergy}`);
 

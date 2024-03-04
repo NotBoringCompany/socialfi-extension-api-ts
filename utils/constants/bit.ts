@@ -184,6 +184,5 @@ export const ENERGY_THRESHOLD_REDUCTIONS = (energy: number): EnergyThresholdRedu
                 earningRateReduction: 0
             }
         }
-
     }
 }
