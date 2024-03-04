@@ -207,9 +207,9 @@ export const depleteEnergy = async (): Promise<void> => {
                 // check if the `earningRateModifiers` already has a modifier called `Energy Threshold Reduction`
                 const earningRateModifierIndex = earningRateModifiers?.findIndex((modifier: Modifier) => modifier.origin === 'Energy Threshold Reduction');
 
-                // if the modifier exists, update it; if not, push it. also include the new energy
+                // if the modifier exists, update it; if not, push it.
                 if (gatheringRateModifierIndex !== -1) {
-                    // if the new gathering rate modifier is 1, remove the modifier
+                    // if the new gathering rate modifier is 1, remove the modifier, else, update it
                     if (gatheringRateModifier.value === 1) {
                         updateOperations.push({
                             updateOne: { 
@@ -219,13 +219,25 @@ export const depleteEnergy = async (): Promise<void> => {
                                 $pull: { 'bitStatsModifiers.gatheringRateModifiers': { origin: 'Energy Threshold Reduction' } } 
                               } 
                             }
-                          });
+                        });
+                    // if the new gathering rate modifier is not 1, update it
                     } else {
                         updateOperations.push({ updateOne: { filter: { bitId: bit.bitId }, update: { $set: { 'farmingStats.currentEnergy': newEnergy, 'bitStatsModifiers.gatheringRateModifiers.$[elem].value': gatheringRateModifier.value } }, arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }] } });
                     }
+                // if the modifier doesn't exist, push it
                 } else {
-                    // if the new gathering rate modifier is 1, don't push it
-                    if (gatheringRateModifier.value !== 1) {
+                    // if the new gathering rate modifier is 1, only update the energy and don't push the modifier
+                    if (gatheringRateModifier.value === 1) {
+                        updateOperations.push({
+                            updateOne: {
+                                filter: { bitId: bit.bitId },
+                                update: {
+                                    $set: { 'farmingStats.currentEnergy': newEnergy }
+                                }
+                            }
+                        });
+                    // if the new gathering rate modifier is not 1, push the modifier
+                    } else {
                         updateOperations.push({
                             updateOne: {
                                 filter: { bitId: bit.bitId },
@@ -239,7 +251,7 @@ export const depleteEnergy = async (): Promise<void> => {
                 }
 
                 if (earningRateModifierIndex !== -1) {
-                    // if the new earning rate modifier is 1, remove the modifier
+                    // if the new earning rate modifier is 1, update energy AND remove modifier
                     if (earningRateModifier.value === 1) {
                         updateOperations.push({
                             updateOne: { 
@@ -250,12 +262,24 @@ export const depleteEnergy = async (): Promise<void> => {
                               } 
                             }
                           });
+                    // if the new earning rate modifier is not 1, update it
                     } else {
                         updateOperations.push({ updateOne: { filter: { bitId: bit.bitId }, update: { $set: { 'farmingStats.currentEnergy': newEnergy, 'bitStatsModifiers.earningRateModifiers.$[elem].value': earningRateModifier.value } }, arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }] } });
                     }
+                // if the modifier doesn't exist, push it
                 } else {
-                    // if the new earning rate modifier is 1, don't push it
-                    if (earningRateModifier.value !== 1) {
+                    // if the new earning rate modifier is 1, only update the energy and don't push the modifier
+                    if (earningRateModifier.value === 1) {
+                        updateOperations.push({
+                            updateOne: {
+                                filter: { bitId: bit.bitId },
+                                update: {
+                                    $set: { 'farmingStats.currentEnergy': newEnergy }
+                                }
+                            }
+                        });
+                    // if the new earning rate modifier is not 1, update energy AND push the modifier
+                    } else {
                         updateOperations.push({
                             updateOne: {
                                 filter: { bitId: bit.bitId },
