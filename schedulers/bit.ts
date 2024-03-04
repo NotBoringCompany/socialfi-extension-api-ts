@@ -7,10 +7,10 @@ import { depleteEnergy } from '../api/bit';
 export const depleteEnergyScheduler = async (): Promise<void> => {
     try {
         cron.schedule('*/10 * * * *', async () => {
-            console.log('Running updateGatheringProgressAndDropResourceScheduler...');
+            console.log('Running depleteEnergyScheduler...');
             await depleteEnergy();
         });
     } catch (err: any) {
-        console.error('Error in updateGatheringProgressAndDropResourceScheduler:', err.message);
+        console.error('Error in depleteEnergyScheduler:', err.message);
     }
 }
