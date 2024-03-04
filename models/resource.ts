@@ -19,9 +19,9 @@ export interface Resource {
  */
 export enum ResourceType {
     SEAWEED = 'Seaweed', // only available for raft, not islands
-    STONE = 'STONE',
-    KERATIN = 'KERATIN',
-    SILVER = 'SILVER',
-    DIAMOND = 'DIAMOND',
+    STONE = 'Stone',
+    KERATIN = 'Keratin',
+    SILVER = 'Silver',
+    DIAMOND = 'Diamond',
     RELIC = 'Relic',
 }

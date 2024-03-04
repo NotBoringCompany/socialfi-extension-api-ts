@@ -141,78 +141,85 @@ export const feedBit = async (twitterId: string, bitId: number, foodType: FoodTy
 }
 
 /**
- * Depletes a bit's energy given their `bitId` by calculating their energy depletion rate.
+ * Depletes all bits' energies by calculating their energy depletion rate.
  * 
  * Called by a scheduler every 10 minutes.
  */
-export const depleteEnergy = async (bitId: number): Promise<ReturnValue> => {
+export const depleteEnergy = async (): Promise<ReturnValue> => {
     const Bit = mongoose.model('Bits', BitSchema, 'Bits');
 
     try {
-        const bit = await Bit.findOne({ bitId });
+        const bits = await Bit.find();
 
-        if (!bit) {
+        if (bits.length === 0 || !bits) {
             return {
                 status: Status.ERROR,
-                message: `(depleteEnergy) Bit not found.`
+                message: `(depleteEnergy) No bits found.`
             }
         }
 
-        // get bit's current energy
-        const currentEnergy = bit.farmingStats?.currentEnergy;
+        // prepare bulk write operations to update energy and modifiers
+        const bulkWriteOperations = bits.map(bit => {
+            // get bit's current energy
+            const currentEnergy = bit.farmingStats?.currentEnergy;
 
-        // divide base energy depletion rate by 6 to get the depletion rate every 10 minutes
-        const depletionRate = BASE_ENERGY_DEPLETION_RATE / 6;
+            // divide base energy depletion rate by 6 to get the depletion rate every 10 minutes
+            const depletionRate = BASE_ENERGY_DEPLETION_RATE / 6;
 
-        // calculate the new energy (can go negative)
-        const newEnergy = currentEnergy - depletionRate;
+            // calculate the new energy (can go negative)
+            const newEnergy = currentEnergy - depletionRate;
 
-        // check if the new energy goes below a certain threshold
-        const { gatheringRateReduction, earningRateReduction } = ENERGY_THRESHOLD_REDUCTIONS(newEnergy);
+            // check if the new energy goes below a certain threshold
+            const { gatheringRateReduction, earningRateReduction } = ENERGY_THRESHOLD_REDUCTIONS(newEnergy);
 
-        // instant double check if both values aren't 0 (because it can't be that 1 value is 0 and the other is not)
-        if (gatheringRateReduction !== 0 && earningRateReduction !== 0) {
-            const gatheringRateModifier: Modifier = {
-                origin: 'Energy Threshold Reduction',
-                value: 1 - (gatheringRateReduction / 100)
-            };
+            let updateOperations = [];
 
-            const earningRateModifier: Modifier = {
-                origin: 'Energy Threshold Reduction',
-                value: 1 - (earningRateReduction / 100)
-            };
+            // instant double check if both values aren't 0 (because it can't be that 1 value is 0 and the other is not)
+            if (gatheringRateReduction !== 0 && earningRateReduction !== 0) {
+                const gatheringRateModifier: Modifier = {
+                    origin: 'Energy Threshold Reduction',
+                    value: 1 - (gatheringRateReduction / 100)
+                };
 
-            // update the bit's `statsModifiers` with the new modifiers. if the `bitStatsModifiers` already has modifiers called `Energy Threshold Reduction`, overwrite them, else push them
-            const gatheringRateModifiers = bit.bitStatsModifiers?.gatheringRateModifiers as Modifier[];
-            const earningRateModifiers = bit.bitStatsModifiers?.earningRateModifiers as Modifier[];
+                const earningRateModifier: Modifier = {
+                    origin: 'Energy Threshold Reduction',
+                    value: 1 - (earningRateReduction / 100)
+                };
 
-            // check if the `gatheringRateModifiers` already has a modifier called `Energy Threshold Reduction`
-            const gatheringRateModifierIndex = gatheringRateModifiers?.findIndex((modifier: Modifier) => modifier.origin === 'Energy Threshold Reduction');
-            // check if the `earningRateModifiers` already has a modifier called `Energy Threshold Reduction`
-            const earningRateModifierIndex = earningRateModifiers?.findIndex((modifier: Modifier) => modifier.origin === 'Energy Threshold Reduction');
+                // update the bit's `statsModifiers` with the new modifiers. if the `bitStatsModifiers` already has modifiers called `Energy Threshold Reduction`, overwrite them, else push them
+                const gatheringRateModifiers = bit.bitStatsModifiers?.gatheringRateModifiers as Modifier[];
+                const earningRateModifiers = bit.bitStatsModifiers?.earningRateModifiers as Modifier[];
 
-            // if the modifier exists, update it; if not, push it
-            if (gatheringRateModifierIndex !== -1) {
-                await Bit.updateOne({ bitId }, { $set: { 'bitStatsModifiers.gatheringRateModifiers.$[elem].value': gatheringRateModifier.value } }, { arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }] });
-            } else {
-                await Bit.updateOne({ bitId }, { $push: { 'bitStatsModifiers.gatheringRateModifiers': gatheringRateModifier } });
+                // check if the `gatheringRateModifiers` already has a modifier called `Energy Threshold Reduction`
+                const gatheringRateModifierIndex = gatheringRateModifiers?.findIndex((modifier: Modifier) => modifier.origin === 'Energy Threshold Reduction');
+                // check if the `earningRateModifiers` already has a modifier called `Energy Threshold Reduction`
+                const earningRateModifierIndex = earningRateModifiers?.findIndex((modifier: Modifier) => modifier.origin === 'Energy Threshold Reduction');
+
+                // if the modifier exists, update it; if not, push it
+                if (gatheringRateModifierIndex !== -1) {
+                    updateOperations.push({ updateOne: { filter: { bitId: bit.bitId }, update: { $set: { 'bitStatsModifiers.gatheringRateModifiers.$[elem].value': gatheringRateModifier.value } }, arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }] } });
+                } else {
+                    updateOperations.push({ updateOne: { filter: { bitId: bit.bitId }, update: { $push: { 'bitStatsModifiers.gatheringRateModifiers': gatheringRateModifier } } } });
+                }
+
+                if (earningRateModifierIndex !== -1) {
+                    updateOperations.push({ updateOne: { filter: { bitId: bit.bitId }, update: { $set: { 'bitStatsModifiers.earningRateModifiers.$[elem].value': earningRateModifier.value } }, arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }] } });
+                } else {
+                    updateOperations.push({ updateOne: { filter: { bitId: bit.bitId }, update: { $push: { 'bitStatsModifiers.earningRateModifiers': earningRateModifier } } } });
+                }
             }
 
-            if (earningRateModifierIndex !== -1) {
-                await Bit.updateOne({ bitId }, { $set: { 'bitStatsModifiers.earningRateModifiers.$[elem].value': earningRateModifier.value } }, { arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }] });
-            } else {
-                await Bit.updateOne({ bitId }, { $push: { 'bitStatsModifiers.earningRateModifiers': earningRateModifier } });
-            }
-        }
+            return updateOperations;
+        }).flat();
 
-        // update the bit's current energy
-        await Bit.updateOne({ bitId }, { $set: { 'farmingStats.currentEnergy': newEnergy } });
+        // execute the bulk write operations
+        await Bit.bulkWrite(bulkWriteOperations);
 
         return {
             status: Status.SUCCESS,
-            message: `(depleteEnergy) Bit's energy depleted.`,
+            message: `(depleteEnergy) Bits' energies depleted.`,
             data: {
-                bitId: bitId
+                bitIds: bits.map(bit => bit.bitId)
             }
         }
     } catch (err: any) {
@@ -222,6 +229,89 @@ export const depleteEnergy = async (bitId: number): Promise<ReturnValue> => {
         }
     }
 }
+
+// /**
+//  * Depletes a bit's energy given their `bitId` by calculating their energy depletion rate.
+//  * 
+//  * Called by a scheduler every 10 minutes.
+//  */
+// export const depleteEnergy = async (bitId: number): Promise<ReturnValue> => {
+//     const Bit = mongoose.model('Bits', BitSchema, 'Bits');
+
+//     try {
+//         const bit = await Bit.findOne({ bitId });
+
+//         if (!bit) {
+//             return {
+//                 status: Status.ERROR,
+//                 message: `(depleteEnergy) Bit not found.`
+//             }
+//         }
+
+//         // get bit's current energy
+//         const currentEnergy = bit.farmingStats?.currentEnergy;
+
+//         // divide base energy depletion rate by 6 to get the depletion rate every 10 minutes
+//         const depletionRate = BASE_ENERGY_DEPLETION_RATE / 6;
+
+//         // calculate the new energy (can go negative)
+//         const newEnergy = currentEnergy - depletionRate;
+
+//         // check if the new energy goes below a certain threshold
+//         const { gatheringRateReduction, earningRateReduction } = ENERGY_THRESHOLD_REDUCTIONS(newEnergy);
+
+//         // instant double check if both values aren't 0 (because it can't be that 1 value is 0 and the other is not)
+//         if (gatheringRateReduction !== 0 && earningRateReduction !== 0) {
+//             const gatheringRateModifier: Modifier = {
+//                 origin: 'Energy Threshold Reduction',
+//                 value: 1 - (gatheringRateReduction / 100)
+//             };
+
+//             const earningRateModifier: Modifier = {
+//                 origin: 'Energy Threshold Reduction',
+//                 value: 1 - (earningRateReduction / 100)
+//             };
+
+//             // update the bit's `statsModifiers` with the new modifiers. if the `bitStatsModifiers` already has modifiers called `Energy Threshold Reduction`, overwrite them, else push them
+//             const gatheringRateModifiers = bit.bitStatsModifiers?.gatheringRateModifiers as Modifier[];
+//             const earningRateModifiers = bit.bitStatsModifiers?.earningRateModifiers as Modifier[];
+
+//             // check if the `gatheringRateModifiers` already has a modifier called `Energy Threshold Reduction`
+//             const gatheringRateModifierIndex = gatheringRateModifiers?.findIndex((modifier: Modifier) => modifier.origin === 'Energy Threshold Reduction');
+//             // check if the `earningRateModifiers` already has a modifier called `Energy Threshold Reduction`
+//             const earningRateModifierIndex = earningRateModifiers?.findIndex((modifier: Modifier) => modifier.origin === 'Energy Threshold Reduction');
+
+//             // if the modifier exists, update it; if not, push it
+//             if (gatheringRateModifierIndex !== -1) {
+//                 await Bit.updateOne({ bitId }, { $set: { 'bitStatsModifiers.gatheringRateModifiers.$[elem].value': gatheringRateModifier.value } }, { arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }] });
+//             } else {
+//                 await Bit.updateOne({ bitId }, { $push: { 'bitStatsModifiers.gatheringRateModifiers': gatheringRateModifier } });
+//             }
+
+//             if (earningRateModifierIndex !== -1) {
+//                 await Bit.updateOne({ bitId }, { $set: { 'bitStatsModifiers.earningRateModifiers.$[elem].value': earningRateModifier.value } }, { arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }] });
+//             } else {
+//                 await Bit.updateOne({ bitId }, { $push: { 'bitStatsModifiers.earningRateModifiers': earningRateModifier } });
+//             }
+//         }
+
+//         // update the bit's current energy
+//         await Bit.updateOne({ bitId }, { $set: { 'farmingStats.currentEnergy': newEnergy } });
+
+//         return {
+//             status: Status.SUCCESS,
+//             message: `(depleteEnergy) Bit's energy depleted.`,
+//             data: {
+//                 bitId: bitId
+//             }
+//         }
+//     } catch (err: any) {
+//         return {
+//             status: Status.ERROR,
+//             message: `(depleteEnergy) Error: ${err.message}`
+//         }
+//     }
+// }
 
 /**
  * (User) Evolves a bit to the next level (levelling it up). !!!ONLY FOR LEVELLING UP IN ISLANDS!!!
