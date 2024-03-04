@@ -167,6 +167,8 @@ export const depleteEnergy = async (): Promise<void> => {
             // calculate the new energy (can go negative)
             const newEnergy = currentEnergy - depletionRate;
 
+            console.log(`(depleteEnergy) Bit ${bit.bitId} - Current Energy: ${currentEnergy}, New Energy: ${newEnergy}`);
+
             // check if the new energy goes below a certain threshold
             const { gatheringRateReduction, earningRateReduction } = ENERGY_THRESHOLD_REDUCTIONS(newEnergy);
 
