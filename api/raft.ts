@@ -339,16 +339,28 @@ export const claimSeaweed = async (twitterId: string): Promise<ReturnValue> => {
 /**
  * (Called by scheduler, EVERY 10 MINUTES) Updates the amount of claimable seaweed of all users' rafts that are eligible to gather seaweed.
  */
-export const updateClaimableSeaweed = async (): Promise<ReturnValue> => {
+export const updateClaimableSeaweed = async (): Promise<void> => {
     const Raft = mongoose.model('Rafts', RaftSchema, 'Rafts');
+    const Bit = mongoose.model('Bits', BitSchema, 'Bits');
 
     try {
         // get all rafts that have `gatheringStart` that is not equal to 0 and `placedBitIds` length > 0
         const rafts = await Raft.find({ 'raftResourceStats.gatheringStart': { $ne: 0 }, 'placedBitIds.0': { $exists: true } });
 
         for (const raft of rafts) {
+            // get the bit IDs that are placed in the raft
+            const bitIds: number[] = raft.placedBitIds as number[];
+
+            // fetch the bits based on the bitIds
+            const bits = await Bit.find({ bitId: { $in: bitIds } });
+            
+            if (bits.length === 0 || !bits) {
+                console.error(`(updateClaimableSeaweed) No bits found for Raft ${raft.raftId}.`);
+                continue;
+            }
+            
             // calculate the amount of claimable seaweed within the last 10 minutes based on the gathering rate
-            const gatheringRate = calcSeaweedGatheringRate(raft.placedBitIds as Bit[]);
+            const gatheringRate = calcSeaweedGatheringRate(bits as Bit[]);
 
             // divide the gathering rate by 6 to get the rate per 10 minutes
             const claimableSeaweed = gatheringRate / 6;
@@ -362,10 +374,7 @@ export const updateClaimableSeaweed = async (): Promise<ReturnValue> => {
             console.log(`(updateClaimableSeaweed) Updated claimable seaweed for user with raft ID ${raft.raftId}.`);
         }
     } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(updateClaimableSeaweed) ${err.message}`
-        }
+        console.error('(updateClaimableSeaweed) Error:', err.message);
     }
 }
 
