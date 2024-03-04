@@ -363,13 +363,7 @@ export const updateClaimableSeaweed = async (): Promise<void> => {
             const gatheringRate = calcSeaweedGatheringRate(bits as Bit[]);
 
             // divide the gathering rate by 6 to get the rate per 10 minutes
-            let claimableSeaweed = gatheringRate / 6;
-
-            // get the current `claimableSeaweed` of the raft and add the new `claimableSeaweed` to it
-            const currentClaimableSeaweed = raft.raftResourceStats?.claimableSeaweed as number;
-            claimableSeaweed += currentClaimableSeaweed;
-
-            console.log(`(updateClaimableSeaweed) claimableSeaweed for Raft ${raft.raftId}: `, claimableSeaweed);
+            const claimableSeaweed = gatheringRate / 6;
 
             // update the `claimableSeaweed` in the raft
             await Raft.updateOne({ raftId: raft.raftId }, { $inc: { 'raftResourceStats.claimableSeaweed': claimableSeaweed } });
