@@ -358,12 +358,16 @@ export const updateClaimableSeaweed = async (): Promise<void> => {
                 console.error(`(updateClaimableSeaweed) No bits found for Raft ${raft.raftId}.`);
                 continue;
             }
-            
+
             // calculate the amount of claimable seaweed within the last 10 minutes based on the gathering rate
             const gatheringRate = calcSeaweedGatheringRate(bits as Bit[]);
 
             // divide the gathering rate by 6 to get the rate per 10 minutes
-            const claimableSeaweed = gatheringRate / 6;
+            let claimableSeaweed = gatheringRate / 6;
+
+            // get the current `claimableSeaweed` of the raft and add the new `claimableSeaweed` to it
+            const currentClaimableSeaweed = raft.raftResourceStats?.claimableSeaweed as number;
+            claimableSeaweed += currentClaimableSeaweed;
 
             console.log(`(updateClaimableSeaweed) claimableSeaweed for Raft ${raft.raftId}: `, claimableSeaweed);
 
