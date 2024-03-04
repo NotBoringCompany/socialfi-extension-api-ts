@@ -186,115 +186,112 @@ export const depleteEnergy = async (): Promise<void> => {
 
             let updateOperations = [];
 
-            // instant double check if both values aren't 0 (because it can't be that 1 value is 0 and the other is not)
-            if (gatheringRateReduction !== 0 && earningRateReduction !== 0) {
-                const gatheringRateModifier: Modifier = {
-                    origin: 'Energy Threshold Reduction',
-                    value: 1 - (gatheringRateReduction / 100)
-                };
+            const gatheringRateModifier: Modifier = {
+                origin: 'Energy Threshold Reduction',
+                value: 1 - (gatheringRateReduction / 100)
+            };
 
-                const earningRateModifier: Modifier = {
-                    origin: 'Energy Threshold Reduction',
-                    value: 1 - (earningRateReduction / 100)
-                };
+            const earningRateModifier: Modifier = {
+                origin: 'Energy Threshold Reduction',
+                value: 1 - (earningRateReduction / 100)
+            };
 
-                // update the bit's `statsModifiers` with the new modifiers. if the `bitStatsModifiers` already has modifiers called `Energy Threshold Reduction`, overwrite them, else push them
-                const gatheringRateModifiers = bit.bitStatsModifiers?.gatheringRateModifiers as Modifier[];
-                const earningRateModifiers = bit.bitStatsModifiers?.earningRateModifiers as Modifier[];
+            // update the bit's `statsModifiers` with the new modifiers. if the `bitStatsModifiers` already has modifiers called `Energy Threshold Reduction`, overwrite them, else push them
+            const gatheringRateModifiers = bit.bitStatsModifiers?.gatheringRateModifiers as Modifier[];
+            const earningRateModifiers = bit.bitStatsModifiers?.earningRateModifiers as Modifier[];
 
-                // check if the `gatheringRateModifiers` already has a modifier called `Energy Threshold Reduction`
-                const gatheringRateModifierIndex = gatheringRateModifiers?.findIndex((modifier: Modifier) => modifier.origin === 'Energy Threshold Reduction');
-                // check if the `earningRateModifiers` already has a modifier called `Energy Threshold Reduction`
-                const earningRateModifierIndex = earningRateModifiers?.findIndex((modifier: Modifier) => modifier.origin === 'Energy Threshold Reduction');
+            // check if the `gatheringRateModifiers` already has a modifier called `Energy Threshold Reduction`
+            const gatheringRateModifierIndex = gatheringRateModifiers?.findIndex((modifier: Modifier) => modifier.origin === 'Energy Threshold Reduction');
+            // check if the `earningRateModifiers` already has a modifier called `Energy Threshold Reduction`
+            const earningRateModifierIndex = earningRateModifiers?.findIndex((modifier: Modifier) => modifier.origin === 'Energy Threshold Reduction');
 
-                // if the modifier exists, update it
-                if (gatheringRateModifierIndex !== -1) {
-                    // if the new gathering rate modifier is 1, remove the modifier, else, update it
-                    if (gatheringRateModifier.value === 1) {
-                        console.log(`Bit ID ${bit.bitId} - gathering rate modifier exists AND value is 1. updating energy and removing modifier`);
+            // if the modifier exists, update it
+            if (gatheringRateModifierIndex !== -1) {
+                // if the new gathering rate modifier is 1, remove the modifier, else, update it
+                if (gatheringRateModifier.value === 1) {
+                    console.log(`Bit ID ${bit.bitId} - gathering rate modifier exists AND value is 1. updating energy and removing modifier`);
 
-                        updateOperations.push({
-                            updateOne: { 
-                              filter: { bitId: bit.bitId }, 
-                              update: { 
-                                $set: { 'farmingStats.currentEnergy': newEnergy }, 
-                                $pull: { 'bitStatsModifiers.gatheringRateModifiers': { origin: 'Energy Threshold Reduction' } } 
-                              } 
-                            }
-                        })
-                    // if the new gathering rate modifier is not 1, update it
-                    } else {
-                        console.log(`Bit ID ${bit.bitId} - gathering rate modifier exists AND value is not 1. updating energy and modifier`);
-
-                        updateOperations.push({ updateOne: { filter: { bitId: bit.bitId }, update: { $set: { 'farmingStats.currentEnergy': newEnergy, 'bitStatsModifiers.gatheringRateModifiers.$[elem].value': gatheringRateModifier.value } }, arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }] } });
-                    }
-                // if the modifier doesn't exist, push it
+                    updateOperations.push({
+                        updateOne: { 
+                            filter: { bitId: bit.bitId }, 
+                            update: { 
+                            $set: { 'farmingStats.currentEnergy': newEnergy }, 
+                            $pull: { 'bitStatsModifiers.gatheringRateModifiers': { origin: 'Energy Threshold Reduction' } } 
+                            } 
+                        }
+                    })
+                // if the new gathering rate modifier is not 1, update it
                 } else {
-                    // if the new gathering rate modifier is 1, only update the energy and don't push the modifier
-                    if (gatheringRateModifier.value === 1) {
-                        console.log(`Bit ID ${bit.bitId} - gathering rate modifier does not exist AND value is 1. updating energy and NOT pushing modifier.`);
+                    console.log(`Bit ID ${bit.bitId} - gathering rate modifier exists AND value is not 1. updating energy and modifier`);
 
-                        updateOperations.push({
-                            updateOne: {
-                                filter: { bitId: bit.bitId },
-                                update: {
-                                    $set: { 'farmingStats.currentEnergy': newEnergy }
-                                }
-                            }
-                        })
-                    // if the new gathering rate modifier is not 1, push the modifier
-                    } else {
-                        console.log(`Bit ID ${bit.bitId} - gathering rate modifier does not exist AND value is not 1. updating energy and pushing modifier.`);
-
-                        updateOperations.push({
-                            updateOne: {
-                                filter: { bitId: bit.bitId },
-                                update: {
-                                    $set: { 'farmingStats.currentEnergy': newEnergy },
-                                    $push: { 'bitStatsModifiers.gatheringRateModifiers': gatheringRateModifier }
-                                }
-                            }
-                        });
-                    }
+                    updateOperations.push({ updateOne: { filter: { bitId: bit.bitId }, update: { $set: { 'farmingStats.currentEnergy': newEnergy, 'bitStatsModifiers.gatheringRateModifiers.$[elem].value': gatheringRateModifier.value } }, arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }] } });
                 }
+            // if the modifier doesn't exist, push it
+            } else {
+                // if the new gathering rate modifier is 1, only update the energy and don't push the modifier
+                if (gatheringRateModifier.value === 1) {
+                    console.log(`Bit ID ${bit.bitId} - gathering rate modifier does not exist AND value is 1. updating energy and NOT pushing modifier.`);
 
-                // at this point, we've already updated the gathering rate modifier AND the energy. We don't need to update the energy anymore.
-                if (earningRateModifierIndex !== -1) {
-                    // if the new earning rate modifier is 1, remove modifier
-                    if (earningRateModifier.value === 1) {
-                        console.log(`Bit ID ${bit.bitId} - earning rate modifier exists AND value is 1. removing modifier`);
-                        
-                        updateOperations.push({
-                            updateOne: { 
-                              filter: { bitId: bit.bitId }, 
-                              update: { 
-                                $pull: { 'bitStatsModifiers.earningRateModifiers': { origin: 'Energy Threshold Reduction' } } 
-                              } 
+                    updateOperations.push({
+                        updateOne: {
+                            filter: { bitId: bit.bitId },
+                            update: {
+                                $set: { 'farmingStats.currentEnergy': newEnergy }
                             }
-                          });
-                    // if the new earning rate modifier is not 1, update it
-                    } else {
-                        console.log(`Bit ID ${bit.bitId} - earning rate modifier exists AND value is not 1. updating modifier`);
-                        
-                        updateOperations.push({ updateOne: { filter: { bitId: bit.bitId }, update: { $set: { 'farmingStats.currentEnergy': newEnergy, 'bitStatsModifiers.earningRateModifiers.$[elem].value': earningRateModifier.value } }, arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }] } });
-                    }
-                // if the modifier doesn't exist, push it
+                        }
+                    })
+                // if the new gathering rate modifier is not 1, push the modifier
                 } else {
-                    // if the new earning rate modifier is not 1, push the modifier, else, do nothing (since energy is already updated)
-                    if (earningRateModifier.value !== 1) {
-                        console.log(`Bit ID ${bit.bitId} - earning rate modifier does not exist AND value is not 1. pushing modifier`);
+                    console.log(`Bit ID ${bit.bitId} - gathering rate modifier does not exist AND value is not 1. updating energy and pushing modifier.`);
 
-                        updateOperations.push({
-                            updateOne: {
-                                filter: { bitId: bit.bitId },
-                                update: {
-                                    $push: { 'bitStatsModifiers.earningRateModifiers': earningRateModifier }
-                                }
+                    updateOperations.push({
+                        updateOne: {
+                            filter: { bitId: bit.bitId },
+                            update: {
+                                $set: { 'farmingStats.currentEnergy': newEnergy },
+                                $push: { 'bitStatsModifiers.gatheringRateModifiers': gatheringRateModifier }
                             }
+                        }
+                    });
+                }
+            }
+
+            // at this point, we've already updated the gathering rate modifier AND the energy. We don't need to update the energy anymore.
+            if (earningRateModifierIndex !== -1) {
+                // if the new earning rate modifier is 1, remove modifier
+                if (earningRateModifier.value === 1) {
+                    console.log(`Bit ID ${bit.bitId} - earning rate modifier exists AND value is 1. removing modifier`);
+                    
+                    updateOperations.push({
+                        updateOne: { 
+                            filter: { bitId: bit.bitId }, 
+                            update: { 
+                            $pull: { 'bitStatsModifiers.earningRateModifiers': { origin: 'Energy Threshold Reduction' } } 
+                            } 
+                        }
                         });
-                    } else {
-                        console.log(`Bit ID ${bit.bitId} - earning rate modifier does not exist AND value is 1. doing nothing.`);
-                    }
+                // if the new earning rate modifier is not 1, update it
+                } else {
+                    console.log(`Bit ID ${bit.bitId} - earning rate modifier exists AND value is not 1. updating modifier`);
+                    
+                    updateOperations.push({ updateOne: { filter: { bitId: bit.bitId }, update: { $set: { 'farmingStats.currentEnergy': newEnergy, 'bitStatsModifiers.earningRateModifiers.$[elem].value': earningRateModifier.value } }, arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }] } });
+                }
+            // if the modifier doesn't exist, push it
+            } else {
+                // if the new earning rate modifier is not 1, push the modifier, else, do nothing (since energy is already updated)
+                if (earningRateModifier.value !== 1) {
+                    console.log(`Bit ID ${bit.bitId} - earning rate modifier does not exist AND value is not 1. pushing modifier`);
+
+                    updateOperations.push({
+                        updateOne: {
+                            filter: { bitId: bit.bitId },
+                            update: {
+                                $push: { 'bitStatsModifiers.earningRateModifiers': earningRateModifier }
+                            }
+                        }
+                    });
+                } else {
+                    console.log(`Bit ID ${bit.bitId} - earning rate modifier does not exist AND value is 1. doing nothing.`);
                 }
             }
 
