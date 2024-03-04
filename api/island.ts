@@ -489,6 +489,10 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
     }
 }
 
+// export const updateClaimableXCookies = async (): Promise<void> => {
+
+// }
+
 /**
  * Claims all claimable resources from an island and adds them to the user's inventory.
  * 

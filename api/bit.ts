@@ -152,10 +152,8 @@ export const depleteEnergy = async (): Promise<void> => {
         const bits = await Bit.find();
 
         if (bits.length === 0 || !bits) {
-            return {
-                status: Status.ERROR,
-                message: `(depleteEnergy) No bits found.`
-            }
+            console.log(`(depleteEnergy) No bits found.`);
+            return;
         }
 
         // prepare bulk write operations to update energy and modifiers
