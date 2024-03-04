@@ -163,6 +163,11 @@ export const BASE_ENERGY_DEPLETION_RATE: number = 5;
 /** returns the reductions in earning and gathering rate (by a fixed %) if the bit's energy goes below a certain threshold */
 export const ENERGY_THRESHOLD_REDUCTIONS = (energy: number): EnergyThresholdReduction => {
     switch (true) {
+        case energy <= 0:
+            return {
+                gatheringRateReduction: 100,
+                earningRateReduction: 100
+            }
         case energy < 25:
             return {
                 gatheringRateReduction: 50,
