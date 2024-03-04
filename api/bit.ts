@@ -207,39 +207,63 @@ export const depleteEnergy = async (): Promise<void> => {
 
                 // if the modifier exists, update it; if not, push it. also include the new energy
                 if (gatheringRateModifierIndex !== -1) {
-                    updateOperations.push({
-                        updateOne: {
-                            filter: { bitId: bit.bitId },
-                            update: {
-                                $set: { 'farmingStats.currentEnergy': newEnergy, 'bitStatsModifiers.gatheringRateModifiers.$[elem].value': gatheringRateModifier.value }
-                            },
-                            arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }]
-                        }
-                    });
-                } else {
-                    updateOperations.push({
-                        updateOne: {
-                            filter: { bitId: bit.bitId },
-                            update: {
-                                $set: { 'farmingStats.currentEnergy': newEnergy },
-                                $push: { 'bitStatsModifiers.gatheringRateModifiers': gatheringRateModifier }
+                    // if the new gathering rate modifier is 1, remove the modifier
+                    if (gatheringRateModifier.value === 1) {
+                        updateOperations.push({
+                            updateOne: { 
+                              filter: { bitId: bit.bitId }, 
+                              update: { 
+                                $set: { 'farmingStats.currentEnergy': newEnergy }, 
+                                $pull: { 'bitStatsModifiers.gatheringRateModifiers': { origin: 'Energy Threshold Reduction' } } 
+                              } 
                             }
-                        }
-                    });
+                          });
+                    } else {
+                        updateOperations.push({ updateOne: { filter: { bitId: bit.bitId }, update: { $set: { 'farmingStats.currentEnergy': newEnergy, 'bitStatsModifiers.gatheringRateModifiers.$[elem].value': gatheringRateModifier.value } }, arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }] } });
+                    }
+                } else {
+                    // if the new gathering rate modifier is 1, don't push it
+                    if (gatheringRateModifier.value !== 1) {
+                        updateOperations.push({
+                            updateOne: {
+                                filter: { bitId: bit.bitId },
+                                update: {
+                                    $set: { 'farmingStats.currentEnergy': newEnergy },
+                                    $push: { 'bitStatsModifiers.gatheringRateModifiers': gatheringRateModifier }
+                                }
+                            }
+                        });
+                    }
                 }
 
                 if (earningRateModifierIndex !== -1) {
-                    updateOperations.push({ updateOne: { filter: { bitId: bit.bitId }, update: { $set: { 'farmingStats.currentEnergy': newEnergy, 'bitStatsModifiers.earningRateModifiers.$[elem].value': earningRateModifier.value } }, arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }] } });
-                } else {
-                    updateOperations.push({
-                        updateOne: {
-                            filter: { bitId: bit.bitId },
-                            update: {
-                                $set: { 'farmingStats.currentEnergy': newEnergy },
-                                $push: { 'bitStatsModifiers.earningRateModifiers': earningRateModifier }
+                    // if the new earning rate modifier is 1, remove the modifier
+                    if (earningRateModifier.value === 1) {
+                        updateOperations.push({
+                            updateOne: { 
+                              filter: { bitId: bit.bitId }, 
+                              update: { 
+                                $set: { 'farmingStats.currentEnergy': newEnergy }, 
+                                $pull: { 'bitStatsModifiers.earningRateModifiers': { origin: 'Energy Threshold Reduction' } } 
+                              } 
                             }
-                        }
-                    });
+                          });
+                    } else {
+                        updateOperations.push({ updateOne: { filter: { bitId: bit.bitId }, update: { $set: { 'farmingStats.currentEnergy': newEnergy, 'bitStatsModifiers.earningRateModifiers.$[elem].value': earningRateModifier.value } }, arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }] } });
+                    }
+                } else {
+                    // if the new earning rate modifier is 1, don't push it
+                    if (earningRateModifier.value !== 1) {
+                        updateOperations.push({
+                            updateOne: {
+                                filter: { bitId: bit.bitId },
+                                update: {
+                                    $set: { 'farmingStats.currentEnergy': newEnergy },
+                                    $push: { 'bitStatsModifiers.earningRateModifiers': earningRateModifier }
+                                }
+                            }
+                        });
+                    }
                 }
             }
 
