@@ -145,7 +145,7 @@ export const feedBit = async (twitterId: string, bitId: number, foodType: FoodTy
  * 
  * Called by a scheduler every 10 minutes.
  */
-export const depleteEnergy = async (): Promise<ReturnValue> => {
+export const depleteEnergy = async (): Promise<void> => {
     const Bit = mongoose.model('Bits', BitSchema, 'Bits');
 
     try {
@@ -215,18 +215,9 @@ export const depleteEnergy = async (): Promise<ReturnValue> => {
         // execute the bulk write operations
         await Bit.bulkWrite(bulkWriteOperations);
 
-        return {
-            status: Status.SUCCESS,
-            message: `(depleteEnergy) Bits' energies depleted.`,
-            data: {
-                bitIds: bits.map(bit => bit.bitId)
-            }
-        }
+        console.log(`(depleteEnergy) Bits' energies depleted.`)
     } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(depleteEnergy) Error: ${err.message}`
-        }
+        console.error(`(depleteEnergy) Error: ${err.message}`);
     }
 }
 
