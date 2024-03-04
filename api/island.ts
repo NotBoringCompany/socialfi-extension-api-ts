@@ -506,10 +506,97 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
  */
 export const updateClaimableXCookies = async (): Promise<void> => {
     const Island = mongoose.model('Islands', IslandSchema, 'Islands');
-    const User = mongoose.model('Users', UserSchema, 'Users');
+    const Bit = mongoose.model('Bits', BitSchema, 'Bits');
 
     try {
+        // find islands only where xCookies spent is > 0
+        const islands = await Island.find({ 'islandEarningStats.totalXCookiesSpent': { $gt: 0 } });
 
+        if (islands.length === 0 || !islands) {
+            console.error(`(updateClaimableXCookies) No islands found.`);
+            return;
+        }
+
+        // prepare bulk write operations to update all islands' `claimableXCookies`
+        const bulkWriteOpsPromises = islands.map(async island => {
+            let updateOperations = [];
+
+            // get the bit ids placed on this island and fetch the bits
+            const placedBitIds = island.placedBitIds as number[];
+
+            // if no bits are placed, skip this island
+            if (placedBitIds.length === 0) {
+                console.log(`(updateClaimableXCookies) Island ID ${island.islandId} has no bits placed. Skipping...`);
+                return;
+            }
+
+            // get the bits placed on the island
+            const bits = await Bit.find({ bitId: { $in: placedBitIds } });
+
+            // get the island's current earning rate
+            const currentEarningRate = calcIslandCurrentRate(
+                RateType.EARNING, 
+                bits.map(bit => bit.farmingStats?.baseEarningRate), 
+                bits.map(bit => bit.currentFarmingLevel), 
+                bits.map(bit => bit.farmingStats.earningRateGrowth), 
+                bits.map(bit => bit.bitStatsModifiers.earningRateModifiers as Modifier[]), 
+                island.islandStatsModifiers?.earningRateModifiers as Modifier[]
+            );
+
+            // since this is called every 10 minutes, we will divide the `currentEarningRate` by 6 to get the 10-minute earning rate, and multiply it by the cookies spent to get the `claimableXCookies`
+            const tenMinEarningRate = currentEarningRate / 6;
+            const claimableXCookies = tenMinEarningRate * island.islandEarningStats?.totalXCookiesSpent;
+
+            // get the current amount of cookies earned already
+            const xCookiesEarned = island.islandEarningStats?.totalXCookiesEarned;
+
+            // if the amount of `claimableXCookies` is 0, skip this island (shouldn't happen, but just in case)
+            if (claimableXCookies === 0) {
+                console.log(`(updateClaimableXCookies) Island ID ${island.islandId} has 0 claimable xCookies. Skipping...`);
+                return;
+            }
+
+            // if `xCookiesEarned` + `claimableXCookies` is greater than totalXCookiesSpent, set `claimableXCookies` to totalXCookiesSpent - xCookiesEarned
+            // this is to prevent the user from claiming more xCookies than they have spent
+            if (claimableXCookies + xCookiesEarned > island.islandEarningStats?.totalXCookiesSpent) {
+                console.log(`(updateClaimableXCookies) Island ID ${island.islandId}'s claimableXCookies exceeds cookies spent.
+                 adjusting... totalXCookiesSpent: ${island.islandEarningStats?.totalXCookiesSpent} - xCookiesEarned: ${xCookiesEarned} = ${island.islandEarningStats?.totalXCookiesSpent - xCookiesEarned}.`
+                );
+                
+                updateOperations.push({
+                    updateOne: {
+                        filter: { islandId: island.islandId },
+                        update: { $set: { 'islandEarningStats.claimableXCookies': island.islandEarningStats?.totalXCookiesSpent - xCookiesEarned } }
+                    }
+                });
+            } else {
+                console.log(`(updateClaimableXCookies) Island ID ${island.islandId} has updated its claimable xCookies to ${claimableXCookies}.`);
+
+                updateOperations.push({
+                    updateOne: {
+                        filter: { islandId: island.islandId },
+                        update: { $set: { 'islandEarningStats.claimableXCookies': claimableXCookies } }
+                    }
+                });
+            }
+
+            return updateOperations;
+        });
+
+        const bulkWriteOpsArrays = await Promise.all(bulkWriteOpsPromises);
+
+        const bulkWriteOps = bulkWriteOpsArrays.flat().filter(op => op);
+
+        // if there are no bulk write operations, return
+        if (bulkWriteOps.length === 0) {
+            console.error(`(updateClaimableXCookies) No bulk write operations found.`);
+            return;
+        }
+
+        // execute the bulk write operations
+        await Island.bulkWrite(bulkWriteOps);
+
+        console.log(`(updateClaimableXCookies) All islands' claimableXCookies have been updated.`);
     } catch (err: any) {
         console.error(`(updateClaimableXCookies) Error: ${err.message}`);
     }
