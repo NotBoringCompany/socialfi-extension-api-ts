@@ -2,7 +2,7 @@ import cron from 'node-cron';
 import { depleteEnergy } from '../api/bit';
 
 /**
- * Calls `depleteEnergy` every 10 minutes and depletes all bit energ
+ * Calls `depleteEnergy` every 10 minutes and depletes all bits' energies.
  */
 export const depleteEnergyScheduler = async (): Promise<void> => {
     try {

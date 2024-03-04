@@ -39,6 +39,7 @@ import bitOrb from './routes/bitOrb';
 import bit from './routes/bit';
 import user from './routes/user';
 import chest from './routes/chest';
+import { schedulers } from './schedulers/schedulers';
 
 app.use('/auth/twitter', twitterAuth);
 app.use('/jwt', jwt);
@@ -56,4 +57,6 @@ app.listen(port, async () => {
     console.log(`Server running on port ${port}`);
 
     await mongoose.connect(mongoUri);
+
+    await schedulers();
 });
