@@ -47,7 +47,7 @@ export const evolveIsland = async (twitterId: string, islandId: number): Promise
     try {
         // firstly, check if the user owns the island
         const user = await User.findOne({ twitterId });
-        
+
         if (!user) {
             return {
                 status: Status.ERROR,
@@ -105,8 +105,8 @@ export const evolveIsland = async (twitterId: string, islandId: number): Promise
         if (totalXCookiesSpentIsZero) {
             await Island.updateOne(
                 { islandId },
-                { 
-                    $inc: { 
+                {
+                    $inc: {
                         'currentLevel': 1,
                         'islandEarningStats.totalXCookiesSpent': requiredXCookies
                     },
@@ -115,12 +115,12 @@ export const evolveIsland = async (twitterId: string, islandId: number): Promise
                     }
                 }
             );
-        // otherwise, only evolve the island and increment the totalXCookiesSpent.
+            // otherwise, only evolve the island and increment the totalXCookiesSpent.
         } else {
             await Island.updateOne(
                 { islandId },
-                { 
-                    $inc: { 
+                {
+                    $inc: {
                         'currentLevel': 1,
                         'islandEarningStats.totalXCookiesSpent': requiredXCookies
                     }
@@ -202,11 +202,12 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
 
         // filter out the islands that have bits placed by querying the `Islands` collection to get the total amount of active islands
         const activeIslands = await Island.find(
-            { islandId: 
-                { $in: ownedIslands }, 
-                placedBitIds: { $exists: true, $ne: [] } 
+            {
+                islandId:
+                    { $in: ownedIslands },
+                placedBitIds: { $exists: true, $ne: [] }
             });
-        
+
         if (activeIslands.length >= TOTAL_ACTIVE_ISLANDS_ALLOWED) {
             return {
                 status: Status.ERROR,
@@ -266,8 +267,11 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
                 value: 1 - (rarityDeviationReductions.gatheringRateReduction / 100)
             }
 
-            // add the new modifier to the island's `gatheringRateModifiers`
-            await Island.updateOne({ islandId }, { $push: { 'islandStatsModifiers.gatheringRateModifiers': newGatheringRateModifier } });
+            // if modifier value is NOT 1, add the new modifier to the island's `gatheringRateModifiers` (1 means no change in gathering rate, so no need to add it to the array)
+            if (newGatheringRateModifier.value !== 1) {
+                // add the new modifier to the island's `gatheringRateModifiers`
+                await Island.updateOne({ islandId }, { $push: { 'islandStatsModifiers.gatheringRateModifiers': newGatheringRateModifier } });
+            }
         } else {
             const currentValue = island.islandStatsModifiers?.gatheringRateModifiers[gatheringRateModifierIndex].value;
             const newValue = currentValue - (rarityDeviationReductions.gatheringRateReduction / 100);
@@ -289,8 +293,11 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
                 value: 1 - (rarityDeviationReductions.resourceCapReduction / 100)
             }
 
-            // add the new modifier to the island's `resourceCapModifiers`
-            await Island.updateOne({ islandId }, { $push: { 'islandStatsModifiers.resourceCapModifiers': newResourceCapModifier } });
+            // if modifier value is NOT 1, add the new modifier to the island's `resourceCapModifiers` (1 means no change in resource cap, so no need to add it to the array)
+            if (newResourceCapModifier.value !== 1) {
+                // add the new modifier to the island's `resourceCapModifiers`
+                await Island.updateOne({ islandId }, { $push: { 'islandStatsModifiers.resourceCapModifiers': newResourceCapModifier } });
+            }
         } else {
             const currentValue = island.islandStatsModifiers?.resourceCapModifiers[resourceCapModifierIndex].value;
             const newValue = currentValue - (rarityDeviationReductions.resourceCapReduction / 100);
@@ -376,9 +383,10 @@ export const checkCurrentTax = async (twitterId: string, islandId: number): Prom
 
         // filter out the islands that have bits placed by querying the `Islands` collection to get the total amount of active islands
         const activeIslands = await Island.find(
-            { islandId: 
-                { $in: islandIds }, 
-                placedBitIds: { $exists: true, $ne: [] } 
+            {
+                islandId:
+                    { $in: islandIds },
+                placedBitIds: { $exists: true, $ne: [] }
             });
 
         // get the island from the `islandId` within the `activeIslands` array
@@ -497,7 +505,14 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
  * NOTE: If 0 xCookies have been spent for an island, this function will skip that island.
  */
 export const updateClaimableXCookies = async (): Promise<void> => {
+    const Island = mongoose.model('Islands', IslandSchema, 'Islands');
+    const User = mongoose.model('Users', UserSchema, 'Users');
 
+    try {
+
+    } catch (err: any) {
+        console.error(`(updateClaimableXCookies) Error: ${err.message}`);
+    }
 }
 
 /**
@@ -577,15 +592,15 @@ export const claimResources = async (twitterId: string, islandId: number): Promi
         // 2. set the island's `lastClaimed` to the current time
         // 3. add the claimed resources into `resourcesGathered`. if the resource already exists, increment its amount; if not, push the new resource into `resourcesGathered`
         await Island.updateOne(
-            { islandId }, 
-            { 
-                $set: { 
-                    'islandResourceStats.claimableResources': [], 
-                    'islandResourceStats.lastClaimed': currentTime 
+            { islandId },
+            {
+                $set: {
+                    'islandResourceStats.claimableResources': [],
+                    'islandResourceStats.lastClaimed': currentTime
                 },
-                $push: { 
-                    'islandResourceStats.resourcesGathered': { 
-                        $each: claimableResources.map(resource => ({ 
+                $push: {
+                    'islandResourceStats.resourcesGathered': {
+                        $each: claimableResources.map(resource => ({
                             $cond: [
                                 { $eq: ["$$type", resource.type] },
                                 { $inc: { 'amount': resource.amount } },
@@ -593,9 +608,9 @@ export const claimResources = async (twitterId: string, islandId: number): Promi
                             ]
                         }))
                     }
-                } 
+                }
             }
-        );        
+        );
 
         return {
             status: Status.SUCCESS,
@@ -648,7 +663,7 @@ export const claimXCookies = async (twitterId: string, islandId: number): Promis
         // check if the `X_COOKIE_CLAIM_COOLDOWN` has passed from the last claimed time
         const currentTime = Math.floor(Date.now() / 1000);
         const lastClaimedTime = island.islandEarningStats?.lastClaimed as number;
-        
+
         if (currentTime - lastClaimedTime < X_COOKIE_CLAIM_COOLDOWN) {
             return {
                 status: Status.ERROR,
@@ -691,10 +706,10 @@ export const claimXCookies = async (twitterId: string, islandId: number): Promis
         // 3. set the island's `currentTax` to `tax`
         // 4. increment the island's `totalXCookiesEarned` by the amount of xCookies claimed
         await Island.updateOne(
-            { islandId }, 
-            { 
-                $set: { 
-                    'islandEarningStats.claimableXCookies': 0, 
+            { islandId },
+            {
+                $set: {
+                    'islandEarningStats.claimableXCookies': 0,
                     'islandEarningStats.lastClaimed': currentTime,
                     'currentTax': tax
                 },

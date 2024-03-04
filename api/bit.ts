@@ -93,6 +93,9 @@ export const feedBit = async (twitterId: string, bitId: number, foodType: FoodTy
 
         const { gatheringRateReduction, earningRateReduction } = ENERGY_THRESHOLD_REDUCTIONS(currentEnergy);
 
+        console.log('feed bit gathering rate reduction: ', gatheringRateReduction);
+        console.log('feed bit earning rate reduction: ', earningRateReduction);
+
         // update the modifiers of the bit regardless based on the energy thresholds
         const gatheringRateModifier: Modifier = {
             origin: 'Energy Threshold Reduction',
