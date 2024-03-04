@@ -93,9 +93,6 @@ export const feedBit = async (twitterId: string, bitId: number, foodType: FoodTy
 
         const { gatheringRateReduction, earningRateReduction } = ENERGY_THRESHOLD_REDUCTIONS(currentEnergy);
 
-        console.log('feed bit gathering rate reduction: ', gatheringRateReduction);
-        console.log('feed bit earning rate reduction: ', earningRateReduction);
-
         // update the modifiers of the bit regardless based on the energy thresholds
         const gatheringRateModifier: Modifier = {
             origin: 'Energy Threshold Reduction',
@@ -117,13 +114,23 @@ export const feedBit = async (twitterId: string, bitId: number, foodType: FoodTy
 
         // if the modifier exists, update it; if not, push it
         if (gatheringRateModifierIndex !== -1) {
-            await Bit.updateOne({ bitId }, { $set: { 'bitStatsModifiers.gatheringRateModifiers.$[elem].value': gatheringRateModifier.value } }, { arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }] });
+            // if the new gathering rate modifier is 1, remove the modifier
+            if (gatheringRateModifier.value === 1) {
+                await Bit.updateOne({ bitId }, { $pull: { 'bitStatsModifiers.gatheringRateModifiers': { origin: 'Energy Threshold Reduction' } } });
+            } else {
+                await Bit.updateOne({ bitId }, { $set: { 'bitStatsModifiers.gatheringRateModifiers.$[elem].value': gatheringRateModifier.value } }, { arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }] });
+            }
         } else {
             await Bit.updateOne({ bitId }, { $push: { 'bitStatsModifiers.gatheringRateModifiers': gatheringRateModifier } });
         }
 
         if (earningRateModifierIndex !== -1) {
-            await Bit.updateOne({ bitId }, { $set: { 'bitStatsModifiers.earningRateModifiers.$[elem].value': earningRateModifier.value } }, { arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }] });
+            // if the new earning rate modifier is 1, remove the modifier
+            if (earningRateModifier.value === 1) {
+                await Bit.updateOne({ bitId }, { $pull: { 'bitStatsModifiers.earningRateModifiers': { origin: 'Energy Threshold Reduction' } } });
+            } else {
+                await Bit.updateOne({ bitId }, { $set: { 'bitStatsModifiers.earningRateModifiers.$[elem].value': earningRateModifier.value } }, { arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }] });
+            }
         } else {
             await Bit.updateOne({ bitId }, { $push: { 'bitStatsModifiers.earningRateModifiers': earningRateModifier } });
         }
