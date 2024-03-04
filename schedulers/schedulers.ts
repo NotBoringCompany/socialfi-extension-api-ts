@@ -3,9 +3,9 @@ import { updateGatheringProgressAndDropResourceScheduler } from './island';
 
 export const schedulers = async (): Promise<void> => {
     try {
-        // deplete energy scheduler needs to run first
-        await depleteEnergyScheduler();
+        // update gathering progress first because bits' energies will deplete afterwards
         await updateGatheringProgressAndDropResourceScheduler();
+        await depleteEnergyScheduler();
     } catch (err: any) {
         console.error('Error in schedulers:', err.message);
     }
