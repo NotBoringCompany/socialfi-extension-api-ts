@@ -91,7 +91,7 @@ export const feedBit = async (twitterId: string, bitId: number, foodType: FoodTy
         // here, we assume that `currentEnergy` is still the same because it was called before updating it, so we use `currentEnergy` instead of `currentEnergy + actualToReplenish`
         const currentEnergy: number = bit.farmingStats?.currentEnergy + actualToReplenish;
 
-        const {gatheringRateReduction, earningRateReduction} = ENERGY_THRESHOLD_REDUCTIONS(currentEnergy);
+        const { gatheringRateReduction, earningRateReduction } = ENERGY_THRESHOLD_REDUCTIONS(currentEnergy);
 
         // update the modifiers of the bit regardless based on the energy thresholds
         const gatheringRateModifier: Modifier = {
@@ -193,17 +193,41 @@ export const depleteEnergy = async (): Promise<void> => {
                 // check if the `earningRateModifiers` already has a modifier called `Energy Threshold Reduction`
                 const earningRateModifierIndex = earningRateModifiers?.findIndex((modifier: Modifier) => modifier.origin === 'Energy Threshold Reduction');
 
-                // if the modifier exists, update it; if not, push it
+                // if the modifier exists, update it; if not, push it. also include the new energy
                 if (gatheringRateModifierIndex !== -1) {
-                    updateOperations.push({ updateOne: { filter: { bitId: bit.bitId }, update: { $set: { 'bitStatsModifiers.gatheringRateModifiers.$[elem].value': gatheringRateModifier.value } }, arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }] } });
+                    updateOperations.push({
+                        updateOne: {
+                            filter: { bitId: bit.bitId },
+                            update: {
+                                $set: { 'farmingStats.currentEnergy': newEnergy, 'bitStatsModifiers.gatheringRateModifiers.$[elem].value': gatheringRateModifier.value }
+                            },
+                            arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }]
+                        }
+                    });
                 } else {
-                    updateOperations.push({ updateOne: { filter: { bitId: bit.bitId }, update: { $push: { 'bitStatsModifiers.gatheringRateModifiers': gatheringRateModifier } } } });
+                    updateOperations.push({
+                        updateOne: {
+                            filter: { bitId: bit.bitId },
+                            update: {
+                                $set: { 'farmingStats.currentEnergy': newEnergy },
+                                $push: { 'bitStatsModifiers.gatheringRateModifiers': gatheringRateModifier }
+                            }
+                        }
+                    });
                 }
 
                 if (earningRateModifierIndex !== -1) {
-                    updateOperations.push({ updateOne: { filter: { bitId: bit.bitId }, update: { $set: { 'bitStatsModifiers.earningRateModifiers.$[elem].value': earningRateModifier.value } }, arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }] } });
+                    updateOperations.push({ updateOne: { filter: { bitId: bit.bitId }, update: { $set: { 'farmingStats.currentEnergy': newEnergy, 'bitStatsModifiers.earningRateModifiers.$[elem].value': earningRateModifier.value } }, arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }] } });
                 } else {
-                    updateOperations.push({ updateOne: { filter: { bitId: bit.bitId }, update: { $push: { 'bitStatsModifiers.earningRateModifiers': earningRateModifier } } } });
+                    updateOperations.push({
+                        updateOne: {
+                            filter: { bitId: bit.bitId },
+                            update: {
+                                $set: { 'farmingStats.currentEnergy': newEnergy },
+                                $push: { 'bitStatsModifiers.earningRateModifiers': earningRateModifier }
+                            }
+                        }
+                    });
                 }
             }
 
@@ -392,7 +416,7 @@ export const evolveBit = async (twitterId: string, bitId: number): Promise<Retur
             // if island's total xCookiesSpent is zero, update the `totalXCookiesSpent` AND start the `earningStart`
             if (islandTotalXCookiesSpentIsZero) {
                 await Island.updateOne({ islandId: bit.placedIslandId }, { $inc: { 'islandEarningStats.totalXCookiesSpent': requiredXCookies }, 'islandEarningStats.earningStart': Math.floor(Date.now() / 1000) });
-            // otherwise, just update the `totalXCookiesSpent`
+                // otherwise, just update the `totalXCookiesSpent`
             } else {
                 await Island.updateOne({ islandId: bit.placedIslandId }, { $inc: { 'islandEarningStats.totalXCookiesSpent': requiredXCookies } });
             }
@@ -493,7 +517,7 @@ export const evolveBitInRaft = async (twitterId: string, bitId: number): Promise
 
         // increase the bit's current farming level by 1
         await Bit.updateOne({ bitId }, { $inc: { 'currentFarmingLevel': 1 } });
-        
+
         return {
             status: Status.SUCCESS,
             message: `(evolveBitInRaft) Bit evolved to the next level.`,

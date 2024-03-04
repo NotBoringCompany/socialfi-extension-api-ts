@@ -489,9 +489,16 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
     }
 }
 
-// export const updateClaimableXCookies = async (): Promise<void> => {
+/**
+ * Updates all eligible islands' `claimableXCookies` based on their current earning rate.
+ * 
+ * Run by a scheduler every 10 minutes.
+ * 
+ * NOTE: If 0 xCookies have been spent for an island, this function will skip that island.
+ */
+export const updateClaimableXCookies = async (): Promise<void> => {
 
-// }
+}
 
 /**
  * Claims all claimable resources from an island and adds them to the user's inventory.
