@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
 import { BitSchema } from '../schemas/Bit';
 import { Bit, BitFarmingStats, BitRarity } from '../models/bit';
-import { BASE_ENERGY_DEPLETION_RATE, BIT_EVOLVING_COST, BIT_EVOLVING_COST_RAFT, DEFAULT_EARNING_RATE, DEFAULT_EARNING_RATE_GROWTH, DEFAULT_GATHERING_RATE, DEFAULT_GATHERING_RATE_GROWTH, ENERGY_THRESHOLD_REDUCTIONS, MAX_BIT_LEVEL, MAX_BIT_LEVEL_RAFT } from '../utils/constants/bit';
+import { BASE_ENERGY_DEPLETION_RATE, BIT_EVOLUTION_COST, BIT_RAFT_EVOLUTION_COST, DEFAULT_EARNING_RATE, DEFAULT_EARNING_RATE_GROWTH, DEFAULT_GATHERING_RATE, DEFAULT_GATHERING_RATE_GROWTH, ENERGY_THRESHOLD_REDUCTIONS, MAX_BIT_LEVEL, MAX_BIT_LEVEL_RAFT } from '../utils/constants/bit';
 import { EARNING_RATE_EXPONENTIAL_DECAY, GATHERING_RATE_EXPONENTIAL_DECAY } from '../utils/constants/island';
 import { RateType } from '../models/island';
 import { Modifier } from '../models/modifier';
@@ -448,7 +448,7 @@ export const evolveBit = async (twitterId: string, bitId: number): Promise<Retur
         const userXCookies = user.inventory?.xCookies;
 
         // calculate the cost to evolve the bit to the next level
-        const requiredXCookies = BIT_EVOLVING_COST(bit.currentFarmingLevel);
+        const requiredXCookies = BIT_EVOLUTION_COST(bit.currentFarmingLevel);
 
         // if not enough xCookies, return an error
         if (userXCookies < requiredXCookies) {
@@ -566,7 +566,7 @@ export const evolveBitInRaft = async (twitterId: string, bitId: number): Promise
         }
 
         // calculate the cost to evolve the bit to the next level
-        const requiredSeaweed = BIT_EVOLVING_COST_RAFT(bit.currentFarmingLevel);
+        const requiredSeaweed = BIT_RAFT_EVOLUTION_COST(bit.currentFarmingLevel);
 
         // if not enough seaweed, return an error
         if (userSeaweed.amount < requiredSeaweed) {
