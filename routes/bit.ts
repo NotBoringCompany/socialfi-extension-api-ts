@@ -155,6 +155,53 @@ router.get('/get_current_gathering_rate/:bitId', async (req, res) => {
     }
 })
 
+// get the current gathering rate for a bit when it evolves to the next level (to show users how much the CGR can grow by)
+router.get('/get_next_current_gathering_rate_increase/:bitId', async (req, res) => {
+    const { bitId } = req.params;
+
+    const Bit = mongoose.model('Bits', BitSchema, 'Bits');
+
+    try {
+        const bit = await Bit.findOne({ bitId: parseInt(bitId) });
+
+        if (!bit) {
+            return res.status(404).json({
+                status: 404,
+                message: `(get_current_gathering_rate) Bit with ID ${bitId} not found.`
+            })
+        }
+
+        const currentGatheringRate = calcBitCurrentRate(
+            RateType.GATHERING,
+            bit.farmingStats?.baseGatheringRate,
+            bit.currentFarmingLevel,
+            bit.farmingStats?.gatheringRateGrowth,
+            bit.bitStatsModifiers?.gatheringRateModifiers
+        );
+
+        const nextCurrentGatheringRate = calcBitCurrentRate(
+            RateType.GATHERING,
+            bit.farmingStats?.baseGatheringRate,
+            bit.currentFarmingLevel + 1,
+            bit.farmingStats?.gatheringRateGrowth,
+            bit.bitStatsModifiers?.gatheringRateModifiers
+        );
+
+        return res.status(200).json({
+            status: 200,
+            message: `(get_current_gathering_rate) Successfully retrieved current gathering rate for bit with ID ${bitId}.`,
+            data: {
+                currentGatheringRateIncrease: nextCurrentGatheringRate - currentGatheringRate
+            }
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+});
+
 // current earning rate for 1 bit
 router.get('/get_current_earning_rate/:bitId', async (req, res) => {
     const { bitId } = req.params;
@@ -192,7 +239,54 @@ router.get('/get_current_earning_rate/:bitId', async (req, res) => {
             message: err.message
         })
     }
-})
+});
+
+// get the current earning rate for a bit when it evolves to the next level (to show users how much the CER can grow by)
+router.get('/get_next_current_earning_rate_increase/:bitId', async (req, res) => {
+    const { bitId } = req.params;
+
+    const Bit = mongoose.model('Bits', BitSchema, 'Bits');
+
+    try {
+        const bit = await Bit.findOne({ bitId: parseInt(bitId) });
+
+        if (!bit) {
+            return res.status(404).json({
+                status: 404,
+                message: `(get_current_earning_rate) Bit with ID ${bitId} not found.`
+            })
+        }
+
+        const currentEarningRate = calcBitCurrentRate(
+            RateType.EARNING,
+            bit.farmingStats?.baseEarningRate,
+            bit.currentFarmingLevel,
+            bit.farmingStats?.earningRateGrowth,
+            bit.bitStatsModifiers?.earningRateModifiers
+        );
+
+        const nextCurrentEarningRate = calcBitCurrentRate(
+            RateType.EARNING,
+            bit.farmingStats?.baseEarningRate,
+            bit.currentFarmingLevel + 1,
+            bit.farmingStats?.earningRateGrowth,
+            bit.bitStatsModifiers?.earningRateModifiers
+        );
+
+        return res.status(200).json({
+            status: 200,
+            message: `(get_current_earning_rate) Successfully retrieved current earning rate for bit with ID ${bitId}.`,
+            data: {
+                currentEarningRateIncrease: nextCurrentEarningRate - currentEarningRate
+            }
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+});
 
 router.get('/get_evolution_cost/:bitId', async (req, res) => {
     const { bitId } = req.params;
