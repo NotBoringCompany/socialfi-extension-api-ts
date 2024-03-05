@@ -566,7 +566,11 @@ export const updateClaimableXCookies = async (): Promise<void> => {
                 updateOperations.push({
                     updateOne: {
                         filter: { islandId: island.islandId },
-                        update: { $set: { 'islandEarningStats.claimableXCookies': island.islandEarningStats?.totalXCookiesSpent - xCookiesEarned } }
+                        update: { 
+                            $set: { 'islandEarningStats.claimableXCookies': island.islandEarningStats?.totalXCookiesSpent - xCookiesEarned },
+                            // also increment the `totalXCookiesEarned` by `claimableXCookies`
+                            $inc: { 'islandEarningStats.totalXCookiesEarned': claimableXCookies }
+                        }
                     }
                 });
             } else {
@@ -575,7 +579,11 @@ export const updateClaimableXCookies = async (): Promise<void> => {
                 updateOperations.push({
                     updateOne: {
                         filter: { islandId: island.islandId },
-                        update: { $set: { 'islandEarningStats.claimableXCookies': claimableXCookies } }
+                        update: { 
+                            $set: { 'islandEarningStats.claimableXCookies': claimableXCookies },
+                            // also increment the `totalXCookiesEarned` by `claimableXCookies`
+                            $inc: { 'islandEarningStats.totalXCookiesEarned': claimableXCookies }
+                        }
                     }
                 });
             }
@@ -677,24 +685,12 @@ export const claimResources = async (twitterId: string, islandId: number): Promi
         // do a few things:
         // 1. clear the island's `claimableResources`
         // 2. set the island's `lastClaimed` to the current time
-        // 3. add the claimed resources into `resourcesGathered`. if the resource already exists, increment its amount; if not, push the new resource into `resourcesGathered`
         await Island.updateOne(
             { islandId },
             {
                 $set: {
                     'islandResourceStats.claimableResources': [],
                     'islandResourceStats.lastClaimed': currentTime
-                },
-                $push: {
-                    'islandResourceStats.resourcesGathered': {
-                        $each: claimableResources.map(resource => ({
-                            $cond: [
-                                { $eq: ["$$type", resource.type] },
-                                { $inc: { 'amount': resource.amount } },
-                                resource
-                            ]
-                        }))
-                    }
                 }
             }
         );
@@ -791,7 +787,6 @@ export const claimXCookies = async (twitterId: string, islandId: number): Promis
         // 1. set the island's `claimableXCookies` to 0
         // 2. set the island's `lastClaimed` to the current time
         // 3. set the island's `currentTax` to `tax`
-        // 4. increment the island's `totalXCookiesEarned` by the amount of xCookies claimed
         await Island.updateOne(
             { islandId },
             {
@@ -800,7 +795,6 @@ export const claimXCookies = async (twitterId: string, islandId: number): Promis
                     'islandEarningStats.lastClaimed': currentTime,
                     'currentTax': tax
                 },
-                $inc: { 'islandEarningStats.totalXCookiesEarned': xCookies }
             }
         );
 
@@ -835,7 +829,9 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
         }
 
         // check if the `resourcesLeft` is at least 1, if not, return an error.
-        if (island.islandResourceStats?.resourcesLeft < 1) {
+        const baseResourceCap = island.islandResourceStats?.baseResourceCap as number;
+        const resourcesGathered: Resource[] = island.islandResourceStats?.resourcesGathered;
+        if (baseResourceCap - resourcesGathered.length === 0) {
             return {
                 status: Status.ERROR,
                 message: `(dropResource) No resources left to drop.`
@@ -875,9 +871,6 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
                 await Island.updateOne({ islandId }, { $push: { 'islandResourceStats.claimableResources': newResource } });
             }
         }
-
-        // then, check if `resourcesGathered` is empty.
-        const resourcesGathered: Resource[] = island.islandResourceStats?.resourcesGathered;
 
         if (resourcesGathered.length === 0 || !resourcesGathered) {
             // if empty, create a new resource and add it to the island's `resourcesGathered`
