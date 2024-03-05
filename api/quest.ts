@@ -112,6 +112,9 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
         // loop through the rewards and add them to the user's inventory
         const rewards: QuestReward[] = quest.rewards;
 
+        // the actual reward types and amounts obtained by the user (e.g. if food => then burger or chocolate etc)
+        let obtainedRewards = [];
+
         for (let i = 0; i < rewards.length; i++) {
             const reward = rewards[i];
             const amount = Math.floor(Math.random() * (reward.maxReceived - reward.minReceived + 1) + reward.minReceived);
@@ -124,6 +127,7 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                 // add the cookie count into the user's inventory
                 case QuestRewardType.X_COOKIES:
                     await User.updateOne({ twitterId }, { $inc: { 'inventory.xCookies': amount } });
+                    obtainedRewards.push({ type: rewardType, amount });
                     break;
                 // add the food into the user's inventory
                 case QuestRewardType.FOOD:
@@ -138,6 +142,7 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                         await User.updateOne({ twitterId }, { $push: { 'inventory.foods': { type: food, amount } } });
                     }
 
+                    obtainedRewards.push({ type: food, amount });
                     break;
                 // if default, return an error (shouldn't happen)
                 default:
@@ -153,7 +158,7 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
             message: `(completeQuest) Quest completed. Rewards received and added to user's inventory.`,
             data: {
                 questId,
-                rewards
+                rewards: obtainedRewards
             }
         }
     } catch (err: any) {
