@@ -7,7 +7,8 @@ import { IslandSchema } from '../schemas/Island';
 import { BitSchema } from '../schemas/Bit';
 import { IslandType, RateType } from '../models/island';
 import { Modifier } from '../models/modifier';
-import { ISLAND_EVOLUTION_COST } from '../utils/constants/island';
+import { ISLAND_EVOLUTION_COST, X_COOKIE_TAX } from '../utils/constants/island';
+import { UserSchema } from '../schemas/User';
 
 const router = express.Router();
 
@@ -294,6 +295,56 @@ router.get('/get_evolution_cost/:islandId', async (req, res) => {
             message: `(get_evolution_cost) Successfully retrieved evolution cost for island with ID ${islandId}.`,
             data: {
                 evolutionCost
+            }
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        });
+    }
+})
+
+router.get('/get_x_cookie_tax/:twitterId/:islandId', async (req, res) => {
+    const { twitterId, islandId } = req.params;
+
+    const Island = mongoose.model('Islands', IslandSchema, 'Islands');
+    const User = mongoose.model('Users', UserSchema, 'Users');
+
+    try {
+        const island = await Island.findOne({ islandId: parseInt(islandId) });
+
+        if (!island) {
+            return res.status(404).json({
+                status: 404,
+                message: `(get_x_cookie_tax) Island with ID ${islandId} not found.`
+            });
+        }
+
+        const user = await User.findOne({ twitterId });
+
+        if (!user) {
+            return res.status(404).json({
+                status: 404,
+                message: `(get_x_cookie_tax) User with ID ${twitterId} not found.`
+            });
+        }
+
+        // get the amount of active islands the user has
+        const activeIslands = await Island.find(
+            {
+                islandId:
+                    { $in:  user.inventory?.islandIds as number[] },
+                placedBitIds: { $exists: true, $ne: [] }
+            });
+
+        const tax = X_COOKIE_TAX(<IslandType>island.type, activeIslands.length);
+
+        return res.status(200).json({
+            status: 200,
+            message: `(get_x_cookie_tax) Successfully retrieved xCookie tax for island with ID ${islandId}.`,
+            data: {
+                tax
             }
         });
     } catch (err: any) {
