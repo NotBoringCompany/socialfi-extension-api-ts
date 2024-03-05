@@ -122,7 +122,7 @@ router.get('/get_current_gathering_rate/:bitId', async (req, res) => {
     const Bit = mongoose.model('Bits', BitSchema, 'Bits');
 
     try {
-        const bit = await Bit.findOne({ bitId: bitId });
+        const bit = await Bit.findOne({ bitId: parseInt(bitId) });
 
         if (!bit) {
             return res.status(404).json({
@@ -161,7 +161,7 @@ router.get('/get_current_earning_rate/:bitId', async (req, res) => {
     const Bit = mongoose.model('Bits', BitSchema, 'Bits');
 
     try {
-        const bit = await Bit.findOne({ bitId: bitId });
+        const bit = await Bit.findOne({ bitId: parseInt(bitId) });
 
         if (!bit) {
             return res.status(404).json({
@@ -192,7 +192,5 @@ router.get('/get_current_earning_rate/:bitId', async (req, res) => {
         })
     }
 })
-
-
 
 export default router;

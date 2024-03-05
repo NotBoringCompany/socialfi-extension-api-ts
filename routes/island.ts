@@ -1,7 +1,12 @@
 import express from 'express';
-import { checkCurrentTax, claimResources, claimXCookies, evolveIsland, getIslands, placeBit } from '../api/island';
+import { calcIslandCurrentRate, checkCurrentTax, claimResources, claimXCookies, evolveIsland, getIslands, placeBit } from '../api/island';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
+import mongoose from 'mongoose';
+import { IslandSchema } from '../schemas/Island';
+import { BitSchema } from '../schemas/Bit';
+import { RateType } from '../models/island';
+import { Modifier } from '../models/modifier';
 
 const router = express.Router();
 
@@ -155,6 +160,114 @@ router.get('/get_islands', async (req, res) => {
             status: 500,
             message: err.message
         })
+    }
+})
+
+// get current gathering rate of an island
+router.get('/get_current_gathering_rate/:islandId', async (req, res) => {
+    const { islandId } = req.params;
+
+    const Island = mongoose.model('Islands', IslandSchema, 'Islands');
+    const Bit = mongoose.model('Bits', BitSchema, 'Bits');
+
+    try {
+        const island = await Island.findOne({ islandId: parseInt(islandId) });
+
+        if (!island) {
+            return res.status(404).json({
+                status: 404,
+                message: `(get_current_gathering_rate) Island with ID ${islandId} not found.`
+            });
+        }
+
+        // get the bits placed in the island
+        const placedBits = island.placedBitIds as number[];
+
+        // find the bits
+        const bits = await Bit.find({ bitId: { $in: placedBits } });
+
+        if (bits.length === 0 || !bits) {
+            return res.status(404).json({
+                status: 404,
+                message: `(get_current_gathering_rate) Bits not found in Island with ID ${islandId}.`
+            });
+        }
+
+        const currentGatheringRate = calcIslandCurrentRate(
+            RateType.GATHERING,
+            bits.map(bit => bit.farmingStats?.baseGatheringRate),
+            bits.map(bit => bit.currentFarmingLevel),
+            bits.map(bit => bit.farmingStats?.gatheringRateGrowth),
+            bits.map(bit => bit.bitStatsModifiers?.gatheringRateModifiers),
+            island.islandStatsModifiers?.gatheringRateModifiers as Modifier[]
+        );
+
+        return res.status(200).json({
+            status: 200,
+            message: `(get_current_gathering_rate) Successfully retrieved current gathering rate for island with ID ${islandId}.`,
+            data: {
+                currentGatheringRate
+            }
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        });
+    }
+})
+
+// get current earning rate of an island
+router.get('/get_current_earning_rate/:islandId', async (req, res) => {
+    const { islandId } = req.params;
+
+    const Island = mongoose.model('Islands', IslandSchema, 'Islands');
+    const Bit = mongoose.model('Bits', BitSchema, 'Bits');
+
+    try {
+        const island = await Island.findOne({ islandId: parseInt(islandId) });
+
+        if (!island) {
+            return res.status(404).json({
+                status: 404,
+                message: `(get_current_earning_rate) Island with ID ${islandId} not found.`
+            });
+        }
+
+        // get the bits placed in the island
+        const placedBits = island.placedBitIds as number[];
+
+        // find the bits
+        const bits = await Bit.find({ bitId: { $in: placedBits } });
+
+        if (bits.length === 0 || !bits) {
+            return res.status(404).json({
+                status: 404,
+                message: `(get_current_earning_rate) Bits not found in Island with ID ${islandId}.`
+            });
+        }
+
+        const currentEarningRate = calcIslandCurrentRate(
+            RateType.EARNING,
+            bits.map(bit => bit.farmingStats?.baseEarningRate),
+            bits.map(bit => bit.currentFarmingLevel),
+            bits.map(bit => bit.farmingStats?.earningRateGrowth),
+            bits.map(bit => bit.bitStatsModifiers?.earningRateModifiers),
+            island.islandStatsModifiers?.earningRateModifiers as Modifier[]
+        );
+
+        return res.status(200).json({
+            status: 200,
+            message: `(get_current_earning_rate) Successfully retrieved current earning rate for island with ID ${islandId}.`,
+            data: {
+                currentEarningRate
+            }
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        });
     }
 })
 
