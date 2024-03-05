@@ -37,7 +37,7 @@ export const addQuest = async (
     try {
         const newQuest = new Quest({
             _id: generateObjectId(),
-            id: questCount + 1,
+            questId: questCount + 1,
             name,
             description,
             type,
