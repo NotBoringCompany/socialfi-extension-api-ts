@@ -1,8 +1,11 @@
 import express from 'express';
-import { evolveBit, evolveBitInRaft, feedBit, getBits } from '../api/bit';
+import { calcBitCurrentRate, evolveBit, evolveBitInRaft, feedBit, getBits } from '../api/bit';
 import { FoodType } from '../models/food';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
+import { RateType } from '../models/island';
+import mongoose from 'mongoose';
+import { BitSchema } from '../schemas/Bit';
 
 const router = express.Router();
 
@@ -111,5 +114,85 @@ router.get('/get_bits', async (req, res) => {
         })
     }
 });
+
+// current gathering rate for 1 bit
+router.get('/get_current_gathering_rate/:bitId', async (req, res) => {
+    const { bitId } = req.params;
+
+    const Bit = mongoose.model('Bits', BitSchema, 'Bits');
+
+    try {
+        const bit = await Bit.findOne({ bitId: bitId });
+
+        if (!bit) {
+            return res.status(404).json({
+                status: 404,
+                message: `(get_current_gathering_rate) Bit with ID ${bitId} not found.`
+            })
+        }
+
+        const currentGatheringRate = calcBitCurrentRate(
+            RateType.GATHERING,
+            bit.farmingStats?.baseGatheringRate,
+            bit.currentFarmingLevel,
+            bit.farmingStats?.gatheringRateGrowth,
+            bit.bitStatsModifiers?.gatheringRateModifiers
+        );
+
+        return res.status(200).json({
+            status: 200,
+            message: `(get_current_gathering_rate) Successfully retrieved current gathering rate for bit with ID ${bitId}.`,
+            data: {
+                currentGatheringRate
+            }
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
+
+// current earning rate for 1 bit
+router.get('/get_current_earning_rate/:bitId', async (req, res) => {
+    const { bitId } = req.params;
+
+    const Bit = mongoose.model('Bits', BitSchema, 'Bits');
+
+    try {
+        const bit = await Bit.findOne({ bitId: bitId });
+
+        if (!bit) {
+            return res.status(404).json({
+                status: 404,
+                message: `(get_current_earning_rate) Bit with ID ${bitId} not found.`
+            })
+        }
+
+        const currentEarningRate = calcBitCurrentRate(
+            RateType.EARNING,
+            bit.farmingStats?.baseEarningRate,
+            bit.currentFarmingLevel,
+            bit.farmingStats?.earningRateGrowth,
+            bit.bitStatsModifiers?.earningRateModifiers
+        );
+
+        return res.status(200).json({
+            status: 200,
+            message: `(get_current_earning_rate) Successfully retrieved current earning rate for bit with ID ${bitId}.`,
+            data: {
+                currentEarningRate
+            }
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
+
+
 
 export default router;
