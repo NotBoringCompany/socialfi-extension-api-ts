@@ -1,6 +1,6 @@
 import { Strategy as TwitterStrategy } from '@superfaceai/passport-twitter-oauth2';
 import passport from 'passport';
-import types, { ExtendedProfile } from '../utils/types';
+import { ExtendedProfile } from '../utils/types';
 
 passport.use(new TwitterStrategy({
     clientType: 'confidential',
