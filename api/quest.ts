@@ -153,6 +153,9 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
             }
         }
 
+        // add the twitter id to the quest's `completedBy` array
+        await Quest.updateOne({ questId }, { $push: { completedBy: twitterId } });
+
         return {
             status: Status.SUCCESS,
             message: `(completeQuest) Quest completed. Rewards received and added to user's inventory.`,
