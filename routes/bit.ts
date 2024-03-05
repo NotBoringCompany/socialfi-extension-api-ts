@@ -6,7 +6,7 @@ import { Status } from '../utils/retVal';
 import { RateType } from '../models/island';
 import mongoose from 'mongoose';
 import { BitSchema } from '../schemas/Bit';
-import { BIT_EVOLUTION_COST } from '../utils/constants/bit';
+import { BIT_EVOLUTION_COST, BIT_RAFT_EVOLUTION_COST } from '../utils/constants/bit';
 
 const router = express.Router();
 
@@ -222,6 +222,38 @@ router.get('/get_evolution_cost/:bitId', async (req, res) => {
         return res.status(500).json({
             status: 500,
             message: `(get_evolution_cost) ${err.message}`
+        })
+    }
+})
+
+router.get('/get_evolution_cost_raft/:bitId', async (req, res) => {
+    const { bitId } = req.params;
+
+    const Bit = mongoose.model('Bits', BitSchema, 'Bits');
+
+    try {
+        const bit = await Bit.findOne({ bitId: parseInt(bitId) });
+
+        if (!bit) {
+            return res.status(404).json({
+                status: 404,
+                message: `(get_evolution_cost_raft) Bit with ID ${bitId} not found.`
+            });
+        }
+
+        const evolutionCost = BIT_RAFT_EVOLUTION_COST(bit.currentFarmingLevel);
+
+        return res.status(200).json({
+            status: 200,
+            message: `(get_evolution_cost_raft) Successfully retrieved raft evolution cost for bit with ID ${bitId}.`,
+            data: {
+                evolutionCost
+            }
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: `(get_evolution_cost_raft) ${err.message}`
         })
     }
 })

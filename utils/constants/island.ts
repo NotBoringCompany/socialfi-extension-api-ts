@@ -34,6 +34,8 @@ export const TOTAL_ACTIVE_ISLANDS_ALLOWED = 30;
 
 /** cost to evolve an island (in xCookies) based on the island type and the island's current level */
 export const ISLAND_EVOLUTION_COST = (type: IslandType, currentLevel: number) => {
+    if (currentLevel === MAX_ISLAND_LEVEL) throw new Error(`(ISLAND_EVOLUTION_COST) Island is already at max level: ${currentLevel}`);
+    
     // higher rarity islands will cost more each time it levels up
     switch (type) {
         case IslandType.PRIMAL_ISLES:

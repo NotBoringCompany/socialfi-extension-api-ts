@@ -5,8 +5,9 @@ import { Status } from '../utils/retVal';
 import mongoose from 'mongoose';
 import { IslandSchema } from '../schemas/Island';
 import { BitSchema } from '../schemas/Bit';
-import { RateType } from '../models/island';
+import { IslandType, RateType } from '../models/island';
 import { Modifier } from '../models/modifier';
+import { ISLAND_EVOLUTION_COST } from '../utils/constants/island';
 
 const router = express.Router();
 
@@ -261,6 +262,38 @@ router.get('/get_current_earning_rate/:islandId', async (req, res) => {
             message: `(get_current_earning_rate) Successfully retrieved current earning rate for island with ID ${islandId}.`,
             data: {
                 currentEarningRate
+            }
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        });
+    }
+})
+
+router.get('/get_evolution_cost/:islandId', async (req, res) => {
+    const { islandId } = req.params;
+
+    const Island = mongoose.model('Islands', IslandSchema, 'Islands');
+
+    try {
+        const island = await Island.findOne({ islandId: parseInt(islandId) });
+
+        if (!island) {
+            return res.status(404).json({
+                status: 404,
+                message: `(get_evolution_cost) Island with ID ${islandId} not found.`
+            });
+        }
+
+        const evolutionCost = ISLAND_EVOLUTION_COST(<IslandType>island.type, island.currentLevel);
+
+        return res.status(200).json({
+            status: 200,
+            message: `(get_evolution_cost) Successfully retrieved evolution cost for island with ID ${islandId}.`,
+            data: {
+                evolutionCost
             }
         });
     } catch (err: any) {
