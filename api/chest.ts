@@ -134,3 +134,48 @@ export const openChest = async (twitterId: string, tweetId: string): Promise<Ret
         }
     }
 }
+
+/**
+ * Removes all opened tweet IDs from the user's `openedTweetIdsToday` array.
+ * 
+ * Should be called by a scheduler every 23:59 UTC.
+ */
+export const removeOpenedTweetIdsToday = async (): Promise<void> => {
+    const User = mongoose.model('Users', UserSchema, 'Users');
+
+    try {
+        // only find users where `openedTweetIdsToday` is not empty
+        const users = await User.find({ openedTweetIdsToday: { $ne: [] } });
+
+        if (users.length === 0 || !users) {
+            console.log(`(removeOpenedTweetIdsToday) No users found with opened tweet IDs today.`);
+            return;
+        }
+
+        // prepare bulk write operations to remove all opened tweet IDs from the `openedTweetIdsToday` array
+        const bulkWriteOperations = users.map(user => {
+            let updateOperations = [];
+
+            // remove all opened tweet IDs from the user's `openedTweetIdsToday` array
+            updateOperations.push({
+                updateOne: {
+                    filter: { twitterId: user.twitterId },
+                    update: {
+                        $set: {
+                            openedTweetIdsToday: []
+                        }
+                    }
+                }
+            });
+
+            return updateOperations;
+        }).flat();
+
+        // execute the bulk write operations
+        await User.bulkWrite(bulkWriteOperations);
+
+        console.log(`(removeOpenedTweetIdsToday) Removed all opened tweet IDs from the users' openedTweetIdsToday array.`);
+    } catch (err: any) {
+        console.error(`(removeOpenedTweetIdsToday) ${err.message}`);
+    }
+}
