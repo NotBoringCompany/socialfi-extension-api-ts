@@ -478,7 +478,7 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
             // divide by 6 to get the gathering progress increment per 10 minutes
             const gatheringProgressIncrement = gatheringProgressIncrementPerHour / 6; 
 
-
+            console.log(`(updateGatheringProgressAndDropResource) Island ID ${island.islandId} has a current gathering rate of ${gatheringRate} %/hour and a gathering progress increment of ${gatheringProgressIncrement}%/10 minutes.`)
 
             if (gatheringProgress + gatheringProgressIncrement < 100) {
                 await Island.updateOne({ islandId: island.islandId }, { $inc: { 'islandResourceStats.gatheringProgress': gatheringProgressIncrement } });
