@@ -17,15 +17,15 @@ app.use(express.json());
 // temporarily allowing all cors requests
 app.use(cors());
 
-// app.use(session({
-//     secret: process.env.SESSION_SECRET,
-//     resave: false,
-//     saveUninitialized: false,
-//     store: MongoStore.create({ mongoUrl: mongoUri, collectionName: 'Sessions' })
-// }));
+app.use(session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    // store: MongoStore.create({ mongoUrl: mongoUri, collectionName: 'Sessions' })
+}));
 
 app.use(passport.initialize());
-// app.use(passport.session());
+app.use(passport.session());
 
 /** ROUTE IMPORTS */
 import twitterAuth from './routes/auth/twitter';
