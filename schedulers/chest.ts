@@ -8,8 +8,7 @@ import { removeOpenedTweetIdsToday } from '../api/chest';
  */
 export const removeOpenedTweetIdsTodayScheduler = async (): Promise<void> => {
     try {
-        // test to run every 10 seconds first
-        cron.schedule('*/10 * * * * *', async () => {
+        cron.schedule('59 23 * * *', async () => {
             console.log('Running removeOpenedTweetIdsTodayScheduler...');
             await removeOpenedTweetIdsToday();
         });
