@@ -465,14 +465,25 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
                 island.islandStatsModifiers?.gatheringRateModifiers as Modifier[]
             );
 
-            // because this function is called every 10 minutes, we will increment the gathering progress by `gatheringRate/6` (since gathering rate is per hour)
-            // check if the island's gathering progress + tenMinGatheringRate is >= 100
-            // if not, just update the gathering progress
-            const tenMinGatheringRate = gatheringRate / 6;
-            if (gatheringProgress + tenMinGatheringRate < 100) {
-                await Island.updateOne({ islandId: island.islandId }, { $inc: { 'islandResourceStats.gatheringProgress': tenMinGatheringRate } });
+            // to calculate the gathering progress increment every 10 minutes, we need to firstly calculate the time it takes (in hours) to drop 1 resource. 
+            // the gathering progress increment/hour (in %) will just be 1 / time to drop 1 resource * 100 (or 100/time to drop resource)
+            // which means that the gathering progress increment/10 minutes will be the gathering progress increment per hour / 6.
+            // example:
+            // say an island has a 250 resource cap. if the gathering rate is 0.02% of total resources/hour, this equates to gathering 0.02/100*250 = 0.05 resources per hour.
+            // to get 1 resource to drop, it would take 1/0.05 = 20 hours, meaning that each hour, the gathering progress (to drop 1 resource) increments by 1/20*100 = 5%.
+            // to get the gathering progress in 10 minutes, divide 5% by 6 to get 0.8333% per 10 minutes.
+            const resourcesPerHour = gatheringRate / 100 * island.islandResourceStats?.baseResourceCap;
+            const hoursToDropResource = 1 / resourcesPerHour;
+            const gatheringProgressIncrementPerHour = 1 / hoursToDropResource * 100;
+            // divide by 6 to get the gathering progress increment per 10 minutes
+            const gatheringProgressIncrement = gatheringProgressIncrementPerHour / 6; 
 
-                console.log(`(updateGatheringProgressAndDropResource) Island ID ${island.islandId} has updated its gathering progress to ${gatheringProgress + tenMinGatheringRate}.`);
+
+
+            if (gatheringProgress + gatheringProgressIncrement < 100) {
+                await Island.updateOne({ islandId: island.islandId }, { $inc: { 'islandResourceStats.gatheringProgress': gatheringProgressIncrement } });
+
+                console.log(`(updateGatheringProgressAndDropResource) Island ID ${island.islandId} has updated its gathering progress to ${gatheringProgress + gatheringProgressIncrement}.`);
             } else {
                 // if >= 100, drop a resource and reset the gathering progress back to 0 + the remaining overflow of %
                 const { status, message } = await dropResource(island.islandId);
@@ -481,7 +492,7 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
                 }
 
                 // calculate the remaining overflow of %
-                finalGatheringProgress = (gatheringProgress + tenMinGatheringRate) - 100;
+                finalGatheringProgress = (gatheringProgress + gatheringProgressIncrement) - 100;
 
                 // reset the gathering progress back to 0 + the remaining overflow of %
                 await Island.updateOne({ islandId: island.islandId }, { $set: { 'islandResourceStats.gatheringProgress': finalGatheringProgress } });
