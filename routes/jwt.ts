@@ -11,7 +11,7 @@ router.post('/validate_jwt', async (req, res) => {
         if (!token) {
             return res.status(401).json({
                 status: Status.UNAUTHORIZED,
-                message: 'No token provided.'
+                message: `(validate_jwt) No token provided.`
             });
         }
 

@@ -20,7 +20,7 @@ export const validateJWT = (token: string): ReturnValue => {
     if (!token) {
         return {
             status: Status.UNAUTHORIZED,
-            message: 'No token provided.'
+            message: `(validateJWT) No token provided.`
         }
     }
 
@@ -31,7 +31,7 @@ export const validateJWT = (token: string): ReturnValue => {
         if (decoded.exp < Date.now() / 1000) {
             return {
                 status: Status.UNAUTHORIZED,
-                message: 'Token expired.'
+                message: `(validateJWT) Token expired.`
             }
         }
 
@@ -44,7 +44,7 @@ export const validateJWT = (token: string): ReturnValue => {
         ) {
             return {
                 status: Status.SUCCESS,
-                message: 'Token is valid.',
+                message: `(validateJWT) Token is valid.`
                 data: {
                     twitterId: decoded.twitterId,
                     twitterAccessToken: decoded.twitterAccessToken,
@@ -55,7 +55,7 @@ export const validateJWT = (token: string): ReturnValue => {
         } else {
             return {
                 status: Status.UNAUTHORIZED,
-                message: 'Invalid token.'
+                message: `(validateJWT) Invalid token.`
             }
         
         }
@@ -63,7 +63,7 @@ export const validateJWT = (token: string): ReturnValue => {
         {
             return {
                 status: Status.UNAUTHORIZED,
-                message: 'Error while validating JWT token: ' + err.message || 'Unknown error.'
+                message: `(validateJWT) ${err.message}`
             }
         }
     }
