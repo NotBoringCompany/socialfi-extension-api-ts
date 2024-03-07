@@ -594,7 +594,7 @@ export const updateClaimableXCookies = async (): Promise<void> => {
                     }
                 });
             } else {
-                console.log(`(updateClaimableXCookies) Island ID ${island.islandId} has updated its claimable xCookies to ${claimableXCookies}.`);
+                console.log(`(updateClaimableXCookies) Island ID ${island.islandId} has updated its claimable xCookies to ${island.islandEarningStats?.claimableXCookies + claimableXCookies}.`);
 
                 updateOperations.push({
                     updateOne: {
