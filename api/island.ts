@@ -585,9 +585,11 @@ export const updateClaimableXCookies = async (): Promise<void> => {
                     updateOne: {
                         filter: { islandId: island.islandId },
                         update: { 
-                            $set: { 'islandEarningStats.claimableXCookies': island.islandEarningStats?.totalXCookiesSpent - xCookiesEarned },
                             // also increment the `totalXCookiesEarned` by `totalXCookiesSpent - xCookiesEarned`
-                            $inc: { 'islandEarningStats.totalXCookiesEarned': island.islandEarningStats?.totalXCookiesSpent - xCookiesEarned }
+                            $inc: { 
+                                'islandEarningStats.totalXCookiesEarned': island.islandEarningStats?.totalXCookiesSpent - xCookiesEarned,
+                                'islandEarningStats.claimableXCookies': island.islandEarningStats?.totalXCookiesSpent - xCookiesEarned 
+                            }
                         }
                     }
                 });
@@ -598,9 +600,11 @@ export const updateClaimableXCookies = async (): Promise<void> => {
                     updateOne: {
                         filter: { islandId: island.islandId },
                         update: { 
-                            $set: { 'islandEarningStats.claimableXCookies': claimableXCookies },
                             // also increment the `totalXCookiesEarned` by `claimableXCookies`
-                            $inc: { 'islandEarningStats.totalXCookiesEarned': claimableXCookies }
+                            $inc: { 
+                                'islandEarningStats.totalXCookiesEarned': claimableXCookies,
+                                'islandEarningStats.claimableXCookies': claimableXCookies
+                            }
                         }
                     }
                 });
