@@ -21,10 +21,11 @@ export const getShop = (): ReturnValue => {
 }
 
 /**
- * (User) Purchases a shop asset. Requires enough xCookies.
+ * (User) Purchases `amount` of a shop asset. Requires enough xCookies.
  */
 export const purchaseShopAsset = async (
     twitterId: string,
+    amount: number,
     asset: ShopAsset,
     foodType?: FoodType
 ): Promise<ReturnValue> => {
@@ -82,7 +83,7 @@ export const purchaseShopAsset = async (
                 assetPrice = food.xCookies;
 
                 // if user doesn't have enough xCookies, return an error
-                if (xCookies < food.xCookies) {
+                if (xCookies < assetPrice * amount) {
                     return {
                         status: Status.ERROR,
                         message: `(purchaseShopAsset) Not enough xCookies.`
@@ -93,7 +94,7 @@ export const purchaseShopAsset = async (
             case ShopAsset.BIT_ORB:
                 assetPrice = shop.bitOrbs.xCookies;
 
-                if (xCookies < shop.bitOrbs.xCookies) {
+                if (xCookies < assetPrice * amount) {
                     return {
                         status: Status.ERROR,
                         message: `(purchaseShopAsset) Not enough xCookies.`
@@ -104,7 +105,7 @@ export const purchaseShopAsset = async (
             case ShopAsset.TERRA_CAPSULATOR:
                 assetPrice = shop.terraCapsulators.xCookies;
 
-                if (xCookies < shop.terraCapsulators.xCookies) {
+                if (xCookies < assetPrice * amount) {
                     return {
                         status: Status.ERROR,
                         message: `(purchaseShopAsset) Not enough xCookies.`
@@ -130,7 +131,7 @@ export const purchaseShopAsset = async (
 
         // Prepare the update operation to deduct the asset price from the user's xCookies
         const updateOperation: any = {
-            $set: { 'inventory.xCookies': xCookies - assetPrice }
+            $set: { 'inventory.xCookies': xCookies - (assetPrice * amount) }
         };
 
         // Update the user's inventory based on the asset type
@@ -140,19 +141,19 @@ export const purchaseShopAsset = async (
                 const existingFoodIndex = user.inventory.foods.findIndex(f => f.type === foodType);
                 if (existingFoodIndex !== -1) {
                     // If the food already exists, increment its amount
-                    updateOperation.$inc = { [`inventory.foods.${existingFoodIndex}.amount`]: 1 };
+                    updateOperation.$inc = { [`inventory.foods.${existingFoodIndex}.amount`]: amount };
                 } else {
                     // If the food doesn't exist, push a new food item
-                    updateOperation.$push = { 'inventory.foods': { type: foodType, amount: 1 } };
+                    updateOperation.$push = { 'inventory.foods': { type: foodType, amount: amount } };
                 }
                 break;
             case ShopAsset.BIT_ORB:
                 // Increment totalBitOrbs count
-                updateOperation.$inc = { 'inventory.totalBitOrbs': 1 };
+                updateOperation.$inc = { 'inventory.totalBitOrbs': amount };
                 break;
             case ShopAsset.TERRA_CAPSULATOR:
                 // Increment totalTerraCapsulators count
-                updateOperation.$inc = { 'inventory.totalTerraCapsulators': 1 };
+                updateOperation.$inc = { 'inventory.totalTerraCapsulators': amount };
                 break;
         }
 
@@ -165,6 +166,7 @@ export const purchaseShopAsset = async (
             status: Status.SUCCESS,
             message: `(purchaseShopAsset) Asset purchased and xCookies deducted.`,
             data: {
+                amount,
                 asset,
                 foodType
             }
