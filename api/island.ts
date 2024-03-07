@@ -787,7 +787,7 @@ export const claimXCookies = async (twitterId: string, islandId: number): Promis
         }
 
         // check how much tax the user has to pay
-        const { status, message, data } = await checkCurrentTax(<IslandType>island.type, islandId);
+        const { status, message, data } = await checkCurrentTax(twitterId, islandId);
 
         if (status !== Status.SUCCESS) {
             return {
