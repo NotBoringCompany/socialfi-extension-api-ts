@@ -795,8 +795,9 @@ export const claimXCookies = async (twitterId: string, islandId: number): Promis
         const tax = data?.tax as number;
 
         // reduce the xCookies by the tax amount
-        const xCookiesAfterTax = tax / 100 * xCookies;
+        const xCookiesAfterTax = xCookies - (tax / 100 * xCookies);
 
+        console.log(`claiming tax for island ID ${islandId}: ${tax}%`);
 
         // add the xCookies to the user's inventory
         await User.updateOne({ twitterId }, { $inc: { 'inventory.xCookies': xCookiesAfterTax } });
