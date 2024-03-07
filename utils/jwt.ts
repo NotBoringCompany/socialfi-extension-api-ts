@@ -28,7 +28,7 @@ export const validateJWT = (token: string): ReturnValue => {
         const decoded = verify(token, process.env.JWT_SECRET) as JwtPayload;
 
         // check for token expiration
-        if (decoded.exp < Date.now() / 1000) {
+        if (decoded.exp < Math.floor(Date.now() / 1000)) {
             return {
                 status: Status.UNAUTHORIZED,
                 message: `(validateJWT) Token expired.`
@@ -49,7 +49,8 @@ export const validateJWT = (token: string): ReturnValue => {
                     twitterId: decoded.twitterId,
                     twitterAccessToken: decoded.twitterAccessToken,
                     twitterRefreshToken: decoded.twitterRefreshToken,
-                    twitterExpiresIn: decoded.twitterExpiresIn
+                    twitterExpiresIn: decoded.exp - Math.floor(Date.now() / 1000),
+                    jwtExpiry: decoded.exp
                 }
             }
         } else {
