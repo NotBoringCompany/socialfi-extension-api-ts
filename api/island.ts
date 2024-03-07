@@ -569,6 +569,11 @@ export const updateClaimableXCookies = async (): Promise<void> => {
                 return;
             }
 
+            if (xCookiesEarned === island.islandEarningStats?.totalXCookiesSpent) {
+                console.log(`(updateClaimableXCookies) Island ID ${island.islandId} has already earned all of its xCookies. Skipping...`);
+                return;
+            }
+
             // if `xCookiesEarned` + `claimableXCookies` is greater than totalXCookiesSpent, set `claimableXCookies` to totalXCookiesSpent - xCookiesEarned
             // this is to prevent the user from claiming more xCookies than they have spent
             if (claimableXCookies + xCookiesEarned > island.islandEarningStats?.totalXCookiesSpent) {
@@ -581,8 +586,8 @@ export const updateClaimableXCookies = async (): Promise<void> => {
                         filter: { islandId: island.islandId },
                         update: { 
                             $set: { 'islandEarningStats.claimableXCookies': island.islandEarningStats?.totalXCookiesSpent - xCookiesEarned },
-                            // also increment the `totalXCookiesEarned` by `claimableXCookies`
-                            $inc: { 'islandEarningStats.totalXCookiesEarned': claimableXCookies }
+                            // also increment the `totalXCookiesEarned` by `totalXCookiesSpent - xCookiesEarned`
+                            $inc: { 'islandEarningStats.totalXCookiesEarned': island.islandEarningStats?.totalXCookiesSpent - xCookiesEarned }
                         }
                     }
                 });
