@@ -558,6 +558,8 @@ export const updateClaimableXCookies = async (): Promise<void> => {
             const tenMinEarningRate = currentEarningRate / 6;
             const claimableXCookies = tenMinEarningRate * island.islandEarningStats?.totalXCookiesSpent;
 
+            console.log(`claimable xCookies for Island ${island.islandId} is ${claimableXCookies}.`);
+
             // get the current amount of cookies earned already
             const xCookiesEarned = island.islandEarningStats?.totalXCookiesEarned;
 
