@@ -1030,7 +1030,7 @@ export const randomizeBaseResourceCap = (type: IslandType): number => {
     // rand between 0.8 and 1.2 to multiply the default resource cap by
     const resCapRand = Math.random() * 0.4 + 0.8;
 
-    return defaultResourceCap * resCapRand;
+    return Math.floor(defaultResourceCap * resCapRand);
 }
 
 /**
