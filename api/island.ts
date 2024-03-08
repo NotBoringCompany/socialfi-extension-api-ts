@@ -854,7 +854,7 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
         // check if the `resourcesLeft` is at least 1, if not, return an error.
         const baseResourceCap = island.islandResourceStats?.baseResourceCap as number;
         const resourcesGathered: Resource[] = island.islandResourceStats?.resourcesGathered;
-        if (baseResourceCap - resourcesGathered.length === 0) {
+        if (baseResourceCap - resourcesGathered.length <= 0) {
             return {
                 status: Status.ERROR,
                 message: `(dropResource) No resources left to drop.`
@@ -922,9 +922,6 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
                 await Island.updateOne({ islandId }, { $push: { 'islandResourceStats.resourcesGathered': newResource } });
             }
         }
-
-        // finally, decrement the `resourcesLeft` by 1
-        await Island.updateOne({ islandId }, { $inc: { 'islandResourceStats.resourcesLeft': -1 } });
 
         return {
             status: Status.SUCCESS,
