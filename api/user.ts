@@ -112,3 +112,35 @@ export const getInventory = async (twitterId: string): Promise<ReturnValue> => {
         }
     }
 }
+
+/**
+ * Fetches the user's wallet private and public keys.
+ */
+export const getWalletDetails = async (twitterId: string): Promise<ReturnValue> => {
+    const User = mongoose.model('Users', UserSchema, 'Users');
+
+    try {
+        const user = await User.findOne({ twitterId });
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(getWalletDetails) User not found.`
+            }
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getWalletDetails) Wallet details fetched.`,
+            data: {
+                privateKey: user.wallet.privateKey,
+                publicKey: user.wallet.publicKey
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getWalletDetails) ${err.message}`
+        }
+    }
+}
