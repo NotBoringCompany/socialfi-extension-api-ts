@@ -6,27 +6,27 @@ import { Shop } from '../models/shop';
  */
 export const shop: Shop = {
     bitOrbs: {
-        xCookies: 100
+        xCookies: 200
     },
     terraCapsulators: {
-        xCookies: 300
+        xCookies: 600
     },
     foods: [
         {
             type: FoodType.APPLE,
-            xCookies: 2
+            xCookies: 5
         },
         {
             type: FoodType.CHOCOLATE,
-            xCookies: 4
+            xCookies: 10
         },
         {
             type: FoodType.JUICE,
-            xCookies: 8
+            xCookies: 20
         },
         {
             type: FoodType.BURGER,
-            xCookies: 15
+            xCookies: 35
         }
     ]
 }
