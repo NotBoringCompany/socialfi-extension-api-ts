@@ -7,7 +7,7 @@ import { IslandSchema } from '../schemas/Island';
 import { BitSchema } from '../schemas/Bit';
 import { IslandType, RateType, ResourceDropChanceDiff } from '../models/island';
 import { Modifier } from '../models/modifier';
-import { ISLAND_EVOLUTION_COST, X_COOKIE_TAX } from '../utils/constants/island';
+import { ISLAND_EVOLUTION_COST, MAX_ISLAND_LEVEL, X_COOKIE_TAX } from '../utils/constants/island';
 import { UserSchema } from '../schemas/User';
 
 const router = express.Router();
@@ -373,7 +373,21 @@ router.get('/get_evolution_resource_drop_chances_diff/:islandId', async (req, re
         const currentLevel = island.currentLevel;
 
         const currentResourceDropChances = calcEffectiveResourceDropChances(<IslandType>island.type, currentLevel);
-        const nextLevelResourceDropChances = calcEffectiveResourceDropChances(<IslandType>island.type, currentLevel + 1);
+
+        let nextLevelResourceDropChances: ResourceDropChanceDiff;
+
+        // since islands have a max level, if theyre at max level, the next level resource drop chances will be 0 (because they technically can't level it up anymore)
+        if (currentLevel === MAX_ISLAND_LEVEL) {
+            nextLevelResourceDropChances = {
+                stone: 0,
+                keratin: 0,
+                silver: 0,
+                diamond: 0,
+                relic: 0
+            }
+        } else {
+            nextLevelResourceDropChances = calcEffectiveResourceDropChances(<IslandType>island.type, currentLevel + 1);
+        }
 
         const resourceDropChanceDiff: ResourceDropChanceDiff = {
             stone: nextLevelResourceDropChances.stone - currentResourceDropChances.stone,
