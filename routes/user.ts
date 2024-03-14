@@ -24,9 +24,7 @@ router.get('/get_inventory/:twitterId', async (req, res) => {
     }
 });
 
-router.get('/get_wallet_details/:twitterId', async (req, res) => {
-    const { twitterId } = req.params;
-
+router.get('/get_wallet_details', async (req, res) => {
     const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'get_wallet_details');
 
     if (validateStatus !== Status.SUCCESS) {

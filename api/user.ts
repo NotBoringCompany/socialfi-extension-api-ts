@@ -4,12 +4,18 @@ import { UserSchema } from '../schemas/User';
 import { createUserWallet } from '../utils/wallet';
 import { createRaft } from './raft';
 import { generateObjectId } from '../utils/crypto';
+import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
+import { BitSchema } from '../schemas/Bit';
+import { RANDOMIZE_RARITY_FROM_ORB } from '../utils/constants/bitOrb';
+import { RANDOMIZE_GENDER } from '../utils/constants/bit';
+import { ObtainMethod } from '../models/obtainMethod';
 
 /**
  * Twitter login logic. Creates a new user or simply log them in if they already exist.
  */
 export const handleTwitterLogin = async (twitterId: string): Promise<ReturnValue> => {
     const User = mongoose.model('Users', UserSchema, 'Users');
+    const Bit = mongoose.model('Bits', BitSchema, 'Bits');
 
     try {
         const user = await User.findOne({ twitterId });
@@ -26,6 +32,47 @@ export const handleTwitterLogin = async (twitterId: string): Promise<ReturnValue
                 return {
                     status,
                     message: `(handleTwitterLogin) Error from createRaft: ${message}`
+                }
+            }
+
+            // get the latest bit ID from the database
+            const { status: bitIdStatus, message: bitIdMessage, data: bitIdData } = await getLatestBitId();
+
+            if (bitIdStatus !== Status.SUCCESS) {
+                return {
+                    status: bitIdStatus,
+                    message: `(handleTwitterLogin) Error from getLatestBitId: ${bitIdMessage}`
+                }
+            }
+
+            // randomize bit rarity; follows the same rarity as when obtaining a bit from a bit orb
+            const rarity = RANDOMIZE_RARITY_FROM_ORB();
+
+            // add a free/rafting bit to the user's inventory (users get 1 for free when they sign up)
+            const { status: bitStatus, message: bitMessage, data: bitData } = await addBitToDatabase({
+                bitId: bitIdData?.latestBitId + 1,
+                rarity,
+                gender: RANDOMIZE_GENDER(),
+                premium: false, // free/rafting bit, so not premium
+                owner: userObjectId,
+                purchaseDate: Math.floor(Date.now() / 1000),
+                obtainMethod: ObtainMethod.SIGN_UP,
+                totalXCookiesSpent: 0,
+                placedIslandId: 0,
+                placedRaftId: data.raft.raftId, // automatically placed in the user's raft
+                currentFarmingLevel: 1, // starts at level 1
+                farmingStats: randomizeFarmingStats(rarity), // although rafting bits don't use farming stats, we still need to randomize it just in case for future events
+                bitStatsModifiers: {
+                    gatheringRateModifiers: [],
+                    earningRateModifiers: [],
+                    energyRateModifiers: []
+                }
+            });
+
+            if (bitStatus !== Status.SUCCESS) {
+                return {
+                    status: bitStatus,
+                    message: `(handleTwitterLogin) Error from addBitToDatabase: ${bitMessage}`
                 }
             }
 
@@ -47,7 +94,7 @@ export const handleTwitterLogin = async (twitterId: string): Promise<ReturnValue
                     foods: [],
                     raftId: data.raft.raftId,
                     islandIds: [],
-                    bitIds: [],
+                    bitIds: [bitIdData?.latestBitId + 1],
                     totalBitOrbs: 0,
                     totalTerraCapsulators: 0
                 }
@@ -57,10 +104,10 @@ export const handleTwitterLogin = async (twitterId: string): Promise<ReturnValue
 
             return {
                 status: Status.SUCCESS,
-                message: `(handleTwitterLogin) New user created.`,
+                message: `(handleTwitterLogin) New user created and free Rafting Bit added to raft.`,
                 data: {
                     userId: newUser._id,
-                    twitterId
+                    twitterId,
                 }
             }
         } else {

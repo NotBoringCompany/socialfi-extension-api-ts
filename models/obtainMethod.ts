@@ -7,4 +7,8 @@ export enum ObtainMethod {
     BIT_ORB = 'Bit Orb',
     /** staking benefits obtained from Blast or other staking protocols */
     STAKING = 'Staking',
+    /* reward obtained from signing up */
+    SIGN_UP = 'Sign Up',
+    /* reward obtained from an event */
+    EVENT = 'Event',
 }
