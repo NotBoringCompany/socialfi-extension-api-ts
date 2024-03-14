@@ -1,11 +1,11 @@
 import express from 'express';
-import { calcIslandCurrentRate, checkCurrentTax, claimResources, claimXCookies, evolveIsland, getIslands, placeBit } from '../api/island';
+import { calcEffectiveResourceDropChances, calcIslandCurrentRate, calcResourceDropChanceDiff, checkCurrentTax, claimResources, claimXCookies, evolveIsland, getIslands, placeBit } from '../api/island';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import mongoose from 'mongoose';
 import { IslandSchema } from '../schemas/Island';
 import { BitSchema } from '../schemas/Bit';
-import { IslandType, RateType } from '../models/island';
+import { IslandType, RateType, ResourceDropChanceDiff } from '../models/island';
 import { Modifier } from '../models/modifier';
 import { ISLAND_EVOLUTION_COST, X_COOKIE_TAX } from '../utils/constants/island';
 import { UserSchema } from '../schemas/User';
@@ -345,6 +345,50 @@ router.get('/get_x_cookie_tax/:twitterId/:islandId', async (req, res) => {
             message: `(get_x_cookie_tax) Successfully retrieved xCookie tax for island with ID ${islandId}.`,
             data: {
                 tax
+            }
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        });
+    }
+})
+
+router.get('/get_evolution_resource_drop_chances_diff/:islandId', async (req, res) => {
+    const { islandId } = req.params;
+
+    const Island = mongoose.model('Islands', IslandSchema, 'Islands');
+
+    try {
+        const island = await Island.findOne({ islandId: parseInt(islandId) });
+
+        if (!island) {
+            return res.status(404).json({
+                status: 404,
+                message: `(get_evolution_resource_drop_chances_diff) Island with ID ${islandId} not found.`
+            });
+        }
+
+        const currentLevel = island.currentLevel;
+
+        const currentResourceDropChances = calcEffectiveResourceDropChances(<IslandType>island.type, currentLevel);
+        const nextLevelResourceDropChances = calcEffectiveResourceDropChances(<IslandType>island.type, currentLevel + 1);
+
+        const resourceDropChanceDiff: ResourceDropChanceDiff = {
+            stone: nextLevelResourceDropChances.stone - currentResourceDropChances.stone,
+            keratin: nextLevelResourceDropChances.keratin - currentResourceDropChances.keratin,
+            silver: nextLevelResourceDropChances.silver - currentResourceDropChances.silver,
+            diamond: nextLevelResourceDropChances.diamond - currentResourceDropChances.diamond,
+            relic: nextLevelResourceDropChances.relic - currentResourceDropChances.relic
+        }
+
+        return res.status(200).json({
+            status: 200,
+            message: `(get_evolution_resource_drop_chances_diff) Successfully retrieved resource drop chances difference for island with ID ${islandId}.`,
+            data: {
+                currentResourceDropChances,
+                resourceDropChanceDiff
             }
         });
     } catch (err: any) {

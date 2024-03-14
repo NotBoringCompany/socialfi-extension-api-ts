@@ -90,7 +90,7 @@ export const DEFAULT_RESOURCE_CAP = (type: IslandType) => {
 }
 
 /**
- * Gets the resource drop chances for an Island based on its type.
+ * Gets the base resource drop chances for an Island based on its type.
  */
 export const RESOURCE_DROP_CHANCES = (type: IslandType): ResourceDropChance => {
     switch (type) {
