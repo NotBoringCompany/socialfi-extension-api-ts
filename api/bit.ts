@@ -12,6 +12,7 @@ import { Food, FoodType } from '../models/food';
 import { FOOD_ENERGY_REPLENISHMENT } from '../utils/constants/food';
 import { Resource, ResourceType } from '../models/resource';
 import { generateObjectId } from '../utils/crypto';
+import { shop } from '../utils/shop';
 
 /**
  * (User) Feeds a bit some food and replenishes its energy.
@@ -19,6 +20,7 @@ import { generateObjectId } from '../utils/crypto';
 export const feedBit = async (twitterId: string, bitId: number, foodType: FoodType): Promise<ReturnValue> => {
     const User = mongoose.model('Users', UserSchema, 'Users');
     const Bit = mongoose.model('Bits', BitSchema, 'Bits');
+    const Island = mongoose.model('Islands', IslandSchema, 'Islands');
 
     try {
         // first, check if the user owns the bit
@@ -135,9 +137,33 @@ export const feedBit = async (twitterId: string, bitId: number, foodType: FoodTy
             await Bit.updateOne({ bitId }, { $push: { 'bitStatsModifiers.earningRateModifiers': earningRateModifier } });
         }
 
+        // then, update the bit's `totalXCookiesSpent` by 90% of the cost of food
+        const foodCost = shop.foods.find(food => food.type === foodType)?.xCookies * 0.9;
+        await Bit.updateOne({ bitId }, { $inc: { 'totalXCookiesSpent': foodCost } });
+
+        // if the bit is placed in an island, update the island's `totalXCookiesSpent` by the cost of the food
+        if (bit.placedIslandId !== 0) {
+            const island = await Island.findOne({ islandId: bit.placedIslandId });
+
+            if (!island) {
+                return {
+                    status: Status.ERROR,
+                    message: `(feedBit) Island not found.`
+                }
+            }
+
+            // if island's total xCookiesSpent is zero, update the `totalXCookiesSpent` AND start the `earningStart`
+            if (island.islandEarningStats?.totalXCookiesSpent === 0) {
+                await Island.updateOne({ islandId: bit.placedIslandId }, { $inc: { 'islandEarningStats.totalXCookiesSpent': foodCost, 'islandEarningStats.earningStart': Math.floor(Date.now() / 1000) } });
+            } else {
+                // otherwise, just update the `totalXCookiesSpent`
+                await Island.updateOne({ islandId: bit.placedIslandId }, { $inc: { 'islandEarningStats.totalXCookiesSpent': foodCost } });
+            }
+        }
+
         return {
             status: Status.SUCCESS,
-            message: `(feedBit) Bit fed and energy replenished.`,
+            message: `(feedBit) Bit fed and energy replenished. Cookies spent added to bit's (and possibly the island the bit was placed in's) totalXCookiesSpent.`,
             data: {
                 bitId: bitId
             }
