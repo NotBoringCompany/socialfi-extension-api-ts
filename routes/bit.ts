@@ -241,6 +241,54 @@ router.get('/get_current_earning_rate/:bitId', async (req, res) => {
     }
 });
 
+// current gathering and earning rate for 1 bit
+router.get('/get_current_rates/:bitId', async (req, res) => {
+    const { bitId } = req.params;
+
+    const Bit = mongoose.model('Bits', BitSchema, 'Bits');
+
+    try {
+        const bit = await Bit.findOne({ bitId: parseInt(bitId) });
+
+        if (!bit) {
+            return res.status(404).json({
+                status: 404,
+                message: `(get_current_rates) Bit with ID ${bitId} not found.`
+            })
+        }
+
+        const currentGatheringRate = calcBitCurrentRate(
+            RateType.GATHERING,
+            bit.farmingStats?.baseGatheringRate,
+            bit.currentFarmingLevel,
+            bit.farmingStats?.gatheringRateGrowth,
+            bit.bitStatsModifiers?.gatheringRateModifiers
+        );
+
+        const currentEarningRate = calcBitCurrentRate(
+            RateType.EARNING,
+            bit.farmingStats?.baseEarningRate,
+            bit.currentFarmingLevel,
+            bit.farmingStats?.earningRateGrowth,
+            bit.bitStatsModifiers?.earningRateModifiers
+        );
+
+        return res.status(200).json({
+            status: 200,
+            message: `(get_current_rates) Successfully retrieved current gathering and earning rates for bit with ID ${bitId}.`,
+            data: {
+                currentGatheringRate,
+                currentEarningRate
+            }
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
+
 // gets the max current gathering and earning rate (negating any modifiers) for a bit. used mainly for showing max stats during evolution
 router.get('/get_max_current_rates/:bitId', async (req, res) => {
     const { bitId } = req.params;
