@@ -168,6 +168,12 @@ export const depleteEnergy = async (): Promise<void> => {
 
         // prepare bulk write operations to update energy and modifiers
         const bulkWriteOperations = bits.map(bit => {
+            // if bit isn't placed on a raft or an island, don't deplete energy for this bit
+            if (bit.placedRaftId === 0 && bit.placedIslandId === 0) {
+                console.log(`(depleteEnergy) Bit ${bit.bitId} - not placed in a raft or an island. Skipping.`);
+                return [];
+            }
+
             // get bit's current energy
             const currentEnergy = bit.farmingStats?.currentEnergy;
 
