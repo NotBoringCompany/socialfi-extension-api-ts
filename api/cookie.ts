@@ -33,9 +33,6 @@ export const depositCookies = async (twitterId: string, amount: number): Promise
             gasLimit: 200000
         });
 
-        // wait for 3 confirmations
-        await result.wait(3);
-
         // we dont check for errors here since it will directly go to the catch block if there's an error
         // we just deposit the same amount of cookies to the user's xCookies balance
         await User.updateOne({ twitterId }, {
@@ -127,9 +124,6 @@ export const withdrawCookies = async (twitterId: string, amount: number): Promis
                 gasLimit: 1000000
             }
         );
-
-        // wait for 3 confirmations
-        await result.wait(3);
 
         // we dont check for errors here since it will directly go to the catch block if there's an error
         // we just withdraw the same amount of cookies from the user's xCookies balance
