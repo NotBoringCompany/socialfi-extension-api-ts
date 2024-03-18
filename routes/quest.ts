@@ -49,16 +49,16 @@ router.post('/add_quest', async (req, res) => {
 router.post('/complete_quest', async (req, res) => {
     const { questId } = req.body;
 
-    const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'complete_quest');
-
-    if (validateStatus !== Status.SUCCESS) {
-        return res.status(validateStatus).json({
-            status: validateStatus,
-            message: validateMessage
-        })
-    }
-
     try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'complete_quest');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+        
         const { status, message, data } = await completeQuest(validateData?.twitterId, questId);
 
         return res.status(status).json({

@@ -6,17 +6,16 @@ import { Status } from '../utils/retVal';
 const router = express.Router();
 
 router.post('/consume', async (req, res) => {
-
-    const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'consume_terra_capsulator');
-
-    if (validateStatus !== Status.SUCCESS) {
-        return res.status(validateStatus).json({
-            status: validateStatus,
-            message: validateMessage
-        })
-    }
-
     try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'consume_terra_capsulator');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
         const { status, message, data } = await consumeTerraCapsulator(validateData?.twitterId);
 
         return res.status(status).json({

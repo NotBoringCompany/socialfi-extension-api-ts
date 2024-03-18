@@ -39,6 +39,7 @@ import bitOrb from './routes/bitOrb';
 import bit from './routes/bit';
 import user from './routes/user';
 import chest from './routes/chest';
+import cookie from './routes/cookie';
 import { schedulers } from './schedulers/schedulers';
 
 app.use('/auth/twitter', twitterAuth);
@@ -52,6 +53,7 @@ app.use('/bit_orb', bitOrb);
 app.use('/bit', bit);
 app.use('/user', user);
 app.use('/chest', chest);
+app.use('/cookie', cookie);
 
 app.listen(port, async () => {
     console.log(`Server running on port ${port}`);

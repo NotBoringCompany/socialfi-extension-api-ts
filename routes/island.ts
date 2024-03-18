@@ -15,16 +15,15 @@ const router = express.Router();
 router.post('/place_bit', async (req, res) => {
     const { islandId, bitId } = req.body;
 
-    const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'place_bit');
-
-    if (validateStatus !== Status.SUCCESS) {
-        return res.status(validateStatus).json({
-            status: validateStatus,
-            message: validateMessage
-        })
-    }
-
     try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'place_bit');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
         const { status, message, data } = await placeBit(validateData?.twitterId, islandId, bitId);
 
         return res.status(status).json({
@@ -62,16 +61,15 @@ router.get('/check_current_tax/:twitterId/:islandId', async (req, res) => {
 router.post('/evolve_island', async (req, res) => {
     const { islandId } = req.body;
 
-    const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'evolve_island');
-
-    if (validateStatus !== Status.SUCCESS) {
-        return res.status(validateStatus).json({
-            status: validateStatus,
-            message: validateMessage
-        })
-    }
-
     try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'evolve_island');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
         const { status, message, data } = await evolveIsland(validateData?.twitterId, islandId);
 
         return res.status(status).json({
@@ -90,16 +88,17 @@ router.post('/evolve_island', async (req, res) => {
 router.post('/claim_xcookies', async (req, res) => {
     const { islandId } = req.body;
 
-    const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'claim_xcookies');
-
-    if (validateStatus !== Status.SUCCESS) {
-        return res.status(validateStatus).json({
-            status: validateStatus,
-            message: validateMessage
-        })
-    }
-
     try {
+
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'claim_xcookies');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
         const { status, message, data } = await claimXCookies(validateData?.twitterId, islandId);
 
         return res.status(status).json({
@@ -118,16 +117,16 @@ router.post('/claim_xcookies', async (req, res) => {
 router.post('/claim_resources', async (req, res) => {
     const { islandId } = req.body;
 
-    const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'claim_resources');
-
-    if (validateStatus !== Status.SUCCESS) {
-        return res.status(validateStatus).json({
-            status: validateStatus,
-            message: validateMessage
-        })
-    }
-
     try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'claim_resources');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
         const { status, message, data } = await claimResources(validateData?.twitterId, islandId);
 
         return res.status(status).json({
@@ -290,7 +289,7 @@ router.get('/get_x_cookie_tax/:twitterId/:islandId', async (req, res) => {
         const activeIslands = await Island.find(
             {
                 islandId:
-                    { $in:  user.inventory?.islandIds as number[] },
+                    { $in: user.inventory?.islandIds as number[] },
                 placedBitIds: { $exists: true, $ne: [] }
             });
 

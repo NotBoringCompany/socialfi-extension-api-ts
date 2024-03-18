@@ -14,16 +14,16 @@ const router = express.Router();
 router.post('/place_bit', async (req, res) => {
     const { bitId } = req.body;
 
-    const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'place_bit');
-
-    if (validateStatus !== Status.SUCCESS) {
-        return res.status(validateStatus).json({
-            status: validateStatus,
-            message: validateMessage
-        })
-    }
-
     try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'place_bit');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
         const { status, message, data } = await placeBit(validateData?.twitterId, bitId);
 
         return res.status(status).json({
@@ -59,16 +59,16 @@ router.get('/get_raft/:twitterId', async (req, res) => {
 });
 
 router.post('/claim_seaweed', async (req, res) => {
-    const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'claim_seaweed');
-
-    if (validateStatus !== Status.SUCCESS) {
-        return res.status(validateStatus).json({
-            status: validateStatus,
-            message: validateMessage
-        })
-    }
-
     try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'claim_seaweed');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
         const { status, message, data } = await claimSeaweed(validateData?.twitterId);
 
         return res.status(status).json({

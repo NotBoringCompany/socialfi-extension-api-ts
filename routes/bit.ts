@@ -13,16 +13,16 @@ const router = express.Router();
 router.post('/evolve_bit_in_raft', async (req, res) => {
     const { bitId } = req.body;
 
-    const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'evolve_bit_in_raft');
-
-    if (validateStatus !== Status.SUCCESS) {
-        return res.status(validateStatus).json({
-            status: validateStatus,
-            message: validateMessage
-        })
-    }
-
     try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'evolve_bit_in_raft');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
         const { status, message, data } = await evolveBitInRaft(validateData?.twitterId, bitId);
 
         return res.status(status).json({
@@ -41,16 +41,16 @@ router.post('/evolve_bit_in_raft', async (req, res) => {
 router.post('/evolve_bit', async (req, res) => {
     const { bitId } = req.body;
 
-    const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'evolve_bit');
-
-    if (validateStatus !== Status.SUCCESS) {
-        return res.status(validateStatus).json({
-            status: validateStatus,
-            message: validateMessage
-        })
-    }
-
     try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'evolve_bit');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
         const { status, message, data } = await evolveBit(validateData?.twitterId, bitId);
 
         return res.status(status).json({
@@ -69,16 +69,16 @@ router.post('/evolve_bit', async (req, res) => {
 router.post('/feed_bit', async (req, res) => {
     const { bitId, foodType } = req.body;
 
-    const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'feed_bit');
-
-    if (validateStatus !== Status.SUCCESS) {
-        return res.status(validateStatus).json({
-            status: validateStatus,
-            message: validateMessage
-        })
-    }
-
     try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'feed_bit');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
         const { status, message, data } = await feedBit(validateData?.twitterId, bitId, <FoodType>foodType);
 
         return res.status(status).json({
@@ -266,10 +266,10 @@ router.get('/get_next_current_rate_increases/:bitId', async (req, res) => {
             status: 200,
             message: `(get_current_rates) Successfully retrieved all rates for bit with ID ${bitId}.`,
             data: {
-                    maxCurrentGatheringRate,
-                    maxCurrentEarningRate,
-                    maxCurrentGatheringRateIncrease: nextMaxCurrentGatheringRate - maxCurrentGatheringRate,
-                    maxCurrentEarningRateIncrease: nextMaxCurrentEarningRate - maxCurrentEarningRate
+                maxCurrentGatheringRate,
+                maxCurrentEarningRate,
+                maxCurrentGatheringRateIncrease: nextMaxCurrentGatheringRate - maxCurrentGatheringRate,
+                maxCurrentEarningRateIncrease: nextMaxCurrentEarningRate - maxCurrentEarningRate
             }
         });
 
@@ -288,7 +288,7 @@ router.get('/get_evolution_cost/:bitId', async (req, res) => {
 
     try {
         const bit = await Bit.findOne({ bitId: parseInt(bitId) });
-        
+
         if (!bit) {
             return res.status(404).json({
                 status: 404,
