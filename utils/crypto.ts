@@ -2,6 +2,7 @@ import CryptoJS from 'crypto-js';
 import { BLAST_TESTNET_PROVIDER } from './constants/web3';
 import { ReturnValue, Status } from './retVal';
 import { ethers } from 'ethers';
+import { solidityKeccak256 } from 'ethers/lib/utils';
 
 /**
  * Generates a random Object ID for MongoDB collections.
@@ -62,4 +63,15 @@ export const generateDrawSeed = async (): Promise<ReturnValue> => {
             message: `(generateDrawSeed) Err: ${err.message}`
         }
     }
+}
+
+/**
+ * Generates a random hash salt used for withdrawing xCookies.
+ */
+export const generateHashSalt = (): string => {
+    const randomBytes = CryptoJS.lib.WordArray.random(32); // Generate 32 random bytes
+    const salt = CryptoJS.enc.Hex.stringify(randomBytes); // Convert random bytes to hex string
+
+    // keccak256 the salt 
+    return solidityKeccak256(['string'], [salt]);
 }

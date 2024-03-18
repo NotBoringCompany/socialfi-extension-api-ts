@@ -26,6 +26,8 @@ export const CookieWithdrawalSchema = new mongoose.Schema({
     withdrawer: String,
     withdrawalId: Number,
     amount: Number,
+    hashSalt: String,
+    signature: String,
     transactionHash: String,
     timestamp: Number
 })

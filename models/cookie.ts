@@ -25,6 +25,10 @@ export interface CookieWithdrawal {
     withdrawalId: number;
     /** the amount of xCookies withdrawn */
     amount: number;
+    /** the random hash salt to generate the withdraw hash */
+    hashSalt: string;
+    /** the signature from the deployer wallet */
+    signature: string;
     /** the transaction hash of the withdrawal */
     transactionHash: string;
     /** the withdrawal timestamp (in unix) */

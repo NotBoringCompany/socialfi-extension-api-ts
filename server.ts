@@ -40,7 +40,6 @@ import bit from './routes/bit';
 import user from './routes/user';
 import chest from './routes/chest';
 import { schedulers } from './schedulers/schedulers';
-import { depositCookies } from './api/cookie';
 
 app.use('/auth/twitter', twitterAuth);
 app.use('/jwt', jwt);
@@ -60,8 +59,4 @@ app.listen(port, async () => {
     await mongoose.connect(mongoUri);
 
     await schedulers();
-
-    // test deposit
-    const deposit = await depositCookies('1462755469102137357', 25000);
-    console.log('deposit: ', deposit);
 });

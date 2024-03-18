@@ -1,9 +1,10 @@
 import mongoose from 'mongoose'
 import { ReturnValue, Status } from '../utils/retVal'
 import { UserSchema } from '../schemas/User';
-import { COOKIE_CONTRACT_DECIMALS, COOKIE_CONTRACT_USER } from '../utils/constants/web3';
-import { CookieDepositSchema } from '../schemas/Cookie';
-import { generateObjectId } from '../utils/crypto';
+import { COOKIE_CONTRACT, COOKIE_CONTRACT_DECIMALS, COOKIE_CONTRACT_USER, DEPLOYER_WALLET } from '../utils/constants/web3';
+import { CookieDepositSchema, CookieWithdrawalSchema } from '../schemas/Cookie';
+import { generateHashSalt, generateObjectId } from '../utils/crypto';
+import { ethers } from 'ethers';
 
 /**
  * (User) Deposits `amount` of cookies and earn the equivalent amount of xCookies.
@@ -32,14 +33,11 @@ export const depositCookies = async (twitterId: string, amount: number): Promise
             gasLimit: 200000
         });
 
-        // wait for at least 3 confirmations
-        await result.wait(3);
-
         // we dont check for errors here since it will directly go to the catch block if there's an error
         // we just deposit the same amount of cookies to the user's xCookies balance
         await User.updateOne({ twitterId }, {
             $inc: {
-                xCookies: amount
+                'inventory.xCookies': amount
             }
         });
 
@@ -74,6 +72,100 @@ export const depositCookies = async (twitterId: string, amount: number): Promise
 }
 
 /**
+ * (User) Withdraws `amount` of xCookies and earn the equivalent amount of cookies in the blockchain.
+ */
+export const withdrawCookies = async (twitterId: string, amount: number): Promise<ReturnValue> => {
+    const User = mongoose.model('Users', UserSchema, 'Users');
+    const CookieWithdrawal = mongoose.model('CookieWithdrawals', CookieWithdrawalSchema, 'CookieWithdrawals');
+
+    try {
+        const user = await User.findOne({ twitterId });
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(withdrawCookies) User not found.`
+            }
+        }
+
+        const xCookies = user.inventory?.xCookies;
+
+        if (xCookies < amount) {
+            return {
+                status: Status.ERROR,
+                message: `(withdrawCookies) Insufficient xCookies.`
+            }
+        }
+
+        // get the user's private key
+        const privateKey = user.wallet.privateKey;
+
+        const hashSalt = generateHashSalt();
+        const timestamp = Math.floor(Date.now() / 1000);
+
+        // call the `getWithdrawHash` function from the contract
+        const withdrawHash = await COOKIE_CONTRACT_USER(privateKey).getWithdrawHash(
+            user.wallet.publicKey,
+            amount * 10 ** COOKIE_CONTRACT_DECIMALS,
+            timestamp,
+            hashSalt
+        );
+
+        // sign the withdraw hash using the deployer wallet's private key
+        const signature = await DEPLOYER_WALLET.signMessage(ethers.utils.arrayify(withdrawHash));
+
+        // call the `withdraw` function from the contract
+        const result = await COOKIE_CONTRACT_USER(privateKey).withdraw(
+            amount * 10 ** COOKIE_CONTRACT_DECIMALS,
+            hashSalt,
+            timestamp,
+            signature,
+            {
+                gasLimit: 1000000
+            }
+        );
+
+        // we dont check for errors here since it will directly go to the catch block if there's an error
+        // we just withdraw the same amount of cookies from the user's xCookies balance
+        await User.updateOne({ twitterId }, {
+            $inc: {
+                'inventory.xCookies': -amount
+            }
+        });
+
+        // we add an instance of the withdrawal to the CookieWithdrawals collection
+        const latestWithdrawalId = await getLatestWithdrawalId();
+
+        const withdrawal = new CookieWithdrawal({
+            _id: generateObjectId(),
+            withdrawer: twitterId,
+            withdrawalId: latestWithdrawalId.data.withdrawalId + 1,
+            amount,
+            hashSalt,
+            signature,
+            transactionHash: result.hash,
+            timestamp
+        });
+
+        await withdrawal.save();
+
+        return {
+            status: Status.SUCCESS,
+            message: `(withdrawCookies) Withdrawn ${amount} xCookies successfully.`,
+            data: {
+                txResult: result,
+                amount: amount
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(withdrawCookies) Error: ${err.message}`
+        }
+    }
+}
+
+/**
  * Gets the latest cookie deposit ID.
  */
 export const getLatestDepositId = async (): Promise<ReturnValue> => {
@@ -94,6 +186,28 @@ export const getLatestDepositId = async (): Promise<ReturnValue> => {
         return {
             status: Status.ERROR,
             message: `(getLatestDepositId) Error: ${err.message}`
+        }
+    }
+}
+
+export const getLatestWithdrawalId = async (): Promise<ReturnValue> => {
+    const CookieWithdrawal = mongoose.model('CookieWithdrawals', CookieWithdrawalSchema, 'CookieWithdrawals');
+
+    try {
+        // we count the amount of documents in the collection
+        const count = await CookieWithdrawal.countDocuments();
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getLatestWithdrawalId) Latest withdrawal ID: ${count}`,
+            data: {
+                withdrawalId: count
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getLatestWithdrawalId) Error: ${err.message}`
         }
     }
 }
