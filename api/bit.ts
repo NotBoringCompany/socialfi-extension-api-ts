@@ -23,76 +23,54 @@ export const feedBit = async (twitterId: string, bitId: number, foodType: FoodTy
     const Island = mongoose.model('Islands', IslandSchema, 'Islands');
 
     try {
-        // first, check if the user owns the bit
-        const user = await User.findOne({ twitterId });
+        const [user, bit] = await Promise.all([
+            User.findOne({ twitterId }).lean(),
+            Bit.findOne({ bitId }).lean(),
+        ]);
 
         if (!user) {
-            return {
-                status: Status.ERROR,
-                message: `(feedBit) User not found.`
-            }
+            return { status: Status.ERROR, message: `(feedBit) User not found.` };
         }
-
-        if (!(user.inventory?.bitIds as number[]).includes(bitId)) {
-            return {
-                status: Status.ERROR,
-                message: `(feedBit) User does not own the bit.`
-            }
+        // check if user owns the bit
+        if (!user.inventory.bitIds.includes(bitId)) {
+            return { status: Status.ERROR, message: `(feedBit) User does not own the bit.` };
         }
-
-        // check if the user has at least 1 of the specified `food` by checking if:
-        // 1. the food type exists in `foods`
-        // 2. the `amount` of the food type is at least 1
-        const userFood = (user.inventory?.foods as Food[]).find(food => food.type === foodType);
-        if (!userFood) {
-            return {
-                status: Status.ERROR,
-                message: `(feedBit) User does not have the specified food.`
-            }
+        // check if user has the food
+        const userFood = user.inventory.foods.find((food: Food) => food.type === foodType);
+        if (!userFood || userFood.amount < 1) {
+            return { status: Status.ERROR, message: `(feedBit) Insufficient food.` };
         }
-
-        if (userFood.amount < 1) {
-            return {
-                status: Status.ERROR,
-                message: `(feedBit) User does not have enough of the specified food.`
-            }
-        }
-
-        // ensure that the bit exists
-        const bit = await Bit.findOne({ bitId });
-
+        // check if the bit exists
         if (!bit) {
-            return {
-                status: Status.ERROR,
-                message: `(feedBit) Bit not found.`
-            }
+            return { status: Status.ERROR, message: `(feedBit) Bit not found.` };
         }
-
-        // check if the bit's energy is already at max (100)
+        // check if the bit is placed in an island
         if (bit.farmingStats?.currentEnergy === 100) {
-            return {
-                status: Status.ERROR,
-                message: `(feedBit) Bit's energy is already at max.`
-            }
+            return { status: Status.ERROR, message: `(feedBit) Bit's energy is already at max.` };
         }
 
-        // calculate the amount of energy to replenish
+        // calc the amount of energy to replenish
         const toReplenish = FOOD_ENERGY_REPLENISHMENT(foodType);
-
         // if the amount of energy to replenish is more than the amount of energy needed to reach 100, set the amount to replenish to the amount needed to reach 100
-        const energyNeededToReach100 = 100 - bit.farmingStats?.currentEnergy;
-        const actualToReplenish = toReplenish > energyNeededToReach100 ? energyNeededToReach100 : toReplenish;
+        const actualToReplenish = Math.min(toReplenish, 100 - bit.farmingStats.currentEnergy);
 
-        // search for the food type (in string format) in the `foods` array and decrement the `amount` by `1`
-        await User.updateOne({ twitterId, 'inventory.foods.type': foodType }, { $inc: { 'inventory.foods.$.amount': -1 } });
+        // create update operations
+        let userUpdateOperations = {};
+        let bitUpdateOperations = {};
+        let islandUpdateOperations = {};
 
-        // increment the bit's current energy by `actualToReplenish`
-        await Bit.updateOne({ bitId }, { $inc: { 'farmingStats.currentEnergy': actualToReplenish } });
+        // update user's food
+        userUpdateOperations = {
+            $inc: { 'inventory.foods.$.amount': -1 }
+        };
+
+        // update bit's energy
+        bitUpdateOperations = {
+            $inc: { 'farmingStats.currentEnergy': actualToReplenish }
+        };
 
         // check if the current energy is above the thresholds defined by `ENERGY_THRESHOLD_REDUCTIONS`. if so, check for prev. negative modifiers and update them.
-        // here, we assume that `currentEnergy` is still the same because it was called before updating it, so we use `currentEnergy` instead of `currentEnergy + actualToReplenish`
-        const currentEnergy: number = bit.farmingStats?.currentEnergy + actualToReplenish;
-
+        const currentEnergy: number = bit.farmingStats.currentEnergy + actualToReplenish;
         const { gatheringRateReduction, earningRateReduction } = ENERGY_THRESHOLD_REDUCTIONS(currentEnergy);
 
         // update the modifiers of the bit regardless based on the energy thresholds
@@ -118,63 +96,80 @@ export const feedBit = async (twitterId: string, bitId: number, foodType: FoodTy
         if (gatheringRateModifierIndex !== -1) {
             // if the new gathering rate modifier is 1, remove the modifier
             if (gatheringRateModifier.value === 1) {
-                await Bit.updateOne({ bitId }, { $pull: { 'bitStatsModifiers.gatheringRateModifiers': { origin: 'Energy Threshold Reduction' } } });
+                Object.assign(bitUpdateOperations, {
+                    $pull: { 'bitStatsModifiers.gatheringRateModifiers': { origin: 'Energy Threshold Reduction' } }
+                });
             } else {
-                await Bit.updateOne({ bitId }, { $set: { 'bitStatsModifiers.gatheringRateModifiers.$[elem].value': gatheringRateModifier.value } }, { arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }] });
+                Object.assign(bitUpdateOperations, {
+                    $set: { 'bitStatsModifiers.gatheringRateModifiers.$[elem].value': gatheringRateModifier.value }
+                });
             }
         } else {
-            await Bit.updateOne({ bitId }, { $push: { 'bitStatsModifiers.gatheringRateModifiers': gatheringRateModifier } });
+            Object.assign(bitUpdateOperations, {
+                $push: { 'bitStatsModifiers.gatheringRateModifiers': gatheringRateModifier }
+            });
         }
 
         if (earningRateModifierIndex !== -1) {
             // if the new earning rate modifier is 1, remove the modifier
             if (earningRateModifier.value === 1) {
-                await Bit.updateOne({ bitId }, { $pull: { 'bitStatsModifiers.earningRateModifiers': { origin: 'Energy Threshold Reduction' } } });
+                Object.assign(bitUpdateOperations, {
+                    $pull: { 'bitStatsModifiers.earningRateModifiers': { origin: 'Energy Threshold Reduction' } }
+                });
             } else {
-                await Bit.updateOne({ bitId }, { $set: { 'bitStatsModifiers.earningRateModifiers.$[elem].value': earningRateModifier.value } }, { arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }] });
+                Object.assign(bitUpdateOperations, {
+                    $set: { 'bitStatsModifiers.earningRateModifiers.$[elem].value': earningRateModifier.value }
+                });
             }
         } else {
-            await Bit.updateOne({ bitId }, { $push: { 'bitStatsModifiers.earningRateModifiers': earningRateModifier } });
+            Object.assign(bitUpdateOperations, {
+                $push: { 'bitStatsModifiers.earningRateModifiers': earningRateModifier }
+            });
         }
 
         // then, update the bit's `totalXCookiesSpent` by 90% of the cost of food
         const foodCost = shop.foods.find(food => food.type === foodType)?.xCookies * 0.9;
-        await Bit.updateOne({ bitId }, { $inc: { 'totalXCookiesSpent': foodCost } });
+        Object.assign(bitUpdateOperations, {
+            $inc: { 'totalXCookiesSpent': foodCost }
+        });
 
         // if the bit is placed in an island, update the island's `totalXCookiesSpent` by the cost of the food
         if (bit.placedIslandId !== 0) {
-            const island = await Island.findOne({ islandId: bit.placedIslandId });
+            const island = await Island.findOne({ islandId: bit.placedIslandId }).lean();
 
             if (!island) {
-                return {
-                    status: Status.ERROR,
-                    message: `(feedBit) Island not found.`
-                }
+                return { status: Status.ERROR, message: `(feedBit) Island not found.` };
             }
 
             // if island's total xCookiesSpent is zero, update the `totalXCookiesSpent` AND start the `earningStart`
             if (island.islandEarningStats?.totalXCookiesSpent === 0) {
-                await Island.updateOne({ islandId: bit.placedIslandId }, { $inc: { 'islandEarningStats.totalXCookiesSpent': foodCost, 'islandEarningStats.earningStart': Math.floor(Date.now() / 1000) } });
+                Object.assign(islandUpdateOperations, {
+                    $inc: { 'islandEarningStats.totalXCookiesSpent': foodCost, 'islandEarningStats.earningStart': Math.floor(Date.now() / 1000) }
+                });
             } else {
                 // otherwise, just update the `totalXCookiesSpent`
-                await Island.updateOne({ islandId: bit.placedIslandId }, { $inc: { 'islandEarningStats.totalXCookiesSpent': foodCost } });
+                Object.assign(islandUpdateOperations, {
+                    $inc: { 'islandEarningStats.totalXCookiesSpent': foodCost }
+                });
             }
         }
 
+        // execute the update operations
+        await Promise.all([
+            User.updateOne({ twitterId, 'inventory.foods.type': foodType }, userUpdateOperations),
+            Bit.updateOne({ bitId }, bitUpdateOperations),
+            Island.updateOne({ islandId: bit.placedIslandId }, islandUpdateOperations)
+        ]);
+
         return {
             status: Status.SUCCESS,
-            message: `(feedBit) Bit fed and energy replenished. Cookies spent added to bit's (and possibly the island the bit was placed in's) totalXCookiesSpent.`,
-            data: {
-                bitId: bitId
-            }
-        }
-    } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(feedBit) Error: ${err.message}`
-        }
+            message: `(feedBit) Bit fed and energy replenished.`,
+            data: { bitId }
+        };
+    } catch (err) {
+        return { status: Status.ERROR, message: `(feedBit) Error: ${err.message}` };
     }
-}
+};
 
 /**
  * Depletes all bits' energies by calculating their energy depletion rate.
