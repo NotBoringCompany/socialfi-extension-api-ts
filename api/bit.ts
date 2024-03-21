@@ -112,11 +112,9 @@ export const feedBit = async (twitterId: string, bitId: number, foodType: FoodTy
 
         // search for the food type (in string format) in the `foods` array and decrement the `amount` by `1`
         userUpdateOperations.$inc['inventory.foods.$.amount'] = -1;
-        // await User.updateOne({ twitterId, 'inventory.foods.type': foodType }, { $inc: { 'inventory.foods.$.amount': -1 } });
 
         // increment the bit's current energy by `actualToReplenish`
         bitUpdateOperations.$inc['farmingStats.currentEnergy'] = actualToReplenish;
-        // await Bit.updateOne({ bitId }, { $inc: { 'farmingStats.currentEnergy': actualToReplenish } });
 
         // check if the current energy is above the thresholds defined by `ENERGY_THRESHOLD_REDUCTIONS`. if so, check for prev. negative modifiers and update them.
         // here, we assume that `currentEnergy` is still the same because it was called before updating it, so we use `currentEnergy` instead of `currentEnergy + actualToReplenish`
@@ -147,35 +145,28 @@ export const feedBit = async (twitterId: string, bitId: number, foodType: FoodTy
         if (gatheringRateModifierIndex !== -1) {
             // if the new gathering rate modifier is 1, remove the modifier
             if (gatheringRateModifier.value === 1) {
-                // await Bit.updateOne({ bitId }, { $pull: { 'bitStatsModifiers.gatheringRateModifiers': { origin: 'Energy Threshold Reduction' } } });
                 bitUpdateOperations.$pull['bitStatsModifiers.gatheringRateModifiers'] = { origin: 'Energy Threshold Reduction' };
             } else {
                 bitUpdateOperations.$set[`bitStatsModifiers.gatheringRateModifiers.$[elem].value`] = gatheringRateModifier.value;
-                // await Bit.updateOne({ bitId }, { $set: { 'bitStatsModifiers.gatheringRateModifiers.$[elem].value': gatheringRateModifier.value } }, { arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }] });
             }
         } else {
             bitUpdateOperations.$push['bitStatsModifiers.gatheringRateModifiers'] = gatheringRateModifier;
-            // await Bit.updateOne({ bitId }, { $push: { 'bitStatsModifiers.gatheringRateModifiers': gatheringRateModifier } });
         }
 
         if (earningRateModifierIndex !== -1) {
             // if the new earning rate modifier is 1, remove the modifier
             if (earningRateModifier.value === 1) {
                 bitUpdateOperations.$pull['bitStatsModifiers.earningRateModifiers'] = { origin: 'Energy Threshold Reduction' };
-                // await Bit.updateOne({ bitId }, { $pull: { 'bitStatsModifiers.earningRateModifiers': { origin: 'Energy Threshold Reduction' } } });
             } else {
                 bitUpdateOperations.$set[`bitStatsModifiers.earningRateModifiers.$[elem].value`] = earningRateModifier.value;
-                // await Bit.updateOne({ bitId }, { $set: { 'bitStatsModifiers.earningRateModifiers.$[elem].value': earningRateModifier.value } }, { arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }] });
             }
         } else {
             bitUpdateOperations.$push['bitStatsModifiers.earningRateModifiers'] = earningRateModifier;
-            // await Bit.updateOne({ bitId }, { $push: { 'bitStatsModifiers.earningRateModifiers': earningRateModifier } });
         }
 
         // then, update the bit's `totalXCookiesSpent` by 90% of the cost of food
         const foodCost = shop.foods.find(food => food.type === foodType)?.xCookies * 0.9;
         bitUpdateOperations.$inc['totalXCookiesSpent'] = foodCost;
-        // await Bit.updateOne({ bitId }, { $inc: { 'totalXCookiesSpent': foodCost } });
 
         // if the bit is placed in an island, update the island's `totalXCookiesSpent` by the cost of the food
         if (bit.placedIslandId !== 0) {
@@ -192,17 +183,11 @@ export const feedBit = async (twitterId: string, bitId: number, foodType: FoodTy
             if (island.islandEarningStats?.totalXCookiesSpent === 0) {
                 islandUpdateOperations.$inc['islandEarningStats.totalXCookiesSpent'] = foodCost;
                 islandUpdateOperations.$set['islandEarningStats.earningStart'] = Math.floor(Date.now() / 1000);
-                // await Island.updateOne({ islandId: bit.placedIslandId }, { $inc: { 'islandEarningStats.totalXCookiesSpent': foodCost, 'islandEarningStats.earningStart': Math.floor(Date.now() / 1000) } });
             } else {
                 // otherwise, just update the `totalXCookiesSpent`
                 islandUpdateOperations.$inc['islandEarningStats.totalXCookiesSpent'] = foodCost;
-                // await Island.updateOne({ islandId: bit.placedIslandId }, { $inc: { 'islandEarningStats.totalXCookiesSpent': foodCost } });
             }
         }
-
-        console.log('bit update operations: ', bitUpdateOperations);
-        console.log('user update operations: ', userUpdateOperations);
-        console.log('island update operations: ', islandUpdateOperations);
 
         let bitUpdateOptions = {};
 
@@ -210,8 +195,6 @@ export const feedBit = async (twitterId: string, bitId: number, foodType: FoodTy
         if (gatheringRateModifier.value !== 1 && earningRateModifier.value !== 1) {
             bitUpdateOptions = { arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }] };
         }
-
-        console.log('bit update options: ', bitUpdateOptions);
 
         // execute the update operations
         await Promise.all([
