@@ -61,7 +61,7 @@ export const consumeBitOrb = async (twitterId: string): Promise<ReturnValue> => 
         }
 
         // add the bit ID to the user's inventory
-        userUpdateOperations.$push['inventory.bits'] = bit.bitId;
+        userUpdateOperations.$push['inventory.bitIds'] = bit.bitId;
 
         // execute the update operation
         await UserModel.updateOne({ twitterId }, userUpdateOperations);
