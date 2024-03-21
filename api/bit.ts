@@ -461,13 +461,32 @@ export const evolveBit = async (
   twitterId: string,
   bitId: number
 ): Promise<ReturnValue> => {
-  const User = mongoose.model('Users', UserSchema, 'Users');
-  const Bit = mongoose.model('Bits', BitSchema, 'Bits');
-  const Island = mongoose.model('Islands', IslandSchema, 'Islands');
-
   try {
-    // first, check if the user owns the bit
-    const user = await User.findOne({ twitterId });
+    const [user, bit] = await Promise.all([
+        UserModel.findOne({ twitterId }).lean(),
+        BitModel.findOne({ bitId }).lean()
+    ]);
+
+    let bitUpdateOperations = {
+        $pull: {},
+        $inc: {},
+        $set: {},
+        $push: {}
+    };
+
+    let userUpdateOperations = {
+        $pull: {},
+        $inc: {},
+        $set: {},
+        $push: {}
+    }
+
+    let islandUpdateOperations = {
+        $pull: {},
+        $inc: {},
+        $set: {},
+        $push: {}
+    }
 
     if (!user) {
       return {
@@ -482,9 +501,6 @@ export const evolveBit = async (
         message: `(evolveBit) User does not own the bit.`,
       };
     }
-
-    // ensure that the bit exists
-    const bit = await Bit.findOne({ bitId });
 
     if (!bit) {
       return {
@@ -524,20 +540,23 @@ export const evolveBit = async (
     }
 
     // deduct the required xCookies from the user's inventory
-    await User.updateOne(
-      { twitterId },
-      { $inc: { 'inventory.xCookies': -requiredXCookies } }
-    );
+    userUpdateOperations.$inc['inventory.xCookies'] = -requiredXCookies;
+    // await User.updateOne(
+    //   { twitterId },
+    //   { $inc: { 'inventory.xCookies': -requiredXCookies } }
+    // );
 
     // increase the bit's current farming level by 1 and increment the `totalXCookiesSpent` by `requiredXCookies`
-    await Bit.updateOne(
-      { bitId },
-      { $inc: { currentFarmingLevel: 1, totalXCookiesSpent: requiredXCookies } }
-    );
+    bitUpdateOperations.$inc['currentFarmingLevel'] = 1;
+    bitUpdateOperations.$inc['totalXCookiesSpent'] = requiredXCookies;
+    // await Bit.updateOne(
+    //   { bitId },
+    //   { $inc: { currentFarmingLevel: 1, totalXCookiesSpent: requiredXCookies } }
+    // );
 
     // check if the bit has a `placedIslandId`. if yes, update the island's `totalXCookiesSpent` by `requiredXCookies` and if required, start the `earningStart` if the island previously has 0 totalXCookiesSpent.
     if (bit.placedIslandId !== 0) {
-      const island = await Island.findOne({ islandId: bit.placedIslandId });
+      const island = await IslandModel.findOne({ islandId: bit.placedIslandId });
 
       if (!island) {
         return {
@@ -551,23 +570,33 @@ export const evolveBit = async (
 
       // if island's total xCookiesSpent is zero, update the `totalXCookiesSpent` AND start the `earningStart`
       if (islandTotalXCookiesSpentIsZero) {
-        await Island.updateOne(
-          { islandId: bit.placedIslandId },
-          {
-            $inc: { 'islandEarningStats.totalXCookiesSpent': requiredXCookies },
-            'islandEarningStats.earningStart': Math.floor(Date.now() / 1000),
-          }
-        );
+        islandUpdateOperations.$inc['islandEarningStats.totalXCookiesSpent'] = requiredXCookies;
+        islandUpdateOperations.$set['islandEarningStats.earningStart'] = Math.floor(Date.now() / 1000);
+        // await Island.updateOne(
+        //   { islandId: bit.placedIslandId },
+        //   {
+        //     $inc: { 'islandEarningStats.totalXCookiesSpent': requiredXCookies },
+        //     'islandEarningStats.earningStart': Math.floor(Date.now() / 1000),
+        //   }
+        // );
         // otherwise, just update the `totalXCookiesSpent`
       } else {
-        await Island.updateOne(
-          { islandId: bit.placedIslandId },
-          {
-            $inc: { 'islandEarningStats.totalXCookiesSpent': requiredXCookies },
-          }
-        );
+        islandUpdateOperations.$inc['islandEarningStats.totalXCookiesSpent'] = requiredXCookies;
+        // await Island.updateOne(
+        //   { islandId: bit.placedIslandId },
+        //   {
+        //     $inc: { 'islandEarningStats.totalXCookiesSpent': requiredXCookies },
+        //   }
+        // );
       }
     }
+
+    // execute the update operations
+    await Promise.all([
+        BitModel.updateOne({ bitId }, bitUpdateOperations),
+        UserModel.updateOne({ twitterId }, userUpdateOperations),
+        IslandModel.updateOne({ islandId: bit.placedIslandId }, islandUpdateOperations)
+    ]);
 
     return {
       status: Status.SUCCESS,
