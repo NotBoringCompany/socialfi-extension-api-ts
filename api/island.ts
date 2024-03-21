@@ -569,12 +569,9 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
  * NOTE: If 0 xCookies have been spent for an island, this function will skip that island.
  */
 export const updateClaimableXCookies = async (): Promise<void> => {
-    const Island = mongoose.model('Islands', IslandSchema, 'Islands');
-    const Bit = mongoose.model('Bits', BitSchema, 'Bits');
-
     try {
         // find islands only where xCookies spent is > 0
-        const islands = await Island.find({ 'islandEarningStats.totalXCookiesSpent': { $gt: 0 } });
+        const islands = await IslandModel.find({ 'islandEarningStats.totalXCookiesSpent': { $gt: 0 } }).lean();
 
         if (islands.length === 0 || !islands) {
             console.error(`(updateClaimableXCookies) No islands found.`);
@@ -595,7 +592,7 @@ export const updateClaimableXCookies = async (): Promise<void> => {
             }
 
             // get the bits placed on the island
-            const bits = await Bit.find({ bitId: { $in: placedBitIds } });
+            const bits = await BitModel.find({ bitId: { $in: placedBitIds } });
 
             // get the island's current earning rate
             const currentEarningRate = calcIslandCurrentRate(
@@ -677,7 +674,7 @@ export const updateClaimableXCookies = async (): Promise<void> => {
         }
 
         // execute the bulk write operations
-        await Island.bulkWrite(bulkWriteOps);
+        await IslandModel.bulkWrite(bulkWriteOps);
 
         console.log(`(updateClaimableXCookies) All islands' claimableXCookies have been updated.`);
     } catch (err: any) {
@@ -691,12 +688,25 @@ export const updateClaimableXCookies = async (): Promise<void> => {
  * NOTE: Requires `twitterId` which is fetched via `req.user`, automatically giving us the user's Twitter ID. This will check if the user who calls this function owns the twitter ID that owns the island.
  */
 export const claimResources = async (twitterId: string, islandId: number): Promise<ReturnValue> => {
-    const User = mongoose.model('Users', UserSchema, 'Users');
-    const Island = mongoose.model('Islands', IslandSchema, 'Islands');
-
     try {
-        // check if user exists
-        const user = await User.findOne({ twitterId });
+        const [user, island] = await Promise.all([
+            UserModel.findOne({ twitterId }).lean(),
+            IslandModel.findOne({ islandId }).lean()
+        ]);
+
+        const userUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const islandUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
 
         if (!user) {
             return {
@@ -704,9 +714,6 @@ export const claimResources = async (twitterId: string, islandId: number): Promi
                 message: `(claimResources) User not found.`
             }
         }
-
-        // check if island with `islandId` exists
-        const island = await Island.findOne({ islandId });
 
         if (!island) {
             return {
@@ -751,24 +758,23 @@ export const claimResources = async (twitterId: string, islandId: number): Promi
             const existingResourceIndex = (user.inventory?.resources as Resource[]).findIndex(r => r.type === resource.type);
 
             if (existingResourceIndex !== -1) {
-                await User.updateOne({ twitterId }, { $inc: { [`inventory.resources.${existingResourceIndex}.amount`]: resource.amount } });
+                userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = resource.amount;
             } else {
-                await User.updateOne({ twitterId }, { $push: { 'inventory.resources': resource } });
+                userUpdateOperations.$push['inventory.resources'] = resource;
             }
         }
 
         // do a few things:
         // 1. clear the island's `claimableResources`
         // 2. set the island's `lastClaimed` to the current time
-        await Island.updateOne(
-            { islandId },
-            {
-                $set: {
-                    'islandResourceStats.claimableResources': [],
-                    'islandResourceStats.lastClaimed': currentTime
-                }
-            }
-        );
+        islandUpdateOperations.$set['islandResourceStats.claimableResources'] = [];
+        islandUpdateOperations.$set['islandResourceStats.lastClaimed'] = currentTime;
+
+        // execute the update operations
+        await Promise.all([
+            UserModel.updateOne({ twitterId }, userUpdateOperations),
+            IslandModel.updateOne({ islandId }, islandUpdateOperations)
+        ]);
 
         return {
             status: Status.SUCCESS,
@@ -786,12 +792,25 @@ export const claimResources = async (twitterId: string, islandId: number): Promi
  * Claims all claimable xCookies from an island and adds them to the user's inventory.
  */
 export const claimXCookies = async (twitterId: string, islandId: number): Promise<ReturnValue> => {
-    const User = mongoose.model('Users', UserSchema, 'Users');
-    const Island = mongoose.model('Islands', IslandSchema, 'Islands');
-
     try {
-        // check if user exists
-        const user = await User.findOne({ twitterId });
+        const [user, island] = await Promise.all([
+            UserModel.findOne({ twitterId }).lean(),
+            IslandModel.findOne({ islandId }).lean()
+        ]);
+
+        const userUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const islandUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
 
         if (!user) {
             return {
@@ -799,9 +818,6 @@ export const claimXCookies = async (twitterId: string, islandId: number): Promis
                 message: `(claimXCookies) User not found.`
             }
         }
-
-        // check if island with `islandId` exists
-        const island = await Island.findOne({ islandId });
 
         if (!island) {
             return {
@@ -857,22 +873,21 @@ export const claimXCookies = async (twitterId: string, islandId: number): Promis
         console.log(`claiming tax for island ID ${islandId}: ${tax}%`);
 
         // add the xCookies to the user's inventory
-        await User.updateOne({ twitterId }, { $inc: { 'inventory.xCookies': xCookiesAfterTax } });
+        userUpdateOperations.$inc['inventory.xCookies'] = xCookiesAfterTax;
 
         // do a few things:
         // 1. set the island's `claimableXCookies` to 0
         // 2. set the island's `lastClaimed` to the current time
         // 3. set the island's `currentTax` to `tax`
-        await Island.updateOne(
-            { islandId },
-            {
-                $set: {
-                    'islandEarningStats.claimableXCookies': 0,
-                    'islandEarningStats.lastClaimed': currentTime,
-                    'currentTax': tax
-                },
-            }
-        );
+        islandUpdateOperations.$set['islandEarningStats.claimableXCookies'] = 0;
+        islandUpdateOperations.$set['islandEarningStats.lastClaimed'] = currentTime;
+        islandUpdateOperations.$set['currentTax'] = tax;
+
+        // execute the update operations
+        await Promise.all([
+            UserModel.updateOne({ twitterId }, userUpdateOperations),
+            IslandModel.updateOne({ islandId }, islandUpdateOperations)
+        ]);
 
         return {
             status: Status.SUCCESS,
@@ -892,10 +907,15 @@ export const claimXCookies = async (twitterId: string, islandId: number): Promis
  * Should only be called when gathering progress has reached >= 100% (and then reset back to 0%). Scheduler/parent function will check this.
  */
 export const dropResource = async (islandId: number): Promise<ReturnValue> => {
-    const Island = mongoose.model('Islands', IslandSchema, 'Islands');
-
     try {
-        const island = await Island.findOne({ islandId });
+        const island = await IslandModel.findOne({ islandId }).lean();
+
+        const islandUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
 
         if (!island) {
             return {
@@ -928,14 +948,14 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
             }
 
             // add the new resource to the island's `claimableResources`
-            await Island.updateOne({ islandId }, { $push: { 'islandResourceStats.claimableResources': newResource } });
+            islandUpdateOperations.$push['islandResourceStats.claimableResources'] = newResource;
         } else {
             // if not empty, check if the resource already exists in `claimableResources`
             const existingResourceIndex = claimableResources.findIndex(r => r.type === resourceType);
 
             // if the resource already exists, increment its amount
             if (existingResourceIndex !== -1) {
-                await Island.updateOne({ islandId }, { $inc: { [`islandResourceStats.claimableResources.${existingResourceIndex}.amount`]: 1 } });
+                islandUpdateOperations.$inc[`islandResourceStats.claimableResources.${existingResourceIndex}.amount`] = 1;
             } else {
                 // if the resource doesn't exist, push a new resource
                 const newResource: Resource = {
@@ -944,7 +964,7 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
                 }
 
                 // add the new resource to the island's `claimableResources`
-                await Island.updateOne({ islandId }, { $push: { 'islandResourceStats.claimableResources': newResource } });
+                islandUpdateOperations.$push['islandResourceStats.claimableResources'] = newResource;
             }
         }
 
@@ -956,14 +976,14 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
             }
 
             // add the new resource to the island's `resourcesGathered`
-            await Island.updateOne({ islandId }, { $push: { 'islandResourceStats.resourcesGathered': newResource } });
+            islandUpdateOperations.$push['islandResourceStats.resourcesGathered'] = newResource;
         } else {
             // if not empty, check if the resource already exists in `resourcesGathered`
             const existingResourceIndex = resourcesGathered.findIndex(r => r.type === resourceType);
 
             // if the resource already exists, increment its amount
             if (existingResourceIndex !== -1) {
-                await Island.updateOne({ islandId }, { $inc: { [`islandResourceStats.resourcesGathered.${existingResourceIndex}.amount`]: 1 } });
+                islandUpdateOperations.$inc[`islandResourceStats.resourcesGathered.${existingResourceIndex}.amount`] = 1;
             } else {
                 // if the resource doesn't exist, push a new resource
                 const newResource: Resource = {
@@ -972,9 +992,12 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
                 }
 
                 // add the new resource to the island's `resourcesGathered`
-                await Island.updateOne({ islandId }, { $push: { 'islandResourceStats.resourcesGathered': newResource } });
+                islandUpdateOperations.$push['islandResourceStats.resourcesGathered'] = newResource;
             }
         }
+
+        // execute the update operations
+        await IslandModel.updateOne({ islandId }, islandUpdateOperations);
 
         return {
             status: Status.SUCCESS,
@@ -1020,10 +1043,8 @@ export const randomizeResourceFromChances = (type: IslandType, level: number): R
  * Adds an island (e.g. when obtained via Terra Capsulator) to the database.
  */
 export const addIslandToDatabase = async (island: Island): Promise<ReturnValue> => {
-    const Island = mongoose.model('Islands', IslandSchema, 'Islands');
-
     try {
-        const newIsland = new Island({
+        const newIsland = new IslandModel({
             _id: generateObjectId(),
             ...island
         });
@@ -1050,10 +1071,8 @@ export const addIslandToDatabase = async (island: Island): Promise<ReturnValue> 
  * Fetches the latest island id from the database.
  */
 export const getLatestIslandId = async (): Promise<ReturnValue> => {
-    const Island = mongoose.model('Islands', IslandSchema, 'Islands');
-
     try {
-        const latestIslandId = await Island.countDocuments();
+        const latestIslandId = await IslandModel.countDocuments();
 
         return {
             status: Status.SUCCESS,
@@ -1121,13 +1140,7 @@ export const calcIslandCurrentRate = (
         const reductionModifier = type === RateType.GATHERING ? GATHERING_RATE_REDUCTION_MODIFIER : EARNING_RATE_REDUCTION_MODIFIER;
 
         // finally, check for IslandStatsModifiers for the island; if not empty, multiply each modifier's amount to the modifierMultiplier
-        let modifierMultiplier = 1;
-
-        if (modifiers.length > 0) {
-            for (let modifier of modifiers) {
-                modifierMultiplier *= modifier.value;
-            }
-        }
+        const modifierMultiplier = modifiers.reduce((acc, modifier) => acc * modifier.value, 1);
 
         return (sum * (1 - (reductionModifier * (n - 1)))) * modifierMultiplier;
     } else {
