@@ -1,16 +1,13 @@
-import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
-import { UserSchema } from '../schemas/User';
 import { RANDOMIZE_CHEST_ITEM } from '../utils/constants/chest';
 import { Food, FoodType } from '../models/food';
 import { Resource, ResourceType } from '../models/resource';
+import { UserModel } from '../utils/constants/db';
 
 /**
  * Opens a chest found across Twitter's timeline, randomizing a chest item and adding it to the user's inventory.
  */
 export const openChest = async (twitterId: string, tweetId: string): Promise<ReturnValue> => {
-    const User = mongoose.model('Users', UserSchema, 'Users');
-
     if (!tweetId) {
         return {
             status: Status.BAD_REQUEST,
@@ -19,7 +16,7 @@ export const openChest = async (twitterId: string, tweetId: string): Promise<Ret
     }
 
     try {
-        const user = await User.findOne({ twitterId });
+        const user = await UserModel.findOne({ twitterId });
 
         if (!user) {
             return {
@@ -53,13 +50,13 @@ export const openChest = async (twitterId: string, tweetId: string): Promise<Ret
             const existingFoodIndex = (user.inventory?.foods as Food[]).findIndex(food => food.type === item);
 
             if (existingFoodIndex !== -1) {
-                await User.updateOne({ twitterId }, {
+                await UserModel.updateOne({ twitterId }, {
                     $inc: {
                         [`inventory.foods.${existingFoodIndex}.amount`]: amount
                     }
                 })
             } else {
-                await User.updateOne({ twitterId }, {
+                await UserModel.updateOne({ twitterId }, {
                     $push: {
                         'inventory.foods': {
                             type: item,
@@ -73,13 +70,13 @@ export const openChest = async (twitterId: string, tweetId: string): Promise<Ret
             const existingResourceIndex = (user.inventory?.resources as Resource[]).findIndex(resource => resource.type === item);
 
             if (existingResourceIndex !== -1) {
-                await User.updateOne({ twitterId }, {
+                await UserModel.updateOne({ twitterId }, {
                     $inc: {
                         [`inventory.resources.${existingResourceIndex}.amount`]: amount
                     }
                 })
             } else {
-                await User.updateOne({ twitterId }, {
+                await UserModel.updateOne({ twitterId }, {
                     $push: {
                         'inventory.resources': {
                             type: item,
@@ -90,7 +87,7 @@ export const openChest = async (twitterId: string, tweetId: string): Promise<Ret
             }
         // increment the user's xCookies
         } else if (isXCookies) {
-            await User.updateOne({ twitterId }, {
+            await UserModel.updateOne({ twitterId }, {
                 $inc: {
                     'inventory.xCookies': amount
                 }
@@ -98,14 +95,14 @@ export const openChest = async (twitterId: string, tweetId: string): Promise<Ret
             })
         // increment the user's bit orb count
         } else if (isBitOrb) {
-            await User.updateOne({ twitterId }, {
+            await UserModel.updateOne({ twitterId }, {
                 $inc: {
                     'inventory.totalBitOrbs': amount
                 }
             })
         // increment the user's terra capsulator count
         } else if (isTerraCapsulator) {
-            await User.updateOne({ twitterId }, {
+            await UserModel.updateOne({ twitterId }, {
                 $inc: {
                     'inventory.totalTerraCapsulators': amount
                 }
@@ -113,7 +110,7 @@ export const openChest = async (twitterId: string, tweetId: string): Promise<Ret
         }
 
         // add the tweet ID to the user's openedTweetIdsToday
-        await User.updateOne({ twitterId }, {
+        await UserModel.updateOne({ twitterId }, {
             $push: {
                 openedTweetIdsToday: tweetId
             }
@@ -141,11 +138,9 @@ export const openChest = async (twitterId: string, tweetId: string): Promise<Ret
  * Should be called by a scheduler every 23:59 UTC.
  */
 export const removeOpenedTweetIdsToday = async (): Promise<void> => {
-    const User = mongoose.model('Users', UserSchema, 'Users');
-
     try {
         // only find users where `openedTweetIdsToday` is not empty
-        const users = await User.find({ openedTweetIdsToday: { $ne: [] } });
+        const users = await UserModel.find({ openedTweetIdsToday: { $ne: [] } });
 
         if (users.length === 0 || !users) {
             console.log(`(removeOpenedTweetIdsToday) No users found with opened tweet IDs today.`);
@@ -172,7 +167,7 @@ export const removeOpenedTweetIdsToday = async (): Promise<void> => {
         }).flat();
 
         // execute the bulk write operations
-        await User.bulkWrite(bulkWriteOperations);
+        await UserModel.bulkWrite(bulkWriteOperations);
 
         console.log(`(removeOpenedTweetIdsToday) Removed all opened tweet IDs from the users' openedTweetIdsToday array.`);
     } catch (err: any) {
