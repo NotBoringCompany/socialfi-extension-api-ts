@@ -10,7 +10,7 @@ import { Modifier } from '../models/modifier';
 import { BitSchema } from '../schemas/Bit';
 import { Bit, BitRarity, BitRarityNumeric } from '../models/bit';
 import { generateObjectId } from '../utils/crypto';
-import { IslandModel, UserModel } from '../utils/constants/db';
+import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
 
 /**
  * Gets one or multiple islands based on their IDs.
@@ -149,13 +149,33 @@ export const evolveIsland = async (twitterId: string, islandId: number): Promise
  * NOTE: Requires `twitterId` which is fetched via `req.user`, automatically giving us the user's Twitter ID. This will check if the user who calls this function owns the twitter ID that owns the island and the bit ID.
  */
 export const placeBit = async (twitterId: string, islandId: number, bitId: number): Promise<ReturnValue> => {
-    const User = mongoose.model('Users', UserSchema, 'Users');
-    const Island = mongoose.model('Islands', IslandSchema, 'Islands');
-    const Bit = mongoose.model('Bits', BitSchema, 'Bits');
-
     try {
-        // firstly, check if the twitter ID owns the island
-        const user = await User.findOne({ twitterId });
+        const [user, bit, island] = await Promise.all([
+            UserModel.findOne({ twitterId }).lean(),
+            BitModel.findOne({ bitId }).lean(),
+            IslandModel.findOne({ islandId }).lean(),
+        ]);
+
+        const bitUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const userUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const islandUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
 
         if (!user) {
             return {
@@ -179,10 +199,6 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
             }
         }
 
-        // query the island and the bit
-        const bit = await Bit.findOne({ bitId });
-        const island = await Island.findOne({ islandId });
-
         if (!bit) {
             return {
                 status: Status.ERROR,
@@ -201,7 +217,7 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
         const ownedIslands = user.inventory?.islandIds as number[];
 
         // filter out the islands that have bits placed by querying the `Islands` collection to get the total amount of active islands
-        const activeIslands = await Island.find(
+        const activeIslands = await IslandModel.find(
             {
                 islandId:
                     { $in: ownedIslands },
@@ -270,14 +286,14 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
             // if modifier value is NOT 1, add the new modifier to the island's `gatheringRateModifiers` (1 means no change in gathering rate, so no need to add it to the array)
             if (newGatheringRateModifier.value !== 1) {
                 // add the new modifier to the island's `gatheringRateModifiers`
-                await Island.updateOne({ islandId }, { $push: { 'islandStatsModifiers.gatheringRateModifiers': newGatheringRateModifier } });
+                islandUpdateOperations.$push['islandStatsModifiers.gatheringRateModifiers'] = newGatheringRateModifier;
             }
         } else {
             const currentValue = island.islandStatsModifiers?.gatheringRateModifiers[gatheringRateModifierIndex].value;
             const newValue = currentValue - (rarityDeviationReductions.gatheringRateReduction / 100);
 
             // reduce the value by the reduction amount
-            await Island.updateOne({ islandId }, { $set: { [`islandStatsModifiers.gatheringRateModifiers.${gatheringRateModifierIndex}.value`]: newValue } });
+            islandUpdateOperations.$set[`islandStatsModifiers.gatheringRateModifiers.${gatheringRateModifierIndex}.value`] = newValue;
         }
 
         // check for previous `resourceCapModifiers` from the island's `IslandStatsModifiers`
@@ -296,31 +312,38 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
             // if modifier value is NOT 1, add the new modifier to the island's `resourceCapModifiers` (1 means no change in resource cap, so no need to add it to the array)
             if (newResourceCapModifier.value !== 1) {
                 // add the new modifier to the island's `resourceCapModifiers`
-                await Island.updateOne({ islandId }, { $push: { 'islandStatsModifiers.resourceCapModifiers': newResourceCapModifier } });
+                islandUpdateOperations.$push['islandStatsModifiers.resourceCapModifiers'] = newResourceCapModifier;
             }
         } else {
             const currentValue = island.islandStatsModifiers?.resourceCapModifiers[resourceCapModifierIndex].value;
             const newValue = currentValue - (rarityDeviationReductions.resourceCapReduction / 100);
 
             // reduce the value by the reduction amount
-            await Island.updateOne({ islandId }, { $set: { [`islandStatsModifiers.resourceCapModifiers.${resourceCapModifierIndex}.value`]: newValue } });
+            islandUpdateOperations.$set[`islandStatsModifiers.resourceCapModifiers.${resourceCapModifierIndex}.value`] = newValue;
         }
 
         // check if the to-be-put bit is the first one; if yes, start the `gatheringStart` timestamp
         if (island.placedBitIds.length === 0) {
-            await Island.updateOne({ islandId }, { $set: { 'islandResourceStats.gatheringStart': Math.floor(Date.now() / 1000) } });
+            islandUpdateOperations.$set['islandResourceStats.gatheringStart'] = Math.floor(Date.now() / 1000);
         }
 
         // place the bit on the island
-        await Island.updateOne({ islandId }, { $push: { placedBitIds: bitId } });
+        islandUpdateOperations.$push['placedBitIds'] = bitId;
 
         // update the bit to include `placedIslandId`
-        await Bit.updateOne({ bitId }, { placedIslandId: islandId });
+        bitUpdateOperations.$set['placedIslandId'] = islandId;
 
         // check if the bit has `totalXCookiesSpent` > 0. if yes, increment the island's `totalXCookiesSpent` by this amount.
         if (bit.totalXCookiesSpent > 0) {
-            await Island.updateOne({ island }, { $inc: { 'islandEarningStats.totalXCookiesSpent': bit.totalXCookiesSpent } })
+            islandUpdateOperations.$inc['islandEarningStats.totalXCookiesSpent'] = bit.totalXCookiesSpent;
         }
+
+        // execute the update operations
+        await Promise.all([
+            UserModel.updateOne({ twitterId }, userUpdateOperations),
+            IslandModel.updateOne({ islandId }, islandUpdateOperations),
+            BitModel.updateOne({ bitId }, bitUpdateOperations)
+        ]);
 
         return {
             status: Status.SUCCESS,
