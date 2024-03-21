@@ -9,16 +9,14 @@ import { BitSchema } from '../schemas/Bit';
 import { RANDOMIZE_RARITY_FROM_ORB } from '../utils/constants/bitOrb';
 import { RANDOMIZE_GENDER } from '../utils/constants/bit';
 import { ObtainMethod } from '../models/obtainMethod';
+import { UserModel } from '../utils/constants/db';
 
 /**
  * Twitter login logic. Creates a new user or simply log them in if they already exist.
  */
 export const handleTwitterLogin = async (twitterId: string): Promise<ReturnValue> => {
-    const User = mongoose.model('Users', UserSchema, 'Users');
-    const Bit = mongoose.model('Bits', BitSchema, 'Bits');
-
     try {
-        const user = await User.findOne({ twitterId });
+        const user = await UserModel.findOne({ twitterId }).lean();
 
         // if user doesn't exist, create a new user
         if (!user) {
@@ -79,7 +77,7 @@ export const handleTwitterLogin = async (twitterId: string): Promise<ReturnValue
             // creates the wallet for the user
             const { privateKey, publicKey } = createUserWallet();
 
-            const newUser = new User({
+            const newUser = new UserModel({
                 _id: userObjectId,
                 twitterId,
                 wallet: {
@@ -133,10 +131,8 @@ export const handleTwitterLogin = async (twitterId: string): Promise<ReturnValue
  * Fetches the user's inventory.
  */
 export const getInventory = async (twitterId: string): Promise<ReturnValue> => {
-    const User = mongoose.model('Users', UserSchema, 'Users');
-
     try {
-        const user = await User.findOne({ twitterId });
+        const user = await UserModel.findOne({ twitterId }).lean();
 
         if (!user) {
             return {
@@ -164,10 +160,8 @@ export const getInventory = async (twitterId: string): Promise<ReturnValue> => {
  * Fetches the user's wallet private and public keys.
  */
 export const getWalletDetails = async (twitterId: string): Promise<ReturnValue> => {
-    const User = mongoose.model('Users', UserSchema, 'Users');
-
     try {
-        const user = await User.findOne({ twitterId });
+        const user = await UserModel.findOne({ twitterId }).lean();
 
         if (!user) {
             return {
