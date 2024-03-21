@@ -541,18 +541,10 @@ export const evolveBit = async (
 
     // deduct the required xCookies from the user's inventory
     userUpdateOperations.$inc['inventory.xCookies'] = -requiredXCookies;
-    // await User.updateOne(
-    //   { twitterId },
-    //   { $inc: { 'inventory.xCookies': -requiredXCookies } }
-    // );
 
     // increase the bit's current farming level by 1 and increment the `totalXCookiesSpent` by `requiredXCookies`
     bitUpdateOperations.$inc['currentFarmingLevel'] = 1;
     bitUpdateOperations.$inc['totalXCookiesSpent'] = requiredXCookies;
-    // await Bit.updateOne(
-    //   { bitId },
-    //   { $inc: { currentFarmingLevel: 1, totalXCookiesSpent: requiredXCookies } }
-    // );
 
     // check if the bit has a `placedIslandId`. if yes, update the island's `totalXCookiesSpent` by `requiredXCookies` and if required, start the `earningStart` if the island previously has 0 totalXCookiesSpent.
     if (bit.placedIslandId !== 0) {
@@ -572,22 +564,10 @@ export const evolveBit = async (
       if (islandTotalXCookiesSpentIsZero) {
         islandUpdateOperations.$inc['islandEarningStats.totalXCookiesSpent'] = requiredXCookies;
         islandUpdateOperations.$set['islandEarningStats.earningStart'] = Math.floor(Date.now() / 1000);
-        // await Island.updateOne(
-        //   { islandId: bit.placedIslandId },
-        //   {
-        //     $inc: { 'islandEarningStats.totalXCookiesSpent': requiredXCookies },
-        //     'islandEarningStats.earningStart': Math.floor(Date.now() / 1000),
-        //   }
-        // );
+ 
         // otherwise, just update the `totalXCookiesSpent`
       } else {
         islandUpdateOperations.$inc['islandEarningStats.totalXCookiesSpent'] = requiredXCookies;
-        // await Island.updateOne(
-        //   { islandId: bit.placedIslandId },
-        //   {
-        //     $inc: { 'islandEarningStats.totalXCookiesSpent': requiredXCookies },
-        //   }
-        // );
       }
     }
 
