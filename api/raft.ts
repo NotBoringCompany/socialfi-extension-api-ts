@@ -7,6 +7,7 @@ import { BitSchema } from '../schemas/Bit';
 import { RAFT_BIT_PLACEMENT_CAP } from '../utils/constants/raft';
 import { Resource, ResourceType } from '../models/resource';
 import { Bit } from '../models/bit';
+import { BitModel, RaftModel, UserModel } from '../utils/constants/db';
 
 /**
  * Creates a new Raft for new users.
@@ -14,8 +15,6 @@ import { Bit } from '../models/bit';
  * NOTE: No checks to see if the user already has a raft because it's done in the parent function, i.e. `handleTwitterLogin`.
  */
 export const createRaft = async (userId: string): Promise<ReturnValue> => {
-    const Raft = mongoose.model('Rafts', RaftSchema, 'Rafts');
-
     try {
         const { status, message: raftMessage, data } = await getLatestRaftId();
         if (status !== Status.SUCCESS) {
@@ -25,7 +24,7 @@ export const createRaft = async (userId: string): Promise<ReturnValue> => {
             }
         }
 
-        const newRaft = new Raft({
+        const newRaft = new RaftModel({
             _id: generateObjectId(),
             raftId: data.latestRaftId + 1,
             owner: userId,
@@ -61,13 +60,25 @@ export const createRaft = async (userId: string): Promise<ReturnValue> => {
  * Places a Bit into a Raft.
  */
 export const placeBit = async (twitterId: string, bitId: number): Promise<ReturnValue> => {
-    const Raft = mongoose.model('Rafts', RaftSchema, 'Rafts');
-    const User = mongoose.model('Users', UserSchema, 'Users');
-    const Bit = mongoose.model('Bits', BitSchema, 'Bits');
-
     try {
-        // check if user exists
-        const user = await User.findOne({ twitterId });
+        const [user, bit] = await Promise.all([
+            UserModel.findOne({ twitterId }).lean(),
+            BitModel.findOne({ bitId }).lean()
+        ]);
+
+        const bitUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const raftUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
 
         if (!user) {
             return {
@@ -96,8 +107,7 @@ export const placeBit = async (twitterId: string, bitId: number): Promise<Return
         }
 
         // query the raft and the bit
-        const raft = await Raft.findOne({ raftId });
-        const bit = await Bit.findOne({ bitId });
+        const raft = await RaftModel.findOne({ raftId }).lean();
 
         if (!raft) {
             return {
@@ -133,16 +143,20 @@ export const placeBit = async (twitterId: string, bitId: number): Promise<Return
         // 1. if it's the first bit, update the `gatheringStart` to the current timestamp (unix)
         // 2. if it's the first bit, add `bitId` to `placedBitIds`. if not, just push `bitId` to `placedBitIds`
         if (raft.placedBitIds.length === 0) {
-            await Raft.updateOne({ raftId }, {
-                $set: { 'raftResourceStats.gatheringStart': Math.floor(Date.now() / 1000) },
-                $push: { placedBitIds: bitId }
-            });
+            raftUpdateOperations.$set['raftResourceStats.gatheringStart'] = Math.floor(Date.now() / 1000);
+            raftUpdateOperations.$push['placedBitIds'] = bitId;
         } else {
-            await Raft.updateOne({ raftId }, { $push: { placedBitIds: bitId } });
+            raftUpdateOperations.$push['placedBitIds'] = bitId;
         }
 
         // update the bit's placedRaftId
-        await Bit.updateOne({ bitId }, { $set: { placedRaftId: raftId } });
+        bitUpdateOperations.$set['placedRaftId'] = raftId;
+
+        // execute the update operations
+        await Promise.all([
+            RaftModel.updateOne({ raftId }, raftUpdateOperations),
+            BitModel.updateOne({ bitId }, bitUpdateOperations)
+        ]);
 
         return {
             status: Status.SUCCESS,
@@ -164,11 +178,9 @@ export const placeBit = async (twitterId: string, bitId: number): Promise<Return
  * Returns the latest (i.e. max) Raft ID that exists in the database.
  */
 export const getLatestRaftId = async (): Promise<ReturnValue> => {
-    const Raft = mongoose.model('Rafts', RaftSchema, 'Rafts');
-
     try {
         // get the latest Raft ID by counting the amount of rafts in the database
-        const latestRaftId = await Raft.countDocuments();
+        const latestRaftId = await RaftModel.countDocuments();
 
         return {
             status: Status.SUCCESS,
@@ -187,12 +199,9 @@ export const getLatestRaftId = async (): Promise<ReturnValue> => {
  * Returns the Raft of the user.
  */
 export const getRaft = async (twitterId: string): Promise<ReturnValue> => {
-    const Raft = mongoose.model('Rafts', RaftSchema, 'Rafts');
-    const User = mongoose.model('Users', UserSchema, 'Users');
-
     try {
         // check if user exists
-        const user = await User.findOne({ twitterId });
+        const user = await UserModel.findOne({ twitterId }).lean();
 
         if (!user) {
             return {
@@ -213,7 +222,7 @@ export const getRaft = async (twitterId: string): Promise<ReturnValue> => {
         }
 
         // query the raft
-        const raft = await Raft.findOne({ raftId });
+        const raft = await RaftModel.findOne({ raftId }).lean();
 
         if (!raft) {
             return {
@@ -243,11 +252,22 @@ export const getRaft = async (twitterId: string): Promise<ReturnValue> => {
  * NOTE: Requires `twitterId` which is fetched via `req.user`, automatically giving us the user's Twitter ID. This will check if the user who calls this function owns the twitter ID that owns the island.
  */
 export const claimSeaweed = async (twitterId: string): Promise<ReturnValue> => {
-    const User = mongoose.model('Users', UserSchema, 'Users');
-    const Raft = mongoose.model('Rafts', RaftSchema, 'Rafts');
-
     try {
-        const user = await User.findOne({ twitterId });
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        const userUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const raftUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
 
         if (!user) {
             return {
@@ -268,7 +288,7 @@ export const claimSeaweed = async (twitterId: string): Promise<ReturnValue> => {
         }
 
         // query the raft
-        const raft = await Raft.findOne({ raftId });
+        const raft = await RaftModel.findOne({ raftId }).lean();
 
         if (!raft) {
             return {
@@ -296,30 +316,24 @@ export const claimSeaweed = async (twitterId: string): Promise<ReturnValue> => {
 
         // if index doesn't exist, we add the seaweed to the user's inventory
         if (seaweedIndex === -1) {
-            await User.updateOne({ twitterId }, {
-                $push: {
-                    'inventory.resources': {
-                        type: ResourceType.SEAWEED,
-                        amount: claimableSeaweed
-                    }
-                }
-            })
+            userUpdateOperations.$push['inventory.resources'] = {
+                type: ResourceType.SEAWEED,
+                amount: claimableSeaweed
+            }
         } else {
-            await User.updateOne({ twitterId }, {
-                $inc: {
-                    [`inventory.resources.${seaweedIndex}.amount`]: claimableSeaweed
-                }
-            })
+            userUpdateOperations.$inc[`inventory.resources.${seaweedIndex}.amount`] = claimableSeaweed;
         }
 
         // update the raft
-        await Raft.updateOne({ raftId }, {
-            $set: { 'raftResourceStats.claimableSeaweed': 0 },
-            $inc: {
-                'raftResourceStats.seaweedGathered': claimableSeaweed,
-                'raftResourceStats.lastClaimed': Math.floor(Date.now() / 1000)
-            }
-        });
+        raftUpdateOperations.$set['raftResourceStats.claimableSeaweed'] = 0;
+        raftUpdateOperations.$inc['raftResourceStats.seaweedGathered'] = claimableSeaweed;
+        raftUpdateOperations.$set['raftResourceStats.lastClaimed'] = Math.floor(Date.now() / 1000);
+
+        // execute the update operations
+        await Promise.all([
+            UserModel.updateOne({ twitterId }, userUpdateOperations),
+            RaftModel.updateOne({ raftId }, raftUpdateOperations)
+        ]);
 
         return {
             status: Status.SUCCESS,
@@ -340,23 +354,23 @@ export const claimSeaweed = async (twitterId: string): Promise<ReturnValue> => {
  * (Called by scheduler, EVERY 10 MINUTES) Updates the amount of claimable seaweed of all users' rafts that are eligible to gather seaweed.
  */
 export const updateClaimableSeaweed = async (): Promise<void> => {
-    const Raft = mongoose.model('Rafts', RaftSchema, 'Rafts');
-    const Bit = mongoose.model('Bits', BitSchema, 'Bits');
-
     try {
         // get all rafts that have `gatheringStart` that is not equal to 0 and `placedBitIds` length > 0
-        const rafts = await Raft.find({ 'raftResourceStats.gatheringStart': { $ne: 0 }, 'placedBitIds.0': { $exists: true } });
+        const rafts = await RaftModel.find({ 'raftResourceStats.gatheringStart': { $ne: 0 }, 'placedBitIds.0': { $exists: true } }).lean();
 
-        for (const raft of rafts) {
+        // prepare bulk write operations to update the claimable seaweed of all rafts
+        const bulkWriteOpsPromises = rafts.map(async raft => {
+            let updateOperations = [];
+
             // get the bit IDs that are placed in the raft
             const bitIds: number[] = raft.placedBitIds as number[];
 
             // fetch the bits based on the bitIds
-            const bits = await Bit.find({ bitId: { $in: bitIds } });
-            
+            const bits = await BitModel.find({ bitId: { $in: bitIds } }).lean();
+
             if (bits.length === 0 || !bits) {
                 console.error(`(updateClaimableSeaweed) No bits found for Raft ${raft.raftId}.`);
-                continue;
+                return;
             }
 
             // calculate the amount of claimable seaweed within the last 10 minutes based on the gathering rate
@@ -366,11 +380,33 @@ export const updateClaimableSeaweed = async (): Promise<void> => {
             const claimableSeaweed = gatheringRate / 6;
 
             // update the `claimableSeaweed` in the raft
-            await Raft.updateOne({ raftId: raft.raftId }, { $inc: { 'raftResourceStats.claimableSeaweed': claimableSeaweed } });
+            updateOperations.push({
+                updateOne: {
+                    filter: { raftId: raft.raftId },
+                    update: {
+                        $inc: { 'raftResourceStats.claimableSeaweed': claimableSeaweed }
+                    }
+                }
+            });
 
-            // log the update
-            console.log(`(updateClaimableSeaweed) Updated claimable seaweed for user with raft ID ${raft.raftId}.`);
+            console.log(`(updateClaimableSeaweed) Updated claimable seaweed for Raft ${raft.raftId}.`);
+
+            return updateOperations;
+        })
+
+        const bulkWriteOpsArrays = await Promise.all(bulkWriteOpsPromises);
+
+        const bulkWriteOps = bulkWriteOpsArrays.flat().filter(op => op);
+
+        if (bulkWriteOps.length === 0) {
+            console.error(`(updateClaimableSeaweed) No bulk write operations found.`);
+            return;
         }
+
+        // execute the bulk write operations
+        await RaftModel.bulkWrite(bulkWriteOps);
+
+        console.log(`(updateClaimableSeaweed) Updated claimable seaweed for all rafts.`);
     } catch (err: any) {
         console.error('(updateClaimableSeaweed) Error:', err.message);
     }
