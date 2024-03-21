@@ -5,15 +5,21 @@ import { addIslandToDatabase, getLatestIslandId, randomizeBaseResourceCap } from
 import { RANDOMIZE_TYPE_FROM_CAPSULATOR } from '../utils/constants/terraCapsulator';
 import { Island } from '../models/island';
 import { ObtainMethod } from '../models/obtainMethod';
+import { UserModel } from '../utils/constants/db';
 
 /**
  * (User) Consumes a Terra Capsulator to obtain an island.
  */
 export const consumeTerraCapsulator = async (twitterId: string): Promise<ReturnValue> => {
-    const User = mongoose.model('Users', UserSchema, 'Users');
-
     try {
-        const user = await User.findOne({ twitterId });
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        const userUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
 
         if (!user) {
             return {
@@ -31,7 +37,7 @@ export const consumeTerraCapsulator = async (twitterId: string): Promise<ReturnV
         }
 
         // consume the Terra Capsulator
-        await User.updateOne({ twitterId }, { $inc: { 'inventory.totalTerraCapsulators': -1 } });
+        userUpdateOperations.$inc['inventory.totalTerraCapsulators'] = -1;
 
         // call `summonIsland` to summon an Island
         const { status: summonIslandStatus, message: summonIslandMessage, data: summonIslandData } = await summonIsland(user._id);
@@ -56,7 +62,9 @@ export const consumeTerraCapsulator = async (twitterId: string): Promise<ReturnV
         }
 
         // add the island ID to the user's inventory
-        await User.updateOne({ twitterId }, { $push: { 'inventory.islandIds': island.islandId } });
+        userUpdateOperations.$push['inventory.islands'] = island.islandId;
+
+        await UserModel.updateOne({ twitterId }, userUpdateOperations);
 
         return {
             status: Status.SUCCESS,
