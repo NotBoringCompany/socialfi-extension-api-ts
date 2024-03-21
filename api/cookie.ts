@@ -1,20 +1,15 @@
-import mongoose from 'mongoose'
 import { ReturnValue, Status } from '../utils/retVal'
-import { UserSchema } from '../schemas/User';
-import { COOKIE_CONTRACT, COOKIE_CONTRACT_DECIMALS, COOKIE_CONTRACT_USER, DEPLOYER_WALLET } from '../utils/constants/web3';
-import { CookieDepositSchema, CookieWithdrawalSchema } from '../schemas/Cookie';
+import { COOKIE_CONTRACT_DECIMALS, COOKIE_CONTRACT_USER, DEPLOYER_WALLET } from '../utils/constants/web3';
 import { generateHashSalt, generateObjectId } from '../utils/crypto';
 import { ethers } from 'ethers';
+import { CookieDepositModel, CookieWithdrawalModel, UserModel } from '../utils/constants/db';
 
 /**
  * (User) Deposits `amount` of cookies and earn the equivalent amount of xCookies.
  */
 export const depositCookies = async (twitterId: string, amount: number): Promise<ReturnValue> => {
-    const User = mongoose.model('Users', UserSchema, 'Users');
-    const CookieDeposit = mongoose.model('CookieDeposits', CookieDepositSchema, 'CookieDeposits');
-
     try {
-        const user = await User.findOne({ twitterId });
+        const user = await UserModel.findOne({ twitterId });
         
         if (!user) {
             return {
@@ -38,7 +33,7 @@ export const depositCookies = async (twitterId: string, amount: number): Promise
 
         // we dont check for errors here since it will directly go to the catch block if there's an error
         // we just deposit the same amount of cookies to the user's xCookies balance
-        await User.updateOne({ twitterId }, {
+        await UserModel.updateOne({ twitterId }, {
             $inc: {
                 'inventory.xCookies': amount
             }
@@ -47,7 +42,7 @@ export const depositCookies = async (twitterId: string, amount: number): Promise
         // we add an instance of the deposit to the CookieDeposits collection
         const latestDepositId = await getLatestDepositId();
         
-        const deposit = new CookieDeposit({
+        const deposit = new CookieDepositModel({
             _id: generateObjectId(),
             depositor: twitterId,
             depositId: latestDepositId.data.depositId + 1,
@@ -78,11 +73,8 @@ export const depositCookies = async (twitterId: string, amount: number): Promise
  * (User) Withdraws `amount` of xCookies and earn the equivalent amount of cookies in the blockchain.
  */
 export const withdrawCookies = async (twitterId: string, amount: number): Promise<ReturnValue> => {
-    const User = mongoose.model('Users', UserSchema, 'Users');
-    const CookieWithdrawal = mongoose.model('CookieWithdrawals', CookieWithdrawalSchema, 'CookieWithdrawals');
-
     try {
-        const user = await User.findOne({ twitterId });
+        const user = await UserModel.findOne({ twitterId });
 
         if (!user) {
             return {
@@ -133,7 +125,7 @@ export const withdrawCookies = async (twitterId: string, amount: number): Promis
 
         // we dont check for errors here since it will directly go to the catch block if there's an error
         // we just withdraw the same amount of cookies from the user's xCookies balance
-        await User.updateOne({ twitterId }, {
+        await UserModel.updateOne({ twitterId }, {
             $inc: {
                 'inventory.xCookies': -amount
             }
@@ -142,7 +134,7 @@ export const withdrawCookies = async (twitterId: string, amount: number): Promis
         // we add an instance of the withdrawal to the CookieWithdrawals collection
         const latestWithdrawalId = await getLatestWithdrawalId();
 
-        const withdrawal = new CookieWithdrawal({
+        const withdrawal = new CookieWithdrawalModel({
             _id: generateObjectId(),
             withdrawer: twitterId,
             withdrawalId: latestWithdrawalId.data.withdrawalId + 1,
@@ -175,11 +167,9 @@ export const withdrawCookies = async (twitterId: string, amount: number): Promis
  * Gets the latest cookie deposit ID.
  */
 export const getLatestDepositId = async (): Promise<ReturnValue> => {
-    const CookieDeposit = mongoose.model('CookieDeposits', CookieDepositSchema, 'CookieDeposits');
-
     try {
         // we count the amount of documents in the collection
-        const count = await CookieDeposit.countDocuments();
+        const count = await CookieDepositModel.countDocuments();
 
         return {
             status: Status.SUCCESS,
@@ -197,11 +187,9 @@ export const getLatestDepositId = async (): Promise<ReturnValue> => {
 }
 
 export const getLatestWithdrawalId = async (): Promise<ReturnValue> => {
-    const CookieWithdrawal = mongoose.model('CookieWithdrawals', CookieWithdrawalSchema, 'CookieWithdrawals');
-
     try {
         // we count the amount of documents in the collection
-        const count = await CookieWithdrawal.countDocuments();
+        const count = await CookieWithdrawalModel.countDocuments();
 
         return {
             status: Status.SUCCESS,
