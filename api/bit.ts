@@ -214,6 +214,15 @@ export const feedBit = async (
       }
     }
 
+    const bitUpdateOptions = {};
+
+    // add a filter to update the modifiers if the bit has both gathering and earning rate modifiers
+    if (gatheringRateModifier.value !== 1 && earningRateModifier.value !== 1) {
+      bitUpdateOptions['arrayFilters'] = [{ 'elem.origin': 'Energy Threshold Reduction' }];
+    }
+
+    console.log('bit update operations:', bitUpdateOperations);
+
     // execute the update operations
     await Promise.all([
       User.updateOne(
@@ -222,9 +231,7 @@ export const feedBit = async (
       ),
       Bit.updateOne({ bitId }, 
         bitUpdateOperations, 
-        {
-            arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }],
-        }
+        bitUpdateOptions
       ),
       Island.updateOne(
         { islandId: bit.placedIslandId },
