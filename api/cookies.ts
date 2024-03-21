@@ -1,15 +1,12 @@
-import mongoose from 'mongoose';
-import { UserSchema } from '../schemas/User';
 import { ReturnValue, Status } from '../utils/retVal';
+import { UserModel } from '../utils/constants/db';
 
 /**
  * Fetches the number of xCookies owned by the user.
  */
 export const getOwnedXCookies = async (twitterId: string): Promise<ReturnValue> => {
-    const User = mongoose.model('Users', UserSchema, 'Users');
-
     try {
-        const user = await User.findOne({ twitterId });
+        const user = await UserModel.findOne({ twitterId });
 
         if (!user) {
             return {
