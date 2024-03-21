@@ -6,15 +6,21 @@ import { RANDOMIZE_RARITY_FROM_ORB } from '../utils/constants/bitOrb';
 import { ReturnValue, Status } from '../utils/retVal';
 import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
 import { UserSchema } from '../schemas/User';
+import { BitModel, UserModel } from '../utils/constants/db';
 
 /**
  * (User) Consumes a Bit Orb to obtain a Bit.
  */
 export const consumeBitOrb = async (twitterId: string): Promise<ReturnValue> => {
-    const User = mongoose.model('Users', UserSchema, 'Users');
-
     try {
-        const user = await User.findOne({ twitterId });
+        const user = await UserModel.findOne({ twitterId });
+
+        const userUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
 
         if (!user) {
             return {
@@ -32,7 +38,7 @@ export const consumeBitOrb = async (twitterId: string): Promise<ReturnValue> => 
         }
 
         // consume the Bit Orb
-        await User.updateOne({ twitterId }, { $inc: { 'inventory.totalBitOrbs': -1 } });
+        userUpdateOperations.$inc['inventory.totalBitOrbs'] = -1;
 
         // call `summonBit` to summon a Bit
         const { status: summonBitStatus, message: summonBitMessage, data: summonBitData } = await summonBit(user._id);
@@ -57,7 +63,10 @@ export const consumeBitOrb = async (twitterId: string): Promise<ReturnValue> => 
         }
 
         // add the bit ID to the user's inventory
-        await User.updateOne({ twitterId }, { $push: { 'inventory.bitIds': bit.bitId } });  
+        userUpdateOperations.$push['inventory.bits'] = bit.bitId;
+
+        // execute the update operation
+        await UserModel.updateOne({ twitterId }, userUpdateOperations);
 
         return {
             status: Status.SUCCESS,
