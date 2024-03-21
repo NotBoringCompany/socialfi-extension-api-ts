@@ -154,6 +154,10 @@ export const feedBit = async (twitterId: string, bitId: number, foodType: FoodTy
             }
         }
 
+        console.log('user update operations: ', userUpdateOperations);
+        console.log('bit update operations: ', bitUpdateOperations);
+        console.log('island update operations: ', islandUpdateOperations);
+
         // execute the update operations
         await Promise.all([
             User.updateOne({ twitterId, 'inventory.foods.type': foodType }, userUpdateOperations),
