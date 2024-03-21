@@ -9,6 +9,7 @@ import { IslandType, RateType, ResourceDropChanceDiff } from '../models/island';
 import { Modifier } from '../models/modifier';
 import { ISLAND_EVOLUTION_COST, MAX_ISLAND_LEVEL, X_COOKIE_TAX } from '../utils/constants/island';
 import { UserSchema } from '../schemas/User';
+import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
 
 const router = express.Router();
 
@@ -168,11 +169,8 @@ router.get('/get_islands', async (req, res) => {
 router.get('/get_current_rates/:islandId', async (req, res) => {
     const { islandId } = req.params;
 
-    const Island = mongoose.model('Islands', IslandSchema, 'Islands');
-    const Bit = mongoose.model('Bits', BitSchema, 'Bits');
-
     try {
-        const island = await Island.findOne({ islandId: parseInt(islandId) });
+        const island = await IslandModel.findOne({ islandId: parseInt(islandId) }).lean();
 
         if (!island) {
             return res.status(404).json({
@@ -185,7 +183,7 @@ router.get('/get_current_rates/:islandId', async (req, res) => {
         const placedBits = island.placedBitIds as number[];
 
         // find the bits
-        const bits = await Bit.find({ bitId: { $in: placedBits } });
+        const bits = await BitModel.find({ bitId: { $in: placedBits } }).lean();
 
         if (bits.length === 0 || !bits) {
             return res.status(404).json({
@@ -231,10 +229,8 @@ router.get('/get_current_rates/:islandId', async (req, res) => {
 router.get('/get_evolution_cost/:islandId', async (req, res) => {
     const { islandId } = req.params;
 
-    const Island = mongoose.model('Islands', IslandSchema, 'Islands');
-
     try {
-        const island = await Island.findOne({ islandId: parseInt(islandId) });
+        const island = await IslandModel.findOne({ islandId: parseInt(islandId) }).lean();
 
         if (!island) {
             return res.status(404).json({
@@ -263,44 +259,13 @@ router.get('/get_evolution_cost/:islandId', async (req, res) => {
 router.get('/get_x_cookie_tax/:twitterId/:islandId', async (req, res) => {
     const { twitterId, islandId } = req.params;
 
-    const Island = mongoose.model('Islands', IslandSchema, 'Islands');
-    const User = mongoose.model('Users', UserSchema, 'Users');
-
     try {
-        const island = await Island.findOne({ islandId: parseInt(islandId) });
-
-        if (!island) {
-            return res.status(404).json({
-                status: 404,
-                message: `(get_x_cookie_tax) Island with ID ${islandId} not found.`
-            });
-        }
-
-        const user = await User.findOne({ twitterId });
-
-        if (!user) {
-            return res.status(404).json({
-                status: 404,
-                message: `(get_x_cookie_tax) User with ID ${twitterId} not found.`
-            });
-        }
-
-        // get the amount of active islands the user has
-        const activeIslands = await Island.find(
-            {
-                islandId:
-                    { $in: user.inventory?.islandIds as number[] },
-                placedBitIds: { $exists: true, $ne: [] }
-            });
-
-        const tax = X_COOKIE_TAX(<IslandType>island.type, activeIslands.length);
-
-        return res.status(200).json({
-            status: 200,
-            message: `(get_x_cookie_tax) Successfully retrieved xCookie tax for island with ID ${islandId}.`,
-            data: {
-                tax
-            }
+        const { status, message, data } = await checkCurrentTax(twitterId, parseInt(islandId));
+        
+        return res.status(status).json({
+            status,
+            message,
+            data
         });
     } catch (err: any) {
         return res.status(500).json({
@@ -313,10 +278,8 @@ router.get('/get_x_cookie_tax/:twitterId/:islandId', async (req, res) => {
 router.get('/get_evolution_resource_drop_chances_diff/:islandId', async (req, res) => {
     const { islandId } = req.params;
 
-    const Island = mongoose.model('Islands', IslandSchema, 'Islands');
-
     try {
-        const island = await Island.findOne({ islandId: parseInt(islandId) });
+        const island = await IslandModel.findOne({ islandId: parseInt(islandId) }).lean();
 
         if (!island) {
             return res.status(404).json({
