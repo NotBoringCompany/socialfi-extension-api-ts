@@ -6,6 +6,7 @@ import { shop } from '../utils/shop';
 import { getOwnedXCookies } from './cookies';
 import { UserSchema } from '../schemas/User';
 import { User } from '../models/user';
+import { UserModel } from '../utils/constants/db';
 
 /**
  * Fetches the shop.
@@ -116,9 +117,7 @@ export const purchaseShopAsset = async (
         }
 
         // deduct the price of the asset from the user's xCookies
-        const User = mongoose.model<User>('Users', UserSchema, 'Users');
-
-        const user = await User.findOne({ twitterId });
+        const user = await UserModel.findOne({ twitterId }).lean();
 
         if (!user) {
             return {
@@ -126,8 +125,6 @@ export const purchaseShopAsset = async (
                 message: `(purchaseShopAsset) User not found.`
             }
         }
-
-        console.log('user inventory: ', user.inventory);
 
         // Prepare the update operation to deduct the asset price from the user's xCookies
         const updateOperation: any = {
@@ -160,7 +157,7 @@ export const purchaseShopAsset = async (
         console.log('updateOperation', updateOperation);
 
         // Execute the update operation
-        await User.updateOne({ twitterId }, updateOperation);
+        await UserModel.updateOne({ twitterId }, updateOperation);
 
         return {
             status: Status.SUCCESS,
