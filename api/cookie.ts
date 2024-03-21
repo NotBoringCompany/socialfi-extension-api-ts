@@ -9,7 +9,7 @@ import { CookieDepositModel, CookieWithdrawalModel, UserModel } from '../utils/c
  */
 export const depositCookies = async (twitterId: string, amount: number): Promise<ReturnValue> => {
     try {
-        const user = await UserModel.findOne({ twitterId });
+        const user = await UserModel.findOne({ twitterId }).lean();
         
         if (!user) {
             return {
@@ -74,7 +74,7 @@ export const depositCookies = async (twitterId: string, amount: number): Promise
  */
 export const withdrawCookies = async (twitterId: string, amount: number): Promise<ReturnValue> => {
     try {
-        const user = await UserModel.findOne({ twitterId });
+        const user = await UserModel.findOne({ twitterId }).lean();
 
         if (!user) {
             return {

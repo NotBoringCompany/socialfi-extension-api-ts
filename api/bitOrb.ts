@@ -11,7 +11,7 @@ import { UserModel } from '../utils/constants/db';
  */
 export const consumeBitOrb = async (twitterId: string): Promise<ReturnValue> => {
     try {
-        const user = await UserModel.findOne({ twitterId });
+        const user = await UserModel.findOne({ twitterId }).lean();
 
         const userUpdateOperations = {
             $pull: {},

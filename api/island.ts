@@ -10,15 +10,14 @@ import { Modifier } from '../models/modifier';
 import { BitSchema } from '../schemas/Bit';
 import { Bit, BitRarity, BitRarityNumeric } from '../models/bit';
 import { generateObjectId } from '../utils/crypto';
+import { IslandModel, UserModel } from '../utils/constants/db';
 
 /**
  * Gets one or multiple islands based on their IDs.
  */
 export const getIslands = async (islandIds: number[]): Promise<ReturnValue> => {
-    const Island = mongoose.model('Islands', IslandSchema, 'Islands');
-
     try {
-        const islands = await Island.find({ islandId: { $in: islandIds } });
+        const islands = await IslandModel.find({ islandId: { $in: islandIds } });
 
         return {
             status: Status.SUCCESS,
@@ -41,12 +40,25 @@ export const getIslands = async (islandIds: number[]): Promise<ReturnValue> => {
  * NOTE: Requires `twitterId` which is fetched via `req.user`, automatically giving us the user's Twitter ID. This will check if the user who calls this function owns the twitter ID that owns the island.
  */
 export const evolveIsland = async (twitterId: string, islandId: number): Promise<ReturnValue> => {
-    const User = mongoose.model('Users', UserSchema, 'Users');
-    const Island = mongoose.model('Islands', IslandSchema, 'Islands');
-
     try {
-        // firstly, check if the user owns the island
-        const user = await User.findOne({ twitterId });
+        const [user, island] = await Promise.all([
+            UserModel.findOne({ twitterId }).lean(),
+            IslandModel.findOne({ islandId }).lean()
+        ]);
+
+        const userUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const islandUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
 
         if (!user) {
             return {
@@ -61,9 +73,6 @@ export const evolveIsland = async (twitterId: string, islandId: number): Promise
                 message: `(evolveIsland) User does not own the island.`
             }
         }
-
-        // query the island
-        const island = await Island.findOne({ islandId });
 
         if (!island) {
             return {
@@ -95,7 +104,7 @@ export const evolveIsland = async (twitterId: string, islandId: number): Promise
         }
 
         // deduct the xCookies from the user
-        await User.updateOne({ twitterId }, { $inc: { 'inventory.xCookies': -requiredXCookies } });
+        userUpdateOperations.$inc['inventory.xCookies'] = -requiredXCookies;
 
         // firstly, check if at this moment, the totalXCookiesSpent is 0.
         // because if it is, it means that earning hasn't started yet, meaning that after evolving the island, `earningStart` will be set to current timestamp, and earning will start.
@@ -103,30 +112,21 @@ export const evolveIsland = async (twitterId: string, islandId: number): Promise
 
         // if totalXCookies spent is 0, evolve the island, increment the totalXCookiesSpent of the island by `requiredXCookies` and also set the `earningStart` to now.
         if (totalXCookiesSpentIsZero) {
-            await Island.updateOne(
-                { islandId },
-                {
-                    $inc: {
-                        'currentLevel': 1,
-                        'islandEarningStats.totalXCookiesSpent': requiredXCookies
-                    },
-                    $set: {
-                        'islandEarningStats.earningStart': totalXCookiesSpentIsZero ? Math.floor(Date.now() / 1000) : undefined
-                    }
-                }
-            );
+            islandUpdateOperations.$inc['currentLevel'] = 1;
+            islandUpdateOperations.$inc['islandEarningStats.totalXCookiesSpent'] = requiredXCookies;
+            islandUpdateOperations.$set['islandEarningStats.earningStart'] = Math.floor(Date.now() / 1000);
+
             // otherwise, only evolve the island and increment the totalXCookiesSpent.
         } else {
-            await Island.updateOne(
-                { islandId },
-                {
-                    $inc: {
-                        'currentLevel': 1,
-                        'islandEarningStats.totalXCookiesSpent': requiredXCookies
-                    }
-                }
-            );
+            islandUpdateOperations.$inc['currentLevel'] = 1;
+            islandUpdateOperations.$inc['islandEarningStats.totalXCookiesSpent'] = requiredXCookies;
         }
+
+        // execute the update operations
+        await Promise.all([
+            UserModel.updateOne({ twitterId }, userUpdateOperations),
+            IslandModel.updateOne({ islandId }, islandUpdateOperations)
+        ]);
 
         return {
             status: Status.SUCCESS,

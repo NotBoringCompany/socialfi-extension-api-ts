@@ -16,7 +16,7 @@ export const openChest = async (twitterId: string, tweetId: string): Promise<Ret
     }
 
     try {
-        const user = await UserModel.findOne({ twitterId });
+        const user = await UserModel.findOne({ twitterId }).lean();
 
         if (!user) {
             return {
@@ -140,7 +140,7 @@ export const openChest = async (twitterId: string, tweetId: string): Promise<Ret
 export const removeOpenedTweetIdsToday = async (): Promise<void> => {
     try {
         // only find users where `openedTweetIdsToday` is not empty
-        const users = await UserModel.find({ openedTweetIdsToday: { $ne: [] } });
+        const users = await UserModel.find({ openedTweetIdsToday: { $ne: [] } }).lean();
 
         if (users.length === 0 || !users) {
             console.log(`(removeOpenedTweetIdsToday) No users found with opened tweet IDs today.`);
