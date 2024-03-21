@@ -602,12 +602,25 @@ export const evolveBitInRaft = async (
   twitterId: string,
   bitId: number
 ): Promise<ReturnValue> => {
-  const User = mongoose.model('Users', UserSchema, 'Users');
-  const Bit = mongoose.model('Bits', BitSchema, 'Bits');
-
   try {
-    // first, check if the user owns the bit
-    const user = await User.findOne({ twitterId });
+    const [user, bit] = await Promise.all([
+        UserModel.findOne({ twitterId }).lean(),
+        BitModel.findOne({ bitId }).lean()
+    ]);
+
+    let bitUpdateOperations = {
+        $pull: {},
+        $inc: {},
+        $set: {},
+        $push: {}
+    };
+
+    let userUpdateOperations = {
+        $pull: {},
+        $inc: {},
+        $set: {},
+        $push: {}
+    }
 
     if (!user) {
       return {
@@ -623,9 +636,6 @@ export const evolveBitInRaft = async (
         message: `(evolveBitInRaft) User does not own the bit.`,
       };
     }
-
-    // ensure that the bit exists
-    const bit = await Bit.findOne({ bitId });
 
     if (!bit) {
       return {
@@ -655,18 +665,11 @@ export const evolveBitInRaft = async (
       (resource) => resource.type === ResourceType.SEAWEED
     );
 
-    if (!userSeaweed || userSeaweed.amount === 0) {
-      return {
-        status: Status.ERROR,
-        message: `(evolveBitInRaft) Not enough seaweed to evolve the bit.`,
-      };
-    }
-
     // calculate the cost to evolve the bit to the next level
     const requiredSeaweed = BIT_RAFT_EVOLUTION_COST(bit.currentFarmingLevel);
 
     // if not enough seaweed, return an error
-    if (userSeaweed.amount < requiredSeaweed) {
+    if (!userSeaweed || userSeaweed.amount === 0 || userSeaweed.amount < requiredSeaweed) {
       return {
         status: Status.ERROR,
         message: `(evolveBitInRaft) Not enough seaweed to evolve the bit.`,
@@ -674,13 +677,16 @@ export const evolveBitInRaft = async (
     }
 
     // deduct the required seaweed from the user's inventory
-    await User.updateOne(
-      { twitterId, 'inventory.resources.type': ResourceType.SEAWEED },
-      { $inc: { 'inventory.resources.$.amount': -requiredSeaweed } }
-    );
+    userUpdateOperations.$inc['inventory.resources.$.amount'] = -requiredSeaweed;
 
     // increase the bit's current farming level by 1
-    await Bit.updateOne({ bitId }, { $inc: { currentFarmingLevel: 1 } });
+    bitUpdateOperations.$inc['currentFarmingLevel'] = 1;
+
+    // execute the update operations
+    await Promise.all([
+        BitModel.updateOne({ bitId }, bitUpdateOperations),
+        UserModel.updateOne({ twitterId, 'inventory.resources.type': ResourceType.SEAWEED }, userUpdateOperations)
+    ]);
 
     return {
       status: Status.SUCCESS,
