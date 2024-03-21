@@ -211,6 +211,8 @@ export const feedBit = async (twitterId: string, bitId: number, foodType: FoodTy
             bitUpdateOptions = { arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }] };
         }
 
+        console.log('bit update options: ', bitUpdateOptions);
+
         // execute the update operations
         await Promise.all([
             BitModel.updateOne({ bitId }, bitUpdateOperations, bitUpdateOptions),
