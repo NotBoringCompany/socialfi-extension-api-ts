@@ -1,6 +1,4 @@
-import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
-import { BitSchema } from '../schemas/Bit';
 import { Bit, BitFarmingStats, BitRarity } from '../models/bit';
 import {
     BASE_ENERGY_DEPLETION_RATE,
@@ -219,10 +217,8 @@ export const feedBit = async (twitterId: string, bitId: number, foodType: FoodTy
  * Called by a scheduler every 10 minutes.
  */
 export const depleteEnergy = async (): Promise<void> => {
-    const Bit = mongoose.model('Bits', BitSchema, 'Bits');
-
     try {
-        const bits = await Bit.find();
+        const bits = await BitModel.find();
 
         if (bits.length === 0 || !bits) {
             console.log(`(depleteEnergy) No bits found.`);
@@ -441,7 +437,7 @@ export const depleteEnergy = async (): Promise<void> => {
             .flat();
 
         // execute the bulk write operations
-        await Bit.bulkWrite(bulkWriteOperations);
+        await BitModel.bulkWrite(bulkWriteOperations);
 
         console.log(`(depleteEnergy) Bits' energies depleted.`);
     } catch (err: any) {
