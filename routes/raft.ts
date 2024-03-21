@@ -8,6 +8,7 @@ import { UserSchema } from '../schemas/User';
 import { RaftSchema } from '../schemas/Raft';
 import { BitSchema } from '../schemas/Bit';
 import { Bit } from '../models/bit';
+import { BitModel, RaftModel, UserModel } from '../utils/constants/db';
 
 const router = express.Router();
 
@@ -88,11 +89,8 @@ router.post('/claim_seaweed', async (req, res) => {
 router.get('/get_current_gathering_rate/:twitterId', async (req, res) => {
     const { twitterId } = req.params;
 
-    const User = mongoose.model('Users', UserSchema, 'Users');
-    const Raft = mongoose.model('Rafts', RaftSchema, 'Rafts');
-    const Bit = mongoose.model('Bits', BitSchema, 'Bits');
     try {
-        const user = await User.findOne({ twitterId });
+        const user = await UserModel.findOne({ twitterId }).lean();
 
         if (!user) {
             return res.status(404).json({
@@ -103,7 +101,7 @@ router.get('/get_current_gathering_rate/:twitterId', async (req, res) => {
 
         // get the raft
         const raftId = user.inventory?.raftId;
-        const raft = await Raft.findOne({ raftId });
+        const raft = await RaftModel.findOne({ raftId }).lean();
 
         if (!raft) {
             return res.status(404).json({
@@ -114,7 +112,7 @@ router.get('/get_current_gathering_rate/:twitterId', async (req, res) => {
 
         // get the bits placed in the raft
         const bitIds = raft.placedBitIds as number[];
-        const bits = await Bit.find({ bitId: { $in: bitIds } });
+        const bits = await BitModel.find({ bitId: { $in: bitIds } }).lean();
 
         // calculate the gathering rate
         const currentGatheringRate = calcSeaweedGatheringRate(bits as Bit[]);
