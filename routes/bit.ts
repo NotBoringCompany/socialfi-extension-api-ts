@@ -7,6 +7,7 @@ import { RateType } from '../models/island';
 import mongoose from 'mongoose';
 import { BitSchema } from '../schemas/Bit';
 import { BIT_EVOLUTION_COST, BIT_RAFT_EVOLUTION_COST } from '../utils/constants/bit';
+import { BitModel } from '../utils/constants/db';
 
 const router = express.Router();
 
@@ -120,10 +121,8 @@ router.get('/get_bits', async (req, res) => {
 router.get('/get_current_rates/:bitId', async (req, res) => {
     const { bitId } = req.params;
 
-    const Bit = mongoose.model('Bits', BitSchema, 'Bits');
-
     try {
-        const bit = await Bit.findOne({ bitId: parseInt(bitId) });
+        const bit = await BitModel.findOne({ bitId: parseInt(bitId) }).lean();
 
         if (!bit) {
             return res.status(404).json({
@@ -168,10 +167,8 @@ router.get('/get_current_rates/:bitId', async (req, res) => {
 router.get('/get_max_current_rates/:bitId', async (req, res) => {
     const { bitId } = req.params;
 
-    const Bit = mongoose.model('Bits', BitSchema, 'Bits');
-
     try {
-        const bit = await Bit.findOne({ bitId: parseInt(bitId) });
+        const bit = await BitModel.findOne({ bitId: parseInt(bitId) }).lean();
 
         if (!bit) {
             return res.status(404).json({
@@ -216,10 +213,8 @@ router.get('/get_max_current_rates/:bitId', async (req, res) => {
 router.get('/get_next_current_rate_increases/:bitId', async (req, res) => {
     const { bitId } = req.params;
 
-    const Bit = mongoose.model('Bits', BitSchema, 'Bits');
-
     try {
-        const bit = await Bit.findOne({ bitId: parseInt(bitId) });
+        const bit = await BitModel.findOne({ bitId: parseInt(bitId) }).lean();
 
         if (!bit) {
             return res.status(404).json({
@@ -284,10 +279,8 @@ router.get('/get_next_current_rate_increases/:bitId', async (req, res) => {
 router.get('/get_evolution_cost/:bitId', async (req, res) => {
     const { bitId } = req.params;
 
-    const Bit = mongoose.model('Bits', BitSchema, 'Bits');
-
     try {
-        const bit = await Bit.findOne({ bitId: parseInt(bitId) });
+        const bit = await BitModel.findOne({ bitId: parseInt(bitId) }).lean();
 
         if (!bit) {
             return res.status(404).json({
@@ -316,10 +309,8 @@ router.get('/get_evolution_cost/:bitId', async (req, res) => {
 router.get('/get_evolution_cost_raft/:bitId', async (req, res) => {
     const { bitId } = req.params;
 
-    const Bit = mongoose.model('Bits', BitSchema, 'Bits');
-
     try {
-        const bit = await Bit.findOne({ bitId: parseInt(bitId) });
+        const bit = await BitModel.findOne({ bitId: parseInt(bitId) }).lean();
 
         if (!bit) {
             return res.status(404).json({
