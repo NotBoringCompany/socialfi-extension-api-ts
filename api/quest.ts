@@ -7,6 +7,7 @@ import { User, UserInventory } from '../models/user';
 import { UserSchema } from '../schemas/User';
 import { Food } from '../models/food';
 import { RANDOMIZE_FOOD_FROM_QUEST } from '../utils/constants/quest';
+import { QuestModel, UserModel } from '../utils/constants/db';
 
 /**
  * Adds a quest to the database. Requires admin key.
@@ -29,13 +30,11 @@ export const addQuest = async (
         }
     }
 
-    const Quest = mongoose.model('Quests', QuestSchema, 'Quests');
-
     // get the amount of quests in the database to determine the `id` number
-    const questCount = await Quest.countDocuments();
+    const questCount = await QuestModel.countDocuments();
 
     try {
-        const newQuest = new Quest({
+        const newQuest = new QuestModel({
             _id: generateObjectId(),
             questId: questCount + 1,
             name,
@@ -72,11 +71,25 @@ export const addQuest = async (
  * TO DO: implement quest requirements check
  */
 export const completeQuest = async (twitterId: string, questId: number): Promise<ReturnValue> => {
-    const Quest = mongoose.model('Quests', QuestSchema, 'Quests');
-    const User = mongoose.model('Users', UserSchema, 'Users');
-
     try {
-        const quest = await Quest.findOne({ questId });
+        const [quest, user] = await Promise.all([
+            QuestModel.findOne({ questId }).lean(),
+            UserModel.findOne({ twitterId }).lean()
+        ]);
+
+        const userUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const questUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
 
         if (!quest) {
             return {
@@ -84,8 +97,6 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                 message: `(completeQuest) Quest not found. Quest ID: ${questId}`
             }
         }
-
-        const user = await User.findOne({ twitterId });
 
         if (!user) {
             return {
@@ -107,7 +118,7 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
         }
 
         // add the user to the `completedBy` array
-        await Quest.updateOne({ id: questId }, { $push: { completedBy: twitterId } });
+        questUpdateOperations.$push['completedBy'] = twitterId;
 
         // loop through the rewards and add them to the user's inventory
         const rewards: QuestReward[] = quest.rewards;
@@ -126,7 +137,7 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
             switch (rewardType) {
                 // add the cookie count into the user's inventory
                 case QuestRewardType.X_COOKIES:
-                    await User.updateOne({ twitterId }, { $inc: { 'inventory.xCookies': amount } });
+                    userUpdateOperations.$inc['inventory.xCookies'] = amount;
                     obtainedRewards.push({ type: rewardType, amount });
                     break;
                 // add the food into the user's inventory
@@ -137,9 +148,9 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                     const foodIndex = userInventory.foods.findIndex((f: Food) => f.type === food);
                     // if the food exists, increment the amount; otherwise, push the food into the inventory
                     if (foodIndex !== -1) {
-                        await User.updateOne({ twitterId }, { $inc: { [`inventory.foods.${foodIndex}.amount`]: amount } });
+                        userUpdateOperations.$inc[`inventory.foods.${foodIndex}.amount`] = amount;
                     } else {
-                        await User.updateOne({ twitterId }, { $push: { 'inventory.foods': { type: food, amount } } });
+                        userUpdateOperations.$push['inventory.foods'] = { type: food, amount };
                     }
 
                     obtainedRewards.push({ type: food, amount });
@@ -154,7 +165,13 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
         }
 
         // add the twitter id to the quest's `completedBy` array
-        await Quest.updateOne({ questId }, { $push: { completedBy: twitterId } });
+        questUpdateOperations.$push['completedBy'] = twitterId;
+
+        // execute the update operations
+        await Promise.all([
+            UserModel.updateOne({ twitterId }, userUpdateOperations),
+            QuestModel.updateOne({ questId }, questUpdateOperations)
+        ]);
 
         return {
             status: Status.SUCCESS,
@@ -176,10 +193,8 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
  * Fetches all quests from the database.
  */
 export const getQuests = async (): Promise<ReturnValue> => {
-    const Quest = mongoose.model('Quests', QuestSchema, 'Quests');
-
     try {
-        const quests = await Quest.find();
+        const quests = await QuestModel.find().lean();
 
         if (quests.length === 0 || !quests) {
             return {
@@ -207,8 +222,6 @@ export const getQuests = async (): Promise<ReturnValue> => {
  * Deletes a quest from the database. Requires admin key.
  */
 export const deleteQuest = async (questId: number, adminKey: string): Promise<ReturnValue> => {
-    const Quest = mongoose.model('Quests', QuestSchema, 'Quests');
-
     try {
         if (adminKey !== process.env.ADMIN_KEY) {
             return {
@@ -217,7 +230,7 @@ export const deleteQuest = async (questId: number, adminKey: string): Promise<Re
             }
         }
 
-        const quest = await Quest.findOne({ questId });
+        const quest = await QuestModel.findOne({ questId }).lean();
 
         if (!quest) {
             return {
@@ -226,7 +239,7 @@ export const deleteQuest = async (questId: number, adminKey: string): Promise<Re
             }
         }
 
-        await Quest.deleteOne({ questId });
+        await QuestModel.deleteOne({ questId });
 
         return {
             status: Status.SUCCESS,
@@ -247,10 +260,8 @@ export const deleteQuest = async (questId: number, adminKey: string): Promise<Re
  * Gets all quests that a user has completed.
  */
 export const getUserCompletedQuests = async (twitterId: string): Promise<ReturnValue> => {
-    const Quest = mongoose.model('Quests', QuestSchema, 'Quests');
-
     try {
-        const completedQuests = await Quest.find({ completedBy: twitterId });
+        const completedQuests = await QuestModel.find({ completedBy: twitterId }).lean();
 
         return {
             status: Status.SUCCESS,

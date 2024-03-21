@@ -21,7 +21,7 @@ export const purchaseTicket = async (
     twitterId: string, 
     resourceType: ResourceType,
     pickedNumbers: number[] | null | undefined
-) => {
+): Promise<ReturnValue> => {
     const Lottery = mongoose.model('Lottery', LotterySchema, 'Lottery');
     const User = mongoose.model('Users', UserSchema, 'Users');
 
@@ -168,7 +168,7 @@ export const purchaseTicket = async (
 /**
  * Claims the winnings for a user from a specific draw. If no `drawId` is provided, the system will claim the winnings from the latest draw (if applicable).
  */
-export const claimWinnings = async (twitterId: string, drawId?: number) => {
+export const claimWinnings = async (twitterId: string, drawId?: number): Promise<ReturnValue> => {
     const Lottery = mongoose.model('Lottery', LotterySchema, 'Lottery');
     const User = mongoose.model('Users', UserSchema, 'Users');
 
