@@ -222,7 +222,7 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
                 islandId:
                     { $in: ownedIslands },
                 placedBitIds: { $exists: true, $ne: [] }
-            });
+            }).lean();
 
         if (activeIslands.length >= TOTAL_ACTIVE_ISLANDS_ALLOWED) {
             return {
@@ -372,12 +372,9 @@ export const checkBitRarityAllowed = (bitRarity: BitRarity, minRarityRequired: B
  * Checks how much tax the user has to pay when claiming xCookies based on the island type and the amount of active islands the user has.
  */
 export const checkCurrentTax = async (twitterId: string, islandId: number): Promise<ReturnValue> => {
-    const User = mongoose.model('Users', UserSchema, 'Users');
-    const Island = mongoose.model('Islands', IslandSchema, 'Islands');
-
     try {
         // check if user exists
-        const user = await User.findOne({ twitterId });
+        const user = await UserModel.findOne({ twitterId }).lean();
 
         if (!user) {
             return {
@@ -405,12 +402,12 @@ export const checkCurrentTax = async (twitterId: string, islandId: number): Prom
         }
 
         // filter out the islands that have bits placed by querying the `Islands` collection to get the total amount of active islands
-        const activeIslands = await Island.find(
+        const activeIslands = await IslandModel.find(
             {
                 islandId:
                     { $in: islandIds },
                 placedBitIds: { $exists: true, $ne: [] }
-            });
+            }).lean();
 
         // get the island from the `islandId` within the `activeIslands` array
         const island = activeIslands.find(island => island.islandId === islandId);
@@ -439,25 +436,26 @@ export const checkCurrentTax = async (twitterId: string, islandId: number): Prom
  * For islands that have reached >= 100% gathering progress, it should drop a resource and reset the gathering progress back to 0% + the remaining overflow of %.
  */
 export const updateGatheringProgressAndDropResource = async (): Promise<void> => {
-    const Island = mongoose.model('Islands', IslandSchema, 'Islands');
-
     try {
         // find islands only where (in `islandResourceStats`):
         // 1. `gatheringStart` is not 0
         // 2. `gatheringEnd` is 0
         // 3. `placedBitIds` has at least a length of 1 (i.e. at least 1 placed bit inside)
-        const islands = await Island.find({
+        const islands = await IslandModel.find({
             'islandResourceStats.gatheringStart': { $ne: 0 },
             'islandResourceStats.gatheringEnd': 0,
             'placedBitIds.0': { $exists: true }
-        });
+        }).lean();
 
         if (islands.length === 0 || !islands) {
             console.error(`(updateGatheringProgressAndDropResource) No islands found.`);
             return;
         }
 
-        for (let island of islands) {
+        // prepare bulk write operations to update all islands' `gatheringProgress`
+        const bulkWriteOpsPromises = islands.map(async island => {
+            let updateOperations = [];
+
             let finalGatheringProgress = 0;
             // check current gathering progress
             const gatheringProgress = island.islandResourceStats?.gatheringProgress;
@@ -468,7 +466,7 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
             // if error, just console log and continue to the next island
             if (status !== Status.SUCCESS) {
                 console.error(`(updateGatheringProgressAndDropResource) Error For island ID ${island.islandId} from getBits: ${message}`);
-                continue;
+                return;
             }
 
             const bits = data?.bits as Bit[];
@@ -488,7 +486,7 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
                 island.islandStatsModifiers?.gatheringRateModifiers as Modifier[]
             );
 
-            // to calculate the gathering progress increment every 10 minutes, we need to firstly calculate the time it takes (in hours) to drop 1 resource. 
+            // to calculate the gathering progress increment every 10 minutes, we need to firstly calculate the time it takes (in hours) to drop 1 resource.
             // the gathering progress increment/hour (in %) will just be 1 / time to drop 1 resource * 100 (or 100/time to drop resource)
             // which means that the gathering progress increment/10 minutes will be the gathering progress increment per hour / 6.
             // example:
@@ -499,13 +497,22 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
             const hoursToDropResource = 1 / resourcesPerHour;
             const gatheringProgressIncrementPerHour = 1 / hoursToDropResource * 100;
             // divide by 6 to get the gathering progress increment per 10 minutes
-            const gatheringProgressIncrement = gatheringProgressIncrementPerHour / 6; 
+            const gatheringProgressIncrement = gatheringProgressIncrementPerHour / 6;
 
             console.log(`(updateGatheringProgressAndDropResource) Island ID ${island.islandId} has a current gathering rate of ${gatheringRate} %/hour and a gathering progress increment of ${gatheringProgressIncrement}%/10 minutes.`)
 
             if (gatheringProgress + gatheringProgressIncrement < 100) {
-                await Island.updateOne({ islandId: island.islandId }, { $inc: { 'islandResourceStats.gatheringProgress': gatheringProgressIncrement } });
-
+                // add to the update operations
+                updateOperations.push({
+                    updateOne: {
+                        filter: { islandId: island.islandId },
+                        update: {
+                            $inc: {
+                                'islandResourceStats.gatheringProgress': gatheringProgressIncrement
+                            }
+                        }
+                    }
+                });
                 console.log(`(updateGatheringProgressAndDropResource) Island ID ${island.islandId} has updated its gathering progress to ${gatheringProgress + gatheringProgressIncrement}.`);
             } else {
                 // if >= 100, drop a resource and reset the gathering progress back to 0 + the remaining overflow of %
@@ -518,13 +525,36 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
                 finalGatheringProgress = (gatheringProgress + gatheringProgressIncrement) - 100;
 
                 // reset the gathering progress back to 0 + the remaining overflow of %
-                await Island.updateOne({ islandId: island.islandId }, { $set: { 'islandResourceStats.gatheringProgress': finalGatheringProgress } });
+                updateOperations.push({
+                    updateOne: {
+                        filter: { islandId: island.islandId },
+                        update: {
+                            $set: {
+                                'islandResourceStats.gatheringProgress': finalGatheringProgress
+                            }
+                        }
+                    }
+                });
 
                 console.log(`(updateGatheringProgressAndDropResource) Island ID ${island.islandId} has dropped a resource and reset its gathering progress to ${finalGatheringProgress}.`);
             }
+
+            return updateOperations;
+        });
+
+        const bulkWriteOpsArrays = await Promise.all(bulkWriteOpsPromises);
+
+        const bulkWriteOps = bulkWriteOpsArrays.flat().filter(op => op);
+
+        if (bulkWriteOps.length === 0) {
+            console.error(`(updateGatheringProgressAndDropResource) No islands have been updated.`);
+            return;
         }
 
-        console.log(`(updateGatheringProgressAndDropResource) All islands have been updated.`);
+        // execute the bulk write operations
+        await IslandModel.bulkWrite(bulkWriteOps);
+
+        console.log(`(updateGatheringProgressAndDropResource) All islands' gathering progresses have been updated.`);
     } catch (err: any) {
         // only console logging; this shouldn't stop the entire process
         console.error(`(updateGatheringProgressAndDropResource) Error: ${err.message}`);
