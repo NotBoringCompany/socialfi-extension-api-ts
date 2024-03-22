@@ -30,6 +30,8 @@ export interface Island {
     currentTax: number;
     /** the IDs of the bits that are placed (tied down) into this island to gather and earn */
     placedBitIds: number[];
+    /** the island's trait */
+    trait: IslandTrait;
     /** resource stats related to the island, such as gathering rate */
     islandResourceStats: IslandResourceStats;
     /** earning stats related to the island, such as earning rate */
@@ -47,6 +49,18 @@ export enum IslandType {
     EXOTIC_ISLES = 'Exotic Isles',
     CRYSTAL_ISLES = 'Crystal Isles',
     CELESTIAL_ISLES = 'Celestial Isles',
+}
+
+/**
+ * Represents the trait of an island.
+ */
+export enum IslandTrait {
+    // produce mineral ores
+    MINERAL_RICH = 'Mineral Rich',
+    // produce fruits
+    FERTILE = 'Fertile',
+    // produce liquids
+    AQUIFER = 'Aquifer',
 }
 
 /**
