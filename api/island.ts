@@ -60,7 +60,11 @@ export const createBarrenIsland = async (userId: string): Promise<ReturnValue> =
                 lastClaimed: 0,
                 crumbsLastClaimed: 0
             },
-            islandStatsModifiers: []  
+            islandStatsModifiers: {
+                resourceCapModifiers: [],
+                gatheringRateModifiers: [],
+                earningRateModifiers: []
+            }
         });
 
         await newIsland.save();

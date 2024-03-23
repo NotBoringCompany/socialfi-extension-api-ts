@@ -57,6 +57,26 @@ export const GET_TOTAL_X_COOKIES_EARNABLE = (type: IslandType) => {
 }
 
 /**
+ * Gets the total cookie crumbs earnable for an island based on its type.
+ */
+export const GET_TOTAL_COOKIE_CRUMBS_EARNABLE = (type: IslandType) => {
+    switch (type) {
+        case IslandType.PRIMAL_ISLES:
+            return 150;
+        case IslandType.VERDANT_ISLES:
+            return 250;
+        case IslandType.EXOTIC_ISLES:
+            return 400;
+        case IslandType.CRYSTAL_ISLES:
+            return 675;
+        case IslandType.CELESTIAL_ISLES:
+            return 1000;
+        default:
+            throw new Error(`(GET_TOTAL_COOKIE_CRUMBS_EARNABLE) Invalid Island Type: ${type}`);
+    }
+}
+
+/**
  * Randomizes 5 traits from the available island traits.
  */
 export const randomizeIslandTraits = (): IslandTrait[] => {
