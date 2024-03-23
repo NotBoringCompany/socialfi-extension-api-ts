@@ -1,8 +1,6 @@
 import { ReturnValue, Status } from '../utils/retVal';
 import { generateObjectId } from '../utils/crypto';
 import { randomizeRaftCapacity, randomizeRaftSpeed } from '../utils/constants/raft';
-import { Resource, ResourceType } from '../models/resource';
-import { Bit } from '../models/bit';
 import { BitModel, RaftModel, UserModel } from '../utils/constants/db';
 
 /**
