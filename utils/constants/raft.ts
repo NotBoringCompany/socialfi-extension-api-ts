@@ -19,3 +19,17 @@ export const SEAWEED_GATHERING_RATE = (level: number): number => {
 export const SEAWEED_GATHERING_RATES = (levels: number[]): number => {
     return levels.reduce((acc, level) => acc + SEAWEED_GATHERING_RATE(level), 0);
 }
+
+/**
+ * Randomizes the raft's speed between 1 to 10.
+ */
+export const randomizeRaftSpeed = () => {
+    return Math.floor(Math.random() * 10) + 1;
+}
+
+/**
+ * Randomizes the raft's capacity from 3 to 7.
+ */
+export const randomizeRaftCapacity = () => {
+    return Math.floor(Math.random() * 5) + 3;
+}

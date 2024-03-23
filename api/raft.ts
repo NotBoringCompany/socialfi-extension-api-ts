@@ -1,10 +1,6 @@
-import mongoose from 'mongoose'
-import { RaftSchema } from '../schemas/Raft'
 import { ReturnValue, Status } from '../utils/retVal';
 import { generateObjectId } from '../utils/crypto';
-import { UserSchema } from '../schemas/User';
-import { BitSchema } from '../schemas/Bit';
-import { RAFT_BIT_PLACEMENT_CAP } from '../utils/constants/raft';
+import { RAFT_BIT_PLACEMENT_CAP, randomizeRaftCapacity, randomizeRaftSpeed } from '../utils/constants/raft';
 import { Resource, ResourceType } from '../models/resource';
 import { Bit } from '../models/bit';
 import { BitModel, RaftModel, UserModel } from '../utils/constants/db';
@@ -30,6 +26,10 @@ export const createRaft = async (userId: string): Promise<ReturnValue> => {
             owner: userId,
             currentLevel: 1,
             placedBitIds: [],
+            stats: {
+                speed: randomizeRaftSpeed(),
+                capacity: randomizeRaftCapacity()
+            },
             raftResourceStats: {
                 seaweedGathered: 0,
                 claimableSeaweed: 0,
