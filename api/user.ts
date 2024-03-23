@@ -10,6 +10,7 @@ import { RANDOMIZE_RARITY_FROM_ORB } from '../utils/constants/bitOrb';
 import { RANDOMIZE_GENDER } from '../utils/constants/bit';
 import { ObtainMethod } from '../models/obtainMethod';
 import { UserModel } from '../utils/constants/db';
+import { createBarrenIsland } from './island';
 
 /**
  * Twitter login logic. Creates a new user or simply log them in if they already exist.
@@ -74,6 +75,16 @@ export const handleTwitterLogin = async (twitterId: string): Promise<ReturnValue
                 }
             }
 
+            // creates a new barren island for the user for free as well
+            const {status: islandStatus, message: islandMessage, data: islandData} = await createBarrenIsland(userObjectId);
+
+            if (islandStatus !== Status.SUCCESS) {
+                return {
+                    status: islandStatus,
+                    message: `(handleTwitterLogin) Error from createBarrenIsland: ${islandMessage}`
+                }
+            }
+
             // creates the wallet for the user
             const { privateKey, publicKey } = createUserWallet();
 
@@ -90,6 +101,7 @@ export const handleTwitterLogin = async (twitterId: string): Promise<ReturnValue
                     resources: [],
                     items: [],
                     foods: [],
+                    barrenIslandId: islandData.island.islandId,
                     raftId: data.raft.raftId,
                     islandIds: [],
                     bitIds: [bitIdData?.latestBitId + 1],

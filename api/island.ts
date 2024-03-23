@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
 import { IslandSchema } from '../schemas/Island';
 import { Island, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
-import { BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLUTION_COST, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN, X_COOKIE_TAX } from '../utils/constants/island';
+import { BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLUTION_COST, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN, X_COOKIE_TAX, randomizeIslandTraits } from '../utils/constants/island';
 import { calcBitCurrentRate, getBits } from './bit';
 import { Resource, ResourceType } from '../models/resource';
 import { UserSchema } from '../schemas/User';
@@ -11,6 +11,74 @@ import { BitSchema } from '../schemas/Bit';
 import { Bit, BitRarity, BitRarityNumeric } from '../models/bit';
 import { generateObjectId } from '../utils/crypto';
 import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
+import { ObtainMethod } from '../models/obtainMethod';
+
+/**
+ * Creates a barren island for newly registered users.
+ */
+export const createBarrenIsland = async (userId: string): Promise<ReturnValue> => {
+    try {
+        const { status, message, data } = await getLatestIslandId();
+
+        if (status !== Status.SUCCESS) {
+            return {
+                status,
+                message: `(createBarrenIsland) Error from getLatestIslandId: ${message}`
+            }
+        }
+
+        const newIsland = new IslandModel({
+            _id: generateObjectId(),
+            islandId: data.latestIslandId + 1,
+            type: IslandType.BARREN,
+            owner: userId,
+            purchaseDate: Math.floor(Date.now() / 1000),
+            obtainMethod: ObtainMethod.SIGN_UP,
+            currentLevel: 1,
+            currentTax: 0,
+            placedBitIds: [],
+            traits: randomizeIslandTraits(),
+            islandResourceStats: {
+                baseResourceCap: randomizeBaseResourceCap(IslandType.BARREN),
+                resourcesGathered: [],
+                claimableResources: [],
+                gatheringStart: 0,
+                gatheringEnd: 0,
+                lastClaimed: 0,
+                gatheringProgress: 0
+            },
+            islandEarningStats: {
+                totalXCookiesEarnable: 0,
+                totalXCookiesEarned: 0,
+                claimableXCookies: 0,
+                totalCookieCrumbsEarned: 0,
+                claimableCookieCrumbs: 0,
+                earningStart: 0,
+                crumbsEarningStart: 0,
+                earningEnd: 0,
+                crumbsEarningEnd: 0,
+                lastClaimed: 0,
+                crumbsLastClaimed: 0
+            },
+            islandStatsModifiers: []  
+        });
+
+        await newIsland.save();
+
+        return {
+            status: Status.SUCCESS,
+            message: `(createBarrenIsland) Barren island created.`,
+            data: {
+                island: newIsland
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(createBarrenIsland) Error: ${err.message}`
+        }
+    }
+}
 
 /**
  * Gets one or multiple islands based on their IDs.

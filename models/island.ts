@@ -99,19 +99,21 @@ export interface IslandResourceStats {
  * Represents the earning stats of an island.
  */
 export interface IslandEarningStats {
-    /** total xCookies earnable on this island (mainly depends on the island's rarity and some other factors) */
+    /** total xCookies earnable on this island (mainly depends on the island's rarity and some other factors and also the amount of cookies spent on this island) */
     totalXCookiesEarnable: number;
     /** total xCookies earned, incl. ones claimed already. end amount should equal total xCookies spent (even with tax since it's not calc. here) */
     totalXCookiesEarned: number;
     /** claimable xCookies that haven't been claimed yet to the inventory */
     claimableXCookies: number;
+    /** total cookie crumbs earanble on this island */
+    totalCookieCrumbsEarnable: number;
     /** total cookie crumbs earned, incl. the ones claimed already. */
     totalCookieCrumbsEarned: number;
     /** claimable cookie crumbs that haven't been claimed yet to the inventory */
     claimableCookieCrumbs: number;
     /** start timestamp of earning (xCookies); 0 if not started yet */
     earningStart: number;
-    /**  start timestamp of earning (cookie crumbs); 0 if not started yet */
+    /**  start timestamp of earning (cookie crumbs); 0 if not started yet; starts after gathering of resources and earning of xCookies are completed */
     crumbsEarningStart: number;
     /** end timestamp of earning (xCookies); 0 if not ended yet */
     earningEnd: number;

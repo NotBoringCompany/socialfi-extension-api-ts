@@ -116,6 +116,8 @@ export const ISLAND_EVOLUTION_COST = (type: IslandType, currentLevel: number) =>
  */
 export const DEFAULT_RESOURCE_CAP = (type: IslandType) => {
     switch (type) {
+        case IslandType.BARREN:
+            return 15;
         case IslandType.PRIMAL_ISLES:
             return 100;
         case IslandType.VERDANT_ISLES:

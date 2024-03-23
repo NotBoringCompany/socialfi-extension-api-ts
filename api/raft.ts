@@ -1,6 +1,6 @@
 import { ReturnValue, Status } from '../utils/retVal';
 import { generateObjectId } from '../utils/crypto';
-import { randomizeRaftCapacity, randomizeRaftSpeed } from '../utils/constants/raft';
+import { randomizeRaftBaseSpeed, randomizeRaftCapacity } from '../utils/constants/raft';
 import { BitModel, RaftModel, UserModel } from '../utils/constants/db';
 
 /**
@@ -25,15 +25,8 @@ export const createRaft = async (userId: string): Promise<ReturnValue> => {
             currentLevel: 1,
             placedBitIds: [],
             stats: {
-                speed: randomizeRaftSpeed(),
+                baseSpeed: randomizeRaftBaseSpeed(),
                 capacity: randomizeRaftCapacity()
-            },
-            raftResourceStats: {
-                seaweedGathered: 0,
-                claimableSeaweed: 0,
-                // gathering start will essentially start when the first bit is added
-                gatheringStart: 0,
-                lastClaimed: 0,
             }
         });
 

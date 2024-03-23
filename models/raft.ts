@@ -22,8 +22,8 @@ export interface Raft {
  * Represents the stats of a raft.
  */
 export interface RaftStats {
-    /** the speed of the raft */
-    speed: number;
+    /** the base speed of the raft */
+    baseSpeed: number;
     /** max amount of bits that can be placed inside the raft */
     capacity: number;
 }

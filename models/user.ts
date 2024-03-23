@@ -44,6 +44,8 @@ export interface UserInventory {
     items: Item[];
     /** a list of foods owned */
     foods: Food[];
+    /** the owned barren island ID */
+    barrenIslandId: number;
     /** the owned raft ID */
     raftId: number;
     /** a list of owned island IDs */
