@@ -16,6 +16,7 @@ export const IslandSchema = new mongoose.Schema({
     currentLevel: Number,
     currentTax: Number,
     placedBitIds: Array,
+    traits: Array,
     islandResourceStats: Object,
     islandEarningStats: Object,
     islandStatsModifiers: Object
