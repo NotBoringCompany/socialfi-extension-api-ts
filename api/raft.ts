@@ -131,8 +131,8 @@ export const placeBit = async (twitterId: string, bitId: number): Promise<Return
             }
         }
 
-        // check if the raft has reached its bit cap
-        if (raft.placedBitIds.length >= RAFT_BIT_PLACEMENT_CAP) {
+        // check if the raft has reached its capacity
+        if (raft.placedBitIds.length >= raft.stats.capacity) {
             return {
                 status: Status.ERROR,
                 message: `(placeBit) Raft has reached its bit cap.`

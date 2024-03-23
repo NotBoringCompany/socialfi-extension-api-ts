@@ -24,6 +24,6 @@ export interface Raft {
 export interface RaftStats {
     /** the speed of the raft */
     speed: number;
-    /** how many bits the raft can hold */
+    /** max amount of bits that can be placed inside the raft */
     capacity: number;
 }

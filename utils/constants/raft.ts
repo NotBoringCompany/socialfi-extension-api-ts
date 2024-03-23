@@ -1,6 +1,3 @@
-/** the maximum amount of bits allowed in a raft */
-export const RAFT_BIT_PLACEMENT_CAP = 5;
-
 /**
  * Gets the gathering rate of seaweed per hour given the bit's level.
  */
