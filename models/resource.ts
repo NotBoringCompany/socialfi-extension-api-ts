@@ -9,11 +9,13 @@
  */
 export interface Resource {
     /** the type of resource */
-    type: BarrenResource | OreResource | FruitResource | LiquidResource;
+    type: ResourceType;
     /** the resource line */
     line: ResourceLine;
+    /** the rarity of the resource */
+    rarity: ResourceRarity;
     /** the amount of resource */
-    amount: number;
+    amount?: number;
 }
 
 /**
@@ -24,6 +26,17 @@ export enum ResourceLine {
     ORE = 'Ore',
     FRUIT = 'Fruit',
     LIQUID = 'Liquid',
+}
+
+/** 
+ * Represents the resource's rarity 
+ */
+export enum ResourceRarity {
+    COMMON = 'Common',
+    UNCOMMON = 'Uncommon',
+    RARE = 'Rare',
+    EPIC = 'Epic',
+    LEGENDARY = 'Legendary',
 }
 
 /**
@@ -65,3 +78,8 @@ export enum LiquidResource {
     MOONLIGHT_DEW = 'Moonlight Dew',
     PHOENIX_TEAR = 'Phoenix Tear',
 }
+
+/** 
+ * Represents a resource type based on all possible resources.
+ */
+export type ResourceType = BarrenResource | OreResource | FruitResource | LiquidResource;
