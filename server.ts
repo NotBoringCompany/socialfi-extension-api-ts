@@ -41,6 +41,7 @@ import user from './routes/user';
 import chest from './routes/chest';
 import cookie from './routes/cookie';
 import { schedulers } from './schedulers/schedulers';
+import { randomizeIslandTraits } from './utils/constants/island';
 
 app.use('/auth/twitter', twitterAuth);
 app.use('/jwt', jwt);

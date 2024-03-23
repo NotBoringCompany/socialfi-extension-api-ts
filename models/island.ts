@@ -34,9 +34,9 @@ export interface Island {
      * 5 island traits for each resource rarity
      * e.g. if mineral rich, fertile, fertile, fertile, aquifer, then:
      * common = mineral rich, uncommon = fertile, rare = fertile, epic = fertile, legendary = aquifer
-     * so if a common resource is gathered, it will drop a mineral rich resource for common rarity
+     * so if a common resource is gathered, it will drop a mineral rich resource of common rarity
      */
-    trait: IslandTrait[];
+    traits: IslandTrait[];
     /** resource stats related to the island, such as gathering rate */
     islandResourceStats: IslandResourceStats;
     /** earning stats related to the island, such as earning rate */

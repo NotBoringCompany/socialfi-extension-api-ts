@@ -1,5 +1,5 @@
 import { BitRarity } from '../../models/bit';
-import { IslandType, RarityDeviationReduction, ResourceDropChance, ResourceDropChanceDiff } from '../../models/island';
+import { IslandTrait, IslandType, RarityDeviationReduction, ResourceDropChance, ResourceDropChanceDiff } from '../../models/island';
 import { shop } from '../shop';
 
 /** max level for any island type */
@@ -54,6 +54,22 @@ export const GET_TOTAL_X_COOKIES_EARNABLE = (type: IslandType) => {
         default:
             throw new Error(`(GET_TOTAL_X_COOKIES_EARNABLE) Invalid Island Type: ${type}`);
     }
+}
+
+/**
+ * Randomizes 5 traits from the available island traits.
+ */
+export const randomizeIslandTraits = (): IslandTrait[] => {
+    const traits = Object.values(IslandTrait);
+
+    const randomTraits: IslandTrait[] = [];
+
+    for (let i = 0; i < 5; i++) {
+        const rand = Math.floor(Math.random() * traits.length);
+        randomTraits.push(traits[rand]);
+    }
+
+    return randomTraits;
 }
 
 /** cost to evolve an island (in xCookies) based on the island type and the island's current level */

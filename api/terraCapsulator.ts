@@ -4,6 +4,7 @@ import { randomizeTypeFromCapsulator } from '../utils/constants/terraCapsulator'
 import { Island } from '../models/island';
 import { ObtainMethod } from '../models/obtainMethod';
 import { UserModel } from '../utils/constants/db';
+import { GET_TOTAL_X_COOKIES_EARNABLE, randomizeIslandTraits } from '../utils/constants/island';
 
 /**
  * (User) Consumes a Terra Capsulator to obtain an island.
@@ -104,6 +105,11 @@ export const summonIsland = async (
         // randomize the base resource cap
         const baseResourceCap = randomizeBaseResourceCap(islandType);
 
+        // randomize the 5 island traits
+        const traits = randomizeIslandTraits();
+
+        // get total xCookies earnable based on rarity
+        const totalXCookiesEarnable = GET_TOTAL_X_COOKIES_EARNABLE(islandType);
 
         // summon and return the island. DOESN'T SAVE TO DATABASE YET.
         const island: Island = {
@@ -115,6 +121,7 @@ export const summonIsland = async (
             currentLevel: 1,
             currentTax: 0,
             placedBitIds: [],
+            traits,
             islandResourceStats: {
                 baseResourceCap,
                 resourcesGathered: [],
@@ -125,12 +132,17 @@ export const summonIsland = async (
                 gatheringProgress: 0
             },
             islandEarningStats: {
-                totalXCookiesEarnable: 0,
+                totalXCookiesEarnable,
                 totalXCookiesEarned: 0,
                 claimableXCookies: 0,
+                totalCookieCrumbsEarned: 0,
+                claimableCookieCrumbs: 0,
                 earningStart: 0,
+                crumbsEarningStart: 0,
                 earningEnd: 0,
+                crumbsEarningEnd: 0,
                 lastClaimed: 0,
+                crumbsLastClaimed: 0
             },
             islandStatsModifiers: {
                 resourceCapModifiers: [],
