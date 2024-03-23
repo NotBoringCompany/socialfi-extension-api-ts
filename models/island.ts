@@ -30,8 +30,13 @@ export interface Island {
     currentTax: number;
     /** the IDs of the bits that are placed (tied down) into this island to gather and earn */
     placedBitIds: number[];
-    /** the island's trait */
-    trait: IslandTrait;
+    /** 
+     * 5 island traits for each resource rarity
+     * e.g. if mineral rich, fertile, fertile, fertile, aquifer, then:
+     * common = mineral rich, uncommon = fertile, rare = fertile, epic = fertile, legendary = aquifer
+     * so if a common resource is gathered, it will drop a mineral rich resource for common rarity
+     */
+    trait: IslandTrait[];
     /** resource stats related to the island, such as gathering rate */
     islandResourceStats: IslandResourceStats;
     /** earning stats related to the island, such as earning rate */
@@ -44,6 +49,8 @@ export interface Island {
  * Represents the type of island.
  */
 export enum IslandType {
+    // for free to play players, generating very small amount of (possibly common) resources
+    BARREN = 'Barren',
     PRIMAL_ISLES = 'Primal Isles',
     VERDANT_ISLES = 'Verdant Isles',
     EXOTIC_ISLES = 'Exotic Isles',
@@ -100,12 +107,22 @@ export interface IslandEarningStats {
     totalXCookiesEarned: number;
     /** claimable xCookies that haven't been claimed yet to the inventory */
     claimableXCookies: number;
-    /** start timestamp of earning; 0 if not started yet */
+    /** total cookie crumbs earned, incl. the ones claimed already. */
+    totalCookieCrumbsEarned: number;
+    /** claimable cookie crumbs that haven't been claimed yet to the inventory */
+    claimableCookieCrumbs: number;
+    /** start timestamp of earning (xCookies); 0 if not started yet */
     earningStart: number;
-    /** end timestamp of earning; 0 if not ended yet */
+    /**  start timestamp of earning (cookie crumbs); 0 if not started yet */
+    crumbsEarningStart: number;
+    /** end timestamp of earning (xCookies); 0 if not ended yet */
     earningEnd: number;
+    /** end timestamp of earning (cookie crumbs); 0 if not ended yet */
+    crumbsEarningEnd: number;
     /** timestamp of when `claimableXCookies` were last claimed */
     lastClaimed: number;
+    /** timestamp of when `claimableCookieCrumbs` were last claimed */
+    crumbsLastClaimed: number;
 }
 
 /** 

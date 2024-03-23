@@ -9,19 +9,59 @@
  */
 export interface Resource {
     /** the type of resource */
-    type: ResourceType;
+    type: BarrenResource | OreResource | FruitResource | LiquidResource;
+    /** the resource line */
+    line: ResourceLine;
     /** the amount of resource */
     amount: number;
 }
 
 /**
- * Represents the type of resource.
+ * Represents the resource's line.
  */
-export enum ResourceType {
-    SEAWEED = 'Seaweed', // only available for raft, not islands
+export enum ResourceLine {
+    BARREN = 'Barren',
+    ORE = 'Ore',
+    FRUIT = 'Fruit',
+    LIQUID = 'Liquid',
+}
+
+/**
+ * Lists all barren resources from common-legendary.
+ */
+export enum BarrenResource {
+    SEAWEED = 'Seaweed',
+}
+
+/**
+ * Lists all ore resources from common-legendary.
+ */
+export enum OreResource {
     STONE = 'Stone',
-    KERATIN = 'Keratin',
+    COPPER = 'Copper',
+    IRON = 'Iron',
     SILVER = 'Silver',
-    DIAMOND = 'Diamond',
-    RELIC = 'Relic',
+    GOLD = 'Gold',
+}
+
+/**
+ * Lists all fruit resources from common-legendary.
+ */
+export enum FruitResource {
+    BLUEBERRY = 'Blueberry',
+    APPLE = 'Apple',
+    STAR_FRUIT = 'Star Fruit',
+    MELON = 'Melon',
+    DRAGON_FRUIT = 'Dragon Fruit',
+}
+
+/**
+ * Lists all liquid resources from common-legendary.
+ */
+export enum LiquidResource {
+    WATER = 'Water',
+    MAPLE_SYRUP = 'Maple Syrup',
+    HONEY = 'Honey',
+    MOONLIGHT_DEW = 'Moonlight Dew',
+    PHOENIX_TEAR = 'Phoenix Tear',
 }
