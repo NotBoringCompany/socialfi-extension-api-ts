@@ -97,12 +97,10 @@ export interface IslandResourceStats {
 
 /**
  * Represents the earning stats of an island.
- * 
- * Earning rate will not be calculated here due to complexity.
  */
 export interface IslandEarningStats {
-    /** total xCookies spent on this island (INCL. BITS!); will keep increasing when upgrading the island and bits placed inside */
-    totalXCookiesSpent: number;
+    /** total xCookies earnable on this island (mainly depends on the island's rarity and some other factors) */
+    totalXCookiesEarnable: number;
     /** total xCookies earned, incl. ones claimed already. end amount should equal total xCookies spent (even with tax since it's not calc. here) */
     totalXCookiesEarned: number;
     /** claimable xCookies that haven't been claimed yet to the inventory */

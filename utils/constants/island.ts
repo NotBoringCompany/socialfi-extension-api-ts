@@ -1,5 +1,6 @@
 import { BitRarity } from '../../models/bit';
 import { IslandType, RarityDeviationReduction, ResourceDropChance, ResourceDropChanceDiff } from '../../models/island';
+import { shop } from '../shop';
 
 /** max level for any island type */
 export const MAX_ISLAND_LEVEL = 20;
@@ -31,6 +32,29 @@ export const BIT_PLACEMENT_CAP = 5;
  * however, the user is of course still allowed to have more islands in their inventory.
  */
 export const TOTAL_ACTIVE_ISLANDS_ALLOWED = 30;
+
+/**
+ * Gets the total xCookies earnable for an island based on its type (i.e. rarity)
+ */
+export const GET_TOTAL_X_COOKIES_EARNABLE = (type: IslandType) => {
+    // get the price of a terra capsulator to determine the total xCookies earnable
+    const terraCapsulatorPrice = shop.terraCapsulators.xCookies;
+
+    switch (type) {
+        case IslandType.PRIMAL_ISLES:
+            return 0.6 * terraCapsulatorPrice;
+        case IslandType.VERDANT_ISLES:
+            return 0.9 * terraCapsulatorPrice;
+        case IslandType.EXOTIC_ISLES:
+            return 1.25 * terraCapsulatorPrice;
+        case IslandType.CRYSTAL_ISLES:
+            return 1.75 * terraCapsulatorPrice;
+        case IslandType.CELESTIAL_ISLES:
+            return 2.5 * terraCapsulatorPrice;
+        default:
+            throw new Error(`(GET_TOTAL_X_COOKIES_EARNABLE) Invalid Island Type: ${type}`);
+    }
+}
 
 /** cost to evolve an island (in xCookies) based on the island type and the island's current level */
 export const ISLAND_EVOLUTION_COST = (type: IslandType, currentLevel: number) => {

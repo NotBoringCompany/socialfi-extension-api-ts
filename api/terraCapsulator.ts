@@ -1,8 +1,6 @@
-import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
-import { UserSchema } from '../schemas/User';
 import { addIslandToDatabase, getLatestIslandId, randomizeBaseResourceCap } from './island';
-import { RANDOMIZE_TYPE_FROM_CAPSULATOR } from '../utils/constants/terraCapsulator';
+import { randomizeTypeFromCapsulator } from '../utils/constants/terraCapsulator';
 import { Island } from '../models/island';
 import { ObtainMethod } from '../models/obtainMethod';
 import { UserModel } from '../utils/constants/db';
@@ -101,7 +99,7 @@ export const summonIsland = async (
         const latestIslandId = data?.latestIslandId as number;
 
         // get the island type based on the probability of obtaining it
-        const islandType = RANDOMIZE_TYPE_FROM_CAPSULATOR();
+        const islandType = randomizeTypeFromCapsulator();
 
         // randomize the base resource cap
         const baseResourceCap = randomizeBaseResourceCap(islandType);
@@ -127,7 +125,7 @@ export const summonIsland = async (
                 gatheringProgress: 0
             },
             islandEarningStats: {
-                totalXCookiesSpent: 0,
+                totalXCookiesEarnable: 0,
                 totalXCookiesEarned: 0,
                 claimableXCookies: 0,
                 earningStart: 0,
