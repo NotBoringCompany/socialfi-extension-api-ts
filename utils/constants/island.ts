@@ -157,6 +157,9 @@ export const ISLAND_EVOLUTION_COST = (type: IslandType, currentLevel: number): {
                     cookieCrumbs: 3000 + (900 * (currentLevel - 1))
                 }
             }
+        // if barren or invalid type, throw error
+        default:
+            throw new Error(`(ISLAND_EVOLUTION_COST) Invalid Island Type: ${type}`);
     }
 }
 

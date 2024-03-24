@@ -101,11 +101,15 @@ export interface IslandResourceStats {
 export interface IslandEarningStats {
     /** total xCookies spent for this island (a % of the xCookies spent for a terra cap will go here. the rest comes from island upgrades) */
     totalXCookiesSpent: number;
+    /** total xCookies earnable from this island. */
+    totalXCookiesEarnable: number;
     /** total xCookies earned, incl. ones claimed already. end amount should equal total xCookies spent (even with tax since it's not calc. here) */
     totalXCookiesEarned: number;
     /** claimable xCookies that haven't been claimed yet to the inventory */
     claimableXCookies: number;
-    /** total cookie crumbs earanble on this island */
+    /**  total cookie crumbs spent on this island */
+    totalCookieCrumbsSpent: number;
+    /** total cookie crumbs earnble on this island */
     totalCookieCrumbsEarnable: number;
     /** total cookie crumbs earned, incl. the ones claimed already. */
     totalCookieCrumbsEarned: number;

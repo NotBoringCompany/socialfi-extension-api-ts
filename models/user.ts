@@ -36,8 +36,10 @@ export interface UserWallet {
  * Represents a user's inventory.
  */
 export interface UserInventory {
-    /** the amount of in-game cookies (users are required to convert from blockchain cookies first) */
+    /** the amount of in-game cookies owned (users are required to convert from blockchain cookies first) */
     xCookies: number;
+    /** the amount of cookie crumbs owned */
+    cookieCrumbs: number;
     /** a list of resources owned */
     resources: InventoryResource[];
     /** a list of items owned */
