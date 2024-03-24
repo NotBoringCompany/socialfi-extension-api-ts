@@ -18,8 +18,8 @@ export const MAX_BIT_LEVEL = (rarity: BitRarity): number => {
     }
 }
 
-/** regardless of rarity, the max level bits can be in a raft is 30 */
-export const MAX_BIT_LEVEL_RAFT = 30;
+/** relocation cooldown for bits after relocating from a raft or island (1 day) */
+export const RELOCATION_COOLDOWN = 86400000;
 
 /** gets the cost (in xCookies) of evolving a bit, based on its current level */
 export const BIT_EVOLUTION_COST = (currentLevel: number): number => {
@@ -233,6 +233,37 @@ export const BIT_TRAIT_EFFECT_ON_SELF = (trait: BitTrait): BitTraitModifier => {
             }
         
     }
+}
+
+/**
+ * Return a `bitStatsModifiers` instance for a Bit based on all effects of the Bit's traits.
+ * 
+ * NOTE: This only involves traits that impact a bit's own modifiers. Traits that impact an island's stats will be added when placing the bit on the island.
+ */
+export const getBitStatsModifiersFromTraits = (traits: BitTrait[]): BitStatsModifiers => {
+    const traitEffects: BitTraitModifier[] = traits.map(trait => { 
+        return BIT_TRAIT_EFFECT_ON_SELF(trait);
+    });
+
+    const bitStatsModifiers: BitStatsModifiers = {
+        gatheringRateModifiers: [],
+        earningRateModifiers: [],
+        energyRateModifiers: []
+    }
+
+    for (const traitEffect of traitEffects) {
+        if (traitEffect.bitGatheringRate) {
+            bitStatsModifiers.gatheringRateModifiers.push(traitEffect.bitGatheringRate);
+        }
+        if (traitEffect.bitEarningRate) {
+            bitStatsModifiers.earningRateModifiers.push(traitEffect.bitEarningRate);
+        }
+        if (traitEffect.energyDepletionRate) {
+            bitStatsModifiers.energyRateModifiers.push(traitEffect.energyDepletionRate);
+        }
+    }
+
+    return bitStatsModifiers;
 }
 
 /**

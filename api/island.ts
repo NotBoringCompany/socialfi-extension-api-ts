@@ -12,6 +12,7 @@ import { Bit, BitRarity, BitRarityNumeric } from '../models/bit';
 import { generateObjectId } from '../utils/crypto';
 import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
 import { ObtainMethod } from '../models/obtainMethod';
+import { RELOCATION_COOLDOWN } from '../utils/constants/bit';
 
 /**
  * Creates a barren island for newly registered users.
@@ -349,13 +350,41 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
             }
         }
 
-        // check if the bit is already placed on an island or a raft
-        if (bit.placedIslandId !== 0 && bit.placedRaftId !== 0) {
+        // check if this bit is already placed on this island. if yes, return an error.
+        if (bit.placedIslandId === islandId) {
             return {
                 status: Status.ERROR,
-                message: `(placeBit) Bit is already placed on an island.`
+                message: `(placeBit) Bit is already placed on this island.`
             }
         }
+
+        // check if the bit is already placed on an island or the user's raft.
+        // if yes, we will relocate them here automatically, assuming their moving cooldown has passed.
+        if (bit.placedIslandId !== 0 && bit.placedRaftId !== 0) {
+            // check if the cooldown has passed
+            if (bit.lastRelocationTimestamp + RELOCATION_COOLDOWN > Math.floor(Date.now() / 1000)) {
+                return {
+                    status: Status.ERROR,
+                    message: `(placeBit) Bit relocation cooldown has not passed yet.`
+                }
+            }
+
+            // if the bit is placed on an island, remove it from the island
+            if (bit.placedIslandId !== 0) {
+                // remove the bit from the island
+                islandUpdateOperations.$pull['placedBitIds'] = bitId;
+            }
+
+            // if the bit is placed on a raft, remove it from the raft
+            if (bit.placedRaftId !== 0) {
+                // remove the bit from the raft
+                userUpdateOperations.$pull['inventory.raft.bits'] = bitId;
+            }
+
+            // set the last relocation timestamp to now
+            bitUpdateOperations.$set['lastRelocationTimestamp'] = Math.floor(Date.now() / 1000);
+        }
+
 
         // check if the island has reached its bit cap
         if (island.placedBitIds.length >= BIT_PLACEMENT_CAP) {
@@ -432,6 +461,8 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
             islandUpdateOperations.$set[`islandStatsModifiers.resourceCapModifiers.${resourceCapModifierIndex}.value`] = newValue;
         }
 
+        // TRAIT UPDATE HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! //
+
         // check if the to-be-put bit is the first one; if yes, start the `gatheringStart` timestamp
         if (island.placedBitIds.length === 0) {
             islandUpdateOperations.$set['islandResourceStats.gatheringStart'] = Math.floor(Date.now() / 1000);
@@ -442,11 +473,6 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
 
         // update the bit to include `placedIslandId`
         bitUpdateOperations.$set['placedIslandId'] = islandId;
-
-        // check if the bit has `totalXCookiesSpent` > 0. if yes, increment the island's `totalXCookiesSpent` by this amount.
-        if (bit.totalXCookiesSpent > 0) {
-            islandUpdateOperations.$inc['islandEarningStats.totalXCookiesSpent'] = bit.totalXCookiesSpent;
-        }
 
         // execute the update operations
         await Promise.all([
@@ -676,12 +702,12 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
  * 
  * Run by a scheduler every 10 minutes.
  * 
- * NOTE: If 0 xCookies have been spent for an island, this function will skip that island.
+ * NOTE: If 0 xCookies is earnable for an island, this function will skip that island.
  */
 export const updateClaimableXCookies = async (): Promise<void> => {
     try {
-        // find islands only where xCookies spent is > 0
-        const islands = await IslandModel.find({ 'islandEarningStats.totalXCookiesSpent': { $gt: 0 } }).lean();
+        // find islands only where xCookies earnable is > 0
+        const islands = await IslandModel.find({ 'islandEarningStats.totalXCookiesEarnable': { $gt: 0 } }).lean();
 
         if (islands.length === 0 || !islands) {
             console.error(`(updateClaimableXCookies) No islands found.`);
@@ -714,9 +740,9 @@ export const updateClaimableXCookies = async (): Promise<void> => {
                 island.islandStatsModifiers?.earningRateModifiers as Modifier[]
             );
 
-            // since this is called every 10 minutes, we will divide the `currentEarningRate` by 6 to get the 10-minute earning rate, and multiply it by the cookies spent to get the `claimableXCookies`
+            // since this is called every 10 minutes, we will divide the `currentEarningRate` by 6 to get the 10-minute earning rate, and multiply it by the cookies earnable to get the `claimableXCookies`
             const tenMinEarningRate = currentEarningRate / 6;
-            const claimableXCookies = tenMinEarningRate / 100 * island.islandEarningStats?.totalXCookiesSpent;
+            const claimableXCookies = tenMinEarningRate / 100 * island.islandEarningStats?.totalXCookiesEarnable;
 
             console.log(`claimable xCookies for Island ${island.islandId} is ${claimableXCookies}.`);
 
@@ -729,26 +755,26 @@ export const updateClaimableXCookies = async (): Promise<void> => {
                 return;
             }
 
-            if (xCookiesEarned === island.islandEarningStats?.totalXCookiesSpent) {
+            if (xCookiesEarned === island.islandEarningStats?.totalXCookiesEarnable) {
                 console.log(`(updateClaimableXCookies) Island ID ${island.islandId} has already earned all of its xCookies. Skipping...`);
                 return;
             }
 
-            // if `xCookiesEarned` + `claimableXCookies` is greater than totalXCookiesSpent, set `claimableXCookies` to totalXCookiesSpent - xCookiesEarned
+            // if `xCookiesEarned` + `claimableXCookies` is greater than totalXCookiesEarnable, set `claimableXCookies` to totalXCookiesEarnable - xCookiesEarned
             // this is to prevent the user from claiming more xCookies than they have spent
-            if (claimableXCookies + xCookiesEarned > island.islandEarningStats?.totalXCookiesSpent) {
+            if (claimableXCookies + xCookiesEarned > island.islandEarningStats?.totalXCookiesEarnable) {
                 console.log(`(updateClaimableXCookies) Island ID ${island.islandId}'s claimableXCookies exceeds cookies spent.
-                 adjusting... totalXCookiesSpent: ${island.islandEarningStats?.totalXCookiesSpent} - xCookiesEarned: ${xCookiesEarned} = ${island.islandEarningStats?.totalXCookiesSpent - xCookiesEarned}.`
+                 adjusting... totalXCookiesEarnable: ${island.islandEarningStats?.totalXCookiesEarnable} - xCookiesEarned: ${xCookiesEarned} = ${island.islandEarningStats?.totalXCookiesEarnable - xCookiesEarned}.`
                 );
 
                 updateOperations.push({
                     updateOne: {
                         filter: { islandId: island.islandId },
                         update: {
-                            // also increment the `totalXCookiesEarned` by `totalXCookiesSpent - xCookiesEarned`
+                            // also increment the `totalXCookiesEarned` by `totalXCookiesEarnable - xCookiesEarned`
                             $inc: {
-                                'islandEarningStats.totalXCookiesEarned': island.islandEarningStats?.totalXCookiesSpent - xCookiesEarned,
-                                'islandEarningStats.claimableXCookies': island.islandEarningStats?.totalXCookiesSpent - xCookiesEarned
+                                'islandEarningStats.totalXCookiesEarned': island.islandEarningStats?.totalXCookiesEarnable - xCookiesEarned,
+                                'islandEarningStats.claimableXCookies': island.islandEarningStats?.totalXCookiesEarnable - xCookiesEarned
                             }
                         }
                     }

@@ -27,6 +27,8 @@ export interface Bit {
     placedIslandId: number;
     /** if the bit is placed in the user's raft, the raft ID will be shown here. if not, this will be 0. */
     placedRaftId: number;
+    /** if the bit was relocated from a raft or an island, the relocation timestamp will be shown here to prevent constant relocation (cooldown). */
+    lastRelocationTimestamp: number;
     /** current farming level of the bit; pvx level will start from level 1 */
     currentFarmingLevel: number;
     /** the bit's traits (up to 5 depending on rarity) */

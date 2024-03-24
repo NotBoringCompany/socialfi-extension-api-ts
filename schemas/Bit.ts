@@ -17,7 +17,8 @@ export const BitSchema = new mongoose.Schema({
     obtainMethod: String,
     placedIslandId: Number,
     placedRaftId: Number,
+    lastRelocationTimestamp: Number,
     currentFarmingLevel: Number,
     farmingStats: Object,
-    bitStatsModifiers: Object
+    bitStatsModifiers: Object,
 })

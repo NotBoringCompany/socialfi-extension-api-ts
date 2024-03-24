@@ -7,10 +7,12 @@ import { generateObjectId } from '../utils/crypto';
 import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
 import { BitSchema } from '../schemas/Bit';
 import { RANDOMIZE_RARITY_FROM_ORB } from '../utils/constants/bitOrb';
-import { RANDOMIZE_GENDER, randomizeBitTraits } from '../utils/constants/bit';
+import { BIT_TRAIT_EFFECT_ON_SELF, RANDOMIZE_GENDER, getBitStatsModifiersFromTraits, randomizeBitTraits } from '../utils/constants/bit';
 import { ObtainMethod } from '../models/obtainMethod';
 import { UserModel } from '../utils/constants/db';
 import { createBarrenIsland } from './island';
+import { BitTraitModifier } from '../models/modifier';
+import { BitStatsModifiers } from '../models/bit';
 
 /**
  * Twitter login logic. Creates a new user or simply log them in if they already exist.
@@ -47,6 +49,10 @@ export const handleTwitterLogin = async (twitterId: string): Promise<ReturnValue
             // randomize bit rarity; follows the same rarity as when obtaining a bit from a bit orb
             const rarity = RANDOMIZE_RARITY_FROM_ORB();
 
+            const traits = randomizeBitTraits(rarity);
+
+            const bitStatsModifiers = getBitStatsModifiersFromTraits(traits);
+
             // add a free bit to the user's inventory (users get 1 for free when they sign up)
             const { status: bitStatus, message: bitMessage, data: bitData } = await addBitToDatabase({
                 bitId: bitIdData?.latestBitId + 1,
@@ -58,14 +64,11 @@ export const handleTwitterLogin = async (twitterId: string): Promise<ReturnValue
                 obtainMethod: ObtainMethod.SIGN_UP,
                 placedIslandId: 0,
                 placedRaftId: 0,
+                lastRelocationTimestamp: 0,
                 currentFarmingLevel: 1, // starts at level 1
-                traits: randomizeBitTraits(rarity),
+                traits,
                 farmingStats: randomizeFarmingStats(rarity), // although free bits don't use farming stats, we still need to randomize it just in case for future events
-                bitStatsModifiers: {
-                    gatheringRateModifiers: [],
-                    earningRateModifiers: [],
-                    energyRateModifiers: []
-                }
+                bitStatsModifiers
             });
 
             if (bitStatus !== Status.SUCCESS) {
@@ -76,7 +79,7 @@ export const handleTwitterLogin = async (twitterId: string): Promise<ReturnValue
             }
 
             // creates a new barren island for the user for free as well
-            const {status: islandStatus, message: islandMessage, data: islandData} = await createBarrenIsland(userObjectId);
+            const { status: islandStatus, message: islandMessage, data: islandData } = await createBarrenIsland(userObjectId);
 
             if (islandStatus !== Status.SUCCESS) {
                 return {
