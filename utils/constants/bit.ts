@@ -108,9 +108,9 @@ export const randomizeBitTraits = (rarity: BitRarity): BitTrait[] => {
 /**
  * Gets the modifier effect of a Bit's trait ONLY on itself.
  * 
- * NOTE: for traits that impact the modifiers of other bits, they will be available in the respective functions (such as `placeBit`).
+ * NOTE: for traits that impact the modifiers of other bits, they will be available in the relevant functions (such as `placeBit`).
  */
-export const getSelfTraitEffect = (trait: BitTrait): BitTraitModifier => {
+export const BIT_TRAIT_EFFECT_ON_SELF = (trait: BitTrait): BitTraitModifier => {
     switch (trait) {
         case BitTrait.PRODUCTIVE:
             return {

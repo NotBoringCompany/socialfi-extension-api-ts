@@ -14,8 +14,18 @@ export interface Resource {
     line: ResourceLine;
     /** the rarity of the resource */
     rarity: ResourceRarity;
-    /** the amount of resource */
-    amount?: number;
+    /** the weight of 1 of this resource */
+    weight: number;
+}
+
+/**
+ * Represents a resource in a user's inventory.
+ */
+export interface InventoryResource {
+    /** the type of resource */
+    type: ResourceType;
+    /** the amount of this resource owned */
+    amount: number;
 }
 
 /**

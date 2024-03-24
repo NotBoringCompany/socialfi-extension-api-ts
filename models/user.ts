@@ -1,6 +1,6 @@
 import { Food } from './food';
 import { Item } from './item';
-import { Resource } from './resource';
+import { InventoryResource } from './resource';
 
 /****************
  * USER-RELATED MODELS
@@ -39,7 +39,7 @@ export interface UserInventory {
     /** the amount of in-game cookies (users are required to convert from blockchain cookies first) */
     xCookies: number;
     /** a list of resources owned */
-    resources: Resource[];
+    resources: InventoryResource[];
     /** a list of items owned */
     items: Item[];
     /** a list of foods owned */
