@@ -8,11 +8,12 @@ import { Resource, ResourceType } from '../models/resource';
 import { UserSchema } from '../schemas/User';
 import { Modifier } from '../models/modifier';
 import { BitSchema } from '../schemas/Bit';
-import { Bit, BitRarity, BitRarityNumeric } from '../models/bit';
+import { Bit, BitRarity, BitRarityNumeric, BitTrait } from '../models/bit';
 import { generateObjectId } from '../utils/crypto';
 import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
 import { ObtainMethod } from '../models/obtainMethod';
 import { RELOCATION_COOLDOWN } from '../utils/constants/bit';
+import { User } from '../models/user';
 
 /**
  * Creates a barren island for newly registered users.
@@ -209,7 +210,7 @@ export const evolveIsland = async (twitterId: string, islandId: number, choice: 
                 islandUpdateOperations.$inc['islandEarningStats.totalXCookiesSpent'] = requiredXCookies;
                 islandUpdateOperations.$inc['islandEarningStats.totalXCookiesEarnable'] = requiredXCookies;
             }
-        // if choice to evolve is using cookie crumbs
+            // if choice to evolve is using cookie crumbs
         } else {
             const userCookieCrumbs: number = user.inventory?.cookieCrumbs;
 
@@ -262,9 +263,9 @@ export const evolveIsland = async (twitterId: string, islandId: number, choice: 
 export const placeBit = async (twitterId: string, islandId: number, bitId: number): Promise<ReturnValue> => {
     try {
         const [user, bit, island] = await Promise.all([
-            UserModel.findOne({ twitterId }).lean(),
-            BitModel.findOne({ bitId }).lean(),
-            IslandModel.findOne({ islandId }).lean(),
+            UserModel.findOne({ twitterId }).lean() as Promise<User>,
+            BitModel.findOne({ bitId }).lean() as Promise<Bit>,
+            IslandModel.findOne({ islandId }).lean() as Promise<Island>
         ]);
 
         const bitUpdateOperations = {
@@ -360,30 +361,27 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
 
         // check if the bit is already placed on an island or the user's raft.
         // if yes, we will relocate them here automatically, assuming their moving cooldown has passed.
-        if (bit.placedIslandId !== 0 && bit.placedRaftId !== 0) {
-            // check if the cooldown has passed
-            if (bit.lastRelocationTimestamp + RELOCATION_COOLDOWN > Math.floor(Date.now() / 1000)) {
-                return {
-                    status: Status.ERROR,
-                    message: `(placeBit) Bit relocation cooldown has not passed yet.`
-                }
-            }
+        // we do the following checks:
+        // IF ISLAND:
+        // 1. if cooldown is 0 or has passed, relocate the bit.
+        // 2. when relocating bit, no need to change `placedIslandId` for the bit and `placedBitIds` for this island because it's done at the end. BUT:
+        // 3. we need to remove the bit's ID from the previous island's `placedBitIds`.
+        // 4. after removing the bit ID, we also need to remove any modifiers that has to do with the current bit's traits from the island's and its bits' modifiers.
+        // e.g. if Bit 40 was placed in Island 1, all other bits that has the same or lesser rarity than Bit 40 will get +5% gathering and earning rate.
+        // if Bit 40 is relocated to Island 2, we need to remove all the modifiers that has to do with Bit 40's traits from Island 1 and its bits (meaning that Island 1's bits will no longer get the +5% boost from Bit 40).
+        // 5. when relocating bit, set the lastRelocationTimestamp to now.
+        // IF RAFT:
+        // 1. if cooldown is 0 or has passed, relocate the bit.
+        // 2. when relocating bit, remove the placedRaftId (i.e. set to 0). no need to set the new island's `placedBitIds` because it's done at the end.
+        // 3. when relocating bit, set the lastRelocationTimestamp to now.
+        if (bit.placedIslandId !== 0) {
 
-            // if the bit is placed on an island, remove it from the island
-            if (bit.placedIslandId !== 0) {
-                // remove the bit from the island
-                islandUpdateOperations.$pull['placedBitIds'] = bitId;
-            }
-
-            // if the bit is placed on a raft, remove it from the raft
-            if (bit.placedRaftId !== 0) {
-                // remove the bit from the raft
-                userUpdateOperations.$pull['inventory.raft.bits'] = bitId;
-            }
-
-            // set the last relocation timestamp to now
-            bitUpdateOperations.$set['lastRelocationTimestamp'] = Math.floor(Date.now() / 1000);
+        } else if (bit.placedRaftId !== 0) {
+            
         }
+
+
+        
 
 
         // check if the island has reached its bit cap
@@ -461,8 +459,6 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
             islandUpdateOperations.$set[`islandStatsModifiers.resourceCapModifiers.${resourceCapModifierIndex}.value`] = newValue;
         }
 
-        // TRAIT UPDATE HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! //
-
         // check if the to-be-put bit is the first one; if yes, start the `gatheringStart` timestamp
         if (island.placedBitIds.length === 0) {
             islandUpdateOperations.$set['islandResourceStats.gatheringStart'] = Math.floor(Date.now() / 1000);
@@ -481,6 +477,9 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
             BitModel.updateOne({ bitId }, bitUpdateOperations)
         ]);
 
+        // update the other bits' modifiers and also if applicable the island's modifiers with the bit's traits
+        await updateExtendedTraitEffects(bit, island);
+
         return {
             status: Status.SUCCESS,
             message: `(placeBit) Bit placed on the island.`,
@@ -495,6 +494,207 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
             message: `(placeBit) Error: ${err.message}`
         }
     }
+}
+
+/**
+ * Update an island's modifiers or all other bits' (within this island) modifiers based on a bit's trait.
+ * 
+ * Called when a bit is being placed on an island via `placeBit.
+ */
+export const updateExtendedTraitEffects = async (
+    bit: Bit,
+    island: Island,
+): Promise<void> => {
+    // get the other bit IDs from the island (excl. the bit to be placed)
+    const otherBitIds = island.placedBitIds.filter(placedBitId => placedBitId !== bit.bitId);
+
+    // get the bit's traits
+    const bitTraits = bit.traits;
+
+    // loop through each trait and see if they impact the island's modifiers or other bits' modifiers
+    // right now, these traits are:
+    // nibbler, teamworker, leader, cute and genius
+    const bitUpdateOperations: Array<{
+        bitId: number,
+        updateOperations: {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+    }> = [];
+
+    const islandUpdateOperations = {
+        $pull: {},
+        $inc: {},
+        $set: {},
+        $push: {}
+    }
+
+    for (const trait of bitTraits) {
+        const otherBits = await BitModel.find({ bitId: { $in: otherBitIds } }).lean();
+
+        // if the trait is nibbler, increase the island's gathering and earning rate by 2.5%
+        if (trait === BitTrait.NIBBLER) {
+            // no need to check for existing modifiers because the modifiers aren't stackable in one modifier instance but rather in separate instances based on each Bit ID.
+            // so, we just add the new modifier to the island's `gatheringRateModifiers` and `earningRateModifiers`
+            const newGatheringRateModifier: Modifier = {
+                origin: `Bit ID #${bit.bitId}'s Trait: Nibbler`,
+                value: 1.025
+            }
+
+            const newEarningRateModifier: Modifier = {
+                origin: `Bit ID #${bit.bitId}'s Trait: Nibbler`,
+                value: 1.025
+            }
+
+            // add the new modifier to the island's `gatheringRateModifiers` and `earningRateModifiers`
+            islandUpdateOperations.$push['islandStatsModifiers.gatheringRateModifiers'] = newGatheringRateModifier;
+            islandUpdateOperations.$push['islandStatsModifiers.earningRateModifiers'] = newEarningRateModifier;
+            // if trait is teamworker:
+            // increase all other bits that have the same or lesser rarity as the bit being placed by 5% gathering and earning rate
+        } else if (trait === BitTrait.TEAMWORKER) {
+            // loop through each other bit and check if they have the same or lesser rarity as the bit being placed
+            // if no other bits found, skip this trait
+            if (otherBits.length === 0 || !otherBits) {
+                console.log(`(updateExtendedTraitEffects) No other bits found.`);
+                continue;
+            }
+
+            for (const otherBit of otherBits) {
+                // check if the other bit's rarity is the same or lesser than the bit being placed
+                if (BitRarityNumeric[otherBit.rarity] <= BitRarityNumeric[bit.rarity]) {
+                    // add the new modifier to the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                    const newGatheringRateModifier: Modifier = {
+                        origin: `Bit ID #${bit.bitId}'s Trait: Teamworker`,
+                        value: 1.05
+                    }
+
+                    const newEarningRateModifier: Modifier = {
+                        origin: `Bit ID #${bit.bitId}'s Trait: Teamworker`,
+                        value: 1.05
+                    }
+
+                    // add the new modifier to the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                    bitUpdateOperations.push({
+                        bitId: otherBit.bitId,
+                        updateOperations: {
+                            $push: {
+                                'bitStatsModifiers.gatheringRateModifiers': newGatheringRateModifier,
+                                'bitStatsModifiers.earningRateModifiers': newEarningRateModifier
+                            },
+                            $pull: {},
+                            $inc: {},
+                            $set: {}
+                        }
+                    });
+                    // if the other bit's rarity is higher than the bit being placed, skip this bit
+                } else {
+                    continue;
+                }
+            }
+            // if trait is leader:
+            // increase all other bits' gathering and earning rate by 10%
+        } else if (trait === BitTrait.LEADER) {
+            if (otherBits.length === 0 || !otherBits) {
+                console.log(`(updateExtendedTraitEffects) No other bits found.`);
+                continue;
+            }
+
+            for (const otherBit of otherBits) {
+                // add the new modifier to the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                const newGatheringRateModifier: Modifier = {
+                    origin: `Bit ID #${bit.bitId}'s Trait: Leader`,
+                    value: 1.1
+                }
+
+                const newEarningRateModifier: Modifier = {
+                    origin: `Bit ID #${bit.bitId}'s Trait: Leader`,
+                    value: 1.1
+                }
+
+                // add the new modifier to the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                bitUpdateOperations.push({
+                    bitId: otherBit.bitId,
+                    updateOperations: {
+                        $push: {
+                            'bitStatsModifiers.gatheringRateModifiers': newGatheringRateModifier,
+                            'bitStatsModifiers.earningRateModifiers': newEarningRateModifier
+                        },
+                        $pull: {},
+                        $inc: {},
+                        $set: {}
+                    }
+                });
+            }
+            // if bit trait is cute:
+            // increase gathering and earning rate of all other bits by 12.5%
+        } else if (trait === BitTrait.CUTE) {
+            if (otherBits.length === 0 || !otherBits) {
+                console.log(`(updateExtendedTraitEffects) No other bits found.`);
+                continue;
+            }
+
+            for (const otherBit of otherBits) {
+                // add the new modifier to the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                const newGatheringRateModifier: Modifier = {
+                    origin: `Bit ID #${bit.bitId}'s Trait: Cute`,
+                    value: 1.125
+                }
+
+                const newEarningRateModifier: Modifier = {
+                    origin: `Bit ID #${bit.bitId}'s Trait: Cute`,
+                    value: 1.125
+                }
+
+                // add the new modifier to the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                bitUpdateOperations.push({
+                    bitId: otherBit.bitId,
+                    updateOperations: {
+                        $push: {
+                            'bitStatsModifiers.gatheringRateModifiers': newGatheringRateModifier,
+                            'bitStatsModifiers.earningRateModifiers': newEarningRateModifier
+                        },
+                        $pull: {},
+                        $inc: {},
+                        $set: {}
+                    }
+                });
+            }
+            // if bit trait is genius:
+            // increase the island's gathering and earning rate by 7.5%
+        } else if (trait === BitTrait.GENIUS) {
+            // add the new modifier to the island's `gatheringRateModifiers` and `earningRateModifiers`
+            const newGatheringRateModifier: Modifier = {
+                origin: `Bit ID #${bit.bitId}'s Trait: Genius`,
+                value: 1.075
+            }
+
+            const newEarningRateModifier: Modifier = {
+                origin: `Bit ID #${bit.bitId}'s Trait: Genius`,
+                value: 1.075
+            }
+
+            // add the new modifier to the island's `gatheringRateModifiers` and `earningRateModifiers`
+            islandUpdateOperations.$push['islandStatsModifiers.gatheringRateModifiers'] = newGatheringRateModifier;
+            islandUpdateOperations.$push['islandStatsModifiers.earningRateModifiers'] = newEarningRateModifier;
+            // if bit trait is none of the above, skip this trait
+        } else {
+            continue;
+        }
+    }
+
+    // execute the update operations
+    const bitUpdatePromises = bitUpdateOperations.map(async op => {
+        return BitModel.updateOne({ bitId: op.bitId }, op.updateOperations);
+    });
+
+    await Promise.all([
+        ...bitUpdatePromises,
+        IslandModel.updateOne({ islandId: island.islandId }, islandUpdateOperations)
+    ]);
+
+    console.log(`(updateExtendedTraitEffects) Extended trait effects updated for island ID ${island.islandId}.`);
 }
 
 /** 
