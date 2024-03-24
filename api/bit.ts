@@ -156,31 +156,6 @@ export const feedBit = async (twitterId: string, bitId: number, foodType: FoodTy
             bitUpdateOperations.$push['bitStatsModifiers.earningRateModifiers'] = earningRateModifier;
         }
 
-        // then, update the bit's `totalXCookiesSpent` by 90% of the cost of food
-        const foodCost = shop.foods.find(food => food.type === foodType)?.xCookies * 0.9;
-        bitUpdateOperations.$inc['totalXCookiesSpent'] = foodCost;
-
-        // if the bit is placed in an island, update the island's `totalXCookiesSpent` by the cost of the food
-        if (bit.placedIslandId !== 0) {
-            const island = await IslandModel.findOne({ islandId: bit.placedIslandId }).lean();
-
-            if (!island) {
-                return {
-                    status: Status.ERROR,
-                    message: `(feedBit) Island not found.`
-                }
-            }
-
-            // if island's total xCookiesSpent is zero, update the `totalXCookiesSpent` AND start the `earningStart`
-            if (island.islandEarningStats?.totalXCookiesSpent === 0) {
-                islandUpdateOperations.$inc['islandEarningStats.totalXCookiesSpent'] = foodCost;
-                islandUpdateOperations.$set['islandEarningStats.earningStart'] = Math.floor(Date.now() / 1000);
-            } else {
-                // otherwise, just update the `totalXCookiesSpent`
-                islandUpdateOperations.$inc['islandEarningStats.totalXCookiesSpent'] = foodCost;
-            }
-        }
-
         let bitUpdateOptions = {};
 
         // set the array filters for the bit update operations if gathering rate and earning rate modifier values are not 1
@@ -197,7 +172,7 @@ export const feedBit = async (twitterId: string, bitId: number, foodType: FoodTy
 
         return {
             status: Status.SUCCESS,
-            message: `(feedBit) Bit fed and energy replenished. Cookies spent added to bit's (and possibly the island the bit was placed in's) totalXCookiesSpent.`,
+            message: `(feedBit) Bit fed and energy replenished.`,
             data: {
                 bitId: bitId
             }
@@ -473,13 +448,6 @@ export const evolveBit = async (
             $push: {}
         }
 
-        let islandUpdateOperations = {
-            $pull: {},
-            $inc: {},
-            $set: {},
-            $push: {}
-        }
-
         if (!user) {
             return {
                 status: Status.ERROR,
@@ -538,36 +506,10 @@ export const evolveBit = async (
         bitUpdateOperations.$inc['currentFarmingLevel'] = 1;
         bitUpdateOperations.$inc['totalXCookiesSpent'] = requiredXCookies;
 
-        // check if the bit has a `placedIslandId`. if yes, update the island's `totalXCookiesSpent` by `requiredXCookies` and if required, start the `earningStart` if the island previously has 0 totalXCookiesSpent.
-        if (bit.placedIslandId !== 0) {
-            const island = await IslandModel.findOne({ islandId: bit.placedIslandId });
-
-            if (!island) {
-                return {
-                    status: Status.ERROR,
-                    message: `(evolveBit) Island not found.`,
-                };
-            }
-
-            const islandTotalXCookiesSpentIsZero =
-                island.islandEarningStats?.totalXCookiesSpent === 0;
-
-            // if island's total xCookiesSpent is zero, update the `totalXCookiesSpent` AND start the `earningStart`
-            if (islandTotalXCookiesSpentIsZero) {
-                islandUpdateOperations.$inc['islandEarningStats.totalXCookiesSpent'] = requiredXCookies;
-                islandUpdateOperations.$set['islandEarningStats.earningStart'] = Math.floor(Date.now() / 1000);
-
-                // otherwise, just update the `totalXCookiesSpent`
-            } else {
-                islandUpdateOperations.$inc['islandEarningStats.totalXCookiesSpent'] = requiredXCookies;
-            }
-        }
-
         // execute the update operations
         await Promise.all([
             BitModel.updateOne({ bitId }, bitUpdateOperations),
-            UserModel.updateOne({ twitterId }, userUpdateOperations),
-            IslandModel.updateOne({ islandId: bit.placedIslandId }, islandUpdateOperations)
+            UserModel.updateOne({ twitterId }, userUpdateOperations)
         ]);
 
         return {
@@ -581,116 +523,6 @@ export const evolveBit = async (
         return {
             status: Status.ERROR,
             message: `(evolveBit) Error: ${err.message}`,
-        };
-    }
-};
-
-/**
- * (User) Evolves a bit to the next level (levelling it up). !!!ONLY FOR LEVELLING UP IN RAFTS!!!
- *
- * NOTE: Requires `twitterId` which is fetched via `req.user`, automatically giving us the user's Twitter ID. This will check if the user who calls this function owns the twitter ID that owns the bit ID.
- */
-export const evolveBitInRaft = async (
-    twitterId: string,
-    bitId: number
-): Promise<ReturnValue> => {
-    try {
-        const [user, bit] = await Promise.all([
-            UserModel.findOne({ twitterId }).lean(),
-            BitModel.findOne({ bitId }).lean()
-        ]);
-
-        let bitUpdateOperations = {
-            $pull: {},
-            $inc: {},
-            $set: {},
-            $push: {}
-        };
-
-        let userUpdateOperations = {
-            $pull: {},
-            $inc: {},
-            $set: {},
-            $push: {}
-        }
-
-        if (!user) {
-            return {
-                status: Status.ERROR,
-                message: `(evolveBitInRaft) User not found.`,
-            };
-        }
-
-        // check if the user owns the bit
-        if (!(user.inventory?.bitIds as number[]).includes(bitId)) {
-            return {
-                status: Status.ERROR,
-                message: `(evolveBitInRaft) User does not own the bit.`,
-            };
-        }
-
-        if (!bit) {
-            return {
-                status: Status.ERROR,
-                message: `(evolveBitInRaft) Bit not found.`,
-            };
-        }
-
-        // check if the bit is already placed in the raft to start evolving
-        if (bit.placedRaftId === 0) {
-            return {
-                status: Status.ERROR,
-                message: `(evolveBitInRaft) Bit is not placed in a raft.`,
-            };
-        }
-
-        // check if the bit is already at max level
-        if (bit.currentFarmingLevel >= MAX_BIT_LEVEL_RAFT) {
-            return {
-                status: Status.ERROR,
-                message: `(evolveBitInRaft) Bit is already at max level.`,
-            };
-        }
-
-        // check if the user has enough seaweed to evolve the bit
-        const userSeaweed = (user.inventory?.resources as Resource[]).find(
-            (resource) => resource.type === ResourceType.SEAWEED
-        );
-
-        // calculate the cost to evolve the bit to the next level
-        const requiredSeaweed = BIT_RAFT_EVOLUTION_COST(bit.currentFarmingLevel);
-
-        // if not enough seaweed, return an error
-        if (!userSeaweed || userSeaweed.amount === 0 || userSeaweed.amount < requiredSeaweed) {
-            return {
-                status: Status.ERROR,
-                message: `(evolveBitInRaft) Not enough seaweed to evolve the bit.`,
-            };
-        }
-
-        // deduct the required seaweed from the user's inventory
-        userUpdateOperations.$inc['inventory.resources.$.amount'] = -requiredSeaweed;
-
-        // increase the bit's current farming level by 1
-        bitUpdateOperations.$inc['currentFarmingLevel'] = 1;
-
-        // execute the update operations
-        await Promise.all([
-            BitModel.updateOne({ bitId }, bitUpdateOperations),
-            UserModel.updateOne({ twitterId, 'inventory.resources.type': ResourceType.SEAWEED }, userUpdateOperations)
-        ]);
-
-        return {
-            status: Status.SUCCESS,
-            message: `(evolveBitInRaft) Bit evolved to the next level.`,
-            data: {
-                bitId: bitId,
-            },
-        };
-    } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(evolveBitInRaft) Error: ${err.message}`,
         };
     }
 };

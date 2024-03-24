@@ -193,10 +193,10 @@ export const evolveIsland = async (twitterId: string, islandId: number, choice: 
 
             // firstly, check if at this moment, the totalXCookiesSpent is 0.
             // because if it is, it means that earning hasn't started yet, meaning that after evolving the island, `earningStart` will be set to current timestamp, and earning will start.
-            const totalXCookiesSpentIsZero = island.islandEarningStats?.totalXCookiesSpent === 0;
+            const totalXCookiesEarnableIsZero = island.islandEarningStats?.totalXCookiesEarnable === 0;
 
             // if totalXCookies spent is 0, evolve the island, increment the totalXCookiesSpent and totalXCookiesEarnable of the island by `requiredXCookies` and also set the `earningStart` to now.
-            if (totalXCookiesSpentIsZero) {
+            if (totalXCookiesEarnableIsZero) {
                 islandUpdateOperations.$inc['currentLevel'] = 1;
                 islandUpdateOperations.$inc['islandEarningStats.totalXCookiesSpent'] = requiredXCookies;
                 islandUpdateOperations.$inc['islandEarningStats.totalXCookiesEarnable'] = requiredXCookies;
