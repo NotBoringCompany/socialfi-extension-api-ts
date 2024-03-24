@@ -108,8 +108,8 @@ export const summonIsland = async (
         // randomize the 5 island traits
         const traits = randomizeIslandTraits();
 
-        // get total xCookies earnable based on rarity
-        const totalXCookiesEarnable = GET_TOTAL_X_COOKIES_EARNABLE(islandType);
+        // set initial totalXCookiesSpent to the xCookies earnable back depending on island type
+        const totalXCookiesSpent = GET_TOTAL_X_COOKIES_EARNABLE(islandType);
 
         // get total cookie crumbs earnable based on rarity
         const totalCookieCrumbsEarnable = GET_TOTAL_COOKIE_CRUMBS_EARNABLE(islandType);
@@ -135,7 +135,7 @@ export const summonIsland = async (
                 gatheringProgress: 0
             },
             islandEarningStats: {
-                totalXCookiesEarnable,
+                totalXCookiesSpent,
                 totalXCookiesEarned: 0,
                 claimableXCookies: 0,
                 totalCookieCrumbsEarnable,

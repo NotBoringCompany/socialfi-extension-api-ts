@@ -34,7 +34,7 @@ export const BIT_PLACEMENT_CAP = 5;
 export const TOTAL_ACTIVE_ISLANDS_ALLOWED = 30;
 
 /**
- * Gets the total xCookies earnable for an island based on its type (i.e. rarity)
+ * Gets the total xCookies earnable back for an island based on its type (i.e. rarity) when opening from a Terra Capsulator.
  */
 export const GET_TOTAL_X_COOKIES_EARNABLE = (type: IslandType) => {
     // get the price of a terra capsulator to determine the total xCookies earnable
@@ -44,13 +44,9 @@ export const GET_TOTAL_X_COOKIES_EARNABLE = (type: IslandType) => {
         case IslandType.PRIMAL_ISLES:
             return 0.6 * terraCapsulatorPrice;
         case IslandType.VERDANT_ISLES:
-            return 0.9 * terraCapsulatorPrice;
+            return 0.925 * terraCapsulatorPrice;
         case IslandType.EXOTIC_ISLES:
-            return 1.25 * terraCapsulatorPrice;
-        case IslandType.CRYSTAL_ISLES:
-            return 1.75 * terraCapsulatorPrice;
-        case IslandType.CELESTIAL_ISLES:
-            return 2.5 * terraCapsulatorPrice;
+            return 1.3 * terraCapsulatorPrice;
         default:
             throw new Error(`(GET_TOTAL_X_COOKIES_EARNABLE) Invalid Island Type: ${type}`);
     }
@@ -62,15 +58,15 @@ export const GET_TOTAL_X_COOKIES_EARNABLE = (type: IslandType) => {
 export const GET_TOTAL_COOKIE_CRUMBS_EARNABLE = (type: IslandType) => {
     switch (type) {
         case IslandType.PRIMAL_ISLES:
-            return 150;
+            return 100;
         case IslandType.VERDANT_ISLES:
-            return 250;
+            return 175;
         case IslandType.EXOTIC_ISLES:
-            return 400;
+            return 300;
         case IslandType.CRYSTAL_ISLES:
-            return 675;
+            return 750;
         case IslandType.CELESTIAL_ISLES:
-            return 1000;
+            return 1750;
         default:
             throw new Error(`(GET_TOTAL_COOKIE_CRUMBS_EARNABLE) Invalid Island Type: ${type}`);
     }

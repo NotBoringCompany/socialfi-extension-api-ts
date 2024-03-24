@@ -3,7 +3,6 @@ import { Bit, BitFarmingStats, BitRarity } from '../models/bit';
 import {
     BASE_ENERGY_DEPLETION_RATE,
     BIT_EVOLUTION_COST,
-    BIT_RAFT_EVOLUTION_COST,
     DEFAULT_EARNING_RATE,
     DEFAULT_EARNING_RATE_GROWTH,
     DEFAULT_GATHERING_RATE,

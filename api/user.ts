@@ -7,7 +7,7 @@ import { generateObjectId } from '../utils/crypto';
 import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
 import { BitSchema } from '../schemas/Bit';
 import { RANDOMIZE_RARITY_FROM_ORB } from '../utils/constants/bitOrb';
-import { RANDOMIZE_GENDER } from '../utils/constants/bit';
+import { RANDOMIZE_GENDER, randomizeBitTraits } from '../utils/constants/bit';
 import { ObtainMethod } from '../models/obtainMethod';
 import { UserModel } from '../utils/constants/db';
 import { createBarrenIsland } from './island';
@@ -47,20 +47,20 @@ export const handleTwitterLogin = async (twitterId: string): Promise<ReturnValue
             // randomize bit rarity; follows the same rarity as when obtaining a bit from a bit orb
             const rarity = RANDOMIZE_RARITY_FROM_ORB();
 
-            // add a free/rafting bit to the user's inventory (users get 1 for free when they sign up)
+            // add a free bit to the user's inventory (users get 1 for free when they sign up)
             const { status: bitStatus, message: bitMessage, data: bitData } = await addBitToDatabase({
                 bitId: bitIdData?.latestBitId + 1,
                 rarity,
                 gender: RANDOMIZE_GENDER(),
-                premium: false, // free/rafting bit, so not premium
+                premium: false, // free bit, so not premium
                 owner: userObjectId,
                 purchaseDate: Math.floor(Date.now() / 1000),
                 obtainMethod: ObtainMethod.SIGN_UP,
-                totalXCookiesSpent: 0,
                 placedIslandId: 0,
-                placedRaftId: data.raft.raftId, // automatically placed in the user's raft
+                placedRaftId: 0,
                 currentFarmingLevel: 1, // starts at level 1
-                farmingStats: randomizeFarmingStats(rarity), // although rafting bits don't use farming stats, we still need to randomize it just in case for future events
+                traits: randomizeBitTraits(rarity),
+                farmingStats: randomizeFarmingStats(rarity), // although free bits don't use farming stats, we still need to randomize it just in case for future events
                 bitStatsModifiers: {
                     gatheringRateModifiers: [],
                     earningRateModifiers: [],

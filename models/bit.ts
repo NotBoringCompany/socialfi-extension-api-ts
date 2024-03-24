@@ -23,15 +23,13 @@ export interface Bit {
     purchaseDate: number;
     /** method of obtaining the bit */
     obtainMethod: ObtainMethod;
-    /** total xCookies spent for the bit (excl. purchase price). when evolving, this number will increase */
-    totalXCookiesSpent: number;
     /** if the bit is placed in an island, the island ID will be shown here. If not, this will be 0. */
     placedIslandId: number;
     /** if the bit is placed in the user's raft, the raft ID will be shown here. if not, this will be 0. */
     placedRaftId: number;
     /** current farming level of the bit; pvx level will start from level 1 */
     currentFarmingLevel: number;
-    /** the bit's traits (up to 2) */
+    /** the bit's traits (up to 5 depending on rarity) */
     traits: BitTrait[];
     /** farming stats of the bit, such as gathering rate, earning rate and energy */
     farmingStats: BitFarmingStats;
