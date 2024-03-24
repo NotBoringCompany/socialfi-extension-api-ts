@@ -88,41 +88,74 @@ export const randomizeIslandTraits = (): IslandTrait[] => {
     return randomTraits;
 }
 
-/** cost to evolve an island (in xCookies) based on the island type and the island's current level */
-export const ISLAND_EVOLUTION_COST = (type: IslandType, currentLevel: number) => {
+/** cost to evolve an island (in xCookies OR cookie crumbs) based on the island type and the island's current level */
+export const ISLAND_EVOLUTION_COST = (type: IslandType, currentLevel: number): {
+    xCookies: number,
+    cookieCrumbs: number
+} => {
     if (currentLevel === MAX_ISLAND_LEVEL) throw new Error(`(ISLAND_EVOLUTION_COST) Island is already at max level: ${currentLevel}`);
     
     // higher rarity islands will cost more each time it levels up
     switch (type) {
         case IslandType.PRIMAL_ISLES:
             if (currentLevel === 1) {
-                return 50;
+                return {
+                    xCookies: 50,
+                    cookieCrumbs: 100
+                }
             } else {
-                return 50 + (15 * (currentLevel - 1));
+                return {
+                    xCookies: 50 + (15 * (currentLevel - 1)),
+                    cookieCrumbs: 100 + (30 * (currentLevel - 1))
+                }
             }
         case IslandType.VERDANT_ISLES:
             if (currentLevel === 1) {
-                return 100;
+                return {
+                    xCookies: 100,
+                    cookieCrumbs: 200
+                }
             } else {
-                return 100 + (30 * (currentLevel - 1));
+                return {
+                    xCookies: 100 + (30 * (currentLevel - 1)),
+                    cookieCrumbs: 200 + (60 * (currentLevel - 1))
+                }
             }
         case IslandType.EXOTIC_ISLES:
             if (currentLevel === 1) {
-                return 250;
+                return {
+                    xCookies: 250,
+                    cookieCrumbs: 500
+                }
             } else {
-                return 250 + (75 * (currentLevel - 1));
+                return {
+                    xCookies: 250 + (75 * (currentLevel - 1)),
+                    cookieCrumbs: 500 + (150 * (currentLevel - 1))
+                }
             }
         case IslandType.CRYSTAL_ISLES:
             if (currentLevel === 1) {
-                return 700;
+                return {
+                    xCookies: 700,
+                    cookieCrumbs: 1400
+                }
             } else {
-                return 700 + (210 * (currentLevel - 1));
+                return {
+                    xCookies: 700 + (210 * (currentLevel - 1)),
+                    cookieCrumbs: 1400 + (420 * (currentLevel - 1))
+                }
             }
         case IslandType.CELESTIAL_ISLES:
             if (currentLevel === 1) {
-                return 1500;
+                return {
+                    xCookies: 1500,
+                    cookieCrumbs: 3000
+                }
             } else {
-                return 1500 + (450 * (currentLevel - 1));
+                return {
+                    xCookies: 1500 + (450 * (currentLevel - 1)),
+                    cookieCrumbs: 3000 + (900 * (currentLevel - 1))
+                }
             }
     }
 }
