@@ -1,4 +1,6 @@
-import { BitGender, BitRarity, EnergyThresholdReduction } from '../../models/bit';
+import { Bit, BitGender, BitRarity, BitStatsModifiers, BitTrait, EnergyThresholdReduction } from '../../models/bit';
+import { Island, IslandStatsModifiers } from '../../models/island';
+import { BitTraitModifier, Modifier } from '../../models/modifier';
 
 /** gets the max level for a bit given their rarity */
 export const MAX_BIT_LEVEL = (rarity: BitRarity): number => {
@@ -46,16 +48,193 @@ export const BIT_EVOLUTION_COST = (currentLevel: number): number => {
 }
 
 /**
- * Calculates the cost (in seaweed) to evolve a bit placed in a user's raft given the current level of the bit.
- * 
- * Unlike bit evolution in islands, the cost to evolve a bit in a raft uses seaweed.
+ * Randomizes 2-5 traits (based on rarity) for a Bit.
  */
-export const BIT_RAFT_EVOLUTION_COST = (currentLevel: number): number => {
-    if (currentLevel === 30) throw new Error(`(RAFT_EVOLUTION_COST) Raft is already at max level: ${currentLevel}`);
+export const randomizeBitTraits = (rarity: BitRarity): BitTrait[] => {
+    const commonTraits = [
+        BitTrait.PRODUCTIVE,
+        BitTrait.ENTHUSIASTIC,
+        BitTrait.FIT,
+        BitTrait.LAZY,
+        BitTrait.UNINSPIRED,
+        BitTrait.OBESE
+    ];
 
-    // level 1 starts with 10 seaweed, and every level after is 1.125x the previous level
-    return 10 * (1.125 ** (currentLevel - 1)); 
+    const uncommonTraits = [
+        BitTrait.STRONG,
+        BitTrait.NIBBLER,
+        BitTrait.TEAMWORKER,
+        BitTrait.WEAK,
+    ];
+
+    const rareTraits = [
+        BitTrait.LEADER,
+        BitTrait.CUTE,
+        BitTrait.GENIUS
+    ];
+
+    const traits: BitTrait[] = [];
+
+    // if rarity is common or uncommon, 2 traits.
+    // if rarity is rare, 3 traits.
+    // if rarity is epic, 4 traits.
+    // if rarity is legendary, 5 traits.
+    const maxTraits = 
+        rarity === BitRarity.LEGENDARY ? 5 : 
+        rarity === BitRarity.EPIC ? 4 : 
+        rarity === BitRarity.RARE ? 3 : 
+        2;
+
+    for (let i = 0; i < maxTraits; i++) {
+        const rand = Math.floor(Math.random() * 100) + 1;
+
+        // randomize a trait based on the traits available for the rarity
+        switch (true) {
+            case rand <= 50:
+                traits.push(commonTraits[Math.floor(Math.random() * commonTraits.length)]);
+                break;
+            case rand <= 85:
+                traits.push(uncommonTraits[Math.floor(Math.random() * uncommonTraits.length)]);
+                break;
+            default:
+                traits.push(rareTraits[Math.floor(Math.random() * rareTraits.length)]);
+                break;
+        }
+    }
+
+    return traits;
 }
+
+/**
+ * Gets the modifier effect of a Bit's trait ONLY on itself.
+ * 
+ * NOTE: for traits that impact the modifiers of other bits, they will be available in the respective functions (such as `placeBit`).
+ */
+export const getSelfTraitEffect = (trait: BitTrait): BitTraitModifier => {
+    switch (trait) {
+        case BitTrait.PRODUCTIVE:
+            return {
+                bitGatheringRate: {
+                    origin: 'Bit Trait: Productive',
+                    value: 1.05
+                },
+                bitEarningRate: {
+                    origin: 'Bit Trait: Productive',
+                    value: 1.05
+                }
+            }
+        case BitTrait.ENTHUSIASTIC:
+            return {
+                bitGatheringRate: {
+                    origin: 'Bit Trait: Enthusiastic',
+                    value: 1.1
+                },
+                bitEarningRate: {
+                    origin: 'Bit Trait: Enthusiastic',
+                    value: 1.1
+                }
+            }
+        case BitTrait.FIT:
+            return {
+                energyDepletionRate: {
+                    origin: 'Bit Trait: Fit',
+                    value: 0.95
+                }
+            }
+        case BitTrait.LAZY:
+            return {
+                bitGatheringRate: {
+                    origin: 'Bit Trait: Lazy',
+                    value: 0.95
+                },
+                bitEarningRate: {
+                    origin: 'Bit Trait: Lazy',
+                    value: 0.95
+                }
+            }
+        case BitTrait.UNINSPIRED:
+            return {
+                bitEarningRate: {
+                    origin: 'Bit Trait: Uninspired',
+                    value: 0.9
+                },
+                bitGatheringRate: {
+                    origin: 'Bit Trait: Uninspired',
+                    value: 0.9
+                }
+            }
+        case BitTrait.OBESE:
+            return {
+                energyDepletionRate: {
+                    origin: 'Bit Trait: Obese',
+                    value: 1.05
+                }
+            }
+        case BitTrait.STRONG:
+            return {
+                energyDepletionRate: {
+                    origin: 'Bit Trait: Strong',
+                    value: 0.85
+                }
+            }
+        case BitTrait.NIBBLER:
+            return {
+                islandGatheringRate: {
+                    origin: 'Bit Trait: Nibbler',
+                    value: 1.02
+                },
+                islandEarningRate: {
+                    origin: 'Bit Trait: Nibbler',
+                    value: 1.02
+                }
+            }
+        case BitTrait.TEAMWORKER:
+            return {
+                bitEarningRate: {
+                    origin: 'Bit Trait: Teamworker',
+                    value: 1.05
+                },
+                bitGatheringRate: {
+                    origin: 'Bit Trait: Teamworker',
+                    value: 1.05
+                }
+            }
+        case BitTrait.WEAK:
+            return {
+                energyDepletionRate: {
+                    origin: 'Bit Trait: Weak',
+                    value: 1.15
+                }
+            }
+        case BitTrait.LEADER:
+            return {
+                bitGatheringRate: {
+                    origin: 'Bit Trait: Leader',
+                    value: 1.1
+                },
+                bitEarningRate: {
+                    origin: 'Bit Trait: Leader',
+                    value: 1.1
+                }
+            }
+        // cute trait only impacts other bits within the same isle
+        case BitTrait.CUTE:
+            return {}
+        case BitTrait.GENIUS:
+            return {
+                islandEarningRate: {
+                    origin: 'Bit Trait: Genius',
+                    value: 1.075
+                },
+                islandGatheringRate: {
+                    origin: 'Bit Trait: Genius',
+                    value: 1.075
+                }
+            }
+        
+    }
+}
+
 /**
  * Randomizes a Bit's gender. 
  */

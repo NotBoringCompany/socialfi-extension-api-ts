@@ -15,7 +15,7 @@ export interface Bit {
     rarity: BitRarity;
     /** bit gender */
     gender: BitGender;
-    /** if this bit is a premium bit or not (which will allow them to be placed on islands. otherwise they can only be placed inside the raft) */
+    /** if this bit is a premium bit or not (premium will allow them to be placed in non-barren islands.) */
     premium: boolean;
     /** owner of this bit; equates to the user's object ID in the database */
     owner: string;
@@ -31,6 +31,8 @@ export interface Bit {
     placedRaftId: number;
     /** current farming level of the bit; pvx level will start from level 1 */
     currentFarmingLevel: number;
+    /** the bit's traits (up to 2) */
+    traits: BitTrait[];
     /** farming stats of the bit, such as gathering rate, earning rate and energy */
     farmingStats: BitFarmingStats;
     /** stat modifiers for the bit's farming stats */
@@ -55,6 +57,25 @@ export const BitRarityNumeric: { [key in BitRarity]: number } = {
     [BitRarity.RARE]: 2,
     [BitRarity.EPIC]: 3,
     [BitRarity.LEGENDARY]: 4
+}
+
+/**
+ * Lists all possible traits a Bit can have.
+ */
+export enum BitTrait {
+    PRODUCTIVE = 'Productive',
+    ENTHUSIASTIC = 'Enthusiastic',
+    FIT = 'Fit',
+    LAZY = 'Lazy',
+    UNINSPIRED = 'Uninspired',
+    OBESE = 'Obese',
+    STRONG = 'Strong',
+    NIBBLER = 'Nibbler',
+    TEAMWORKER = 'Teamworker',
+    WEAK = 'Weak',
+    LEADER = 'Leader',
+    CUTE = 'Cute',
+    GENIUS = 'Genius',
 }
 
 /**

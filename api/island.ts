@@ -303,11 +303,11 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
             }
         }
 
-        // check if this bit is premium
-        if (!bit.premium) {
+        // check if this bit is premium and the island is barren. if both are false, return an error.
+        if (!bit.premium && island.type !== IslandType.BARREN) {
             return {
                 status: Status.ERROR,
-                message: `(placeBit) Non-premium bits cannot be placed on islands.`
+                message: `(placeBit) Non-premium bits cannot be placed on non-barren islands.`
             }
         }
 
