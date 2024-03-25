@@ -1,6 +1,6 @@
 import { Food } from './food';
 import { Item } from './item';
-import { InventoryResource } from './resource';
+import { ExtendedResource, InventoryResource } from './resource';
 
 /****************
  * USER-RELATED MODELS
@@ -41,7 +41,7 @@ export interface UserInventory {
     /** the amount of cookie crumbs owned */
     cookieCrumbs: number;
     /** a list of resources owned */
-    resources: InventoryResource[];
+    resources: ExtendedResource[];
     /** a list of items owned */
     items: Item[];
     /** a list of foods owned */

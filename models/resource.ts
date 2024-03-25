@@ -14,17 +14,19 @@ export interface Resource {
     line: ResourceLine;
     /** the rarity of the resource */
     rarity: ResourceRarity;
-    /** the weight of 1 of this resource */
+    /** the weight of 1 of this resource (singular weight) */
     weight: number;
 }
 
 /**
- * Represents a resource in a user's inventory.
+ * Represents a resource with an amount of that resource.
+ * 
+ * Used primarily in claimable resources and the user's inventory.
+ * 
+ * Cumulative weight is not calculated here.
  */
-export interface InventoryResource {
-    /** the type of resource */
-    type: ResourceType;
-    /** the amount of this resource owned */
+export interface ExtendedResource extends Resource {
+    /** the amount of this resource */
     amount: number;
 }
 

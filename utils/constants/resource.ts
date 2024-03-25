@@ -1,4 +1,4 @@
-import { BarrenResource, FruitResource, LiquidResource, OreResource, Resource, ResourceLine, ResourceRarity } from '../../models/resource';
+import { BarrenResource, FruitResource, LiquidResource, OreResource, Resource, ResourceLine, ResourceRarity, ResourceType } from '../../models/resource';
 
 export const resources: Resource[] = [
     // Barren resources
@@ -22,3 +22,10 @@ export const resources: Resource[] = [
     { type: LiquidResource.MOONLIGHT_DEW, line: ResourceLine.LIQUID, rarity: ResourceRarity.EPIC, weight: 1.6 },
     { type: LiquidResource.PHOENIX_TEAR, line: ResourceLine.LIQUID, rarity: ResourceRarity.LEGENDARY, weight: 1.8 },
 ];
+
+/**
+ * Gets a resource's details based on its type.
+ */
+export const getResource = (type: ResourceType): Resource => {
+    return resources.find(resource => resource.type === type);
+}

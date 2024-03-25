@@ -4,7 +4,7 @@ import { IslandSchema } from '../schemas/Island';
 import { Island, IslandStatsModifiers, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
 import { BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLUTION_COST, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN, X_COOKIE_TAX, randomizeIslandTraits } from '../utils/constants/island';
 import { calcBitCurrentRate, getBits } from './bit';
-import { Resource, ResourceType } from '../models/resource';
+import { ExtendedResource, Resource, ResourceType } from '../models/resource';
 import { UserSchema } from '../schemas/User';
 import { Modifier } from '../models/modifier';
 import { BitSchema } from '../schemas/Bit';
@@ -14,6 +14,7 @@ import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
 import { ObtainMethod } from '../models/obtainMethod';
 import { RELOCATION_COOLDOWN } from '../utils/constants/bit';
 import { User } from '../models/user';
+import { getResource } from '../utils/constants/resource';
 
 /**
  * Creates a barren island for newly registered users.
@@ -1192,7 +1193,7 @@ export const claimResources = async (twitterId: string, islandId: number): Promi
         }
 
         // check all claimable resources 
-        const claimableResources = island.islandResourceStats?.claimableResources as Resource[];
+        const claimableResources = island.islandResourceStats?.claimableResources as ExtendedResource[];
 
         if (claimableResources.length === 0 || !claimableResources) {
             return {
@@ -1205,7 +1206,7 @@ export const claimResources = async (twitterId: string, islandId: number): Promi
         // loop through each resource and check if the resource already exists in the user's inventory
         // if it does, increment the amount; if not, push a new resource
         for (let resource of claimableResources) {
-            const existingResourceIndex = (user.inventory?.resources as Resource[]).findIndex(r => r.type === resource.type);
+            const existingResourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(r => r.type === resource.type);
 
             if (existingResourceIndex !== -1) {
                 userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = resource.amount;
@@ -1392,8 +1393,8 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
 
         if (claimableResources.length === 0 || !claimableResources) {
             // if empty, create a new resource and add it to the island's `claimableResources`
-            const newResource: Resource = {
-                type: resourceType,
+            const newResource: ExtendedResource = {
+                ...getResource(resourceType),
                 amount: 1
             }
 
@@ -1408,8 +1409,8 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
                 islandUpdateOperations.$inc[`islandResourceStats.claimableResources.${existingResourceIndex}.amount`] = 1;
             } else {
                 // if the resource doesn't exist, push a new resource
-                const newResource: Resource = {
-                    type: resourceType,
+                const newResource: ExtendedResource = {
+                    ...getResource(resourceType),
                     amount: 1
                 }
 
@@ -1420,8 +1421,8 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
 
         if (resourcesGathered.length === 0 || !resourcesGathered) {
             // if empty, create a new resource and add it to the island's `resourcesGathered`
-            const newResource: Resource = {
-                type: resourceType,
+            const newResource: ExtendedResource = {
+                ...getResource(resourceType),
                 amount: 1
             }
 
@@ -1436,8 +1437,8 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
                 islandUpdateOperations.$inc[`islandResourceStats.resourcesGathered.${existingResourceIndex}.amount`] = 1;
             } else {
                 // if the resource doesn't exist, push a new resource
-                const newResource: Resource = {
-                    type: resourceType,
+                const newResource: ExtendedResource = {
+                    ...getResource(resourceType),
                     amount: 1
                 }
 
