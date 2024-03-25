@@ -26,7 +26,6 @@ export const createRaft = async (userId: string): Promise<ReturnValue> => {
             placedBitIds: [],
             stats: {
                 baseSpeed: randomizeRaftBaseSpeed(),
-                capacity: randomizeRaftCapacity()
             }
         });
 
@@ -43,124 +42,6 @@ export const createRaft = async (userId: string): Promise<ReturnValue> => {
         return {
             status: Status.ERROR,
             message: `(createRaft) ${err.message}`
-        }
-    }
-}
-
-/**
- * Places a Bit into a Raft.
- */
-export const placeBit = async (twitterId: string, bitId: number): Promise<ReturnValue> => {
-    try {
-        const [user, bit] = await Promise.all([
-            UserModel.findOne({ twitterId }).lean(),
-            BitModel.findOne({ bitId }).lean()
-        ]);
-
-        const bitUpdateOperations = {
-            $pull: {},
-            $inc: {},
-            $set: {},
-            $push: {}
-        }
-
-        const raftUpdateOperations = {
-            $pull: {},
-            $inc: {},
-            $set: {},
-            $push: {}
-        }
-
-        if (!user) {
-            return {
-                status: Status.ERROR,
-                message: `(placeBit) User not found.`
-            }
-        }
-
-        // then, check if the user owns the bit to be placed
-        if (!(user.inventory?.bitIds as number[]).includes(bitId)) {
-            return {
-                status: Status.ERROR,
-                message: `(placeBit) User doesn't own the bit.`
-            }
-        }
-
-        // get the raft id of the user
-        const raftId: number = user.inventory?.raftId;
-
-        // this shouldn't happen, but just in case
-        if (!raftId) {
-            return {
-                status: Status.ERROR,
-                message: `(placeBit) User doesn't have a raft.`
-            }
-        }
-
-        // query the raft and the bit
-        const raft = await RaftModel.findOne({ raftId }).lean();
-
-        if (!raft) {
-            return {
-                status: Status.ERROR,
-                message: `(placeBit) Raft not found.`
-            }
-        }
-
-        if (!bit) {
-            return {
-                status: Status.ERROR,
-                message: `(placeBit) Bit not found.`
-            }
-        }
-
-        // check if the bit is already placed
-        if (bit.placedIslandId !== 0 && bit.placedRaftId !== 0) {
-            return {
-                status: Status.ERROR,
-                message: `(placeBit) Bit already placed.`
-            }
-        }
-
-        // check if the raft has reached its capacity
-        if (raft.placedBitIds.length >= raft.stats.capacity) {
-            return {
-                status: Status.ERROR,
-                message: `(placeBit) Raft has reached its bit cap.`
-            }
-        }
-
-        // update these things to the raft:
-        // 1. if it's the first bit, update the `gatheringStart` to the current timestamp (unix)
-        // 2. if it's the first bit, add `bitId` to `placedBitIds`. if not, just push `bitId` to `placedBitIds`
-        if (raft.placedBitIds.length === 0) {
-            raftUpdateOperations.$set['raftResourceStats.gatheringStart'] = Math.floor(Date.now() / 1000);
-            raftUpdateOperations.$push['placedBitIds'] = bitId;
-        } else {
-            raftUpdateOperations.$push['placedBitIds'] = bitId;
-        }
-
-        // update the bit's placedRaftId
-        bitUpdateOperations.$set['placedRaftId'] = raftId;
-
-        // execute the update operations
-        await Promise.all([
-            RaftModel.updateOne({ raftId }, raftUpdateOperations),
-            BitModel.updateOne({ bitId }, bitUpdateOperations)
-        ]);
-
-        return {
-            status: Status.SUCCESS,
-            message: `(placeBit) Bit placed in the raft.`,
-            data: {
-                bitId,
-                raftId
-            }
-        }
-    } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(placeBit) ${err.message}`
         }
     }
 }

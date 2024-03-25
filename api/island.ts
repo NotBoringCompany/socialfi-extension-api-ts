@@ -1,14 +1,14 @@
 import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
 import { IslandSchema } from '../schemas/Island';
-import { Island, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
+import { Island, IslandStatsModifiers, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
 import { BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLUTION_COST, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN, X_COOKIE_TAX, randomizeIslandTraits } from '../utils/constants/island';
 import { calcBitCurrentRate, getBits } from './bit';
 import { Resource, ResourceType } from '../models/resource';
 import { UserSchema } from '../schemas/User';
 import { Modifier } from '../models/modifier';
 import { BitSchema } from '../schemas/Bit';
-import { Bit, BitRarity, BitRarityNumeric, BitTrait } from '../models/bit';
+import { Bit, BitRarity, BitRarityNumeric, BitStatsModifiers, BitTrait } from '../models/bit';
 import { generateObjectId } from '../utils/crypto';
 import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
 import { ObtainMethod } from '../models/obtainMethod';
@@ -359,30 +359,144 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
             }
         }
 
-        // check if the bit is already placed on an island or the user's raft.
+        // check if the bit is already placed on an island.
         // if yes, we will relocate them here automatically, assuming their moving cooldown has passed.
         // we do the following checks:
-        // IF ISLAND:
         // 1. if cooldown is 0 or has passed, relocate the bit.
-        // 2. when relocating bit, no need to change `placedIslandId` for the bit and `placedBitIds` for this island because it's done at the end. BUT:
-        // 3. we need to remove the bit's ID from the previous island's `placedBitIds`.
-        // 4. after removing the bit ID, we also need to remove any modifiers that has to do with the current bit's traits from the island's and its bits' modifiers.
+        // when relocating bit, no need to change `placedIslandId` for the bit and `placedBitIds` for this island because it's done at the end. BUT:
+        // 2. we need to remove the bit's ID from the previous island's `placedBitIds`.
+        // 3. after removing the bit ID, we also need to remove any modifiers that has to do with the current bit's traits from the island's and its bits' modifiers.
         // e.g. if Bit 40 was placed in Island 1, all other bits that has the same or lesser rarity than Bit 40 will get +5% gathering and earning rate.
         // if Bit 40 is relocated to Island 2, we need to remove all the modifiers that has to do with Bit 40's traits from Island 1 and its bits (meaning that Island 1's bits will no longer get the +5% boost from Bit 40).
-        // 5. when relocating bit, set the lastRelocationTimestamp to now.
-        // IF RAFT:
-        // 1. if cooldown is 0 or has passed, relocate the bit.
-        // 2. when relocating bit, remove the placedRaftId (i.e. set to 0). no need to set the new island's `placedBitIds` because it's done at the end.
-        // 3. when relocating bit, set the lastRelocationTimestamp to now.
+        // 4. when relocating bit, set the lastRelocationTimestamp to now.
         if (bit.placedIslandId !== 0) {
+            // if cooldown has placed, do multiple things and relocate the bit
+            if (bit.lastRelocationTimestamp + RELOCATION_COOLDOWN < Math.floor(Date.now() / 1000)) {
+                // get the previous island ID from the bit
+                const prevIslandId = bit.placedIslandId;
 
-        } else if (bit.placedRaftId !== 0) {
-            
+                const prevIsland = await IslandModel.findOne({ islandId: prevIslandId }).lean();
+
+                const prevIslandUpdateOperations = {
+                    $pull: {},
+                    $inc: {},
+                    $set: {},
+                    $push: {}
+                }
+
+                const prevIslandBitsUpdateOperations: Array<{
+                    bitId: number,
+                    updateOperations: {
+                        $pull: {},
+                        $inc: {},
+                        $set: {},
+                        $push: {}
+                    }
+                    }> = [];
+
+                // remove the bit ID from the previous island's `placedBitIds`
+                prevIslandUpdateOperations.$pull['placedBitIds'] = bit.bitId;
+
+                // get the prev island's bits
+                const prevIslandBits = await BitModel.find({ bitId: { $in: prevIsland.placedBitIds } }).lean();
+
+                // loop through each bit and see if they have modifiers that include 'Bit ID #{bit id to be removed from this island}' as the origin
+                // if they do, remove the modifier from the bit
+                for (const prevIslandBit of prevIslandBits) {
+                    // loop through each modifier and see if the origin includes the bit ID to be removed
+                    const { gatheringRateModifiers, earningRateModifiers, energyRateModifiers }: BitStatsModifiers = prevIslandBit.bitStatsModifiers;
+
+                    for (const modifier of gatheringRateModifiers) {
+                        if (modifier.origin.includes(`Bit ID #${bit.bitId}`)) {
+                            prevIslandBitsUpdateOperations.push({
+                                bitId: prevIslandBit.bitId,
+                                updateOperations: {
+                                    $pull: {
+                                        'bitStatsModifiers.gatheringRateModifiers': modifier
+                                    },
+                                    $inc: {},
+                                    $set: {},
+                                    $push: {}
+                                }
+                            });
+                        }
+                    }
+
+                    for (const modifier of earningRateModifiers) {
+                        if (modifier.origin.includes(`Bit ID #${bit.bitId}`)) {
+                            prevIslandBitsUpdateOperations.push({
+                                bitId: prevIslandBit.bitId,
+                                updateOperations: {
+                                    $pull: {
+                                        'bitStatsModifiers.earningRateModifiers': modifier
+                                    },
+                                    $inc: {},
+                                    $set: {},
+                                    $push: {}
+                                }
+                            });
+                        }
+                    }
+
+                    for (const modifier of energyRateModifiers) {
+                        if (modifier.origin.includes(`Bit ID #${bit.bitId}`)) {
+                            prevIslandBitsUpdateOperations.push({
+                                bitId: prevIslandBit.bitId,
+                                updateOperations: {
+                                    $pull: {
+                                        'bitStatsModifiers.energyRateModifiers': modifier
+                                    },
+                                    $inc: {},
+                                    $set: {},
+                                    $push: {}
+                                }
+                            });
+                        }
+                    }
+                }
+
+                // remove any modifiers from the island that contain the bit ID to be removed
+                const { resourceCapModifiers, gatheringRateModifiers, earningRateModifiers }: IslandStatsModifiers = prevIsland.islandStatsModifiers;
+
+                for (const modifier of resourceCapModifiers) {
+                    if (modifier.origin.includes(`Bit ID #${bit.bitId}`)) {
+                        prevIslandUpdateOperations.$pull['islandStatsModifiers.resourceCapModifiers'] = modifier;
+                    }
+                }
+
+                for (const modifier of gatheringRateModifiers) {
+                    if (modifier.origin.includes(`Bit ID #${bit.bitId}`)) {
+                        prevIslandUpdateOperations.$pull['islandStatsModifiers.gatheringRateModifiers'] = modifier;
+                    }
+                }
+
+                for (const modifier of earningRateModifiers) {
+                    if (modifier.origin.includes(`Bit ID #${bit.bitId}`)) {
+                        prevIslandUpdateOperations.$pull['islandStatsModifiers.earningRateModifiers'] = modifier;
+                    }
+                }
+
+
+                // execute the update operations
+                const prevBitPromises = prevIslandBitsUpdateOperations.map(async op => {
+                    return BitModel.updateOne({ bitId: op.bitId }, op.updateOperations);
+                });
+
+                // remove the modifiers that has to do with the bit to be removed from the prev island and the bits in the prev island
+                await Promise.all([
+                    IslandModel.updateOne({ islandId: prevIslandId }, prevIslandUpdateOperations),
+                    ...prevBitPromises
+                ]);
+
+                // set the lastRelocationTimestamp to now
+                bitUpdateOperations.$set['lastRelocationTimestamp'] = Math.floor(Date.now() / 1000);
+            } else {
+                return {
+                    status: Status.ERROR,
+                    message: `(placeBit) Bit ID #${bit.bitId}'s relocation cooldown has not passed.`
+                }
+            }
         }
-
-
-        
-
 
         // check if the island has reached its bit cap
         if (island.placedBitIds.length >= BIT_PLACEMENT_CAP) {

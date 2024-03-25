@@ -9,7 +9,6 @@ import {
     DEFAULT_GATHERING_RATE_GROWTH,
     ENERGY_THRESHOLD_REDUCTIONS,
     MAX_BIT_LEVEL,
-    MAX_BIT_LEVEL_RAFT,
 } from '../utils/constants/bit';
 import {
     EARNING_RATE_EXPONENTIAL_DECAY,
@@ -202,8 +201,8 @@ export const depleteEnergy = async (): Promise<void> => {
         // prepare bulk write operations to update energy and modifiers
         const bulkWriteOperations = bits
             .map((bit) => {
-                // if bit isn't placed on a raft or an island, don't deplete energy for this bit
-                if (bit.placedRaftId === 0 && bit.placedIslandId === 0) {
+                // if bit isn't placed on an island, don't deplete energy for this bit
+                if (bit.placedIslandId === 0) {
                     console.log(
                         `(depleteEnergy) Bit ${bit.bitId} - not placed in a raft or an island. Skipping.`
                     );
