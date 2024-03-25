@@ -1,6 +1,6 @@
 import { ReturnValue, Status } from '../utils/retVal';
 import { generateObjectId } from '../utils/crypto';
-import { randomizeRaftBaseSpeed, randomizeRaftCapacity } from '../utils/constants/raft';
+import { randomizeRaftBaseSpeed } from '../utils/constants/raft';
 import { BitModel, RaftModel, UserModel } from '../utils/constants/db';
 
 /**
