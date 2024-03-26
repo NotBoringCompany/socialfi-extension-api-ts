@@ -1,6 +1,6 @@
 import { Food } from './food';
 import { Item } from './item';
-import { ExtendedResource, InventoryResource } from './resource';
+import { ExtendedResource } from './resource';
 
 /****************
  * USER-RELATED MODELS
@@ -20,6 +20,8 @@ export interface User {
     openedTweetIdsToday: string[];
     /** the user's inventory */
     inventory: UserInventory;
+    /** the user's in-game stats */
+    stats: UserStats;
 }
 
 /**
@@ -36,6 +38,8 @@ export interface UserWallet {
  * Represents a user's inventory.
  */
 export interface UserInventory {
+    /** the weight of the inventory (currently only impacted by resources) */
+    weight: number;
     /** the amount of in-game cookies owned (users are required to convert from blockchain cookies first) */
     xCookies: number;
     /** the amount of cookie crumbs owned */
@@ -58,4 +62,12 @@ export interface UserInventory {
     totalBitOrbs: number;
     /** total amount of terra caps owned */
     totalTerraCapsulators: number;
+}
+
+/**
+ * Represents the user's in-game stats
+ */
+export interface UserStats {
+    /** the user's level */
+    level: number;
 }

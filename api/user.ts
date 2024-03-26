@@ -63,7 +63,6 @@ export const handleTwitterLogin = async (twitterId: string): Promise<ReturnValue
                 purchaseDate: Math.floor(Date.now() / 1000),
                 obtainMethod: ObtainMethod.SIGN_UP,
                 placedIslandId: 0,
-                placedRaftId: 0,
                 lastRelocationTimestamp: 0,
                 currentFarmingLevel: 1, // starts at level 1
                 traits,
