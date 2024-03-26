@@ -1395,7 +1395,6 @@ export const claimResources = async (
                             currentWeight += totalWeight;
 
                             // since this essentially means we can claim all of this resource, we will pull this resource from the island's claimable resources.
-                            const claimableResourceIndex = claimableResources.findIndex(r => r.type === resource.type);
                             islandUpdateOperations.$pull[`islandResourceStats.claimableResources`] = { type: resource.type };
                         }
                     }
