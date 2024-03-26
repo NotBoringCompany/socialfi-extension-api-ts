@@ -196,43 +196,43 @@ export const RESOURCE_DROP_CHANCES = (type: IslandType): ResourceDropChance => {
     switch (type) {
         case IslandType.PRIMAL_ISLES:
             return {
-                stone: 77.5,
-                keratin: 18.5,
-                silver: 4,
-                diamond: 0,
-                relic: 0
+                common: 77.5,
+                uncommon: 18.5,
+                rare: 4,
+                epic: 0,
+                legendary: 0
             }
         case IslandType.VERDANT_ISLES:
             return {
-                stone: 62.5,
-                keratin: 28.7,
-                silver: 8.6,
-                diamond: 0.2,
-                relic: 0
+                common: 62.5,
+                uncommon: 28.7,
+                rare: 8.6,
+                epic: 0.2,
+                legendary: 0
             }
         case IslandType.EXOTIC_ISLES:
             return {
-                stone: 50,
-                keratin: 33.745,
-                silver: 15,
-                diamond: 1.25,
-                relic: 0.005
+                common: 50,
+                uncommon: 33.745,
+                rare: 15,
+                epic: 1.25,
+                legendary: 0.005
             }
         case IslandType.CRYSTAL_ISLES:
             return {
-                stone: 35.5,
-                keratin: 34,
-                silver: 25,
-                diamond: 5,
-                relic: 0.5
+                common: 35.5,
+                uncommon: 34,
+                rare: 25,
+                epic: 5,
+                legendary: 0.5
             }
         case IslandType.CELESTIAL_ISLES:
             return {
-                stone: 15,
-                keratin: 20,
-                silver: 40,
-                diamond: 20,
-                relic: 5
+                common: 15,
+                uncommon: 20,
+                rare: 40,
+                epic: 20,
+                legendary: 5
             }
     }
 }
@@ -244,43 +244,43 @@ export const RESOURCE_DROP_CHANCES_LEVEL_DIFF = (type: IslandType): ResourceDrop
     switch (type) {
         case IslandType.PRIMAL_ISLES:
             return {
-                stone: -0.13,
-                keratin: 0.12,
-                silver: 0.01,
-                diamond: 0,
-                relic: 0
+                common: -0.13,
+                uncommon: 0.12,
+                rare: 0.01,
+                epic: 0,
+                legendary: 0
             }
         case IslandType.VERDANT_ISLES:
             return {
-                stone: -0.21001,
-                keratin: 0.155,
-                silver: 0.05,
-                diamond: 0.005,
-                relic: 0
+                common: -0.21001,
+                uncommon: 0.155,
+                rare: 0.05,
+                epic: 0.005,
+                legendary: 0
             }
         case IslandType.EXOTIC_ISLES:
             return {
-                stone: -0.44825,
-                keratin: 0.175,
-                silver: 0.25,
-                diamond: 0.0225,
-                relic: 0.00075
+                common: -0.44825,
+                uncommon: 0.175,
+                rare: 0.25,
+                epic: 0.0225,
+                legendary: 0.00075
             }
         case IslandType.CRYSTAL_ISLES:
             return {
-                stone: -0.429,
-                keratin: 0.02,
-                silver: 0.3,
-                diamond: 0.1,
-                relic: 0.009
+                common: -0.429,
+                uncommon: 0.02,
+                rare: 0.3,
+                epic: 0.1,
+                legendary: 0.009
             }
         case IslandType.CELESTIAL_ISLES:
             return {
-                stone: -0.55,
-                keratin: -0.175,
-                silver: 0.3,
-                diamond: 0.25,
-                relic: 0.175
+                common: -0.55,
+                uncommon: -0.175,
+                rare: 0.3,
+                epic: 0.25,
+                legendary: 0.175
             }
     }
 }

@@ -1584,11 +1584,11 @@ export const calcEffectiveResourceDropChances = (type: IslandType, level: number
     const resourceDiff = calcResourceDropChanceDiff(type, level);
 
     return {
-        stone: dropChances.stone + resourceDiff.stone,
-        keratin: dropChances.keratin + resourceDiff.keratin,
-        silver: dropChances.silver + resourceDiff.silver,
-        diamond: dropChances.diamond + resourceDiff.diamond,
-        relic: dropChances.relic + resourceDiff.relic
+        common: dropChances.common + resourceDiff.common,
+        uncommon: dropChances.uncommon + resourceDiff.uncommon,
+        rare: dropChances.rare + resourceDiff.rare,
+        epic: dropChances.epic + resourceDiff.epic,
+        legendary: dropChances.legendary + resourceDiff.legendary
     }
 }
 
@@ -1599,10 +1599,10 @@ export const calcResourceDropChanceDiff = (type: IslandType, level: number): Res
     const resourceDiff = RESOURCE_DROP_CHANCES_LEVEL_DIFF(type);
 
     return {
-        stone: resourceDiff.stone * (level - 1),
-        keratin: resourceDiff.keratin * (level - 1),
-        silver: resourceDiff.silver * (level - 1),
-        diamond: resourceDiff.diamond * (level - 1),
-        relic: resourceDiff.relic * (level - 1)
+        common: resourceDiff.common * (level - 1),
+        uncommon: resourceDiff.uncommon * (level - 1),
+        rare: resourceDiff.rare * (level - 1),
+        epic: resourceDiff.epic * (level - 1),
+        legendary: resourceDiff.legendary * (level - 1)
     }
 }
