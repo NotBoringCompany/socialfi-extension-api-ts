@@ -47,6 +47,11 @@ export const GET_TOTAL_X_COOKIES_EARNABLE = (type: IslandType) => {
             return 0.925 * terraCapsulatorPrice;
         case IslandType.EXOTIC_ISLES:
             return 1.3 * terraCapsulatorPrice;
+        // currently, terra caps won't give out crystal or celestial isles; these values are only for future-proofing.
+        case IslandType.CRYSTAL_ISLES:
+            return 2 * terraCapsulatorPrice;
+        case IslandType.CELESTIAL_ISLES:
+            return 4.5 * terraCapsulatorPrice;
         default:
             throw new Error(`(GET_TOTAL_X_COOKIES_EARNABLE) Invalid Island Type: ${type}`);
     }
@@ -169,7 +174,8 @@ export const ISLAND_EVOLUTION_COST = (type: IslandType, currentLevel: number): {
 export const DEFAULT_RESOURCE_CAP = (type: IslandType) => {
     switch (type) {
         case IslandType.BARREN:
-            return 15;
+            // 1000 resources but only seaweed with a small chance of dropping common resources each time.
+            return 1000;
         case IslandType.PRIMAL_ISLES:
             return 100;
         case IslandType.VERDANT_ISLES:
@@ -308,7 +314,6 @@ export const RARITY_DEVIATION_REDUCTIONS = (type: IslandType, rarity: BitRarity)
         case IslandType.PRIMAL_ISLES:
             return {
                 gatheringRateReduction: 0,
-                resourceCapReduction: 0
             }
         // for verdant isles, only common bits will get reductions.
         case IslandType.VERDANT_ISLES:
@@ -316,12 +321,11 @@ export const RARITY_DEVIATION_REDUCTIONS = (type: IslandType, rarity: BitRarity)
                 case BitRarity.COMMON:
                     return {
                         gatheringRateReduction: 2,
-                        resourceCapReduction: 5
                     }
                 default:
                     return {
                         gatheringRateReduction: 0,
-                        resourceCapReduction: 0
+
                     }
             }
         // for exotic isles, only common and uncommon bits will get reductions.
@@ -330,12 +334,10 @@ export const RARITY_DEVIATION_REDUCTIONS = (type: IslandType, rarity: BitRarity)
                 case BitRarity.COMMON:
                     return {
                         gatheringRateReduction: 5,
-                        resourceCapReduction: 7.75
                     }
                 case BitRarity.UNCOMMON:
                     return {
                         gatheringRateReduction: 3,
-                        resourceCapReduction: 6
                     }
             }
         // for crystal isles, commons cannot be placed, so technically only uncommons and rares will get reductions.
@@ -346,12 +348,10 @@ export const RARITY_DEVIATION_REDUCTIONS = (type: IslandType, rarity: BitRarity)
                 case BitRarity.UNCOMMON:
                     return {
                         gatheringRateReduction: 5.75,
-                        resourceCapReduction: 10
                     }
                 case BitRarity.RARE:
                     return {
                         gatheringRateReduction: 4,
-                        resourceCapReduction: 7
                     }
             }
         // for celestial isles, commons and uncommons cannot be placed, so technically only rares and epics will get reductions.
@@ -364,17 +364,14 @@ export const RARITY_DEVIATION_REDUCTIONS = (type: IslandType, rarity: BitRarity)
                 case BitRarity.RARE:
                     return {
                         gatheringRateReduction: 7.5,
-                        resourceCapReduction: 11.5
                     }
                 case BitRarity.EPIC:
                     return {
                         gatheringRateReduction: 5.25,
-                        resourceCapReduction: 8.25
                     }
                 case BitRarity.LEGENDARY:
                     return {
                         gatheringRateReduction: 0,
-                        resourceCapReduction: 0
                     }
             }
     }

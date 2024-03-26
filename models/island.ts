@@ -145,20 +145,21 @@ export interface IslandStatsModifiers {
 }
 
 /**
- * Represents the chances to drop each of the resources when gathering 1 resource from an island.
- *
+ * Represents the chances to drop a resource of a specific rarity of a specific line.
+ * 
+ * For example, if the number within `uncommon` hits, then an uncommon resource of a specific line (depending on the island's trait for an uncommon resource) will be dropped.
  */
 export interface ResourceDropChance {
-    /** the chance to drop stone */
-    stone: number;
-    /** the chance to drop keratin */
-    keratin: number;
-    /** the chance to drop silver */
-    silver: number;
-    /** the chance to drop diamond */
-    diamond: number;
-    /** the chance to drop relic */
-    relic: number;
+    /** chance to drop a common resource of a specific line */
+    common: number;
+    /** chance to drop an uncommon resource of a specific line */
+    uncommon: number;
+    /** chance to drop a rare resource of a specific line */
+    rare: number;
+    /** chance to drop an epic resource of a specific line */
+    epic: number;
+    /** chance to drop a legendary resource of a specific line */
+    legendary: number;
 }
 
 /**
@@ -179,6 +180,4 @@ export enum RateType {
 export interface RarityDeviationReduction {
     /** the reduction in gathering rate (by a fixed %)  */
     gatheringRateReduction: number;
-    /** the reduction in resource cap (by a fixed %) */
-    resourceCapReduction: number;
 }

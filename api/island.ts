@@ -548,32 +548,6 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
             islandUpdateOperations.$set[`islandStatsModifiers.gatheringRateModifiers.${gatheringRateModifierIndex}.value`] = newValue;
         }
 
-        // check for previous `resourceCapModifiers` from the island's `IslandStatsModifiers`
-        // by searching for an origin of `Rarity Deviation` on `resourceCapModifiers`
-        // if not found, create; if found, reduce the value by the reduction amount
-        const resourceCapModifierIndex = (island.islandStatsModifiers?.resourceCapModifiers as Modifier[]).findIndex(modifier => modifier.origin === 'Rarity Deviation');
-
-        if (resourceCapModifierIndex === -1) {
-            // create a new modifier
-            const newResourceCapModifier: Modifier = {
-                origin: 'Rarity Deviation',
-                // since the value is based on a scale of 0 - 1 (multiplier), divide the reduction amount by 100
-                value: 1 - (rarityDeviationReductions.resourceCapReduction / 100)
-            }
-
-            // if modifier value is NOT 1, add the new modifier to the island's `resourceCapModifiers` (1 means no change in resource cap, so no need to add it to the array)
-            if (newResourceCapModifier.value !== 1) {
-                // add the new modifier to the island's `resourceCapModifiers`
-                islandUpdateOperations.$push['islandStatsModifiers.resourceCapModifiers'] = newResourceCapModifier;
-            }
-        } else {
-            const currentValue = island.islandStatsModifiers?.resourceCapModifiers[resourceCapModifierIndex].value;
-            const newValue = currentValue - (rarityDeviationReductions.resourceCapReduction / 100);
-
-            // reduce the value by the reduction amount
-            islandUpdateOperations.$set[`islandStatsModifiers.resourceCapModifiers.${resourceCapModifierIndex}.value`] = newValue;
-        }
-
         // check if the to-be-put bit is the first one; if yes, start the `gatheringStart` timestamp
         if (island.placedBitIds.length === 0) {
             islandUpdateOperations.$set['islandResourceStats.gatheringStart'] = Math.floor(Date.now() / 1000);
