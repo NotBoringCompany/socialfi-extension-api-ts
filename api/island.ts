@@ -4,7 +4,7 @@ import { IslandSchema } from '../schemas/Island';
 import { Island, IslandStatsModifiers, IslandTrait, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
 import { BARREN_ISLE_COMMON_DROP_CHANCE, BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLUTION_COST, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN, X_COOKIE_TAX, randomizeIslandTraits } from '../utils/constants/island';
 import { calcBitCurrentRate, getBits } from './bit';
-import { BarrenResource, ExtendedResource, Resource, ResourceLine, ResourceRarity, ResourceRarityNumeric, ResourceType } from '../models/resource';
+import { BarrenResource, ExtendedResource, Resource, ResourceLine, ResourceRarity, ResourceRarityNumeric, ResourceType, SimplifiedResource } from '../models/resource';
 import { UserSchema } from '../schemas/User';
 import { Modifier } from '../models/modifier';
 import { BitSchema } from '../schemas/Bit';
@@ -1112,7 +1112,14 @@ export const updateClaimableXCookies = async (): Promise<void> => {
  * 
  * NOTE: Requires `twitterId` which is fetched via `req.user`, automatically giving us the user's Twitter ID. This will check if the user who calls this function owns the twitter ID that owns the island.
  */
-export const claimResources = async (twitterId: string, islandId: number): Promise<ReturnValue> => {
+export const claimResources = async (
+    twitterId: string, 
+    islandId: number,
+    claimType: 'manual' | 'auto',
+    // only should be used if `claimType` is 'manual'
+    // this essentially allows the user to choose which resources to claim
+    chosenResources?: SimplifiedResource[]
+    ): Promise<ReturnValue> => {
     try {
         const [user, island] = await Promise.all([
             UserModel.findOne({ twitterId }).lean(),
@@ -1176,24 +1183,231 @@ export const claimResources = async (twitterId: string, islandId: number): Promi
             }
         }
 
-        // add all claimable resources to the user's inventory
-        // loop through each resource and check if the resource already exists in the user's inventory
-        // if it does, increment the amount; if not, push a new resource
-        for (let resource of claimableResources) {
-            const existingResourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(r => r.type === resource.type);
+        // get the user's current inventory weight
+        const currentInventoryWeight: number = user.inventory.weight;
 
-            if (existingResourceIndex !== -1) {
-                userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = resource.amount;
+        // if manual, check:
+        // 1. if the user has chosen resources to claim
+        // 2. if the chosen resources exist in the island's claimable resources and if the amount is above 0 for each resource AND if the amount to claim is less than or equal to the claimable amount for each resource.
+        // 3. if all chosen resources don't exceed the player's max inventory weight.
+        if (claimType === 'manual') {
+            if (!chosenResources || chosenResources.length === 0) {
+                return {
+                    status: Status.ERROR,
+                    message: `(claimResources) No chosen resources found. This is required for manual claiming.`
+                }
+            }
+
+            // initialize total weight of resources to claim for calculation
+            let totalWeightToClaim = 0;
+
+            // initialize `$each` on the user's inventory resources if it doesn't exist so that we can push multiple resources at once
+            if (!userUpdateOperations.$push['inventory.resources']) {
+                userUpdateOperations.$push['inventory.resources'] = { $each: [] }
+            }
+
+            // `chosenResources` will essentially consist of the resource types and the equivalent amounts of that resource the user wants to claim.
+            // we check, for each chosenResource, if the resource exists in the island's claimable resources, if the amount the user wants to claim is above 0 for each resource 
+            // and if the amount to claim is less than or equal to the claimable amount for each resource.
+            // then, we also check if the total weight of the chosen resources doesn't exceed the player's max inventory weight.
+            for (let chosenResource of chosenResources) {
+                const claimableResourceIndex = claimableResources.findIndex(r => r.type === chosenResource.type);
+
+                if (claimableResourceIndex === -1) {
+                    return {
+                        status: Status.ERROR,
+                        message: `(claimResources) Chosen resource ${chosenResource.type} not found in island's claimable resources.`
+                    }
+                }
+
+                if (chosenResource.amount <= 0) {
+                    return {
+                        status: Status.ERROR,
+                        message: `(claimResources) Chosen resource ${chosenResource.type} amount is 0.`
+                    }
+                }
+
+                if (chosenResource.amount > claimableResources[claimableResourceIndex].amount) {
+                    return {
+                        status: Status.ERROR,
+                        message: `(claimResources) Chosen resource ${chosenResource.type} amount exceeds claimable amount.`
+                    }
+                }
+
+                // get the total weight of this resource
+                const resourceWeight: number = resources.find(r => r.type === chosenResource.type)?.weight;
+                const totalWeight = resourceWeight * chosenResource.amount;
+
+                // add to the total weight to claim
+                totalWeightToClaim += totalWeight;
+
+                // just in case all checks pass later, we will do the following update operations.
+                // 1. if the resource already exists in the user's inventory, increment the amount; if not, push a new resource.
+                // 2. pull the resource (if amount to claim = max claimable amount of this resource) or decrement the amount (if amount to claim < max claimable amount of this resource) from the island's claimable resources.
+                // !!! NOTE: if the checks don't pass, this function will return and the update operations will not be executed anyway. !!!
+
+                // we check if this resource exists on the user's inventory or not. if not, we push a new resource; if yes, we increment the amount.
+                const existingResourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(r => r.type === chosenResource.type);
+
+                if (existingResourceIndex !== -1) {
+                    userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = chosenResource.amount;
+                } else {
+                    userUpdateOperations.$push['inventory.resources'].$each.push(chosenResource);
+                }
+
+                // now, check if the amount to claim for this resource equals the max claimable amount for this resource.
+                // if yes, we will pull this resource from the island's claimable resources. otherwise, we will only deduct the amount by the amount to claim.
+                if (chosenResource.amount === claimableResources[claimableResourceIndex].amount) {
+                    islandUpdateOperations.$pull[`islandResourceStats.claimableResources`] = { type: chosenResource.type };
+                } else {
+                    islandUpdateOperations.$inc[`islandResourceStats.claimableResources.${claimableResourceIndex}.amount`] = -chosenResource.amount;
+                }
+            }
+
+            // check if the total weight to claim exceeds the player's max inventory weight
+            if (currentInventoryWeight + totalWeightToClaim > user.inventory.maxWeight) {
+                return {
+                    status: Status.ERROR,
+                    message: `(claimResources) Total weight of chosen resources exceeds player's max inventory weight.`
+                }
+            }
+
+            // if all checks pass, we can proceed to claim the resources
+            // since we already have the update operations to add the resources to the user's inventory and to reduce the resource amount/pull the resource from the island's claimable resources,
+            // we just have a few more things to do:
+            // 1. increment the user's inventory weight by the total weight to claim
+            // 2. set the island's `lastClaimed` to the current time
+            userUpdateOperations.$inc['inventory.weight'] = totalWeightToClaim
+            islandUpdateOperations.$set['islandResourceStats.lastClaimed'] = currentTime;
+        // if auto, we will do the following:
+        // 1. firstly, check if all resources can be claimed based on the user's max inventory weight. if yes, skip the next steps.
+        // 2. if not, we will sort the resources from highest to lowest rarity.
+        // 3. then, for each rarity, sort the resources from highest to lowest weight.
+        // 4. then, for each resource, we will claim the max amount of that resource that the user can claim based on their max inventory weight.
+        } else {
+            // initialize the total weight to claim
+            let totalWeightToClaim = 0;
+
+            // loop through each resource and calculate the total weight to claim
+            for (const resource of claimableResources) {
+                const resourceWeight: number = resources.find(r => r.type === resource.type)?.weight;
+                const totalWeight = resourceWeight * resource.amount;
+
+                totalWeightToClaim += totalWeight;
+            }
+
+            // if the total weight to claim doesn't exceed the user's max inventory weight, we can claim all resources.
+            if (currentInventoryWeight + totalWeightToClaim <= user.inventory.maxWeight) {
+                // initialize `$each` on the user's inventory resources if it doesn't exist so that we can push multiple resources at once
+                if (!userUpdateOperations.$push['inventory.resources']) {
+                    userUpdateOperations.$push['inventory.resources'] = { $each: [] }
+                }
+                
+                // loop through each resource and add it to the user's inventory
+                for (const resource of claimableResources) {
+                    // check if this resource exists on the user's inventory or not. if not, we push a new resource; if yes, we increment the amount.
+                    const existingResourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(r => r.type === resource.type);
+
+                    if (existingResourceIndex !== -1) {
+                        userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = resource.amount;
+                    } else {
+                        userUpdateOperations.$push['inventory.resources'].$each.push(resource);
+                    }
+                }
+            // otherwise, we will need to proceed with sorting.
             } else {
-                userUpdateOperations.$push['inventory.resources'] = resource;
+                // sort resources from highest to lowest rarity
+                const sortedResources = claimableResources.sort((a, b) => ResourceRarityNumeric[b.rarity] - ResourceRarityNumeric[a.rarity]);
+
+                // group resources by rarity
+                const groupedResources = sortedResources.reduce((acc, resource) => {
+                    if (!acc[resource.rarity]) {
+                        acc[resource.rarity] = [];
+                    }
+
+                    acc[resource.rarity].push(resource);
+
+                    return acc;
+                }, {} as { [key in ResourceRarity]: ExtendedResource[] });
+
+                // get the max allowed weight
+                const maxAllowedWeight = user.inventory.maxWeight - currentInventoryWeight;
+
+                // initialize the current weight of resources. this is used to know how many resources we can claim based on the user's max inventory weight.
+                let currentWeight: number = 0;
+
+                // loop through each rarity group
+                for (const rarityGroup of Object.values(groupedResources)) {
+                    // sort the resources from highest to lowest weight
+                    // this will at this point be something like heaviest legendary resources to lightest.
+                    const sortedByWeight = rarityGroup.sort((a, b) => resources.find(r => r.type === b.type)?.weight - resources.find(r => r.type === a.type)?.weight);
+
+                    // for each resource, check if we can claim all of it or just a portion of it based on the user's max inventory weight.
+                    for (const resource of sortedByWeight) {
+                        const resourceWeight: number = resources.find(r => r.type === resource.type)?.weight;
+                        const totalWeight = resourceWeight * resource.amount;
+
+                        // if the current weight + the total weight of this resource exceeds the max allowed weight, we will only claim a portion of this resource.
+                        if (currentWeight + totalWeight > maxAllowedWeight) {
+                            // calculate the amount of this resource we can claim based on the max allowed weight
+                            const amountToClaim = Math.floor((maxAllowedWeight - currentWeight) / resourceWeight);
+
+                            // if amount to claim is 0, we can't claim this resource anymore. break out of the loop.
+                            if (amountToClaim <= 0) {
+                                break;
+                            }
+
+                            // check if this resource exists on the user's inventory or not. if not, we push a new resource; if yes, we increment the amount.
+                            const existingResourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(r => r.type === resource.type);
+
+                            if (existingResourceIndex !== -1) {
+                                userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = amountToClaim;
+                            } else {
+                                userUpdateOperations.$push['inventory.resources'].$each.push({
+                                    type: resource.type,
+                                    line: resource.line,
+                                    rarity: resource.rarity,
+                                    weight: resource.weight,
+                                    amount: amountToClaim
+                                });
+                            }
+
+                            // increment the current weight by the total weight of this resource
+                            currentWeight += resourceWeight * amountToClaim;
+
+                            // deduce the amount from the island's claimable resources
+                            const claimableResourceIndex = claimableResources.findIndex(r => r.type === resource.type);
+                            islandUpdateOperations.$inc[`islandResourceStats.claimableResources.${claimableResourceIndex}.amount`] = -amountToClaim;
+
+                            // break out of the loop since we can't claim more resources based on the user's max inventory weight
+                            break;
+                        } else {
+                            // check if this resource exists on the user's inventory or not. if not, we push a new resource; if yes, we increment the amount.
+                            const existingResourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(r => r.type === resource.type);
+
+                            if (existingResourceIndex !== -1) {
+                                userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = resource.amount;
+                            } else {
+                                userUpdateOperations.$push['inventory.resources'].$each.push(resource);
+                            }
+
+                            // increment the current weight by the total weight of this resource
+                            currentWeight += totalWeight;
+
+                            // since this essentially means we can claim all of this resource, we will pull this resource from the island's claimable resources.
+                            const claimableResourceIndex = claimableResources.findIndex(r => r.type === resource.type);
+                            islandUpdateOperations.$pull[`islandResourceStats.claimableResources`] = { type: resource.type };
+                        }
+                    }
+                }
+
+                // add the weight to the user's inventory
+                userUpdateOperations.$inc['inventory.weight'] = currentWeight;
+
+                // set the island's `lastClaimed` to the current time
+                islandUpdateOperations.$set['islandResourceStats.lastClaimed'] = currentTime;
             }
         }
-
-        // do a few things:
-        // 1. clear the island's `claimableResources`
-        // 2. set the island's `lastClaimed` to the current time
-        islandUpdateOperations.$set['islandResourceStats.claimableResources'] = [];
-        islandUpdateOperations.$set['islandResourceStats.lastClaimed'] = currentTime;
 
         // execute the update operations
         await Promise.all([

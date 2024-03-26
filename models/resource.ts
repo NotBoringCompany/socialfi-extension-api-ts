@@ -19,6 +19,16 @@ export interface Resource {
 }
 
 /**
+ * Represents a simplified resource with an amount of that resource.
+ * 
+ * Used primarily for functions that require a resource as a parameter but don't need the full resource object.
+ */
+export interface SimplifiedResource {
+    type: ResourceType;
+    amount: number;
+}
+
+/**
  * Represents a resource with an amount of that resource.
  * 
  * Used primarily in claimable resources and the user's inventory.
@@ -58,7 +68,6 @@ export const ResourceRarityNumeric: { [key in ResourceRarity]: number } = {
     [ResourceRarity.RARE]: 2,
     [ResourceRarity.EPIC]: 3,
     [ResourceRarity.LEGENDARY]: 4,
-
 }
 
 /**

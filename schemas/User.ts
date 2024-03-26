@@ -11,5 +11,6 @@ export const UserSchema = new mongoose.Schema({
     twitterId: String,
     wallet: Object,
     openedTweetIdsToday: Array,
-    inventory: Object
+    inventory: Object,
+    stats: Object
 })

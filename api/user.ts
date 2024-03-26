@@ -99,16 +99,22 @@ export const handleTwitterLogin = async (twitterId: string): Promise<ReturnValue
                 },
                 openedTweetIdsToday: [],
                 inventory: {
+                    weight: 0,
+                    maxWeight: 200,
                     xCookies: 0,
+                    cookieCrumbs: 0,
                     resources: [],
                     items: [],
                     foods: [],
-                    barrenIslandId: islandData.island.islandId,
                     raftId: data.raft.raftId,
-                    islandIds: [],
+                    // add the free barren island to the `islandIds` array
+                    islandIds: [islandData.island.islandId],
                     bitIds: [bitIdData?.latestBitId + 1],
                     totalBitOrbs: 0,
                     totalTerraCapsulators: 0
+                },
+                stats: {
+                    level: 1
                 }
             });
 

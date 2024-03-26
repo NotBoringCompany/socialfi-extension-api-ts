@@ -40,6 +40,8 @@ export interface UserWallet {
 export interface UserInventory {
     /** the weight of the inventory (currently only impacted by resources) */
     weight: number;
+    /** the maximum inventory weight a user can have */
+    maxWeight: number;
     /** the amount of in-game cookies owned (users are required to convert from blockchain cookies first) */
     xCookies: number;
     /** the amount of cookie crumbs owned */
@@ -50,8 +52,6 @@ export interface UserInventory {
     items: Item[];
     /** a list of foods owned */
     foods: Food[];
-    /** the owned barren island ID */
-    barrenIslandId: number;
     /** the owned raft ID */
     raftId: number;
     /** a list of owned island IDs */
