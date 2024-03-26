@@ -51,6 +51,16 @@ export enum ResourceRarity {
     LEGENDARY = 'Legendary',
 }
 
+/** Numeric representation of `ResourceRarity` */
+export const ResourceRarityNumeric: { [key in ResourceRarity]: number } = {
+    [ResourceRarity.COMMON]: 0,
+    [ResourceRarity.UNCOMMON]: 1,
+    [ResourceRarity.RARE]: 2,
+    [ResourceRarity.EPIC]: 3,
+    [ResourceRarity.LEGENDARY]: 4,
+
+}
+
 /**
  * Lists all barren resources from common-legendary.
  */

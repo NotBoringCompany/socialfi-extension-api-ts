@@ -1,10 +1,10 @@
 import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
 import { IslandSchema } from '../schemas/Island';
-import { Island, IslandStatsModifiers, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
-import { BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLUTION_COST, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN, X_COOKIE_TAX, randomizeIslandTraits } from '../utils/constants/island';
+import { Island, IslandStatsModifiers, IslandTrait, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
+import { BARREN_ISLE_COMMON_DROP_CHANCE, BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLUTION_COST, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN, X_COOKIE_TAX, randomizeIslandTraits } from '../utils/constants/island';
 import { calcBitCurrentRate, getBits } from './bit';
-import { ExtendedResource, Resource, ResourceType } from '../models/resource';
+import { BarrenResource, ExtendedResource, Resource, ResourceLine, ResourceRarity, ResourceRarityNumeric, ResourceType } from '../models/resource';
 import { UserSchema } from '../schemas/User';
 import { Modifier } from '../models/modifier';
 import { BitSchema } from '../schemas/Bit';
@@ -14,7 +14,7 @@ import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
 import { ObtainMethod } from '../models/obtainMethod';
 import { RELOCATION_COOLDOWN } from '../utils/constants/bit';
 import { User } from '../models/user';
-import { getResource } from '../utils/constants/resource';
+import { getResource, resources } from '../utils/constants/resource';
 
 /**
  * Creates a barren island for newly registered users.
@@ -1352,6 +1352,20 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
         // check if the `resourcesLeft` is at least 1, if not, return an error.
         const baseResourceCap = island.islandResourceStats?.baseResourceCap as number;
         const resourcesGathered: Resource[] = island.islandResourceStats?.resourcesGathered;
+
+        // for barren isles, check only for resources gathered that are seaweed instead of the entire length.
+        // this is because for barren isles, there is a small chance to drop common resources that won't be counted towards the base resource cap.
+        if (<IslandType>island.type === IslandType.BARREN) {
+            const seaweedGathered = resourcesGathered.filter(r => r.type === BarrenResource.SEAWEED);
+            if (baseResourceCap - seaweedGathered.length <= 0) {
+                return {
+                    status: Status.ERROR,
+                    message: `(dropResource) No resources left to drop.`
+                }
+            }
+        }
+
+        // for any other isles, check the entire length of resources gathered.
         if (baseResourceCap - resourcesGathered.length <= 0) {
             return {
                 status: Status.ERROR,
@@ -1360,7 +1374,7 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
         }
 
         // randomize the resource from the effective drop chances based on the island's type and level
-        const resourceType: ResourceType = randomizeResourceFromChances(<IslandType>island.type, island.currentLevel);
+        const resourceToDrop: Resource = randomizeResourceFromChances(<IslandType>island.type, island.traits, island.currentLevel);
 
         // firstly check if `claimableResources` is empty.
         const claimableResources: Resource[] = island.islandResourceStats?.claimableResources;
@@ -1368,7 +1382,7 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
         if (claimableResources.length === 0 || !claimableResources) {
             // if empty, create a new resource and add it to the island's `claimableResources`
             const newResource: ExtendedResource = {
-                ...getResource(resourceType),
+                ...resourceToDrop,
                 amount: 1
             }
 
@@ -1376,7 +1390,7 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
             islandUpdateOperations.$push['islandResourceStats.claimableResources'] = newResource;
         } else {
             // if not empty, check if the resource already exists in `claimableResources`
-            const existingResourceIndex = claimableResources.findIndex(r => r.type === resourceType);
+            const existingResourceIndex = claimableResources.findIndex(r => r.type === resourceToDrop.type);
 
             // if the resource already exists, increment its amount
             if (existingResourceIndex !== -1) {
@@ -1384,7 +1398,7 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
             } else {
                 // if the resource doesn't exist, push a new resource
                 const newResource: ExtendedResource = {
-                    ...getResource(resourceType),
+                    ...resourceToDrop,
                     amount: 1
                 }
 
@@ -1396,7 +1410,7 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
         if (resourcesGathered.length === 0 || !resourcesGathered) {
             // if empty, create a new resource and add it to the island's `resourcesGathered`
             const newResource: ExtendedResource = {
-                ...getResource(resourceType),
+                ...resourceToDrop,
                 amount: 1
             }
 
@@ -1404,7 +1418,7 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
             islandUpdateOperations.$push['islandResourceStats.resourcesGathered'] = newResource;
         } else {
             // if not empty, check if the resource already exists in `resourcesGathered`
-            const existingResourceIndex = resourcesGathered.findIndex(r => r.type === resourceType);
+            const existingResourceIndex = resourcesGathered.findIndex(r => r.type === resourceToDrop.type);
 
             // if the resource already exists, increment its amount
             if (existingResourceIndex !== -1) {
@@ -1412,7 +1426,7 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
             } else {
                 // if the resource doesn't exist, push a new resource
                 const newResource: ExtendedResource = {
-                    ...getResource(resourceType),
+                    ...resourceToDrop,
                     amount: 1
                 }
 
@@ -1421,14 +1435,44 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
             }
         }
 
+        // lastly, check if island is barren. if it is, they have an additional small chance to drop a common resource of any line.
+        if (<IslandType>island.type === IslandType.BARREN) {
+            // roll a dice between 1-100
+            const rand = Math.random() * 100 + 1;
+
+            // if dice lands under `BARREN_ISLE_COMMON_DROP_CHANCE`, drop a random common resource alongside the seaweed they're getting.
+            if (rand <= BARREN_ISLE_COMMON_DROP_CHANCE) {
+                // randomize any common resource from `resources`
+                const commonResources = resources.filter(r => r.rarity === ResourceRarity.COMMON);
+                const commonResourceToDrop = commonResources[Math.floor(Math.random() * commonResources.length)];
+
+                // check if the common resource already exists in `claimableResources`
+                const existingResourceIndex = claimableResources.findIndex(r => r.type === commonResourceToDrop.type);
+
+                // if the resource already exists, increment its amount
+                if (existingResourceIndex !== -1) {
+                    islandUpdateOperations.$inc[`islandResourceStats.claimableResources.${existingResourceIndex}.amount`] = 1;
+                } else {
+                    // if the resource doesn't exist, push a new resource
+                    const newResource: ExtendedResource = {
+                        ...commonResourceToDrop,
+                        amount: 1
+                    }
+
+                    // add the new resource to the island's `claimableResources`
+                    islandUpdateOperations.$push['islandResourceStats.claimableResources'] = newResource;
+                }
+            }
+        }
+
         // execute the update operations
         await IslandModel.updateOne({ islandId }, islandUpdateOperations);
 
         return {
             status: Status.SUCCESS,
-            message: `(dropResource) Island ID ${islandId} has dropped a resource: ${resourceType}.`,
+            message: `(dropResource) Island ID ${islandId} has dropped a resource: ${resourceToDrop}.`,
             data: {
-                resourceType
+                resource: resourceToDrop
             }
         }
     } catch (err: any) {
@@ -1442,7 +1486,12 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
 /**
  * Randomizes a resource from the effective drop chances based on the island's type and level.
  */
-export const randomizeResourceFromChances = (type: IslandType, level: number): ResourceType => {
+export const randomizeResourceFromChances = (
+    type: IslandType,
+    // get the island's traits for common - legendary resourceas
+    traits: IslandTrait[],
+    level: number
+): Resource => {
     // calculate the effective drop chance rates based on the island's type and level
     const effectiveDropChances: ResourceDropChance = calcEffectiveResourceDropChances(type, level);
 
@@ -1452,14 +1501,39 @@ export const randomizeResourceFromChances = (type: IslandType, level: number): R
     // calculate the cumulative probability for each resource and see if the rand falls within the range
     let cumulativeProbability = 0;
 
-    for (let [resource, probability] of Object.entries(effectiveDropChances)) {
+    for (let [resourceRarity, probability] of Object.entries(effectiveDropChances)) {
         cumulativeProbability += probability;
 
         if (rand <= cumulativeProbability) {
-            // capitalize the first letter of the resource to match the ResourceType enum
-            resource = resource.charAt(0).toUpperCase() + resource.slice(1);
+            // capitalize the first letter of the resource rarity to match the ResourceRarity enum
+            resourceRarity = resourceRarity.charAt(0).toUpperCase() + resourceRarity.slice(1);
 
-            return <ResourceType>resource;
+            // get the trait for the resource rarity. if rarity is common, then take traits[0], if uncommon, then traits[1], and so on.
+            const trait = traits[ResourceRarityNumeric[resourceRarity]];
+
+            // if island type is barren, return seaweed
+            // if trait is mineral rich, find the ore resource with the specified rarity.
+            // if trait is aquifer, find the liquid resource with the specified rarity.
+            // if trait is fertile, find the fruit resource with the specified rarity
+            const resource = resources.find(r => {
+                if (type === IslandType.BARREN) {
+                    return r.line === ResourceLine.BARREN;
+                }
+
+                if (trait === IslandTrait.MINERAL_RICH) {
+                    return r.line === ResourceLine.ORE && r.rarity === <ResourceRarity>resourceRarity;
+                }
+
+                if (trait === IslandTrait.AQUIFER) {
+                    return r.line === ResourceLine.LIQUID && r.rarity === <ResourceRarity>resourceRarity;
+                }
+
+                if (trait === IslandTrait.FERTILE) {
+                    return r.line === ResourceLine.FRUIT && r.rarity === <ResourceRarity>resourceRarity;
+                }
+            });
+
+            return resource;
         }
     }
 }

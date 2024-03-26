@@ -26,6 +26,9 @@ export const EARNING_RATE_EXPONENTIAL_DECAY = 0.03;
 /** the amount of bits that can be placed in an island */
 export const BIT_PLACEMENT_CAP = 5;
 
+/** the chance to drop a common resource for barren isles (in %) */
+export const BARREN_ISLE_COMMON_DROP_CHANCE = 2;
+
 /** 
  * the amount of islands the user can have at a time to farm resources/earn back cookies. 
  * 
@@ -194,6 +197,16 @@ export const DEFAULT_RESOURCE_CAP = (type: IslandType) => {
  */
 export const RESOURCE_DROP_CHANCES = (type: IslandType): ResourceDropChance => {
     switch (type) {
+        case IslandType.BARREN:
+            return {
+                // barren islands will only drop common resources
+                // and this is also only with a very small chance
+                common: 100,
+                uncommon: 0,
+                rare: 0,
+                epic: 0,
+                legendary: 0
+            }
         case IslandType.PRIMAL_ISLES:
             return {
                 common: 77.5,
@@ -242,6 +255,14 @@ export const RESOURCE_DROP_CHANCES = (type: IslandType): ResourceDropChance => {
  */
 export const RESOURCE_DROP_CHANCES_LEVEL_DIFF = (type: IslandType): ResourceDropChanceDiff => {
     switch (type) {
+        case IslandType.BARREN:
+            return {
+                common: 0,
+                uncommon: 0,
+                rare: 0,
+                epic: 0,
+                legendary: 0
+            }
         case IslandType.PRIMAL_ISLES:
             return {
                 common: -0.13,

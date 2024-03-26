@@ -48,7 +48,7 @@ export enum BitRarity {
     LEGENDARY = 'Legendary',
 }
 
-/** numeric representation of `BitRarity` */
+/** Numeric representation of `BitRarity` */
 export const BitRarityNumeric: { [key in BitRarity]: number } = {
     [BitRarity.COMMON]: 0,
     [BitRarity.UNCOMMON]: 1,
