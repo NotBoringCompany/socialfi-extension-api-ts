@@ -393,7 +393,7 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
                         $set: {},
                         $push: {}
                     }
-                    }> = [];
+                }> = [];
 
                 // remove the bit ID from the previous island's `placedBitIds`
                 prevIslandUpdateOperations.$pull['placedBitIds'] = bit.bitId;
@@ -1113,14 +1113,19 @@ export const updateClaimableXCookies = async (): Promise<void> => {
  * NOTE: Requires `twitterId` which is fetched via `req.user`, automatically giving us the user's Twitter ID. This will check if the user who calls this function owns the twitter ID that owns the island.
  */
 export const claimResources = async (
-    twitterId: string, 
+    twitterId: string,
     islandId: number,
     claimType: 'manual' | 'auto',
     // only should be used if `claimType` is 'manual'
     // this essentially allows the user to choose which resources to claim
     chosenResources?: SimplifiedResource[]
-    ): Promise<ReturnValue> => {
+): Promise<ReturnValue> => {
     try {
+        // the return message (just in case not all resources can be claimed). only for successful claims.
+        let returnMessage: string = '';
+        // only for automatic claiming if not all resources can be claimed
+        const claimedResources: ExtendedResource[] = [];
+
         const [user, island] = await Promise.all([
             UserModel.findOne({ twitterId }).lean(),
             IslandModel.findOne({ islandId }).lean()
@@ -1279,6 +1284,8 @@ export const claimResources = async (
             // 2. set the island's `lastClaimed` to the current time
             userUpdateOperations.$inc['inventory.weight'] = totalWeightToClaim
             islandUpdateOperations.$set['islandResourceStats.lastClaimed'] = currentTime;
+
+            returnMessage = `Manually claimed resources for Island ID ${islandId}.`;
         // if auto, we will do the following:
         // 1. firstly, check if all resources can be claimed based on the user's max inventory weight. if yes, skip the next steps.
         // 2. if not, we will sort the resources from highest to lowest rarity.
@@ -1302,7 +1309,7 @@ export const claimResources = async (
                 if (!userUpdateOperations.$push['inventory.resources']) {
                     userUpdateOperations.$push['inventory.resources'] = { $each: [] }
                 }
-                
+
                 // loop through each resource and add it to the user's inventory
                 for (const resource of claimableResources) {
                     // check if this resource exists on the user's inventory or not. if not, we push a new resource; if yes, we increment the amount.
@@ -1314,7 +1321,14 @@ export const claimResources = async (
                         userUpdateOperations.$push['inventory.resources'].$each.push(resource);
                     }
                 }
-            // otherwise, we will need to proceed with sorting.
+
+                // add the weight to the user's inventory
+                userUpdateOperations.$inc['inventory.weight'] = totalWeightToClaim;
+
+                // add the claimed resources to the claimedResources array
+                claimedResources.push(...claimableResources);
+                
+                // otherwise, we will need to proceed with sorting.
             } else {
                 // sort resources from highest to lowest rarity
                 const sortedResources = claimableResources.sort((a, b) => ResourceRarityNumeric[b.rarity] - ResourceRarityNumeric[a.rarity]);
@@ -1339,7 +1353,6 @@ export const claimResources = async (
                 // loop through each rarity group
                 for (const rarityGroup of Object.values(groupedResources)) {
                     // sort the resources from highest to lowest weight
-                    // this will at this point be something like heaviest legendary resources to lightest.
                     const sortedByWeight = rarityGroup.sort((a, b) => resources.find(r => r.type === b.type)?.weight - resources.find(r => r.type === a.type)?.weight);
 
                     // for each resource, check if we can claim all of it or just a portion of it based on the user's max inventory weight.
@@ -1379,6 +1392,15 @@ export const claimResources = async (
                             const claimableResourceIndex = claimableResources.findIndex(r => r.type === resource.type);
                             islandUpdateOperations.$inc[`islandResourceStats.claimableResources.${claimableResourceIndex}.amount`] = -amountToClaim;
 
+                            // add the claimed resource to the claimedResources array
+                            claimedResources.push({
+                                type: resource.type,
+                                line: resource.line,
+                                rarity: resource.rarity,
+                                weight: resource.weight,
+                                amount: amountToClaim
+                            });
+
                             // break out of the loop since we can't claim more resources based on the user's max inventory weight
                             break;
                         } else {
@@ -1396,6 +1418,9 @@ export const claimResources = async (
 
                             // since this essentially means we can claim all of this resource, we will pull this resource from the island's claimable resources.
                             islandUpdateOperations.$pull[`islandResourceStats.claimableResources`] = { type: resource.type };
+
+                            // add the claimed resource to the claimedResources array
+                            claimedResources.push(resource);
                         }
                     }
                 }
@@ -1405,6 +1430,8 @@ export const claimResources = async (
 
                 // set the island's `lastClaimed` to the current time
                 islandUpdateOperations.$set['islandResourceStats.lastClaimed'] = currentTime;
+
+                returnMessage = `Unable to claim all resources due to max inventory weight. Automatically claimed partial resources for Island ID ${islandId}.`;
             }
         }
 
@@ -1416,7 +1443,10 @@ export const claimResources = async (
 
         return {
             status: Status.SUCCESS,
-            message: `(claimResources) Claimed all resources from island ID ${islandId}.`
+            message: `(claimResources) Claimed all resources from island ID ${islandId}.`,
+            data: {
+                claimedResources: claimType === 'manual' ? chosenResources : claimedResources,
+            }
         }
     } catch (err: any) {
         return {
