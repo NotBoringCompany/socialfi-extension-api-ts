@@ -17,9 +17,12 @@ import { User } from '../models/user';
 import { getResource, resources } from '../utils/constants/resource';
 
 /**
- * Creates a barren island for newly registered users.
+ * Generates a barren island. This is called when a user signs up or when a user obtains and opens a bottled message.
  */
-export const createBarrenIsland = async (userId: string): Promise<ReturnValue> => {
+export const generateBarrenIsland = async (
+    userId: string,
+    obtainMethod: ObtainMethod.SIGN_UP | ObtainMethod.BOTTLED_MESSAGE
+): Promise<ReturnValue> => {
     try {
         const { status, message, data } = await getLatestIslandId();
 
@@ -36,7 +39,7 @@ export const createBarrenIsland = async (userId: string): Promise<ReturnValue> =
             type: IslandType.BARREN,
             owner: userId,
             purchaseDate: Math.floor(Date.now() / 1000),
-            obtainMethod: ObtainMethod.SIGN_UP,
+            obtainMethod,
             currentLevel: 1,
             currentTax: 0,
             placedBitIds: [],

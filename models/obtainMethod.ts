@@ -11,4 +11,6 @@ export enum ObtainMethod {
     SIGN_UP = 'Sign Up',
     /* reward obtained from an event */
     EVENT = 'Event',
+    /* a message in a bottle, currently used to obtain a barren island */
+    BOTTLED_MESSAGE = 'Bottled Message',
 }

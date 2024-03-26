@@ -10,9 +10,9 @@ import { RANDOMIZE_RARITY_FROM_ORB } from '../utils/constants/bitOrb';
 import { BIT_TRAIT_EFFECT_ON_SELF, RANDOMIZE_GENDER, getBitStatsModifiersFromTraits, randomizeBitTraits } from '../utils/constants/bit';
 import { ObtainMethod } from '../models/obtainMethod';
 import { UserModel } from '../utils/constants/db';
-import { createBarrenIsland } from './island';
 import { BitTraitModifier } from '../models/modifier';
 import { BitStatsModifiers } from '../models/bit';
+import { generateBarrenIsland } from './island';
 
 /**
  * Twitter login logic. Creates a new user or simply log them in if they already exist.
@@ -78,7 +78,7 @@ export const handleTwitterLogin = async (twitterId: string): Promise<ReturnValue
             }
 
             // creates a new barren island for the user for free as well
-            const { status: islandStatus, message: islandMessage, data: islandData } = await createBarrenIsland(userObjectId);
+            const { status: islandStatus, message: islandMessage, data: islandData } = await generateBarrenIsland(userObjectId, ObtainMethod.SIGN_UP);
 
             if (islandStatus !== Status.SUCCESS) {
                 return {
