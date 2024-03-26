@@ -1122,7 +1122,7 @@ export const claimResources = async (
 ): Promise<ReturnValue> => {
     try {
         // the return message (just in case not all resources can be claimed). only for successful claims.
-        let returnMessage: string = '';
+        let returnMessage: string = `(claimResources) Claimed all resources from island ID ${islandId}.`;
         // only for automatic claiming if not all resources can be claimed
         const claimedResources: ExtendedResource[] = [];
 
@@ -1327,7 +1327,7 @@ export const claimResources = async (
 
                 // add the claimed resources to the claimedResources array
                 claimedResources.push(...claimableResources);
-                
+
                 // otherwise, we will need to proceed with sorting.
             } else {
                 // sort resources from highest to lowest rarity
@@ -1443,7 +1443,7 @@ export const claimResources = async (
 
         return {
             status: Status.SUCCESS,
-            message: `(claimResources) Claimed all resources from island ID ${islandId}.`,
+            message: returnMessage,
             data: {
                 claimedResources: claimType === 'manual' ? chosenResources : claimedResources,
             }
