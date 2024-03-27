@@ -30,17 +30,21 @@ export enum CityName {
  */
 export interface CityShop {
     /** all global items that can be bought by everyone */
-    global: CityShopGlobalItem[];
-    /** all player-only items that can be bought */
-    player: CityShopPlayerItem[];
+    globalItems: CityShopGlobalItem[];
+    /** 
+     * all player items that can be bought by each player respectively.
+     * currently, each player should see the same items on the shop. however, the exact amount limit that can be bought (or sold) may differ per player.
+     * e.g. player 1 can buy 10 of item A, player 2 can buy 20 of item A.
+     */
+    playerItems: CityShopPlayerItem[];
 }
 
 /**
- * Represents all global items in a city's shop.
+ * Represents a global item in a city's shop.
  */
 export interface CityShopGlobalItem {
     /** the item name */
-    name: string;
+    name: CityShopItemName;
     /** 
      * the amount of this item that can be bought (by everyone)
      * e.g. only 50 can be bought; user 1 buys 40, user 2 buys 10. no other user can buy anymore.
@@ -55,6 +59,40 @@ export interface CityShopGlobalItem {
     buyingPrice: CityShopItemBuyingPrice[];
     /** the item's selling price (what the user can get if they sell 1 of this item) */
     sellingPrice: CityShopItemSellingPrice[];
+}
+
+/**
+ * Represents a player item in a city's shop.
+ */
+export interface CityShopPlayerItem {
+    /** the item name */
+    name: CityShopItemName;
+    /** the item's buying price (if the user wants to buy 1 of this item) */
+    buyingPrice: CityShopItemBuyingPrice[];
+    /** the item's selling price (what the user can get if they sell 1 of this item) */
+    sellingPrice: CityShopItemSellingPrice[];
+}
+
+/**
+ * Lists all shop items in cities.
+ */
+export enum CityShopItemName {
+    SEAWEED = 'Seaweed',
+    STONE = 'Stone',
+    COPPER = 'Copper',
+    IRON = 'Iron',
+    SILVER = 'Silver',
+    GOLD = 'Gold',
+    BLUEBERRY = 'Blueberry',
+    APPLE = 'Apple',
+    STAR_FRUIT = 'Star Fruit',
+    MELON = 'Melon',
+    DRAGON_FRUIT = 'Dragon Fruit',
+    WATER = 'Water',
+    MAPLE_SYRUP = 'Maple Syrup',
+    HONEY = 'Honey',
+    MOONLIGHT_DEW = 'Moonlight Dew',
+    PHOENIX_TEAR = 'Phoenix Tear',
 }
 
 /**
