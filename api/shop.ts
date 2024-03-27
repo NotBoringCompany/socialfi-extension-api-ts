@@ -154,8 +154,6 @@ export const purchaseShopAsset = async (
                 break;
         }
 
-        console.log('updateOperation', updateOperation);
-
         // Execute the update operation
         await UserModel.updateOne({ twitterId }, updateOperation);
 
