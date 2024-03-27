@@ -1,3 +1,4 @@
+import { CityName } from './city';
 import { Food } from './food';
 import { Item } from './item';
 import { ExtendedResource } from './resource';
@@ -20,8 +21,8 @@ export interface User {
     openedTweetIdsToday: string[];
     /** the user's inventory */
     inventory: UserInventory;
-    /** the user's in-game stats */
-    stats: UserStats;
+    /** the user's in-game data */
+    inGameData: InGameData;
 }
 
 /**
@@ -65,10 +66,12 @@ export interface UserInventory {
 }
 
 /**
- * Represents the user's in-game stats
+ * Represents the user's in-game data
  */
-export interface UserStats {
+export interface InGameData {
     /** the user's level */
     level: number;
+    /** the current location of the user (either home or in a city) */
+    location: 'home' | CityName;
 }
 

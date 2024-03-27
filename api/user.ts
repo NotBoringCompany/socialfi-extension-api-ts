@@ -109,8 +109,9 @@ export const handleTwitterLogin = async (twitterId: string): Promise<ReturnValue
                     totalBitOrbs: 0,
                     totalTerraCapsulators: 0
                 },
-                stats: {
-                    level: 1
+                inGameData: {
+                    level: 1,
+                    location: 'home'
                 }
             });
 
