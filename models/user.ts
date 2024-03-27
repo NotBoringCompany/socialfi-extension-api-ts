@@ -40,7 +40,7 @@ export interface UserWallet {
 export interface UserInventory {
     /** the weight of the inventory (currently only impacted by resources) */
     weight: number;
-    /** the maximum inventory weight a user can have */
+    /** the maximum inventory weight the user can have */
     maxWeight: number;
     /** the amount of in-game cookies owned (users are required to convert from blockchain cookies first) */
     xCookies: number;
