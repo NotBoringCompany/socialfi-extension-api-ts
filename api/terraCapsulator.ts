@@ -64,6 +64,8 @@ export const consumeTerraCapsulator = async (twitterId: string): Promise<ReturnV
         // add the island ID to the user's inventory
         userUpdateOperations.$push['inventory.islandIds'] = island.islandId;
 
+        console.log('added to island ids of user: ', user._id);
+
         await UserModel.updateOne({ twitterId }, userUpdateOperations);
 
         return {
