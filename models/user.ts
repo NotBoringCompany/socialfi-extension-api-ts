@@ -1,4 +1,3 @@
-import { CityName, CityShopItemName } from './city';
 import { Food } from './food';
 import { Item } from './item';
 import { ExtendedResource } from './resource';
@@ -71,42 +70,5 @@ export interface UserInventory {
 export interface UserStats {
     /** the user's level */
     level: number;
-    /** the user's transactions within the in-game shops in all cities 
-     * used to limit purchases and sales, etc.
-     * Each `ShopTransactionData` instance corresponds to the transaction data of a shop in one city.
-     */
-    shopTransactionData: UserShopTransactionData[];
 }
 
-/**
- * Represents the user's transactions within the in-game shops in all cities.
- */
-export interface UserShopTransactionData {
-    city: CityName;
-    purchases: UserShopPurchase[];
-    sales: UserShopSale[];
-}
-
-/**
- * Represents a user's purchase in a shop.
- */
-export interface UserShopPurchase {
-    /** the item name */
-    name: CityShopItemName;
-    /** the amount bought */
-    amount: number;
-    /** the max amount of this item the user can buy (will get reset) */
-    limit: number;
-}
-
-/**
- * Represents a user's sale in a shop.
- */
-export interface UserShopSale {
-    /** the item name */
-    name: CityShopItemName;
-    /** the amount sold */
-    amount: number;
-    /** the max amount of this item the user can sell (will get reset) */
-    limit: number;
-}

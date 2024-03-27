@@ -71,6 +71,25 @@ export interface CityShopPlayerItem {
     buyingPrice: CityShopItemBuyingPrice[];
     /** the item's selling price (what the user can get if they sell 1 of this item) */
     sellingPrice: CityShopItemSellingPrice[];
+    /** 
+     * the transaction data for each user for this item.
+     * 
+     * this includes the amount of this item that has been bought/sold, and the buying/selling limit for each user for this item.
+     */
+    userTransactionData: ShopItemUserTransactionData[];
+}
+
+export interface ShopItemUserTransactionData {
+    /** the user's database ID */
+    userId: string;
+    /** the amount of this item that has been bought by this user */
+    boughtAmount: number;
+    /** the amount of this item that has been sold by this user */
+    soldAmount: number;
+    /** the buying limit for this user for this item */
+    buyingLimit: number;
+    /** the selling limit for this user for this item */
+    sellingLimit: number;
 }
 
 /**

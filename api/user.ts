@@ -1,17 +1,13 @@
-import mongoose from 'mongoose';
+
 import { ReturnValue, Status } from '../utils/retVal';
-import { UserSchema } from '../schemas/User';
 import { createUserWallet } from '../utils/wallet';
 import { createRaft } from './raft';
 import { generateObjectId } from '../utils/crypto';
 import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
-import { BitSchema } from '../schemas/Bit';
 import { RANDOMIZE_RARITY_FROM_ORB } from '../utils/constants/bitOrb';
-import { BIT_TRAIT_EFFECT_ON_SELF, RANDOMIZE_GENDER, getBitStatsModifiersFromTraits, randomizeBitTraits } from '../utils/constants/bit';
+import { RANDOMIZE_GENDER, getBitStatsModifiersFromTraits, randomizeBitTraits } from '../utils/constants/bit';
 import { ObtainMethod } from '../models/obtainMethod';
 import { UserModel } from '../utils/constants/db';
-import { BitTraitModifier } from '../models/modifier';
-import { BitStatsModifiers } from '../models/bit';
 import { generateBarrenIsland } from './island';
 
 /**
