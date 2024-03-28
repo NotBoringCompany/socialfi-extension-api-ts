@@ -1,6 +1,5 @@
 import express from 'express';
 import { addQuest, completeQuest, deleteQuest, getQuests, getUserCompletedQuests } from '../api/quest';
-import { validateJWT } from '../utils/jwt';
 import { Status } from '../utils/retVal';
 import { validateRequestAuth } from '../utils/auth';
 

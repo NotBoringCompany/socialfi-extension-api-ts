@@ -1,16 +1,11 @@
 import express from 'express';
-import { calcEffectiveResourceDropChances, calcIslandCurrentRate, calcResourceDropChanceDiff, checkCurrentTax, claimResources, claimXCookies, evolveIsland, getIslands, placeBit } from '../api/island';
+import { calcEffectiveResourceDropChances, calcIslandCurrentRate, checkCurrentTax, claimResources, claimXCookies, evolveIsland, getIslands, placeBit } from '../api/island';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
-import mongoose from 'mongoose';
-import { IslandSchema } from '../schemas/Island';
-import { BitSchema } from '../schemas/Bit';
 import { IslandType, RateType, ResourceDropChanceDiff } from '../models/island';
 import { Modifier } from '../models/modifier';
-import { ISLAND_EVOLUTION_COST, MAX_ISLAND_LEVEL, X_COOKIE_TAX } from '../utils/constants/island';
-import { UserSchema } from '../schemas/User';
-import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
-import { resources } from '../utils/constants/resource';
+import { ISLAND_EVOLUTION_COST, MAX_ISLAND_LEVEL } from '../utils/constants/island';;
+import { BitModel, IslandModel } from '../utils/constants/db';
 
 const router = express.Router();
 

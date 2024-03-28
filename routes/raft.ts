@@ -1,37 +1,7 @@
 import express from 'express';
-import { getRaft, placeBit } from '../api/raft';
-import { validateRequestAuth } from '../utils/auth';
-import { Status } from '../utils/retVal';
+import { getRaft } from '../api/raft';
 
 const router = express.Router();
-
-router.post('/place_bit', async (req, res) => {
-    const { bitId } = req.body;
-
-    try {
-        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'place_bit');
-
-        if (validateStatus !== Status.SUCCESS) {
-            return res.status(validateStatus).json({
-                status: validateStatus,
-                message: validateMessage
-            })
-        }
-
-        const { status, message, data } = await placeBit(validateData?.twitterId, bitId);
-
-        return res.status(status).json({
-            status,
-            message,
-            data
-        });
-    } catch (err: any) {
-        return res.status(500).json({
-            status: 500,
-            message: err.message
-        })
-    }
-});
 
 router.get('/get_raft/:twitterId', async (req, res) => {
     const { twitterId } = req.params;
