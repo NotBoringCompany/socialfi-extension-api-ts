@@ -72,6 +72,18 @@ export interface InGameData {
     /** the user's level */
     level: number;
     /** the current location of the user (either home or in a city) */
-    location: 'home' | CityName;
+    location: CityName;
+    /** 
+     * checks if the user is currently travelling to another city 
+     * 
+     * if not null, this means that the user is currently travelling to another city.
+     */
+    travellingTo: CityName | null;
+    /** 
+     * the arrival time of the destination at `travellingTo`
+     * 
+     * value will be 0 if not travelling (i.e. if travellingTo is null)
+     */
+    destinationArrival: number;
 }
 

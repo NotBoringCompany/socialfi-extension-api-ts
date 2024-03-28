@@ -1170,6 +1170,14 @@ export const claimResources = async (
             }
         }
 
+        // if the user is currently travelling, disable claiming resources
+        if (user.inGameData.travellingTo !== null) {
+            return {
+                status: Status.ERROR,
+                message: `(claimResources) User is currently travelling.`
+            }
+        }
+
         // check if the `RESOURCES_CLAIM_COOLDOWN` has passed from the last claimed time
         const currentTime = Math.floor(Date.now() / 1000);
         const lastClaimedTime = island.islandResourceStats?.lastClaimed as number;

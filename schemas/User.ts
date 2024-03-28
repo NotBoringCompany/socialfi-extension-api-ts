@@ -13,5 +13,5 @@ export const UserSchema = new mongoose.Schema({
     wallet: Object,
     openedTweetIdsToday: Array,
     inventory: Object,
-    stats: Object
+    inGameData: Object
 })
