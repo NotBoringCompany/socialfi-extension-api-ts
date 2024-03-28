@@ -1219,6 +1219,9 @@ export const claimResources = async (
             // and if the amount to claim is less than or equal to the claimable amount for each resource.
             // then, we also check if the total weight of the chosen resources doesn't exceed the player's max inventory weight.
             for (let chosenResource of chosenResources) {
+                // get the full data of the chosen resource (so that it can be added to the user's inventory)
+                const chosenResourceData = resources.find(r => r.type === chosenResource.type);
+
                 const claimableResourceIndex = claimableResources.findIndex(r => r.type === chosenResource.type);
 
                 if (claimableResourceIndex === -1) {
@@ -1260,7 +1263,10 @@ export const claimResources = async (
                 if (existingResourceIndex !== -1) {
                     userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = chosenResource.amount;
                 } else {
-                    userUpdateOperations.$push['inventory.resources'].$each.push(chosenResource);
+                    userUpdateOperations.$push['inventory.resources'].$each.push({
+                        ...chosenResourceData,
+                        amount: chosenResource.amount
+                    });
                 }
 
                 // now, check if the amount to claim for this resource equals the max claimable amount for this resource.
@@ -1380,10 +1386,7 @@ export const claimResources = async (
                                 userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = amountToClaim;
                             } else {
                                 userUpdateOperations.$push['inventory.resources'].$each.push({
-                                    type: resource.type,
-                                    line: resource.line,
-                                    rarity: resource.rarity,
-                                    weight: resource.weight,
+                                    ...resource,
                                     amount: amountToClaim
                                 });
                             }
@@ -1397,10 +1400,7 @@ export const claimResources = async (
 
                             // add the claimed resource to the claimedResources array
                             claimedResources.push({
-                                type: resource.type,
-                                line: resource.line,
-                                rarity: resource.rarity,
-                                weight: resource.weight,
+                                ...resource,
                                 amount: amountToClaim
                             });
 
