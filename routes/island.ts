@@ -60,7 +60,7 @@ router.get('/check_current_tax/:twitterId/:islandId', async (req, res) => {
 });
 
 router.post('/evolve_island', async (req, res) => {
-    const { islandId } = req.body;
+    const { islandId, choice } = req.body;
 
     try {
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'evolve_island');
@@ -71,7 +71,8 @@ router.post('/evolve_island', async (req, res) => {
                 message: validateMessage
             })
         }
-        const { status, message, data } = await evolveIsland(validateData?.twitterId, islandId);
+        
+        const { status, message, data } = await evolveIsland(validateData?.twitterId, islandId, choice);
 
         return res.status(status).json({
             status,
