@@ -1,7 +1,7 @@
 import { ReturnValue, Status } from '../utils/retVal';
 import { RANDOMIZE_CHEST_ITEM } from '../utils/constants/chest';
 import { Food, FoodType } from '../models/food';
-import { BarrenResource, Resource, ResourceType } from '../models/resource';
+import { BarrenResource, CombinedResources, Resource, ResourceType } from '../models/resource';
 import { UserModel } from '../utils/constants/db';
 
 /**
@@ -40,7 +40,7 @@ export const openChest = async (twitterId: string, tweetId: string): Promise<Ret
 
         // check which category the `item` falls under
         const isFood = Object.values(FoodType).includes(item as FoodType);
-        const isResource = Object.values(ResourceType).includes(item as ResourceType);
+        const isResource = Object.values(CombinedResources).includes(item as ResourceType);
         const isXCookies = item === 'xCookies';
         const isBitOrb = item === 'Bit Orb';
         const isTerraCapsulator = item === 'Terra Capsulator';

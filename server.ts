@@ -42,6 +42,8 @@ import chest from './routes/chest';
 import cookie from './routes/cookie';
 import { schedulers } from './schedulers/schedulers';
 import { randomizeIslandTraits } from './utils/constants/island';
+import { addCity } from './api/city';
+import { CityName } from './models/city';
 
 app.use('/auth/twitter', twitterAuth);
 app.use('/jwt', jwt);
@@ -62,4 +64,21 @@ app.listen(port, async () => {
     await mongoose.connect(mongoUri);
 
     await schedulers();
+
+    // add city
+    await addCity(
+        CityName.HOME,
+        {
+            [CityName.HOME]: 0,
+            [CityName.EVERGREEN_VILLAGE]: 20000, // ~33 minutes
+            [CityName.PALMSHADE_VILLAGE]: 30000, // ~50 minutes
+            [CityName.SEABREEZE_HARBOR]: 45000, // ~75 minutes
+            [CityName.STARFALL_SANCTUARY]: 60000, // ~100 minutes
+          },
+          {
+            globalItems: [],
+            playerItems: []
+          },
+          process.env.ADMIN_KEY!
+    )
 });

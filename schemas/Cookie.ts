@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { generateObjectId } from '../utils/crypto';
 
 /**
  * Cookie Deposit schema. Represents closely to the `CookieDeposit` interface in `models/cookieDeposit.ts`.

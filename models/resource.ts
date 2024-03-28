@@ -114,3 +114,13 @@ export enum LiquidResource {
  * Represents a resource type based on all possible resources.
  */
 export type ResourceType = BarrenResource | OreResource | FruitResource | LiquidResource;
+
+/**
+ * Lists all possible resources.
+ */
+export const CombinedResources = {
+    ...BarrenResource,
+    ...OreResource,
+    ...FruitResource,
+    ...LiquidResource,
+}
