@@ -40,10 +40,8 @@ import bit from './routes/bit';
 import user from './routes/user';
 import chest from './routes/chest';
 import cookie from './routes/cookie';
+import city from './routes/city';
 import { schedulers } from './schedulers/schedulers';
-import { randomizeIslandTraits } from './utils/constants/island';
-import { addCity } from './api/city';
-import { CityName } from './models/city';
 
 app.use('/auth/twitter', twitterAuth);
 app.use('/jwt', jwt);
@@ -56,6 +54,7 @@ app.use('/bit_orb', bitOrb);
 app.use('/bit', bit);
 app.use('/user', user);
 app.use('/chest', chest);
+app.use('/city', city);
 app.use('/cookie', cookie);
 
 app.listen(port, async () => {
