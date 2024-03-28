@@ -1,7 +1,7 @@
 import { ReturnValue, Status } from '../utils/retVal';
 import { RANDOMIZE_CHEST_ITEM } from '../utils/constants/chest';
 import { Food, FoodType } from '../models/food';
-import { Resource, ResourceType } from '../models/resource';
+import { BarrenResource, Resource, ResourceType } from '../models/resource';
 import { UserModel } from '../utils/constants/db';
 
 /**
