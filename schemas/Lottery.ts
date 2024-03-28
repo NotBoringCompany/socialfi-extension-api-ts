@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { generateObjectId } from '../utils/crypto';
 
 /**
  * Lottery schema. Represents closely to the `Lottery` interface in `models/lottery.ts`.

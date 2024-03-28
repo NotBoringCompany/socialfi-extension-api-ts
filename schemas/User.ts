@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { generateObjectId } from '../utils/crypto';
 
 /**
  * User schema. Represents closely to the `User` interface in `models/user.ts`.

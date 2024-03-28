@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { generateObjectId } from '../utils/crypto';
 
 /**
  * Island schema. Represents closely to the `Island` interface in `models/island.ts`.

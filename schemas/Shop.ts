@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { generateObjectId } from '../utils/crypto';
 
 /**
  * Shop schema. Represents closely to the `Shop` interface in `models/shop.ts`.
