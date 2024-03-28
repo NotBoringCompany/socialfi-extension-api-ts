@@ -64,21 +64,4 @@ app.listen(port, async () => {
     await mongoose.connect(mongoUri);
 
     await schedulers();
-
-    // add city
-    await addCity(
-        CityName.HOME,
-        {
-            [CityName.HOME]: 0,
-            [CityName.EVERGREEN_VILLAGE]: 20000, // ~33 minutes
-            [CityName.PALMSHADE_VILLAGE]: 30000, // ~50 minutes
-            [CityName.SEABREEZE_HARBOR]: 45000, // ~75 minutes
-            [CityName.STARFALL_SANCTUARY]: 60000, // ~100 minutes
-          },
-          {
-            globalItems: [],
-            playerItems: []
-          },
-          process.env.ADMIN_KEY!
-    )
 });
