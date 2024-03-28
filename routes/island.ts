@@ -71,7 +71,7 @@ router.post('/evolve_island', async (req, res) => {
                 message: validateMessage
             })
         }
-        
+
         const { status, message, data } = await evolveIsland(validateData?.twitterId, islandId, choice);
 
         return res.status(status).json({
@@ -117,7 +117,7 @@ router.post('/claim_xcookies', async (req, res) => {
 });
 
 router.post('/claim_resources', async (req, res) => {
-    const { islandId } = req.body;
+    const { islandId, claimType, chosenResources } = req.body;
 
     try {
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'claim_resources');
@@ -129,7 +129,12 @@ router.post('/claim_resources', async (req, res) => {
             })
         }
 
-        const { status, message, data } = await claimResources(validateData?.twitterId, islandId);
+        const { status, message, data } = await claimResources(
+            validateData?.twitterId, 
+            islandId,
+            claimType,
+            chosenResources ?? null
+        );
 
         return res.status(status).json({
             status,
