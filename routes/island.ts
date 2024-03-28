@@ -10,6 +10,7 @@ import { Modifier } from '../models/modifier';
 import { ISLAND_EVOLUTION_COST, MAX_ISLAND_LEVEL, X_COOKIE_TAX } from '../utils/constants/island';
 import { UserSchema } from '../schemas/User';
 import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
+import { resources } from '../utils/constants/resource';
 
 const router = express.Router();
 
@@ -295,30 +296,31 @@ router.get('/get_evolution_resource_drop_chances_diff/:islandId', async (req, re
         }
 
         const currentLevel = island.currentLevel;
+        const islandType = <IslandType>island.type;
 
-        const currentResourceDropChances = calcEffectiveResourceDropChances(<IslandType>island.type, currentLevel);
+        const currentResourceDropChances = calcEffectiveResourceDropChances(islandType, currentLevel);
 
         let nextLevelResourceDropChances: ResourceDropChanceDiff;
 
         // since islands have a max level, if theyre at max level, the next level resource drop chances will be 0 (because they technically can't level it up anymore)
         if (currentLevel === MAX_ISLAND_LEVEL) {
             nextLevelResourceDropChances = {
-                stone: 0,
-                keratin: 0,
-                silver: 0,
-                diamond: 0,
-                relic: 0
+                common: 0,
+                uncommon: 0,
+                rare: 0,
+                epic: 0,
+                legendary: 0
             }
         } else {
             nextLevelResourceDropChances = calcEffectiveResourceDropChances(<IslandType>island.type, currentLevel + 1);
         }
 
         const resourceDropChanceDiff: ResourceDropChanceDiff = {
-            stone: nextLevelResourceDropChances.stone - currentResourceDropChances.stone,
-            keratin: nextLevelResourceDropChances.keratin - currentResourceDropChances.keratin,
-            silver: nextLevelResourceDropChances.silver - currentResourceDropChances.silver,
-            diamond: nextLevelResourceDropChances.diamond - currentResourceDropChances.diamond,
-            relic: nextLevelResourceDropChances.relic - currentResourceDropChances.relic
+            common: nextLevelResourceDropChances.common - currentResourceDropChances.common,
+            uncommon: nextLevelResourceDropChances.uncommon - currentResourceDropChances.uncommon,
+            rare: nextLevelResourceDropChances.rare - currentResourceDropChances.rare,
+            epic: nextLevelResourceDropChances.epic - currentResourceDropChances.epic,
+            legendary: nextLevelResourceDropChances.legendary - currentResourceDropChances.legendary
         }
 
         return res.status(200).json({
