@@ -6,7 +6,7 @@ import mongoose from 'mongoose';
 export const ShopSchema = new mongoose.Schema({
     _id: {
         type: String,
-        default: new mongoose.Types.ObjectId()
+        default: generateObjectId()
     },
     bitOrbs: Object,
     terraCapsulators: Object,

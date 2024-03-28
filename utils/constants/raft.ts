@@ -1,6 +1,6 @@
 /**
- * Randomizes the raft's base speed between 1 to 10.
+ * Randomizes the raft's base speed (+- 10% of 10 m/s)
  */
 export const randomizeRaftBaseSpeed = () => {
-    return Math.floor(Math.random() * 10) + 1;
+    return 10 + Math.random() * 2 - 1;
 }

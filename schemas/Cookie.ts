@@ -6,7 +6,7 @@ import mongoose from 'mongoose';
 export const CookieDepositSchema = new mongoose.Schema({
     _id: {
         type: String,
-        default: new mongoose.Types.ObjectId()
+        default: generateObjectId()
     },
     depositor: String,
     depositId: Number,
@@ -21,7 +21,7 @@ export const CookieDepositSchema = new mongoose.Schema({
 export const CookieWithdrawalSchema = new mongoose.Schema({
     _id: {
         type: String,
-        default: new mongoose.Types.ObjectId()
+        default: generateObjectId()
     },
     withdrawer: String,
     withdrawalId: Number,

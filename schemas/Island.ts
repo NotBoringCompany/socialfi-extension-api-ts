@@ -6,7 +6,7 @@ import mongoose from 'mongoose';
 export const IslandSchema = new mongoose.Schema({
     _id: {
         type: String,
-        default: new mongoose.Types.ObjectId()
+        default: generateObjectId()
     },
     islandId: Number,
     type: String,

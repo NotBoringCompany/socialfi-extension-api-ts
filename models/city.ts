@@ -1,13 +1,11 @@
-import { Resource } from './resource';
-
 /**
  * Represents a city.
  */
 export interface City {
     /** the city name */
     name: CityName;
-    /** the time it takes to travel to another city (in seconds) from this city */
-    travelTimeTo: {
+    /** the distance from this city to another city (in meters) */
+    distanceTo: {
         [destination in CityName]?: number;
     }
     /** the city's shop */

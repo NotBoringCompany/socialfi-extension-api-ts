@@ -6,7 +6,7 @@ import mongoose from 'mongoose';
 export const BitSchema = new mongoose.Schema({
     _id: {
         type: String,
-        default: new mongoose.Types.ObjectId()
+        default: generateObjectId()
     },
     bitId: Number,
     rarity: String,
