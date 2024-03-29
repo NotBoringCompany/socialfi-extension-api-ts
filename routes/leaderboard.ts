@@ -32,3 +32,5 @@ router.post('/add_leaderboard', async (req, res) => {
         })
     }
 })
+
+export default router;
