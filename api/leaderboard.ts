@@ -1,5 +1,5 @@
 import { LeaderboardType } from '../models/leaderboard';
-import { LeaderboardModel } from '../utils/constants/db';
+import { LeaderboardModel, UserModel } from '../utils/constants/db';
 import { ReturnValue, Status } from '../utils/retVal';
 
 /**
@@ -111,5 +111,58 @@ export const addWeeklyToMainLeaderboard = async (): Promise<void> => {
         console.log(`(addWeeklyToMainLeaderboard) Added weekly leaderboard data to the main leaderboard.`);
     } catch (err: any) {
         console.error(`(addWeeklyToMainLeaderboard) ${err.message}`);
+    }
+}
+
+/**
+ * Gets a leaderboard's rankings for users.
+ * 
+ * Sorts the user data by points in descending order.
+ */
+export const getLeaderboardRanking = async (type: LeaderboardType): Promise<ReturnValue> => {
+    try {
+        const leaderboard = await LeaderboardModel.findOne({ type }).lean();
+
+        if (!leaderboard) {
+            return {
+                status: Status.ERROR,
+                message: `(getLeaderboardRanking) Leaderboard not found.`
+            };
+        }
+
+        // Sort the user data by points in descending order
+        const descendingPoints = leaderboard.userData.sort((a, b) => b.points - a.points);
+
+        // Extract user IDs from sorted data
+        const userIds = descendingPoints.map(userData => userData.userId);
+
+        // Retrieve all user data in a single query
+        const users = await UserModel.find({_id: { $in: userIds }}).lean();
+
+        // Create a map for quick user ID to Twitter ID lookup
+        const userIdToTwitterIdMap = users.reduce((acc, user) => {
+            acc[user._id.toString()] = user.twitterId;
+            return acc;
+        }, {});
+
+        // Add a rank to each user data
+        const rankedUserData = descendingPoints.map((userData, index) => ({
+            rank: index + 1,
+            userId: userIdToTwitterIdMap[userData.userId] || 'N/A',
+            points: userData.points
+        }));
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getLeaderboardRanking) Leaderboard found.`,
+            data: {
+                ranking: rankedUserData
+            }
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getLeaderboardRanking) ${err.message}`
+        }
     }
 }
