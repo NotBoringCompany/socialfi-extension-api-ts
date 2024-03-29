@@ -217,8 +217,11 @@ export const getOwnLeaderboardRanking = async (
             status: Status.SUCCESS,
             message: `(getOwnLeaderboardRanking) User data found.`,
             data: {
-                rank: userRank,
-                points: userData.points
+                ranking: {
+                    rank: userRank,
+                    userId: twitterId,
+                    points: userData.points
+                }
             }
         };
     } catch (err: any) {
