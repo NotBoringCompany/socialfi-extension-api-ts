@@ -1,4 +1,4 @@
-import { Resource } from './resource';
+import { SimplifiedResource } from './resource';
 
 /**
  * Represents a lottery draw.
@@ -43,7 +43,7 @@ export interface Ticket {
     /** the timestamp of when the ticket was purchased */
     purchaseTimestamp: number;
     // the resource used to purchase the ticket
-    resourcesSpent: Resource;
+    resourcesSpent: SimplifiedResource;
 }
 
 /**
