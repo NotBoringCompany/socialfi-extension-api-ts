@@ -41,6 +41,7 @@ import user from './routes/user';
 import chest from './routes/chest';
 import cookie from './routes/cookie';
 import city from './routes/city';
+import leaderboard from './routes/leaderboard';
 import { schedulers } from './schedulers/schedulers';
 
 app.use('/auth/twitter', twitterAuth);
@@ -56,6 +57,7 @@ app.use('/user', user);
 app.use('/chest', chest);
 app.use('/city', city);
 app.use('/cookie', cookie);
+app.use('/leaderboard', leaderboard);
 
 app.listen(port, async () => {
     console.log(`Server running on port ${port}`);
