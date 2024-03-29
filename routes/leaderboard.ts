@@ -6,7 +6,7 @@ import { addLeaderboard } from '../api/leaderboard';
 const router = express.Router();
 
 router.post('/add_leaderboard', async (req, res) => {
-    const { name, type, adminKey } = req.body;
+    const { type, adminKey } = req.body;
 
     try {
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'add_leaderboard');
@@ -18,7 +18,7 @@ router.post('/add_leaderboard', async (req, res) => {
             });
         }
 
-        const { status, message, data } = await addLeaderboard(name, type, adminKey);
+        const { status, message, data } = await addLeaderboard(type, adminKey);
 
         return res.status(status).json({
             status,

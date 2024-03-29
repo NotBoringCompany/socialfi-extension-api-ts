@@ -2,8 +2,6 @@
  * Represents a leaderboard.
  */
 export interface Leaderboard {
-    /** the name of the leaderboard */
-    name: string;
     /** the type of leaderboard */
     type: LeaderboardType;
     /** user data for this leaderboard (points etc)  */
