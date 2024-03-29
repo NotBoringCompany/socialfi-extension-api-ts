@@ -23,7 +23,6 @@ export const createRaft = async (userId: string): Promise<ReturnValue> => {
             raftId: data.latestRaftId + 1,
             owner: userId,
             currentLevel: 1,
-            placedBitIds: [],
             stats: {
                 baseSpeed: randomizeRaftBaseSpeed(),
             }

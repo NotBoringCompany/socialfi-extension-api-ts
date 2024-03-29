@@ -12,8 +12,6 @@ export interface Raft {
     owner: string;
     /** current level of the raft */
     currentLevel: number;
-    /** the IDs of the bits that are placed (tied down) into this raft to gather seaweed */
-    placedBitIds: number[];
     /** the stats of the raft */
     stats: RaftStats;
 }
