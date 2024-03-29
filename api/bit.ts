@@ -8,6 +8,7 @@ import {
     DEFAULT_GATHERING_RATE,
     DEFAULT_GATHERING_RATE_GROWTH,
     ENERGY_THRESHOLD_REDUCTIONS,
+    FREE_BIT_EVOLUTION_COST,
     MAX_BIT_LEVEL,
 } from '../utils/constants/bit';
 import {
@@ -18,7 +19,7 @@ import { RateType } from '../models/island';
 import { Modifier } from '../models/modifier';
 import { Food, FoodType } from '../models/food';
 import { FOOD_ENERGY_REPLENISHMENT } from '../utils/constants/food';
-import { Resource, ResourceType } from '../models/resource';
+import { BarrenResource, ExtendedResource, Resource, ResourceType } from '../models/resource';
 import { generateObjectId } from '../utils/crypto';
 import { shop } from '../utils/shop';
 import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
@@ -419,7 +420,9 @@ export const depleteEnergy = async (): Promise<void> => {
 };
 
 /**
- * (User) Evolves a bit to the next level (levelling it up). !!!ONLY FOR LEVELLING UP IN ISLANDS!!!
+ * (User) Evolves a bit to the next level (levelling it up).
+ * 
+ * Premium bits require xCookies, while non-premium bits require seaweed.
  *
  * NOTE: Requires `twitterId` which is fetched via `req.user`, automatically giving us the user's Twitter ID. This will check if the user who calls this function owns the twitter ID that owns the bit ID.
  */
@@ -484,26 +487,48 @@ export const evolveBit = async (
             };
         }
 
-        // check if the user has enough xCookies to evolve the bit
-        const userXCookies = user.inventory?.xCookies;
+        // if bit is premium, check if the user has enough xCookies to evolve the bit
+        if (bit.premium) {
+            // check if the user has enough xCookies to evolve the bit
+            const userXCookies = user.inventory?.xCookies;
 
-        // calculate the cost to evolve the bit to the next level
-        const requiredXCookies = BIT_EVOLUTION_COST(bit.currentFarmingLevel);
+            // calculate the cost to evolve the bit to the next level
+            const requiredXCookies = BIT_EVOLUTION_COST(bit.currentFarmingLevel);
 
-        // if not enough xCookies, return an error
-        if (userXCookies < requiredXCookies) {
-            return {
-                status: Status.ERROR,
-                message: `(evolveBit) Not enough xCookies to evolve the bit.`,
-            };
+            // if not enough xCookies, return an error
+            if (userXCookies < requiredXCookies) {
+                return {
+                    status: Status.ERROR,
+                    message: `(evolveBit) Not enough xCookies to evolve the bit.`,
+                };
+            }
+
+            // deduct the required xCookies from the user's inventory
+            userUpdateOperations.$inc['inventory.xCookies'] = -requiredXCookies;
+
+            // increase the bit's current farming level by 1
+            bitUpdateOperations.$inc['currentFarmingLevel'] = 1;
+        // if bit is not premium, check if the user has enough seaweed to evolve the bit
+        } else {
+            const userSeaweed = (user.inventory?.resources as ExtendedResource[]).find(resource => resource.type === BarrenResource.SEAWEED);
+
+            const requiredSeaweed = FREE_BIT_EVOLUTION_COST(bit.currentFarmingLevel);
+
+            // if not enough seaweed, return an error
+            if (!userSeaweed || userSeaweed.amount < requiredSeaweed) {
+                return {
+                    status: Status.ERROR,
+                    message: `(evolveBit) Not enough seaweed to evolve the bit.`,
+                };
+            }
+
+            const userSeaweedIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(resource => resource.type === BarrenResource.SEAWEED);
+            // deduct the required seaweed from the user's inventory
+            userUpdateOperations.$inc[`inventory.resources.${userSeaweedIndex}.amount`] = -requiredSeaweed;
+
+            // increase the bit's current farming level by 1
+            bitUpdateOperations.$inc['currentFarmingLevel'] = 1;
         }
-
-        // deduct the required xCookies from the user's inventory
-        userUpdateOperations.$inc['inventory.xCookies'] = -requiredXCookies;
-
-        // increase the bit's current farming level by 1 and increment the `totalXCookiesSpent` by `requiredXCookies`
-        bitUpdateOperations.$inc['currentFarmingLevel'] = 1;
-        bitUpdateOperations.$inc['totalXCookiesSpent'] = requiredXCookies;
 
         // execute the update operations
         await Promise.all([
