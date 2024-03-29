@@ -166,3 +166,65 @@ export const getLeaderboardRanking = async (type: LeaderboardType): Promise<Retu
         }
     }
 }
+
+/**
+ * (User) Gets the user's own ranking in a leaderboard.
+ */
+export const getOwnLeaderboardRanking = async (
+    twitterId: string,
+    type: LeaderboardType
+): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(getOwnLeaderboardRanking) User not found.`
+            };
+        }
+
+        const leaderboard = await LeaderboardModel.findOne({ type }).lean();
+
+        if (!leaderboard) {
+            return {
+                status: Status.ERROR,
+                message: `(getOwnLeaderboardRanking) Leaderboard not found.`
+            };
+        }
+
+        // Sort the leaderboard.userData by points in descending order to ensure ranking correctness
+        const sortedUserData = leaderboard.userData.sort((a, b) => b.points - a.points);
+
+        // Find the user's data and determine the rank simultaneously
+        let userRank = -1; // Default value indicating not found
+        const userData = sortedUserData.find((data, index) => {
+            if (data.userId === user._id.toString()) {
+                userRank = index + 1; // Adjust for zero-based index
+                return true;
+            }
+            return false;
+        });
+
+        if (!userData || userRank === -1) {
+            return {
+                status: Status.ERROR,
+                message: `(getOwnLeaderboardRanking) User data not found in leaderboard.`
+            };
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getOwnLeaderboardRanking) User data found.`,
+            data: {
+                rank: userRank,
+                points: userData.points
+            }
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getOwnLeaderboardRanking) ${err.message}`
+        }
+    }
+}
