@@ -125,6 +125,11 @@ export const checkArrival = async (): Promise<void> => {
         // get all users that are travelling to another city (i.e. inGameData.travellingTo is not null (but rather contains a city name))
         const users = await UserModel.find({ 'inGameData.travellingTo': { $ne: null } }).lean();
 
+        if (users.length === 0) {
+            console.log(`(checkArrival) No users are travelling to another city.`);
+            return;
+        }
+
         // prepare bulk write operations
         const bulkWriteOpsPromises = users.map(async user => {
             let updateOperations = [];
