@@ -30,6 +30,24 @@ export const COOKIE_ARTIFACT = JSON.parse(
     ).toString()
 );
 
+export const KOS_ARTIFACT = JSON.parse(
+    fs.readFileSync(
+        path.join(__dirname, '../../artifacts/KeyOfSalvation.json')
+    ).toString()
+);
+
+export const KEYCHAIN_ARTIFACT = JSON.parse(
+    fs.readFileSync(
+        path.join(__dirname, '../../artifacts/Keychain.json')
+    ).toString()
+);
+
+export const SUPERIOR_KEYCHAIN_ARTIFACT = JSON.parse(
+    fs.readFileSync(
+        path.join(__dirname, '../../artifacts/SuperiorKeychain.json')
+    ).toString()
+);
+
 /**
  * The lottery contract instance (using admin wallet)
  */
@@ -46,6 +64,33 @@ export const COOKIE_CONTRACT = new ethers.Contract(
     COOKIE_CONTRACT_ADDRESS,
     COOKIE_ARTIFACT.abi,
     DEPLOYER_WALLET(BLAST_TESTNET_PROVIDER)
+);
+
+/**
+ * The keychain contract instance (using admin wallet)
+ */
+export const KOS_CONTRACT = new ethers.Contract(
+    KOS_CONTRACT_ADDRESS,
+    KOS_ARTIFACT.abi,
+    DEPLOYER_WALLET(ETH_MAINNET_PROVIDER)
+);
+
+/**
+ * The keychain contract instance (using admin wallet)
+ */
+export const KEYCHAIN_CONTRACT = new ethers.Contract(
+    KEYCHAIN_CONTRACT_ADDRESS,
+    KEYCHAIN_ARTIFACT.abi,
+    DEPLOYER_WALLET(ETH_MAINNET_PROVIDER)
+);
+
+/**
+ * The superior keychain contract instance (using admin wallet)
+ */
+export const SUPERIOR_KEYCHAIN_CONTRACT = new ethers.Contract(
+    SUPERIOR_KEYCHAIN_CONTRACT_ADDRESS,
+    SUPERIOR_KEYCHAIN_ARTIFACT.abi,
+    DEPLOYER_WALLET(ETH_MAINNET_PROVIDER)
 );
 
 /**
@@ -70,6 +115,45 @@ export const COOKIE_CONTRACT_USER = (privateKey: string) => {
     return new ethers.Contract(
         COOKIE_CONTRACT_ADDRESS,
         COOKIE_ARTIFACT.abi,
+        wallet
+    );
+}
+
+/**
+ * The keychain contract instance (using user wallet, requires their private key)
+ */
+export const KOS_CONTRACT_USER = (privateKey: string) => {
+    const wallet = new ethers.Wallet(privateKey, ETH_MAINNET_PROVIDER);
+
+    return new ethers.Contract(
+        KOS_CONTRACT_ADDRESS,
+        KOS_ARTIFACT.abi,
+        wallet
+    );
+}
+
+/**
+ * The keychain contract instance (using user wallet, requires their private key)
+ */
+export const KEYCHAIN_CONTRACT_USER = (privateKey: string) => {
+    const wallet = new ethers.Wallet(privateKey, ETH_MAINNET_PROVIDER);
+
+    return new ethers.Contract(
+        KEYCHAIN_CONTRACT_ADDRESS,
+        KEYCHAIN_ARTIFACT.abi,
+        wallet
+    );
+}
+
+/**
+ * The superior keychain contract instance (using user wallet, requires their private key)
+ */
+export const SUPERIOR_KEYCHAIN_CONTRACT_USER = (privateKey: string) => {
+    const wallet = new ethers.Wallet(privateKey, ETH_MAINNET_PROVIDER);
+
+    return new ethers.Contract(
+        SUPERIOR_KEYCHAIN_CONTRACT_ADDRESS,
+        SUPERIOR_KEYCHAIN_ARTIFACT.abi,
         wallet
     );
 }
