@@ -1016,7 +1016,7 @@ export const updateClaimableXCookies = async (): Promise<void> => {
             // if no bits are placed, skip this island
             if (placedBitIds.length === 0) {
                 console.log(`(updateClaimableXCookies) Island ID ${island.islandId} has no bits placed. Skipping...`);
-                return;
+                return [];
             }
 
             // get the bits placed on the island
@@ -1044,12 +1044,12 @@ export const updateClaimableXCookies = async (): Promise<void> => {
             // if the amount of `claimableXCookies` is 0, skip this island (shouldn't happen, but just in case)
             if (claimableXCookies === 0) {
                 console.log(`(updateClaimableXCookies) Island ID ${island.islandId} has 0 claimable xCookies. Skipping...`);
-                return;
+                return [];
             }
 
-            if (xCookiesEarned === island.islandEarningStats?.totalXCookiesEarnable) {
+            if (xCookiesEarned >= island.islandEarningStats?.totalXCookiesEarnable) {
                 console.log(`(updateClaimableXCookies) Island ID ${island.islandId} has already earned all of its xCookies. Skipping...`);
-                return;
+                return [];
             }
 
             // if `xCookiesEarned` + `claimableXCookies` is greater than totalXCookiesEarnable, set `claimableXCookies` to totalXCookiesEarnable - xCookiesEarned
@@ -1107,6 +1107,126 @@ export const updateClaimableXCookies = async (): Promise<void> => {
         console.log(`(updateClaimableXCookies) All islands' claimableXCookies have been updated.`);
     } catch (err: any) {
         console.error(`(updateClaimableXCookies) Error: ${err.message}`);
+    }
+}
+
+/**
+ * Updates all eligible islands' `claimableCookieCrumbs` based on their current earning rate.
+ * 
+ * Run by a scheduler every 10 minutes.
+ * 
+ * NOTE: If 0 cookie crumbs is earnable for an island, this function will skip that island.
+ */
+export const updateClaimableCrumbs = async (): Promise<void> => {
+    try {
+        const islands = await IslandModel.find({ 'islandEarningStats.totalCookieCrumbsEarnable': { $gt: 0 } }).lean();
+
+        if (islands.length === 0 || !islands) {
+            console.error(`(updateClaimableCrumbs) No islands found.`);
+            return;
+        }
+
+        // prepare bulk write operations to update all islands' `claimableCookieCrumbs`
+        const bulkWriteOpsPromises = islands.map(async island => {
+            let updateOperations = [];
+
+            // get the bit ids placed on this island and fetch the bits
+            const placedBitIds = island.placedBitIds as number[];
+
+            // if no bits are placed, skip this island
+            if (placedBitIds.length === 0) {
+                console.log(`(updateClaimableCrumbs) Island ID ${island.islandId} has no bits placed. Skipping...`);
+                return;
+            }
+
+            // get the bits placed on the island
+            const bits = await BitModel.find({ bitId: { $in: placedBitIds } });
+
+            // get the island's current earning rate
+            const currentEarningRate = calcIslandCurrentRate(
+                RateType.EARNING,
+                bits.map(bit => bit.farmingStats?.baseEarningRate),
+                bits.map(bit => bit.currentFarmingLevel),
+                bits.map(bit => bit.farmingStats.earningRateGrowth),
+                bits.map(bit => bit.bitStatsModifiers.earningRateModifiers as Modifier[]),
+                island.islandStatsModifiers?.earningRateModifiers as Modifier[]
+            );
+
+            // since this is called every 10 minutes, we will divide the `currentEarningRate` by 6 to get the 10-minute earning rate, and multiply it by the cookie crumbs earnable to get the `claimableCookieCrumbs`
+            const tenMinEarningRate = currentEarningRate / 6;
+            const claimableCookieCrumbs = tenMinEarningRate / 100 * island.islandEarningStats?.totalCookieCrumbsEarnable;
+
+            console.log(`claimable Cookie Crumbs for Island ${island.islandId} is ${claimableCookieCrumbs}.`);
+
+            // get the current amount of cookie crumbs earned already
+            const cookieCrumbsEarned = island.islandEarningStats?.totalCookieCrumbsEarned;
+
+            // if the amount of `claimableCookieCrumbs` is 0, skip this island (shouldn't happen, but just in case)
+            if (claimableCookieCrumbs === 0) {
+                console.log(`(updateClaimableCrumbs) Island ID ${island.islandId} has 0 claimable Cookie Crumbs. Skipping...`);
+                return [];
+            }
+
+            if (cookieCrumbsEarned >= island.islandEarningStats?.totalCookieCrumbsEarnable) {
+                console.log(`(updateClaimableCrumbs) Island ID ${island.islandId} has already earned all of its Cookie Crumbs. Skipping...`);
+                return [];
+            }
+
+            // if `cookieCrumbsEarned` + `claimableCookieCrumbs` is greater than totalCookieCrumbsEarnable, set `claimableCookieCrumbs` to totalCookieCrumbsEarnable - cookieCrumbsEarned
+            // this is to prevent the user from claiming more cookie crumbs than they have spent
+            if (claimableCookieCrumbs + cookieCrumbsEarned > island.islandEarningStats?.totalCookieCrumbsEarnable) {
+                console.log(`(updateClaimableCrumbs) Island ID ${island.islandId}'s claimableCookieCrumbs exceeds cookie crumbs spent.
+                 adjusting... totalCookieCrumbsEarnable: ${island.islandEarningStats?.totalCookieCrumbsEarnable} - cookieCrumbsEarned: ${cookieCrumbsEarned} = ${island.islandEarningStats?.totalCookieCrumbsEarnable - cookieCrumbsEarned}.`
+                );
+
+                updateOperations.push({
+                    updateOne: {
+                        filter: { islandId: island.islandId },
+                        update: {
+                            // also increment the `totalCookieCrumbsEarned` by `totalCookieCrumbsEarnable - cookieCrumbsEarned`
+                            $inc: {
+                                'islandEarningStats.totalCookieCrumbsEarned': island.islandEarningStats?.totalCookieCrumbsEarnable - cookieCrumbsEarned,
+                                'islandEarningStats.claimableCookieCrumbs': island.islandEarningStats?.totalCookieCrumbsEarnable - cookieCrumbsEarned
+                            }
+                        }
+                    }
+                });
+            } else {
+                console.log(`(updateClaimableCrumbs) Island ID ${island.islandId} has updated its claimable Cookie Crumbs to ${island.islandEarningStats?.claimableCookieCrumbs + claimableCookieCrumbs}.`);
+
+                updateOperations.push({
+                    updateOne: {
+                        filter: { islandId: island.islandId },
+                        update: {
+                            // also increment the `totalCookieCrumbsEarned` by `claimableCookieCrumbs`
+                            $inc: {
+                                'islandEarningStats.totalCookieCrumbsEarned': claimableCookieCrumbs,
+                                'islandEarningStats.claimableCookieCrumbs': claimableCookieCrumbs
+                            }
+                        }
+                    }
+                });
+            }
+
+            return updateOperations;
+        });
+
+        const bulkWriteOpsArrays = await Promise.all(bulkWriteOpsPromises);
+
+        const bulkWriteOps = bulkWriteOpsArrays.flat().filter(op => op);
+
+        // if there are no bulk write operations, return
+        if (bulkWriteOps.length === 0) {
+            console.error(`(updateClaimableCrumbs) No bulk write operations found.`);
+            return;
+        }
+
+        // execute the bulk write operations
+        await IslandModel.bulkWrite(bulkWriteOps);
+
+        console.log(`(updateClaimableCrumbs) All islands' claimableCookieCrumbs have been updated.`);
+    } catch (err: any) {
+        console.error(`(updateClaimableCrumbs) Error: ${err.message}`);
     }
 }
 
