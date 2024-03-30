@@ -6,7 +6,7 @@ export const RANDOMIZE_FOOD_FROM_QUEST = (): FoodType => {
 
     switch (true) {
         case rand < 46:
-            return FoodType.APPLE; // 45% chance
+            return FoodType.CANDY; // 45% chance
         case rand < 76:
             return FoodType.CHOCOLATE; // 30% chance
         case rand < 91:

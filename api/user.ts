@@ -1,15 +1,15 @@
-import mongoose from 'mongoose';
+
 import { ReturnValue, Status } from '../utils/retVal';
-import { UserSchema } from '../schemas/User';
 import { createUserWallet } from '../utils/wallet';
 import { createRaft } from './raft';
 import { generateObjectId } from '../utils/crypto';
 import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
-import { BitSchema } from '../schemas/Bit';
 import { RANDOMIZE_RARITY_FROM_ORB } from '../utils/constants/bitOrb';
-import { RANDOMIZE_GENDER } from '../utils/constants/bit';
+import { RANDOMIZE_GENDER, getBitStatsModifiersFromTraits, randomizeBitTraits } from '../utils/constants/bit';
 import { ObtainMethod } from '../models/obtainMethod';
 import { UserModel } from '../utils/constants/db';
+import { generateBarrenIsland } from './island';
+import { CityName } from '../models/city';
 
 /**
  * Twitter login logic. Creates a new user or simply log them in if they already exist.
@@ -46,31 +46,41 @@ export const handleTwitterLogin = async (twitterId: string): Promise<ReturnValue
             // randomize bit rarity; follows the same rarity as when obtaining a bit from a bit orb
             const rarity = RANDOMIZE_RARITY_FROM_ORB();
 
-            // add a free/rafting bit to the user's inventory (users get 1 for free when they sign up)
+            const traits = randomizeBitTraits(rarity);
+
+            const bitStatsModifiers = getBitStatsModifiersFromTraits(traits);
+
+            // add a free bit to the user's inventory (users get 1 for free when they sign up)
             const { status: bitStatus, message: bitMessage, data: bitData } = await addBitToDatabase({
                 bitId: bitIdData?.latestBitId + 1,
                 rarity,
                 gender: RANDOMIZE_GENDER(),
-                premium: false, // free/rafting bit, so not premium
+                premium: false, // free bit, so not premium
                 owner: userObjectId,
                 purchaseDate: Math.floor(Date.now() / 1000),
                 obtainMethod: ObtainMethod.SIGN_UP,
-                totalXCookiesSpent: 0,
                 placedIslandId: 0,
-                placedRaftId: data.raft.raftId, // automatically placed in the user's raft
+                lastRelocationTimestamp: 0,
                 currentFarmingLevel: 1, // starts at level 1
-                farmingStats: randomizeFarmingStats(rarity), // although rafting bits don't use farming stats, we still need to randomize it just in case for future events
-                bitStatsModifiers: {
-                    gatheringRateModifiers: [],
-                    earningRateModifiers: [],
-                    energyRateModifiers: []
-                }
+                traits,
+                farmingStats: randomizeFarmingStats(rarity), // although free bits don't use farming stats, we still need to randomize it just in case for future events
+                bitStatsModifiers
             });
 
             if (bitStatus !== Status.SUCCESS) {
                 return {
                     status: bitStatus,
                     message: `(handleTwitterLogin) Error from addBitToDatabase: ${bitMessage}`
+                }
+            }
+
+            // creates a new barren island for the user for free as well
+            const { status: islandStatus, message: islandMessage, data: islandData } = await generateBarrenIsland(userObjectId, ObtainMethod.SIGN_UP);
+
+            if (islandStatus !== Status.SUCCESS) {
+                return {
+                    status: islandStatus,
+                    message: `(handleTwitterLogin) Error from createBarrenIsland: ${islandMessage}`
                 }
             }
 
@@ -86,15 +96,25 @@ export const handleTwitterLogin = async (twitterId: string): Promise<ReturnValue
                 },
                 openedTweetIdsToday: [],
                 inventory: {
+                    weight: 0,
+                    maxWeight: 200,
                     xCookies: 0,
+                    cookieCrumbs: 0,
                     resources: [],
                     items: [],
                     foods: [],
                     raftId: data.raft.raftId,
-                    islandIds: [],
+                    // add the free barren island to the `islandIds` array
+                    islandIds: [islandData.island.islandId],
                     bitIds: [bitIdData?.latestBitId + 1],
                     totalBitOrbs: 0,
                     totalTerraCapsulators: 0
+                },
+                inGameData: {
+                    level: 1,
+                    location: CityName.HOME,
+                    travellingTo: null,
+                    destinationArrival: 0
                 }
             });
 

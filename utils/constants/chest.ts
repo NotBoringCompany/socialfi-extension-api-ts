@@ -1,5 +1,6 @@
 import { FoodType } from '../../models/food';
-import { ResourceType } from '../../models/resource';
+import { BarrenResource, ResourceRarity, ResourceType } from '../../models/resource';
+import { resources } from './resource';
 
 /** 
  * Returns an item from a chest to be given when the chest is opened.
@@ -22,7 +23,7 @@ export const RANDOMIZE_CHEST_ITEM = (): {
 
             switch (true) {
                 case foodRand < 66:
-                    return { item: FoodType.APPLE, amount: 1}
+                    return { item: FoodType.CANDY, amount: 1}
                 case foodRand < 91:
                     return { item: FoodType.CHOCOLATE, amount: 1}
                 case foodRand < 100:
@@ -34,21 +35,33 @@ export const RANDOMIZE_CHEST_ITEM = (): {
         case rand < 9985:
             // randomize the resource with probabilities
             // 45% chance of seaweed
-            // 35% chance of stone
-            // 15% chance of keratin
-            // 5% chance of silver
-            // 0% chance of diamond and relic
+            // 35% chance of a common resource of any type
+            // 15% chance of an uncommon resource of any type
+            // 5% chance of a rare resource of any type
+            // 0% chance of epic or rare resource
             const resourceRand = Math.floor(Math.random() * 100) + 1;
 
             switch (true) {
                 case resourceRand < 46:
-                    return { item: ResourceType.SEAWEED, amount: 3 }
+                    return { item: BarrenResource.SEAWEED, amount: 3 }
                 case resourceRand < 81:
-                    return { item: ResourceType.STONE, amount: 1 }
+                    // randomize a common resource from `resources` (there are 3)
+                    const commonResources = resources.filter(resource => resource.rarity === ResourceRarity.COMMON);
+                    const commonResource = commonResources[Math.floor(Math.random() * commonResources.length)];
+
+                    return { item: commonResource.type, amount: 1 }
                 case resourceRand < 96:
-                    return { item: ResourceType.KERATIN, amount: 1 }
+                    // randomize an uncommon resource from `resources` (there are 2)
+                    const uncommonResources = resources.filter(resource => resource.rarity === ResourceRarity.UNCOMMON);
+                    const uncommonResource = uncommonResources[Math.floor(Math.random() * uncommonResources.length)];
+
+                    return { item: uncommonResource.type, amount: 1 }
                 default:
-                    return { item: ResourceType.SILVER, amount: 1 }
+                    // randomize a rare resource from `resources` (there are 2)
+                    const rareResources = resources.filter(resource => resource.rarity === ResourceRarity.RARE);
+                    const rareResource = rareResources[Math.floor(Math.random() * rareResources.length)];
+
+                    return { item: rareResource.type, amount: 1 }
             }
         // 0.98% chance for xCookies
         case rand < 9999:

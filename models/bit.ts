@@ -15,7 +15,7 @@ export interface Bit {
     rarity: BitRarity;
     /** bit gender */
     gender: BitGender;
-    /** if this bit is a premium bit or not (which will allow them to be placed on islands. otherwise they can only be placed inside the raft) */
+    /** if this bit is a premium bit or not (premium will allow them to be placed in non-barren islands.) */
     premium: boolean;
     /** owner of this bit; equates to the user's object ID in the database */
     owner: string;
@@ -23,14 +23,14 @@ export interface Bit {
     purchaseDate: number;
     /** method of obtaining the bit */
     obtainMethod: ObtainMethod;
-    /** total xCookies spent for the bit (excl. purchase price). when evolving, this number will increase */
-    totalXCookiesSpent: number;
     /** if the bit is placed in an island, the island ID will be shown here. If not, this will be 0. */
     placedIslandId: number;
-    /** if the bit is placed in the user's raft, the raft ID will be shown here. if not, this will be 0. */
-    placedRaftId: number;
+    /** if the bit was relocated from a raft or an island, the relocation timestamp will be shown here to prevent constant relocation (cooldown). */
+    lastRelocationTimestamp: number;
     /** current farming level of the bit; pvx level will start from level 1 */
     currentFarmingLevel: number;
+    /** the bit's traits (up to 5 depending on rarity) */
+    traits: BitTrait[];
     /** farming stats of the bit, such as gathering rate, earning rate and energy */
     farmingStats: BitFarmingStats;
     /** stat modifiers for the bit's farming stats */
@@ -48,13 +48,32 @@ export enum BitRarity {
     LEGENDARY = 'Legendary',
 }
 
-/** numeric representation of `BitRarity` */
+/** Numeric representation of `BitRarity` */
 export const BitRarityNumeric: { [key in BitRarity]: number } = {
     [BitRarity.COMMON]: 0,
     [BitRarity.UNCOMMON]: 1,
     [BitRarity.RARE]: 2,
     [BitRarity.EPIC]: 3,
     [BitRarity.LEGENDARY]: 4
+}
+
+/**
+ * Lists all possible traits a Bit can have.
+ */
+export enum BitTrait {
+    PRODUCTIVE = 'Productive',
+    ENTHUSIASTIC = 'Enthusiastic',
+    FIT = 'Fit',
+    LAZY = 'Lazy',
+    UNINSPIRED = 'Uninspired',
+    OBESE = 'Obese',
+    STRONG = 'Strong',
+    NIBBLER = 'Nibbler',
+    TEAMWORKER = 'Teamworker',
+    WEAK = 'Weak',
+    LEADER = 'Leader',
+    CUTE = 'Cute',
+    GENIUS = 'Genius',
 }
 
 /**

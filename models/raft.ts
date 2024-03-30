@@ -1,5 +1,3 @@
-import { Resource } from './resource';
-
 /****************
  * RAFT-RELATED MODELS
  ****************/
@@ -14,24 +12,14 @@ export interface Raft {
     owner: string;
     /** current level of the raft */
     currentLevel: number;
-    /** the IDs of the bits that are placed (tied down) into this raft to gather seaweed */
-    placedBitIds: number[];
-    /** resource stats related to the raft, such as gathering rate */
-    raftResourceStats: RaftResourceStats;
+    /** the stats of the raft */
+    stats: RaftStats;
 }
 
 /**
- * Represents the gathering and resource stats of a raft.
- * 
- * NOTE: Currently, bits within rafts can only gather seaweed.
+ * Represents the stats of a raft.
  */
-export interface RaftResourceStats {
-    /** total seaweed gathered, incl. ones claimed already */
-    seaweedGathered: number;
-    /** gathered seaweed that are claimable but not claimed to the inventory yet (pending) */
-    claimableSeaweed: number;
-    /** start timestamp of gathering; will essentially equate to when the first bit is added */
-    gatheringStart: number;
-    /** the last timestamp of when `claimableSeaweed` was claimed */
-    lastClaimed: number;
+export interface RaftStats {
+    /** the base speed of the raft */
+    baseSpeed: number;
 }

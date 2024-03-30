@@ -3,7 +3,7 @@ import { FoodType } from '../../models/food';
 /** gets the amount of energy replenished from a food */
 export const FOOD_ENERGY_REPLENISHMENT = (food: FoodType) => {
     switch (food) {
-        case FoodType.APPLE:
+        case FoodType.CANDY:
             return 10;
         case FoodType.CHOCOLATE:
             return 25;

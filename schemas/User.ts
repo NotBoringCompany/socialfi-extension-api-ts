@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { generateObjectId } from '../utils/crypto';
 
 /**
  * User schema. Represents closely to the `User` interface in `models/user.ts`.
@@ -6,10 +7,11 @@ import mongoose from 'mongoose';
 export const UserSchema = new mongoose.Schema({
     _id: {
         type: String,
-        default: new mongoose.Types.ObjectId()
+        default: generateObjectId()
     },
     twitterId: String,
     wallet: Object,
     openedTweetIdsToday: Array,
-    inventory: Object
+    inventory: Object,
+    inGameData: Object
 })

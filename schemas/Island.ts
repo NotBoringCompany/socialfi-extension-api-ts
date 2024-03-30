@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { generateObjectId } from '../utils/crypto';
 
 /**
  * Island schema. Represents closely to the `Island` interface in `models/island.ts`.
@@ -6,7 +7,7 @@ import mongoose from 'mongoose';
 export const IslandSchema = new mongoose.Schema({
     _id: {
         type: String,
-        default: new mongoose.Types.ObjectId()
+        default: generateObjectId()
     },
     islandId: Number,
     type: String,
@@ -16,6 +17,7 @@ export const IslandSchema = new mongoose.Schema({
     currentLevel: Number,
     currentTax: Number,
     placedBitIds: Array,
+    traits: Array,
     islandResourceStats: Object,
     islandEarningStats: Object,
     islandStatsModifiers: Object

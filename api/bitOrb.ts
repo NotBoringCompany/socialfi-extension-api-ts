@@ -1,6 +1,6 @@
 import { Bit } from '../models/bit';
 import { ObtainMethod } from '../models/obtainMethod';
-import { RANDOMIZE_GENDER } from '../utils/constants/bit';
+import { RANDOMIZE_GENDER, getBitStatsModifiersFromTraits, randomizeBitTraits } from '../utils/constants/bit';
 import { RANDOMIZE_RARITY_FROM_ORB } from '../utils/constants/bitOrb';
 import { ReturnValue, Status } from '../utils/retVal';
 import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
@@ -105,6 +105,10 @@ export const summonBit = async (
         // randomize the gender 
         const gender = RANDOMIZE_GENDER();
 
+        // randomize the traits and the resulting stat modifiers for the bit
+        const traits = randomizeBitTraits(rarity);
+        const bitStatsModifiers = getBitStatsModifiersFromTraits(traits);
+
         // summon and return the Bit. DOESN'T SAVE TO DATABASE YET.
         const bit: Bit = {
             bitId: latestBitId + 1,
@@ -114,16 +118,12 @@ export const summonBit = async (
             owner,
             purchaseDate: Math.floor(Date.now() / 1000),
             obtainMethod: ObtainMethod.BIT_ORB,
-            totalXCookiesSpent: 0,
             placedIslandId: 0,
-            placedRaftId: 0,
+            lastRelocationTimestamp: 0,
             currentFarmingLevel: 1,
             farmingStats: randomizeFarmingStats(rarity),
-            bitStatsModifiers: {
-                gatheringRateModifiers: [],
-                earningRateModifiers: [],
-                energyRateModifiers: []
-            }
+            traits,
+            bitStatsModifiers
         }
 
         return {

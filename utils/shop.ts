@@ -13,20 +13,20 @@ export const shop: Shop = {
     },
     foods: [
         {
-            type: FoodType.APPLE,
-            xCookies: 5
+            type: FoodType.CANDY,
+            xCookies: 0.1
         },
         {
             type: FoodType.CHOCOLATE,
-            xCookies: 10
+            xCookies: 0.2
         },
         {
             type: FoodType.JUICE,
-            xCookies: 20
+            xCookies: 0.35
         },
         {
             type: FoodType.BURGER,
-            xCookies: 35
+            xCookies: 0.6
         }
     ]
 }

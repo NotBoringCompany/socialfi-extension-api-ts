@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { generateObjectId } from '../utils/crypto';
 
 /**
  * Bit schema. Represents closely to the `Bit` interface in `models/bit.ts`.
@@ -6,7 +7,7 @@ import mongoose from 'mongoose';
 export const BitSchema = new mongoose.Schema({
     _id: {
         type: String,
-        default: new mongoose.Types.ObjectId()
+        default: generateObjectId()
     },
     bitId: Number,
     rarity: String,
@@ -15,10 +16,9 @@ export const BitSchema = new mongoose.Schema({
     owner: String,
     purchaseDate: Number,
     obtainMethod: String,
-    totalXCookiesSpent: Number,
     placedIslandId: Number,
-    placedRaftId: Number,
+    lastRelocationTimestamp: Number,
     currentFarmingLevel: Number,
     farmingStats: Object,
-    bitStatsModifiers: Object
+    bitStatsModifiers: Object,
 })

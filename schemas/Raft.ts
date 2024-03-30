@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { generateObjectId } from '../utils/crypto';
 
 /**
  * Raft schema. Represents closely to the `Raft` interface in `models/raft.ts`.
@@ -6,11 +7,10 @@ import mongoose from 'mongoose';
 export const RaftSchema = new mongoose.Schema({
     _id: {
         type: String,
-        default: new mongoose.Types.ObjectId()
+        default: generateObjectId()
     },
     raftId: Number,
     owner: String,
     currentLevel: Number,
-    placedBitIds: Array,
-    raftResourceStats: Object,
+    stats: Object
 })

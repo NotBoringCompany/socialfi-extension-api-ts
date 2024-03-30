@@ -7,3 +7,14 @@ export interface Modifier {
     /** value of the modifier */
     value: number;
 }
+
+/**
+ * Represents the modifier effect of a Bit's trait.
+ */
+export interface BitTraitModifier {
+    bitGatheringRate?: Modifier;
+    bitEarningRate?: Modifier;
+    energyDepletionRate?: Modifier;
+    islandGatheringRate?: Modifier;
+    islandEarningRate?: Modifier;
+}

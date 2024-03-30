@@ -1,6 +1,7 @@
 import { Prize } from '../../models/lottery';
-import { ResourceType } from '../../models/resource';
+import { ResourceRarity, ResourceType } from '../../models/resource';
 import { countMatchingNormalNumbers, isSpecialNumberCorrect } from '../lottery';
+import { resources } from './resource';
 
 /**
  * Calculates the cost of a lottery ticket based on the resource type.
@@ -8,19 +9,28 @@ import { countMatchingNormalNumbers, isSpecialNumberCorrect } from '../lottery';
  * Returns the cost in x amount of the resource type.
  */
 export const lotteryTicketCost = (resourceType: ResourceType): number => {
-    switch (resourceType) {
-        case ResourceType.STONE:
+    // check if the resource type is either common, uncommon, rare, epic or legendary
+    // from the `resources` array
+    const resource = resources.find(r => r.type === resourceType);
+
+    if (!resource) {
+        throw new Error(`(lotteryTicketCost) Invalid resource type: ${resourceType.toString()}`);
+    }
+
+    switch (resource.rarity) {
+        case ResourceRarity.COMMON:
             return 1;
-        case ResourceType.KERATIN:
-            return 1/3;
-        case ResourceType.SILVER:
-            return 1/7;
-        case ResourceType.DIAMOND:
-            return 1/25;
-        case ResourceType.RELIC:
-            return 1/75;
+        case ResourceRarity.UNCOMMON:
+            return 1 / 3;
+        case ResourceRarity.RARE:
+            return 1 / 7;
+        case ResourceRarity.EPIC:
+            return 1 / 25;
+        case ResourceRarity.LEGENDARY:
+            return 1 / 75;
         default:
-            throw new Error(`(lotteryTicketCost) Invalid resource type: ${resourceType.toString()}`)
+            throw new Error(`(lotteryTicketCost) Invalid resource rarity: ${resource.rarity}`);
+    
     }
 }
 

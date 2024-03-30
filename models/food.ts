@@ -18,7 +18,7 @@ export interface Food {
  * Represents the type of food.
  */
 export enum FoodType {
-    APPLE = 'Apple',
+    CANDY = 'Candy',
     CHOCOLATE = 'Chocolate',
     JUICE = 'Juice',
     BURGER = 'Burger',

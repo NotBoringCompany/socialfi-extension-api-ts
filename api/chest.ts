@@ -1,8 +1,9 @@
 import { ReturnValue, Status } from '../utils/retVal';
 import { RANDOMIZE_CHEST_ITEM } from '../utils/constants/chest';
 import { Food, FoodType } from '../models/food';
-import { Resource, ResourceType } from '../models/resource';
+import { BarrenResource, CombinedResources, ExtendedResource, Resource, ResourceType } from '../models/resource';
 import { UserModel } from '../utils/constants/db';
+import { resources } from '../utils/constants/resource';
 
 /**
  * Opens a chest found across Twitter's timeline, randomizing a chest item and adding it to the user's inventory.
@@ -40,7 +41,7 @@ export const openChest = async (twitterId: string, tweetId: string): Promise<Ret
 
         // check which category the `item` falls under
         const isFood = Object.values(FoodType).includes(item as FoodType);
-        const isResource = Object.values(ResourceType).includes(item as ResourceType);
+        const isResource = Object.values(CombinedResources).includes(item as ResourceType);
         const isXCookies = item === 'xCookies';
         const isBitOrb = item === 'Bit Orb';
         const isTerraCapsulator = item === 'Terra Capsulator';
@@ -67,7 +68,10 @@ export const openChest = async (twitterId: string, tweetId: string): Promise<Ret
             }
         // check if the user already has the resource, if yes, increment the amount, if not, add it to the user's inventory
         } else if (isResource) {
-            const existingResourceIndex = (user.inventory?.resources as Resource[]).findIndex(resource => resource.type === item);
+            const existingResourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(resource => resource.type === item);
+
+            // get the full resource based on the 'item' (at this point, the item is a ResourceType)
+            const resource: Resource = resources.find(resource => resource.type === item as ResourceType);
 
             if (existingResourceIndex !== -1) {
                 await UserModel.updateOne({ twitterId }, {
@@ -79,7 +83,7 @@ export const openChest = async (twitterId: string, tweetId: string): Promise<Ret
                 await UserModel.updateOne({ twitterId }, {
                     $push: {
                         'inventory.resources': {
-                            type: item,
+                            ...resource,
                             amount
                         }
                     }

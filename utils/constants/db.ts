@@ -5,6 +5,8 @@ import { IslandSchema } from '../../schemas/Island';
 import { RaftSchema } from '../../schemas/Raft';
 import { CookieDepositSchema, CookieWithdrawalSchema } from '../../schemas/Cookie';
 import { QuestSchema } from '../../schemas/Quest';
+import { CitySchema } from '../../schemas/City';
+import { LeaderboardSchema } from '../../schemas/Leaderboard';
 
 export const UserModel = mongoose.model('Users', UserSchema, 'Users');
 export const BitModel = mongoose.model('Bits', BitSchema, 'Bits');
@@ -13,3 +15,5 @@ export const RaftModel = mongoose.model('Rafts', RaftSchema, 'Rafts');
 export const CookieDepositModel = mongoose.model('CookieDeposits', CookieDepositSchema, 'CookieDeposits');
 export const CookieWithdrawalModel = mongoose.model('CookieWithdrawals', CookieWithdrawalSchema, 'CookieWithdrawals');
 export const QuestModel = mongoose.model('Quests', QuestSchema, 'Quests');
+export const CityModel = mongoose.model('Cities', CitySchema, 'Cities');
+export const LeaderboardModel = mongoose.model('Leaderboards', LeaderboardSchema, 'Leaderboards');

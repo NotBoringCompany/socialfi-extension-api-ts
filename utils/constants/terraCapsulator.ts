@@ -3,7 +3,7 @@ import { IslandType } from '../../models/island';
 /**
  * Gets the Island's type based on the probability of obtaining it, depending on `rand`, which is a number from 1 to 100
  */
-export const RANDOMIZE_TYPE_FROM_CAPSULATOR = (): IslandType => {
+export const randomizeTypeFromCapsulator = (): IslandType => {
     const rand = Math.floor(Math.random() * 100) + 1;
 
     switch (true) {

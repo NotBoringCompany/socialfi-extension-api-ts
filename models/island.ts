@@ -30,6 +30,13 @@ export interface Island {
     currentTax: number;
     /** the IDs of the bits that are placed (tied down) into this island to gather and earn */
     placedBitIds: number[];
+    /** 
+     * 5 island traits for each resource rarity
+     * e.g. if mineral rich, fertile, fertile, fertile, aquifer, then:
+     * common = mineral rich, uncommon = fertile, rare = fertile, epic = fertile, legendary = aquifer
+     * so if a common resource is gathered, it will drop a mineral rich resource of common rarity
+     */
+    traits: IslandTrait[];
     /** resource stats related to the island, such as gathering rate */
     islandResourceStats: IslandResourceStats;
     /** earning stats related to the island, such as earning rate */
@@ -42,11 +49,25 @@ export interface Island {
  * Represents the type of island.
  */
 export enum IslandType {
+    // for free to play players, generating very small amount of (possibly common) resources
+    BARREN = 'Barren',
     PRIMAL_ISLES = 'Primal Isles',
     VERDANT_ISLES = 'Verdant Isles',
     EXOTIC_ISLES = 'Exotic Isles',
     CRYSTAL_ISLES = 'Crystal Isles',
     CELESTIAL_ISLES = 'Celestial Isles',
+}
+
+/**
+ * Represents the trait of an island.
+ */
+export enum IslandTrait {
+    // produce mineral ores
+    MINERAL_RICH = 'Mineral Rich',
+    // produce fruits
+    FERTILE = 'Fertile',
+    // produce liquids
+    AQUIFER = 'Aquifer',
 }
 
 /**
@@ -76,22 +97,36 @@ export interface IslandResourceStats {
 
 /**
  * Represents the earning stats of an island.
- * 
- * Earning rate will not be calculated here due to complexity.
  */
 export interface IslandEarningStats {
-    /** total xCookies spent on this island (INCL. BITS!); will keep increasing when upgrading the island and bits placed inside */
+    /** total xCookies spent for this island (a % of the xCookies spent for a terra cap will go here. the rest comes from island upgrades) */
     totalXCookiesSpent: number;
+    /** total xCookies earnable from this island. */
+    totalXCookiesEarnable: number;
     /** total xCookies earned, incl. ones claimed already. end amount should equal total xCookies spent (even with tax since it's not calc. here) */
     totalXCookiesEarned: number;
     /** claimable xCookies that haven't been claimed yet to the inventory */
     claimableXCookies: number;
-    /** start timestamp of earning; 0 if not started yet */
+    /**  total cookie crumbs spent on this island */
+    totalCookieCrumbsSpent: number;
+    /** total cookie crumbs earnble on this island */
+    totalCookieCrumbsEarnable: number;
+    /** total cookie crumbs earned, incl. the ones claimed already. */
+    totalCookieCrumbsEarned: number;
+    /** claimable cookie crumbs that haven't been claimed yet to the inventory */
+    claimableCookieCrumbs: number;
+    /** start timestamp of earning (xCookies); 0 if not started yet */
     earningStart: number;
-    /** end timestamp of earning; 0 if not ended yet */
+    /**  start timestamp of earning (cookie crumbs); 0 if not started yet; starts after gathering of resources and earning of xCookies are completed */
+    crumbsEarningStart: number;
+    /** end timestamp of earning (xCookies); 0 if not ended yet */
     earningEnd: number;
+    /** end timestamp of earning (cookie crumbs); 0 if not ended yet */
+    crumbsEarningEnd: number;
     /** timestamp of when `claimableXCookies` were last claimed */
     lastClaimed: number;
+    /** timestamp of when `claimableCookieCrumbs` were last claimed */
+    crumbsLastClaimed: number;
 }
 
 /** 
@@ -110,20 +145,21 @@ export interface IslandStatsModifiers {
 }
 
 /**
- * Represents the chances to drop each of the resources when gathering 1 resource from an island.
- *
+ * Represents the chances to drop a resource of a specific rarity of a specific line.
+ * 
+ * For example, if the number within `uncommon` hits, then an uncommon resource of a specific line (depending on the island's trait for an uncommon resource) will be dropped.
  */
 export interface ResourceDropChance {
-    /** the chance to drop stone */
-    stone: number;
-    /** the chance to drop keratin */
-    keratin: number;
-    /** the chance to drop silver */
-    silver: number;
-    /** the chance to drop diamond */
-    diamond: number;
-    /** the chance to drop relic */
-    relic: number;
+    /** chance to drop a common resource of a specific line */
+    common: number;
+    /** chance to drop an uncommon resource of a specific line */
+    uncommon: number;
+    /** chance to drop a rare resource of a specific line */
+    rare: number;
+    /** chance to drop an epic resource of a specific line */
+    epic: number;
+    /** chance to drop a legendary resource of a specific line */
+    legendary: number;
 }
 
 /**
@@ -144,6 +180,4 @@ export enum RateType {
 export interface RarityDeviationReduction {
     /** the reduction in gathering rate (by a fixed %)  */
     gatheringRateReduction: number;
-    /** the reduction in resource cap (by a fixed %) */
-    resourceCapReduction: number;
 }

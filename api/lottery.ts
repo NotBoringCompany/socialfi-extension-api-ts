@@ -9,7 +9,7 @@ import { lotteryPrizeTier, lotteryTicketCost } from '../utils/constants/lottery'
 import { UserSchema } from '../schemas/User';
 import { getLotteryContractBalance } from '../utils/web3';
 import { LOTTERY_CONTRACT, LOTTERY_CONTRACT_USER } from '../utils/constants/web3';
-import { Resource, ResourceType } from '../models/resource';
+import { ExtendedResource, Resource, ResourceType } from '../models/resource';
 import { ethers } from 'ethers';
 
 /**
@@ -40,7 +40,7 @@ export const purchaseTicket = async (
         const ticketCost = lotteryTicketCost(resourceType);
 
         // check if user has enough resources
-        const userResources: Resource[] = user.inventory?.resources;
+        const userResources: ExtendedResource[] = user.inventory?.resources;
 
         // find the resource that matches the `resourceType`
         const resource = userResources?.find(r => r.type === resourceType);

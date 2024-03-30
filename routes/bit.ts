@@ -1,43 +1,15 @@
 import express from 'express';
-import { calcBitCurrentRate, evolveBit, evolveBitInRaft, feedBit, getBits } from '../api/bit';
+import { calcBitCurrentRate, evolveBit, feedBit, getBits } from '../api/bit';
 import { FoodType } from '../models/food';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { RateType } from '../models/island';
 import mongoose from 'mongoose';
 import { BitSchema } from '../schemas/Bit';
-import { BIT_EVOLUTION_COST, BIT_RAFT_EVOLUTION_COST } from '../utils/constants/bit';
+import { BIT_EVOLUTION_COST } from '../utils/constants/bit';
 import { BitModel } from '../utils/constants/db';
 
 const router = express.Router();
-
-router.post('/evolve_bit_in_raft', async (req, res) => {
-    const { bitId } = req.body;
-
-    try {
-        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'evolve_bit_in_raft');
-
-        if (validateStatus !== Status.SUCCESS) {
-            return res.status(validateStatus).json({
-                status: validateStatus,
-                message: validateMessage
-            })
-        }
-
-        const { status, message, data } = await evolveBitInRaft(validateData?.twitterId, bitId);
-
-        return res.status(status).json({
-            status,
-            message,
-            data
-        });
-    } catch (err: any) {
-        return res.status(500).json({
-            status: 500,
-            message: err.message
-        })
-    }
-});
 
 router.post('/evolve_bit', async (req, res) => {
     const { bitId } = req.body;
@@ -302,36 +274,6 @@ router.get('/get_evolution_cost/:bitId', async (req, res) => {
         return res.status(500).json({
             status: 500,
             message: `(get_evolution_cost) ${err.message}`
-        })
-    }
-})
-
-router.get('/get_evolution_cost_raft/:bitId', async (req, res) => {
-    const { bitId } = req.params;
-
-    try {
-        const bit = await BitModel.findOne({ bitId: parseInt(bitId) }).lean();
-
-        if (!bit) {
-            return res.status(404).json({
-                status: 404,
-                message: `(get_evolution_cost_raft) Bit with ID ${bitId} not found.`
-            });
-        }
-
-        const evolutionCost = BIT_RAFT_EVOLUTION_COST(bit.currentFarmingLevel);
-
-        return res.status(200).json({
-            status: 200,
-            message: `(get_evolution_cost_raft) Successfully retrieved raft evolution cost for bit with ID ${bitId}.`,
-            data: {
-                evolutionCost
-            }
-        });
-    } catch (err: any) {
-        return res.status(500).json({
-            status: 500,
-            message: `(get_evolution_cost_raft) ${err.message}`
         })
     }
 })

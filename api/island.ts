@@ -1,16 +1,97 @@
 import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
 import { IslandSchema } from '../schemas/Island';
-import { Island, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
-import { BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLUTION_COST, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN, X_COOKIE_TAX } from '../utils/constants/island';
+import { Island, IslandStatsModifiers, IslandTrait, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
+import { BARREN_ISLE_COMMON_DROP_CHANCE, BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLUTION_COST, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN, X_COOKIE_TAX, randomizeIslandTraits } from '../utils/constants/island';
 import { calcBitCurrentRate, getBits } from './bit';
-import { Resource, ResourceType } from '../models/resource';
+import { BarrenResource, ExtendedResource, Resource, ResourceLine, ResourceRarity, ResourceRarityNumeric, ResourceType, SimplifiedResource } from '../models/resource';
 import { UserSchema } from '../schemas/User';
 import { Modifier } from '../models/modifier';
 import { BitSchema } from '../schemas/Bit';
-import { Bit, BitRarity, BitRarityNumeric } from '../models/bit';
+import { Bit, BitRarity, BitRarityNumeric, BitStatsModifiers, BitTrait } from '../models/bit';
 import { generateObjectId } from '../utils/crypto';
 import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
+import { ObtainMethod } from '../models/obtainMethod';
+import { RELOCATION_COOLDOWN } from '../utils/constants/bit';
+import { User } from '../models/user';
+import { getResource, resources } from '../utils/constants/resource';
+
+/**
+ * Generates a barren island. This is called when a user signs up or when a user obtains and opens a bottled message.
+ */
+export const generateBarrenIsland = async (
+    userId: string,
+    obtainMethod: ObtainMethod.SIGN_UP | ObtainMethod.BOTTLED_MESSAGE
+): Promise<ReturnValue> => {
+    try {
+        const { status, message, data } = await getLatestIslandId();
+
+        if (status !== Status.SUCCESS) {
+            return {
+                status,
+                message: `(createBarrenIsland) Error from getLatestIslandId: ${message}`
+            }
+        }
+
+        const newIsland = new IslandModel({
+            _id: generateObjectId(),
+            islandId: data.latestIslandId + 1,
+            type: IslandType.BARREN,
+            owner: userId,
+            purchaseDate: Math.floor(Date.now() / 1000),
+            obtainMethod,
+            currentLevel: 1,
+            currentTax: 0,
+            placedBitIds: [],
+            traits: randomizeIslandTraits(),
+            islandResourceStats: {
+                baseResourceCap: randomizeBaseResourceCap(IslandType.BARREN),
+                resourcesGathered: [],
+                claimableResources: [],
+                gatheringStart: 0,
+                gatheringEnd: 0,
+                lastClaimed: 0,
+                gatheringProgress: 0
+            },
+            islandEarningStats: {
+                totalXCookiesSpent: 0,
+                totalXCookiesEarnable: 0,
+                totalXCookiesEarned: 0,
+                claimableXCookies: 0,
+                totalCookieCrumbsSpent: 0,
+                totalCookieCrumbsEarnable: 0,
+                totalCookieCrumbsEarned: 0,
+                claimableCookieCrumbs: 0,
+                earningStart: 0,
+                crumbsEarningStart: 0,
+                earningEnd: 0,
+                crumbsEarningEnd: 0,
+                lastClaimed: 0,
+                crumbsLastClaimed: 0
+            },
+            islandStatsModifiers: {
+                resourceCapModifiers: [],
+                gatheringRateModifiers: [],
+                earningRateModifiers: []
+            }
+        });
+
+        await newIsland.save();
+
+        return {
+            status: Status.SUCCESS,
+            message: `(createBarrenIsland) Barren island created.`,
+            data: {
+                island: newIsland
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(createBarrenIsland) Error: ${err.message}`
+        }
+    }
+}
 
 /**
  * Gets one or multiple islands based on their IDs.
@@ -35,11 +116,11 @@ export const getIslands = async (islandIds: number[]): Promise<ReturnValue> => {
 }
 
 /**
- * (User) Evolves an island (levelling it up).
+ * (User) Evolves an island (levelling it up). Allows either xCookies or cookie crumbs.
  * 
  * NOTE: Requires `twitterId` which is fetched via `req.user`, automatically giving us the user's Twitter ID. This will check if the user who calls this function owns the twitter ID that owns the island.
  */
-export const evolveIsland = async (twitterId: string, islandId: number): Promise<ReturnValue> => {
+export const evolveIsland = async (twitterId: string, islandId: number, choice: 'xCookies' | 'Cookie Crumbs'): Promise<ReturnValue> => {
     try {
         const [user, island] = await Promise.all([
             UserModel.findOne({ twitterId }).lean(),
@@ -81,6 +162,14 @@ export const evolveIsland = async (twitterId: string, islandId: number): Promise
             }
         }
 
+        // check if island is barren. barren islands CANNOT be evolved.
+        if (island.type === IslandType.BARREN) {
+            return {
+                status: Status.ERROR,
+                message: `(evolveIsland) Barren islands cannot be evolved.`
+            }
+        }
+
         // check if the island is already max level, if it is, return an error.
         if (island.currentLevel >= MAX_ISLAND_LEVEL) {
             return {
@@ -89,37 +178,64 @@ export const evolveIsland = async (twitterId: string, islandId: number): Promise
             }
         }
 
-        // check if the user has enough xCookies
-        const userXCookies = user.inventory?.xCookies;
+        // if choice to evolve is using xCookies
+        if (choice === 'xCookies') {
+            // check if the user has enough xCookies
+            const userXCookies: number = user.inventory?.xCookies;
 
-        // calculate the cost to evolve the island based on its current level
-        const requiredXCookies = ISLAND_EVOLUTION_COST(<IslandType>island.type, island.currentLevel);
+            // calculate the cost to evolve the island based on its current level
+            const { xCookies: requiredXCookies } = ISLAND_EVOLUTION_COST(<IslandType>island.type, island.currentLevel);
 
-        // if not enough, return an error.
-        if (userXCookies < requiredXCookies) {
-            return {
-                status: Status.ERROR,
-                message: `(evolveIsland) Not enough cookies to evolve island.`
+            // if not enough, return an error.
+            if (userXCookies < requiredXCookies) {
+                return {
+                    status: Status.ERROR,
+                    message: `(evolveIsland) Not enough xCookies to evolve island.`
+                }
             }
-        }
 
-        // deduct the xCookies from the user
-        userUpdateOperations.$inc['inventory.xCookies'] = -requiredXCookies;
+            // deduct the xCookies from the user
+            userUpdateOperations.$inc['inventory.xCookies'] = -requiredXCookies;
 
-        // firstly, check if at this moment, the totalXCookiesSpent is 0.
-        // because if it is, it means that earning hasn't started yet, meaning that after evolving the island, `earningStart` will be set to current timestamp, and earning will start.
-        const totalXCookiesSpentIsZero = island.islandEarningStats?.totalXCookiesSpent === 0;
+            // firstly, check if at this moment, the totalXCookiesSpent is 0.
+            // because if it is, it means that earning hasn't started yet, meaning that after evolving the island, `earningStart` will be set to current timestamp, and earning will start.
+            const totalXCookiesEarnableIsZero = island.islandEarningStats?.totalXCookiesEarnable === 0;
 
-        // if totalXCookies spent is 0, evolve the island, increment the totalXCookiesSpent of the island by `requiredXCookies` and also set the `earningStart` to now.
-        if (totalXCookiesSpentIsZero) {
-            islandUpdateOperations.$inc['currentLevel'] = 1;
-            islandUpdateOperations.$inc['islandEarningStats.totalXCookiesSpent'] = requiredXCookies;
-            islandUpdateOperations.$set['islandEarningStats.earningStart'] = Math.floor(Date.now() / 1000);
+            // if totalXCookies spent is 0, evolve the island, increment the totalXCookiesSpent and totalXCookiesEarnable of the island by `requiredXCookies` and also set the `earningStart` to now.
+            if (totalXCookiesEarnableIsZero) {
+                islandUpdateOperations.$inc['currentLevel'] = 1;
+                islandUpdateOperations.$inc['islandEarningStats.totalXCookiesSpent'] = requiredXCookies;
+                islandUpdateOperations.$inc['islandEarningStats.totalXCookiesEarnable'] = requiredXCookies;
+                islandUpdateOperations.$set['islandEarningStats.earningStart'] = Math.floor(Date.now() / 1000);
 
-            // otherwise, only evolve the island and increment the totalXCookiesSpent.
+                // otherwise, only evolve the island and increment the totalXCookiesSpent and totalXCookiesEarnable by `requiredXCookies`.
+            } else {
+                islandUpdateOperations.$inc['currentLevel'] = 1;
+                islandUpdateOperations.$inc['islandEarningStats.totalXCookiesSpent'] = requiredXCookies;
+                islandUpdateOperations.$inc['islandEarningStats.totalXCookiesEarnable'] = requiredXCookies;
+            }
+            // if choice to evolve is using cookie crumbs
         } else {
+            const userCookieCrumbs: number = user.inventory?.cookieCrumbs;
+
+            // calculate the cost to evolve the island based on its current level
+            const { cookieCrumbs: requiredCookieCrumbs } = ISLAND_EVOLUTION_COST(<IslandType>island.type, island.currentLevel);
+
+            // if not enough, return an error.
+            if (userCookieCrumbs < requiredCookieCrumbs) {
+                return {
+                    status: Status.ERROR,
+                    message: `(evolveIsland) Not enough Cookie Crumbs to evolve island.`
+                }
+            }
+
+            // deduct the cookie crumbs from the user
+            userUpdateOperations.$inc['inventory.cookieCrumbs'] = -requiredCookieCrumbs;
+
+            // since users wont get back cookie crumbs spent, no need to do any sort of logic for earnable cookie crumbs.
+            // we just simply evolve the island and increment `totalCookieCrumbsSpent`
+            islandUpdateOperations.$inc['islandEarningStats.totalCookieCrumbsSpent'] = requiredCookieCrumbs;
             islandUpdateOperations.$inc['currentLevel'] = 1;
-            islandUpdateOperations.$inc['islandEarningStats.totalXCookiesSpent'] = requiredXCookies;
         }
 
         // execute the update operations
@@ -151,9 +267,9 @@ export const evolveIsland = async (twitterId: string, islandId: number): Promise
 export const placeBit = async (twitterId: string, islandId: number, bitId: number): Promise<ReturnValue> => {
     try {
         const [user, bit, island] = await Promise.all([
-            UserModel.findOne({ twitterId }).lean(),
-            BitModel.findOne({ bitId }).lean(),
-            IslandModel.findOne({ islandId }).lean(),
+            UserModel.findOne({ twitterId }).lean() as Promise<User>,
+            BitModel.findOne({ bitId }).lean() as Promise<Bit>,
+            IslandModel.findOne({ islandId }).lean() as Promise<Island>
         ]);
 
         const bitUpdateOperations = {
@@ -231,19 +347,158 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
             }
         }
 
-        // check if this bit is premium
-        if (!bit.premium) {
+        // check if this bit is premium and the island is barren. if both are false, return an error.
+        if (!bit.premium && island.type !== IslandType.BARREN) {
             return {
                 status: Status.ERROR,
-                message: `(placeBit) Non-premium bits cannot be placed on islands.`
+                message: `(placeBit) Non-premium bits cannot be placed on non-barren islands.`
             }
         }
 
-        // check if the bit is already placed on an island or a raft
-        if (bit.placedIslandId !== 0 && bit.placedRaftId !== 0) {
+        // check if this bit is already placed on this island. if yes, return an error.
+        if (bit.placedIslandId === islandId) {
             return {
                 status: Status.ERROR,
-                message: `(placeBit) Bit is already placed on an island.`
+                message: `(placeBit) Bit is already placed on this island.`
+            }
+        }
+
+        // check if the bit is already placed on an island.
+        // if yes, we will relocate them here automatically, assuming their moving cooldown has passed.
+        // we do the following checks:
+        // 1. if cooldown is 0 or has passed, relocate the bit.
+        // when relocating bit, no need to change `placedIslandId` for the bit and `placedBitIds` for this island because it's done at the end. BUT:
+        // 2. we need to remove the bit's ID from the previous island's `placedBitIds`.
+        // 3. after removing the bit ID, we also need to remove any modifiers that has to do with the current bit's traits from the island's and its bits' modifiers.
+        // e.g. if Bit 40 was placed in Island 1, all other bits that has the same or lesser rarity than Bit 40 will get +5% gathering and earning rate.
+        // if Bit 40 is relocated to Island 2, we need to remove all the modifiers that has to do with Bit 40's traits from Island 1 and its bits (meaning that Island 1's bits will no longer get the +5% boost from Bit 40).
+        // 4. when relocating bit, set the lastRelocationTimestamp to now.
+        if (bit.placedIslandId !== 0) {
+            // if cooldown has placed, do multiple things and relocate the bit
+            if (bit.lastRelocationTimestamp + RELOCATION_COOLDOWN < Math.floor(Date.now() / 1000)) {
+                // get the previous island ID from the bit
+                const prevIslandId = bit.placedIslandId;
+
+                const prevIsland = await IslandModel.findOne({ islandId: prevIslandId }).lean();
+
+                const prevIslandUpdateOperations = {
+                    $pull: {},
+                    $inc: {},
+                    $set: {},
+                    $push: {}
+                }
+
+                const prevIslandBitsUpdateOperations: Array<{
+                    bitId: number,
+                    updateOperations: {
+                        $pull: {},
+                        $inc: {},
+                        $set: {},
+                        $push: {}
+                    }
+                }> = [];
+
+                // remove the bit ID from the previous island's `placedBitIds`
+                prevIslandUpdateOperations.$pull['placedBitIds'] = bit.bitId;
+
+                // get the prev island's bits
+                const prevIslandBits = await BitModel.find({ bitId: { $in: prevIsland.placedBitIds } }).lean();
+
+                // loop through each bit and see if they have modifiers that include 'Bit ID #{bit id to be removed from this island}' as the origin
+                // if they do, remove the modifier from the bit
+                for (const prevIslandBit of prevIslandBits) {
+                    // loop through each modifier and see if the origin includes the bit ID to be removed
+                    const { gatheringRateModifiers, earningRateModifiers, energyRateModifiers }: BitStatsModifiers = prevIslandBit.bitStatsModifiers;
+
+                    for (const modifier of gatheringRateModifiers) {
+                        if (modifier.origin.includes(`Bit ID #${bit.bitId}`)) {
+                            prevIslandBitsUpdateOperations.push({
+                                bitId: prevIslandBit.bitId,
+                                updateOperations: {
+                                    $pull: {
+                                        'bitStatsModifiers.gatheringRateModifiers': modifier
+                                    },
+                                    $inc: {},
+                                    $set: {},
+                                    $push: {}
+                                }
+                            });
+                        }
+                    }
+
+                    for (const modifier of earningRateModifiers) {
+                        if (modifier.origin.includes(`Bit ID #${bit.bitId}`)) {
+                            prevIslandBitsUpdateOperations.push({
+                                bitId: prevIslandBit.bitId,
+                                updateOperations: {
+                                    $pull: {
+                                        'bitStatsModifiers.earningRateModifiers': modifier
+                                    },
+                                    $inc: {},
+                                    $set: {},
+                                    $push: {}
+                                }
+                            });
+                        }
+                    }
+
+                    for (const modifier of energyRateModifiers) {
+                        if (modifier.origin.includes(`Bit ID #${bit.bitId}`)) {
+                            prevIslandBitsUpdateOperations.push({
+                                bitId: prevIslandBit.bitId,
+                                updateOperations: {
+                                    $pull: {
+                                        'bitStatsModifiers.energyRateModifiers': modifier
+                                    },
+                                    $inc: {},
+                                    $set: {},
+                                    $push: {}
+                                }
+                            });
+                        }
+                    }
+                }
+
+                // remove any modifiers from the island that contain the bit ID to be removed
+                const { resourceCapModifiers, gatheringRateModifiers, earningRateModifiers }: IslandStatsModifiers = prevIsland.islandStatsModifiers;
+
+                for (const modifier of resourceCapModifiers) {
+                    if (modifier.origin.includes(`Bit ID #${bit.bitId}`)) {
+                        prevIslandUpdateOperations.$pull['islandStatsModifiers.resourceCapModifiers'] = modifier;
+                    }
+                }
+
+                for (const modifier of gatheringRateModifiers) {
+                    if (modifier.origin.includes(`Bit ID #${bit.bitId}`)) {
+                        prevIslandUpdateOperations.$pull['islandStatsModifiers.gatheringRateModifiers'] = modifier;
+                    }
+                }
+
+                for (const modifier of earningRateModifiers) {
+                    if (modifier.origin.includes(`Bit ID #${bit.bitId}`)) {
+                        prevIslandUpdateOperations.$pull['islandStatsModifiers.earningRateModifiers'] = modifier;
+                    }
+                }
+
+
+                // execute the update operations
+                const prevBitPromises = prevIslandBitsUpdateOperations.map(async op => {
+                    return BitModel.updateOne({ bitId: op.bitId }, op.updateOperations);
+                });
+
+                // remove the modifiers that has to do with the bit to be removed from the prev island and the bits in the prev island
+                await Promise.all([
+                    IslandModel.updateOne({ islandId: prevIslandId }, prevIslandUpdateOperations),
+                    ...prevBitPromises
+                ]);
+
+                // set the lastRelocationTimestamp to now
+                bitUpdateOperations.$set['lastRelocationTimestamp'] = Math.floor(Date.now() / 1000);
+            } else {
+                return {
+                    status: Status.ERROR,
+                    message: `(placeBit) Bit ID #${bit.bitId}'s relocation cooldown has not passed.`
+                }
             }
         }
 
@@ -296,32 +551,6 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
             islandUpdateOperations.$set[`islandStatsModifiers.gatheringRateModifiers.${gatheringRateModifierIndex}.value`] = newValue;
         }
 
-        // check for previous `resourceCapModifiers` from the island's `IslandStatsModifiers`
-        // by searching for an origin of `Rarity Deviation` on `resourceCapModifiers`
-        // if not found, create; if found, reduce the value by the reduction amount
-        const resourceCapModifierIndex = (island.islandStatsModifiers?.resourceCapModifiers as Modifier[]).findIndex(modifier => modifier.origin === 'Rarity Deviation');
-
-        if (resourceCapModifierIndex === -1) {
-            // create a new modifier
-            const newResourceCapModifier: Modifier = {
-                origin: 'Rarity Deviation',
-                // since the value is based on a scale of 0 - 1 (multiplier), divide the reduction amount by 100
-                value: 1 - (rarityDeviationReductions.resourceCapReduction / 100)
-            }
-
-            // if modifier value is NOT 1, add the new modifier to the island's `resourceCapModifiers` (1 means no change in resource cap, so no need to add it to the array)
-            if (newResourceCapModifier.value !== 1) {
-                // add the new modifier to the island's `resourceCapModifiers`
-                islandUpdateOperations.$push['islandStatsModifiers.resourceCapModifiers'] = newResourceCapModifier;
-            }
-        } else {
-            const currentValue = island.islandStatsModifiers?.resourceCapModifiers[resourceCapModifierIndex].value;
-            const newValue = currentValue - (rarityDeviationReductions.resourceCapReduction / 100);
-
-            // reduce the value by the reduction amount
-            islandUpdateOperations.$set[`islandStatsModifiers.resourceCapModifiers.${resourceCapModifierIndex}.value`] = newValue;
-        }
-
         // check if the to-be-put bit is the first one; if yes, start the `gatheringStart` timestamp
         if (island.placedBitIds.length === 0) {
             islandUpdateOperations.$set['islandResourceStats.gatheringStart'] = Math.floor(Date.now() / 1000);
@@ -333,17 +562,15 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
         // update the bit to include `placedIslandId`
         bitUpdateOperations.$set['placedIslandId'] = islandId;
 
-        // check if the bit has `totalXCookiesSpent` > 0. if yes, increment the island's `totalXCookiesSpent` by this amount.
-        if (bit.totalXCookiesSpent > 0) {
-            islandUpdateOperations.$inc['islandEarningStats.totalXCookiesSpent'] = bit.totalXCookiesSpent;
-        }
-
         // execute the update operations
         await Promise.all([
             UserModel.updateOne({ twitterId }, userUpdateOperations),
             IslandModel.updateOne({ islandId }, islandUpdateOperations),
             BitModel.updateOne({ bitId }, bitUpdateOperations)
         ]);
+
+        // update the other bits' modifiers and also if applicable the island's modifiers with the bit's traits
+        await updateExtendedTraitEffects(bit, island);
 
         return {
             status: Status.SUCCESS,
@@ -359,6 +586,207 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
             message: `(placeBit) Error: ${err.message}`
         }
     }
+}
+
+/**
+ * Update an island's modifiers or all other bits' (within this island) modifiers based on a bit's trait.
+ * 
+ * Called when a bit is being placed on an island via `placeBit.
+ */
+export const updateExtendedTraitEffects = async (
+    bit: Bit,
+    island: Island,
+): Promise<void> => {
+    // get the other bit IDs from the island (excl. the bit to be placed)
+    const otherBitIds = island.placedBitIds.filter(placedBitId => placedBitId !== bit.bitId);
+
+    // get the bit's traits
+    const bitTraits = bit.traits;
+
+    // loop through each trait and see if they impact the island's modifiers or other bits' modifiers
+    // right now, these traits are:
+    // nibbler, teamworker, leader, cute and genius
+    const bitUpdateOperations: Array<{
+        bitId: number,
+        updateOperations: {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+    }> = [];
+
+    const islandUpdateOperations = {
+        $pull: {},
+        $inc: {},
+        $set: {},
+        $push: {}
+    }
+
+    for (const trait of bitTraits) {
+        const otherBits = await BitModel.find({ bitId: { $in: otherBitIds } }).lean();
+
+        // if the trait is nibbler, increase the island's gathering and earning rate by 2.5%
+        if (trait === BitTrait.NIBBLER) {
+            // no need to check for existing modifiers because the modifiers aren't stackable in one modifier instance but rather in separate instances based on each Bit ID.
+            // so, we just add the new modifier to the island's `gatheringRateModifiers` and `earningRateModifiers`
+            const newGatheringRateModifier: Modifier = {
+                origin: `Bit ID #${bit.bitId}'s Trait: Nibbler`,
+                value: 1.025
+            }
+
+            const newEarningRateModifier: Modifier = {
+                origin: `Bit ID #${bit.bitId}'s Trait: Nibbler`,
+                value: 1.025
+            }
+
+            // add the new modifier to the island's `gatheringRateModifiers` and `earningRateModifiers`
+            islandUpdateOperations.$push['islandStatsModifiers.gatheringRateModifiers'] = newGatheringRateModifier;
+            islandUpdateOperations.$push['islandStatsModifiers.earningRateModifiers'] = newEarningRateModifier;
+            // if trait is teamworker:
+            // increase all other bits that have the same or lesser rarity as the bit being placed by 5% gathering and earning rate
+        } else if (trait === BitTrait.TEAMWORKER) {
+            // loop through each other bit and check if they have the same or lesser rarity as the bit being placed
+            // if no other bits found, skip this trait
+            if (otherBits.length === 0 || !otherBits) {
+                console.log(`(updateExtendedTraitEffects) No other bits found.`);
+                continue;
+            }
+
+            for (const otherBit of otherBits) {
+                // check if the other bit's rarity is the same or lesser than the bit being placed
+                if (BitRarityNumeric[otherBit.rarity] <= BitRarityNumeric[bit.rarity]) {
+                    // add the new modifier to the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                    const newGatheringRateModifier: Modifier = {
+                        origin: `Bit ID #${bit.bitId}'s Trait: Teamworker`,
+                        value: 1.05
+                    }
+
+                    const newEarningRateModifier: Modifier = {
+                        origin: `Bit ID #${bit.bitId}'s Trait: Teamworker`,
+                        value: 1.05
+                    }
+
+                    // add the new modifier to the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                    bitUpdateOperations.push({
+                        bitId: otherBit.bitId,
+                        updateOperations: {
+                            $push: {
+                                'bitStatsModifiers.gatheringRateModifiers': newGatheringRateModifier,
+                                'bitStatsModifiers.earningRateModifiers': newEarningRateModifier
+                            },
+                            $pull: {},
+                            $inc: {},
+                            $set: {}
+                        }
+                    });
+                    // if the other bit's rarity is higher than the bit being placed, skip this bit
+                } else {
+                    continue;
+                }
+            }
+            // if trait is leader:
+            // increase all other bits' gathering and earning rate by 10%
+        } else if (trait === BitTrait.LEADER) {
+            if (otherBits.length === 0 || !otherBits) {
+                console.log(`(updateExtendedTraitEffects) No other bits found.`);
+                continue;
+            }
+
+            for (const otherBit of otherBits) {
+                // add the new modifier to the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                const newGatheringRateModifier: Modifier = {
+                    origin: `Bit ID #${bit.bitId}'s Trait: Leader`,
+                    value: 1.1
+                }
+
+                const newEarningRateModifier: Modifier = {
+                    origin: `Bit ID #${bit.bitId}'s Trait: Leader`,
+                    value: 1.1
+                }
+
+                // add the new modifier to the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                bitUpdateOperations.push({
+                    bitId: otherBit.bitId,
+                    updateOperations: {
+                        $push: {
+                            'bitStatsModifiers.gatheringRateModifiers': newGatheringRateModifier,
+                            'bitStatsModifiers.earningRateModifiers': newEarningRateModifier
+                        },
+                        $pull: {},
+                        $inc: {},
+                        $set: {}
+                    }
+                });
+            }
+            // if bit trait is cute:
+            // increase gathering and earning rate of all other bits by 12.5%
+        } else if (trait === BitTrait.CUTE) {
+            if (otherBits.length === 0 || !otherBits) {
+                console.log(`(updateExtendedTraitEffects) No other bits found.`);
+                continue;
+            }
+
+            for (const otherBit of otherBits) {
+                // add the new modifier to the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                const newGatheringRateModifier: Modifier = {
+                    origin: `Bit ID #${bit.bitId}'s Trait: Cute`,
+                    value: 1.125
+                }
+
+                const newEarningRateModifier: Modifier = {
+                    origin: `Bit ID #${bit.bitId}'s Trait: Cute`,
+                    value: 1.125
+                }
+
+                // add the new modifier to the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                bitUpdateOperations.push({
+                    bitId: otherBit.bitId,
+                    updateOperations: {
+                        $push: {
+                            'bitStatsModifiers.gatheringRateModifiers': newGatheringRateModifier,
+                            'bitStatsModifiers.earningRateModifiers': newEarningRateModifier
+                        },
+                        $pull: {},
+                        $inc: {},
+                        $set: {}
+                    }
+                });
+            }
+            // if bit trait is genius:
+            // increase the island's gathering and earning rate by 7.5%
+        } else if (trait === BitTrait.GENIUS) {
+            // add the new modifier to the island's `gatheringRateModifiers` and `earningRateModifiers`
+            const newGatheringRateModifier: Modifier = {
+                origin: `Bit ID #${bit.bitId}'s Trait: Genius`,
+                value: 1.075
+            }
+
+            const newEarningRateModifier: Modifier = {
+                origin: `Bit ID #${bit.bitId}'s Trait: Genius`,
+                value: 1.075
+            }
+
+            // add the new modifier to the island's `gatheringRateModifiers` and `earningRateModifiers`
+            islandUpdateOperations.$push['islandStatsModifiers.gatheringRateModifiers'] = newGatheringRateModifier;
+            islandUpdateOperations.$push['islandStatsModifiers.earningRateModifiers'] = newEarningRateModifier;
+            // if bit trait is none of the above, skip this trait
+        } else {
+            continue;
+        }
+    }
+
+    // execute the update operations
+    const bitUpdatePromises = bitUpdateOperations.map(async op => {
+        return BitModel.updateOne({ bitId: op.bitId }, op.updateOperations);
+    });
+
+    await Promise.all([
+        ...bitUpdatePromises,
+        IslandModel.updateOne({ islandId: island.islandId }, islandUpdateOperations)
+    ]);
+
+    console.log(`(updateExtendedTraitEffects) Extended trait effects updated for island ID ${island.islandId}.`);
 }
 
 /** 
@@ -566,12 +994,12 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
  * 
  * Run by a scheduler every 10 minutes.
  * 
- * NOTE: If 0 xCookies have been spent for an island, this function will skip that island.
+ * NOTE: If 0 xCookies is earnable for an island, this function will skip that island.
  */
 export const updateClaimableXCookies = async (): Promise<void> => {
     try {
-        // find islands only where xCookies spent is > 0
-        const islands = await IslandModel.find({ 'islandEarningStats.totalXCookiesSpent': { $gt: 0 } }).lean();
+        // find islands only where xCookies earnable is > 0
+        const islands = await IslandModel.find({ 'islandEarningStats.totalXCookiesEarnable': { $gt: 0 } }).lean();
 
         if (islands.length === 0 || !islands) {
             console.error(`(updateClaimableXCookies) No islands found.`);
@@ -596,17 +1024,17 @@ export const updateClaimableXCookies = async (): Promise<void> => {
 
             // get the island's current earning rate
             const currentEarningRate = calcIslandCurrentRate(
-                RateType.EARNING, 
-                bits.map(bit => bit.farmingStats?.baseEarningRate), 
-                bits.map(bit => bit.currentFarmingLevel), 
-                bits.map(bit => bit.farmingStats.earningRateGrowth), 
-                bits.map(bit => bit.bitStatsModifiers.earningRateModifiers as Modifier[]), 
+                RateType.EARNING,
+                bits.map(bit => bit.farmingStats?.baseEarningRate),
+                bits.map(bit => bit.currentFarmingLevel),
+                bits.map(bit => bit.farmingStats.earningRateGrowth),
+                bits.map(bit => bit.bitStatsModifiers.earningRateModifiers as Modifier[]),
                 island.islandStatsModifiers?.earningRateModifiers as Modifier[]
             );
 
-            // since this is called every 10 minutes, we will divide the `currentEarningRate` by 6 to get the 10-minute earning rate, and multiply it by the cookies spent to get the `claimableXCookies`
+            // since this is called every 10 minutes, we will divide the `currentEarningRate` by 6 to get the 10-minute earning rate, and multiply it by the cookies earnable to get the `claimableXCookies`
             const tenMinEarningRate = currentEarningRate / 6;
-            const claimableXCookies = tenMinEarningRate / 100 * island.islandEarningStats?.totalXCookiesSpent;
+            const claimableXCookies = tenMinEarningRate / 100 * island.islandEarningStats?.totalXCookiesEarnable;
 
             console.log(`claimable xCookies for Island ${island.islandId} is ${claimableXCookies}.`);
 
@@ -619,26 +1047,26 @@ export const updateClaimableXCookies = async (): Promise<void> => {
                 return;
             }
 
-            if (xCookiesEarned === island.islandEarningStats?.totalXCookiesSpent) {
+            if (xCookiesEarned === island.islandEarningStats?.totalXCookiesEarnable) {
                 console.log(`(updateClaimableXCookies) Island ID ${island.islandId} has already earned all of its xCookies. Skipping...`);
                 return;
             }
 
-            // if `xCookiesEarned` + `claimableXCookies` is greater than totalXCookiesSpent, set `claimableXCookies` to totalXCookiesSpent - xCookiesEarned
+            // if `xCookiesEarned` + `claimableXCookies` is greater than totalXCookiesEarnable, set `claimableXCookies` to totalXCookiesEarnable - xCookiesEarned
             // this is to prevent the user from claiming more xCookies than they have spent
-            if (claimableXCookies + xCookiesEarned > island.islandEarningStats?.totalXCookiesSpent) {
+            if (claimableXCookies + xCookiesEarned > island.islandEarningStats?.totalXCookiesEarnable) {
                 console.log(`(updateClaimableXCookies) Island ID ${island.islandId}'s claimableXCookies exceeds cookies spent.
-                 adjusting... totalXCookiesSpent: ${island.islandEarningStats?.totalXCookiesSpent} - xCookiesEarned: ${xCookiesEarned} = ${island.islandEarningStats?.totalXCookiesSpent - xCookiesEarned}.`
+                 adjusting... totalXCookiesEarnable: ${island.islandEarningStats?.totalXCookiesEarnable} - xCookiesEarned: ${xCookiesEarned} = ${island.islandEarningStats?.totalXCookiesEarnable - xCookiesEarned}.`
                 );
-                
+
                 updateOperations.push({
                     updateOne: {
                         filter: { islandId: island.islandId },
-                        update: { 
-                            // also increment the `totalXCookiesEarned` by `totalXCookiesSpent - xCookiesEarned`
-                            $inc: { 
-                                'islandEarningStats.totalXCookiesEarned': island.islandEarningStats?.totalXCookiesSpent - xCookiesEarned,
-                                'islandEarningStats.claimableXCookies': island.islandEarningStats?.totalXCookiesSpent - xCookiesEarned 
+                        update: {
+                            // also increment the `totalXCookiesEarned` by `totalXCookiesEarnable - xCookiesEarned`
+                            $inc: {
+                                'islandEarningStats.totalXCookiesEarned': island.islandEarningStats?.totalXCookiesEarnable - xCookiesEarned,
+                                'islandEarningStats.claimableXCookies': island.islandEarningStats?.totalXCookiesEarnable - xCookiesEarned
                             }
                         }
                     }
@@ -649,9 +1077,9 @@ export const updateClaimableXCookies = async (): Promise<void> => {
                 updateOperations.push({
                     updateOne: {
                         filter: { islandId: island.islandId },
-                        update: { 
+                        update: {
                             // also increment the `totalXCookiesEarned` by `claimableXCookies`
-                            $inc: { 
+                            $inc: {
                                 'islandEarningStats.totalXCookiesEarned': claimableXCookies,
                                 'islandEarningStats.claimableXCookies': claimableXCookies
                             }
@@ -687,8 +1115,20 @@ export const updateClaimableXCookies = async (): Promise<void> => {
  * 
  * NOTE: Requires `twitterId` which is fetched via `req.user`, automatically giving us the user's Twitter ID. This will check if the user who calls this function owns the twitter ID that owns the island.
  */
-export const claimResources = async (twitterId: string, islandId: number): Promise<ReturnValue> => {
+export const claimResources = async (
+    twitterId: string,
+    islandId: number,
+    claimType: 'manual' | 'auto',
+    // only should be used if `claimType` is 'manual'
+    // this essentially allows the user to choose which resources to claim
+    chosenResources?: SimplifiedResource[]
+): Promise<ReturnValue> => {
     try {
+        // the return message (just in case not all resources can be claimed). only for successful claims.
+        let returnMessage: string = `(claimResources) Claimed all resources from island ID ${islandId}.`;
+        // only for automatic claiming if not all resources can be claimed
+        const claimedResources: ExtendedResource[] = [];
+
         const [user, island] = await Promise.all([
             UserModel.findOne({ twitterId }).lean(),
             IslandModel.findOne({ islandId }).lean()
@@ -730,6 +1170,14 @@ export const claimResources = async (twitterId: string, islandId: number): Promi
             }
         }
 
+        // if the user is currently travelling, disable claiming resources
+        if (user.inGameData.travellingTo !== null) {
+            return {
+                status: Status.ERROR,
+                message: `(claimResources) User is currently travelling.`
+            }
+        }
+
         // check if the `RESOURCES_CLAIM_COOLDOWN` has passed from the last claimed time
         const currentTime = Math.floor(Date.now() / 1000);
         const lastClaimedTime = island.islandResourceStats?.lastClaimed as number;
@@ -742,7 +1190,7 @@ export const claimResources = async (twitterId: string, islandId: number): Promi
         }
 
         // check all claimable resources 
-        const claimableResources = island.islandResourceStats?.claimableResources as Resource[];
+        const claimableResources = island.islandResourceStats?.claimableResources as ExtendedResource[];
 
         if (claimableResources.length === 0 || !claimableResources) {
             return {
@@ -751,24 +1199,252 @@ export const claimResources = async (twitterId: string, islandId: number): Promi
             }
         }
 
-        // add all claimable resources to the user's inventory
-        // loop through each resource and check if the resource already exists in the user's inventory
-        // if it does, increment the amount; if not, push a new resource
-        for (let resource of claimableResources) {
-            const existingResourceIndex = (user.inventory?.resources as Resource[]).findIndex(r => r.type === resource.type);
+        // get the user's current inventory weight
+        const currentInventoryWeight: number = user.inventory.weight;
 
-            if (existingResourceIndex !== -1) {
-                userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = resource.amount;
+        // if manual, check:
+        // 1. if the user has chosen resources to claim
+        // 2. if the chosen resources exist in the island's claimable resources and if the amount is above 0 for each resource AND if the amount to claim is less than or equal to the claimable amount for each resource.
+        // 3. if all chosen resources don't exceed the player's max inventory weight.
+        if (claimType === 'manual') {
+            if (!chosenResources || chosenResources.length === 0) {
+                return {
+                    status: Status.ERROR,
+                    message: `(claimResources) No chosen resources found. This is required for manual claiming.`
+                }
+            }
+
+            // initialize total weight of resources to claim for calculation
+            let totalWeightToClaim = 0;
+
+            // initialize `$each` on the user's inventory resources if it doesn't exist so that we can push multiple resources at once
+            if (!userUpdateOperations.$push['inventory.resources']) {
+                userUpdateOperations.$push['inventory.resources'] = { $each: [] }
+            }
+
+            // `chosenResources` will essentially consist of the resource types and the equivalent amounts of that resource the user wants to claim.
+            // we check, for each chosenResource, if the resource exists in the island's claimable resources, if the amount the user wants to claim is above 0 for each resource 
+            // and if the amount to claim is less than or equal to the claimable amount for each resource.
+            // then, we also check if the total weight of the chosen resources doesn't exceed the player's max inventory weight.
+            for (let chosenResource of chosenResources) {
+                // get the full data of the chosen resource (so that it can be added to the user's inventory)
+                const chosenResourceData = resources.find(r => r.type === chosenResource.type);
+
+                const claimableResourceIndex = claimableResources.findIndex(r => r.type === chosenResource.type);
+
+                if (claimableResourceIndex === -1) {
+                    return {
+                        status: Status.ERROR,
+                        message: `(claimResources) Chosen resource ${chosenResource.type} not found in island's claimable resources.`
+                    }
+                }
+
+                if (chosenResource.amount <= 0) {
+                    return {
+                        status: Status.ERROR,
+                        message: `(claimResources) Chosen resource ${chosenResource.type} amount is 0.`
+                    }
+                }
+
+                if (chosenResource.amount > claimableResources[claimableResourceIndex].amount) {
+                    return {
+                        status: Status.ERROR,
+                        message: `(claimResources) Chosen resource ${chosenResource.type} amount exceeds claimable amount.`
+                    }
+                }
+
+                // get the total weight of this resource
+                const resourceWeight: number = resources.find(r => r.type === chosenResource.type)?.weight;
+                const totalWeight = resourceWeight * chosenResource.amount;
+
+                // add to the total weight to claim
+                totalWeightToClaim += totalWeight;
+
+                // just in case all checks pass later, we will do the following update operations.
+                // 1. if the resource already exists in the user's inventory, increment the amount; if not, push a new resource.
+                // 2. pull the resource (if amount to claim = max claimable amount of this resource) or decrement the amount (if amount to claim < max claimable amount of this resource) from the island's claimable resources.
+                // !!! NOTE: if the checks don't pass, this function will return and the update operations will not be executed anyway. !!!
+
+                // we check if this resource exists on the user's inventory or not. if not, we push a new resource; if yes, we increment the amount.
+                const existingResourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(r => r.type === chosenResource.type);
+
+                if (existingResourceIndex !== -1) {
+                    userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = chosenResource.amount;
+                } else {
+                    userUpdateOperations.$push['inventory.resources'].$each.push({
+                        ...chosenResourceData,
+                        amount: chosenResource.amount
+                    });
+                }
+
+                // now, check if the amount to claim for this resource equals the max claimable amount for this resource.
+                // if yes, we will pull this resource from the island's claimable resources. otherwise, we will only deduct the amount by the amount to claim.
+                if (chosenResource.amount === claimableResources[claimableResourceIndex].amount) {
+                    islandUpdateOperations.$pull[`islandResourceStats.claimableResources`] = { type: chosenResource.type };
+                } else {
+                    islandUpdateOperations.$inc[`islandResourceStats.claimableResources.${claimableResourceIndex}.amount`] = -chosenResource.amount;
+                }
+            }
+
+            // check if the total weight to claim exceeds the player's max inventory weight
+            if (currentInventoryWeight + totalWeightToClaim > user.inventory.maxWeight) {
+                return {
+                    status: Status.ERROR,
+                    message: `(claimResources) Total weight of chosen resources exceeds player's max inventory weight.`
+                }
+            }
+
+            // if all checks pass, we can proceed to claim the resources
+            // since we already have the update operations to add the resources to the user's inventory and to reduce the resource amount/pull the resource from the island's claimable resources,
+            // we just have a few more things to do:
+            // 1. increment the user's inventory weight by the total weight to claim
+            // 2. set the island's `lastClaimed` to the current time
+            userUpdateOperations.$inc['inventory.weight'] = totalWeightToClaim
+            islandUpdateOperations.$set['islandResourceStats.lastClaimed'] = currentTime;
+
+            returnMessage = `Manually claimed resources for Island ID ${islandId}.`;
+        // if auto, we will do the following:
+        // 1. firstly, check if all resources can be claimed based on the user's max inventory weight. if yes, skip the next steps.
+        // 2. if not, we will sort the resources from highest to lowest rarity.
+        // 3. then, for each rarity, sort the resources from highest to lowest weight.
+        // 4. then, for each resource, we will claim the max amount of that resource that the user can claim based on their max inventory weight.
+        } else {
+            // initialize the total weight to claim
+            let totalWeightToClaim = 0;
+
+            // loop through each resource and calculate the total weight to claim
+            for (const resource of claimableResources) {
+                const resourceWeight: number = resources.find(r => r.type === resource.type)?.weight;
+                const totalWeight = resourceWeight * resource.amount;
+
+                totalWeightToClaim += totalWeight;
+            }
+
+            // if the total weight to claim doesn't exceed the user's max inventory weight, we can claim all resources.
+            if (currentInventoryWeight + totalWeightToClaim <= user.inventory.maxWeight) {
+                // initialize `$each` on the user's inventory resources if it doesn't exist so that we can push multiple resources at once
+                if (!userUpdateOperations.$push['inventory.resources']) {
+                    userUpdateOperations.$push['inventory.resources'] = { $each: [] }
+                }
+
+                // loop through each resource and add it to the user's inventory
+                for (const resource of claimableResources) {
+                    // check if this resource exists on the user's inventory or not. if not, we push a new resource; if yes, we increment the amount.
+                    const existingResourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(r => r.type === resource.type);
+
+                    if (existingResourceIndex !== -1) {
+                        userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = resource.amount;
+                    } else {
+                        userUpdateOperations.$push['inventory.resources'].$each.push(resource);
+                    }
+                }
+
+                // add the weight to the user's inventory
+                userUpdateOperations.$inc['inventory.weight'] = totalWeightToClaim;
+
+                // add the claimed resources to the claimedResources array
+                claimedResources.push(...claimableResources);
+
+                // otherwise, we will need to proceed with sorting.
             } else {
-                userUpdateOperations.$push['inventory.resources'] = resource;
+                // sort resources from highest to lowest rarity
+                const sortedResources = claimableResources.sort((a, b) => ResourceRarityNumeric[b.rarity] - ResourceRarityNumeric[a.rarity]);
+
+                // group resources by rarity
+                const groupedResources = sortedResources.reduce((acc, resource) => {
+                    if (!acc[resource.rarity]) {
+                        acc[resource.rarity] = [];
+                    }
+
+                    acc[resource.rarity].push(resource);
+
+                    return acc;
+                }, {} as { [key in ResourceRarity]: ExtendedResource[] });
+
+                // get the max allowed weight
+                const maxAllowedWeight = user.inventory.maxWeight - currentInventoryWeight;
+
+                // initialize the current weight of resources. this is used to know how many resources we can claim based on the user's max inventory weight.
+                let currentWeight: number = 0;
+
+                // loop through each rarity group
+                for (const rarityGroup of Object.values(groupedResources)) {
+                    // sort the resources from highest to lowest weight
+                    const sortedByWeight = rarityGroup.sort((a, b) => resources.find(r => r.type === b.type)?.weight - resources.find(r => r.type === a.type)?.weight);
+
+                    // for each resource, check if we can claim all of it or just a portion of it based on the user's max inventory weight.
+                    for (const resource of sortedByWeight) {
+                        const resourceWeight: number = resources.find(r => r.type === resource.type)?.weight;
+                        const totalWeight = resourceWeight * resource.amount;
+
+                        // if the current weight + the total weight of this resource exceeds the max allowed weight, we will only claim a portion of this resource.
+                        if (currentWeight + totalWeight > maxAllowedWeight) {
+                            // calculate the amount of this resource we can claim based on the max allowed weight
+                            const amountToClaim = Math.floor((maxAllowedWeight - currentWeight) / resourceWeight);
+
+                            // if amount to claim is 0, we can't claim this resource anymore. break out of the loop.
+                            if (amountToClaim <= 0) {
+                                break;
+                            }
+
+                            // check if this resource exists on the user's inventory or not. if not, we push a new resource; if yes, we increment the amount.
+                            const existingResourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(r => r.type === resource.type);
+
+                            if (existingResourceIndex !== -1) {
+                                userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = amountToClaim;
+                            } else {
+                                userUpdateOperations.$push['inventory.resources'].$each.push({
+                                    ...resource,
+                                    amount: amountToClaim
+                                });
+                            }
+
+                            // increment the current weight by the total weight of this resource
+                            currentWeight += resourceWeight * amountToClaim;
+
+                            // deduce the amount from the island's claimable resources
+                            const claimableResourceIndex = claimableResources.findIndex(r => r.type === resource.type);
+                            islandUpdateOperations.$inc[`islandResourceStats.claimableResources.${claimableResourceIndex}.amount`] = -amountToClaim;
+
+                            // add the claimed resource to the claimedResources array
+                            claimedResources.push({
+                                ...resource,
+                                amount: amountToClaim
+                            });
+
+                            // break out of the loop since we can't claim more resources based on the user's max inventory weight
+                            break;
+                        } else {
+                            // check if this resource exists on the user's inventory or not. if not, we push a new resource; if yes, we increment the amount.
+                            const existingResourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(r => r.type === resource.type);
+
+                            if (existingResourceIndex !== -1) {
+                                userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = resource.amount;
+                            } else {
+                                userUpdateOperations.$push['inventory.resources'].$each.push(resource);
+                            }
+
+                            // increment the current weight by the total weight of this resource
+                            currentWeight += totalWeight;
+
+                            // since this essentially means we can claim all of this resource, we will pull this resource from the island's claimable resources.
+                            islandUpdateOperations.$pull[`islandResourceStats.claimableResources`] = { type: resource.type };
+
+                            // add the claimed resource to the claimedResources array
+                            claimedResources.push(resource);
+                        }
+                    }
+                }
+
+                // add the weight to the user's inventory
+                userUpdateOperations.$inc['inventory.weight'] = currentWeight;
+
+                // set the island's `lastClaimed` to the current time
+                islandUpdateOperations.$set['islandResourceStats.lastClaimed'] = currentTime;
+
+                returnMessage = `Unable to claim all resources due to max inventory weight. Automatically claimed partial resources for Island ID ${islandId}.`;
             }
         }
-
-        // do a few things:
-        // 1. clear the island's `claimableResources`
-        // 2. set the island's `lastClaimed` to the current time
-        islandUpdateOperations.$set['islandResourceStats.claimableResources'] = [];
-        islandUpdateOperations.$set['islandResourceStats.lastClaimed'] = currentTime;
 
         // execute the update operations
         await Promise.all([
@@ -778,7 +1454,10 @@ export const claimResources = async (twitterId: string, islandId: number): Promi
 
         return {
             status: Status.SUCCESS,
-            message: `(claimResources) Claimed all resources from island ID ${islandId}.`
+            message: returnMessage,
+            data: {
+                claimedResources: claimType === 'manual' ? chosenResources : claimedResources,
+            }
         }
     } catch (err: any) {
         return {
@@ -927,6 +1606,20 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
         // check if the `resourcesLeft` is at least 1, if not, return an error.
         const baseResourceCap = island.islandResourceStats?.baseResourceCap as number;
         const resourcesGathered: Resource[] = island.islandResourceStats?.resourcesGathered;
+
+        // for barren isles, check only for resources gathered that are seaweed instead of the entire length.
+        // this is because for barren isles, there is a small chance to drop common resources that won't be counted towards the base resource cap.
+        if (<IslandType>island.type === IslandType.BARREN) {
+            const seaweedGathered = resourcesGathered.filter(r => r.type === BarrenResource.SEAWEED);
+            if (baseResourceCap - seaweedGathered.length <= 0) {
+                return {
+                    status: Status.ERROR,
+                    message: `(dropResource) No resources left to drop.`
+                }
+            }
+        }
+
+        // for any other isles, check the entire length of resources gathered.
         if (baseResourceCap - resourcesGathered.length <= 0) {
             return {
                 status: Status.ERROR,
@@ -935,15 +1628,15 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
         }
 
         // randomize the resource from the effective drop chances based on the island's type and level
-        const resourceType: ResourceType = randomizeResourceFromChances(<IslandType>island.type, island.currentLevel);
+        const resourceToDrop: Resource = randomizeResourceFromChances(<IslandType>island.type, island.traits, island.currentLevel);
 
         // firstly check if `claimableResources` is empty.
         const claimableResources: Resource[] = island.islandResourceStats?.claimableResources;
 
         if (claimableResources.length === 0 || !claimableResources) {
             // if empty, create a new resource and add it to the island's `claimableResources`
-            const newResource: Resource = {
-                type: resourceType,
+            const newResource: ExtendedResource = {
+                ...resourceToDrop,
                 amount: 1
             }
 
@@ -951,15 +1644,15 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
             islandUpdateOperations.$push['islandResourceStats.claimableResources'] = newResource;
         } else {
             // if not empty, check if the resource already exists in `claimableResources`
-            const existingResourceIndex = claimableResources.findIndex(r => r.type === resourceType);
+            const existingResourceIndex = claimableResources.findIndex(r => r.type === resourceToDrop.type);
 
             // if the resource already exists, increment its amount
             if (existingResourceIndex !== -1) {
                 islandUpdateOperations.$inc[`islandResourceStats.claimableResources.${existingResourceIndex}.amount`] = 1;
             } else {
                 // if the resource doesn't exist, push a new resource
-                const newResource: Resource = {
-                    type: resourceType,
+                const newResource: ExtendedResource = {
+                    ...resourceToDrop,
                     amount: 1
                 }
 
@@ -970,8 +1663,8 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
 
         if (resourcesGathered.length === 0 || !resourcesGathered) {
             // if empty, create a new resource and add it to the island's `resourcesGathered`
-            const newResource: Resource = {
-                type: resourceType,
+            const newResource: ExtendedResource = {
+                ...resourceToDrop,
                 amount: 1
             }
 
@@ -979,15 +1672,15 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
             islandUpdateOperations.$push['islandResourceStats.resourcesGathered'] = newResource;
         } else {
             // if not empty, check if the resource already exists in `resourcesGathered`
-            const existingResourceIndex = resourcesGathered.findIndex(r => r.type === resourceType);
+            const existingResourceIndex = resourcesGathered.findIndex(r => r.type === resourceToDrop.type);
 
             // if the resource already exists, increment its amount
             if (existingResourceIndex !== -1) {
                 islandUpdateOperations.$inc[`islandResourceStats.resourcesGathered.${existingResourceIndex}.amount`] = 1;
             } else {
                 // if the resource doesn't exist, push a new resource
-                const newResource: Resource = {
-                    type: resourceType,
+                const newResource: ExtendedResource = {
+                    ...resourceToDrop,
                     amount: 1
                 }
 
@@ -996,14 +1689,44 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
             }
         }
 
+        // lastly, check if island is barren. if it is, they have an additional small chance to drop a common resource of any line.
+        if (<IslandType>island.type === IslandType.BARREN) {
+            // roll a dice between 1-100
+            const rand = Math.random() * 100 + 1;
+
+            // if dice lands under `BARREN_ISLE_COMMON_DROP_CHANCE`, drop a random common resource alongside the seaweed they're getting.
+            if (rand <= BARREN_ISLE_COMMON_DROP_CHANCE) {
+                // randomize any common resource from `resources`
+                const commonResources = resources.filter(r => r.rarity === ResourceRarity.COMMON);
+                const commonResourceToDrop = commonResources[Math.floor(Math.random() * commonResources.length)];
+
+                // check if the common resource already exists in `claimableResources`
+                const existingResourceIndex = claimableResources.findIndex(r => r.type === commonResourceToDrop.type);
+
+                // if the resource already exists, increment its amount
+                if (existingResourceIndex !== -1) {
+                    islandUpdateOperations.$inc[`islandResourceStats.claimableResources.${existingResourceIndex}.amount`] = 1;
+                } else {
+                    // if the resource doesn't exist, push a new resource
+                    const newResource: ExtendedResource = {
+                        ...commonResourceToDrop,
+                        amount: 1
+                    }
+
+                    // add the new resource to the island's `claimableResources`
+                    islandUpdateOperations.$push['islandResourceStats.claimableResources'] = newResource;
+                }
+            }
+        }
+
         // execute the update operations
         await IslandModel.updateOne({ islandId }, islandUpdateOperations);
 
         return {
             status: Status.SUCCESS,
-            message: `(dropResource) Island ID ${islandId} has dropped a resource: ${resourceType}.`,
+            message: `(dropResource) Island ID ${islandId} has dropped a resource: ${resourceToDrop}.`,
             data: {
-                resourceType
+                resource: resourceToDrop
             }
         }
     } catch (err: any) {
@@ -1017,7 +1740,12 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
 /**
  * Randomizes a resource from the effective drop chances based on the island's type and level.
  */
-export const randomizeResourceFromChances = (type: IslandType, level: number): ResourceType => {
+export const randomizeResourceFromChances = (
+    type: IslandType,
+    // get the island's traits for common - legendary resourceas
+    traits: IslandTrait[],
+    level: number
+): Resource => {
     // calculate the effective drop chance rates based on the island's type and level
     const effectiveDropChances: ResourceDropChance = calcEffectiveResourceDropChances(type, level);
 
@@ -1027,14 +1755,39 @@ export const randomizeResourceFromChances = (type: IslandType, level: number): R
     // calculate the cumulative probability for each resource and see if the rand falls within the range
     let cumulativeProbability = 0;
 
-    for (let [resource, probability] of Object.entries(effectiveDropChances)) {
+    for (let [resourceRarity, probability] of Object.entries(effectiveDropChances)) {
         cumulativeProbability += probability;
 
         if (rand <= cumulativeProbability) {
-            // capitalize the first letter of the resource to match the ResourceType enum
-            resource = resource.charAt(0).toUpperCase() + resource.slice(1);
+            // capitalize the first letter of the resource rarity to match the ResourceRarity enum
+            resourceRarity = resourceRarity.charAt(0).toUpperCase() + resourceRarity.slice(1);
 
-            return <ResourceType>resource;
+            // get the trait for the resource rarity. if rarity is common, then take traits[0], if uncommon, then traits[1], and so on.
+            const trait = traits[ResourceRarityNumeric[resourceRarity]];
+
+            // if island type is barren, return seaweed
+            // if trait is mineral rich, find the ore resource with the specified rarity.
+            // if trait is aquifer, find the liquid resource with the specified rarity.
+            // if trait is fertile, find the fruit resource with the specified rarity
+            const resource = resources.find(r => {
+                if (type === IslandType.BARREN) {
+                    return r.line === ResourceLine.BARREN;
+                }
+
+                if (trait === IslandTrait.MINERAL_RICH) {
+                    return r.line === ResourceLine.ORE && r.rarity === <ResourceRarity>resourceRarity;
+                }
+
+                if (trait === IslandTrait.AQUIFER) {
+                    return r.line === ResourceLine.LIQUID && r.rarity === <ResourceRarity>resourceRarity;
+                }
+
+                if (trait === IslandTrait.FERTILE) {
+                    return r.line === ResourceLine.FRUIT && r.rarity === <ResourceRarity>resourceRarity;
+                }
+            });
+
+            return resource;
         }
     }
 }
@@ -1159,11 +1912,11 @@ export const calcEffectiveResourceDropChances = (type: IslandType, level: number
     const resourceDiff = calcResourceDropChanceDiff(type, level);
 
     return {
-        stone: dropChances.stone + resourceDiff.stone,
-        keratin: dropChances.keratin + resourceDiff.keratin,
-        silver: dropChances.silver + resourceDiff.silver,
-        diamond: dropChances.diamond + resourceDiff.diamond,
-        relic: dropChances.relic + resourceDiff.relic
+        common: dropChances.common + resourceDiff.common,
+        uncommon: dropChances.uncommon + resourceDiff.uncommon,
+        rare: dropChances.rare + resourceDiff.rare,
+        epic: dropChances.epic + resourceDiff.epic,
+        legendary: dropChances.legendary + resourceDiff.legendary
     }
 }
 
@@ -1174,10 +1927,10 @@ export const calcResourceDropChanceDiff = (type: IslandType, level: number): Res
     const resourceDiff = RESOURCE_DROP_CHANCES_LEVEL_DIFF(type);
 
     return {
-        stone: resourceDiff.stone * (level - 1),
-        keratin: resourceDiff.keratin * (level - 1),
-        silver: resourceDiff.silver * (level - 1),
-        diamond: resourceDiff.diamond * (level - 1),
-        relic: resourceDiff.relic * (level - 1)
+        common: resourceDiff.common * (level - 1),
+        uncommon: resourceDiff.uncommon * (level - 1),
+        rare: resourceDiff.rare * (level - 1),
+        epic: resourceDiff.epic * (level - 1),
+        legendary: resourceDiff.legendary * (level - 1)
     }
 }

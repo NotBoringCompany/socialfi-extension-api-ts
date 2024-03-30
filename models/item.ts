@@ -18,8 +18,6 @@ export interface Item {
  * An item is a general term used for various things that can be obtained and used in the game.
  */
 export enum ItemType {
-    SCROLL_OF_HASTE = 'Scroll of Haste',
-    SCROLL_OF_RESTORATION = 'Scroll of Restoration',
     BIT_ORB = 'Bit Orb',
     TERRA_CAPSULATOR = 'Terra Capsulator',
     RESOURCE = 'Resource',

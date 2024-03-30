@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { generateObjectId } from '../utils/crypto';
 
 /**
  * Quest schema. Represents closely to the `Quest` interface in `models/quest.ts`.
@@ -6,7 +7,7 @@ import mongoose from 'mongoose';
 export const QuestSchema = new mongoose.Schema({
     _id: {
         type: String,
-        default: new mongoose.Types.ObjectId()
+        default: generateObjectId(),
     },
     questId: Number,
     name: String,

@@ -1,5 +1,6 @@
 import { BitRarity } from '../../models/bit';
-import { IslandType, RarityDeviationReduction, ResourceDropChance, ResourceDropChanceDiff } from '../../models/island';
+import { IslandTrait, IslandType, RarityDeviationReduction, ResourceDropChance, ResourceDropChanceDiff } from '../../models/island';
+import { shop } from '../shop';
 
 /** max level for any island type */
 export const MAX_ISLAND_LEVEL = 20;
@@ -25,6 +26,9 @@ export const EARNING_RATE_EXPONENTIAL_DECAY = 0.03;
 /** the amount of bits that can be placed in an island */
 export const BIT_PLACEMENT_CAP = 5;
 
+/** the chance to drop a common resource for barren isles (in %) */
+export const BARREN_ISLE_COMMON_DROP_CHANCE = 2;
+
 /** 
  * the amount of islands the user can have at a time to farm resources/earn back cookies. 
  * 
@@ -32,42 +36,138 @@ export const BIT_PLACEMENT_CAP = 5;
  */
 export const TOTAL_ACTIVE_ISLANDS_ALLOWED = 30;
 
-/** cost to evolve an island (in xCookies) based on the island type and the island's current level */
-export const ISLAND_EVOLUTION_COST = (type: IslandType, currentLevel: number) => {
+/**
+ * Gets the total xCookies earnable back for an island based on its type (i.e. rarity) when opening from a Terra Capsulator.
+ */
+export const GET_TOTAL_X_COOKIES_EARNABLE = (type: IslandType) => {
+    // get the price of a terra capsulator to determine the total xCookies earnable
+    const terraCapsulatorPrice = shop.terraCapsulators.xCookies;
+
+    switch (type) {
+        case IslandType.PRIMAL_ISLES:
+            return 0.6 * terraCapsulatorPrice;
+        case IslandType.VERDANT_ISLES:
+            return 0.925 * terraCapsulatorPrice;
+        case IslandType.EXOTIC_ISLES:
+            return 1.3 * terraCapsulatorPrice;
+        // currently, terra caps won't give out crystal or celestial isles; these values are only for future-proofing.
+        case IslandType.CRYSTAL_ISLES:
+            return 2 * terraCapsulatorPrice;
+        case IslandType.CELESTIAL_ISLES:
+            return 4.5 * terraCapsulatorPrice;
+        default:
+            throw new Error(`(GET_TOTAL_X_COOKIES_EARNABLE) Invalid Island Type: ${type}`);
+    }
+}
+
+/**
+ * Gets the total cookie crumbs earnable for an island based on its type.
+ */
+export const GET_TOTAL_COOKIE_CRUMBS_EARNABLE = (type: IslandType) => {
+    switch (type) {
+        case IslandType.PRIMAL_ISLES:
+            return 100;
+        case IslandType.VERDANT_ISLES:
+            return 175;
+        case IslandType.EXOTIC_ISLES:
+            return 300;
+        case IslandType.CRYSTAL_ISLES:
+            return 750;
+        case IslandType.CELESTIAL_ISLES:
+            return 1750;
+        default:
+            throw new Error(`(GET_TOTAL_COOKIE_CRUMBS_EARNABLE) Invalid Island Type: ${type}`);
+    }
+}
+
+/**
+ * Randomizes 5 traits from the available island traits.
+ */
+export const randomizeIslandTraits = (): IslandTrait[] => {
+    const traits = Object.values(IslandTrait);
+
+    const randomTraits: IslandTrait[] = [];
+
+    for (let i = 0; i < 5; i++) {
+        const rand = Math.floor(Math.random() * traits.length);
+        randomTraits.push(traits[rand]);
+    }
+
+    return randomTraits;
+}
+
+/** cost to evolve an island (in xCookies OR cookie crumbs) based on the island type and the island's current level */
+export const ISLAND_EVOLUTION_COST = (type: IslandType, currentLevel: number): {
+    xCookies: number,
+    cookieCrumbs: number
+} => {
     if (currentLevel === MAX_ISLAND_LEVEL) throw new Error(`(ISLAND_EVOLUTION_COST) Island is already at max level: ${currentLevel}`);
     
     // higher rarity islands will cost more each time it levels up
     switch (type) {
         case IslandType.PRIMAL_ISLES:
             if (currentLevel === 1) {
-                return 50;
+                return {
+                    xCookies: 50,
+                    cookieCrumbs: 100
+                }
             } else {
-                return 50 + (15 * (currentLevel - 1));
+                return {
+                    xCookies: 50 + (15 * (currentLevel - 1)),
+                    cookieCrumbs: 100 + (30 * (currentLevel - 1))
+                }
             }
         case IslandType.VERDANT_ISLES:
             if (currentLevel === 1) {
-                return 100;
+                return {
+                    xCookies: 100,
+                    cookieCrumbs: 200
+                }
             } else {
-                return 100 + (30 * (currentLevel - 1));
+                return {
+                    xCookies: 100 + (30 * (currentLevel - 1)),
+                    cookieCrumbs: 200 + (60 * (currentLevel - 1))
+                }
             }
         case IslandType.EXOTIC_ISLES:
             if (currentLevel === 1) {
-                return 250;
+                return {
+                    xCookies: 250,
+                    cookieCrumbs: 500
+                }
             } else {
-                return 250 + (75 * (currentLevel - 1));
+                return {
+                    xCookies: 250 + (75 * (currentLevel - 1)),
+                    cookieCrumbs: 500 + (150 * (currentLevel - 1))
+                }
             }
         case IslandType.CRYSTAL_ISLES:
             if (currentLevel === 1) {
-                return 700;
+                return {
+                    xCookies: 700,
+                    cookieCrumbs: 1400
+                }
             } else {
-                return 700 + (210 * (currentLevel - 1));
+                return {
+                    xCookies: 700 + (210 * (currentLevel - 1)),
+                    cookieCrumbs: 1400 + (420 * (currentLevel - 1))
+                }
             }
         case IslandType.CELESTIAL_ISLES:
             if (currentLevel === 1) {
-                return 1500;
+                return {
+                    xCookies: 1500,
+                    cookieCrumbs: 3000
+                }
             } else {
-                return 1500 + (450 * (currentLevel - 1));
+                return {
+                    xCookies: 1500 + (450 * (currentLevel - 1)),
+                    cookieCrumbs: 3000 + (900 * (currentLevel - 1))
+                }
             }
+        // if barren or invalid type, throw error
+        default:
+            throw new Error(`(ISLAND_EVOLUTION_COST) Invalid Island Type: ${type}`);
     }
 }
 
@@ -76,6 +176,9 @@ export const ISLAND_EVOLUTION_COST = (type: IslandType, currentLevel: number) =>
  */
 export const DEFAULT_RESOURCE_CAP = (type: IslandType) => {
     switch (type) {
+        case IslandType.BARREN:
+            // 1000 resources but only seaweed with a small chance of dropping common resources each time.
+            return 1000;
         case IslandType.PRIMAL_ISLES:
             return 100;
         case IslandType.VERDANT_ISLES:
@@ -94,45 +197,55 @@ export const DEFAULT_RESOURCE_CAP = (type: IslandType) => {
  */
 export const RESOURCE_DROP_CHANCES = (type: IslandType): ResourceDropChance => {
     switch (type) {
+        case IslandType.BARREN:
+            return {
+                // barren islands will only drop common resources
+                // and this is also only with a very small chance
+                common: 100,
+                uncommon: 0,
+                rare: 0,
+                epic: 0,
+                legendary: 0
+            }
         case IslandType.PRIMAL_ISLES:
             return {
-                stone: 77.5,
-                keratin: 18.5,
-                silver: 4,
-                diamond: 0,
-                relic: 0
+                common: 77.5,
+                uncommon: 18.5,
+                rare: 4,
+                epic: 0,
+                legendary: 0
             }
         case IslandType.VERDANT_ISLES:
             return {
-                stone: 62.5,
-                keratin: 28.7,
-                silver: 8.6,
-                diamond: 0.2,
-                relic: 0
+                common: 62.5,
+                uncommon: 28.7,
+                rare: 8.6,
+                epic: 0.2,
+                legendary: 0
             }
         case IslandType.EXOTIC_ISLES:
             return {
-                stone: 50,
-                keratin: 33.745,
-                silver: 15,
-                diamond: 1.25,
-                relic: 0.005
+                common: 50,
+                uncommon: 33.745,
+                rare: 15,
+                epic: 1.25,
+                legendary: 0.005
             }
         case IslandType.CRYSTAL_ISLES:
             return {
-                stone: 35.5,
-                keratin: 34,
-                silver: 25,
-                diamond: 5,
-                relic: 0.5
+                common: 35.5,
+                uncommon: 34,
+                rare: 25,
+                epic: 5,
+                legendary: 0.5
             }
         case IslandType.CELESTIAL_ISLES:
             return {
-                stone: 15,
-                keratin: 20,
-                silver: 40,
-                diamond: 20,
-                relic: 5
+                common: 15,
+                uncommon: 20,
+                rare: 40,
+                epic: 20,
+                legendary: 5
             }
     }
 }
@@ -142,45 +255,53 @@ export const RESOURCE_DROP_CHANCES = (type: IslandType): ResourceDropChance => {
  */
 export const RESOURCE_DROP_CHANCES_LEVEL_DIFF = (type: IslandType): ResourceDropChanceDiff => {
     switch (type) {
+        case IslandType.BARREN:
+            return {
+                common: 0,
+                uncommon: 0,
+                rare: 0,
+                epic: 0,
+                legendary: 0
+            }
         case IslandType.PRIMAL_ISLES:
             return {
-                stone: -0.13,
-                keratin: 0.12,
-                silver: 0.01,
-                diamond: 0,
-                relic: 0
+                common: -0.13,
+                uncommon: 0.12,
+                rare: 0.01,
+                epic: 0,
+                legendary: 0
             }
         case IslandType.VERDANT_ISLES:
             return {
-                stone: -0.21001,
-                keratin: 0.155,
-                silver: 0.05,
-                diamond: 0.005,
-                relic: 0
+                common: -0.21001,
+                uncommon: 0.155,
+                rare: 0.05,
+                epic: 0.005,
+                legendary: 0
             }
         case IslandType.EXOTIC_ISLES:
             return {
-                stone: -0.44825,
-                keratin: 0.175,
-                silver: 0.25,
-                diamond: 0.0225,
-                relic: 0.00075
+                common: -0.44825,
+                uncommon: 0.175,
+                rare: 0.25,
+                epic: 0.0225,
+                legendary: 0.00075
             }
         case IslandType.CRYSTAL_ISLES:
             return {
-                stone: -0.429,
-                keratin: 0.02,
-                silver: 0.3,
-                diamond: 0.1,
-                relic: 0.009
+                common: -0.429,
+                uncommon: 0.02,
+                rare: 0.3,
+                epic: 0.1,
+                legendary: 0.009
             }
         case IslandType.CELESTIAL_ISLES:
             return {
-                stone: -0.55,
-                keratin: -0.175,
-                silver: 0.3,
-                diamond: 0.25,
-                relic: 0.175
+                common: -0.55,
+                uncommon: -0.175,
+                rare: 0.3,
+                epic: 0.25,
+                legendary: 0.175
             }
     }
 }
@@ -214,7 +335,6 @@ export const RARITY_DEVIATION_REDUCTIONS = (type: IslandType, rarity: BitRarity)
         case IslandType.PRIMAL_ISLES:
             return {
                 gatheringRateReduction: 0,
-                resourceCapReduction: 0
             }
         // for verdant isles, only common bits will get reductions.
         case IslandType.VERDANT_ISLES:
@@ -222,12 +342,11 @@ export const RARITY_DEVIATION_REDUCTIONS = (type: IslandType, rarity: BitRarity)
                 case BitRarity.COMMON:
                     return {
                         gatheringRateReduction: 2,
-                        resourceCapReduction: 5
                     }
                 default:
                     return {
                         gatheringRateReduction: 0,
-                        resourceCapReduction: 0
+
                     }
             }
         // for exotic isles, only common and uncommon bits will get reductions.
@@ -236,12 +355,10 @@ export const RARITY_DEVIATION_REDUCTIONS = (type: IslandType, rarity: BitRarity)
                 case BitRarity.COMMON:
                     return {
                         gatheringRateReduction: 5,
-                        resourceCapReduction: 7.75
                     }
                 case BitRarity.UNCOMMON:
                     return {
                         gatheringRateReduction: 3,
-                        resourceCapReduction: 6
                     }
             }
         // for crystal isles, commons cannot be placed, so technically only uncommons and rares will get reductions.
@@ -252,12 +369,10 @@ export const RARITY_DEVIATION_REDUCTIONS = (type: IslandType, rarity: BitRarity)
                 case BitRarity.UNCOMMON:
                     return {
                         gatheringRateReduction: 5.75,
-                        resourceCapReduction: 10
                     }
                 case BitRarity.RARE:
                     return {
                         gatheringRateReduction: 4,
-                        resourceCapReduction: 7
                     }
             }
         // for celestial isles, commons and uncommons cannot be placed, so technically only rares and epics will get reductions.
@@ -270,17 +385,14 @@ export const RARITY_DEVIATION_REDUCTIONS = (type: IslandType, rarity: BitRarity)
                 case BitRarity.RARE:
                     return {
                         gatheringRateReduction: 7.5,
-                        resourceCapReduction: 11.5
                     }
                 case BitRarity.EPIC:
                     return {
                         gatheringRateReduction: 5.25,
-                        resourceCapReduction: 8.25
                     }
                 case BitRarity.LEGENDARY:
                     return {
                         gatheringRateReduction: 0,
-                        resourceCapReduction: 0
                     }
             }
     }

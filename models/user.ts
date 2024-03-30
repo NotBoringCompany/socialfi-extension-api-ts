@@ -1,6 +1,7 @@
+import { CityName } from './city';
 import { Food } from './food';
 import { Item } from './item';
-import { Resource } from './resource';
+import { ExtendedResource } from './resource';
 
 /****************
  * USER-RELATED MODELS
@@ -20,6 +21,8 @@ export interface User {
     openedTweetIdsToday: string[];
     /** the user's inventory */
     inventory: UserInventory;
+    /** the user's in-game data */
+    inGameData: InGameData;
 }
 
 /**
@@ -36,10 +39,16 @@ export interface UserWallet {
  * Represents a user's inventory.
  */
 export interface UserInventory {
-    /** the amount of in-game cookies (users are required to convert from blockchain cookies first) */
+    /** the weight of the inventory (currently only impacted by resources) */
+    weight: number;
+    /** the maximum inventory weight the user can have */
+    maxWeight: number;
+    /** the amount of in-game cookies owned (users are required to convert from blockchain cookies first) */
     xCookies: number;
+    /** the amount of cookie crumbs owned */
+    cookieCrumbs: number;
     /** a list of resources owned */
-    resources: Resource[];
+    resources: ExtendedResource[];
     /** a list of items owned */
     items: Item[];
     /** a list of foods owned */
@@ -55,3 +64,26 @@ export interface UserInventory {
     /** total amount of terra caps owned */
     totalTerraCapsulators: number;
 }
+
+/**
+ * Represents the user's in-game data
+ */
+export interface InGameData {
+    /** the user's level */
+    level: number;
+    /** the current location of the user (either home or in a city) */
+    location: CityName;
+    /** 
+     * checks if the user is currently travelling to another city 
+     * 
+     * if not null, this means that the user is currently travelling to another city.
+     */
+    travellingTo: CityName | null;
+    /** 
+     * the arrival time of the destination at `travellingTo`
+     * 
+     * value will be 0 if not travelling (i.e. if travellingTo is null)
+     */
+    destinationArrival: number;
+}
+
