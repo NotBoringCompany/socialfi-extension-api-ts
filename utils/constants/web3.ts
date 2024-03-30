@@ -3,11 +3,20 @@ import fs from 'fs';
 import path from 'path';
 
 export const BLAST_TESTNET_PROVIDER = new ethers.providers.JsonRpcProvider(`https://sepolia.blast.io`);
-export const DEPLOYER_WALLET = new ethers.Wallet(process.env.DEPLOYER_PRIVATE_KEY!, BLAST_TESTNET_PROVIDER);
+export const ETH_MAINNET_PROVIDER = new ethers.providers.JsonRpcBatchProvider(`	https://api.securerpc.com/v1`);
+
+/** Gets a deployer wallet instance based on the provider the deployer wallet will operate in */
+export const DEPLOYER_WALLET = (provider: ethers.providers.JsonRpcProvider) => {
+    return new ethers.Wallet(process.env.DEPLOYER_PRIVATE_KEY!, provider);
+}
+
 export const LOTTERY_CONTRACT_ADDRESS = process.env.LOTTERY_CONTRACT!;
 export const COOKIE_CONTRACT_ADDRESS = process.env.COOKIE_CONTRACT!;
-
 export const COOKIE_CONTRACT_DECIMALS = 8;
+
+export const KOS_CONTRACT_ADDRESS = process.env.KOS_CONTRACT!;
+export const KEYCHAIN_CONTRACT_ADDRESS = process.env.KEYCHAIN_CONTRACT!;
+export const SUPERIOR_KEYCHAIN_CONTRACT_ADDRESS = process.env.SUPERIOR_KEYCHAIN_CONTRACT!;
 
 export const LOTTERY_ARTIFACT = JSON.parse(
     fs.readFileSync(
@@ -27,7 +36,7 @@ export const COOKIE_ARTIFACT = JSON.parse(
 export const LOTTERY_CONTRACT = new ethers.Contract(
     LOTTERY_CONTRACT_ADDRESS,
     LOTTERY_ARTIFACT.abi,
-    DEPLOYER_WALLET
+    DEPLOYER_WALLET(BLAST_TESTNET_PROVIDER)
 );
 
 /**
@@ -36,7 +45,7 @@ export const LOTTERY_CONTRACT = new ethers.Contract(
 export const COOKIE_CONTRACT = new ethers.Contract(
     COOKIE_CONTRACT_ADDRESS,
     COOKIE_ARTIFACT.abi,
-    DEPLOYER_WALLET
+    DEPLOYER_WALLET(BLAST_TESTNET_PROVIDER)
 );
 
 /**
