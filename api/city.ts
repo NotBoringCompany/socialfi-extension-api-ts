@@ -112,3 +112,65 @@ export const travelToCity = async (
         }
     }
 }
+
+/**
+ * Checks, for each user that was/is travelling to another city, if they have arrived at their destination.
+ * 
+ * Should be called by a scheduler every 5 minutes.
+ */
+export const checkArrival = async (): Promise<void> => {
+    try {
+        const currentTime = Math.floor(Date.now() / 1000);
+
+        // get all users that are travelling to another city (i.e. inGameData.travellingTo is not null (but rather contains a city name))
+        const users = await UserModel.find({ 'inGameData.travellingTo': { $ne: null } }).lean();
+
+        if (users.length === 0) {
+            console.log(`(checkArrival) No users are travelling to another city.`);
+            return;
+        }
+
+        // prepare bulk write operations
+        const bulkWriteOpsPromises = users.map(async user => {
+            let updateOperations = [];
+
+            // check if user has arrived at their destination
+            if (currentTime >= user.inGameData.destinationArrival) {
+                // user has arrived.
+                // 1. update travellingTo to null
+                // 2. update destinationArrival to 0
+                // 3. update location to the destination
+                updateOperations.push({
+                    updateOne: {
+                        filter: { twitterId: user.twitterId },
+                        update: {
+                            'inGameData.travellingTo': null,
+                            'inGameData.destinationArrival': 0,
+                            'inGameData.location': user.inGameData.travellingTo
+                        }
+                    }
+                });
+            }
+
+            return updateOperations;
+        });
+
+        // execute the bulk write operations
+        const bulkWriteOpsArrays = await Promise.all(bulkWriteOpsPromises);
+
+        const bulkWriteOps = bulkWriteOpsArrays.flat().filter(op => op);
+
+        // if there are no bulk write operations to execute, return
+        if (bulkWriteOps.length === 0) {
+            console.error(`(checkArrival) No users to update.`);
+            return;
+        }
+
+        // execute the bulk write operations
+        await UserModel.bulkWrite(bulkWriteOps);
+
+        console.log(`(checkArrival) Updated ${bulkWriteOps.length} users.`);
+    } catch (err: any) {
+        console.error('Error in checkArrival:', err.message);
+    }
+}

@@ -1,5 +1,5 @@
 import { ReturnValue, Status } from '../utils/retVal'
-import { COOKIE_CONTRACT_DECIMALS, COOKIE_CONTRACT_USER, DEPLOYER_WALLET } from '../utils/constants/web3';
+import { BLAST_TESTNET_PROVIDER, COOKIE_CONTRACT_DECIMALS, COOKIE_CONTRACT_USER, DEPLOYER_WALLET } from '../utils/constants/web3';
 import { generateHashSalt, generateObjectId } from '../utils/crypto';
 import { ethers } from 'ethers';
 import { CookieDepositModel, CookieWithdrawalModel, UserModel } from '../utils/constants/db';
@@ -107,7 +107,7 @@ export const withdrawCookies = async (twitterId: string, amount: number): Promis
         );
 
         // sign the withdraw hash using the deployer wallet's private key
-        const signature = await DEPLOYER_WALLET.signMessage(ethers.utils.arrayify(withdrawHash));
+        const signature = await DEPLOYER_WALLET(BLAST_TESTNET_PROVIDER).signMessage(ethers.utils.arrayify(withdrawHash));
 
         // call the `withdraw` function from the contract
         const result = await COOKIE_CONTRACT_USER(privateKey).withdraw(
@@ -202,6 +202,36 @@ export const getLatestWithdrawalId = async (): Promise<ReturnValue> => {
         return {
             status: Status.ERROR,
             message: `(getLatestWithdrawalId) Error: ${err.message}`
+        }
+    }
+}
+
+/**
+ * Fetches the number of xCookies owned by the user.
+ */
+export const getOwnedXCookies = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(getOwnedXCookies) User not found. Twitter ID: ${twitterId}`
+            }
+        }
+
+        // return the number of xCookies owned by the user
+        return {
+            status: Status.SUCCESS,
+            message: `(getOwnedXCookies) xCookies found.`,
+            data: {
+                xCookies: user.inventory.xCookies
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getOwnedXCookies) ${err.message}`
         }
     }
 }

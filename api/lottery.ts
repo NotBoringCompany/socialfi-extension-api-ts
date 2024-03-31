@@ -8,7 +8,7 @@ import { Prize, Ticket, Winner } from '../models/lottery';
 import { lotteryPrizeTier, lotteryTicketCost } from '../utils/constants/lottery';
 import { UserSchema } from '../schemas/User';
 import { getLotteryContractBalance } from '../utils/web3';
-import { LOTTERY_CONTRACT, LOTTERY_CONTRACT_USER } from '../utils/constants/web3';
+import { LOTTERY_CONTRACT, LOTTERY_CONTRACT_USER } from '../utils/constants/blast';
 import { ExtendedResource, Resource, ResourceType } from '../models/resource';
 import { ethers } from 'ethers';
 

@@ -311,6 +311,8 @@ export const RESOURCE_DROP_CHANCES_LEVEL_DIFF = (type: IslandType): ResourceDrop
  */
 export const BIT_PLACEMENT_MIN_RARITY_REQUIREMENT = (type: IslandType): BitRarity => {
     switch (type) {
+        case IslandType.BARREN:
+            return BitRarity.COMMON;
         case IslandType.PRIMAL_ISLES:
             return BitRarity.COMMON;
         case IslandType.VERDANT_ISLES:
