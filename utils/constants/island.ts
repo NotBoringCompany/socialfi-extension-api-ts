@@ -44,6 +44,8 @@ export const GET_TOTAL_X_COOKIES_EARNABLE = (type: IslandType) => {
     const terraCapsulatorPrice = shop.terraCapsulators.xCookies;
 
     switch (type) {
+        case IslandType.BARREN:
+            return 0;
         case IslandType.PRIMAL_ISLES:
             return 0.6 * terraCapsulatorPrice;
         case IslandType.VERDANT_ISLES:
@@ -65,6 +67,8 @@ export const GET_TOTAL_X_COOKIES_EARNABLE = (type: IslandType) => {
  */
 export const GET_TOTAL_COOKIE_CRUMBS_EARNABLE = (type: IslandType) => {
     switch (type) {
+        case IslandType.BARREN:
+            return 0;
         case IslandType.PRIMAL_ISLES:
             return 100;
         case IslandType.VERDANT_ISLES:
@@ -333,6 +337,11 @@ export const BIT_PLACEMENT_MIN_RARITY_REQUIREMENT = (type: IslandType): BitRarit
  */
 export const RARITY_DEVIATION_REDUCTIONS = (type: IslandType, rarity: BitRarity): RarityDeviationReduction => {
     switch (type) {
+        // for barren isles, all bits from common to legendary will NOT receive any reductions
+        case IslandType.BARREN: 
+            return {
+                gatheringRateReduction: 0,
+            }
         // for primal isles, all bits from common to legendary will NOT receive any reductions
         case IslandType.PRIMAL_ISLES:
             return {
