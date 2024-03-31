@@ -512,8 +512,16 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
 
         // check if the bit's rarity is allowed for it to be placed on the island
         const bitRarity = <BitRarity>bit.rarity;
+
+        console.log(' bit rarity: ', bitRarity);
+
         const minRarityRequired = BIT_PLACEMENT_MIN_RARITY_REQUIREMENT(<IslandType>island.type);
+
+        console.log('island type: ', island.type);
+
         const bitRarityAllowed = checkBitRarityAllowed(bitRarity, minRarityRequired);
+
+        console.log('bit rarity allowed:', bitRarityAllowed);
 
         if (!bitRarityAllowed) {
             return {
