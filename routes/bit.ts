@@ -6,7 +6,7 @@ import { Status } from '../utils/retVal';
 import { RateType } from '../models/island';
 import mongoose from 'mongoose';
 import { BitSchema } from '../schemas/Bit';
-import { BIT_EVOLUTION_COST } from '../utils/constants/bit';
+import { BIT_EVOLUTION_COST, FREE_BIT_EVOLUTION_COST } from '../utils/constants/bit';
 import { BitModel } from '../utils/constants/db';
 
 const router = express.Router();
@@ -277,5 +277,35 @@ router.get('/get_evolution_cost/:bitId', async (req, res) => {
         })
     }
 })
+
+router.get('/get_free_bit_evolution_cost/:bitId', async (req, res) => {
+    const { bitId } = req.params;
+
+    try {
+        const bit = await BitModel.findOne({ bitId: parseInt(bitId) }).lean();
+
+        if (!bit) {
+            return res.status(404).json({
+                status: 404,
+                message: `(get_free_bit_evolution_cost) Bit with ID ${bitId} not found.`
+            });
+        }
+
+        const evolutionCost = FREE_BIT_EVOLUTION_COST(bit.currentFarmingLevel);
+
+        return res.status(200).json({
+            status: 200,
+            message: `(get_free_bit_evolution_cost) Successfully retrieved free bit evolution cost for bit with ID ${bitId}.`,
+            data: {
+                evolutionCost
+            }
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: `(get_free_bit_evolution_cost) ${err.message}`
+        })
+    }
+});
 
 export default router;
