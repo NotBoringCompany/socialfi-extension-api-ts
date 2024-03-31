@@ -43,7 +43,6 @@ import cookie from './routes/cookie';
 import city from './routes/city';
 import leaderboard from './routes/leaderboard';
 import { schedulers } from './schedulers/schedulers';
-import { getExpectedValue } from './api/kos';
 
 app.use('/auth/twitter', twitterAuth);
 app.use('/jwt', jwt);
