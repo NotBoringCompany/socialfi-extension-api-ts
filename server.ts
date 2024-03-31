@@ -65,7 +65,4 @@ app.listen(port, async () => {
     await mongoose.connect(mongoUri);
 
     await schedulers();
-
-    const ev = getExpectedValue();
-    console.log('Expected value:', ev);
 });
