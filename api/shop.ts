@@ -3,7 +3,7 @@ import { Food, FoodType } from '../models/food';
 import { ShopAsset, ShopFood } from '../models/shop';
 import { ReturnValue, Status } from '../utils/retVal';
 import { shop } from '../utils/shop';
-import { getOwnedXCookies } from './cookies';
+import { getOwnedXCookies } from './cookie';
 import { UserSchema } from '../schemas/User';
 import { User } from '../models/user';
 import { UserModel } from '../utils/constants/db';
