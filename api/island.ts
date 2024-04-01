@@ -480,6 +480,8 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
                     }
                 }
 
+                // set the lastRelocationTimestamp of the relocated bit to now
+                bitUpdateOperations.$set['lastRelocationTimestamp'] = Math.floor(Date.now() / 1000);
 
                 // execute the update operations
                 const prevBitPromises = prevIslandBitsUpdateOperations.map(async op => {
@@ -489,11 +491,11 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
                 // remove the modifiers that has to do with the bit to be removed from the prev island and the bits in the prev island
                 await Promise.all([
                     IslandModel.updateOne({ islandId: prevIslandId }, prevIslandUpdateOperations),
-                    ...prevBitPromises
+                    BitModel.updateOne({ bitId }, bitUpdateOperations),
+                    ...prevBitPromises,
                 ]);
 
-                // set the lastRelocationTimestamp to now
-                bitUpdateOperations.$set['lastRelocationTimestamp'] = Math.floor(Date.now() / 1000);
+
             } else {
                 return {
                     status: Status.ERROR,
@@ -1431,11 +1433,11 @@ export const claimResources = async (
             islandUpdateOperations.$set['islandResourceStats.lastClaimed'] = currentTime;
 
             returnMessage = `Manually claimed resources for Island ID ${islandId}.`;
-        // if auto, we will do the following:
-        // 1. firstly, check if all resources can be claimed based on the user's max inventory weight. if yes, skip the next steps.
-        // 2. if not, we will sort the resources from highest to lowest rarity.
-        // 3. then, for each rarity, sort the resources from highest to lowest weight.
-        // 4. then, for each resource, we will claim the max amount of that resource that the user can claim based on their max inventory weight.
+            // if auto, we will do the following:
+            // 1. firstly, check if all resources can be claimed based on the user's max inventory weight. if yes, skip the next steps.
+            // 2. if not, we will sort the resources from highest to lowest rarity.
+            // 3. then, for each rarity, sort the resources from highest to lowest weight.
+            // 4. then, for each resource, we will claim the max amount of that resource that the user can claim based on their max inventory weight.
         } else {
             // initialize the total weight to claim
             let totalWeightToClaim = 0;
@@ -1463,7 +1465,7 @@ export const claimResources = async (
                     if (existingResourceIndex !== -1) {
                         console.log('total weight to claim is not exceeding max weight!');
                         console.log('existing resource index: ', existingResourceIndex);
-                        
+
                         userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = resource.amount;
                     } else {
                         userUpdateOperations.$push['inventory.resources'].$each.push(resource);
