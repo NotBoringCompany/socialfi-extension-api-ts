@@ -1461,6 +1461,8 @@ export const claimResources = async (
                     const existingResourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(r => r.type === resource.type);
 
                     if (existingResourceIndex !== -1) {
+                        console.log('total weight to claim is not exceeding max weight!');
+                        console.log('existing resource index: ', existingResourceIndex);
                         userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = resource.amount;
                     } else {
                         userUpdateOperations.$push['inventory.resources'].$each.push(resource);
