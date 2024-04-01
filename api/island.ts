@@ -1509,6 +1509,8 @@ export const claimResources = async (
 
                         // if the current weight + the total weight of this resource exceeds the max allowed weight, we will only claim a portion of this resource.
                         if (currentWeight + totalWeight > maxAllowedWeight) {
+                            console.log('current weight + total weight of resources exceeds max allowed weight!');
+
                             // calculate the amount of this resource we can claim based on the max allowed weight
                             const amountToClaim = Math.floor((maxAllowedWeight - currentWeight) / resourceWeight);
 
@@ -1545,6 +1547,8 @@ export const claimResources = async (
                             // break out of the loop since we can't claim more resources based on the user's max inventory weight
                             break;
                         } else {
+                            console.log('current weight + total weight of resources does not exceed max allowed weight!');
+                            
                             // check if this resource exists on the user's inventory or not. if not, we push a new resource; if yes, we increment the amount.
                             const existingResourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(r => r.type === resource.type);
 
@@ -1558,7 +1562,7 @@ export const claimResources = async (
                             currentWeight += totalWeight;
 
                             console.log('pulling claimable resources with type: ', resource.type);
-                            
+
                             // since this essentially means we can claim all of this resource, we will pull this resource from the island's claimable resources.
                             islandUpdateOperations.$pull[`islandResourceStats.claimableResources`] = { type: resource.type };
 
