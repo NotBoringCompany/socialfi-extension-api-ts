@@ -1,6 +1,6 @@
 import { Modifier } from './modifier';
 import { ObtainMethod } from './obtainMethod';
-import { Resource } from './resource';
+import { ExtendedResource, Resource } from './resource';
 
 /****************
  * ISLAND-RELATED MODELS
@@ -79,9 +79,9 @@ export interface IslandResourceStats {
     /** base amount of resources available to be gathered from this island, excluding deductions */
     baseResourceCap: number;
     /** total resources gathered, incl. ones claimed already */
-    resourcesGathered: Resource[];
+    resourcesGathered: ExtendedResource[];
     /** gathered resources that are claimable but not claimed to the inventory yet (pending) */
-    claimableResources: Resource[];
+    claimableResources: ExtendedResource[];
     /** start timestamp of gathering; 0 if not started yet */
     gatheringStart: number;
     /** end timestamp of gathering; 0 if not ended yet */

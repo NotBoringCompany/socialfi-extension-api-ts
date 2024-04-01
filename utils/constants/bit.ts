@@ -95,20 +95,15 @@ export const randomizeBitTraits = (rarity: BitRarity): BitTrait[] => {
         rarity === BitRarity.RARE ? 3 : 
         2;
 
-    for (let i = 0; i < maxTraits; i++) {
-        const rand = Math.floor(Math.random() * 100) + 1;
+    const allTraits = [...commonTraits, ...uncommonTraits, ...rareTraits];
 
-        // randomize a trait based on the traits available for the rarity
-        switch (true) {
-            case rand <= 50:
-                traits.push(commonTraits[Math.floor(Math.random() * commonTraits.length)]);
-                break;
-            case rand <= 85:
-                traits.push(uncommonTraits[Math.floor(Math.random() * uncommonTraits.length)]);
-                break;
-            default:
-                traits.push(rareTraits[Math.floor(Math.random() * rareTraits.length)]);
-                break;
+    while (traits.length < Math.min(maxTraits, allTraits.length)) {
+        const randomIndex = Math.floor(Math.random() * allTraits.length);
+        const randomTrait = allTraits[randomIndex];
+        
+        // Check if the randomTrait has already been added to traits array
+        if (!traits.includes(randomTrait)) {
+            traits.push(randomTrait);
         }
     }
 
