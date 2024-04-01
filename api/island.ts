@@ -1463,6 +1463,7 @@ export const claimResources = async (
                     if (existingResourceIndex !== -1) {
                         console.log('total weight to claim is not exceeding max weight!');
                         console.log('existing resource index: ', existingResourceIndex);
+                        
                         userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = resource.amount;
                     } else {
                         userUpdateOperations.$push['inventory.resources'].$each.push(resource);
@@ -1471,6 +1472,9 @@ export const claimResources = async (
 
                 // add the weight to the user's inventory
                 userUpdateOperations.$inc['inventory.weight'] = totalWeightToClaim;
+
+                // remove all claimable resources from the island
+                islandUpdateOperations.$set['islandResourceStats.claimableResources'] = [];
 
                 // add the claimed resources to the claimedResources array
                 claimedResources.push(...claimableResources);
@@ -1496,6 +1500,10 @@ export const claimResources = async (
 
                 // initialize the current weight of resources. this is used to know how many resources we can claim based on the user's max inventory weight.
                 let currentWeight: number = 0;
+
+                // only used for scenarios where the user can't claim all resources due to max inventory weight
+                // since mongodb doesn't support $pull with $each, we will just push the resources to be pulled into this array and pull them all at once after the loop.
+                const islandResourcesPulled = [];
 
                 // loop through each rarity group
                 for (const rarityGroup of Object.values(groupedResources)) {
@@ -1548,7 +1556,7 @@ export const claimResources = async (
                             break;
                         } else {
                             console.log('current weight + total weight of resources does not exceed max allowed weight!');
-                            
+
                             // check if this resource exists on the user's inventory or not. if not, we push a new resource; if yes, we increment the amount.
                             const existingResourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(r => r.type === resource.type);
 
@@ -1564,12 +1572,18 @@ export const claimResources = async (
                             console.log('pulling claimable resources with type: ', resource.type);
 
                             // since this essentially means we can claim all of this resource, we will pull this resource from the island's claimable resources.
-                            islandUpdateOperations.$pull[`islandResourceStats.claimableResources`] = { type: resource.type };
+                            islandResourcesPulled.push(resource.type);
+                            // islandUpdateOperations.$pull[`islandResourceStats.claimableResources`] = { type: resource.type };
 
                             // add the claimed resource to the claimedResources array
                             claimedResources.push(resource);
                         }
                     }
+                }
+
+                // if islandResourcesPulled has any resources, we will pull them all at once.
+                if (islandResourcesPulled.length > 0) {
+                    islandUpdateOperations.$pull[`islandResourceStats.claimableResources`] = { type: { $in: islandResourcesPulled } };
                 }
 
                 // add the weight to the user's inventory
