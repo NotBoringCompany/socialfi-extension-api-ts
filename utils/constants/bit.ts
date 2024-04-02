@@ -65,22 +65,29 @@ export const randomizeBitTraits = (rarity: BitRarity): BitTrait[] => {
         BitTrait.PRODUCTIVE,
         BitTrait.ENTHUSIASTIC,
         BitTrait.FIT,
+        BitTrait.LUCKY,
+        BitTrait.FERTILE,
         BitTrait.LAZY,
         BitTrait.UNINSPIRED,
-        BitTrait.OBESE
+        BitTrait.OBESE,
+        BitTrait.UNLUCKY,
     ];
 
     const uncommonTraits = [
         BitTrait.STRONG,
-        BitTrait.NIBBLER,
+        BitTrait.TRICKSTER,
         BitTrait.TEAMWORKER,
         BitTrait.WEAK,
+        BitTrait.HAPLESS,
     ];
 
     const rareTraits = [
         BitTrait.LEADER,
         BitTrait.CUTE,
-        BitTrait.GENIUS
+        BitTrait.GENIUS,
+        BitTrait.LONEWOLF,
+        BitTrait.INFLUENTIAL,
+        BitTrait.ANTAGONISTIC,
     ];
 
     const traits: BitTrait[] = [];
@@ -146,6 +153,9 @@ export const BIT_TRAIT_EFFECT_ON_SELF = (trait: BitTrait): BitTraitModifier => {
                     value: 0.95
                 }
             }
+        // lucky trait only impacts bonus resource chance when claiming resources
+        case BitTrait.LUCKY:
+            return {}
         case BitTrait.LAZY:
             return {
                 bitGatheringRate: {
@@ -175,6 +185,9 @@ export const BIT_TRAIT_EFFECT_ON_SELF = (trait: BitTrait): BitTraitModifier => {
                     value: 1.05
                 }
             }
+        // unlucky only impacts bonus resource chance when claiming resources
+        case BitTrait.UNLUCKY:
+            return {}
         case BitTrait.STRONG:
             return {
                 energyDepletionRate: {
@@ -182,17 +195,9 @@ export const BIT_TRAIT_EFFECT_ON_SELF = (trait: BitTrait): BitTraitModifier => {
                     value: 0.85
                 }
             }
-        case BitTrait.NIBBLER:
-            return {
-                islandGatheringRate: {
-                    origin: 'Bit Trait: Nibbler',
-                    value: 1.02
-                },
-                islandEarningRate: {
-                    origin: 'Bit Trait: Nibbler',
-                    value: 1.02
-                }
-            }
+        // trickster only impacts bonus resource chance when claiming resources
+        case BitTrait.TRICKSTER:
+            return {}
         case BitTrait.TEAMWORKER:
             return {
                 bitEarningRate: {
@@ -211,6 +216,9 @@ export const BIT_TRAIT_EFFECT_ON_SELF = (trait: BitTrait): BitTraitModifier => {
                     value: 1.15
                 }
             }
+        // hapless only impacts bonus resource chance when claiming resources
+        case BitTrait.HAPLESS:
+            return {}
         case BitTrait.LEADER:
             return {
                 bitGatheringRate: {
@@ -236,6 +244,24 @@ export const BIT_TRAIT_EFFECT_ON_SELF = (trait: BitTrait): BitTraitModifier => {
                     value: 1.075
                 }
             }
+        // increases own working rate by 50% but reduces working rate of other bits in the same island by 5%
+        case BitTrait.LONEWOLF:
+            return {
+                bitGatheringRate: {
+                    origin: 'Bit Trait: Lonewolf',
+                    value: 1.5
+                },
+                bitEarningRate: {
+                    origin: 'Bit Trait: Lonewolf',
+                    value: 1.5
+                }
+            }
+        // influential only increases the working rate of all islands owned
+        case BitTrait.INFLUENTIAL:
+            return {}
+        // antagonistic only reduces the working rate of all islands owned
+        case BitTrait.ANTAGONISTIC:
+            return {}
         
     }
 }

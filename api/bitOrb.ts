@@ -4,7 +4,8 @@ import { RANDOMIZE_GENDER, getBitStatsModifiersFromTraits, randomizeBitTraits } 
 import { RANDOMIZE_RARITY_FROM_ORB } from '../utils/constants/bitOrb';
 import { ReturnValue, Status } from '../utils/retVal';
 import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
-import { UserModel } from '../utils/constants/db';
+import { IslandModel, UserModel } from '../utils/constants/db';
+import { Modifier } from '../models/modifier';
 
 /**
  * (User) Consumes a Bit Orb to obtain a Bit.
@@ -19,6 +20,16 @@ export const consumeBitOrb = async (twitterId: string): Promise<ReturnValue> => 
             $set: {},
             $push: {}
         }
+
+        const islandUpdateOperations: Array<{
+            islandId: number,
+            updateOperations: {
+                $pull: {},
+                $inc: {},
+                $set: {},
+                $push: {}
+            }
+        }> = [];
 
         if (!user) {
             return {
@@ -60,11 +71,88 @@ export const consumeBitOrb = async (twitterId: string): Promise<ReturnValue> => 
             }
         }
 
+        // get the user's list of owned islands
+        const islands = user.inventory?.islandIds as number[];
+
+        // check if the bit has the infuential or antagonistic trait
+        const hasInfluentialTrait = bit.traits.some(trait => trait === 'Influential');
+        const hasAntagonisticTrait = bit.traits.some(trait => trait === 'Antagonistic');
+
+        // if bit has influential trait, add 1% working rate to all islands owned by the user
+        if (hasInfluentialTrait) {
+            // for each island, add 1% working rate (gathering + earning rate) to the island's modifiers
+            // which will be the island's `islandStatsModifiers` field
+            for (const islandId of islands) {
+                const gatheringRateModifier: Modifier = {
+                    origin: `Bit ID #${bit.bitId}'s Trait: Influential`,
+                    value: 1.01
+                }
+
+                const earningRateModifier: Modifier = {
+                    origin: `Bit ID #${bit.bitId}'s Trait: Influential`,
+                    value: 1.01
+                }
+
+                // add the new modifier to the island's `islandStatsModifiers` field
+                islandUpdateOperations.push({
+                    islandId,
+                    updateOperations: {
+                        $push: {
+                            'islandStatsModifiers.gatheringRateModifiers': gatheringRateModifier,
+                            'islandStatsModifiers.earningRateModifiers': earningRateModifier
+                        },
+                        $set: {},
+                        $pull: {},
+                        $inc: {}
+                    }
+                });
+            }
+        }
+
+        // if the bit has the antagonistic trait, reduce 1% working rate to all islands owned by the user
+        if (hasAntagonisticTrait) {
+            // for each island, reduce 1% working rate (gathering + earning rate) to the island's modifiers
+            // which will be the island's `islandStatsModifiers` field
+            for (const islandId of islands) {
+                const gatheringRateModifier: Modifier = {
+                    origin: `Bit ID #${bit.bitId}'s Trait: Antagonistic`,
+                    value: 0.99
+                }
+
+                const earningRateModifier: Modifier = {
+                    origin: `Bit ID #${bit.bitId}'s Trait: Antagonistic`,
+                    value: 0.99
+                }
+
+                // add the new modifier to the island's `islandStatsModifiers` field
+                islandUpdateOperations.push({
+                    islandId,
+                    updateOperations: {
+                        $push: {
+                            'islandStatsModifiers.gatheringRateModifiers': gatheringRateModifier,
+                            'islandStatsModifiers.earningRateModifiers': earningRateModifier
+                        },
+                        $set: {},
+                        $pull: {},
+                        $inc: {}
+                    }
+                });
+            }
+        }
+
         // add the bit ID to the user's inventory
         userUpdateOperations.$push['inventory.bitIds'] = bit.bitId;
 
-        // execute the update operation
-        await UserModel.updateOne({ twitterId }, userUpdateOperations);
+        // create an array of promises for updating the islands
+        const islandUpdatePromises = islandUpdateOperations.map(async op => {
+            return IslandModel.updateOne({ islandId: op.islandId }, op.updateOperations);
+        });
+
+        // execute the update operations
+        await Promise.all([
+            await UserModel.updateOne({ twitterId }, userUpdateOperations),
+            ...islandUpdatePromises
+        ]);
 
         return {
             status: Status.SUCCESS,

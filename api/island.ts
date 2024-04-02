@@ -705,11 +705,10 @@ export const unplaceBit = async (twitterId: string, bitId: number): Promise<Retu
 
             console.log('current trait to check when unplacing Bit: ', trait);
 
-            // if the trait is nibbler OR genius, remove modifiers from the island's `gatheringRateModifiers` and `earningRateModifiers`
+            // if the trait is genius, remove modifiers from the island's `gatheringRateModifiers` and `earningRateModifiers`
             if (
-                trait === BitTrait.NIBBLER || 
                 trait === BitTrait.GENIUS
-                ) {
+            ) {
                 // remove the modifier from the island's `gatheringRateModifiers` and `earningRateModifiers`
                 islandUpdateOperations.$pull['islandStatsModifiers.gatheringRateModifiers'] = { origin: `Bit ID #${bit.bitId}'s Trait: ${trait}` };
                 islandUpdateOperations.$pull['islandStatsModifiers.earningRateModifiers'] = { origin: `Bit ID #${bit.bitId}'s Trait: ${trait}` };
@@ -802,26 +801,9 @@ export const updateExtendedTraitEffects = async (
     for (const trait of bitTraits) {
         const otherBits = await BitModel.find({ bitId: { $in: otherBitIds } }).lean();
 
-        // if the trait is nibbler, increase the island's gathering and earning rate by 2.5%
-        if (trait === BitTrait.NIBBLER) {
-            // no need to check for existing modifiers because the modifiers aren't stackable in one modifier instance but rather in separate instances based on each Bit ID.
-            // so, we just add the new modifier to the island's `gatheringRateModifiers` and `earningRateModifiers`
-            const newGatheringRateModifier: Modifier = {
-                origin: `Bit ID #${bit.bitId}'s Trait: Nibbler`,
-                value: 1.025
-            }
-
-            const newEarningRateModifier: Modifier = {
-                origin: `Bit ID #${bit.bitId}'s Trait: Nibbler`,
-                value: 1.025
-            }
-
-            // add the new modifier to the island's `gatheringRateModifiers` and `earningRateModifiers`
-            islandUpdateOperations.$push['islandStatsModifiers.gatheringRateModifiers'] = newGatheringRateModifier;
-            islandUpdateOperations.$push['islandStatsModifiers.earningRateModifiers'] = newEarningRateModifier;
-            // if trait is teamworker:
-            // increase all other bits that have the same or lesser rarity as the bit being placed by 5% gathering and earning rate
-        } else if (trait === BitTrait.TEAMWORKER) {
+        // if trait is teamworker:
+        // increase all other bits that have the same or lesser rarity as the bit being placed by 5% gathering and earning rate
+        if (trait === BitTrait.TEAMWORKER) {
             // loop through each other bit and check if they have the same or lesser rarity as the bit being placed
             // if no other bits found, skip this trait
             if (otherBits.length === 0 || !otherBits) {
