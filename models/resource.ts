@@ -38,6 +38,18 @@ export interface SimplifiedResource {
 export interface ExtendedResource extends Resource {
     /** the amount of this resource */
     amount: number;
+    /** 
+     the origin of this resource. mostly used when claiming resources to check whether the origin is a bonus resource or rather gathered normally. 
+     */
+    origin: ExtendedResourceOrigin;
+}
+
+/**
+ * Lists all possible origins of a resource.
+ */
+export enum ExtendedResourceOrigin {
+    NORMAL = 'Normal',
+    BONUS = 'Bonus',
 }
 
 /**
