@@ -780,7 +780,7 @@ export const updateExtendedTraitEffects = async (
 
     // loop through each trait and see if they impact the island's modifiers or other bits' modifiers
     // right now, these traits are:
-    // nibbler, teamworker, leader, cute and genius
+    // teamworker, leader, cute, genius and lonewolf
     const bitUpdateOperations: Array<{
         bitId: number,
         updateOperations: {
@@ -928,6 +928,40 @@ export const updateExtendedTraitEffects = async (
             // add the new modifier to the island's `gatheringRateModifiers` and `earningRateModifiers`
             islandUpdateOperations.$push['islandStatsModifiers.gatheringRateModifiers'] = newGatheringRateModifier;
             islandUpdateOperations.$push['islandStatsModifiers.earningRateModifiers'] = newEarningRateModifier;
+            // if bit trait is lonewolf:
+            // reduce the working rate of all other bits by 5%
+        } else if (trait === BitTrait.LONEWOLF) {
+            if (otherBits.length === 0 || !otherBits) {
+                console.log(`(updateExtendedTraitEffects) No other bits found.`);
+                continue;
+            }
+
+            for (const otherBit of otherBits) {
+                // add the new modifier to the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                const newGatheringRateModifier: Modifier = {
+                    origin: `Bit ID #${bit.bitId}'s Trait: Lonewolf`,
+                    value: 0.95
+                }
+
+                const newEarningRateModifier: Modifier = {
+                    origin: `Bit ID #${bit.bitId}'s Trait: Lonewolf`,
+                    value: 0.95
+                }
+
+                // add the new modifier to the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                bitUpdateOperations.push({
+                    bitId: otherBit.bitId,
+                    updateOperations: {
+                        $push: {
+                            'bitStatsModifiers.gatheringRateModifiers': newGatheringRateModifier,
+                            'bitStatsModifiers.earningRateModifiers': newEarningRateModifier
+                        },
+                        $pull: {},
+                        $inc: {},
+                        $set: {}
+                    }
+                });
+            }
             // if bit trait is none of the above, skip this trait
         } else {
             continue;
