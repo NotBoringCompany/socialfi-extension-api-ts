@@ -1,5 +1,5 @@
 import express from 'express';
-import { calcEffectiveResourceDropChances, calcIslandCurrentRate, checkCurrentTax, claimResources, claimXCookies, evolveIsland, getIslands, placeBit } from '../api/island';
+import { calcEffectiveResourceDropChances, calcIslandCurrentRate, checkCurrentTax, claimResources, claimXCookies, evolveIsland, getIslands, placeBit, unplaceBit } from '../api/island';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { IslandType, RateType, ResourceDropChanceDiff } from '../models/island';
@@ -35,6 +35,34 @@ router.post('/place_bit', async (req, res) => {
         })
     }
 });
+
+router.post('/unplace_bit', async (req, res) => {
+    const { bitId } = req.body;
+
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'unplace_bit');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
+        const { status, message, data } = await unplaceBit(validateData?.twitterId, bitId);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
 
 router.get('/check_current_tax/:twitterId/:islandId', async (req, res) => {
     const { twitterId, islandId } = req.params;

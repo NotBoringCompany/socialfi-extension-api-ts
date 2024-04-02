@@ -260,7 +260,7 @@ export const evolveIsland = async (twitterId: string, islandId: number, choice: 
 }
 
 /**
- * (User) Places a bit on an island. Once placed, the bit is locked and cannot be removed until further notice.
+ * (User) Places a bit on an island.
  * 
  * NOTE: Requires `twitterId` which is fetched via `req.user`, automatically giving us the user's Twitter ID. This will check if the user who calls this function owns the twitter ID that owns the island and the bit ID.
  */
@@ -594,6 +594,170 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
         return {
             status: Status.ERROR,
             message: `(placeBit) Error: ${err.message}`
+        }
+    }
+}
+
+/**
+ * *User) Unplaces a bit from an island.
+ * 
+ * NOTE: Requires `twitterId` which is fetched via `req.user`, automatically giving us the user's Twitter ID. This will check if the user who calls this function owns the twitter ID that owns the island and the bit ID.
+ */
+export const unplaceBit = async (twitterId: string, bitId: number): Promise<ReturnValue> => {
+    try {
+        const [user, bit] = await Promise.all([
+            UserModel.findOne({ twitterId }).lean(),
+            BitModel.findOne({ bitId }).lean()
+        ]);
+
+        // since the bit to be unplaced may have traits that impact other bits, we will need to include an array of bitUpdateOperations
+        // so we can update the other bits' modifiers based on the bit to be unplaced.
+        const bitUpdateOperations: Array<{
+            bitId: number,
+            updateOperations: {
+                $pull: {},
+                $inc: {},
+                $set: {},
+                $push: {}
+            }
+        }> = [];
+
+        const userUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const islandUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(unplaceBit) User not found.`
+            }
+        }
+
+        // check if the user owns the bit to be unplaced
+        if (!(user.inventory?.bitIds as number[]).includes(bitId)) {
+            return {
+                status: Status.ERROR,
+                message: `(unplaceBit) User does not own the bit.`
+            }
+        }
+
+        if (!bit) {
+            return {
+                status: Status.ERROR,
+                message: `(unplaceBit) Bit not found.`
+            }
+        }
+
+        // check if the bit is already placed on an island.
+        // if not, return an error.
+        if (bit.placedIslandId === 0) {
+            return {
+                status: Status.ERROR,
+                message: `(unplaceBit) Bit is not placed on any island.`
+            }
+        }
+
+        const islandId = bit.placedIslandId;
+
+        const island = await IslandModel.findOne({ islandId }).lean();
+
+        if (!island) {
+            return {
+                status: Status.ERROR,
+                message: `(unplaceBit) Island not found.`
+            }
+        }
+
+        // remove the bit ID from the island's `placedBitIds`
+        islandUpdateOperations.$pull['placedBitIds'] = bitId;
+
+        // remove the bit's `placedIslandId`
+        bitUpdateOperations.push({
+            bitId: bit.bitId,
+            updateOperations: {
+                $set: {
+                    'placedIslandId': 0
+                },
+                $pull: {},
+                $inc: {},
+                $push: {}
+            }
+        })
+
+        // remove any modifiers that has to do with the bit's traits from the island and its bits
+        const bitTraits = bit.traits;
+
+        // loop through each trait and see if they impact the island's modifiers or other bits' modifiers
+        // right now, these traits are:
+        // nibbler, teamworker, leader, cute and genius
+        for (const trait of bitTraits) {
+            const otherBits = await BitModel.find({ bitId: { $in: island.placedBitIds } }).lean();
+
+            // if the trait is nibbler OR genius, remove modifiers from the island's `gatheringRateModifiers` and `earningRateModifiers`
+            if (
+                trait === BitTrait.NIBBLER || 
+                trait === BitTrait.GENIUS
+                ) {
+                // remove the modifier from the island's `gatheringRateModifiers` and `earningRateModifiers`
+                islandUpdateOperations.$pull['islandStatsModifiers.gatheringRateModifiers'] = { origin: `Bit ID #${bit.bitId}'s Trait: Nibbler` };
+                islandUpdateOperations.$pull['islandStatsModifiers.earningRateModifiers'] = { origin: `Bit ID #${bit.bitId}'s Trait: Nibbler` };
+                // if trait is teamworker, leader or cute, remove modifiers for each bit that was impacted by this bit's trait
+            } else if (
+                trait === BitTrait.TEAMWORKER ||
+                trait === BitTrait.LEADER ||
+                trait === BitTrait.CUTE
+            ) {
+                for (const otherBit of otherBits) {
+                    // remove the modifier from the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                    bitUpdateOperations.push({
+                        bitId: otherBit.bitId,
+                        updateOperations: {
+                            $pull: {
+                                'bitStatsModifiers.gatheringRateModifiers': { origin: `Bit ID #${bit.bitId}'s Trait: Teamworker` },
+                                'bitStatsModifiers.earningRateModifiers': { origin: `Bit ID #${bit.bitId}'s Trait: Teamworker` }
+                            },
+                            $inc: {},
+                            $set: {},
+                            $push: {}
+                        }
+                    });
+                }
+            }
+        }
+
+        const bitUpdatePromises = bitUpdateOperations.map(async op => {
+            return BitModel.updateOne({ bitId: op.bitId }, op.updateOperations);
+        })
+
+        // execute the update operations
+        await Promise.all([
+            UserModel.updateOne({ twitterId }, userUpdateOperations),
+            IslandModel.updateOne({ islandId }, islandUpdateOperations),
+            ...bitUpdatePromises
+        ]);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(unplaceBit) Bit unplaced from the island.`,
+            data: {
+                bitId,
+                islandId
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(unplaceBit) Error: ${err.message}`
         }
     }
 }
