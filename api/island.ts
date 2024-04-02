@@ -712,11 +712,12 @@ export const unplaceBit = async (twitterId: string, bitId: number): Promise<Retu
                 // remove the modifier from the island's `gatheringRateModifiers` and `earningRateModifiers`
                 islandUpdateOperations.$pull['islandStatsModifiers.gatheringRateModifiers'] = { origin: `Bit ID #${bit.bitId}'s Trait: ${trait}` };
                 islandUpdateOperations.$pull['islandStatsModifiers.earningRateModifiers'] = { origin: `Bit ID #${bit.bitId}'s Trait: ${trait}` };
-                // if trait is teamworker, leader or cute, remove modifiers for each bit that was impacted by this bit's trait
+                // if trait is teamworker, leader, cute or lonewolf, remove modifiers for each bit that was impacted by this bit's trait
             } else if (
                 trait === BitTrait.TEAMWORKER ||
                 trait === BitTrait.LEADER ||
-                trait === BitTrait.CUTE
+                trait === BitTrait.CUTE ||
+                trait === BitTrait.LONEWOLF
             ) {
                 for (const otherBit of otherBits) {
                     // remove the modifier from the bit's `gatheringRateModifiers` and `earningRateModifiers`
