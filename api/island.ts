@@ -703,14 +703,16 @@ export const unplaceBit = async (twitterId: string, bitId: number): Promise<Retu
         for (const trait of bitTraits) {
             const otherBits = await BitModel.find({ bitId: { $in: island.placedBitIds } }).lean();
 
+            console.log('current trait to check when unplacing Bit: ', trait);
+
             // if the trait is nibbler OR genius, remove modifiers from the island's `gatheringRateModifiers` and `earningRateModifiers`
             if (
                 trait === BitTrait.NIBBLER || 
                 trait === BitTrait.GENIUS
                 ) {
                 // remove the modifier from the island's `gatheringRateModifiers` and `earningRateModifiers`
-                islandUpdateOperations.$pull['islandStatsModifiers.gatheringRateModifiers'] = { origin: `Bit ID #${bit.bitId}'s Trait: Nibbler` };
-                islandUpdateOperations.$pull['islandStatsModifiers.earningRateModifiers'] = { origin: `Bit ID #${bit.bitId}'s Trait: Nibbler` };
+                islandUpdateOperations.$pull['islandStatsModifiers.gatheringRateModifiers'] = { origin: `Bit ID #${bit.bitId}'s Trait: ${trait}` };
+                islandUpdateOperations.$pull['islandStatsModifiers.earningRateModifiers'] = { origin: `Bit ID #${bit.bitId}'s Trait: ${trait}` };
                 // if trait is teamworker, leader or cute, remove modifiers for each bit that was impacted by this bit's trait
             } else if (
                 trait === BitTrait.TEAMWORKER ||
@@ -723,8 +725,8 @@ export const unplaceBit = async (twitterId: string, bitId: number): Promise<Retu
                         bitId: otherBit.bitId,
                         updateOperations: {
                             $pull: {
-                                'bitStatsModifiers.gatheringRateModifiers': { origin: `Bit ID #${bit.bitId}'s Trait: Teamworker` },
-                                'bitStatsModifiers.earningRateModifiers': { origin: `Bit ID #${bit.bitId}'s Trait: Teamworker` }
+                                'bitStatsModifiers.gatheringRateModifiers': { origin: `Bit ID #${bit.bitId}'s Trait: ${trait}` },
+                                'bitStatsModifiers.earningRateModifiers': { origin: `Bit ID #${bit.bitId}'s Trait: ${trait}` }
                             },
                             $inc: {},
                             $set: {},
