@@ -19,7 +19,7 @@ export const MAX_BIT_LEVEL = (rarity: BitRarity): number => {
 }
 
 /** relocation cooldown for bits after relocating from a raft or island (1 day) */
-export const RELOCATION_COOLDOWN = 86400000;
+export const RELOCATION_COOLDOWN = 86400;
 
 /** gets the cost (in xCookies) of evolving a bit, based on its current level */
 export const BIT_EVOLUTION_COST = (currentLevel: number): number => {
