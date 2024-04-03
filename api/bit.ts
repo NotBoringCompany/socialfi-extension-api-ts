@@ -214,7 +214,16 @@ export const depleteEnergy = async (): Promise<void> => {
                 const currentEnergy = bit.farmingStats?.currentEnergy;
 
                 // get the bit's energy depletion rate and divide it by 6 to get the depletion rate every 10 minutes
-                const depletionRate = bit.farmingStats?.currentEnergyDepletionRate / 6;
+                const baseDepletionRate = bit.farmingStats?.currentEnergyDepletionRate / 6;
+
+                // get (if applicable) the bit's energy rate modifiers. multiply the value to get the final depletion rate
+                const energyRateModifiers = bit.bitStatsModifiers?.energyRateModifiers as Modifier[];
+
+                let depletionRate = baseDepletionRate;
+
+                for (const modifier of energyRateModifiers) {
+                    depletionRate *= modifier.value;
+                }
 
                 // calculate the new energy (can go negative)
                 // if current energy is already 0 or lower, `newEnergy` will be the same.
