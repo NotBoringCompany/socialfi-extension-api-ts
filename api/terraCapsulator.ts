@@ -1,10 +1,12 @@
 import { ReturnValue, Status } from '../utils/retVal';
 import { addIslandToDatabase, getLatestIslandId, randomizeBaseResourceCap } from './island';
 import { randomizeTypeFromCapsulator } from '../utils/constants/terraCapsulator';
-import { Island } from '../models/island';
+import { Island, IslandStatsModifiers } from '../models/island';
 import { ObtainMethod } from '../models/obtainMethod';
-import { UserModel } from '../utils/constants/db';
+import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
 import { GET_TOTAL_COOKIE_CRUMBS_EARNABLE, GET_TOTAL_X_COOKIES_EARNABLE, randomizeIslandTraits } from '../utils/constants/island';
+import { BitTrait } from '../models/bit';
+import { Modifier } from '../models/modifier';
 
 /**
  * (User) Consumes a Terra Capsulator to obtain an island.
@@ -114,6 +116,62 @@ export const summonIsland = async (
         // get total cookie crumbs earnable based on rarity
         const totalCookieCrumbsEarnable = GET_TOTAL_COOKIE_CRUMBS_EARNABLE(islandType);
 
+        // get the user's owned bit ids
+        const user = await UserModel.findOne({ _id: owner }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(summonIsland) User not found.`
+            }
+        }
+
+        const userBitIds = user.inventory?.bitIds as number[];
+
+        const islandStatsModifiers: IslandStatsModifiers = {
+            resourceCapModifiers: [],
+            gatheringRateModifiers: [],
+            earningRateModifiers: []
+        }
+
+        // loop through each bit and see if they have these traits:
+        // influential or antagonistic
+        // if influential, add 1% to earning and gathering rate modifiers
+        // if antagonistic, reduce 1% to earning and gathering rate modifiers
+        const bits = await BitModel.find({ bitId: { $in: userBitIds } }).lean();
+
+        bits.forEach(bit => {
+            if (bit.traits.includes('Influential')) {
+                const gatheringRateModifier: Modifier = {
+                    origin: `Bit ID #${bit.bitId}'s Trait: Influential`,
+                    value: 1.01
+                }
+
+                const earningRateModifier: Modifier = {
+                    origin: `Bit ID #${bit.bitId}'s Trait: Influential`,
+                    value: 1.01
+                }
+
+                islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
+                islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
+            }
+
+            if (bit.traits.includes('Antagonistic')) {
+                const gatheringRateModifier: Modifier = {
+                    origin: `Bit ID #${bit.bitId}'s Trait: Antagonistic`,
+                    value: 0.99
+                }
+
+                const earningRateModifier: Modifier = {
+                    origin: `Bit ID #${bit.bitId}'s Trait: Antagonistic`,
+                    value: 0.99
+                }
+
+                islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
+                islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
+            }
+        });
+
         // summon and return the island. DOESN'T SAVE TO DATABASE YET.
         const island: Island = {
             islandId: latestIslandId + 1,
@@ -150,11 +208,7 @@ export const summonIsland = async (
                 lastClaimed: 0,
                 crumbsLastClaimed: 0
             },
-            islandStatsModifiers: {
-                resourceCapModifiers: [],
-                gatheringRateModifiers: [],
-                earningRateModifiers: []
-            }
+            islandStatsModifiers
         }
 
         return {
