@@ -19,9 +19,8 @@ import { RateType } from '../models/island';
 import { Modifier } from '../models/modifier';
 import { Food, FoodType } from '../models/food';
 import { FOOD_ENERGY_REPLENISHMENT } from '../utils/constants/food';
-import { BarrenResource, ExtendedResource, Resource, ResourceType } from '../models/resource';
+import { BarrenResource, ExtendedResource } from '../models/resource';
 import { generateObjectId } from '../utils/crypto';
-import { shop } from '../utils/shop';
 import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
 
 /**
@@ -96,7 +95,13 @@ export const feedBit = async (twitterId: string, bitId: number, foodType: FoodTy
         }
 
         // calculate the amount of energy to replenish
-        const toReplenish = FOOD_ENERGY_REPLENISHMENT(foodType);
+        const baseToReplenish = FOOD_ENERGY_REPLENISHMENT(foodType);
+
+        // check if the bit has any modifiers that impact food consumption efficiency
+        const foodConsumptionModifiers = bit.bitStatsModifiers?.foodConsumptionEfficiencyModifiers as Modifier[];
+        const foodConsumptionMultiplier = foodConsumptionModifiers.reduce((acc, modifier) => acc * modifier.value, 1);
+
+        const toReplenish = baseToReplenish * foodConsumptionMultiplier;
 
         // if the amount of energy to replenish is more than the amount of energy needed to reach 100, set the amount to replenish to the amount needed to reach 100
         const energyNeededToReach100 = 100 - bit.farmingStats?.currentEnergy;
@@ -218,12 +223,9 @@ export const depleteEnergy = async (): Promise<void> => {
 
                 // get (if applicable) the bit's energy rate modifiers. multiply the value to get the final depletion rate
                 const energyRateModifiers = bit.bitStatsModifiers?.energyRateModifiers as Modifier[];
+                const energyRateMultiplier = energyRateModifiers.reduce((acc, modifier) => acc * modifier.value, 1);
 
-                let depletionRate = baseDepletionRate;
-
-                for (const modifier of energyRateModifiers) {
-                    depletionRate *= modifier.value;
-                }
+                const depletionRate = baseDepletionRate * energyRateMultiplier;
 
                 // calculate the new energy (can go negative)
                 // if current energy is already 0 or lower, `newEnergy` will be the same.
