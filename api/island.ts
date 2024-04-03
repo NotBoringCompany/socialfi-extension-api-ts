@@ -2075,11 +2075,12 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
         }
 
         // finally, if the island has bits that have either the lucky, unlucky, trickster or hapless trait, they have a chance to drop a bonus resource.
+        // there is a 5% base chance to drop a bonus resource everytime a resource is dropped.
         // each bit with a lucky trait gives a 2.5% chance to drop a bonus resource (stacks)
         // each bit with an unlucky trait reduces the chance to drop a bonus resource by 2.5% (stacks)
         // each bit with a trickster trait gives a 5% chance to drop a bonus resource (stacks)
         // each bit with a hapless trait reduces the chance to drop a bonus resource by 5% (stacks)
-        let bonusResourceChance = 0;
+        let bonusResourceChance = 5;
 
         const placedBitIds = island.placedBitIds as number[];
         const bits = await BitModel.find({ bitId: { $in: placedBitIds } }).lean();
