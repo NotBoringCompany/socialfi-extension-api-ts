@@ -84,6 +84,27 @@ export enum BitTrait {
 }
 
 /**
+ * Represents the rarity of a Bit trait.
+ */
+export enum BitTraitRarity {
+    COMMON = 'Common',
+    UNCOMMON = 'Uncommon',
+    RARE = 'Rare',
+}
+
+/**
+ * Lists all possible categories a Bit trait can belong to.
+ */
+export enum BitTraitCategory {
+    WORKRATE_A = 'Workrate A',
+    WORKRATE_B = 'Workrate B',
+    WORKRATE_C = 'Workrate C',
+    ENERGY = 'Energy',
+    BONUS_RESOURCE = 'Bonus Resource',
+    BREEDING = 'Breeding',
+}
+
+/**
  * Represents the gender of a Bit.
  */
 export enum BitGender {

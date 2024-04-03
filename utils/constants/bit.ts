@@ -1,4 +1,4 @@
-import { Bit, BitGender, BitRarity, BitStatsModifiers, BitTrait, EnergyThresholdReduction } from '../../models/bit';
+import { Bit, BitGender, BitRarity, BitStatsModifiers, BitTrait, BitTraitCategory, BitTraitRarity, EnergyThresholdReduction } from '../../models/bit';
 import { Island, IslandStatsModifiers } from '../../models/island';
 import { BitTraitModifier, Modifier } from '../../models/modifier';
 
@@ -61,61 +61,192 @@ export const FREE_BIT_EVOLUTION_COST = (currentLevel: number): number => {
  * Randomizes 2-5 traits (based on rarity) for a Bit.
  */
 export const randomizeBitTraits = (rarity: BitRarity): BitTrait[] => {
-    const commonTraits = [
-        BitTrait.PRODUCTIVE,
-        BitTrait.ENTHUSIASTIC,
-        BitTrait.FIT,
-        BitTrait.LUCKY,
-        BitTrait.FERTILE,
-        BitTrait.LAZY,
-        BitTrait.UNINSPIRED,
-        BitTrait.OBESE,
-        BitTrait.UNLUCKY,
-    ];
-
-    const uncommonTraits = [
-        BitTrait.STRONG,
-        BitTrait.TRICKSTER,
-        BitTrait.TEAMWORKER,
-        BitTrait.WEAK,
-        BitTrait.HAPLESS,
-    ];
-
-    const rareTraits = [
-        BitTrait.LEADER,
-        BitTrait.CUTE,
-        BitTrait.GENIUS,
-        BitTrait.LONEWOLF,
-        BitTrait.INFLUENTIAL,
-        BitTrait.ANTAGONISTIC,
-    ];
-
-    const traits: BitTrait[] = [];
-
-    // if rarity is common or uncommon, 2 traits.
-    // if rarity is rare, 3 traits.
-    // if rarity is epic, 4 traits.
-    // if rarity is legendary, 5 traits.
+    // check how many traits the bit can have based on its rarity
     const maxTraits = 
         rarity === BitRarity.LEGENDARY ? 5 : 
         rarity === BitRarity.EPIC ? 4 : 
         rarity === BitRarity.RARE ? 3 : 
         2;
+    
+    const traits: BitTrait[] = [];
 
-    const allTraits = [...commonTraits, ...uncommonTraits, ...rareTraits];
+    while (traits.length < maxTraits) {
+        // following rules will apply:
+        // 1. 80% common, 15% uncommon, 5% rare chance
+        // 2. only 1 trait per category (BitTraitCategory) can be obtained
+        // 3. no duplicate traits
+        const rand = Math.floor(Math.random() * 100) + 1;
 
-    while (traits.length < Math.min(maxTraits, allTraits.length)) {
-        const randomIndex = Math.floor(Math.random() * allTraits.length);
-        const randomTrait = allTraits[randomIndex];
-        
-        // Check if the randomTrait has already been added to traits array
+        // randomize the traits from the `bitTraits` array
+        // if rand is <= 80, get a common trait
+        // if rand is <= 95, get an uncommon trait
+        // if rand is <= 100, get a rare trait
+        let randomTrait: BitTrait;
+
+        if (rand <= 80) {
+            // filter through common traits
+            const commonTraits = bitTraits.filter(trait => trait.rarity === BitTraitRarity.COMMON);
+
+            // get a random trait from common traits
+            const commonRand = Math.floor(Math.random() * commonTraits.length);
+            randomTrait = commonTraits[commonRand].trait;
+        } else if (rand <= 95) {
+            // filter through uncommon traits
+            const uncommonTraits = bitTraits.filter(trait => trait.rarity === BitTraitRarity.UNCOMMON);
+
+            // get a random trait from uncommon traits
+            const uncommonRand = Math.floor(Math.random() * uncommonTraits.length);
+            randomTrait = uncommonTraits[uncommonRand].trait;
+        } else {
+            // filter through rare traits
+            const rareTraits = bitTraits.filter(trait => trait.rarity === BitTraitRarity.RARE);
+
+            // get a random trait from rare traits
+            const rareRand = Math.floor(Math.random() * rareTraits.length);
+            randomTrait = rareTraits[rareRand].trait;
+        }
+
+        // check if the trait already exists in the traits array
         if (!traits.includes(randomTrait)) {
-            traits.push(randomTrait);
+            // at this point, the trait is unique.
+            // however, we still need to check if the trait is from the same category as another trait in the array
+            const randomTraitCategory = bitTraits.find(trait => trait.trait === randomTrait)?.category;
+
+            // check if the category of the randomTrait is already in the traits array
+            const categoryExists = traits.some(trait => {
+                const traitCategory = bitTraits.find(t => t.trait === trait)?.category;
+                return traitCategory === randomTraitCategory;
+            });
+
+            // if the category doesn't exist, add the trait
+            if (!categoryExists) {
+                traits.push(randomTrait);
+            }
         }
     }
 
     return traits;
 }
+
+/**
+ * A list of all bit traits and their respective stats/details.
+ */
+export const bitTraits = [
+    {
+        trait: BitTrait.PRODUCTIVE,
+        effect: `+5% working rate to self`,
+        rarity: BitTraitRarity.COMMON,
+        category: BitTraitCategory.WORKRATE_A
+    },
+    {
+        trait: BitTrait.ENTHUSIASTIC,
+        effect: '+10% working rate to self',
+        rarity: BitTraitRarity.COMMON,
+        category: BitTraitCategory.WORKRATE_A
+    },
+    {
+        trait: BitTrait.FIT,
+        effect: '-5% energy depletion rate to self',
+        rarity: BitTraitRarity.COMMON,
+        category: BitTraitCategory.ENERGY
+    },
+    {
+        trait: BitTrait.LUCKY,
+        effect: '+2.5% bonus resource chance when resource is dropped',
+        rarity: BitTraitRarity.COMMON,
+        category: BitTraitCategory.BONUS_RESOURCE
+    },
+    {
+        trait: BitTrait.LAZY,
+        effect: '-5% working rate to self',
+        rarity: BitTraitRarity.COMMON,
+        category: BitTraitCategory.WORKRATE_A
+    },
+    {
+        trait: BitTrait.UNINSPIRED,
+        effect: '-10% working rate to self',
+        rarity: BitTraitRarity.COMMON,
+        category: BitTraitCategory.WORKRATE_A
+    },
+    {
+        trait: BitTrait.OBESE,
+        effect: '+5% energy depletion rate to self',
+        rarity: BitTraitRarity.COMMON,
+        category: BitTraitCategory.ENERGY
+    },
+    {
+        trait: BitTrait.UNLUCKY,
+        effect: '-2.5% bonus resource chance when resource is dropped',
+        rarity: BitTraitRarity.COMMON,
+        category: BitTraitCategory.BONUS_RESOURCE
+    },
+    {
+        trait: BitTrait.STRONG,
+        effect: '-15% energy depletion rate to self',
+        rarity: BitTraitRarity.UNCOMMON,
+        category: BitTraitCategory.ENERGY
+    },
+    {
+        trait: BitTrait.TRICKSTER,
+        effect: '+5% bonus resource chance when resource is dropped',
+        rarity: BitTraitRarity.UNCOMMON,
+        category: BitTraitCategory.BONUS_RESOURCE
+    },
+    {
+        trait: BitTrait.TEAMWORKER,
+        effect: '+5% working rate to all bits with same or lesser rarity in the same island',
+        rarity: BitTraitRarity.UNCOMMON,
+        category: BitTraitCategory.WORKRATE_B
+    },
+    {
+        trait: BitTrait.WEAK,
+        effect: '+15% energy depletion rate to self',
+        rarity: BitTraitRarity.UNCOMMON,
+        category: BitTraitCategory.ENERGY
+    },
+    {
+        trait: BitTrait.HAPLESS,
+        effect: '-5% bonus resource chance when resource is dropped',
+        rarity: BitTraitRarity.UNCOMMON,
+        category: BitTraitCategory.BONUS_RESOURCE
+    },
+    {
+        trait: BitTrait.LEADER,
+        effect: '+10% working rate to all bits in the same island',
+        rarity: BitTraitRarity.RARE,
+        category: BitTraitCategory.WORKRATE_B
+    },
+    {
+        trait: BitTrait.CUTE,
+        effect: '+12.5% working rate to all other bits in the same island',
+        rarity: BitTraitRarity.RARE,
+        category: BitTraitCategory.WORKRATE_B
+    },
+    {
+        trait: BitTrait.GENIUS,
+        effect: '+7.5% island working rate',
+        rarity: BitTraitRarity.RARE,
+        category: BitTraitCategory.WORKRATE_B
+    },
+    {
+        trait: BitTrait.LONEWOLF,
+        effect: '+50% working rate to self, -5% working rate to all bits in the same island',
+        rarity: BitTraitRarity.RARE,
+        category: BitTraitCategory.WORKRATE_C
+    },
+    {
+        trait: BitTrait.INFLUENTIAL,
+        effect: '+1% working rate to all islands owned',
+        rarity: BitTraitRarity.RARE,
+        category: BitTraitCategory.WORKRATE_C
+    },
+    {
+        trait: BitTrait.ANTAGONISTIC,
+        effect: '-1% working rate to all islands owned',
+        rarity: BitTraitRarity.RARE,
+        category: BitTraitCategory.WORKRATE_C
+    }
+]
 
 /**
  * Gets the modifier effect of a Bit's trait ONLY on itself.
