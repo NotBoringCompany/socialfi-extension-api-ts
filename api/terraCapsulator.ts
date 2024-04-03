@@ -135,36 +135,46 @@ export const summonIsland = async (
         }
 
         // loop through each bit and see if they have these traits:
-        // influential or antagonistic
+        // influential, antagonistic, famous or mannerless
         // if influential, add 1% to earning and gathering rate modifiers
         // if antagonistic, reduce 1% to earning and gathering rate modifiers
+        // if famous, add 0.5% to earning and gathering rate modifiers
+        // if mannerless, reduce 0.5% to earning and gathering rate modifiers
         const bits = await BitModel.find({ bitId: { $in: userBitIds } }).lean();
 
         bits.forEach(bit => {
-            if (bit.traits.includes('Influential')) {
+            if (
+                bit.traits.includes(BitTrait.INFLUENTIAL) ||
+                bit.traits.includes(BitTrait.FAMOUS) ||
+                bit.traits.includes(BitTrait.MANNERLESS) ||
+                bit.traits.includes(BitTrait.ANTAGONISTIC)
+            ) {
                 const gatheringRateModifier: Modifier = {
-                    origin: `Bit ID #${bit.bitId}'s Trait: Influential`,
-                    value: 1.01
+                    origin: `Bit ID #${bit.bitId}'s Trait: ${
+                        bit.traits.includes(BitTrait.INFLUENTIAL) ? 'Influential' : 
+                        bit.traits.includes(BitTrait.FAMOUS) ? 'Famous' : 
+                        bit.traits.includes(BitTrait.MANNERLESS) ? 'Mannerless' : 
+                        'Antagonistic'
+                    }`,
+                    value: 
+                        bit.traits.includes(BitTrait.INFLUENTIAL) ? 1.01 : 
+                        bit.traits.includes(BitTrait.FAMOUS) ? 1.005 :
+                        bit.traits.includes(BitTrait.MANNERLESS) ? 0.995 :
+                        0.99
                 }
 
                 const earningRateModifier: Modifier = {
-                    origin: `Bit ID #${bit.bitId}'s Trait: Influential`,
-                    value: 1.01
-                }
-
-                islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
-                islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
-            }
-
-            if (bit.traits.includes('Antagonistic')) {
-                const gatheringRateModifier: Modifier = {
-                    origin: `Bit ID #${bit.bitId}'s Trait: Antagonistic`,
-                    value: 0.99
-                }
-
-                const earningRateModifier: Modifier = {
-                    origin: `Bit ID #${bit.bitId}'s Trait: Antagonistic`,
-                    value: 0.99
+                    origin: `Bit ID #${bit.bitId}'s Trait: ${
+                        bit.traits.includes(BitTrait.INFLUENTIAL) ? 'Influential' : 
+                        bit.traits.includes(BitTrait.FAMOUS) ? 'Famous' : 
+                        bit.traits.includes(BitTrait.MANNERLESS) ? 'Mannerless' : 
+                        'Antagonistic'
+                    }`,
+                    value: 
+                        bit.traits.includes(BitTrait.INFLUENTIAL) ? 1.01 : 
+                        bit.traits.includes(BitTrait.FAMOUS) ? 1.005 :
+                        bit.traits.includes(BitTrait.MANNERLESS) ? 0.995 :
+                        0.99
                 }
 
                 islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);

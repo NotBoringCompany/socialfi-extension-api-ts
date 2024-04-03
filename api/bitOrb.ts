@@ -74,57 +74,27 @@ export const consumeBitOrb = async (twitterId: string): Promise<ReturnValue> => 
         // get the user's list of owned islands
         const islands = user.inventory?.islandIds as number[];
 
-        // check if the bit has the infuential or antagonistic trait
+        // check if the bit has the infuential, antagonistic, famous or mannerless traits
         const hasInfluentialTrait = bit.traits.some(trait => trait.trait === 'Influential');
         const hasAntagonisticTrait = bit.traits.some(trait => trait.trait === 'Antagonistic');
+        const hasFamousTrait = bit.traits.some(trait => trait.trait === 'Famous');
+        const hasMannerlessTrait = bit.traits.some(trait => trait.trait === 'Mannerless');
 
         // if bit has influential trait, add 1% working rate to all islands owned by the user
-        if (hasInfluentialTrait) {
-            // for each island, add 1% working rate (gathering + earning rate) to the island's modifiers
-            // which will be the island's `islandStatsModifiers` field
-            for (const islandId of islands) {
-                const gatheringRateModifier: Modifier = {
-                    origin: `Bit ID #${bit.bitId}'s Trait: Influential`,
-                    value: 1.01
-                }
-
-                const earningRateModifier: Modifier = {
-                    origin: `Bit ID #${bit.bitId}'s Trait: Influential`,
-                    value: 1.01
-                }
-
-                // add the new modifier to the island's `islandStatsModifiers` field
-                islandUpdateOperations.push({
-                    islandId,
-                    updateOperations: {
-                        $push: {
-                            'islandStatsModifiers.gatheringRateModifiers': gatheringRateModifier,
-                            'islandStatsModifiers.earningRateModifiers': earningRateModifier
-                        },
-                        $set: {},
-                        $pull: {},
-                        $inc: {}
-                    }
-                });
+        // if bit has antagonistic trait, reduce 1% working rate to all islands owned by the user
+        // if bit has famous trait, add 0.5% working rate to all islands owned by the user
+        // if bit has mannerless trait, reduce 0.5% working rate to all islands owned by the user
+        if (hasInfluentialTrait || hasAntagonisticTrait || hasFamousTrait || hasMannerlessTrait) {
+            const gatheringRateModifier: Modifier = {
+                origin: `Bit ID #${bit.bitId}'s Trait: ${hasInfluentialTrait ? 'Influential' : hasAntagonisticTrait ? 'Antagonistic' : hasFamousTrait ? 'Famous' : 'Mannerless'}`,
+                value: hasInfluentialTrait ? 1.01 : hasAntagonisticTrait ? 0.99 : hasFamousTrait ? 1.005 : 0.995
             }
-        }
+            const earningRateModifier: Modifier = {
+                origin: `Bit ID #${bit.bitId}'s Trait: ${hasInfluentialTrait ? 'Influential' : hasAntagonisticTrait ? 'Antagonistic' : hasFamousTrait ? 'Famous' : 'Mannerless'}`,
+                value: hasInfluentialTrait ? 1.01 : hasAntagonisticTrait ? 0.99 : hasFamousTrait ? 1.005 : 0.995
+            }
 
-        // if the bit has the antagonistic trait, reduce 1% working rate to all islands owned by the user
-        if (hasAntagonisticTrait) {
-            // for each island, reduce 1% working rate (gathering + earning rate) to the island's modifiers
-            // which will be the island's `islandStatsModifiers` field
             for (const islandId of islands) {
-                const gatheringRateModifier: Modifier = {
-                    origin: `Bit ID #${bit.bitId}'s Trait: Antagonistic`,
-                    value: 0.99
-                }
-
-                const earningRateModifier: Modifier = {
-                    origin: `Bit ID #${bit.bitId}'s Trait: Antagonistic`,
-                    value: 0.99
-                }
-
-                // add the new modifier to the island's `islandStatsModifiers` field
                 islandUpdateOperations.push({
                     islandId,
                     updateOperations: {

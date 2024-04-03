@@ -1,4 +1,4 @@
-import { Bit, BitGender, BitRarity, BitStatsModifiers, BitTrait, BitTraitCategory, BitTraitData, BitTraitRarity, EnergyThresholdReduction } from '../../models/bit';
+import { Bit, BitGender, BitRarity, BitStatsModifiers, BitTrait, BitTraitCategory, BitTraitData, BitTraitRarity, BitTraitSubCategory, EnergyThresholdReduction } from '../../models/bit';
 import { Island, IslandStatsModifiers } from '../../models/island';
 import { BitTraitModifier, Modifier } from '../../models/modifier';
 
@@ -136,115 +136,176 @@ export const bitTraits: BitTraitData[] = [
         trait: BitTrait.PRODUCTIVE,
         effect: `+5% working rate to self`,
         rarity: BitTraitRarity.COMMON,
-        category: BitTraitCategory.WORKRATE_A
+        category: BitTraitCategory.WORKRATE_A,
+        subcategory: BitTraitSubCategory.POSITIVE
     },
     {
         trait: BitTrait.ENTHUSIASTIC,
         effect: '+10% working rate to self',
         rarity: BitTraitRarity.COMMON,
-        category: BitTraitCategory.WORKRATE_A
+        category: BitTraitCategory.WORKRATE_A,
+        subcategory: BitTraitSubCategory.POSITIVE
     },
     {
         trait: BitTrait.FIT,
         effect: '-5% energy depletion rate to self',
         rarity: BitTraitRarity.COMMON,
-        category: BitTraitCategory.ENERGY
+        category: BitTraitCategory.ENERGY,
+        subcategory: BitTraitSubCategory.POSITIVE
     },
     {
         trait: BitTrait.LUCKY,
         effect: '+2.5% bonus resource chance when resource is dropped',
         rarity: BitTraitRarity.COMMON,
-        category: BitTraitCategory.BONUS_RESOURCE
+        category: BitTraitCategory.BONUS_RESOURCE,
+        subcategory: BitTraitSubCategory.POSITIVE
     },
     {
         trait: BitTrait.LAZY,
         effect: '-5% working rate to self',
         rarity: BitTraitRarity.COMMON,
-        category: BitTraitCategory.WORKRATE_A
+        category: BitTraitCategory.WORKRATE_A,
+        subcategory: BitTraitSubCategory.NEGATIVE
     },
     {
         trait: BitTrait.UNINSPIRED,
         effect: '-10% working rate to self',
         rarity: BitTraitRarity.COMMON,
-        category: BitTraitCategory.WORKRATE_A
+        category: BitTraitCategory.WORKRATE_A,
+        subcategory: BitTraitSubCategory.NEGATIVE
     },
     {
         trait: BitTrait.OBESE,
         effect: '+5% energy depletion rate to self',
         rarity: BitTraitRarity.COMMON,
-        category: BitTraitCategory.ENERGY
+        category: BitTraitCategory.ENERGY,
+        subcategory: BitTraitSubCategory.NEGATIVE
     },
     {
         trait: BitTrait.UNLUCKY,
         effect: '-2.5% bonus resource chance when resource is dropped',
         rarity: BitTraitRarity.COMMON,
-        category: BitTraitCategory.BONUS_RESOURCE
+        category: BitTraitCategory.BONUS_RESOURCE,
+        subcategory: BitTraitSubCategory.NEGATIVE
     },
     {
         trait: BitTrait.STRONG,
         effect: '-15% energy depletion rate to self',
         rarity: BitTraitRarity.UNCOMMON,
-        category: BitTraitCategory.ENERGY
+        category: BitTraitCategory.ENERGY,
+        subcategory: BitTraitSubCategory.POSITIVE
     },
     {
         trait: BitTrait.TRICKSTER,
         effect: '+5% bonus resource chance when resource is dropped',
         rarity: BitTraitRarity.UNCOMMON,
-        category: BitTraitCategory.BONUS_RESOURCE
+        category: BitTraitCategory.BONUS_RESOURCE,
+        subcategory: BitTraitSubCategory.POSITIVE
     },
     {
         trait: BitTrait.TEAMWORKER,
         effect: '+5% working rate to all bits with same or lesser rarity in the same island',
         rarity: BitTraitRarity.UNCOMMON,
-        category: BitTraitCategory.WORKRATE_B
+        category: BitTraitCategory.WORKRATE_B,
+        subcategory: BitTraitSubCategory.POSITIVE
     },
     {
         trait: BitTrait.WEAK,
         effect: '+15% energy depletion rate to self',
         rarity: BitTraitRarity.UNCOMMON,
-        category: BitTraitCategory.ENERGY
+        category: BitTraitCategory.ENERGY,
+        subcategory: BitTraitSubCategory.NEGATIVE
     },
     {
         trait: BitTrait.HAPLESS,
         effect: '-5% bonus resource chance when resource is dropped',
         rarity: BitTraitRarity.UNCOMMON,
-        category: BitTraitCategory.BONUS_RESOURCE
+        category: BitTraitCategory.BONUS_RESOURCE,
+        subcategory: BitTraitSubCategory.NEGATIVE
     },
     {
         trait: BitTrait.LEADER,
         effect: '+10% working rate to all bits in the same island',
         rarity: BitTraitRarity.RARE,
-        category: BitTraitCategory.WORKRATE_B
+        category: BitTraitCategory.WORKRATE_B,
+        subcategory: BitTraitSubCategory.POSITIVE
     },
     {
         trait: BitTrait.CUTE,
         effect: '+12.5% working rate to all other bits in the same island',
         rarity: BitTraitRarity.RARE,
-        category: BitTraitCategory.WORKRATE_B
+        category: BitTraitCategory.WORKRATE_B,
+        subcategory: BitTraitSubCategory.POSITIVE
     },
     {
         trait: BitTrait.GENIUS,
         effect: '+7.5% island working rate',
         rarity: BitTraitRarity.RARE,
-        category: BitTraitCategory.WORKRATE_B
+        category: BitTraitCategory.WORKRATE_C,
+        subcategory: BitTraitSubCategory.POSITIVE
     },
     {
         trait: BitTrait.LONEWOLF,
         effect: '+50% working rate to self, -5% working rate to all bits in the same island',
         rarity: BitTraitRarity.RARE,
-        category: BitTraitCategory.WORKRATE_C
+        category: BitTraitCategory.WORKRATE_B,
+        subcategory: BitTraitSubCategory.POSITIVE
     },
     {
         trait: BitTrait.INFLUENTIAL,
         effect: '+1% working rate to all islands owned',
         rarity: BitTraitRarity.RARE,
-        category: BitTraitCategory.WORKRATE_C
+        category: BitTraitCategory.WORKRATE_D,
+        subcategory: BitTraitSubCategory.POSITIVE
     },
     {
         trait: BitTrait.ANTAGONISTIC,
         effect: '-1% working rate to all islands owned',
         rarity: BitTraitRarity.RARE,
-        category: BitTraitCategory.WORKRATE_C
+        category: BitTraitCategory.WORKRATE_D,
+        subcategory: BitTraitSubCategory.NEGATIVE
+    },
+    {
+        trait: BitTrait.QUICK,
+        effect: '+1% island working rate',
+        rarity: BitTraitRarity.COMMON,
+        category: BitTraitCategory.WORKRATE_C,
+        subcategory: BitTraitSubCategory.POSITIVE
+    },
+    {
+        trait: BitTrait.SLOW,
+        effect: '-1% island working rate',
+        rarity: BitTraitRarity.COMMON,
+        category: BitTraitCategory.WORKRATE_C,
+        subcategory: BitTraitSubCategory.NEGATIVE
+    },
+    {
+        trait: BitTrait.FAMOUS,
+        effect: '+0.5% working rate to all islands owned',
+        rarity: BitTraitRarity.UNCOMMON,
+        category: BitTraitCategory.WORKRATE_D,
+        subcategory: BitTraitSubCategory.POSITIVE
+    },
+    {
+        trait: BitTrait.MANNERLESS,
+        effect: '-0.5% working rate to all islands owned',
+        rarity: BitTraitRarity.UNCOMMON,
+        category: BitTraitCategory.WORKRATE_D,
+        subcategory: BitTraitSubCategory.NEGATIVE
+    },
+    {
+        trait: BitTrait.FRUGAL,
+        effect: '+10% more energy when consuming food',
+        rarity: BitTraitRarity.COMMON,
+        category: BitTraitCategory.FOOD_CONSUMPTION,
+        subcategory: BitTraitSubCategory.POSITIVE
+    },
+    {
+        trait: BitTrait.HUNGRY,
+        effect: '-10% less energy when consuming food',
+        rarity: BitTraitRarity.COMMON,
+        category: BitTraitCategory.FOOD_CONSUMPTION,
+        subcategory: BitTraitSubCategory.NEGATIVE
     }
 ]
 

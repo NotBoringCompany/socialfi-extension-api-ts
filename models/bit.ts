@@ -63,34 +63,45 @@ export const BitRarityNumeric: { [key in BitRarity]: number } = {
 export enum BitTrait {
     PRODUCTIVE = 'Productive',
     ENTHUSIASTIC = 'Enthusiastic',
-    FIT = 'Fit',
-    LUCKY = 'Lucky',
-    FERTILE = 'Fertile',
     LAZY = 'Lazy',
     UNINSPIRED = 'Uninspired',
-    OBESE = 'Obese',
-    UNLUCKY = 'Unlucky',
-    STRONG = 'Strong',
-    TRICKSTER = 'Trickster',
     TEAMWORKER = 'Teamworker',
-    WEAK = 'Weak',
-    HAPLESS = 'Hapless',
     LEADER = 'Leader',
     CUTE = 'Cute',
-    GENIUS = 'Genius',
     LONEWOLF = 'Lonewolf',
+    QUICK = 'Quick',
+    SLOW = 'Slow',
+    GENIUS = 'Genius',
+    FAMOUS = 'Famous',
+    MANNERLESS = 'Mannerless',
     INFLUENTIAL = 'Influential',
     ANTAGONISTIC = 'Antagonistic',
+    FIT = 'Fit',
+    OBESE = 'Obese',
+    STRONG = 'Strong',
+    WEAK = 'Weak',
+    FRUGAL = 'Frugal',
+    HUNGRY = 'Hungry',
+    LUCKY = 'Lucky',
+    UNLUCKY = 'Unlucky',
+    TRICKSTER = 'Trickster',
+    HAPLESS = 'Hapless',
 }
 
 /**
  * Represents the data of a Bit trait.
  */
 export interface BitTraitData {
+    /** the trait name */
     trait: BitTrait;
+    /** the trait's effect */
     effect: string;
+    /** the trait's rarity */
     rarity: BitTraitRarity;
+    /** the trait's category */
     category: BitTraitCategory;
+    /** the trait's subcategory */
+    subcategory: BitTraitSubCategory;
 }
 
 /**
@@ -109,9 +120,22 @@ export enum BitTraitCategory {
     WORKRATE_A = 'Workrate A',
     WORKRATE_B = 'Workrate B',
     WORKRATE_C = 'Workrate C',
+    WORKRATE_D = 'Workrate D',
     ENERGY = 'Energy',
+    FOOD_CONSUMPTION = 'Food Consumption',
     BONUS_RESOURCE = 'Bonus Resource',
     BREEDING = 'Breeding',
+}
+
+/**
+ * Represents the subcategory of a Bit trait.
+ * 
+ * Positive means that the trait will have a positive effect on modifiers.
+ * Negative means that the trait will have a negative effect on modifiers.
+ */
+export enum BitTraitSubCategory {
+    POSITIVE = 'Positive',
+    NEGATIVE = 'Negative',
 }
 
 /**
