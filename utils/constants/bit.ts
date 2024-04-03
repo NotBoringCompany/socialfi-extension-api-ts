@@ -73,7 +73,10 @@ export const randomizeBitTraits = (rarity: BitRarity): BitTraitData[] => {
     while (traits.length < maxTraits) {
         // following rules will apply:
         // 1. 80% common, 15% uncommon, 5% rare chance
-        // 2. only 1 trait per category (BitTraitCategory) can be obtained
+        // 2. for each trait category, there can only be traits of 1 subcategory.
+        // e.g. category 'Workrate A' has productive, enthusiastic, lazy, uninspired. productive and enthusiastic are positive, lazy and uninspired are negative (subcategory wise).
+        // that means that if a bit already has the trait 'productive', it can only have 'enthusiastic' as the next trait if the rand number falls within this category
+        // not lazy or uninspired.
         // 3. no duplicate traits
         const rand = Math.floor(Math.random() * 100) + 1;
 
@@ -109,17 +112,28 @@ export const randomizeBitTraits = (rarity: BitRarity): BitTraitData[] => {
         // check if the trait already exists in the traits array
         if (!traits.includes(randomTrait)) {
             // at this point, the trait is unique.
-            // however, we still need to check if the trait is from the same category as another trait in the array
-            const randomTraitCategory = bitTraits.find(trait => trait.trait === randomTrait.trait)?.category;
+            // however, we need to check if an existing trait of the opposite subcategory within this category exists.
+            // if it doesn't, add the trait.
 
-            // check if the category of the randomTrait is already in the traits array
+            const traitCategory = randomTrait.category;
+            const traitSubCategory = randomTrait.subcategory;
+
+            // check if the trait's category is already in the traits array
             const categoryExists = traits.some(trait => {
-                const traitCategory = bitTraits.find(t => t.trait === trait.trait)?.category;
-                return traitCategory === randomTraitCategory;
+                return trait.category === traitCategory;
             });
 
-            // if the category doesn't exist, add the trait
-            if (!categoryExists) {
+            // if the category exists, check which subcategory the existing trait(s) belong to
+            // if the subcategory is the same as the randomTrait's subcategory, add the trait
+            if (categoryExists) {
+                const existingSubCategory = traits.find(trait => trait.category === traitCategory)?.subcategory;
+
+                // if the existing subcategory is the same as the randomTrait's subcategory, add the trait
+                if (existingSubCategory === traitSubCategory) {
+                    traits.push(randomTrait);
+                }
+            } else {
+                // if the category doesn't exist, add the trait
                 traits.push(randomTrait);
             }
         }
