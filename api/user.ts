@@ -48,7 +48,7 @@ export const handleTwitterLogin = async (twitterId: string): Promise<ReturnValue
 
             const traits = randomizeBitTraits(rarity);
 
-            const bitStatsModifiers = getBitStatsModifiersFromTraits(traits);
+            const bitStatsModifiers = getBitStatsModifiersFromTraits(traits.map(trait => trait.trait));
 
             // add a free bit to the user's inventory (users get 1 for free when they sign up)
             const { status: bitStatus, message: bitMessage, data: bitData } = await addBitToDatabase({
