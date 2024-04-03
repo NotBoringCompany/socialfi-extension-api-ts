@@ -454,7 +454,33 @@ export const BIT_TRAIT_EFFECT_ON_SELF = (trait: BitTrait): BitTraitModifier => {
         // antagonistic only reduces the working rate of all islands owned
         case BitTrait.ANTAGONISTIC:
             return {}
-        
+        // quick, slow, famous, mannerless, frugal, hungry
+        // slow only reduces isle working rate
+        case BitTrait.SLOW:
+            return {}
+        // quick only increases isle working rate
+        case BitTrait.QUICK:
+            return {}
+        // famous only increases the working rate of all islands owned
+        case BitTrait.FAMOUS:
+            return {}
+        // mannerless only reduces the working rate of all islands owned
+        case BitTrait.MANNERLESS:
+            return {}
+        case BitTrait.FRUGAL:
+            return {
+                foodConsumptionEfficiency: {
+                    origin: 'Bit Trait: Frugal',
+                    value: 1.1
+                }
+            }
+        case BitTrait.HUNGRY:
+            return {
+                foodConsumptionEfficiency: {
+                    origin: 'Bit Trait: Hungry',
+                    value: 0.9
+                }
+            }
     }
 }
 
@@ -471,7 +497,8 @@ export const getBitStatsModifiersFromTraits = (traits: BitTrait[]): BitStatsModi
     const bitStatsModifiers: BitStatsModifiers = {
         gatheringRateModifiers: [],
         earningRateModifiers: [],
-        energyRateModifiers: []
+        energyRateModifiers: [],
+        foodConsumptionEfficiencyModifiers: []
     }
 
     for (const traitEffect of traitEffects) {
@@ -483,6 +510,9 @@ export const getBitStatsModifiersFromTraits = (traits: BitTrait[]): BitStatsModi
         }
         if (traitEffect.energyDepletionRate) {
             bitStatsModifiers.energyRateModifiers.push(traitEffect.energyDepletionRate);
+        }
+        if (traitEffect.foodConsumptionEfficiency) {
+            bitStatsModifiers.foodConsumptionEfficiencyModifiers.push(traitEffect.foodConsumptionEfficiency);
         }
     }
 

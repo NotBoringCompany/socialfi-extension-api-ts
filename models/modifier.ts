@@ -15,6 +15,7 @@ export interface BitTraitModifier {
     bitGatheringRate?: Modifier;
     bitEarningRate?: Modifier;
     energyDepletionRate?: Modifier;
+    foodConsumptionEfficiency?: Modifier;
     islandGatheringRate?: Modifier;
     islandEarningRate?: Modifier;
 }
