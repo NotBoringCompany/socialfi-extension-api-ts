@@ -806,7 +806,7 @@ export const updateExtendedTraitEffects = async (
 
         // if trait is teamworker:
         // increase all other bits that have the same or lesser rarity as the bit being placed by 5% gathering and earning rate
-        if (trait === BitTrait.TEAMWORKER) {
+        if (trait.trait === BitTrait.TEAMWORKER) {
             // loop through each other bit and check if they have the same or lesser rarity as the bit being placed
             // if no other bits found, skip this trait
             if (otherBits.length === 0 || !otherBits) {
@@ -848,7 +848,7 @@ export const updateExtendedTraitEffects = async (
             }
             // if trait is leader:
             // increase all other bits' gathering and earning rate by 10%
-        } else if (trait === BitTrait.LEADER) {
+        } else if (trait.trait === BitTrait.LEADER) {
             if (otherBits.length === 0 || !otherBits) {
                 console.log(`(updateExtendedTraitEffects) No other bits found.`);
                 continue;
@@ -882,7 +882,7 @@ export const updateExtendedTraitEffects = async (
             }
             // if bit trait is cute:
             // increase gathering and earning rate of all other bits by 12.5%
-        } else if (trait === BitTrait.CUTE) {
+        } else if (trait.trait === BitTrait.CUTE) {
             if (otherBits.length === 0 || !otherBits) {
                 console.log(`(updateExtendedTraitEffects) No other bits found.`);
                 continue;
@@ -916,7 +916,7 @@ export const updateExtendedTraitEffects = async (
             }
             // if bit trait is genius:
             // increase the island's gathering and earning rate by 7.5%
-        } else if (trait === BitTrait.GENIUS) {
+        } else if (trait.trait === BitTrait.GENIUS) {
             // add the new modifier to the island's `gatheringRateModifiers` and `earningRateModifiers`
             const newGatheringRateModifier: Modifier = {
                 origin: `Bit ID #${bit.bitId}'s Trait: Genius`,
@@ -933,7 +933,7 @@ export const updateExtendedTraitEffects = async (
             islandUpdateOperations.$push['islandStatsModifiers.earningRateModifiers'] = newEarningRateModifier;
             // if bit trait is lonewolf:
             // reduce the working rate of all other bits by 5%
-        } else if (trait === BitTrait.LONEWOLF) {
+        } else if (trait.trait === BitTrait.LONEWOLF) {
             if (otherBits.length === 0 || !otherBits) {
                 console.log(`(updateExtendedTraitEffects) No other bits found.`);
                 continue;

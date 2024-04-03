@@ -30,7 +30,7 @@ export interface Bit {
     /** current farming level of the bit; pvx level will start from level 1 */
     currentFarmingLevel: number;
     /** the bit's traits (up to 5 depending on rarity) */
-    traits: BitTrait[];
+    traits: BitTraitData[];
     /** farming stats of the bit, such as gathering rate, earning rate and energy */
     farmingStats: BitFarmingStats;
     /** stat modifiers for the bit's farming stats */
@@ -81,6 +81,16 @@ export enum BitTrait {
     LONEWOLF = 'Lonewolf',
     INFLUENTIAL = 'Influential',
     ANTAGONISTIC = 'Antagonistic',
+}
+
+/**
+ * Represents the data of a Bit trait.
+ */
+export interface BitTraitData {
+    trait: BitTrait;
+    effect: string;
+    rarity: BitTraitRarity;
+    category: BitTraitCategory;
 }
 
 /**

@@ -1,4 +1,4 @@
-import { Bit, BitGender, BitRarity, BitStatsModifiers, BitTrait, BitTraitCategory, BitTraitRarity, EnergyThresholdReduction } from '../../models/bit';
+import { Bit, BitGender, BitRarity, BitStatsModifiers, BitTrait, BitTraitCategory, BitTraitData, BitTraitRarity, EnergyThresholdReduction } from '../../models/bit';
 import { Island, IslandStatsModifiers } from '../../models/island';
 import { BitTraitModifier, Modifier } from '../../models/modifier';
 
@@ -60,7 +60,7 @@ export const FREE_BIT_EVOLUTION_COST = (currentLevel: number): number => {
 /**
  * Randomizes 2-5 traits (based on rarity) for a Bit.
  */
-export const randomizeBitTraits = (rarity: BitRarity): BitTrait[] => {
+export const randomizeBitTraits = (rarity: BitRarity): BitTraitData[] => {
     // check how many traits the bit can have based on its rarity
     const maxTraits = 
         rarity === BitRarity.LEGENDARY ? 5 : 
@@ -68,7 +68,7 @@ export const randomizeBitTraits = (rarity: BitRarity): BitTrait[] => {
         rarity === BitRarity.RARE ? 3 : 
         2;
     
-    const traits: BitTrait[] = [];
+    const traits: BitTraitData[] = [];
 
     while (traits.length < maxTraits) {
         // following rules will apply:
@@ -81,7 +81,7 @@ export const randomizeBitTraits = (rarity: BitRarity): BitTrait[] => {
         // if rand is <= 80, get a common trait
         // if rand is <= 95, get an uncommon trait
         // if rand is <= 100, get a rare trait
-        let randomTrait: BitTrait;
+        let randomTrait: BitTraitData;
 
         if (rand <= 80) {
             // filter through common traits
@@ -89,32 +89,32 @@ export const randomizeBitTraits = (rarity: BitRarity): BitTrait[] => {
 
             // get a random trait from common traits
             const commonRand = Math.floor(Math.random() * commonTraits.length);
-            randomTrait = commonTraits[commonRand].trait;
+            randomTrait = commonTraits[commonRand];
         } else if (rand <= 95) {
             // filter through uncommon traits
             const uncommonTraits = bitTraits.filter(trait => trait.rarity === BitTraitRarity.UNCOMMON);
 
             // get a random trait from uncommon traits
             const uncommonRand = Math.floor(Math.random() * uncommonTraits.length);
-            randomTrait = uncommonTraits[uncommonRand].trait;
+            randomTrait = uncommonTraits[uncommonRand];
         } else {
             // filter through rare traits
             const rareTraits = bitTraits.filter(trait => trait.rarity === BitTraitRarity.RARE);
 
             // get a random trait from rare traits
             const rareRand = Math.floor(Math.random() * rareTraits.length);
-            randomTrait = rareTraits[rareRand].trait;
+            randomTrait = rareTraits[rareRand];
         }
 
         // check if the trait already exists in the traits array
         if (!traits.includes(randomTrait)) {
             // at this point, the trait is unique.
             // however, we still need to check if the trait is from the same category as another trait in the array
-            const randomTraitCategory = bitTraits.find(trait => trait.trait === randomTrait)?.category;
+            const randomTraitCategory = bitTraits.find(trait => trait.trait === randomTrait.trait)?.category;
 
             // check if the category of the randomTrait is already in the traits array
             const categoryExists = traits.some(trait => {
-                const traitCategory = bitTraits.find(t => t.trait === trait)?.category;
+                const traitCategory = bitTraits.find(t => t.trait === trait.trait)?.category;
                 return traitCategory === randomTraitCategory;
             });
 
@@ -131,7 +131,7 @@ export const randomizeBitTraits = (rarity: BitRarity): BitTrait[] => {
 /**
  * A list of all bit traits and their respective stats/details.
  */
-export const bitTraits = [
+export const bitTraits: BitTraitData[] = [
     {
         trait: BitTrait.PRODUCTIVE,
         effect: `+5% working rate to self`,

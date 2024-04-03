@@ -75,8 +75,8 @@ export const consumeBitOrb = async (twitterId: string): Promise<ReturnValue> => 
         const islands = user.inventory?.islandIds as number[];
 
         // check if the bit has the infuential or antagonistic trait
-        const hasInfluentialTrait = bit.traits.some(trait => trait === 'Influential');
-        const hasAntagonisticTrait = bit.traits.some(trait => trait === 'Antagonistic');
+        const hasInfluentialTrait = bit.traits.some(trait => trait.trait === 'Influential');
+        const hasAntagonisticTrait = bit.traits.some(trait => trait.trait === 'Antagonistic');
 
         // if bit has influential trait, add 1% working rate to all islands owned by the user
         if (hasInfluentialTrait) {
@@ -195,7 +195,7 @@ export const summonBit = async (
 
         // randomize the traits and the resulting stat modifiers for the bit
         const traits = randomizeBitTraits(rarity);
-        const bitStatsModifiers = getBitStatsModifiersFromTraits(traits);
+        const bitStatsModifiers = getBitStatsModifiersFromTraits(traits.map(trait => trait.trait));
 
         // summon and return the Bit. DOESN'T SAVE TO DATABASE YET.
         const bit: Bit = {
