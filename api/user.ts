@@ -205,3 +205,32 @@ export const getWalletDetails = async (twitterId: string): Promise<ReturnValue> 
         }
     }
 }
+
+/**
+ * Gets the user's in-game data.
+ */
+export const getInGameData = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(getInGameData) User not found.`
+            }
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getInGameData) In-game data fetched.`,
+            data: {
+                inGameData: user.inGameData
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getInGameData) ${err.message}`
+        }
+    }
+}
