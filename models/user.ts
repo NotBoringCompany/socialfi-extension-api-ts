@@ -17,6 +17,8 @@ export interface User {
     twitterId: string;
     /** the user's wallet data, created when the user signs up for the first time */
     wallet: UserWallet;
+    /** users can link up to 10 secondary wallets. this contains the data of each secondary wallet instance, such as the signature. */
+    secondaryWallets?: UserSecondaryWallet[];
     /** a list of tweet IDs where chests have been opened for today */
     openedTweetIdsToday: string[];
     /** the user's inventory */
@@ -33,6 +35,18 @@ export interface UserWallet {
     publicKey: string;
     /** the wallet's private key used to export the wallet */
     privateKey: string;
+}
+
+/**
+ * Represents a user's secondary wallet that they can link to their account.
+ */
+export interface UserSecondaryWallet {
+    /** the message used to generate the signature for verification */
+    signatureMessage: string;
+    /** the signature of the user from the secondary wallet, showing ownership of the wallet */
+    signature: string;
+    /** the secondary wallet's public key, i.e. address */
+    publicKey: string;
 }
 
 /**

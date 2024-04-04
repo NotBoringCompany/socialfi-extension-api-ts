@@ -2,7 +2,7 @@
 import { ReturnValue, Status } from '../utils/retVal';
 import { createUserWallet } from '../utils/wallet';
 import { createRaft } from './raft';
-import { generateObjectId } from '../utils/crypto';
+import { generateHashSalt, generateObjectId } from '../utils/crypto';
 import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
 import { RANDOMIZE_RARITY_FROM_ORB } from '../utils/constants/bitOrb';
 import { RANDOMIZE_GENDER, getBitStatsModifiersFromTraits, randomizeBitTraits } from '../utils/constants/bit';
@@ -10,6 +10,8 @@ import { ObtainMethod } from '../models/obtainMethod';
 import { UserModel } from '../utils/constants/db';
 import { generateBarrenIsland } from './island';
 import { POIName } from '../models/poi';
+import { solidityKeccak256 } from 'ethers/lib/utils';
+import { ethers } from 'ethers';
 
 /**
  * Twitter login logic. Creates a new user or simply log them in if they already exist.
@@ -94,6 +96,7 @@ export const handleTwitterLogin = async (twitterId: string): Promise<ReturnValue
                     privateKey,
                     publicKey
                 },
+                secondaryWallet: [],
                 openedTweetIdsToday: [],
                 inventory: {
                     weight: 0,
@@ -231,6 +234,101 @@ export const getInGameData = async (twitterId: string): Promise<ReturnValue> => 
         return {
             status: Status.ERROR,
             message: `(getInGameData) ${err.message}`
+        }
+    }
+}
+
+/**
+ * Generates a message when users want to link a secondary wallet to their account.
+ * 
+ * The message will follow this format:
+ * `Please sign the following message to link this wallet as a secondary wallet to your account.
+ * 
+ * Wallet address: <walletAddress>
+ * 
+ * Timestamp: <timestamp>
+ * 
+ * Hash salt: <hashSalt>`
+ * 
+ * The message will then be sent to the frontend for the user to sign with their secondary wallet.
+ */
+export const generateSignatureMessage = (walletAddress: string): string => {
+    const timestamp = Math.floor(Date.now() / 1000);
+    const hashSalt = generateHashSalt();
+
+    const message = `
+    Please sign the following message to link this wallet as a secondary wallet to your account.
+    Wallet address: ${walletAddress}
+    Timestamp: ${timestamp}
+    Hash salt: ${hashSalt}
+    `;
+
+    return message;
+}
+
+/**
+ * Links a secondary wallet to the user's account if signature check is valid.
+ */
+export const linkSecondaryWallet = async (
+    twitterId: string,
+    walletAddress: string,
+    signatureMessage: string,
+    signature: string
+): Promise<ReturnValue> => {
+    try {
+        // get the eth signed message hash
+        const ethSignedMessageHash = ethers.utils.arrayify(signatureMessage);
+
+        // recover the address
+        const recoveredAddress = ethers.utils.recoverAddress(ethSignedMessageHash, signature);
+
+        if (recoveredAddress.toLowerCase() !== walletAddress.toLowerCase()) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(linkSecondaryWallet) Invalid signature.`
+            }
+        }
+
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(linkSecondaryWallet) User not found.`
+            }
+        }
+
+        // check if the wallet is already linked in the user's `secondaryWallets`
+        // each secondaryWallet instance in `secondaryWallets` contain the `publicKey`.
+        // check if the `publicKey` is the same as the `walletAddress`
+        const isWalletAlreadyLinked = user.secondaryWallets?.some(wallet => wallet.publicKey.toLowerCase() === walletAddress.toLowerCase());
+
+        if (isWalletAlreadyLinked) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(linkSecondaryWallet) Wallet is already linked.`
+            }
+        }
+
+        // add the secondary wallet to the user's account
+        await UserModel.updateOne({ twitterId }, {
+            $push: {
+                secondaryWallets: {
+                    signatureMessage,
+                    signature,
+                    publicKey: walletAddress
+                }
+            }
+        });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(linkSecondaryWallet) Secondary wallet linked.`
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(linkSecondaryWallet) ${err.message}`
         }
     }
 }

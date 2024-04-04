@@ -11,6 +11,7 @@ export const UserSchema = new mongoose.Schema({
     },
     twitterId: String,
     wallet: Object,
+    secondaryWallets: Array,
     openedTweetIdsToday: Array,
     inventory: Object,
     inGameData: Object
