@@ -9,7 +9,7 @@ import { RANDOMIZE_GENDER, getBitStatsModifiersFromTraits, randomizeBitTraits } 
 import { ObtainMethod } from '../models/obtainMethod';
 import { UserModel } from '../utils/constants/db';
 import { generateBarrenIsland } from './island';
-import { CityName } from '../models/poi';
+import { POIName } from '../models/poi';
 
 /**
  * Twitter login logic. Creates a new user or simply log them in if they already exist.
@@ -112,7 +112,7 @@ export const handleTwitterLogin = async (twitterId: string): Promise<ReturnValue
                 },
                 inGameData: {
                     level: 1,
-                    location: CityName.HOME,
+                    location: POIName.HOME,
                     travellingTo: null,
                     destinationArrival: 0
                 }
