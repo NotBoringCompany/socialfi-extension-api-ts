@@ -1,4 +1,4 @@
-import { CityName } from './poi';
+import { POIName } from './poi';
 import { Food } from './food';
 import { Item } from './item';
 import { ExtendedResource } from './resource';
@@ -71,14 +71,14 @@ export interface UserInventory {
 export interface InGameData {
     /** the user's level */
     level: number;
-    /** the current location of the user (either home or in a city) */
-    location: CityName;
+    /** the current location of the user (either home or in a POI) */
+    location: POIName;
     /** 
-     * checks if the user is currently travelling to another city 
+     * checks if the user is currently travelling to another POI 
      * 
-     * if not null, this means that the user is currently travelling to another city.
+     * if not null, this means that the user is currently travelling to another POI.
      */
-    travellingTo: CityName | null;
+    travellingTo: POIName | null;
     /** 
      * the arrival time of the destination at `travellingTo`
      * 

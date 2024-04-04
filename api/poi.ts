@@ -174,3 +174,71 @@ export const checkArrival = async (): Promise<void> => {
         console.error('Error in checkArrival:', err.message);
     }
 }
+
+/**
+ * Gets the user's current location.
+ */
+export const getCurrentLocation = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(getCurrentLocation) User not found.`
+            }
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getCurrentLocation) Current location fetched.`,
+            data: {
+                location: user.inGameData.location
+            }
+        
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getCurrentLocation) ${err.message}`
+        }
+    }
+}
+
+// /**
+//  * Gets all available POI destinations the user can travel to (which excludes their current location).
+//  */
+// export const getAvailablePOIDestinations = async (twitterId: string): Promise<ReturnValue> => {
+//     try {
+//         const user = await UserModel.findOne({ twitterId }).lean();
+
+//         if (!user) {
+//             return {
+//                 status: Status.ERROR,
+//                 message: `(getAvailablePOIDestinations) User not found.`
+//             }
+//         }
+
+//         // get the user's current location
+//         const currentLocation = user.inGameData.location;
+
+//         // get all POIs (available from the POIName enum)
+//         const allPOIs = Object.values(POIName);
+
+//         // remove the user's current location from the list of all POIs
+//         const availableDestinations = allPOIs.filter(poi => poi !== currentLocation);
+
+//         return {
+//             status: Status.SUCCESS,
+//             message: `(getAvailablePOIDestinations) Available POI destinations fetched.`,
+//             data: {
+//                 availableDestinations
+//             }
+//         }
+//     } catch (err: any) {
+//         return {
+//             status: Status.ERROR,
+//             message: `(getAvailablePOIDestinations) ${err.message}`
+//         }
+//     }
+// }

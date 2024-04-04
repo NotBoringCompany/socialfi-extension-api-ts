@@ -40,7 +40,7 @@ import bit from './routes/bit';
 import user from './routes/user';
 import chest from './routes/chest';
 import cookie from './routes/cookie';
-import city from './routes/city';
+import poi from './routes/poi';
 import leaderboard from './routes/leaderboard';
 import { schedulers } from './schedulers/schedulers';
 
@@ -55,7 +55,7 @@ app.use('/bit_orb', bitOrb);
 app.use('/bit', bit);
 app.use('/user', user);
 app.use('/chest', chest);
-app.use('/city', city);
+app.use('/poi', poi);
 app.use('/cookie', cookie);
 app.use('/leaderboard', leaderboard);
 
