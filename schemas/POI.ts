@@ -2,9 +2,9 @@ import mongoose from 'mongoose';
 import { generateObjectId } from '../utils/crypto';
 
 /**
- * City schema. Represents closely to the `City` interface in `models/city.ts`.
+ * POI schema. Represents closely to the `POI` interface in `models/POI.ts`.
  */
-export const CitySchema = new mongoose.Schema({
+export const POISchema = new mongoose.Schema({
     _id: {
         type: String,
         default: generateObjectId(),

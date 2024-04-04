@@ -1,15 +1,15 @@
 import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
-import { addCity, travelToCity } from '../api/city';
+import { addPoi, travelToPOI } from '../api/poi';
 
 const router = express.Router();
 
-router.post('/add_city', async (req, res) => {
+router.post('/add_poi', async (req, res) => {
     const { name, distanceTo, shop, adminKey } = req.body;
 
     try {
-        const { status: validateStatus, message: validateMessage } = await validateRequestAuth(req, res, 'add_city');
+        const { status: validateStatus, message: validateMessage } = await validateRequestAuth(req, res, 'add_poi');
 
         if (validateStatus !== Status.SUCCESS) {
             return res.status(validateStatus).json({
@@ -18,7 +18,7 @@ router.post('/add_city', async (req, res) => {
             })
         }
 
-        const { status, message } = await addCity(name, distanceTo, shop, adminKey);
+        const { status, message } = await addPoi(name, distanceTo, shop, adminKey);
 
         return res.status(status).json({
             status,
@@ -32,7 +32,7 @@ router.post('/add_city', async (req, res) => {
     }
 })
 
-router.post('/travel_to_city', async (req, res) => {
+router.post('/travel_to_poi', async (req, res) => {
     const { destination } = req.body;
 
     try {
@@ -40,7 +40,7 @@ router.post('/travel_to_city', async (req, res) => {
             status: validateStatus,
             message: validateMessage,
             data: validateData,
-        } = await validateRequestAuth(req, res, 'travel_to_city');
+        } = await validateRequestAuth(req, res, 'travel_to_poi');
 
         if (validateStatus !== Status.SUCCESS) {
             return res.status(validateStatus).json({
@@ -49,7 +49,7 @@ router.post('/travel_to_city', async (req, res) => {
             });
         }
 
-        const { status, message } = await travelToCity(validateData?.twitterId, destination);
+        const { status, message } = await travelToPOI(validateData?.twitterId, destination);
 
         return res.status(status).json({
             status,

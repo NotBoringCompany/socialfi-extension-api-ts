@@ -1,14 +1,14 @@
-import { CityName, CityShop } from '../models/city';
-import { CityModel, RaftModel, UserModel } from '../utils/constants/db';
+import { POIName, POIShop } from '../models/poi';
+import { POIModel, RaftModel, UserModel } from '../utils/constants/db';
 import { ReturnValue, Status } from '../utils/retVal';
 
 /**
- * Adds a new city to the database. Only callable by admin.
+ * Adds a new POI to the database. Only callable by admin.
  */
-export const addCity = async (
-    name: CityName,
-    distanceTo: { [destination in CityName]: number },
-    shop: CityShop,
+export const addPoi = async (
+    name: POIName,
+    distanceTo: { [destination in POIName]: number },
+    shop: POIShop,
     adminKey: string
 ): Promise<ReturnValue> => {
     if (adminKey !== process.env.ADMIN_KEY) {
@@ -16,43 +16,43 @@ export const addCity = async (
     }
 
     try {
-        // check if a city with the existing city name already exists
-        const existingCity = await CityModel.findOne({ name });
+        // check if a POI with the existing POI name already exists
+        const existingPOI = await POIModel.findOne({ name });
 
-        if (existingCity) {
+        if (existingPOI) {
             return {
                 status: Status.BAD_REQUEST,
-                message: `(addCity) City already exists.`
+                message: `(addPOI) POI already exists.`
             }
         }
 
-        // create a new city
-        const newCity = new CityModel({
+        // create a new POI
+        const newPOI = new POIModel({
             name,
             distanceTo,
             shop
         });
 
-        await newCity.save();
+        await newPOI.save();
 
         return {
             status: Status.SUCCESS,
-            message: `(addCity) City added. Name: ${name}`
+            message: `(addPOI) POI added. Name: ${name}`
         }
     } catch (err: any) {
         return {
             status: Status.ERROR,
-            message: `(addCity) ${err.message}`
+            message: `(addPOI) ${err.message}`
         }
     }
 }
 
 /**
- * (User) Travels to a different city. Requires time.
+ * (User) Travels to a different POI. Requires time.
  */
-export const travelToCity = async (
+export const travelToPOI = async (
     twitterId: string,
-    destination: CityName
+    destination: POIName
 ): Promise<ReturnValue> => {
     try {
         const user = await UserModel.findOne({ twitterId });
@@ -60,27 +60,27 @@ export const travelToCity = async (
         if (!user) {
             return {
                 status: Status.ERROR,
-                message: `(travelToCity) User not found.`
+                message: `(travelToPOI) User not found.`
             }
         }
 
-        // get the current city the user is in
-        const currentCity: CityName = user.inGameData.location;
+        // get the current POI the user is in
+        const currentPOI: POIName = user.inGameData.location;
 
-        if (currentCity === destination) {
+        if (currentPOI === destination) {
             return {
                 status: Status.BAD_REQUEST,
-                message: `(travelToCity) User is already in ${destination}.`
+                message: `(travelToPOI) User is already in ${destination}.`
             }
         }
 
-        // get the user's raft and current city data
-        const [raft, currentCityData] = await Promise.all([
+        // get the user's raft and current POI data
+        const [raft, currentPOIData] = await Promise.all([
             RaftModel.findOne({ raftId: user.inventory.raftId }).lean(),
-            CityModel.findOne({ name: currentCity }).lean()
+            POIModel.findOne({ name: currentPOI }).lean()
         ]);
 
-        const distanceToDestination = currentCityData.distanceTo[destination];
+        const distanceToDestination = currentPOIData.distanceTo[destination];
 
         // get the raft speed
         const raftSpeed = raft.stats.speed;
@@ -103,18 +103,18 @@ export const travelToCity = async (
 
         return {
             status: Status.SUCCESS,
-            message: `(travelToCity) Travelling to ${destination}. Arrival in ${timeToTravel} seconds.`
+            message: `(travelToPOI) Travelling to ${destination}. Arrival in ${timeToTravel} seconds.`
         }
     } catch (err: any) {
         return {
             status: Status.ERROR,
-            message: `(travelToCity) ${err.message}`
+            message: `(travelToPOI) ${err.message}`
         }
     }
 }
 
 /**
- * Checks, for each user that was/is travelling to another city, if they have arrived at their destination.
+ * Checks, for each user that was/is travelling to another POI, if they have arrived at their destination.
  * 
  * Should be called by a scheduler every 5 minutes.
  */
@@ -122,11 +122,11 @@ export const checkArrival = async (): Promise<void> => {
     try {
         const currentTime = Math.floor(Date.now() / 1000);
 
-        // get all users that are travelling to another city (i.e. inGameData.travellingTo is not null (but rather contains a city name))
+        // get all users that are travelling to another POI (i.e. inGameData.travellingTo is not null (but rather contains a POI name))
         const users = await UserModel.find({ 'inGameData.travellingTo': { $ne: null } }).lean();
 
         if (users.length === 0) {
-            console.log(`(checkArrival) No users are travelling to another city.`);
+            console.log(`(checkArrival) No users are travelling to another POI.`);
             return;
         }
 

@@ -1,4 +1,4 @@
-import { CityName } from './city';
+import { CityName } from './poi';
 import { Food } from './food';
 import { Item } from './item';
 import { ExtendedResource } from './resource';

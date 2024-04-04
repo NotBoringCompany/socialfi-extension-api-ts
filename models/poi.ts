@@ -1,21 +1,21 @@
 /**
- * Represents a city.
+ * Represents a Point of Interest (POI).
  */
-export interface City {
-    /** the city name */
-    name: CityName;
-    /** the distance from this city to another city (in meters) */
+export interface POI {
+    /** the POI name */
+    name: POIName;
+    /** the distance from this POI to another POI (in meters) */
     distanceTo: {
-        [destination in CityName]?: number;
+        [destination in POIName]?: number;
     }
-    /** the city's shop */
-    shop: CityShop;
+    /** the POI's shop */
+    shop: POIShop;
 }
 
 /**
- * Lists all city names.
+ * Lists all POI names.
  */
-export enum CityName {
+export enum POIName {
     HOME = 'Home',
     EVERGREEN_VILLAGE = 'Evergreen Village',
     PALMSHADE_VILLAGE = 'Palmshade Village',
@@ -24,25 +24,25 @@ export enum CityName {
 }
 
 /**
- * Represents a city's shop.
+ * Represents a POI's shop.
  */
-export interface CityShop {
+export interface POIShop {
     /** all global items that can be bought by everyone */
-    globalItems: CityShopGlobalItem[];
+    globalItems: POIShopGlobalItem[];
     /** 
      * all player items that can be bought by each player respectively.
      * currently, each player should see the same items on the shop. however, the exact amount limit that can be bought (or sold) may differ per player.
      * e.g. player 1 can buy 10 of item A, player 2 can buy 20 of item A.
      */
-    playerItems: CityShopPlayerItem[];
+    playerItems: POIShopPlayerItem[];
 }
 
 /**
- * Represents a global item in a city's shop.
+ * Represents a global item in a POI's shop.
  */
-export interface CityShopGlobalItem {
+export interface POIShopGlobalItem {
     /** the item name */
-    name: CityShopItemName;
+    name: POIShopItemName;
     /** 
      * the amount of this item that can be bought (by everyone)
      * e.g. only 50 can be bought; user 1 buys 40, user 2 buys 10. no other user can buy anymore.
@@ -54,21 +54,21 @@ export interface CityShopGlobalItem {
      */
     sellableAmount: number;
     /** the item's buying price (if the user wants to buy 1 of this item) */
-    buyingPrice: CityShopItemBuyingPrice[];
+    buyingPrice: POIShopItemBuyingPrice[];
     /** the item's selling price (what the user can get if they sell 1 of this item) */
-    sellingPrice: CityShopItemSellingPrice[];
+    sellingPrice: POIShopItemSellingPrice[];
 }
 
 /**
- * Represents a player item in a city's shop.
+ * Represents a player item in a POI's shop.
  */
-export interface CityShopPlayerItem {
+export interface POIShopPlayerItem {
     /** the item name */
-    name: CityShopItemName;
+    name: POIShopItemName;
     /** the item's buying price (if the user wants to buy 1 of this item) */
-    buyingPrice: CityShopItemBuyingPrice[];
+    buyingPrice: POIShopItemBuyingPrice[];
     /** the item's selling price (what the user can get if they sell 1 of this item) */
-    sellingPrice: CityShopItemSellingPrice[];
+    sellingPrice: POIShopItemSellingPrice[];
     /** 
      * the transaction data for each user for this item.
      * 
@@ -93,7 +93,7 @@ export interface ShopItemUserTransactionData {
 /**
  * Lists all shop items in cities.
  */
-export enum CityShopItemName {
+export enum POIShopItemName {
     SEAWEED = 'Seaweed',
     STONE = 'Stone',
     COPPER = 'Copper',
@@ -113,21 +113,21 @@ export enum CityShopItemName {
 }
 
 /**
- * Represents the buying price of a city shop item.
+ * Represents the buying price of a POI shop item.
  * 
  * Unavailable means that the item is not available to be purchased with that currency. If all are unavailable, the item is not available for purchase.
  */
-export interface CityShopItemBuyingPrice {
+export interface POIShopItemBuyingPrice {
     xCookies: number | 'unavailable';
     cookieCrumbs: number | 'unavailable';
 }
 
 /**
- * Represents the selling price of a city shop item.
+ * Represents the selling price of a POI shop item.
  * 
  * Unavailable means that the item is not available to be sold for that currency. If all are unavailable, the item is not available for sale.
  */
-export interface CityShopItemSellingPrice {
+export interface POIShopItemSellingPrice {
     /** leaderboard points (will be divided once more leaderboards are established) */
     leaderboardPoints: number | 'unavailable';
 }

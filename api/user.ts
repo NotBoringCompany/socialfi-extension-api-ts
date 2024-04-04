@@ -9,7 +9,7 @@ import { RANDOMIZE_GENDER, getBitStatsModifiersFromTraits, randomizeBitTraits } 
 import { ObtainMethod } from '../models/obtainMethod';
 import { UserModel } from '../utils/constants/db';
 import { generateBarrenIsland } from './island';
-import { CityName } from '../models/city';
+import { CityName } from '../models/poi';
 
 /**
  * Twitter login logic. Creates a new user or simply log them in if they already exist.
