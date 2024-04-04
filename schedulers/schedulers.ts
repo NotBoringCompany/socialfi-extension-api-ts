@@ -1,7 +1,7 @@
 import { depleteEnergyScheduler } from './bit';
 import { removeOpenedTweetIdsTodayScheduler } from './chest';
 import { checkArrivalScheduler } from './poi';
-import { updateClaimableCrumbsScheduler, updateClaimableXCookiesScheduler, updateGatheringProgressAndDropResourceScheduler } from './island';
+import { updateClaimableCrumbsScheduler, updateClaimableXCookiesScheduler, updateDailyBonusResourcesGatheredScheduler, updateGatheringProgressAndDropResourceScheduler } from './island';
 
 export const schedulers = async (): Promise<void> => {
     try {
@@ -13,6 +13,7 @@ export const schedulers = async (): Promise<void> => {
 
         await removeOpenedTweetIdsTodayScheduler();
         await checkArrivalScheduler();
+        await updateDailyBonusResourcesGatheredScheduler();
     } catch (err: any) {
         console.error('Error in schedulers:', err.message);
     }

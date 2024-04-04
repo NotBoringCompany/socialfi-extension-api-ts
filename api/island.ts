@@ -1804,6 +1804,45 @@ export const claimResources = async (
 }
 
 /**
+ * Resets all islands' `dailyBonusResourcesGathered` back to 0.
+ * 
+ * Will only run for islands that have `dailyBonusResourceGathered` > 0.
+ * 
+ * Called by a scheduler every 23:59 UTC.
+ */
+export const updateDailyBonusResourcesGathered = async (): Promise<void> => {
+    try {
+        const islands = await IslandModel.find({ 'islandResourceStats.dailyBonusResourcesGathered': { $gt: 0 } }).lean();
+
+        if (islands.length === 0 || !islands) {
+            console.error(`(updateDailyBonusResourcesGathered) No islands found.`);
+            return;
+        }
+
+        // prepare bulk write operations to update all islands' `dailyBonusResourcesGathered`
+        const bulkWriteOps = islands.map(island => {
+            return {
+                updateOne: {
+                    filter: { islandId: island.islandId },
+                    update: {
+                        $set: {
+                            'islandResourceStats.dailyBonusResourcesGathered': 0
+                        }
+                    }
+                }
+            }
+        });
+
+        // execute the bulk write operations
+        await IslandModel.bulkWrite(bulkWriteOps);
+
+        console.log(`(updateDailyBonusResourcesGathered) All islands' dailyBonusResourcesGathered have been reset.`);
+    } catch (err: any) {
+        console.error(`(updateDailyBonusResourcesGathered) Error: ${err.message}`);
+    }
+}
+
+/**
  * Claims all claimable xCookies from an island and adds them to the user's inventory.
  */
 export const claimXCookies = async (twitterId: string, islandId: number): Promise<ReturnValue> => {
