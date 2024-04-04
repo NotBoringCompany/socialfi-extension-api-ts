@@ -1,6 +1,6 @@
 import { depleteEnergyScheduler } from './bit';
 import { removeOpenedTweetIdsTodayScheduler } from './chest';
-import { checkArrivalScheduler } from './city';
+import { checkArrivalScheduler } from './poi';
 import { updateClaimableCrumbsScheduler, updateClaimableXCookiesScheduler, updateGatheringProgressAndDropResourceScheduler } from './island';
 
 export const schedulers = async (): Promise<void> => {

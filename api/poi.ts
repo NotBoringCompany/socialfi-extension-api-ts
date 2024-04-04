@@ -5,9 +5,9 @@ import { ReturnValue, Status } from '../utils/retVal';
 /**
  * Adds a new POI to the database. Only callable by admin.
  */
-export const addPoi = async (
+export const addPOI = async (
     name: POIName,
-    distanceTo: { [destination in POIName]: number },
+    distanceTo: { [destination in POIName]?: number },
     shop: POIShop,
     adminKey: string
 ): Promise<ReturnValue> => {
@@ -205,40 +205,43 @@ export const getCurrentLocation = async (twitterId: string): Promise<ReturnValue
     }
 }
 
-// /**
-//  * Gets all available POI destinations the user can travel to (which excludes their current location).
-//  */
-// export const getAvailablePOIDestinations = async (twitterId: string): Promise<ReturnValue> => {
-//     try {
-//         const user = await UserModel.findOne({ twitterId }).lean();
+/**
+ * Gets all available POI destinations the user can travel to (which excludes their current location).
+ */
+export const getAvailablePOIDestinations = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
 
-//         if (!user) {
-//             return {
-//                 status: Status.ERROR,
-//                 message: `(getAvailablePOIDestinations) User not found.`
-//             }
-//         }
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(getAvailablePOIDestinations) User not found.`
+            }
+        }
 
-//         // get the user's current location
-//         const currentLocation = user.inGameData.location;
+        // get the user's current location
+        const currentLocation = user.inGameData.location;
 
-//         // get all POIs (available from the POIName enum)
-//         const allPOIs = Object.values(POIName);
+        // get all POIs (available from the POIName enum)
+        const allPOIs = Object.values(POIName);
 
-//         // remove the user's current location from the list of all POIs
-//         const availableDestinations = allPOIs.filter(poi => poi !== currentLocation);
+        // remove the user's current location from the list of all POIs
+        const availableDestinationNames = allPOIs.filter(poi => poi !== currentLocation);
 
-//         return {
-//             status: Status.SUCCESS,
-//             message: `(getAvailablePOIDestinations) Available POI destinations fetched.`,
-//             data: {
-//                 availableDestinations
-//             }
-//         }
-//     } catch (err: any) {
-//         return {
-//             status: Status.ERROR,
-//             message: `(getAvailablePOIDestinations) ${err.message}`
-//         }
-//     }
-// }
+        // return the full data of all available destinations
+        const availableDestinations = await POIModel.find({ name: { $in: availableDestinationNames } }).lean();
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getAvailablePOIDestinations) Available POI destinations fetched.`,
+            data: {
+                availableDestinations
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getAvailablePOIDestinations) ${err.message}`
+        }
+    }
+}
