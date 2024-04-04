@@ -196,6 +196,7 @@ export const summonIsland = async (
             islandResourceStats: {
                 baseResourceCap,
                 resourcesGathered: [],
+                dailyBonusResourcesGathered: 0,
                 claimableResources: [],
                 gatheringStart: 0,
                 gatheringEnd: 0,

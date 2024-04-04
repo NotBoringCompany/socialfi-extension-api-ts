@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
 import { IslandSchema } from '../schemas/Island';
 import { Island, IslandStatsModifiers, IslandTrait, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
-import { BARREN_ISLE_COMMON_DROP_CHANCE, BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLUTION_COST, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN, X_COOKIE_TAX, randomizeIslandTraits } from '../utils/constants/island';
+import { BARREN_ISLE_COMMON_DROP_CHANCE, BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DAILY_BONUS_RESOURCES_GATHERABLE, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLUTION_COST, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN, X_COOKIE_TAX, randomizeIslandTraits } from '../utils/constants/island';
 import { calcBitCurrentRate, getBits } from './bit';
 import { BarrenResource, ExtendedResource, ExtendedResourceOrigin, Resource, ResourceLine, ResourceRarity, ResourceRarityNumeric, ResourceType, SimplifiedResource } from '../models/resource';
 import { UserSchema } from '../schemas/User';
@@ -47,9 +47,8 @@ export const generateBarrenIsland = async (
             islandResourceStats: {
                 baseResourceCap: randomizeBaseResourceCap(IslandType.BARREN),
                 resourcesGathered: [],
-                bonusResourcesGathered: [],
+                dailyBonusResourcesGathered: 0,
                 claimableResources: [],
-                bonusClaimableResources: [],
                 gatheringStart: 0,
                 gatheringEnd: 0,
                 lastClaimed: 0,
@@ -2074,59 +2073,65 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
             }
         }
 
-        // finally, if the island has bits that have either the lucky, unlucky, trickster or hapless trait, they have a chance to drop a bonus resource.
-        // there is a 5% base chance to drop a bonus resource everytime a resource is dropped.
-        // each bit with a lucky trait gives a 2.5% chance to drop a bonus resource (stacks)
-        // each bit with an unlucky trait reduces the chance to drop a bonus resource by 2.5% (stacks)
-        // each bit with a trickster trait gives a 5% chance to drop a bonus resource (stacks)
-        // each bit with a hapless trait reduces the chance to drop a bonus resource by 5% (stacks)
-        let bonusResourceChance = 5;
+        // only run the next logic if `dailyBonusResourcesGathered` hasn't exceeded the limit yet.
+        if (island.islandResourceStats?.dailyBonusResourcesGathered < DAILY_BONUS_RESOURCES_GATHERABLE(<IslandType>island.type)) {
+            // finally, if the island has bits that have either the lucky, unlucky, trickster or hapless trait, they have a chance to drop a bonus resource.
+            // there is a 5% base chance to drop a bonus resource everytime a resource is dropped.
+            // each bit with a lucky trait gives a 2.5% chance to drop a bonus resource (stacks)
+            // each bit with an unlucky trait reduces the chance to drop a bonus resource by 2.5% (stacks)
+            // each bit with a trickster trait gives a 5% chance to drop a bonus resource (stacks)
+            // each bit with a hapless trait reduces the chance to drop a bonus resource by 5% (stacks)
+            let bonusResourceChance = 5;
 
-        const placedBitIds = island.placedBitIds as number[];
-        const bits = await BitModel.find({ bitId: { $in: placedBitIds } }).lean();
+            const placedBitIds = island.placedBitIds as number[];
+            const bits = await BitModel.find({ bitId: { $in: placedBitIds } }).lean();
 
-        for (const bit of bits) {
-            if (bit.traits.includes(BitTrait.LUCKY)) {
-                bonusResourceChance += 2.5;
+            for (const bit of bits) {
+                if (bit.traits.includes(BitTrait.LUCKY)) {
+                    bonusResourceChance += 2.5;
+                }
+
+                if (bit.traits.includes(BitTrait.UNLUCKY)) {
+                    bonusResourceChance -= 2.5;
+                }
+
+                if (bit.traits.includes(BitTrait.TRICKSTER)) {
+                    bonusResourceChance += 5;
+                }
+
+                if (bit.traits.includes(BitTrait.HAPLESS)) {
+                    bonusResourceChance -= 5;
+                }
             }
 
-            if (bit.traits.includes(BitTrait.UNLUCKY)) {
-                bonusResourceChance -= 2.5;
-            }
+            // only if bonus resource chance is above 0 will we proceed to check if we can drop a bonus resource.
+            if (bonusResourceChance > 0) {
+                // roll a dice between 1-100
+                const rand = Math.random() * 100 + 1;
 
-            if (bit.traits.includes(BitTrait.TRICKSTER)) {
-                bonusResourceChance += 5;
-            }
+                if (rand <= bonusResourceChance) {
+                    // randomize a resource based on the island's resource drop chances
+                    const bonusResource = randomizeResourceFromChances(<IslandType>island.type, island.traits, island.currentLevel);
 
-            if (bit.traits.includes(BitTrait.HAPLESS)) {
-                bonusResourceChance -= 5;
-            }
-        }
+                    // at this point, the island update operations' `$push` should already have `$each` initialized and with at least 1 resource.
+                    // if the resource inside this array is the same as the bonus resource, increment its amount.
+                    // if not, push a new resource.
+                    const existingResourceIndex = islandUpdateOperations.$push['islandResourceStats.claimableResources'].$each.findIndex((r: ExtendedResource) => r.type === bonusResource.type);
 
-        // only if bonus resource chance is above 0 will we proceed to check if we can drop a bonus resource.
-        if (bonusResourceChance > 0) {
-            // roll a dice between 1-100
-            const rand = Math.random() * 100 + 1;
+                    if (existingResourceIndex !== -1) {
+                        islandUpdateOperations.$inc[`islandResourceStats.claimableResources.${existingResourceIndex}.amount`] = 1;
+                    } else {
+                        const newResource: ExtendedResource = {
+                            ...bonusResource,
+                            origin: ExtendedResourceOrigin.BONUS,
+                            amount: 1
+                        }
 
-            if (rand <= bonusResourceChance) {
-                // randomize a resource based on the island's resource drop chances
-                const bonusResource = randomizeResourceFromChances(<IslandType>island.type, island.traits, island.currentLevel);
-
-                // at this point, the island update operations' `$push` should already have `$each` initialized and with at least 1 resource.
-                // if the resource inside this array is the same as the bonus resource, increment its amount.
-                // if not, push a new resource.
-                const existingResourceIndex = islandUpdateOperations.$push['islandResourceStats.claimableResources'].$each.findIndex((r: ExtendedResource) => r.type === bonusResource.type);
-
-                if (existingResourceIndex !== -1) {
-                    islandUpdateOperations.$inc[`islandResourceStats.claimableResources.${existingResourceIndex}.amount`] = 1;
-                } else {
-                    const newResource: ExtendedResource = {
-                        ...bonusResource,
-                        origin: ExtendedResourceOrigin.BONUS,
-                        amount: 1
+                        islandUpdateOperations.$push['islandResourceStats.claimableResources'].$each.push(newResource);
                     }
 
-                    islandUpdateOperations.$push['islandResourceStats.claimableResources'].$each.push(newResource);
+                    // lastly, increment the island's `islandResourceStats.dailyBonusResourcesGathered` by 1.
+                    islandUpdateOperations.$inc['islandResourceStats.dailyBonusResourcesGathered'] = 1;
                 }
             }
         }

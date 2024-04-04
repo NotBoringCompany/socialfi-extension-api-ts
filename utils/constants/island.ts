@@ -37,6 +37,27 @@ export const BARREN_ISLE_COMMON_DROP_CHANCE = 2;
 export const TOTAL_ACTIVE_ISLANDS_ALLOWED = 30;
 
 /**
+ * gets the amount of bonus resources that can be gathered daily based on the island type.
+ */
+export const DAILY_BONUS_RESOURCES_GATHERABLE = (type: IslandType) => {
+    switch (type) {
+        case IslandType.BARREN:
+            return 0;
+        case IslandType.PRIMAL_ISLES:
+            return 2;
+        case IslandType.VERDANT_ISLES:
+            return 3;
+        case IslandType.EXOTIC_ISLES:
+            return 4;
+        case IslandType.CRYSTAL_ISLES:
+            return 5;
+        case IslandType.CELESTIAL_ISLES:
+            return 6;
+    
+    }
+}
+
+/**
  * Gets the total xCookies earnable back for an island based on its type (i.e. rarity) when opening from a Terra Capsulator.
  */
 export const GET_TOTAL_X_COOKIES_EARNABLE = (type: IslandType) => {

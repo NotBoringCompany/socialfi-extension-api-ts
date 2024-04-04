@@ -80,6 +80,11 @@ export interface IslandResourceStats {
     baseResourceCap: number;
     /** total resources gathered, incl. ones claimed already */
     resourcesGathered: ExtendedResource[];
+    /** 
+     * the amount of bonus resources gathered this day (each resource drop grants the user a chance to drop a bonus resource). 
+     * value resets to 0 every day (23:59 UTC); there is a limit as to how many bonus resources can be gathered.
+     */
+    dailyBonusResourcesGathered: number;
     /** gathered resources that are claimable but not claimed to the inventory yet (pending) */
     claimableResources: ExtendedResource[];
     /** start timestamp of gathering; 0 if not started yet */
