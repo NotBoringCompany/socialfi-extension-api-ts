@@ -1,5 +1,6 @@
 import { POIName, POIShop } from '../models/poi';
 import { POIModel, RaftModel, UserModel } from '../utils/constants/db';
+import { ACTUAL_RAFT_SPEED } from '../utils/constants/raft';
 import { ReturnValue, Status } from '../utils/retVal';
 
 /**
@@ -83,7 +84,7 @@ export const travelToPOI = async (
         const distanceToDestination = currentPOIData.distanceTo[destination];
 
         // get the raft speed
-        const raftSpeed = raft.stats.speed;
+        const raftSpeed = ACTUAL_RAFT_SPEED(raft.stats.baseSpeed, raft.currentLevel);
 
         // calculate the time it takes to travel to the destination
         const timeToTravel = distanceToDestination / raftSpeed;
