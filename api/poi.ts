@@ -75,6 +75,14 @@ export const travelToPOI = async (
             }
         }
 
+        // if the user is already travelling to a different POI, return an error
+        if (user.inGameData.travellingTo) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(travelToPOI) User is already travelling to ${user.inGameData.travellingTo}.`
+            }
+        }
+
         // get the user's raft and current POI data
         const [raft, currentPOIData] = await Promise.all([
             RaftModel.findOne({ raftId: user.inventory.raftId }).lean(),
@@ -91,6 +99,9 @@ export const travelToPOI = async (
 
         // get the current timestamp
         const currentTime = Math.floor(Date.now() / 1000);
+
+        console.log('current time: ', currentTime);
+        console.log('time to travel: ', timeToTravel);
 
         // update the user's data
         // 1. set `travellingTo` in the user's inGameData to the destination
