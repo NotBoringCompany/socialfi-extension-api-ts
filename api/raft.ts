@@ -1,6 +1,6 @@
 import { ReturnValue, Status } from '../utils/retVal';
 import { generateObjectId } from '../utils/crypto';
-import { randomizeRaftBaseSpeed } from '../utils/constants/raft';
+import { ACTUAL_RAFT_SPEED, randomizeRaftBaseSpeed } from '../utils/constants/raft';
 import { BitModel, RaftModel, UserModel } from '../utils/constants/db';
 
 /**
@@ -113,6 +113,59 @@ export const getRaft = async (twitterId: string): Promise<ReturnValue> => {
         return {
             status: Status.ERROR,
             message: `(getRaft) ${err.message}`
+        }
+    }
+}
+
+/**
+ * Gets the actual speed of the raft (base speed + level).
+ */
+export const getActualRaftSpeed = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(getActualRaftSpeed) User not found.`
+            }
+        }
+
+        const raftId = user.inventory?.raftId;
+
+        if (!raftId) {
+            return {
+                status: Status.ERROR,
+                message: `(getActualRaftSpeed) User doesn't have a raft.`
+            }
+        }
+
+        const raft = await RaftModel.findOne({ raftId: raftId }).lean();
+
+        if (!raft) {
+            return {
+                status: Status.ERROR,
+                message: `(getActualRaftSpeed) Raft not found.`
+            }
+        }
+
+        // get the base speed of the raft
+        const baseSpeed = raft.stats.baseSpeed;
+
+        // calculate the actual speed of the raft
+        const actualSpeed = ACTUAL_RAFT_SPEED(baseSpeed, raft.currentLevel);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getActualRaftSpeed) Successfully calculated the actual speed of the raft.`,
+            data: {
+                actualSpeed
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getActualRaftSpeed) ${err.message}`
         }
     }
 }
