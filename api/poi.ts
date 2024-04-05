@@ -123,66 +123,64 @@ export const travelToPOI = async (
 }
 
 /**
- * Checks, for each user that was/is travelling to another POI, if they have arrived at their destination.
- * 
- * Should be called by a scheduler every 5 minutes.
+ * Called when the user has arrived at their destination (from the frontend).
  */
-export const checkArrival = async (): Promise<void> => {
+export const updateArrival = async (twitterId: string): Promise<ReturnValue> => {
     try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(updateArrival) User not found.`
+            }
+        }
+
+        // ensure that the user is currently travelling (i.e. `travellingTo` is not null)
+        if (!user.inGameData.travellingTo) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(updateArrival) User is not travelling.`
+            }
+        }
+
+        // get the current time
         const currentTime = Math.floor(Date.now() / 1000);
 
-        // get all users that are travelling to another POI (i.e. inGameData.travellingTo is not null (but rather contains a POI name))
-        const users = await UserModel.find({ 'inGameData.travellingTo': { $ne: null } }).lean();
+        // get the user's destination arrival time
+        const destinationArrival = user.inGameData.destinationArrival;
 
-        if (users.length === 0) {
-            console.log(`(checkArrival) No users are travelling to another POI.`);
-            return;
+        // check if the user has arrived at their destination
+        if (currentTime < destinationArrival) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(updateArrival) User has not arrived yet.`
+            }
         }
 
-        // prepare bulk write operations
-        const bulkWriteOpsPromises = users.map(async user => {
-            let updateOperations = [];
+        // user has arrived.
+        // 1. update travellingTo to null
+        // 2. update destinationArrival to 0
+        // 3. update location to the destination
+        const travellingTo = user.inGameData.travellingTo;
 
-            // check if user has arrived at their destination
-            if (currentTime >= user.inGameData.destinationArrival) {
-                // user has arrived.
-                // 1. update travellingTo to null
-                // 2. update destinationArrival to 0
-                // 3. update location to the destination
-                updateOperations.push({
-                    updateOne: {
-                        filter: { twitterId: user.twitterId },
-                        update: {
-                            $set: {
-                                'inGameData.travellingTo': null,
-                                'inGameData.destinationArrival': 0,
-                                'inGameData.location': user.inGameData.travellingTo
-                            }
-                        }
-                    }
-                });
+        await UserModel.updateOne({ twitterId }, {
+            $set: {
+                'inGameData.travellingTo': null,
+                'inGameData.destinationArrival': 0,
+                'inGameData.location': travellingTo
             }
-
-            return updateOperations;
         });
 
-        // execute the bulk write operations
-        const bulkWriteOpsArrays = await Promise.all(bulkWriteOpsPromises);
-
-        const bulkWriteOps = bulkWriteOpsArrays.flat().filter(op => op);
-
-        // if there are no bulk write operations to execute, return
-        if (bulkWriteOps.length === 0) {
-            console.error(`(checkArrival) No users to update.`);
-            return;
+        return {
+            status: Status.SUCCESS,
+            message: `(updateArrival) User has arrived at ${travellingTo}.`
         }
-
-        // execute the bulk write operations
-        await UserModel.bulkWrite(bulkWriteOps);
-
-        console.log(`(checkArrival) Updated ${bulkWriteOps.length} users.`);
     } catch (err: any) {
-        console.error('Error in checkArrival:', err.message);
+        return {
+            status: Status.ERROR,
+            message: `(updateArrival) ${err.message}`
+        }
     }
 }
 
