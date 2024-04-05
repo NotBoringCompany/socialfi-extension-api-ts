@@ -1,6 +1,6 @@
 import { ReturnValue, Status } from '../utils/retVal';
 import { generateObjectId } from '../utils/crypto';
-import { ACTUAL_RAFT_SPEED, randomizeRaftBaseSpeed } from '../utils/constants/raft';
+import { ACTUAL_RAFT_SPEED, RAFT_EVOLUTION_COST, randomizeRaftBaseSpeed } from '../utils/constants/raft';
 import { BitModel, RaftModel, UserModel } from '../utils/constants/db';
 
 /**
@@ -166,6 +166,90 @@ export const getActualRaftSpeed = async (twitterId: string): Promise<ReturnValue
         return {
             status: Status.ERROR,
             message: `(getActualRaftSpeed) ${err.message}`
+        }
+    }
+}
+
+/**
+ * Evolves/upgrades a user's raft.
+ */
+export const evolveRaft = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        const userUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const raftUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(upgradeRaft) User not found.`
+            }
+        }
+
+        const raftId = user.inventory?.raftId;
+
+        if (!raftId) {
+            return {
+                status: Status.ERROR,
+                message: `(upgradeRaft) User doesn't have a raft.`
+            }
+        }
+
+        const raft = await RaftModel.findOne({ raftId: raftId });
+
+        if (!raft) {
+            return {
+                status: Status.ERROR,
+                message: `(upgradeRaft) Raft not found.`
+            }
+        }
+
+        // get the raft's current level
+        const raftLevel = raft.currentLevel;
+
+        // get the cost to upgrade the raft
+        const upgradeCost = RAFT_EVOLUTION_COST(raftLevel);
+
+        // check if the user has enough xCookies to upgrade the raft
+        if (user.inventory?.xCookies < upgradeCost) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(upgradeRaft) User doesn't have enough xCookies to upgrade the raft.`
+            }
+        }
+
+        // deduct the xCookies from the user
+        userUpdateOperations.$inc['inventory.xCookies'] = -upgradeCost;
+
+        // upgrade the raft
+        raftUpdateOperations.$inc['currentLevel'] = 1;
+
+        // execute the update operations
+        await Promise.all([
+            UserModel.updateOne({ twitterId }, userUpdateOperations),
+            RaftModel.updateOne({ raftId }, raftUpdateOperations)
+        ]);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(upgradeRaft) Successfully upgraded the user's raft.`
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(upgradeRaft) ${err.message}`
         }
     }
 }
