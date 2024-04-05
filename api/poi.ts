@@ -153,9 +153,11 @@ export const checkArrival = async (): Promise<void> => {
                     updateOne: {
                         filter: { twitterId: user.twitterId },
                         update: {
-                            'inGameData.travellingTo': null,
-                            'inGameData.destinationArrival': 0,
-                            'inGameData.location': user.inGameData.travellingTo
+                            $set: {
+                                'inGameData.travellingTo': null,
+                                'inGameData.destinationArrival': 0,
+                                'inGameData.location': user.inGameData.travellingTo
+                            }
                         }
                     }
                 });
@@ -204,7 +206,7 @@ export const getCurrentLocation = async (twitterId: string): Promise<ReturnValue
             data: {
                 location: user.inGameData.location
             }
-        
+
         }
     } catch (err: any) {
         return {
