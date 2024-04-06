@@ -253,3 +253,57 @@ export const evolveRaft = async (twitterId: string): Promise<ReturnValue> => {
         }
     }
 }
+
+/**
+ * Gets the actual stats of a raft (including current and evolution stats).
+ */
+export const getRaftActualStats = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(getRaftActualStats) User not found.`
+            }
+        }
+
+        const raftId = user.inventory?.raftId;
+
+        if (!raftId) {
+            return {
+                status: Status.ERROR,
+                message: `(getRaftActualStats) User doesn't have a raft.`
+            }
+        }
+
+        const raft = await RaftModel.findOne({ raftId: raftId }).lean();
+
+        if (!raft) {
+            return {
+                status: Status.ERROR,
+                message: `(getRaftActualStats) Raft not found.`
+            }
+        }
+
+        // current stats include only the speed of the raft
+        // get the current speed at this level and the evolution speed if the raft is evolved to the next level
+        const currentStats = {
+            currentSpeed: ACTUAL_RAFT_SPEED(raft.stats.baseSpeed, raft.currentLevel),
+            evolutionSpeed: ACTUAL_RAFT_SPEED(raft.stats.baseSpeed, raft.currentLevel + 1)
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getRaftCurrentStats) Successfully retrieved the current stats of the user's raft.`,
+            data: {
+                currentStats
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getRaftCurrentStats) ${err.message}`
+        }
+    }
+}

@@ -1,5 +1,5 @@
 import express from 'express';
-import { evolveRaft, getActualRaftSpeed, getRaft } from '../api/raft';
+import { evolveRaft, getActualRaftSpeed, getRaft, getRaftActualStats } from '../api/raft';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { UserModel } from '../utils/constants/db';
@@ -110,6 +110,25 @@ router.post('/evolve_raft', async (req, res) => {
             message: err.message
         })
     }
-})
+});
+
+router.get('/get_raft_actual_stats/:twitterId', async (req, res) => {
+    const { twitterId } = req.params;
+
+    try {
+        const { status, message, data } = await getRaftActualStats(twitterId);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+});
 
 export default router;
