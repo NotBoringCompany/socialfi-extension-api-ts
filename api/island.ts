@@ -1790,10 +1790,13 @@ export const claimResources = async (
         console.log('island update operations: ', islandUpdateOperations);
 
         // execute the update operations
-        await Promise.all([
-            UserModel.updateOne({ twitterId }, userUpdateOperations),
-            IslandModel.updateOne({ islandId }, islandUpdateOperations)
-        ]);
+        // temporarily executing asynchronously to check if this prevents mongodb update conflicts
+        await IslandModel.updateOne({ islandId }, islandUpdateOperations);
+        await UserModel.updateOne({ twitterId }, userUpdateOperations);
+        // await Promise.all([
+        //     UserModel.updateOne({ twitterId }, userUpdateOperations),
+        //     IslandModel.updateOne({ islandId }, islandUpdateOperations)
+        // ]);
 
         return {
             status: Status.SUCCESS,
