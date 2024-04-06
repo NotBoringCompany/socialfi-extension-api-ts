@@ -1583,6 +1583,7 @@ export const claimResources = async (
                 const existingResourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(r => r.type === chosenResource.type);
 
                 if (existingResourceIndex !== -1) {
+                    console.log('existing resource index #0: ', existingResourceIndex);
                     userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = chosenResource.amount;
                 } else {
                     userUpdateOperations.$push['inventory.resources'].$each.push({
@@ -1648,7 +1649,7 @@ export const claimResources = async (
 
                     if (existingResourceIndex !== -1) {
                         console.log('total weight to claim is not exceeding max weight!');
-                        console.log('existing resource index: ', existingResourceIndex);
+                        console.log('existing resource index #1: ', existingResourceIndex);
 
                         userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = resource.amount;
                     } else {
@@ -1717,6 +1718,8 @@ export const claimResources = async (
                             const existingResourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(r => r.type === resource.type);
 
                             if (existingResourceIndex !== -1) {
+                                console.log('existing resource index #2: ', existingResourceIndex);
+
                                 userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = amountToClaim;
                             } else {
                                 userUpdateOperations.$push['inventory.resources'].$each.push({
@@ -1747,6 +1750,7 @@ export const claimResources = async (
                             const existingResourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(r => r.type === resource.type);
 
                             if (existingResourceIndex !== -1) {
+                                console.log('existing resource index #3: ', existingResourceIndex);
                                 userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = resource.amount;
                             } else {
                                 userUpdateOperations.$push['inventory.resources'].$each.push(resource);
@@ -1781,6 +1785,9 @@ export const claimResources = async (
                 returnMessage = `Unable to claim all resources due to max inventory weight. Automatically claimed partial resources for Island ID ${islandId}.`;
             }
         }
+
+        console.log('user update operations: ', userUpdateOperations);
+        console.log('island update operations: ', islandUpdateOperations);
 
         // execute the update operations
         await Promise.all([
