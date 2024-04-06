@@ -332,3 +332,44 @@ export const linkSecondaryWallet = async (
         }
     }
 }
+
+/**
+ * Gets a user's main and secondary wallets linked to their account.
+ */
+export const getWallets = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(getWallets) User not found.`
+            }
+        }
+
+        const walletAddresses: string[] = [];
+
+        // add the main wallet's public key
+        walletAddresses.push(user.wallet.publicKey);
+
+        // loop through `secondaryWallets` assuming length is not 0 and add each public key
+        if (user.secondaryWallets.length > 0) {
+            for (const secondaryWallet of user.secondaryWallets) {
+                walletAddresses.push(secondaryWallet.publicKey);
+            }
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getWallets) Wallets fetched.`,
+            data: {
+                walletAddresses
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getWallets) ${err.message}`
+        }
+    }
+}
