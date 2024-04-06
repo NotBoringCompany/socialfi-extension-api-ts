@@ -26,25 +26,6 @@ router.get('/get_raft/:twitterId', async (req, res) => {
     }
 });
 
-router.get('/get_actual_raft_speed/:twitterId', async (req, res) => {
-    const { twitterId } = req.params;
-
-    try {
-        const { status, message, data } = await getActualRaftSpeed(twitterId);
-
-        return res.status(status).json({
-            status,
-            message,
-            data
-        });
-    } catch (err: any) {
-        return res.status(500).json({
-            status: 500,
-            message: err.message
-        })
-    }
-});
-
 router.get('/get_raft_evolution_cost', async (req, res) => {
     try {
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'get_raft_evolution_cost');
