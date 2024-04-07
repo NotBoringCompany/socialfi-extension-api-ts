@@ -1645,7 +1645,7 @@ export const claimResources = async (
 
                         userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = resource.amount;
                     } else {
-                        userUpdateOperations.$push['inventory.resources'] = { $each: [{...resource, origin: ExtendedResourceOrigin.NORMAL}] };
+                        userUpdateOperations.$push['inventory.resources'] = { $each: [{ ...resource, origin: ExtendedResourceOrigin.NORMAL }] };
                     }
                 }
 
@@ -1743,7 +1743,7 @@ export const claimResources = async (
                                 console.log('existing resource index #3: ', existingResourceIndex);
                                 userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = resource.amount;
                             } else {
-                                userUpdateOperations.$push['inventory.resources'] = { $each: [{...resource, origin: ExtendedResourceOrigin.NORMAL}] }
+                                userUpdateOperations.$push['inventory.resources'] = { $each: [{ ...resource, origin: ExtendedResourceOrigin.NORMAL }] }
                             }
 
                             // increment the current weight by the total weight of this resource
@@ -1971,14 +1971,14 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
             $push: {}
         }
 
-        // initialize $each on the island's `resourcesGathered` if it doesn't exist so that we can push multiple resources at once
-        if (!islandUpdateOperations.$push['islandResourceStats.resourcesGathered']) {
-            islandUpdateOperations.$push['islandResourceStats.resourcesGathered'] = { $each: [] }
-        }
-
         // initialize $each on the island's `claimableResources` if it doesn't exist so that we can push multiple resources at once
         if (!islandUpdateOperations.$push['islandResourceStats.claimableResources']) {
             islandUpdateOperations.$push['islandResourceStats.claimableResources'] = { $each: [] }
+        }
+
+        // initialize $each on the island's `resourcesGathered` if it doesn't exist so that we can push multiple resources at once
+        if (!islandUpdateOperations.$push['islandResourceStats.resourcesGathered']) {
+            islandUpdateOperations.$push['islandResourceStats.resourcesGathered'] = { $each: [] }
         }
 
         if (!island) {
@@ -2110,6 +2110,27 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
                     islandUpdateOperations.$push['islandResourceStats.claimableResources'].$each.push(newResource);
                     // islandUpdateOperations.$push['islandResourceStats.claimableResources'] = { $each: [newResource] };
                 }
+
+                // add to the island's `resourcesGathered` as well
+                // check if the common resource already exists in `resourcesGathered`
+                const existingGatheredResourceIndex = resourcesGathered.findIndex(r => r.type === commonResourceToDrop.type);
+
+                // if the resource already exists, increment its amount
+                if (existingGatheredResourceIndex !== -1) {
+                    islandUpdateOperations.$inc[`islandResourceStats.resourcesGathered.${existingGatheredResourceIndex}.amount`] = 1;
+                } else {
+                    // if the resource doesn't exist, push a new resource
+                    const newResource: ExtendedResource = {
+                        ...commonResourceToDrop,
+                        origin: ExtendedResourceOrigin.NORMAL,
+                        amount: 1
+                    }
+
+                    // add the new resource to the island's `resourcesGathered`
+                    islandUpdateOperations.$push['islandResourceStats.resourcesGathered'].$each.push(newResource);
+                }
+
+
             }
         }
 
@@ -2171,10 +2192,37 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
                         // islandUpdateOperations.$push['islandResourceStats.claimableResources'] = { $each: [newResource] };
                     }
 
-                    // lastly, increment the island's `islandResourceStats.dailyBonusResourcesGathered` by 1.
+                    // increment the island's `islandResourceStats.dailyBonusResourcesGathered` by 1.
                     islandUpdateOperations.$inc['islandResourceStats.dailyBonusResourcesGathered'] = 1;
+
+                    // add to the island's `resourcesGathered` as well
+                    // check if the bonus resource already exists in `resourcesGathered`
+                    const existingGatheredResourceIndex = resourcesGathered.findIndex(r => r.type === bonusResource.type);
+
+                    // if the resource already exists, increment its amount
+                    if (existingGatheredResourceIndex !== -1) {
+                        islandUpdateOperations.$inc[`islandResourceStats.resourcesGathered.${existingGatheredResourceIndex}.amount`] = 1;
+                    } else {
+                        // if the resource doesn't exist, push a new resource
+                        const newResource: ExtendedResource = {
+                            ...bonusResource,
+                            origin: ExtendedResourceOrigin.BONUS,
+                            amount: 1
+                        }
+
+                        islandUpdateOperations.$push['islandResourceStats.resourcesGathered'].$each.push(newResource);
+                    }
                 }
             }
+        }
+
+        // check if either `resourcesGathered` or `claimableResources`'s `$each` is empty. if so, remove the $each so that both can be pushed properly.
+        if (islandUpdateOperations.$push['islandResourceStats.claimableResources'].$each.length === 0) {
+            delete islandUpdateOperations.$push['islandResourceStats.claimableResources'].$each;
+        }
+
+        if (islandUpdateOperations.$push['islandResourceStats.resourcesGathered'].$each.length === 0) {
+            delete islandUpdateOperations.$push['islandResourceStats.resourcesGathered'].$each;
         }
 
         console.log(`(dropResource) Island ID ${island.islandId}'s updateOperations: `, islandUpdateOperations);
