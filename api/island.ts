@@ -1783,11 +1783,54 @@ export const claimResources = async (
         console.log('island update operations: ', islandUpdateOperations);
 
         // execute the update operations
-        await Promise.all([
-            UserModel.updateOne({ twitterId }, userUpdateOperations),
-            IslandModel.updateOne({ islandId }, islandUpdateOperations)
-        ]);
+        if (Object.keys(userUpdateOperations.$push).length > 0) {
+            await UserModel.updateOne({ twitterId }, {
+                $push: userUpdateOperations.$push
+            });
+        }
 
+        if (Object.keys(userUpdateOperations.$inc).length > 0) {
+            await UserModel.updateOne({ twitterId }, {
+                $inc: userUpdateOperations.$inc
+            });
+        }
+
+        if (Object.keys(userUpdateOperations.$pull).length > 0) {
+            await UserModel.updateOne({ twitterId }, {
+                $pull: userUpdateOperations.$pull
+            });
+        } 
+
+        if (Object.keys(userUpdateOperations.$set).length > 0) {
+            await UserModel.updateOne({ twitterId }, {
+                $set: userUpdateOperations.$set
+            });
+        }
+
+        if (Object.keys(islandUpdateOperations.$push).length > 0) {
+            await IslandModel.updateOne({ islandId }, {
+                $push: islandUpdateOperations.$push
+            });
+        }
+
+        if (Object.keys(islandUpdateOperations.$inc).length > 0) {
+            await IslandModel.updateOne({ islandId }, {
+                $inc: islandUpdateOperations.$inc
+            });
+        }
+
+        if (Object.keys(islandUpdateOperations.$pull).length > 0) {
+            await IslandModel.updateOne({ islandId }, {
+                $pull: islandUpdateOperations.$pull
+            })
+        }
+
+        if (Object.keys(islandUpdateOperations.$set).length > 0) {
+            await IslandModel.updateOne({ islandId }, {
+                $set: islandUpdateOperations.$set
+            });
+        }
+        
         return {
             status: Status.SUCCESS,
             message: returnMessage,
@@ -2227,8 +2270,6 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
         console.log(`(dropResource) Island ID ${island.islandId}'s updateOperations: `, islandUpdateOperations);
 
         // execute the update operations
-        // await IslandModel.updateOne({ islandId }, islandUpdateOperations);
-
         if (Object.keys(islandUpdateOperations.$set).length > 0) {
             console.log('$set is not empty for island ID ', island.islandId);
             await IslandModel.updateOne({ islandId }, {
