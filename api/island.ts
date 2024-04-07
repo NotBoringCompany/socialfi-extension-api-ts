@@ -1586,7 +1586,7 @@ export const claimResources = async (
                     console.log('existing resource index #0: ', existingResourceIndex);
                     userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = chosenResource.amount;
                 } else {
-                    userUpdateOperations.$push['inventory.resources'] = { $each: [{ ...chosenResourceData, amount: chosenResource.amount }] };
+                    userUpdateOperations.$push['inventory.resources'] = { $each: [{ ...chosenResourceData, amount: chosenResource.amount, origin: ExtendedResourceOrigin.NORMAL }] };
                 }
 
                 // now, check if the amount to claim for this resource equals the max claimable amount for this resource.
@@ -1645,7 +1645,7 @@ export const claimResources = async (
 
                         userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = resource.amount;
                     } else {
-                        userUpdateOperations.$push['inventory.resources'] = { $each: [resource] };
+                        userUpdateOperations.$push['inventory.resources'] = { $each: [{...resource, origin: ExtendedResourceOrigin.NORMAL}] };
                     }
                 }
 
@@ -1714,7 +1714,7 @@ export const claimResources = async (
 
                                 userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = amountToClaim;
                             } else {
-                                userUpdateOperations.$push['inventory.resources'] = { $each: [{ ...resource, amount: amountToClaim }] }
+                                userUpdateOperations.$push['inventory.resources'] = { $each: [{ ...resource, amount: amountToClaim, origin: ExtendedResourceOrigin.NORMAL }] }
                             }
 
                             // increment the current weight by the total weight of this resource
@@ -1727,7 +1727,8 @@ export const claimResources = async (
                             // add the claimed resource to the claimedResources array
                             claimedResources.push({
                                 ...resource,
-                                amount: amountToClaim
+                                amount: amountToClaim,
+                                origin: ExtendedResourceOrigin.NORMAL
                             });
 
                             // break out of the loop since we can't claim more resources based on the user's max inventory weight
@@ -1742,7 +1743,7 @@ export const claimResources = async (
                                 console.log('existing resource index #3: ', existingResourceIndex);
                                 userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = resource.amount;
                             } else {
-                                userUpdateOperations.$push['inventory.resources'] = { $each: [resource] }
+                                userUpdateOperations.$push['inventory.resources'] = { $each: [{...resource, origin: ExtendedResourceOrigin.NORMAL}] }
                             }
 
                             // increment the current weight by the total weight of this resource
@@ -1755,7 +1756,10 @@ export const claimResources = async (
                             // islandUpdateOperations.$pull[`islandResourceStats.claimableResources`] = { type: resource.type };
 
                             // add the claimed resource to the claimedResources array
-                            claimedResources.push(resource);
+                            claimedResources.push({
+                                ...resource,
+                                origin: ExtendedResourceOrigin.NORMAL
+                            });
                         }
                     }
                 }
