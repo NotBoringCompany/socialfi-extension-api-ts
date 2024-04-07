@@ -2056,7 +2056,7 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
             }
 
             // add the new resource to the island's `resourcesGathered`
-            islandUpdateOperations.$push['islandResourceStats.claimableResources'] = { $each: [newResource] };
+            islandUpdateOperations.$push['islandResourceStats.resourcesGathered'] = { $each: [newResource] };
         } else {
             // if not empty, check if the resource already exists in `resourcesGathered`
             const existingResourceIndex = resourcesGathered.findIndex(r => r.type === resourceToDrop.type);
@@ -2103,8 +2103,8 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
                     }
 
                     // add the new resource to the island's `claimableResources`
-                    // islandUpdateOperations.$push['islandResourceStats.claimableResources'].$each.push(newResource);
-                    islandUpdateOperations.$push['islandResourceStats.claimableResources'] = { $each: [newResource] };
+                    islandUpdateOperations.$push['islandResourceStats.claimableResources'].$each.push(newResource);
+                    // islandUpdateOperations.$push['islandResourceStats.claimableResources'] = { $each: [newResource] };
                 }
             }
         }
