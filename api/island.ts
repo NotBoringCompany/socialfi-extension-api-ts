@@ -1971,15 +1971,15 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
             $push: {}
         }
 
-        // initialize $each on the island's `claimableResources` if it doesn't exist so that we can push multiple resources at once
-        if (!islandUpdateOperations.$push['islandResourceStats.claimableResources']) {
-            islandUpdateOperations.$push['islandResourceStats.claimableResources'] = { $each: [] }
-        }
+        // // initialize $each on the island's `claimableResources` if it doesn't exist so that we can push multiple resources at once
+        // if (!islandUpdateOperations.$push['islandResourceStats.claimableResources']) {
+        //     islandUpdateOperations.$push['islandResourceStats.claimableResources'] = { $each: [] }
+        // }
 
-        // initialize $each on the island's `resourcesGathered` if it doesn't exist so that we can push multiple resources at once
-        if (!islandUpdateOperations.$push['islandResourceStats.resourcesGathered']) {
-            islandUpdateOperations.$push['islandResourceStats.resourcesGathered'] = { $each: [] }
-        }
+        // // initialize $each on the island's `resourcesGathered` if it doesn't exist so that we can push multiple resources at once
+        // if (!islandUpdateOperations.$push['islandResourceStats.resourcesGathered']) {
+        //     islandUpdateOperations.$push['islandResourceStats.resourcesGathered'] = { $each: [] }
+        // }
 
         if (!island) {
             return {
@@ -2233,7 +2233,22 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
         console.log(`(dropResource) Island ID ${island.islandId}'s updateOperations: `, islandUpdateOperations);
 
         // execute the update operations
-        await IslandModel.updateOne({ islandId }, islandUpdateOperations);
+        // await IslandModel.updateOne({ islandId }, islandUpdateOperations);
+        await IslandModel.updateOne({islandId}, {
+            $set: islandUpdateOperations.$set
+        });
+
+        await IslandModel.updateOne({islandId}, {
+            $push: islandUpdateOperations.$push
+        });
+
+        await IslandModel.updateOne({islandId}, {
+            $pull: islandUpdateOperations.$pull
+        });
+
+        await IslandModel.updateOne({islandId}, {
+            $inc: islandUpdateOperations.$inc
+        });
 
         return {
             status: Status.SUCCESS,
