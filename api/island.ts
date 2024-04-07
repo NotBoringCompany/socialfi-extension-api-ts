@@ -2185,6 +2185,8 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
             }
         }
 
+        console.log(`(dropResource) Island ID ${island.islandId}'s updateOperations: `, islandUpdateOperations);
+
         // execute the update operations
         await IslandModel.updateOne({ islandId }, islandUpdateOperations);
 
