@@ -2234,21 +2234,34 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
 
         // execute the update operations
         // await IslandModel.updateOne({ islandId }, islandUpdateOperations);
-        await IslandModel.updateOne({islandId}, {
-            $set: islandUpdateOperations.$set
-        });
 
-        await IslandModel.updateOne({islandId}, {
-            $push: islandUpdateOperations.$push
-        });
+        if (Object.keys(islandUpdateOperations.$set).length > 0) {
+            console.log('$set is not empty for island ID ', island.islandId);
+            await IslandModel.updateOne({ islandId }, {
+                $set: islandUpdateOperations.$set
+            });
+        }
 
-        await IslandModel.updateOne({islandId}, {
-            $pull: islandUpdateOperations.$pull
-        });
+        if (Object.keys(islandUpdateOperations.$push).length > 0) {
+            console.log('$push is not empty for island ID ', island.islandId);
+            await IslandModel.updateOne({ islandId }, {
+                $push: islandUpdateOperations.$push
+            });
+        }
 
-        await IslandModel.updateOne({islandId}, {
-            $inc: islandUpdateOperations.$inc
-        });
+        if (Object.keys(islandUpdateOperations.$pull).length > 0) {
+            console.log('$pull is not empty for island ID ', island.islandId);
+            await IslandModel.updateOne({ islandId }, {
+                $pull: islandUpdateOperations.$pull
+            });
+        }
+        
+        if (Object.keys(islandUpdateOperations.$inc).length > 0) {
+            console.log('$inc is not empty for island ID ', island.islandId);
+            await IslandModel.updateOne({ islandId }, {
+                $inc: islandUpdateOperations.$inc
+            })
+        }
 
         return {
             status: Status.SUCCESS,
