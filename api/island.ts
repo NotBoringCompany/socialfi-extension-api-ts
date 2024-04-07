@@ -2167,7 +2167,8 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
                             amount: 1
                         }
 
-                        islandUpdateOperations.$push['islandResourceStats.claimableResources'] = { $each: [newResource] };
+                        islandUpdateOperations.$push['islandResourceStats.claimableResources'].$each.push(newResource);
+                        // islandUpdateOperations.$push['islandResourceStats.claimableResources'] = { $each: [newResource] };
                     }
 
                     // lastly, increment the island's `islandResourceStats.dailyBonusResourcesGathered` by 1.
