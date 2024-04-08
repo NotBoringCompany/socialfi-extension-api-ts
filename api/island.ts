@@ -481,9 +481,6 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
                     }
                 }
 
-                // set the lastRelocationTimestamp of the relocated bit to now
-                bitUpdateOperations.$set['lastRelocationTimestamp'] = Math.floor(Date.now() / 1000);
-
                 // execute the update operations
                 const prevBitPromises = prevIslandBitsUpdateOperations.map(async op => {
                     return BitModel.updateOne({ bitId: op.bitId }, op.updateOperations);
@@ -572,6 +569,9 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
 
         // update the bit to include `placedIslandId`
         bitUpdateOperations.$set['placedIslandId'] = islandId;
+
+        // set the lastRelocationTimestamp of the relocated bit to now (regardless of whether the bit was relocated or just placed since that will also trigger the cooldown)
+        bitUpdateOperations.$set['lastRelocationTimestamp'] = Math.floor(Date.now() / 1000);
 
         // execute the update operations
         await Promise.all([
@@ -1799,7 +1799,7 @@ export const claimResources = async (
             await UserModel.updateOne({ twitterId }, {
                 $pull: userUpdateOperations.$pull
             });
-        } 
+        }
 
         if (Object.keys(userUpdateOperations.$set).length > 0) {
             await UserModel.updateOne({ twitterId }, {
@@ -2290,7 +2290,7 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
                 $pull: islandUpdateOperations.$pull
             });
         }
-        
+
         if (Object.keys(islandUpdateOperations.$inc).length > 0) {
             console.log('$inc is not empty for island ID ', island.islandId);
             await IslandModel.updateOne({ islandId }, {
