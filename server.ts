@@ -43,6 +43,7 @@ import cookie from './routes/cookie';
 import poi from './routes/poi';
 import leaderboard from './routes/leaderboard';
 import kos from './routes/kos';
+import item from './routes/item';
 import { schedulers } from './schedulers/schedulers';
 
 app.use('/auth/twitter', twitterAuth);
@@ -60,6 +61,7 @@ app.use('/poi', poi);
 app.use('/cookie', cookie);
 app.use('/leaderboard', leaderboard);
 app.use('/kos', kos);
+app.use('/item', item);
 
 app.listen(port, async () => {
     console.log(`Server running on port ${port}`);
