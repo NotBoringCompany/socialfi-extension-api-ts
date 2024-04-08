@@ -50,13 +50,15 @@ export const createRaft = async (userId: string): Promise<ReturnValue> => {
  */
 export const getLatestRaftId = async (): Promise<ReturnValue> => {
     try {
-        // get the latest Raft ID by counting the amount of rafts in the database
-        const latestRaftId = await RaftModel.countDocuments();
+        // get the latest Raft ID by sorting the collection in descending order and getting the first document
+        const latestRaft = await RaftModel.findOne().sort({ raftId: -1 }).lean();
 
         return {
             status: Status.SUCCESS,
             message: `(getLatestRaftId) Successfully retrieved latest raft ID.`,
-            data: { latestRaftId }
+            data: { 
+                latestRaftId: latestRaft.raftId
+            }
         }
     } catch (err: any) {
         return {

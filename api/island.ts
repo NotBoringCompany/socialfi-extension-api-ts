@@ -1830,7 +1830,7 @@ export const claimResources = async (
                 $set: islandUpdateOperations.$set
             });
         }
-        
+
         return {
             status: Status.SUCCESS,
             message: returnMessage,
@@ -2401,13 +2401,14 @@ export const addIslandToDatabase = async (island: Island): Promise<ReturnValue> 
  */
 export const getLatestIslandId = async (): Promise<ReturnValue> => {
     try {
-        const latestIslandId = await IslandModel.countDocuments();
+        // sort by islandId in descending order and get the first document
+        const latestIsland = await IslandModel.findOne().sort({ islandId: -1 }).lean();
 
         return {
             status: Status.SUCCESS,
             message: `(getLatestIslandId) Latest island id fetched.`,
             data: {
-                latestIslandId
+                latestIslandId: latestIsland.islandId
             }
         }
     } catch (err: any) {

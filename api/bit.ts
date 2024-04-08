@@ -594,13 +594,14 @@ export const addBitToDatabase = async (bit: Bit): Promise<ReturnValue> => {
  */
 export const getLatestBitId = async (): Promise<ReturnValue> => {
     try {
-        const latestBitId = await BitModel.countDocuments();
+        // sort the bit ids in descending order and get the first one
+        const latestBit = await BitModel.findOne().sort({ bitId: -1 }).lean();
 
         return {
             status: Status.SUCCESS,
             message: `(getLatestBitId) Latest bit id fetched.`,
             data: {
-                latestBitId,
+                latestBitId: latestBit.bitId
             },
         };
     } catch (err: any) {

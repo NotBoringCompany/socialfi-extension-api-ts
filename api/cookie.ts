@@ -168,14 +168,14 @@ export const withdrawCookies = async (twitterId: string, amount: number): Promis
  */
 export const getLatestDepositId = async (): Promise<ReturnValue> => {
     try {
-        // we count the amount of documents in the collection
-        const count = await CookieDepositModel.countDocuments();
+        // get the latest deposit id by sorting the collection in descending order and getting the first document
+        const latestDeposit = await CookieDepositModel.findOne().sort({ depositId: -1 }).lean();
 
         return {
             status: Status.SUCCESS,
-            message: `(getLatestDepositId) Latest deposit ID: ${count}`,
+            message: `(getLatestDepositId) Latest deposit ID: ${latestDeposit}`,
             data: {
-                depositId: count
+                depositId: latestDeposit.depositId
             }
         }
     } catch (err: any) {
@@ -188,14 +188,14 @@ export const getLatestDepositId = async (): Promise<ReturnValue> => {
 
 export const getLatestWithdrawalId = async (): Promise<ReturnValue> => {
     try {
-        // we count the amount of documents in the collection
-        const count = await CookieWithdrawalModel.countDocuments();
+        // get the latest withdrawal id by counting the number of documents in the collection
+        const latestWithdrawal = await CookieWithdrawalModel.findOne().sort({ withdrawalId: -1 }).lean();
 
         return {
             status: Status.SUCCESS,
-            message: `(getLatestWithdrawalId) Latest withdrawal ID: ${count}`,
+            message: `(getLatestWithdrawalId) Latest withdrawal ID: ${latestWithdrawal}`,
             data: {
-                withdrawalId: count
+                withdrawalId: latestWithdrawal.withdrawalId
             }
         }
     } catch (err: any) {

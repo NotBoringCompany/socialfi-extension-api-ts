@@ -8,9 +8,9 @@ import { Prize, Ticket, Winner } from '../models/lottery';
 import { lotteryPrizeTier, lotteryTicketCost } from '../utils/constants/lottery';
 import { UserSchema } from '../schemas/User';
 import { getLotteryContractBalance } from '../utils/web3';
-import { LOTTERY_CONTRACT, LOTTERY_CONTRACT_USER } from '../utils/constants/blast';
 import { ExtendedResource, Resource, ResourceType } from '../models/resource';
 import { ethers } from 'ethers';
+import { LOTTERY_CONTRACT, LOTTERY_CONTRACT_USER } from '../utils/constants/web3';
 
 /**
  * (User) purchases a new ticket for the current lottery draw using a `resourceType`.
@@ -256,9 +256,9 @@ export const startNewDraw = async (): Promise<ReturnValue> => {
     const Lottery = mongoose.model('Lottery', LotterySchema, 'Lottery');
 
     try {
-        // get the latest draw ID by obtaining the documents count
+        // get the latest draw ID by sorting the collection in descending order and getting the first document
         // we assume that draws won't be removed from the database, thus we can safely use this method
-        const latestDrawId = await Lottery.countDocuments();
+        const latestDraw = await Lottery.findOne().sort({ drawId: -1 }).lean();
 
         // generates a random server seed and get the hashed version of it
         const serverSeed = generateServerSeed();
@@ -284,7 +284,7 @@ export const startNewDraw = async (): Promise<ReturnValue> => {
         const newDraw = new Lottery({
             _id: generateObjectId(),
             open: true,
-            drawId: latestDrawId + 1,
+            drawId: latestDraw.drawId + 1,
             createdTimestamp,
             finalizationTimestamp,
             tickets: [],
