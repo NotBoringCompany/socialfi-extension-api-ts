@@ -222,6 +222,8 @@ export const summonIsland = async (
             islandStatsModifiers
         }
 
+        console.log(`island stats modifiers for island #${island.islandId}: `, islandStatsModifiers);
+
         return {
             status: Status.SUCCESS,
             message: `(summonIsland) Island randomized and summoned.`,
