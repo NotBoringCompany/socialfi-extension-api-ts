@@ -142,6 +142,8 @@ export const summonIsland = async (
         // if mannerless, reduce 0.5% to earning and gathering rate modifiers
         const bits = await BitModel.find({ bitId: { $in: userBitIds } }).lean();
 
+        console.log(`user ${user.twitterId}'s bits: `, bits);
+
         bits.forEach(bit => {
             if (
                 bit.traits.includes(BitTrait.INFLUENTIAL) ||
@@ -149,6 +151,8 @@ export const summonIsland = async (
                 bit.traits.includes(BitTrait.MANNERLESS) ||
                 bit.traits.includes(BitTrait.ANTAGONISTIC)
             ) {
+                console.log(`user ${user.twitterId}'s bit #${bit.bitId} has traits: `, bit.traits);
+                
                 const gatheringRateModifier: Modifier = {
                     origin: `Bit ID #${bit.bitId}'s Trait: ${
                         bit.traits.includes(BitTrait.INFLUENTIAL) ? 'Influential' : 
