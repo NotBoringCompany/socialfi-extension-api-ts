@@ -5,7 +5,7 @@ import { Island, IslandStatsModifiers } from '../models/island';
 import { ObtainMethod } from '../models/obtainMethod';
 import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
 import { GET_TOTAL_COOKIE_CRUMBS_EARNABLE, GET_TOTAL_X_COOKIES_EARNABLE, randomizeIslandTraits } from '../utils/constants/island';
-import { BitTrait } from '../models/bit';
+import { BitTrait, BitTraitData } from '../models/bit';
 import { Modifier } from '../models/modifier';
 
 /**
@@ -145,13 +145,22 @@ export const summonIsland = async (
         console.log(`user ${user.twitterId}'s bits: `, bits);
 
         bits.forEach(bit => {
+            const bitTraits = bit.traits as BitTraitData[];
+
+            console.log(`bit ID ${bit.bitId} has traits: `, bit.traits.map(trait => {
+                return trait;
+            }));
+
+            // check if the `trait` within each bitTraits instance contain the following traits
             if (
-                bit.traits.includes(BitTrait.INFLUENTIAL) ||
-                bit.traits.includes(BitTrait.FAMOUS) ||
-                bit.traits.includes(BitTrait.MANNERLESS) ||
-                bit.traits.includes(BitTrait.ANTAGONISTIC)
+                bitTraits.some(traitData => {
+                    return traitData.trait === BitTrait.INFLUENTIAL ||
+                        traitData.trait === BitTrait.FAMOUS ||
+                        traitData.trait === BitTrait.MANNERLESS ||
+                        traitData.trait === BitTrait.ANTAGONISTIC
+                })
             ) {
-                console.log(`user ${user.twitterId}'s bit #${bit.bitId} has traits: `, bit.traits);
+                console.log('bit has some of the traits listed above!');
                 
                 const gatheringRateModifier: Modifier = {
                     origin: `Bit ID #${bit.bitId}'s Trait: ${
