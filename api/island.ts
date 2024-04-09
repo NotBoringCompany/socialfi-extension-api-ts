@@ -103,6 +103,23 @@ export const deleteIsland = async (twitterId: string, islandId: number): Promise
             IslandModel.findOne({ islandId }).lean()
         ]);
 
+        const userUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const bitUpdateOperations: Array<{
+            bitId: number,
+            updateOperations: {
+                $pull: {},
+                $inc: {},
+                $set: {},
+                $push: {}
+            }
+        }> = [];
+
         if (!user) {
             return {
                 status: Status.ERROR,
@@ -124,15 +141,38 @@ export const deleteIsland = async (twitterId: string, islandId: number): Promise
             }
         }
 
-        await Promise.all([
-            // remove the island from the database
-            IslandModel.deleteOne({ islandId }),
-            // remove the island ID from the user's inventory
-            UserModel.updateOne({ twitterId }, {
-                $pull: {
-                    'inventory.islandIds': islandId
+        // do the following things:
+        // 1. remove the island ID from the user's inventory
+        // 2. for each bit, set the `placedIslandId` back to 0 and set the `lastRelocationTimestamp` back to 0.
+        // 3. delete the island from the database
+        userUpdateOperations.$pull['inventory.islandIds'] = islandId;
+
+        // get the bits placed on the island
+        const placedBitIds = island.placedBitIds as number[];
+
+        for (const bitId of placedBitIds) {
+            bitUpdateOperations.push({
+                bitId,
+                updateOperations: {
+                    $set: {
+                        placedIslandId: 0,
+                        lastRelocationTimestamp: 0
+                    },
+                    $pull: {},
+                    $inc: {},
+                    $push: {}
                 }
-            })
+            });
+        }
+
+        const bitUpdatePromises = bitUpdateOperations.map(async op => {
+            return BitModel.updateOne({ bitId: op.bitId }, op.updateOperations);
+        })
+
+        await Promise.all([
+            IslandModel.deleteOne({ islandId }),
+            UserModel.updateOne({ twitterId }, userUpdateOperations),
+            ...bitUpdatePromises
         ]);
 
         return {
