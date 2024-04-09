@@ -1,5 +1,5 @@
 import express from 'express';
-import { calcEffectiveResourceDropChances, calcIslandCurrentRate, checkCurrentTax, claimResources, claimXCookiesAndCrumbs, deleteIsland, evolveIsland, getIslands, placeBit, unplaceBit } from '../api/island';
+import { calcEffectiveResourceDropChances, calcIslandCurrentRate, checkCurrentTax, claimResources, claimXCookiesAndCrumbs, evolveIsland, getIslands, placeBit, removeIsland, unplaceBit } from '../api/island';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { IslandType, RateType, ResourceDropChanceDiff } from '../models/island';
@@ -64,11 +64,11 @@ router.post('/unplace_bit', async (req, res) => {
     }
 })
 
-router.post('/delete_island', async (req, res) => {
+router.post('/remove_island', async (req, res) => {
     const { islandId } = req.body;
 
     try {
-        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'delete_island');
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'remove_island');
 
         if (validateStatus !== Status.SUCCESS) {
             return res.status(validateStatus).json({
@@ -77,7 +77,7 @@ router.post('/delete_island', async (req, res) => {
             })
         }
 
-        const { status, message, data } = await deleteIsland(validateData?.twitterId, islandId);
+        const { status, message, data } = await removeIsland(validateData?.twitterId, islandId);
 
         return res.status(status).json({
             status,
