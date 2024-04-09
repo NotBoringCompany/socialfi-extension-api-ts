@@ -1,5 +1,5 @@
 import express from 'express';
-import { calcEffectiveResourceDropChances, calcIslandCurrentRate, checkCurrentTax, claimResources, claimXCookiesAndCrumbs, evolveIsland, getIslands, placeBit, unplaceBit } from '../api/island';
+import { calcEffectiveResourceDropChances, calcIslandCurrentRate, checkCurrentTax, claimResources, claimXCookiesAndCrumbs, deleteIsland, evolveIsland, getIslands, placeBit, unplaceBit } from '../api/island';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { IslandType, RateType, ResourceDropChanceDiff } from '../models/island';
@@ -50,6 +50,34 @@ router.post('/unplace_bit', async (req, res) => {
         }
 
         const { status, message, data } = await unplaceBit(validateData?.twitterId, bitId);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
+
+router.post('/delete_island', async (req, res) => {
+    const { islandId } = req.body;
+
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'delete_island');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
+        const { status, message, data } = await deleteIsland(validateData?.twitterId, islandId);
 
         return res.status(status).json({
             status,

@@ -94,6 +94,60 @@ export const generateBarrenIsland = async (
 }
 
 /**
+ * (User) Manually deletes an island. This is called when a user decides to remove/delete an island of their choice.
+ */
+export const deleteIsland = async (twitterId: string, islandId: number): Promise<ReturnValue> => {
+    try {
+        const [user, island] = await Promise.all([
+            UserModel.findOne({ twitterId }).lean(),
+            IslandModel.findOne({ islandId }).lean()
+        ]);
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(deleteIsland) User not found.`
+            }
+        }
+
+        if (!(user.inventory?.islandIds as number[]).includes(islandId)) {
+            return {
+                status: Status.UNAUTHORIZED,
+                message: `(deleteIsland) User does not own the island.`
+            }
+        }
+
+        if (!island) {
+            return {
+                status: Status.ERROR,
+                message: `(deleteIsland) Island not found.`
+            }
+        }
+
+        await Promise.all([
+            // remove the island from the database
+            IslandModel.deleteOne({ islandId }),
+            // remove the island ID from the user's inventory
+            UserModel.updateOne({ twitterId }, {
+                $pull: {
+                    'inventory.islandIds': islandId
+                }
+            })
+        ]);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(deleteIsland) Island with ID ${islandId} successfully deleted.`
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(deleteIsland) Error: ${err.message}`
+        }
+    }
+}
+
+/**
  * Gets one or multiple islands based on their IDs.
  */
 export const getIslands = async (islandIds: number[]): Promise<ReturnValue> => {
