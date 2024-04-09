@@ -1,5 +1,5 @@
 import express from 'express';
-import { calcEffectiveResourceDropChances, calcIslandCurrentRate, checkCurrentTax, claimResources, claimXCookies, evolveIsland, getIslands, placeBit, unplaceBit } from '../api/island';
+import { calcEffectiveResourceDropChances, calcIslandCurrentRate, checkCurrentTax, claimResources, claimXCookiesAndCrumbs, evolveIsland, getIslands, placeBit, unplaceBit } from '../api/island';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { IslandType, RateType, ResourceDropChanceDiff } from '../models/island';
@@ -111,12 +111,12 @@ router.post('/evolve_island', async (req, res) => {
     }
 });
 
-router.post('/claim_xcookies', async (req, res) => {
+router.post('/claim_xcookies_and_crumbs', async (req, res) => {
     const { islandId } = req.body;
 
     try {
 
-        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'claim_xcookies');
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'claim_xcookies_and_crumbs');
 
         if (validateStatus !== Status.SUCCESS) {
             return res.status(validateStatus).json({
@@ -125,7 +125,7 @@ router.post('/claim_xcookies', async (req, res) => {
             })
         }
 
-        const { status, message, data } = await claimXCookies(validateData?.twitterId, islandId);
+        const { status, message, data } = await claimXCookiesAndCrumbs(validateData?.twitterId, islandId);
 
         return res.status(status).json({
             status,

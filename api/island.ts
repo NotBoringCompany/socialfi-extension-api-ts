@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
 import { IslandSchema } from '../schemas/Island';
 import { Island, IslandStatsModifiers, IslandTrait, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
-import { BARREN_ISLE_COMMON_DROP_CHANCE, BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DAILY_BONUS_RESOURCES_GATHERABLE, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLUTION_COST, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN, X_COOKIE_TAX, randomizeIslandTraits } from '../utils/constants/island';
+import { BARREN_ISLE_COMMON_DROP_CHANCE, BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DAILY_BONUS_RESOURCES_GATHERABLE, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLUTION_COST, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_TAX, randomizeIslandTraits } from '../utils/constants/island';
 import { calcBitCurrentRate, getBits } from './bit';
 import { BarrenResource, ExtendedResource, ExtendedResourceOrigin, Resource, ResourceLine, ResourceRarity, ResourceRarityNumeric, ResourceType, SimplifiedResource } from '../models/resource';
 import { UserSchema } from '../schemas/User';
@@ -1886,9 +1886,9 @@ export const updateDailyBonusResourcesGathered = async (): Promise<void> => {
 }
 
 /**
- * Claims all claimable xCookies (and potential claimable cookie crumbs) from an island and adds them to the user's inventory.
+ * Claims either xCookies or cookie crumbs (or both, but at least one) from an island.
  */
-export const claimXCookies = async (twitterId: string, islandId: number): Promise<ReturnValue> => {
+export const claimXCookiesAndCrumbs = async (twitterId: string, islandId: number): Promise<ReturnValue> => {
     try {
         const [user, island] = await Promise.all([
             UserModel.findOne({ twitterId }).lean(),
@@ -1931,69 +1931,72 @@ export const claimXCookies = async (twitterId: string, islandId: number): Promis
             }
         }
 
-        // check if the `X_COOKIE_CLAIM_COOLDOWN` has passed from the last claimed time
+        // // check if the `X_COOKIE_CLAIM_COOLDOWN` has passed from the last claimed time
         const currentTime = Math.floor(Date.now() / 1000);
-        const lastClaimedTime = island.islandEarningStats?.lastClaimed as number;
+        // const lastClaimedTime = island.islandEarningStats?.lastClaimed as number;
 
-        if (currentTime - lastClaimedTime < X_COOKIE_CLAIM_COOLDOWN) {
-            return {
-                status: Status.ERROR,
-                message: `(claimXCookies) Cooldown not yet passed.`
-            }
-        }
+        // if (currentTime - lastClaimedTime < X_COOKIE_CLAIM_COOLDOWN) {
+        //     return {
+        //         status: Status.ERROR,
+        //         message: `(claimXCookies) Cooldown not yet passed.`
+        //     }
+        // }
 
         // check if the island has any xCookies to claim
         const xCookies: number = island.islandEarningStats?.claimableXCookies;
 
-        // also check if the island has any cookie crumbs to claim
-        // however, we are not going to throw an error if there are no cookie crumbs to claim (beacuse this is optional)
+        // check if the island has any cookie crumbs to claim
         const cookieCrumbs: number = island.islandEarningStats?.claimableCookieCrumbs;
 
-        if (xCookies === 0 || !xCookies) {
+        // at least one should be claimable, else return an error
+        if (xCookies <= 0 && cookieCrumbs <= 0) {
             return {
                 status: Status.ERROR,
-                message: `(claimXCookies) No xCookies to claim.`
+                message: `(claimXCookies) No xCookies or Cookie Crumbs to claim.`
             }
         }
 
-        // check how much tax the user has to pay
-        const { status, message, data } = await checkCurrentTax(twitterId, islandId);
+        // if xCookies can be claimed, do the following logic
+        if (xCookies > 0) {
+            // check how much tax the user has to pay
+            const { status, message, data } = await checkCurrentTax(twitterId, islandId);
 
-        if (status !== Status.SUCCESS) {
-            return {
-                status: Status.ERROR,
-                message: `(claimXCookies) Error from checkCurrentTax: ${message}`
+            if (status !== Status.SUCCESS) {
+                return {
+                    status: Status.ERROR,
+                    message: `(claimXCookies) Error from checkCurrentTax: ${message}`
+                }
             }
+
+            const tax = data?.tax as number;
+
+            // reduce the xCookies by the tax amount
+            const xCookiesAfterTax = xCookies - (tax / 100 * xCookies);
+
+            console.log(`claiming tax for island ID ${islandId}: ${tax}%`);
+
+            // add the xCookies to the user's inventory
+            userUpdateOperations.$inc['inventory.xCookies'] = xCookiesAfterTax;
+
+            // do a few things:
+            // 1. set the island's `claimableXCookies` to 0
+            // 2. set the island's `lastClaimed` to the current time
+            // 3. set the island's `currentTax` to `tax`
+            islandUpdateOperations.$set['islandEarningStats.claimableXCookies'] = 0;
+            islandUpdateOperations.$set['islandEarningStats.lastClaimed'] = currentTime;
+            islandUpdateOperations.$set['currentTax'] = tax;
         }
 
-        const tax = data?.tax as number;
-
-        // reduce the xCookies by the tax amount
-        const xCookiesAfterTax = xCookies - (tax / 100 * xCookies);
-
-        console.log(`claiming tax for island ID ${islandId}: ${tax}%`);
-
-        // add the xCookies to the user's inventory
-        userUpdateOperations.$inc['inventory.xCookies'] = xCookiesAfterTax;
-
-        // if claimable cookie crumbs is > 0, add the cookie crumbs to the user's inventory
+        // if cookie crumbs can be claimed, do the following logic
         if (cookieCrumbs > 0) {
+            // add the cookie crumbs to the user's inventory
             userUpdateOperations.$inc['inventory.cookieCrumbs'] = cookieCrumbs;
 
             // set the island's `claimableCookieCrumbs` to 0
             islandUpdateOperations.$set['islandEarningStats.claimableCookieCrumbs'] = 0;
-            
-            // set `crumbsLastClaimed` to the current time
+            // set the island's `crumbsLastClaimed` to the current time
             islandUpdateOperations.$set['islandEarningStats.crumbsLastClaimed'] = currentTime;
         }
-
-        // do a few things:
-        // 1. set the island's `claimableXCookies` to 0
-        // 2. set the island's `lastClaimed` to the current time
-        // 3. set the island's `currentTax` to `tax`
-        islandUpdateOperations.$set['islandEarningStats.claimableXCookies'] = 0;
-        islandUpdateOperations.$set['islandEarningStats.lastClaimed'] = currentTime;
-        islandUpdateOperations.$set['currentTax'] = tax;
 
         // execute the update operations
         await Promise.all([
