@@ -156,31 +156,29 @@ export const summonIsland = async (
             ) {
                 const gatheringRateModifier: Modifier = {
                     origin: `Bit ID #${bit.bitId}'s Trait: ${
-                        bit.traits.includes(BitTrait.INFLUENTIAL) ? 'Influential' : 
-                        bit.traits.includes(BitTrait.FAMOUS) ? 'Famous' : 
-                        bit.traits.includes(BitTrait.MANNERLESS) ? 'Mannerless' : 
+                        bitTraits.some(traitData => traitData.trait === BitTrait.INFLUENTIAL) ? 'Influential' :
+                        bitTraits.some(traitData => traitData.trait === BitTrait.FAMOUS) ? 'Famous' :
+                        bitTraits.some(traitData => traitData.trait === BitTrait.MANNERLESS) ? 'Mannerless' :
                         'Antagonistic'
                     }`,
-                    value: 
-                        bit.traits.includes(BitTrait.INFLUENTIAL) ? 1.01 : 
-                        bit.traits.includes(BitTrait.FAMOUS) ? 1.005 :
-                        bit.traits.includes(BitTrait.MANNERLESS) ? 0.995 :
+                    value: bitTraits.some(traitData => traitData.trait === BitTrait.INFLUENTIAL) ? 1.01 :
+                        bitTraits.some(traitData => traitData.trait === BitTrait.FAMOUS) ? 1.005 :
+                        bitTraits.some(traitData => traitData.trait === BitTrait.MANNERLESS) ? 0.995 :
                         0.99
-                }
-
+                };
+            
                 const earningRateModifier: Modifier = {
                     origin: `Bit ID #${bit.bitId}'s Trait: ${
-                        bit.traits.includes(BitTrait.INFLUENTIAL) ? 'Influential' : 
-                        bit.traits.includes(BitTrait.FAMOUS) ? 'Famous' : 
-                        bit.traits.includes(BitTrait.MANNERLESS) ? 'Mannerless' : 
+                        bitTraits.some(traitData => traitData.trait === BitTrait.INFLUENTIAL) ? 'Influential' :
+                        bitTraits.some(traitData => traitData.trait === BitTrait.FAMOUS) ? 'Famous' :
+                        bitTraits.some(traitData => traitData.trait === BitTrait.MANNERLESS) ? 'Mannerless' :
                         'Antagonistic'
                     }`,
-                    value: 
-                        bit.traits.includes(BitTrait.INFLUENTIAL) ? 1.01 : 
-                        bit.traits.includes(BitTrait.FAMOUS) ? 1.005 :
-                        bit.traits.includes(BitTrait.MANNERLESS) ? 0.995 :
+                    value: bitTraits.some(traitData => traitData.trait === BitTrait.INFLUENTIAL) ? 1.01 :
+                        bitTraits.some(traitData => traitData.trait === BitTrait.FAMOUS) ? 1.005 :
+                        bitTraits.some(traitData => traitData.trait === BitTrait.MANNERLESS) ? 0.995 :
                         0.99
-                }
+                };
 
                 islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
                 islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
