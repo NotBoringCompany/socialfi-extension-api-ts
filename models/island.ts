@@ -128,10 +128,8 @@ export interface IslandEarningStats {
     earningEnd: number;
     /** end timestamp of earning (cookie crumbs); 0 if not ended yet */
     crumbsEarningEnd: number;
-    /** timestamp of when `claimableXCookies` were last claimed */
+    /** timestamp of when `claimableXCookies` and/or `claimableCookieCrumbs` were last claimed */
     lastClaimed: number;
-    /** timestamp of when `claimableCookieCrumbs` were last claimed */
-    crumbsLastClaimed: number;
 }
 
 /** 

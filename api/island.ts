@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
 import { IslandSchema } from '../schemas/Island';
 import { Island, IslandStatsModifiers, IslandTrait, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
-import { BARREN_ISLE_COMMON_DROP_CHANCE, BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DAILY_BONUS_RESOURCES_GATHERABLE, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLUTION_COST, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_TAX, randomizeIslandTraits } from '../utils/constants/island';
+import { BARREN_ISLE_COMMON_DROP_CHANCE, BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DAILY_BONUS_RESOURCES_GATHERABLE, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLUTION_COST, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN, X_COOKIE_TAX, randomizeIslandTraits } from '../utils/constants/island';
 import { calcBitCurrentRate, getBits } from './bit';
 import { BarrenResource, ExtendedResource, ExtendedResourceOrigin, Resource, ResourceLine, ResourceRarity, ResourceRarityNumeric, ResourceType, SimplifiedResource } from '../models/resource';
 import { UserSchema } from '../schemas/User';
@@ -68,7 +68,6 @@ export const generateBarrenIsland = async (
                 earningEnd: 0,
                 crumbsEarningEnd: 0,
                 lastClaimed: 0,
-                crumbsLastClaimed: 0
             },
             islandStatsModifiers: {
                 resourceCapModifiers: [],
@@ -1931,16 +1930,17 @@ export const claimXCookiesAndCrumbs = async (twitterId: string, islandId: number
             }
         }
 
-        // // check if the `X_COOKIE_CLAIM_COOLDOWN` has passed from the last claimed time
+        // check if the `X_COOKIE_CLAIM_COOLDOWN` has passed from the last claimed time
+        // `lastClaimed` checks for both xCookies and cookie crumbs
         const currentTime = Math.floor(Date.now() / 1000);
-        // const lastClaimedTime = island.islandEarningStats?.lastClaimed as number;
+        const lastClaimedTime = island.islandEarningStats?.lastClaimed as number;
 
-        // if (currentTime - lastClaimedTime < X_COOKIE_CLAIM_COOLDOWN) {
-        //     return {
-        //         status: Status.ERROR,
-        //         message: `(claimXCookies) Cooldown not yet passed.`
-        //     }
-        // }
+        if (currentTime - lastClaimedTime < X_COOKIE_CLAIM_COOLDOWN) {
+            return {
+                status: Status.ERROR,
+                message: `(claimXCookies) Cooldown not yet passed.`
+            }
+        }
 
         // check if the island has any xCookies to claim
         const xCookies: number = island.islandEarningStats?.claimableXCookies;
@@ -1980,10 +1980,8 @@ export const claimXCookiesAndCrumbs = async (twitterId: string, islandId: number
 
             // do a few things:
             // 1. set the island's `claimableXCookies` to 0
-            // 2. set the island's `lastClaimed` to the current time
-            // 3. set the island's `currentTax` to `tax`
+            // 2. set the island's `currentTax` to `tax`
             islandUpdateOperations.$set['islandEarningStats.claimableXCookies'] = 0;
-            islandUpdateOperations.$set['islandEarningStats.lastClaimed'] = currentTime;
             islandUpdateOperations.$set['currentTax'] = tax;
         }
 
@@ -1994,9 +1992,10 @@ export const claimXCookiesAndCrumbs = async (twitterId: string, islandId: number
 
             // set the island's `claimableCookieCrumbs` to 0
             islandUpdateOperations.$set['islandEarningStats.claimableCookieCrumbs'] = 0;
-            // set the island's `crumbsLastClaimed` to the current time
-            islandUpdateOperations.$set['islandEarningStats.crumbsLastClaimed'] = currentTime;
         }
+
+        // set the island's `lastClaimed` to the current time
+        islandUpdateOperations.$set['islandEarningStats.lastClaimed'] = currentTime;
 
         // execute the update operations
         await Promise.all([

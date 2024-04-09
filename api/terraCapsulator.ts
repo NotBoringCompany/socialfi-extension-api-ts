@@ -220,7 +220,6 @@ export const summonIsland = async (
                 earningEnd: 0,
                 crumbsEarningEnd: 0,
                 lastClaimed: 0,
-                crumbsLastClaimed: 0
             },
             islandStatsModifiers
         }

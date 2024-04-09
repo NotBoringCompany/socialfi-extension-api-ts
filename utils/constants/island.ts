@@ -8,8 +8,8 @@ export const MAX_ISLAND_LEVEL = 20;
 /** claim cooldown for claiming resources (in seconds) */
 export const RESOURCES_CLAIM_COOLDOWN = 28800;
 
-// /** claim cooldown for claiming xCookies [FROM THE ISLAND] (in seconds) */
-// export const X_COOKIE_CLAIM_COOLDOWN = 28800;
+/** claim cooldown for claiming xCookies [FROM THE ISLAND] (in seconds) */
+export const X_COOKIE_CLAIM_COOLDOWN = 28800;
 
 /** reduction modifier for effective gathering rate for having multiple bits on an island */
 export const GATHERING_RATE_REDUCTION_MODIFIER = 0.1;
