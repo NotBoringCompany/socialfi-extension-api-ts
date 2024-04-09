@@ -96,7 +96,7 @@ export const generateBarrenIsland = async (
 /**
  * (User) Manually deletes an island. This is called when a user decides to remove/delete an island of their choice.
  */
-export const deleteIsland = async (twitterId: string, islandId: number): Promise<ReturnValue> => {
+export const removeIsland = async (twitterId: string, islandId: number): Promise<ReturnValue> => {
     try {
         const [user, island] = await Promise.all([
             UserModel.findOne({ twitterId }).lean(),

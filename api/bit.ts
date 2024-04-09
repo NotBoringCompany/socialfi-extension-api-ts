@@ -24,6 +24,217 @@ import { generateObjectId } from '../utils/crypto';
 import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
 
 /**
+ * (User) Manually releases a bit from the user's inventory. 
+ */
+export const releaseBit = async (twitterId: string, bitId: number): Promise<ReturnValue> => {
+    try {
+        const [user, bit] = await Promise.all([
+            UserModel.findOne({ twitterId }).lean(),
+            BitModel.findOne({ bitId }).lean()
+        ]);
+
+        const userUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const islandUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const bitUpdateOperations: Array<{
+            bitId: number,
+            updateOperations: {
+                $pull: {},
+                $inc: {},
+                $set: {},
+                $push: {}
+            }
+        }> = [];
+
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(releaseBit) User not found.`
+            }
+        }
+
+        if (!(user.inventory?.bitIds as number[]).includes(bitId)) {
+            return {
+                status: Status.ERROR,
+                message: `(releaseBit) User does not own the bit.`
+            }
+        }
+
+        if (!bit) {
+            return {
+                status: Status.ERROR,
+                message: `(releaseBit) Bit not found.`
+            }
+        }
+
+        // check if the bit is placed in any island
+        const placedIslandId = bit.placedIslandId;
+
+        // remove the bit from the user's inventory
+        userUpdateOperations.$pull['inventory.bitIds'] = bitId;
+
+        // if the bit is placed in an island, we do these checks:
+        // 1. remove the bit from the island's `placedBitIds`
+        // 2. check if the bit affects the islandStatsModifiers. if yes, remove the modifier related to this bit.
+        // 3. check if this bit affects the other bits' bitStatsModifiers (if the island has more bits). if yes, remove the modifier related to this bit.
+        if (placedIslandId !== 0) {
+            // remove the bit from the island's `placedBitIds`
+            islandUpdateOperations.$pull['placedBitIds'] = bitId;
+
+            // check if the island's `islandStatsModifiers` contain any modifiers related to this bit
+            // it should say something like `Bit ID ${bitId}'s Trait: ...` as the origin of the modifier.
+            // if there is, remove it/them.
+            const island = await IslandModel.findOne({ islandId: placedIslandId }).lean();
+
+            if (!island) {
+                return {
+                    status: Status.ERROR,
+                    message: `(releaseBit) Island not found.`
+                }
+            }
+
+            const islandStatsModifiers = island.islandStatsModifiers;
+
+            // check if the islandStatsModifiers contain any modifiers related to this bit
+            const gatheringRateModifiers = islandStatsModifiers?.gatheringRateModifiers as Modifier[];
+            const earningRateModifiers = islandStatsModifiers?.earningRateModifiers as Modifier[];
+            const resourceCapModifiers = islandStatsModifiers?.resourceCapModifiers as Modifier[];
+
+            // check if the `gatheringRateModifiers` contain a modifier related to this bit
+            const gatheringRateModifierIndex = gatheringRateModifiers.findIndex((modifier: Modifier) => modifier.origin.includes(`Bit ID #${bitId}`));
+            const earningRateModifierIndex = earningRateModifiers.findIndex((modifier: Modifier) => modifier.origin.includes(`Bit ID #${bitId}`));
+            const resourceCapModifierIndex = resourceCapModifiers.findIndex((modifier: Modifier) => modifier.origin.includes(`Bit ID #${bitId}`));
+
+            // if the modifier exists, remove it
+            if (gatheringRateModifierIndex !== -1) {
+                islandUpdateOperations.$pull['islandStatsModifiers.gatheringRateModifiers'] = gatheringRateModifiers[gatheringRateModifierIndex];
+            }
+
+            if (earningRateModifierIndex !== -1) {
+                islandUpdateOperations.$pull['islandStatsModifiers.earningRateModifiers'] = earningRateModifiers[earningRateModifierIndex];
+            }
+
+            if (resourceCapModifierIndex !== -1) {
+                islandUpdateOperations.$pull['islandStatsModifiers.resourceCapModifiers'] = resourceCapModifiers[resourceCapModifierIndex];
+            }
+
+            // check if the island has more bits. if yes, check if the other bits' bitStatsModifiers contain any modifiers related to this bit
+            // if there is, remove it/them.
+            const placedBitIds = island.placedBitIds as number[];
+
+            // filter out the bitId from the placedBitIds
+            const otherBitIds = placedBitIds.filter(id => id !== bitId);
+
+            if (otherBitIds.length > 0) {
+                // get the other bits' bitStatsModifiers
+                const otherBits = await BitModel.find({ bitId: { $in: otherBitIds } }).lean();
+
+                otherBits.forEach(otherBit => {
+                    const otherBitStatsModifiers = otherBit.bitStatsModifiers;
+
+                    // check if the bitStatsModifiers contain any modifiers related to this bit
+                    const gatheringRateModifiers = otherBitStatsModifiers?.gatheringRateModifiers as Modifier[];
+                    const earningRateModifiers = otherBitStatsModifiers?.earningRateModifiers as Modifier[];
+                    const energyRateModifiers = otherBitStatsModifiers?.energyRateModifiers as Modifier[];
+                    const foodConsumptionEfficiencyModifiers = otherBitStatsModifiers?.foodConsumptionEfficiencyModifiers as Modifier[];
+
+                    const gatheringRateModifierIndex = gatheringRateModifiers.findIndex((modifier: Modifier) => modifier.origin.includes(`Bit ID #${bitId}`));
+                    const earningRateModifierIndex = earningRateModifiers.findIndex((modifier: Modifier) => modifier.origin.includes(`Bit ID #${bitId}`));
+                    const energyRateModifierIndex = energyRateModifiers.findIndex((modifier: Modifier) => modifier.origin.includes(`Bit ID #${bitId}`));
+                    const foodConsumptionEfficiencyModifierIndex = foodConsumptionEfficiencyModifiers.findIndex((modifier: Modifier) => modifier.origin.includes(`Bit ID #${bitId}`));
+
+                    // if the modifier exists, remove it
+                    if (gatheringRateModifierIndex !== -1) {
+                        bitUpdateOperations.push({
+                            bitId: otherBit.bitId,
+                            updateOperations: {
+                                $pull: { 'bitStatsModifiers.gatheringRateModifiers': gatheringRateModifiers[gatheringRateModifierIndex] },
+                                $inc: {},
+                                $set: {},
+                                $push: {}
+                            }
+                        });
+                    }
+
+                    if (earningRateModifierIndex !== -1) {
+                        bitUpdateOperations.push({
+                            bitId: otherBit.bitId,
+                            updateOperations: {
+                                $pull: { 'bitStatsModifiers.earningRateModifiers': earningRateModifiers[earningRateModifierIndex] },
+                                $inc: {},
+                                $set: {},
+                                $push: {}
+                            }
+                        });
+                    }
+
+                    if (energyRateModifierIndex !== -1) {
+                        bitUpdateOperations.push({
+                            bitId: otherBit.bitId,
+                            updateOperations: {
+                                $pull: { 'bitStatsModifiers.energyRateModifiers': energyRateModifiers[energyRateModifierIndex] },
+                                $inc: {},
+                                $set: {},
+                                $push: {}
+                            }
+                        });
+                    }
+
+                    if (foodConsumptionEfficiencyModifierIndex !== -1) {
+                        bitUpdateOperations.push({
+                            bitId: otherBit.bitId,
+                            updateOperations: {
+                                $pull: { 'bitStatsModifiers.foodConsumptionEfficiencyModifiers': foodConsumptionEfficiencyModifiers[foodConsumptionEfficiencyModifierIndex] },
+                                $inc: {},
+                                $set: {},
+                                $push: {}
+                            }
+                        });
+                    }
+                });
+            }
+        }
+
+        const bitUpdatePromises = bitUpdateOperations.length > 0 && bitUpdateOperations.map(async op => {
+            return BitModel.updateOne({ bitId: op.bitId }, op.updateOperations);
+        });
+
+        // execute the update operations
+        await Promise.all([
+            UserModel.updateOne({ twitterId }, userUpdateOperations),
+            BitModel.deleteOne({ bitId }),
+            IslandModel.updateOne({ islandId: placedIslandId }, islandUpdateOperations),
+            ...bitUpdatePromises
+        ]);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(releaseBit) Bit released.`,
+            data: {
+                bitId: bitId
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(releaseBit) Error: ${err.message}`,
+        };
+    }
+}
+
+/**
  * (User) Feeds a bit some food and replenishes its energy.
  */
 export const feedBit = async (twitterId: string, bitId: number, foodType: FoodType): Promise<ReturnValue> => {
