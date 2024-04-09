@@ -1886,7 +1886,7 @@ export const updateDailyBonusResourcesGathered = async (): Promise<void> => {
 }
 
 /**
- * Claims all claimable xCookies from an island and adds them to the user's inventory.
+ * Claims all claimable xCookies (and potential claimable cookie crumbs) from an island and adds them to the user's inventory.
  */
 export const claimXCookies = async (twitterId: string, islandId: number): Promise<ReturnValue> => {
     try {
@@ -1945,6 +1945,10 @@ export const claimXCookies = async (twitterId: string, islandId: number): Promis
         // check if the island has any xCookies to claim
         const xCookies: number = island.islandEarningStats?.claimableXCookies;
 
+        // also check if the island has any cookie crumbs to claim
+        // however, we are not going to throw an error if there are no cookie crumbs to claim (beacuse this is optional)
+        const cookieCrumbs: number = island.islandEarningStats?.claimableCookieCrumbs;
+
         if (xCookies === 0 || !xCookies) {
             return {
                 status: Status.ERROR,
@@ -1971,6 +1975,17 @@ export const claimXCookies = async (twitterId: string, islandId: number): Promis
 
         // add the xCookies to the user's inventory
         userUpdateOperations.$inc['inventory.xCookies'] = xCookiesAfterTax;
+
+        // if claimable cookie crumbs is > 0, add the cookie crumbs to the user's inventory
+        if (cookieCrumbs > 0) {
+            userUpdateOperations.$inc['inventory.cookieCrumbs'] = cookieCrumbs;
+
+            // set the island's `claimableCookieCrumbs` to 0
+            islandUpdateOperations.$set['islandEarningStats.claimableCookieCrumbs'] = 0;
+            
+            // set `crumbsLastClaimed` to the current time
+            islandUpdateOperations.$set['islandEarningStats.crumbsLastClaimed'] = currentTime;
+        }
 
         // do a few things:
         // 1. set the island's `claimableXCookies` to 0
