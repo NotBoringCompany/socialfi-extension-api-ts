@@ -12,6 +12,8 @@ import { generateBarrenIsland } from './island';
 import { POIName } from '../models/poi';
 import { solidityKeccak256 } from 'ethers/lib/utils';
 import { ethers } from 'ethers';
+import { ExtendedResource, ResourceType, SimplifiedResource } from '../models/resource';
+import { resources } from '../utils/constants/resource';
 
 /**
  * Twitter login logic. Creates a new user or simply log them in if they already exist.
@@ -370,6 +372,92 @@ export const getWallets = async (twitterId: string): Promise<ReturnValue> => {
         return {
             status: Status.ERROR,
             message: `(getWallets) ${err.message}`
+        }
+    }
+}
+
+/**
+ * (User) Manually removes a specific amount of resources that the user owns.
+ */
+export const removeResources = async (twitterId: string, resourcesToRemove: SimplifiedResource[]): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        const userUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(removeResources) User not found.`
+            }
+        }
+
+        const userResources = user.inventory.resources as ExtendedResource[];
+
+        if (userResources.length === 0) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(removeResources) User has no resources.`
+            }
+        }
+
+        // cumulative inventory weight to reduce after removing resources
+        let weightToReduce: number = 0;
+
+        // for each resource specified in `resources` (which is the resources the user wants to remove)
+        // check if the user has enough of that resource
+        for (const resource of resourcesToRemove) {
+            const userResource = userResources.find(r => r.type === resource.type);
+
+            if (!userResource) {
+                return {
+                    status: Status.BAD_REQUEST,
+                    message: `(removeResources) User does not have enough of this resource to remove: ${resource.type}.`
+                }
+            }
+
+            if (userResource.amount < resource.amount) {
+                return {
+                    status: Status.BAD_REQUEST,
+                    message: `(removeResources) User does not have enough of this resource to remove: ${resource.type}.`
+                }
+            }
+
+            // remove the resource from the user's inventory
+            userUpdateOperations.$pull['inventory.resources'] = {
+                type: resource.type,
+                amount: resource.amount
+            }
+
+            // calculate the total weight to reduce by looping through `resources` and getting the weight of each resource
+            const { weight } = resources.find(r => r.type === resource.type);
+
+            const totalWeight = weight * resource.amount;
+
+            weightToReduce += totalWeight;
+        }
+
+        // reduce the user's inventory weight
+        userUpdateOperations.$inc['inventory.weight'] = -weightToReduce;
+
+        await UserModel.updateOne({ twitterId }, userUpdateOperations);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(removeResources) Resources removed.`,
+            data: {
+                resourcesToRemove
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(removeResources) ${err.message}`
         }
     }
 }
