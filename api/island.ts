@@ -660,8 +660,8 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
             islandUpdateOperations.$set[`islandStatsModifiers.gatheringRateModifiers.${gatheringRateModifierIndex}.value`] = newValue;
         }
 
-        // check if the to-be-put bit is the first one; if yes, start the `gatheringStart` timestamp
-        if (island.placedBitIds.length === 0) {
+        // check if the to-be-put bit is the first one; if yes, start the `gatheringStart` timestamp (assuming it hasn't started yet)
+        if (island.placedBitIds.length === 0 && island.islandResourceStats.gatheringStart === 0) {
             islandUpdateOperations.$set['islandResourceStats.gatheringStart'] = Math.floor(Date.now() / 1000);
         }
 
@@ -682,6 +682,7 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
         ]);
 
         // update the other bits' modifiers and also if applicable the island's modifiers with the bit's traits
+        // also updates the to-be-placed bit's modifiers if other bits have traits that impact it
         await updateExtendedTraitEffects(bit, island);
 
         return {
@@ -828,9 +829,6 @@ export const unplaceBit = async (twitterId: string, bitId: number): Promise<Retu
                 if (earningRateModifierIndex !== -1) {
                     islandUpdateOperations.$pull['islandStatsModifiers.earningRateModifiers'] = island.islandStatsModifiers?.earningRateModifiers[earningRateModifierIndex];
                 }
-                // // remove the modifier from the island's `gatheringRateModifiers` and `earningRateModifiers`
-                // islandUpdateOperations.$pull['islandStatsModifiers.gatheringRateModifiers'] = { origin: `Bit ID #${bit.bitId}'s Trait: ${trait}` };
-                // islandUpdateOperations.$pull['islandStatsModifiers.earningRateModifiers'] = { origin: `Bit ID #${bit.bitId}'s Trait: ${trait}` };
                 // if trait is teamworker, leader, cute or lonewolf, remove modifiers for each bit that was impacted by this bit's trait
             } else if (
                 trait.trait === BitTrait.TEAMWORKER ||
@@ -871,20 +869,6 @@ export const unplaceBit = async (twitterId: string, bitId: number): Promise<Retu
                             }
                         });
                     }
-
-                    // // remove the modifier from the bit's `gatheringRateModifiers` and `earningRateModifiers`
-                    // bitUpdateOperations.push({
-                    //     bitId: otherBit.bitId,
-                    //     updateOperations: {
-                    //         $pull: {
-                    //             'bitStatsModifiers.gatheringRateModifiers': { origin: `Bit ID #${bit.bitId}'s Trait: ${trait}` },
-                    //             'bitStatsModifiers.earningRateModifiers': { origin: `Bit ID #${bit.bitId}'s Trait: ${trait}` }
-                    //         },
-                    //         $inc: {},
-                    //         $set: {},
-                    //         $push: {}
-                    //     }
-                    // });
                 }
             }
         }
@@ -1153,6 +1137,134 @@ export const updateExtendedTraitEffects = async (
         // if bit trait is none of the above, skip this trait
         } else {
             continue;
+        }
+    }
+
+    // now, we also need to see if the other bits have traits that impact the to-be-placed bit's modifiers
+    // these traits include: teamworker, leader, cute and lonewolf
+    const otherBits = await BitModel.find({ bitId: { $in: otherBitIds } }).lean();
+
+    if (otherBits.length > 0) {
+        // loop through each bit and check if they have the aforementioned traits.
+        for (const otherBit of otherBits) {
+            const traits = otherBit.traits as BitTraitData[];
+
+            for (const trait of traits) {
+                // if this `otherBit`'s trait contains 'teamworker', check if the to-be-placed's bit rarity is the same or lesser rarity than the `otherBit`'s rarity.
+                // if yes, add 5% gathering and earning rate to the to-be-placed bit
+                if (trait.trait === BitTrait.TEAMWORKER) {
+                    if (BitRarityNumeric[bit.rarity] <= BitRarityNumeric[otherBit.rarity]) {
+                        // add the new modifier to the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                        const newGatheringRateModifier: Modifier = {
+                            origin: `Bit ID #${otherBit.bitId}'s Trait: Teamworker`,
+                            value: 1.05
+                        }
+
+                        const newEarningRateModifier: Modifier = {
+                            origin: `Bit ID #${otherBit.bitId}'s Trait: Teamworker`,
+                            value: 1.05
+                        }
+
+                        // add the new modifier to the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                        bitUpdateOperations.push({
+                            bitId: bit.bitId,
+                            updateOperations: {
+                                $push: {
+                                    'bitStatsModifiers.gatheringRateModifiers': newGatheringRateModifier,
+                                    'bitStatsModifiers.earningRateModifiers': newEarningRateModifier
+                                },
+                                $pull: {},
+                                $inc: {},
+                                $set: {}
+                            }
+                        });
+                    } 
+                } 
+
+                // if the other bit's trait is leader, add 10% gathering and earning rate to the to-be-placed bit
+                if (trait.trait === BitTrait.LEADER) {
+                    // add the new modifier to the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                    const newGatheringRateModifier: Modifier = {
+                        origin: `Bit ID #${otherBit.bitId}'s Trait: Leader`,
+                        value: 1.1
+                    }
+
+                    const newEarningRateModifier: Modifier = {
+                        origin: `Bit ID #${otherBit.bitId}'s Trait: Leader`,
+                        value: 1.1
+                    }
+
+                    // add the new modifier to the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                    bitUpdateOperations.push({
+                        bitId: bit.bitId,
+                        updateOperations: {
+                            $push: {
+                                'bitStatsModifiers.gatheringRateModifiers': newGatheringRateModifier,
+                                'bitStatsModifiers.earningRateModifiers': newEarningRateModifier
+                            },
+                            $pull: {},
+                            $inc: {},
+                            $set: {}
+                        }
+                    });
+                }
+
+                // if the other bit's trait is cute, add 12.5% gathering and earning rate to the to-be-placed bit
+                if (trait.trait === BitTrait.CUTE) {
+                    // add the new modifier to the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                    const newGatheringRateModifier: Modifier = {
+                        origin: `Bit ID #${otherBit.bitId}'s Trait: Cute`,
+                        value: 1.125
+                    }
+
+                    const newEarningRateModifier: Modifier = {
+                        origin: `Bit ID #${otherBit.bitId}'s Trait: Cute`,
+                        value: 1.125
+                    }
+
+                    // add the new modifier to the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                    bitUpdateOperations.push({
+                        bitId: bit.bitId,
+                        updateOperations: {
+                            $push: {
+                                'bitStatsModifiers.gatheringRateModifiers': newGatheringRateModifier,
+                                'bitStatsModifiers.earningRateModifiers': newEarningRateModifier
+                            },
+                            $pull: {},
+                            $inc: {},
+                            $set: {}
+                        }
+                    });
+                }
+
+                // if the other bit's trait is lonewolf, reduce 5% gathering and earning rate to the to-be-placed bit
+                if (trait.trait === BitTrait.LONEWOLF) {
+                    // add the new modifier to the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                    const newGatheringRateModifier: Modifier = {
+                        origin: `Bit ID #${otherBit.bitId}'s Trait: Lonewolf`,
+                        value: 0.95
+                    }
+
+                    const newEarningRateModifier: Modifier = {
+                        origin: `Bit ID #${otherBit.bitId}'s Trait: Lonewolf`,
+                        value: 0.95
+                    }
+
+                    // add the new modifier to the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                    bitUpdateOperations.push({
+                        bitId: bit.bitId,
+                        updateOperations: {
+                            $push: {
+                                'bitStatsModifiers.gatheringRateModifiers': newGatheringRateModifier,
+                                'bitStatsModifiers.earningRateModifiers': newEarningRateModifier
+                            },
+                            $pull: {},
+                            $inc: {},
+                            $set: {}
+                        }
+                    });
+                }
+            }
         }
     }
 
