@@ -254,3 +254,42 @@ export const getAvailablePOIDestinations = async (twitterId: string): Promise<Re
         }
     }
 }
+
+/**
+ * Adds or replaces a POI's shop. 
+ */
+export const addOrReplacePOIShop = async (
+    poiName: POIName,
+    shop: POIShop,
+    adminKey: string
+): Promise<ReturnValue> => {
+    if (adminKey !== process.env.ADMIN_KEY) {
+        return {
+            status: Status.UNAUTHORIZED,
+            message: `(addOrReplacePOIShop) Invalid admin key.`
+        }
+    }
+    
+    try {
+        const poi = await POIModel.findOne({ name: poiName });
+
+        if (!poi) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(addOrUpdatePOIShop) POI not found.`
+            }
+        }
+
+        // add or replace/update an existing shop for the POI
+        await POIModel.updateOne({ name: poiName }, {
+            $set: {
+                shop
+            }
+        });
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(addOrUpdatePOIShop) ${err.message}`
+        }
+    }
+}

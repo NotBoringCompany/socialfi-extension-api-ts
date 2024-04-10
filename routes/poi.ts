@@ -1,7 +1,7 @@
 import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
-import { addPOI, getAvailablePOIDestinations, getCurrentLocation, travelToPOI, updateArrival } from '../api/poi';
+import { addOrReplacePOIShop, addPOI, getAvailablePOIDestinations, getCurrentLocation, travelToPOI, updateArrival } from '../api/poi';
 
 const router = express.Router();
 
@@ -139,6 +139,33 @@ router.post('/update_arrival', async (req, res) => {
         }
 
         const { status, message } = await updateArrival(validateData?.twitterId);
+
+        return res.status(status).json({
+            status,
+            message
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+});
+
+router.post('/add_or_replace_poi_shop', async (req, res) => {
+    const { poiName, shop, adminKey } = req.body;
+
+    try {
+        const { status: validateStatus, message: validateMessage } = await validateRequestAuth(req, res, 'add_or_replace_poi_shop');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
+        const { status, message } = await addOrReplacePOIShop(poiName, shop, adminKey);
 
         return res.status(status).json({
             status,
