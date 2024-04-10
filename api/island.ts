@@ -813,6 +813,8 @@ export const unplaceBit = async (twitterId: string, bitId: number): Promise<Retu
                 trait == BitTrait.SLOW ||
                 trait == BitTrait.QUICK
             ) {
+                console.log(`unplaceBit ID ${bit.bitId}'s trait is ${trait}`);
+                
                 // remove the modifier from the island's `gatheringRateModifiers` and `earningRateModifiers`
                 islandUpdateOperations.$pull['islandStatsModifiers.gatheringRateModifiers'] = { origin: `Bit ID #${bit.bitId}'s Trait: ${trait}` };
                 islandUpdateOperations.$pull['islandStatsModifiers.earningRateModifiers'] = { origin: `Bit ID #${bit.bitId}'s Trait: ${trait}` };
