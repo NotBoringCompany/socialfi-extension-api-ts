@@ -428,10 +428,17 @@ export const removeResources = async (twitterId: string, resourcesToRemove: Simp
                 }
             }
 
-            // remove the resource from the user's inventory
-            userUpdateOperations.$pull['inventory.resources'] = {
-                type: resource.type,
-                amount: resource.amount
+            // get the index of the resource in the user's inventory
+            const resourceIndex = userResources.findIndex(r => r.type === resource.type);
+
+            // if the amount to remove is the same as the amount the user has, remove the resource entirely
+            // otherwise, reduce the amount of the resource
+            if (userResource.amount === resource.amount) {
+                userUpdateOperations.$pull['inventory.resources'] = {
+                    type: resource.type
+                }
+            } else {
+                userUpdateOperations.$inc[`inventory.resources.${resourceIndex}.amount`] = -resource.amount;
             }
 
             // calculate the total weight to reduce by looping through `resources` and getting the weight of each resource
