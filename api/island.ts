@@ -813,9 +813,21 @@ export const unplaceBit = async (twitterId: string, bitId: number): Promise<Retu
             ) {
                 console.log(`unplaceBit ID ${bit.bitId}'s trait is ${trait}`);
 
-                // remove the modifier from the island's `gatheringRateModifiers` and `earningRateModifiers`
-                islandUpdateOperations.$pull['islandStatsModifiers.gatheringRateModifiers'] = { origin: `Bit ID #${bit.bitId}'s Trait: ${trait}` };
-                islandUpdateOperations.$pull['islandStatsModifiers.earningRateModifiers'] = { origin: `Bit ID #${bit.bitId}'s Trait: ${trait}` };
+                // find the index of the modifier in the island's `gatheringRateModifiers` and `earningRateModifiers`
+                const gatheringRateModifierIndex = (island.islandStatsModifiers?.gatheringRateModifiers as Modifier[]).findIndex(modifier => modifier.origin === `Bit ID #${bit.bitId}'s Trait: ${trait}`);
+                const earningRateModifierIndex = (island.islandStatsModifiers?.earningRateModifiers as Modifier[]).findIndex(modifier => modifier.origin === `Bit ID #${bit.bitId}'s Trait: ${trait}`);
+
+                // if the modifier is found, remove it from the island's `gatheringRateModifiers` and `earningRateModifiers`
+                if (gatheringRateModifierIndex !== -1) {
+                    islandUpdateOperations.$pull['islandStatsModifiers.gatheringRateModifiers'] = island.islandStatsModifiers?.gatheringRateModifiers[gatheringRateModifierIndex];
+                }
+
+                if (earningRateModifierIndex !== -1) {
+                    islandUpdateOperations.$pull['islandStatsModifiers.earningRateModifiers'] = island.islandStatsModifiers?.earningRateModifiers[earningRateModifierIndex];
+                }
+                // // remove the modifier from the island's `gatheringRateModifiers` and `earningRateModifiers`
+                // islandUpdateOperations.$pull['islandStatsModifiers.gatheringRateModifiers'] = { origin: `Bit ID #${bit.bitId}'s Trait: ${trait}` };
+                // islandUpdateOperations.$pull['islandStatsModifiers.earningRateModifiers'] = { origin: `Bit ID #${bit.bitId}'s Trait: ${trait}` };
                 // if trait is teamworker, leader, cute or lonewolf, remove modifiers for each bit that was impacted by this bit's trait
             } else if (
                 trait.trait === BitTrait.TEAMWORKER ||
@@ -824,19 +836,52 @@ export const unplaceBit = async (twitterId: string, bitId: number): Promise<Retu
                 trait.trait === BitTrait.LONEWOLF
             ) {
                 for (const otherBit of otherBits) {
-                    // remove the modifier from the bit's `gatheringRateModifiers` and `earningRateModifiers`
-                    bitUpdateOperations.push({
-                        bitId: otherBit.bitId,
-                        updateOperations: {
-                            $pull: {
-                                'bitStatsModifiers.gatheringRateModifiers': { origin: `Bit ID #${bit.bitId}'s Trait: ${trait}` },
-                                'bitStatsModifiers.earningRateModifiers': { origin: `Bit ID #${bit.bitId}'s Trait: ${trait}` }
-                            },
-                            $inc: {},
-                            $set: {},
-                            $push: {}
-                        }
-                    });
+                    // check the index of the modifier in the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                    const gatheringRateModifierIndex = (otherBit.bitStatsModifiers?.gatheringRateModifiers as Modifier[]).findIndex(modifier => modifier.origin === `Bit ID #${bit.bitId}'s Trait: ${trait}`);
+                    const earningRateModifierIndex = (otherBit.bitStatsModifiers?.earningRateModifiers as Modifier[]).findIndex(modifier => modifier.origin === `Bit ID #${bit.bitId}'s Trait: ${trait}`);
+
+                    // if the modifier is found, remove it from the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                    if (gatheringRateModifierIndex !== -1) {
+                        bitUpdateOperations.push({
+                            bitId: otherBit.bitId,
+                            updateOperations: {
+                                $pull: {
+                                    'bitStatsModifiers.gatheringRateModifiers': otherBit.bitStatsModifiers?.gatheringRateModifiers[gatheringRateModifierIndex]
+                                },
+                                $inc: {},
+                                $set: {},
+                                $push: {}
+                            }
+                        });
+                    }
+
+                    if (earningRateModifierIndex !== -1) {
+                        bitUpdateOperations.push({
+                            bitId: otherBit.bitId,
+                            updateOperations: {
+                                $pull: {
+                                    'bitStatsModifiers.earningRateModifiers': otherBit.bitStatsModifiers?.earningRateModifiers[earningRateModifierIndex]
+                                },
+                                $inc: {},
+                                $set: {},
+                                $push: {}
+                            }
+                        });
+                    }
+
+                    // // remove the modifier from the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                    // bitUpdateOperations.push({
+                    //     bitId: otherBit.bitId,
+                    //     updateOperations: {
+                    //         $pull: {
+                    //             'bitStatsModifiers.gatheringRateModifiers': { origin: `Bit ID #${bit.bitId}'s Trait: ${trait}` },
+                    //             'bitStatsModifiers.earningRateModifiers': { origin: `Bit ID #${bit.bitId}'s Trait: ${trait}` }
+                    //         },
+                    //         $inc: {},
+                    //         $set: {},
+                    //         $push: {}
+                    //     }
+                    // });
                 }
             }
         }
