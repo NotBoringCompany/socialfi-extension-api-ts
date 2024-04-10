@@ -1065,7 +1065,39 @@ export const updateExtendedTraitEffects = async (
                     }
                 });
             }
-            // if bit trait is none of the above, skip this trait
+        // if bit trait is slow, reduce 1% of the island's gathering and earning rate
+        } else if (trait.trait === BitTrait.SLOW) {
+            // add the new modifier to the island's `gatheringRateModifiers` and `earningRateModifiers`
+            const newGatheringRateModifier: Modifier = {
+                origin: `Bit ID #${bit.bitId}'s Trait: Slow`,
+                value: 0.99
+            }
+
+            const newEarningRateModifier: Modifier = {
+                origin: `Bit ID #${bit.bitId}'s Trait: Slow`,
+                value: 0.99
+            }
+
+            // add the new modifier to the island's `gatheringRateModifiers` and `earningRateModifiers`
+            islandUpdateOperations.$push['islandStatsModifiers.gatheringRateModifiers'] = newGatheringRateModifier;
+            islandUpdateOperations.$push['islandStatsModifiers.earningRateModifiers'] = newEarningRateModifier;
+        // if bit trait is quick, increase 1% of the island's gathering and earning rate
+        }  else if (trait.trait === BitTrait.QUICK) {
+            // add the new modifier to the island's `gatheringRateModifiers` and `earningRateModifiers`
+            const newGatheringRateModifier: Modifier = {
+                origin: `Bit ID #${bit.bitId}'s Trait: Quick`,
+                value: 1.01
+            }
+
+            const newEarningRateModifier: Modifier = {
+                origin: `Bit ID #${bit.bitId}'s Trait: Quick`,
+                value: 1.01
+            }
+
+            // add the new modifier to the island's `gatheringRateModifiers` and `earningRateModifiers`
+            islandUpdateOperations.$push['islandStatsModifiers.gatheringRateModifiers'] = newGatheringRateModifier;
+            islandUpdateOperations.$push['islandStatsModifiers.earningRateModifiers'] = newEarningRateModifier;
+        // if bit trait is none of the above, skip this trait
         } else {
             continue;
         }
