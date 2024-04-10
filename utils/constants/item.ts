@@ -87,6 +87,19 @@ export const items: Item[] = [
   },
   {
     type: FoodType.CANDY,
-    description: "A sweet candy.",
+    description: "Bursting with vibrant colors and sweet delights.",
+  },
+  {
+    type: FoodType.CHOCOLATE,
+    description: "Luxurious, velvety indulgence infused with sweetness.",
+  },
+  {
+    type: FoodType.JUICE,
+    description: "A revitalizing cascade of pure, fruity refreshment.",
+  },
+  {
+    type: FoodType.BURGER,
+    description:
+      "A towering symphony of savory goodness, bound to satisfy every craving.",
   },
 ];
