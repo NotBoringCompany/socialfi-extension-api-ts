@@ -814,8 +814,8 @@ export const unplaceBit = async (twitterId: string, bitId: number): Promise<Retu
                 console.log(`unplaceBit ID ${bit.bitId}'s trait is ${trait}`);
 
                 // find the index of the modifier in the island's `gatheringRateModifiers` and `earningRateModifiers`
-                const gatheringRateModifierIndex = (island.islandStatsModifiers?.gatheringRateModifiers as Modifier[]).findIndex(modifier => modifier.origin === `Bit ID #${bit.bitId}'s Trait: ${trait}`);
-                const earningRateModifierIndex = (island.islandStatsModifiers?.earningRateModifiers as Modifier[]).findIndex(modifier => modifier.origin === `Bit ID #${bit.bitId}'s Trait: ${trait}`);
+                const gatheringRateModifierIndex = (island.islandStatsModifiers?.gatheringRateModifiers as Modifier[]).findIndex(modifier => modifier.origin.includes(`Bit ID #${bit.bitId}`));
+                const earningRateModifierIndex = (island.islandStatsModifiers?.earningRateModifiers as Modifier[]).findIndex(modifier => modifier.origin.includes(`Bit ID #${bit.bitId}`));
 
                 console.log('gathering rate modifier index: ', gatheringRateModifierIndex);
                 console.log('earning rate modifier index: ', earningRateModifierIndex);
@@ -840,8 +840,8 @@ export const unplaceBit = async (twitterId: string, bitId: number): Promise<Retu
             ) {
                 for (const otherBit of otherBits) {
                     // check the index of the modifier in the bit's `gatheringRateModifiers` and `earningRateModifiers`
-                    const gatheringRateModifierIndex = (otherBit.bitStatsModifiers?.gatheringRateModifiers as Modifier[]).findIndex(modifier => modifier.origin === `Bit ID #${bit.bitId}'s Trait: ${trait}`);
-                    const earningRateModifierIndex = (otherBit.bitStatsModifiers?.earningRateModifiers as Modifier[]).findIndex(modifier => modifier.origin === `Bit ID #${bit.bitId}'s Trait: ${trait}`);
+                    const gatheringRateModifierIndex = (otherBit.bitStatsModifiers?.gatheringRateModifiers as Modifier[]).findIndex(modifier => modifier.origin.includes(`Bit ID #${bit.bitId}`));
+                    const earningRateModifierIndex = (otherBit.bitStatsModifiers?.earningRateModifiers as Modifier[]).findIndex(modifier => modifier.origin.includes(`Bit ID #${bit.bitId}`));
 
                     // if the modifier is found, remove it from the bit's `gatheringRateModifiers` and `earningRateModifiers`
                     if (gatheringRateModifierIndex !== -1) {
