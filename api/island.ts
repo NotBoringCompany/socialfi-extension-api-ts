@@ -8,7 +8,7 @@ import { BarrenResource, ExtendedResource, ExtendedResourceOrigin, Resource, Res
 import { UserSchema } from '../schemas/User';
 import { Modifier } from '../models/modifier';
 import { BitSchema } from '../schemas/Bit';
-import { Bit, BitRarity, BitRarityNumeric, BitStatsModifiers, BitTrait } from '../models/bit';
+import { Bit, BitRarity, BitRarityNumeric, BitStatsModifiers, BitTrait, BitTraitData } from '../models/bit';
 import { generateObjectId } from '../utils/crypto';
 import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
 import { ObtainMethod } from '../models/obtainMethod';
@@ -797,7 +797,7 @@ export const unplaceBit = async (twitterId: string, bitId: number): Promise<Retu
         })
 
         // remove any modifiers that has to do with the bit's traits from the island and its bits
-        const bitTraits = bit.traits;
+        const bitTraits = bit.traits as BitTraitData[];
 
         // loop through each trait and see if they impact the island's modifiers or other bits' modifiers
         // right now, these traits are:
@@ -805,25 +805,23 @@ export const unplaceBit = async (twitterId: string, bitId: number): Promise<Retu
         for (const trait of bitTraits) {
             const otherBits = await BitModel.find({ bitId: { $in: island.placedBitIds } }).lean();
 
-            console.log('current trait to check when unplacing Bit: ', trait);
-
             // if the trait is genius, remove modifiers from the island's `gatheringRateModifiers` and `earningRateModifiers`
             if (
-                trait === BitTrait.GENIUS ||
-                trait == BitTrait.SLOW ||
-                trait == BitTrait.QUICK
+                trait.trait === BitTrait.GENIUS ||
+                trait.trait === BitTrait.SLOW ||
+                trait.trait === BitTrait.QUICK
             ) {
                 console.log(`unplaceBit ID ${bit.bitId}'s trait is ${trait}`);
-                
+
                 // remove the modifier from the island's `gatheringRateModifiers` and `earningRateModifiers`
                 islandUpdateOperations.$pull['islandStatsModifiers.gatheringRateModifiers'] = { origin: `Bit ID #${bit.bitId}'s Trait: ${trait}` };
                 islandUpdateOperations.$pull['islandStatsModifiers.earningRateModifiers'] = { origin: `Bit ID #${bit.bitId}'s Trait: ${trait}` };
                 // if trait is teamworker, leader, cute or lonewolf, remove modifiers for each bit that was impacted by this bit's trait
             } else if (
-                trait === BitTrait.TEAMWORKER ||
-                trait === BitTrait.LEADER ||
-                trait === BitTrait.CUTE ||
-                trait === BitTrait.LONEWOLF
+                trait.trait === BitTrait.TEAMWORKER ||
+                trait.trait === BitTrait.LEADER ||
+                trait.trait === BitTrait.CUTE ||
+                trait.trait === BitTrait.LONEWOLF
             ) {
                 for (const otherBit of otherBits) {
                     // remove the modifier from the bit's `gatheringRateModifiers` and `earningRateModifiers`
