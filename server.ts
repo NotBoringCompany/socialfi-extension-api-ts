@@ -45,6 +45,8 @@ import leaderboard from './routes/leaderboard';
 import kos from './routes/kos';
 import item from './routes/item';
 import { schedulers } from './schedulers/schedulers';
+import { addOrReplacePOIShop } from './api/poi';
+import { POIName, POIShopItemName } from './models/poi';
 
 app.use('/auth/twitter', twitterAuth);
 app.use('/jwt', jwt);
@@ -69,4 +71,142 @@ app.listen(port, async () => {
     await mongoose.connect(mongoUri);
 
     await schedulers();
+
+    // await addOrReplacePOIShop(POIName.EVERGREEN_VILLAGE, {
+    //     globalItems: [],
+    //     playerItems: [
+    //         {
+    //             name: POIShopItemName.CANDY,
+    //             buyableAmount: 10,
+    //             sellableAmount: 0,
+    //             buyingPrice: {
+    //                 xCookies: 4.5,
+    //                 cookieCrumbs: 'unavailable'
+    //             },
+    //             sellingPrice: {
+    //                 leaderboardPoints: 'unavailable'
+    //             }
+    //         },
+    //         {
+    //             name: POIShopItemName.SEAWEED,
+    //             buyableAmount: 0,
+    //             sellableAmount: 'infinite',
+    //             buyingPrice: {
+    //                 xCookies: 'unavailable',
+    //                 cookieCrumbs: 'unavailable'
+    //             },
+    //             sellingPrice: {
+    //                 leaderboardPoints: 0.5
+    //             }
+    //         },
+    //         {
+    //             name: POIShopItemName.STONE,
+    //             buyableAmount: 0,
+    //             sellableAmount: 'infinite',
+    //             buyingPrice: {
+    //                 xCookies: 'unavailable',
+    //                 cookieCrumbs: 'unavailable'
+    //             },
+    //             sellingPrice: {
+    //                 leaderboardPoints: 1
+    //             }
+    //         },
+    //         {
+    //             name: POIShopItemName.BLUEBERRY,
+    //             buyableAmount: 0,
+    //             sellableAmount: 'infinite',
+    //             buyingPrice: {
+    //                 xCookies: 'unavailable',
+    //                 cookieCrumbs: 'unavailable'
+    //             },
+    //             sellingPrice: {
+    //                 leaderboardPoints: 1
+    //             }
+    //         },
+    //         {
+    //             name: POIShopItemName.WATER,
+    //             buyableAmount: 0,
+    //             sellableAmount: 'infinite',
+    //             buyingPrice: {
+    //                 xCookies: 'unavailable',
+    //                 cookieCrumbs: 'unavailable'
+    //             },
+    //             sellingPrice: {
+    //                 leaderboardPoints: 1
+    //             }
+    //         },
+    //         {
+    //             name: POIShopItemName.COPPER,
+    //             buyableAmount: 0,
+    //             sellableAmount: 'infinite',
+    //             buyingPrice: {
+    //                 xCookies: 'unavailable',
+    //                 cookieCrumbs: 'unavailable'
+    //             },
+    //             sellingPrice: {
+    //                 leaderboardPoints: 2
+    //             }
+    //         },
+    //         {
+    //             name: POIShopItemName.APPLE,
+    //             buyableAmount: 0,
+    //             sellableAmount: 'infinite',
+    //             buyingPrice: {
+    //                 xCookies: 'unavailable',
+    //                 cookieCrumbs: 'unavailable'
+    //             },
+    //             sellingPrice: {
+    //                 leaderboardPoints: 2
+    //             }
+    //         },
+    //         {
+    //             name: POIShopItemName.MAPLE_SYRUP,
+    //             buyableAmount: 0,
+    //             sellableAmount: 'infinite',
+    //             buyingPrice: {
+    //                 xCookies: 'unavailable',
+    //                 cookieCrumbs: 'unavailable'
+    //             },
+    //             sellingPrice: {
+    //                 leaderboardPoints: 2
+    //             }
+    //         },
+    //         {
+    //             name: POIShopItemName.IRON,
+    //             buyableAmount: 0,
+    //             sellableAmount: 5,
+    //             buyingPrice: {
+    //                 xCookies: 'unavailable',
+    //                 cookieCrumbs: 'unavailable'
+    //             },
+    //             sellingPrice: {
+    //                 leaderboardPoints: 3
+    //             }
+    //         },
+    //         {
+    //             name: POIShopItemName.STAR_FRUIT,
+    //             buyableAmount: 0,
+    //             sellableAmount: 5,
+    //             buyingPrice: {
+    //                 xCookies: 'unavailable',
+    //                 cookieCrumbs: 'unavailable'
+    //             },
+    //             sellingPrice: {
+    //                 leaderboardPoints: 3
+    //             }
+    //         },
+    //         {
+    //             name: POIShopItemName.HONEY,
+    //             buyableAmount: 0,
+    //             sellableAmount: 5,
+    //             buyingPrice: {
+    //                 xCookies: 'unavailable',
+    //                 cookieCrumbs: 'unavailable'
+    //             },
+    //             sellingPrice: {
+    //                 leaderboardPoints: 3
+    //             }
+    //         }
+    //     ],
+    // }, process.env.ADMIN_KEY!)
 });

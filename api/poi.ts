@@ -269,7 +269,9 @@ export const addOrReplacePOIShop = async (
             message: `(addOrReplacePOIShop) Invalid admin key.`
         }
     }
-    
+
+    console.log('admin key works');
+
     try {
         const poi = await POIModel.findOne({ name: poiName });
 
@@ -280,12 +282,16 @@ export const addOrReplacePOIShop = async (
             }
         }
 
+        console.log('poi found');
+
         // add or replace/update an existing shop for the POI
         await POIModel.updateOne({ name: poiName }, {
             $set: {
-                shop
+                shop: shop
             }
-        });
+        }).catch(err => console.log('err: ', err));
+
+        console.log('shop updated');
     } catch (err: any) {
         return {
             status: Status.ERROR,
