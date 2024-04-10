@@ -141,6 +141,14 @@ export const removeIsland = async (twitterId: string, islandId: number): Promise
             }
         }
 
+        // if the user only has 1 island remaining, return an error.
+        if (user.inventory?.islandIds.length === 1) {
+            return {
+                status: Status.ERROR,
+                message: `(deleteIsland) User only has 1 island remaining.`
+            }
+        }
+
         // do the following things:
         // 1. remove the island ID from the user's inventory
         // 2. for each bit, set the `placedIslandId` back to 0 and set the `lastRelocationTimestamp` back to 0.
