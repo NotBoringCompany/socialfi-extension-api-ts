@@ -891,7 +891,10 @@ export const unplaceBit = async (twitterId: string, bitId: number): Promise<Retu
 
         const bitUpdatePromises = bitUpdateOperations.map(async op => {
             return BitModel.updateOne({ bitId: op.bitId }, op.updateOperations);
-        })
+        });
+
+        console.log('island update operations: ', islandUpdateOperations);
+        console.log('bit update operations: ', bitUpdateOperations);
 
         // execute the update operations
         await Promise.all([
