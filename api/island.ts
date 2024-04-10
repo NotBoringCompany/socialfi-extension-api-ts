@@ -809,7 +809,9 @@ export const unplaceBit = async (twitterId: string, bitId: number): Promise<Retu
 
             // if the trait is genius, remove modifiers from the island's `gatheringRateModifiers` and `earningRateModifiers`
             if (
-                trait === BitTrait.GENIUS
+                trait === BitTrait.GENIUS ||
+                trait == BitTrait.SLOW ||
+                trait == BitTrait.QUICK
             ) {
                 // remove the modifier from the island's `gatheringRateModifiers` and `earningRateModifiers`
                 islandUpdateOperations.$pull['islandStatsModifiers.gatheringRateModifiers'] = { origin: `Bit ID #${bit.bitId}'s Trait: ${trait}` };
