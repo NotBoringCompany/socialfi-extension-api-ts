@@ -216,7 +216,7 @@ export const releaseBit = async (twitterId: string, bitId: number): Promise<Retu
             UserModel.updateOne({ twitterId }, userUpdateOperations),
             BitModel.deleteOne({ bitId }),
             IslandModel.updateOne({ islandId: placedIslandId }, islandUpdateOperations),
-            ...bitUpdatePromises
+            ...(bitUpdatePromises || [])
         ]);
 
         return {
