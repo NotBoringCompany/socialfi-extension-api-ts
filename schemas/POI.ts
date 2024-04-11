@@ -44,11 +44,11 @@ export const POISchema = new mongoose.Schema({
                 _id: false,
                 leaderboardPoints: { type: mongoose.SchemaTypes.Mixed },
             },
-            userTransactionData: {
+            userTransactionData: [{
                 userId: String,
                 boughtAmount: Number,
                 soldAmount: Number,
-            },
+            }],
         }],
     },
 });
