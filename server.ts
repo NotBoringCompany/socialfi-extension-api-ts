@@ -85,7 +85,8 @@ app.listen(port, async () => {
     //             },
     //             sellingPrice: {
     //                 leaderboardPoints: 'unavailable'
-    //             }
+    //             },
+    //             userTransactionData: [],
     //         },
     //         {
     //             name: POIShopItemName.SEAWEED,
@@ -97,7 +98,8 @@ app.listen(port, async () => {
     //             },
     //             sellingPrice: {
     //                 leaderboardPoints: 0.5
-    //             }
+    //             },
+    //             userTransactionData: [],
     //         },
     //         {
     //             name: POIShopItemName.STONE,
@@ -109,7 +111,8 @@ app.listen(port, async () => {
     //             },
     //             sellingPrice: {
     //                 leaderboardPoints: 1
-    //             }
+    //             },
+    //             userTransactionData: [],
     //         },
     //         {
     //             name: POIShopItemName.BLUEBERRY,
@@ -121,7 +124,8 @@ app.listen(port, async () => {
     //             },
     //             sellingPrice: {
     //                 leaderboardPoints: 1
-    //             }
+    //             },
+    //             userTransactionData: [],
     //         },
     //         {
     //             name: POIShopItemName.WATER,
@@ -133,7 +137,8 @@ app.listen(port, async () => {
     //             },
     //             sellingPrice: {
     //                 leaderboardPoints: 1
-    //             }
+    //             },
+    //             userTransactionData: [],
     //         },
     //         {
     //             name: POIShopItemName.COPPER,
@@ -145,7 +150,8 @@ app.listen(port, async () => {
     //             },
     //             sellingPrice: {
     //                 leaderboardPoints: 2
-    //             }
+    //             },
+    //             userTransactionData: [],
     //         },
     //         {
     //             name: POIShopItemName.APPLE,
@@ -157,7 +163,8 @@ app.listen(port, async () => {
     //             },
     //             sellingPrice: {
     //                 leaderboardPoints: 2
-    //             }
+    //             },
+    //             userTransactionData: [],
     //         },
     //         {
     //             name: POIShopItemName.MAPLE_SYRUP,
@@ -169,7 +176,8 @@ app.listen(port, async () => {
     //             },
     //             sellingPrice: {
     //                 leaderboardPoints: 2
-    //             }
+    //             },
+    //             userTransactionData: [],
     //         },
     //         {
     //             name: POIShopItemName.IRON,
@@ -181,7 +189,8 @@ app.listen(port, async () => {
     //             },
     //             sellingPrice: {
     //                 leaderboardPoints: 3
-    //             }
+    //             },
+    //             userTransactionData: [],
     //         },
     //         {
     //             name: POIShopItemName.STAR_FRUIT,
@@ -193,7 +202,8 @@ app.listen(port, async () => {
     //             },
     //             sellingPrice: {
     //                 leaderboardPoints: 3
-    //             }
+    //             },
+    //             userTransactionData: [],
     //         },
     //         {
     //             name: POIShopItemName.HONEY,
@@ -205,7 +215,8 @@ app.listen(port, async () => {
     //             },
     //             sellingPrice: {
     //                 leaderboardPoints: 3
-    //             }
+    //             },
+    //             userTransactionData: [],
     //         }
     //     ],
     // }, process.env.ADMIN_KEY!)
