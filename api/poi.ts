@@ -299,3 +299,43 @@ export const addOrReplacePOIShop = async (
         }
     }
 }
+
+/**
+ * Gets the current POI of the user (i.e. where the user is located)
+ */
+export const getCurrentPOI = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(getCurrentPOI) User not found.`
+            }
+        }
+
+        const poiName = user.inGameData.location;
+
+        const poi = await POIModel.findOne({ name: poiName }).lean();
+
+        if (!poi) {
+            return {
+                status: Status.ERROR,
+                message: `(getCurrentPOI) POI not found.`
+            }
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getCurrentPOI) Current POI fetched.`,
+            data: {
+                currentPOI: poi
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getCurrentPOI) ${err.message}`
+        }
+    }
+}
