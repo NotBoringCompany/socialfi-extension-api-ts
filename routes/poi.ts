@@ -33,7 +33,7 @@ router.post('/add_poi', async (req, res) => {
 })
 
 router.post('/travel_to_poi', async (req, res) => {
-    const { destination } = req.body;
+    const { destination, booster } = req.body;
 
     try {
         const {
@@ -49,7 +49,7 @@ router.post('/travel_to_poi', async (req, res) => {
             });
         }
 
-        const { status, message } = await travelToPOI(validateData?.twitterId, destination);
+        const { status, message } = await travelToPOI(validateData?.twitterId, destination, booster);
 
         return res.status(status).json({
             status,

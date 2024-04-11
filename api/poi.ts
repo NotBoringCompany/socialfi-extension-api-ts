@@ -1,4 +1,5 @@
 import { Food } from '../models/food';
+import { BoosterItem, Item } from '../models/item';
 import { POIName, POIShop, POIShopActionItemData, POIShopItemName } from '../models/poi';
 import { ExtendedResource, ResourceType } from '../models/resource';
 import { LeaderboardModel, POIModel, RaftModel, UserModel } from '../utils/constants/db';
@@ -52,10 +53,13 @@ export const addPOI = async (
 
 /**
  * (User) Travels to a different POI. Requires time.
+ * 
+ * If the user specifies a booster, the time taken to travel is reduced by the booster's effect.
  */
 export const travelToPOI = async (
     twitterId: string,
-    destination: POIName
+    destination: POIName,
+    booster: BoosterItem | null
 ): Promise<ReturnValue> => {
     try {
         const user = await UserModel.findOne({ twitterId });
@@ -84,6 +88,26 @@ export const travelToPOI = async (
                 message: `(travelToPOI) User is already travelling to ${user.inGameData.travellingTo}.`
             }
         }
+        
+        // check if the user has at least 1 of the booster item if specified
+        if (booster) {
+            const boosterIndex = (user.inventory.items as Item[]).findIndex(item => item.type === booster);
+
+            if (boosterIndex === -1) {
+                return {
+                    status: Status.BAD_REQUEST,
+                    message: `(travelToPOI) Booster item not found in user's inventory.`
+                }
+            }
+
+            // if booster specified doesn't contain "Raft Speed Booster", return an error
+            if (!booster.includes('Raft Speed Booster')) {
+                return {
+                    status: Status.BAD_REQUEST,
+                    message: `(travelToPOI) Invalid booster item.`
+                }
+            }
+        }
 
         // get the user's raft and current POI data
         const [raft, currentPOIData] = await Promise.all([
@@ -97,10 +121,20 @@ export const travelToPOI = async (
         const raftSpeed = ACTUAL_RAFT_SPEED(raft.stats.baseSpeed, raft.currentLevel);
 
         // calculate the time it takes to travel to the destination
-        const timeToTravel = distanceToDestination / raftSpeed;
+        let timeToTravel = distanceToDestination / raftSpeed;
 
         // get the current timestamp
         const currentTime = Math.floor(Date.now() / 1000);
+
+        // if the booster exists, reduce the time taken to travel by the booster's effect.
+        if (booster) {
+            // the name contains the booster's effect in a percentage of the original time taken to travel.
+            // e.g. 'Raft Speed Booster 10%' will reduce the time taken to travel by 10%.
+            const boosterEffect = parseInt(booster.split(' ')[3].replace('%', '')) / 100;
+
+            timeToTravel -= timeToTravel * boosterEffect;
+            
+        }
 
         // update the user's data
         // 1. set `travellingTo` in the user's inGameData to the destination
@@ -114,7 +148,11 @@ export const travelToPOI = async (
 
         return {
             status: Status.SUCCESS,
-            message: `(travelToPOI) Travelling to ${destination}. Arrival in ${timeToTravel} seconds.`
+            message: `(travelToPOI) Travelling to ${destination}. Arrival in ${timeToTravel} seconds.`,
+            data: {
+                timeToTravel,
+                booster: booster || null
+            }
         }
     } catch (err: any) {
         return {
