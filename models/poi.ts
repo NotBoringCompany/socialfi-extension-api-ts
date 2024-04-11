@@ -72,11 +72,17 @@ export interface POIShopPlayerItem {
     /**
      * the amount of this item that can be bought by each player respectively.
      * 
+     * unlike `buyableAmount` in `POIShopGlobalItem`, this value doesn't decrease when users buy this item.
+     * instead, the `boughtAmount` in `userTransactionData` will be updated to check if the user has reached the limit.
+     * 
      * if 'infinite', then there is no limit to the amount that can be bought until otherwise specified.
      */
     buyableAmount: number | 'infinite';
     /**
      * the amount of this item that can be sold by each player respectively.
+     * 
+     * unlike `sellableAmount` in `POIShopGlobalItem`, this value doesn't decrease when users sell this item.
+     * instead, the `soldAmount` in `userTransactionData` will be updated to check if the user has reached the limit.
      * 
      * if 'infinite', then there is no limit to the amount that can be sold until otherwise specified.
      */

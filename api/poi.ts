@@ -428,11 +428,6 @@ export const sellItemsInPOIShop = async (
 
             const itemData = globalItem ? globalItem : playerItem;
 
-            // // if the sellable amount is 0, return true
-            // if (itemData.sellableAmount === 0) {
-            //     return true;
-            // }
-
             // if the item is a global item, check if `sellableAmount` is 0.
             // if it is, return true.
             if (globalItem && globalItem.sellableAmount === 0) {
@@ -442,9 +437,8 @@ export const sellItemsInPOIShop = async (
             // if the item is a player item, check if:
             // 1. the sellableAmount is 0.
             // 2. if not, check if the user exists in `userTransactionData`.
-            // 3. if not, return true.
-            // 4. if the user exists, check how many of this item the user has sold so far via `soldAmount`.
-            // 5. if `sellableAmount` - `soldAmount` is less than the amount the user wants to sell, return true.
+            // 3. if the user exists, check how many of this item the user has sold so far via `soldAmount`.
+            // 4. if `sellableAmount` - `soldAmount` is less than the amount the user wants to sell, return true.
             if (playerItem) {
                 if (playerItem.sellableAmount === 0) {
                     return true;
@@ -452,14 +446,12 @@ export const sellItemsInPOIShop = async (
 
                 const userTransactionData = playerItem.userTransactionData.find(transactionData => transactionData.userId === user._id);
 
-                if (!userTransactionData) {
-                    return true;
-                }
+                if (userTransactionData) {
+                    const soldAmount = userTransactionData.soldAmount;
 
-                const soldAmount = userTransactionData.soldAmount;
-
-                if (playerItem.sellableAmount !== 'infinite' && playerItem.sellableAmount as number - soldAmount < item.amount) {
-                    return true;
+                    if (playerItem.sellableAmount !== 'infinite' && playerItem.sellableAmount as number - soldAmount < item.amount) {
+                        return true;
+                    }
                 }
             }
 
@@ -507,12 +499,12 @@ export const sellItemsInPOIShop = async (
                 const food = (user.inventory.foods as Food[]).find(food => food.type === item.item as string);
 
                 return !food || food.amount < item.amount;
-            // if terra cap or bit orb (which at this point is 'else')
+                // if terra cap or bit orb (which at this point is 'else')
             } else if (item.item === POIShopItemName.TERRA_CAPSULATOR) {
                 return user.inventory.totalTerraCapsulators < item.amount;
             } else if (item.item === POIShopItemName.BIT_ORB) {
                 return user.inventory.totalBitOrbs < item.amount;
-            // right now, we don't have any other items in the POI shop, so we just return true since it's invalid.
+                // right now, we don't have any other items in the POI shop, so we just return true since it's invalid.
             } else {
                 return true;
             }
@@ -521,7 +513,7 @@ export const sellItemsInPOIShop = async (
         if (invalidItems.length > 0) {
             return {
                 status: Status.BAD_REQUEST,
-                message: `(sellItemsInPOIShop) Invalid item(s) to sell. Please check the validity of the items specified.`
+                message: `(sellItemsInPOIShop) One ore more checks failed. Please try again.`
             }
         }
 
@@ -543,9 +535,9 @@ export const sellItemsInPOIShop = async (
 
         // check if leaderboard is specified.
         // if not, we find the most recent one.
-        const leaderboard = leaderboardName === null ? 
+        const leaderboard = leaderboardName === null ?
             await LeaderboardModel.findOne().sort({ createdAt: -1 }) :
-            await LeaderboardModel.findOne({ name: { $regex: new RegExp(`^${leaderboardName}$`, 'i') }});
+            await LeaderboardModel.findOne({ name: { $regex: new RegExp(`^${leaderboardName}$`, 'i') } });
 
         if (!leaderboard) {
             return {
@@ -574,11 +566,7 @@ export const sellItemsInPOIShop = async (
         // 1. update the user's inventory
         // 2. update the shop's data.
         items.forEach(item => {
-            if (item.item === 'Bit Orb') {
-                userUpdateOperations.$inc[`inventory.totalBitOrbs`] = -item.amount;
-            } else if (item.item === 'Terra Capsulator') {
-                userUpdateOperations.$inc[`inventory.totalTerraCapsulators`] = -item.amount;
-            } else if (
+            if (
                 item.item === POIShopItemName.SEAWEED ||
                 item.item === POIShopItemName.STONE ||
                 item.item === POIShopItemName.COPPER ||
@@ -704,6 +692,257 @@ export const sellItemsInPOIShop = async (
         return {
             status: Status.ERROR,
             message: `(sellItemsInPOIShop) ${err.message}`
+        }
+    }
+}
+
+/**
+ * (User) Buys 1 or more items in the POI's shop.
+ */
+export const buyItemsInPOIShop = async (
+    twitterId: string,
+    items: POIShopActionItemData[],
+    paymentChoice: 'xCookies' | 'cookieCrumbs'
+): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        const userUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const poiUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(buyItemsInPOIShop) User not found.`
+            }
+        }
+
+        // check if at least 1 item is present and that the amount of that item is at least 1.
+        if (items.length === 0 || items.some(item => item.amount < 1)) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(buyItemsInPOIShop) At least 1 item must be bought.`
+            }
+        }
+
+        // get the user's current location to get the POI shop.
+        const { status, message, data } = await getCurrentPOI(twitterId);
+
+        if (status !== Status.SUCCESS) {
+            return {
+                status,
+                message
+            }
+        }
+
+        const poiShop = data.currentPOI.shop as POIShop;
+
+        // get the total payment the user has to make.
+        let totalPayment = 0;
+
+        // check if:
+        // 1. 1 or more items are not available in the POI shop (cannot be found)
+        // 2. 1 or more items have a buyableAmount of 0
+        // 3. 1 or more items have a buyableAmount less than the amount the user wants to buy
+        // 4. depending on the payment method, check if despite having a buyableAmount > 0 if the xCookies/cookie crumbs value of the item is unavailable.
+        // 5. the user doesn't have the amount of xCookies/cookie crumbs they need to buy the item (for any of the specified items)
+        // if one of these conditions are met, return an error.
+        const invalidItems = items.filter(item => {
+            const globalItems = poiShop.globalItems;
+            const playerItems = poiShop.playerItems;
+
+            const globalItem = globalItems.find(globalItem => globalItem.name === item.item);
+            const playerItem = playerItems.find(playerItem => playerItem.name === item.item);
+
+            // if not available as a global item or player item, return true
+            if (!globalItem && !playerItem) {
+                return true;
+            }
+
+            const itemData = globalItem ? globalItem : playerItem;
+
+            // if the item is a global item, check if `buyableAmount` is 0.
+            // if it is, return true.
+            if (globalItem && globalItem.buyableAmount === 0) {
+                return true;
+            }
+
+            // if the item is a player item, check if:
+            // 1. the buyableAmount is 0.
+            // 2. if not, check if the user exists in `userTransactionData`.
+            // 3. if the user exists, check how many of this item the user has bought so far via `boughtAmount`.
+            // 4. if `buyableAmount` - `boughtAmount` is less than the amount the user wants to buy, return true.
+            if (playerItem) {
+                if (playerItem.buyableAmount === 0) {
+                    return true;
+                }
+
+                const userTransactionData = playerItem.userTransactionData.find(transactionData => transactionData.userId === user._id);
+
+                if (userTransactionData) {
+                    const boughtAmount = userTransactionData.boughtAmount;
+
+                    if (playerItem.buyableAmount !== 'infinite' && playerItem.buyableAmount as number - boughtAmount < item.amount) {
+                        return true;
+                    }
+                }
+            }
+
+            // check if depending on the payment method, the xCookies/cookie crumbs value of the item is unavailable.
+            if (paymentChoice === 'xCookies' && itemData.buyingPrice.xCookies === 'unavailable') {
+                return true;
+            } else if (paymentChoice === 'cookieCrumbs' && itemData.buyingPrice.cookieCrumbs === 'unavailable') {
+                return true;
+            }
+
+            // get the total payment the user has to make.
+            totalPayment += item.amount * (paymentChoice === 'xCookies' ? itemData.buyingPrice.xCookies as number : itemData.buyingPrice.cookieCrumbs as number);
+        });
+
+        if (invalidItems.length > 0) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(buyItemsInPOIShop) One or more checks failed. Please try again.`
+            }
+        }
+
+        // check if the user has enough xCookies/cookie crumbs to buy the items.
+        if (paymentChoice === 'xCookies' && user.inventory.xCookies < totalPayment) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(buyItemsInPOIShop) User does not have enough xCookies.`
+            }
+        } else if (paymentChoice === 'cookieCrumbs' && user.inventory.cookieCrumbs < totalPayment) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(buyItemsInPOIShop) User does not have enough cookie crumbs.`
+            }
+        }
+
+        // do two things:
+        // 1. update the user's inventory
+        // 2. update the shop's data
+        items.forEach(item => {
+            if (
+                item.item === POIShopItemName.SEAWEED ||
+                item.item === POIShopItemName.STONE ||
+                item.item === POIShopItemName.COPPER ||
+                item.item === POIShopItemName.IRON ||
+                item.item === POIShopItemName.SILVER ||
+                item.item === POIShopItemName.GOLD ||
+                item.item === POIShopItemName.BLUEBERRY ||
+                item.item === POIShopItemName.APPLE ||
+                item.item === POIShopItemName.STAR_FRUIT ||
+                item.item === POIShopItemName.MELON ||
+                item.item === POIShopItemName.DRAGON_FRUIT ||
+                item.item === POIShopItemName.WATER ||
+                item.item === POIShopItemName.MAPLE_SYRUP ||
+                item.item === POIShopItemName.HONEY ||
+                item.item === POIShopItemName.MOONLIGHT_DEW ||
+                item.item === POIShopItemName.PHOENIX_TEAR
+            ) {
+                // check if the resource exists in the user's inventory.
+                // if it does, increment the amount of the resource.
+                // if it doesn't, add a new resource.
+                const resourceIndex = (user.inventory.resources as ExtendedResource[]).findIndex(resource => resource.type === item.item as string);
+
+                if (resourceIndex === -1) {
+                    userUpdateOperations.$push[`inventory.resources`] = {
+                        type: item.item,
+                        amount: item.amount
+                    }
+                } else {
+                    userUpdateOperations.$inc[`inventory.resources.${resourceIndex}.amount`] = item.amount;
+                }
+            } else if (
+                item.item === POIShopItemName.CANDY ||
+                item.item === POIShopItemName.CHOCOLATE ||
+                item.item === POIShopItemName.JUICE ||
+                item.item === POIShopItemName.BURGER
+            ) {
+                // check if the food exists in the user's inventory.
+                // if it does, increment the amount of the food.
+                // if it doesn't, add a new food.
+                const foodIndex = (user.inventory.foods as Food[]).findIndex(food => food.type === item.item as string);
+
+                if (foodIndex === -1) {
+                    userUpdateOperations.$push[`inventory.foods`] = {
+                        type: item.item,
+                        amount: item.amount
+                    }
+                } else {
+                    userUpdateOperations.$inc[`inventory.foods.${foodIndex}.amount`] = item.amount;
+                }
+            } else if (item.item === POIShopItemName.TERRA_CAPSULATOR) {
+                userUpdateOperations.$inc[`inventory.totalTerraCapsulators`] = item.amount;
+            } else if (item.item === POIShopItemName.BIT_ORB) {
+                userUpdateOperations.$inc[`inventory.totalBitOrbs`] = item.amount;
+            }
+
+            // now, we update the shop's data.
+            // we check if it's a global item.
+            // if it's a global item, we find the index of the item in the `globalItems` array and reduce the `buyableAmount` of that item by the amount the user wants to buy.
+            // if it's a player item, we:
+            // 1. find the index of the item in the `playerItems` array.
+            // 2. check if the user exists in the `userTransactionData`. if not, we add a new one.
+            // 3. if the user exists, we increment the `boughtAmount` by the amount the user wants to buy.
+            const globalItems = poiShop.globalItems;
+            const playerItems = poiShop.playerItems;
+
+            const globalItem = globalItems.find(globalItem => globalItem.name === item.item);
+            const playerItem = playerItems.find(playerItem => playerItem.name === item.item);
+
+            if (globalItem) {
+                const globalItemIndex = globalItems.findIndex(globalItem => globalItem.name === item.item);
+
+                poiUpdateOperations.$inc[`shop.globalItems.${globalItemIndex}.buyableAmount`] = -item.amount;
+            } else if (playerItem) {
+                const playerItemIndex = playerItems.findIndex(playerItem => playerItem.name === item.item);
+                const userTransactionDataIndex = playerItem.userTransactionData.findIndex(transactionData => transactionData.userId === user._id);
+
+                if (userTransactionDataIndex === -1) {
+                    poiUpdateOperations.$push[`shop.playerItems.${playerItemIndex}.userTransactionData`] = {
+                        userId: user._id,
+                        boughtAmount: item.amount
+                    }
+                } else {
+                    poiUpdateOperations.$inc[`shop.playerItems.${playerItemIndex}.userTransactionData.${userTransactionDataIndex}.boughtAmount`] = item.amount;
+                }
+            }
+
+            // deduct the xCookies/cookie crumbs from the user's inventory.
+            userUpdateOperations.$inc[`inventory.${paymentChoice}`] = -totalPayment;
+        });
+
+        // execute the transactions
+        await Promise.all([
+            UserModel.updateOne({ twitterId }, userUpdateOperations),
+            POIModel.updateOne({ name: user.inGameData.location }, poiUpdateOperations)
+        ]);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(buyItemsInPOIShop) Items bought.`,
+            data: {
+                totalPaid: totalPayment,
+                paymentChoice: paymentChoice
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(buyItemsInPOIShop) ${err.message}`
         }
     }
 }
