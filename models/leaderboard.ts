@@ -2,21 +2,25 @@
  * Represents a leaderboard.
  */
 export interface Leaderboard {
-    /** the type of leaderboard */
-    type: LeaderboardType;
+    // /** the type of leaderboard */
+    // type: LeaderboardType;
+    /** the leaderboard name */
+    name: string;
+    /** the start timestamp of this leaderboard (i.e. when it was started) */
+    startTimestamp: number;
     /** user data for this leaderboard (points etc)  */
     userData: LeaderboardUserData[];
 }
 
-/**
- * Lists the types of leaderboards.
- */
-export enum LeaderboardType {
-    /** main leaderboards are standalone leaderboards */
-    MAIN = 'Main',
-    /** weekly leaderboards may get reset and/or get added to main leaderboards */
-    WEEKLY = 'Weekly'
-}
+// /**
+//  * Lists the types of leaderboards.
+//  */
+// export enum LeaderboardType {
+//     /** main leaderboards are standalone leaderboards */
+//     MAIN = 'Main',
+//     /** weekly leaderboards may get reset and/or get added to main leaderboards */
+//     WEEKLY = 'Weekly'
+// }
 
 /**
  * Represents user data for a leaderboard.

@@ -9,10 +9,8 @@ export const LeaderboardSchema = new mongoose.Schema({
         type: String,
         default: generateObjectId()
     },
-    type: {
-        type: String,
-        enum: ['Main', 'Weekly']
-    },
+    name: String,
+    startTimestamp: Number,
     userData: [{
         userId: String,
         points: Number
