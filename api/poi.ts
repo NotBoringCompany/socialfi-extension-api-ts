@@ -1,7 +1,7 @@
 import { Food } from '../models/food';
 import { BoosterItem, Item } from '../models/item';
 import { POIName, POIShop, POIShopActionItemData, POIShopItemName } from '../models/poi';
-import { ExtendedResource, ResourceType } from '../models/resource';
+import { ExtendedResource } from '../models/resource';
 import { LeaderboardModel, POIModel, RaftModel, UserModel } from '../utils/constants/db';
 import { ACTUAL_RAFT_SPEED } from '../utils/constants/raft';
 import { ReturnValue, Status } from '../utils/retVal';

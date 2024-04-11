@@ -1,10 +1,11 @@
+import { Asset } from '../../models/asset';
 import { Item } from '../../models/item';
 import { BarrenResource, FruitResource, LiquidResource, OreResource } from '../../models/resource';
 
 /**
- * Represents the list of items available in our game.
+ * Represents the list of assets available in our game.
  */
-export const items: Item[] = [
+export const assets: Asset[] = [
     {
         type: BarrenResource.SEAWEED,
         description: 'Underwater foliage with various uses, but watch out for its clingy tendencies!'

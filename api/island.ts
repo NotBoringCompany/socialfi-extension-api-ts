@@ -15,6 +15,7 @@ import { ObtainMethod } from '../models/obtainMethod';
 import { RELOCATION_COOLDOWN } from '../utils/constants/bit';
 import { User } from '../models/user';
 import { getResource, resources } from '../utils/constants/resource';
+import { BoosterItem } from '../models/item';
 
 /**
  * Generates a barren island. This is called when a user signs up or when a user obtains and opens a bottled message.
@@ -1601,6 +1602,67 @@ export const updateClaimableXCookies = async (): Promise<void> => {
         console.error(`(updateClaimableXCookies) Error: ${err.message}`);
     }
 }
+
+// /**
+//  * Applies a Gathering Progress booster to boost an island's gathering progress and potentially drop resources.
+//  */
+// export const applyGatheringProgressBooster = async (
+//     twitterId: string,
+//     islandId: number,
+//     booster: BoosterItem
+// ): Promise<ReturnValue> => {
+//     try {
+//         const user = await UserModel.findOne({ twitterId }).lean();
+
+//         if (!user) {
+//             return {
+//                 status: Status.ERROR,
+//                 message: `(applyGatheringProgressBooster) User not found.`
+//             }
+//         }
+
+//         // check if the user owns the island
+//         if (!(user.inventory?.islandIds as number[]).includes(islandId)) {
+//             return {
+//                 status: Status.UNAUTHORIZED,
+//                 message: `(applyGatheringProgressBooster) User does not own the island.`
+//             }
+//         }
+
+//         // get the island
+//         const island = await IslandModel.findOne({ islandId }).lean();
+
+//         if (!island) {
+//             return {
+//                 status: Status.ERROR,
+//                 message: `(applyGatheringProgressBooster) Island not found.`
+//             }
+//         }
+
+//         // check if the gathering of the island has started. if not, return an error
+//         if (island.islandResourceStats?.gatheringStart === 0) {
+//             return {
+//                 status: Status.ERROR,
+//                 message: `(applyGatheringProgressBooster) Gathering rate has not started for Island ID ${islandId}.`
+//             }
+//         }
+
+//         // check if the gathering of the island has ended. if yes, return an error
+//         if (island.islandResourceStats?.gatheringEnd !== 0) {
+//             return {
+//                 status: Status.ERROR,
+//                 message: `(applyGatheringProgressBooster) Gathering rate has ended for Island ID ${islandId}.`
+//             }
+//         }
+
+//         // for boosters that are 
+//     } catch (err: any) {
+//         return {
+//             status: Status.ERROR,
+//             message: `(applyGatheringProgressBooster) Error: ${err.message}`
+//         }
+//     }
+// }
 
 /**
  * Updates all eligible islands' `claimableCookieCrumbs` based on their current earning rate.
