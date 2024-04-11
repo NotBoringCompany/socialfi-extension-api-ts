@@ -43,7 +43,7 @@ import cookie from './routes/cookie';
 import poi from './routes/poi';
 import leaderboard from './routes/leaderboard';
 import kos from './routes/kos';
-import item from './routes/item';
+import asset from './routes/asset';
 import { schedulers } from './schedulers/schedulers';
 import { addOrReplacePOIShop } from './api/poi';
 import { POIName, POIShopItemName } from './models/poi';
@@ -63,7 +63,7 @@ app.use('/poi', poi);
 app.use('/cookie', cookie);
 app.use('/leaderboard', leaderboard);
 app.use('/kos', kos);
-app.use('/item', item);
+app.use('/asset', asset);
 
 app.listen(port, async () => {
     console.log(`Server running on port ${port}`);
