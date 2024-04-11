@@ -1,5 +1,5 @@
 import express from 'express';
-import { calcEffectiveResourceDropChances, calcIslandCurrentRate, checkCurrentTax, claimResources, claimXCookiesAndCrumbs, evolveIsland, getIslands, placeBit, removeIsland, unplaceBit } from '../api/island';
+import { applyGatheringProgressBooster, calcEffectiveResourceDropChances, calcIslandCurrentRate, checkCurrentTax, claimResources, claimXCookiesAndCrumbs, evolveIsland, getIslands, placeBit, removeIsland, unplaceBit } from '../api/island';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { IslandType, RateType, ResourceDropChanceDiff } from '../models/island';
@@ -382,6 +382,34 @@ router.get('/get_evolution_resource_drop_chances_diff/:islandId', async (req, re
                 resourceDropChanceDiff
             }
         });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        });
+    }
+});
+
+router.post('/apply_gathering_progress_booster', async (req, res) => {
+    const { islandId, booster } = req.body;
+
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'apply_gathering_progress_booster');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
+        const { status, message, data } = await applyGatheringProgressBooster(validateData?.twitterId, islandId, booster);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        })
     } catch (err: any) {
         return res.status(500).json({
             status: 500,

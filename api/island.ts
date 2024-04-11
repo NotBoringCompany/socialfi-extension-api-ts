@@ -15,7 +15,7 @@ import { ObtainMethod } from '../models/obtainMethod';
 import { RELOCATION_COOLDOWN } from '../utils/constants/bit';
 import { User } from '../models/user';
 import { getResource, resources } from '../utils/constants/resource';
-import { BoosterItem } from '../models/item';
+import { BoosterItem, Item } from '../models/item';
 
 /**
  * Generates a barren island. This is called when a user signs up or when a user obtains and opens a bottled message.
@@ -1603,66 +1603,238 @@ export const updateClaimableXCookies = async (): Promise<void> => {
     }
 }
 
-// /**
-//  * Applies a Gathering Progress booster to boost an island's gathering progress and potentially drop resources.
-//  */
-// export const applyGatheringProgressBooster = async (
-//     twitterId: string,
-//     islandId: number,
-//     booster: BoosterItem
-// ): Promise<ReturnValue> => {
-//     try {
-//         const user = await UserModel.findOne({ twitterId }).lean();
+/**
+ * Applies a Gathering Progress booster to boost an island's gathering progress and potentially drop resources.
+ */
+export const applyGatheringProgressBooster = async (
+    twitterId: string,
+    islandId: number,
+    booster: BoosterItem
+): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
 
-//         if (!user) {
-//             return {
-//                 status: Status.ERROR,
-//                 message: `(applyGatheringProgressBooster) User not found.`
-//             }
-//         }
+        const userUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
 
-//         // check if the user owns the island
-//         if (!(user.inventory?.islandIds as number[]).includes(islandId)) {
-//             return {
-//                 status: Status.UNAUTHORIZED,
-//                 message: `(applyGatheringProgressBooster) User does not own the island.`
-//             }
-//         }
+        const islandUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
 
-//         // get the island
-//         const island = await IslandModel.findOne({ islandId }).lean();
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(applyGatheringProgressBooster) User not found.`
+            }
+        }
 
-//         if (!island) {
-//             return {
-//                 status: Status.ERROR,
-//                 message: `(applyGatheringProgressBooster) Island not found.`
-//             }
-//         }
+        // check if the user owns the island
+        if (!(user.inventory?.islandIds as number[]).includes(islandId)) {
+            return {
+                status: Status.UNAUTHORIZED,
+                message: `(applyGatheringProgressBooster) User does not own the island.`
+            }
+        }
 
-//         // check if the gathering of the island has started. if not, return an error
-//         if (island.islandResourceStats?.gatheringStart === 0) {
-//             return {
-//                 status: Status.ERROR,
-//                 message: `(applyGatheringProgressBooster) Gathering rate has not started for Island ID ${islandId}.`
-//             }
-//         }
+        // get the island
+        const island = await IslandModel.findOne({ islandId }).lean();
 
-//         // check if the gathering of the island has ended. if yes, return an error
-//         if (island.islandResourceStats?.gatheringEnd !== 0) {
-//             return {
-//                 status: Status.ERROR,
-//                 message: `(applyGatheringProgressBooster) Gathering rate has ended for Island ID ${islandId}.`
-//             }
-//         }
+        if (!island) {
+            return {
+                status: Status.ERROR,
+                message: `(applyGatheringProgressBooster) Island not found.`
+            }
+        }
 
-//         // for boosters that are 
-//     } catch (err: any) {
-//         return {
-//             status: Status.ERROR,
-//             message: `(applyGatheringProgressBooster) Error: ${err.message}`
-//         }
-//     }
-// }
+        // check if the gathering of the island has started. if not, return an error
+        if (island.islandResourceStats?.gatheringStart === 0) {
+            return {
+                status: Status.ERROR,
+                message: `(applyGatheringProgressBooster) Gathering rate has not started for Island ID ${islandId}.`
+            }
+        }
+
+        // check if the gathering of the island has ended. if yes, return an error
+        if (island.islandResourceStats?.gatheringEnd !== 0) {
+            return {
+                status: Status.ERROR,
+                message: `(applyGatheringProgressBooster) Gathering rate has ended for Island ID ${islandId}.`
+            }
+        }
+
+        // check if the user owns the booster
+        const boosterIndex = (user.inventory.items as Item[]).findIndex(item => item.type === booster);
+
+        if (boosterIndex === -1) {
+            return {
+                status: Status.ERROR,
+                message: `(applyGatheringProgressBooster) User does not own the booster.`
+            }
+        }
+
+        // for boosters that are greater than 100%, that means that 1 or more resources will be dropped.
+        // in this case, we need to check if the resources the island can gather left is greater than the resources the booster will drop.
+        // if not, we throw an error.
+        // get only resources that have an origin of `ExtendedResourceOrigin.NORMAL`
+        const normalResourcesGathered = (island.islandResourceStats?.resourcesGathered as ExtendedResource[]).filter(resource => resource.origin === ExtendedResourceOrigin.NORMAL);
+        const resourcesLeft = island.islandResourceStats?.baseResourceCap - normalResourcesGathered.length;
+
+        // boosters will be something like 'Gathering Progress Booster 200%', so we need to get the percentage
+        const boosterPercentage = parseFloat(booster.split(' ')[3]);
+
+        // if the booster is less than 100, get the current `gatheringProgress` of the island.
+        if (boosterPercentage < 100) {
+            const gatheringProgress = island.islandResourceStats?.gatheringProgress;
+
+            // if the gathering progress + booster percentage is greater than 100:
+            // 1. drop a resource
+            // 2. reset the gathering progress to the remaining overflow of %
+            if (gatheringProgress + boosterPercentage > 100) {
+                // check if a single resource can be dropped
+                if (resourcesLeft === 0) {
+                    return {
+                        status: Status.ERROR,
+                        message: `(applyGatheringProgressBooster) Island ID ${islandId} has no resources left to drop. Cannot apply booster.`
+                    }
+                }
+
+                // calculate the remaining overflow of %
+                const finalGatheringProgress = (gatheringProgress + boosterPercentage) - 100;
+
+                // reset the gathering progress back to 0 + the remaining overflow of %
+                islandUpdateOperations.$set['islandResourceStats.gatheringProgress'] = finalGatheringProgress;
+
+                // check if there is only 1 of this booster left. if yes, remove the booster from the user's inventory.
+                // if not, decrement the booster by 1.
+                if ((user.inventory.items as Item[])[boosterIndex].amount === 1) {
+                    userUpdateOperations.$pull[`inventory.items`] = { type: booster };
+                } else {
+                    userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = -1;
+                }
+
+                // drop a resource
+                const { status, message } = await dropResource(islandId);
+
+                if (status !== Status.SUCCESS) {
+                    return {
+                        status: Status.ERROR,
+                        message: `(applyGatheringProgressBooster) Error: ${message}`
+                    }
+                }
+
+                // execute the update operations
+                await Promise.all([
+                    UserModel.updateOne({ twitterId }, userUpdateOperations),
+                    IslandModel.updateOne({ islandId }, islandUpdateOperations)
+                ]);
+
+                return {
+                    status: Status.SUCCESS,
+                    message: `(applyGatheringProgressBooster) Gathering Progress Booster applied successfully for Island ID ${islandId}.`,
+                    data: {
+                        gatheringProgressData: {
+                            prevGatheringProgress: gatheringProgress,
+                            finalGatheringProgress,
+                            resourcesDropped: 1
+                        },
+                        booster
+                    }
+                }
+            // if not, just increment the gathering progress by the booster percentage and deduct the booster from the user's inventory.
+            } else {
+                islandUpdateOperations.$inc['islandResourceStats.gatheringProgress'] = boosterPercentage;
+
+                // check if there is only 1 of this booster left. if yes, remove the booster from the user's inventory.
+                // if not, decrement the booster by 1.
+                if ((user.inventory.items as Item[])[boosterIndex].amount === 1) {
+                    userUpdateOperations.$pull[`inventory.items`] = { type: booster };
+                } else {
+                    userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = -1;
+                }
+
+                // execute the update operations
+                await Promise.all([
+                    UserModel.updateOne({ twitterId }, userUpdateOperations),
+                    IslandModel.updateOne({ islandId }, islandUpdateOperations)
+                ]);
+
+                return {
+                    status: Status.SUCCESS,
+                    message: `(applyGatheringProgressBooster) Gathering Progress Booster applied successfully for Island ID ${islandId}.`,
+                    data: {
+                        gatheringProgressData: {
+                            prevGatheringProgress: gatheringProgress,
+                            finalGatheringProgress: gatheringProgress + boosterPercentage
+                        },
+                        booster
+                    }
+                }
+            }
+        // if the booster is greater than 100,
+        // 1. check the final non-modulo gathering progress. e.g. if the current gathering progress is 70 and a 500% booster is applied, the non-modulo progress will be 570%.
+        // 2. this means that Math.floor(570/100) = 5 resources will be dropped, and the final gathering progress will be 70.
+        } else {
+            const gatheringProgress = island.islandResourceStats?.gatheringProgress;
+            const finalNonModuloGatheringProgress = gatheringProgress + boosterPercentage;
+            const resourcesToDrop = Math.floor(finalNonModuloGatheringProgress / 100);
+
+            // check if the resources to drop is greater than the resources left
+            if (resourcesToDrop > resourcesLeft) {
+                return {
+                    status: Status.ERROR,
+                    message: `(applyGatheringProgressBooster) Island ID ${islandId} does not have enough resources left to drop. Cannot apply booster.`
+                }
+            }
+
+            // update the island's final gathering progress after moduloing it by 100
+            islandUpdateOperations.$set['islandResourceStats.gatheringProgress'] = gatheringProgress % 100;
+
+            // check if there is only 1 of this booster left. if yes, remove the booster from the user's inventory.
+            // if not, decrement the booster by 1.
+            if ((user.inventory.items as Item[])[boosterIndex].amount === 1) {
+                userUpdateOperations.$pull[`inventory.items`] = { type: booster };
+            } else {
+                userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = -1;
+            }
+
+            // call the `dropResource` function `resourcesToDrop` times
+            // we need to efficiently call this though
+            const dropResourcePromises = Array.from({ length: resourcesToDrop }, async () => dropResource(islandId));
+
+            // execute the update operations and the drop resource promises
+            await Promise.all([
+                UserModel.updateOne({ twitterId }, userUpdateOperations),
+                IslandModel.updateOne({ islandId }, islandUpdateOperations),
+                ...dropResourcePromises
+            ]);
+
+            return {
+                status: Status.SUCCESS,
+                message: `(applyGatheringProgressBooster) Gathering Progress Booster applied successfully for Island ID ${islandId}.`,
+                data: {
+                    gatheringProgressData: {
+                        prevGatheringProgress: gatheringProgress,
+                        finalGatheringProgress: gatheringProgress % 100,
+                        resourcesDropped: resourcesToDrop
+                    },
+                    booster
+                }
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(applyGatheringProgressBooster) Error: ${err.message}`
+        }
+    }
+}
 
 /**
  * Updates all eligible islands' `claimableCookieCrumbs` based on their current earning rate.
