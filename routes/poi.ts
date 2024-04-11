@@ -1,7 +1,7 @@
 import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
-import { addOrReplacePOIShop, addPOI, getAvailablePOIDestinations, getCurrentLocation, getCurrentPOI, travelToPOI, updateArrival } from '../api/poi';
+import { addOrReplacePOIShop, addPOI, getAvailablePOIDestinations, getCurrentLocation, getCurrentPOI, sellItemsInPOIShop, travelToPOI, updateArrival } from '../api/poi';
 
 const router = express.Router();
 
@@ -177,6 +177,34 @@ router.get('/get_current_poi', async (req, res) => {
             message: err.message
         })
     }
-})
+});
+
+router.post('/sell_items_in_poi_shop', async (req, res) => {
+    const { items, leaderboardName } = req.body;
+
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'sell_items_in_poi_shop');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
+        const { status, message, data } = await sellItemsInPOIShop(validateData?.twitterId, items, leaderboardName);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+});
 
 export default router;

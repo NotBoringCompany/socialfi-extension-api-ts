@@ -1,5 +1,7 @@
-import { POIName, POIShop } from '../models/poi';
-import { POIModel, RaftModel, UserModel } from '../utils/constants/db';
+import { Food } from '../models/food';
+import { POIName, POIShop, POIShopActionItemData, POIShopItemName } from '../models/poi';
+import { ExtendedResource, ResourceType } from '../models/resource';
+import { LeaderboardModel, POIModel, RaftModel, UserModel } from '../utils/constants/db';
 import { ACTUAL_RAFT_SPEED } from '../utils/constants/raft';
 import { ReturnValue, Status } from '../utils/retVal';
 
@@ -336,6 +338,372 @@ export const getCurrentPOI = async (twitterId: string): Promise<ReturnValue> => 
         return {
             status: Status.ERROR,
             message: `(getCurrentPOI) ${err.message}`
+        }
+    }
+}
+
+/**
+ * (User) Sells 1 or more items in the POI shop in exchage for leaderboard points.
+ * 
+ * If a leaderboard is not selected, the code automatically searches for the most recent leaderboard to add the points to.
+ * 
+ * Must be a minimum of 1 of each item to sell.
+ */
+export const sellItemsInPOIShop = async (
+    twitterId: string,
+    items: POIShopActionItemData[],
+    leaderboardName: string | null,
+): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId });
+
+        const userUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const leaderboardUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const poiUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(sellItemsInPOIShop) User not found.`
+            }
+        }
+
+        // check if at least 1 item is present and that the amount of that item is at least 1.
+        if (items.length === 0 || items.some(item => item.amount < 1)) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(sellItemsInPOIShop) At least 1 item must be sold.`
+            }
+        }
+
+        // get the user's current location to get the POI shop.
+        const { status, message, data } = await getCurrentPOI(twitterId);
+
+        if (status !== Status.SUCCESS) {
+            return {
+                status,
+                message
+            }
+        }
+
+        const poiShop = data.currentPOI.shop as POIShop;
+
+        // check if:
+        // 1. 1 or more items are not available in the POI shop (cannot be found)
+        // 2. 1 or more items have a sellableAmount of 0
+        // 3. 1 or more items have a sellableAmount less than the amount the user wants to sell
+        // 4. check if despite having a sellableAmount > 0 if the `leaderboardPoints` is unavailable.
+        // 5. the user doesn't have the amount of items they want to sell (for any of the specified items)
+        // if one of these conditions are met, return an error.
+
+        // we do this by returning true for any invalidity from this function.
+        const invalidItems = items.filter(item => {
+            const globalItems = poiShop.globalItems;
+            const playerItems = poiShop.playerItems;
+
+            const globalItem = globalItems.find(globalItem => globalItem.name === item.item);
+            const playerItem = playerItems.find(playerItem => playerItem.name === item.item);
+
+            // if not available as a global item or player item, return true
+            if (!globalItem && !playerItem) {
+                return true;
+            }
+
+            const itemData = globalItem ? globalItem : playerItem;
+
+            // // if the sellable amount is 0, return true
+            // if (itemData.sellableAmount === 0) {
+            //     return true;
+            // }
+
+            // if the item is a global item, check if `sellableAmount` is 0.
+            // if it is, return true.
+            if (globalItem && globalItem.sellableAmount === 0) {
+                return true;
+            }
+
+            // if the item is a player item, check if:
+            // 1. the sellableAmount is 0.
+            // 2. if not, check if the user exists in `userTransactionData`.
+            // 3. if not, return true.
+            // 4. if the user exists, check how many of this item the user has sold so far via `soldAmount`.
+            // 5. if `sellableAmount` - `soldAmount` is less than the amount the user wants to sell, return true.
+            if (playerItem) {
+                if (playerItem.sellableAmount === 0) {
+                    return true;
+                }
+
+                const userTransactionData = playerItem.userTransactionData.find(transactionData => transactionData.userId === user._id);
+
+                if (!userTransactionData) {
+                    return true;
+                }
+
+                const soldAmount = userTransactionData.soldAmount;
+
+                if (playerItem.sellableAmount !== 'infinite' && playerItem.sellableAmount as number - soldAmount < item.amount) {
+                    return true;
+                }
+            }
+
+            // check if despite having a sellableAmount > 0 if the `leaderboardPoints` is unavailable.
+            if (itemData.sellingPrice.leaderboardPoints === 'unavailable') {
+                return true;
+            }
+
+            // search for this item in the user's inventory (which includes resources, items, foods)
+            // if the item specified is `Bit Orb` or `Terra Capsulator`, check the totalBitOrbs or totalTerraCapsulators count respectively.
+            // otherwise, check the items array.
+            if (item.item === 'Bit Orb') {
+                return user.inventory.totalBitOrbs < item.amount;
+            } else if (item.item === 'Terra Capsulator') {
+                return user.inventory.totalTerraCapsulators < item.amount;
+            } else if (
+                item.item === POIShopItemName.SEAWEED ||
+                item.item === POIShopItemName.STONE ||
+                item.item === POIShopItemName.COPPER ||
+                item.item === POIShopItemName.IRON ||
+                item.item === POIShopItemName.SILVER ||
+                item.item === POIShopItemName.GOLD ||
+                item.item === POIShopItemName.BLUEBERRY ||
+                item.item === POIShopItemName.APPLE ||
+                item.item === POIShopItemName.STAR_FRUIT ||
+                item.item === POIShopItemName.MELON ||
+                item.item === POIShopItemName.DRAGON_FRUIT ||
+                item.item === POIShopItemName.WATER ||
+                item.item === POIShopItemName.MAPLE_SYRUP ||
+                item.item === POIShopItemName.HONEY ||
+                item.item === POIShopItemName.MOONLIGHT_DEW ||
+                item.item === POIShopItemName.PHOENIX_TEAR
+            ) {
+                // check the resources array
+                const resource = (user.inventory.resources as ExtendedResource[]).find(resource => resource.type === item.item as string);
+
+                return !resource || resource.amount < item.amount;
+            } else if (
+                item.item === POIShopItemName.CANDY ||
+                item.item === POIShopItemName.CHOCOLATE ||
+                item.item === POIShopItemName.JUICE ||
+                item.item === POIShopItemName.BURGER
+            ) {
+                // check the foods array
+                const food = (user.inventory.foods as Food[]).find(food => food.type === item.item as string);
+
+                return !food || food.amount < item.amount;
+            // if terra cap or bit orb (which at this point is 'else')
+            } else if (item.item === POIShopItemName.TERRA_CAPSULATOR) {
+                return user.inventory.totalTerraCapsulators < item.amount;
+            } else if (item.item === POIShopItemName.BIT_ORB) {
+                return user.inventory.totalBitOrbs < item.amount;
+            // right now, we don't have any other items in the POI shop, so we just return true since it's invalid.
+            } else {
+                return true;
+            }
+        });
+
+        if (invalidItems.length > 0) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(sellItemsInPOIShop) Invalid item(s) to sell. Please check the validity of the items specified.`
+            }
+        }
+
+        // calculate the total leaderboard points to give to the user per item.
+        // if a leaderboard is not specified, we give the points to the most recent leaderboard.
+        // if a leaderboard is specified, we give the points to that leaderboard.
+        const leaderboardPoints = items.reduce((acc, item) => {
+            const globalItems = poiShop.globalItems;
+            const playerItems = poiShop.playerItems;
+
+            const globalItem = globalItems.find(globalItem => globalItem.name === item.item);
+            const playerItem = playerItems.find(playerItem => playerItem.name === item.item);
+
+            const itemData = globalItem ? globalItem : playerItem;
+
+            // at this point, no need to worry if `leaderboardPoints` is 'unavailable' because it was already checked beforehand.
+            return acc + (item.amount * (itemData.sellingPrice.leaderboardPoints as number));
+        }, 0);
+
+        // check if leaderboard is specified.
+        // if not, we find the most recent one.
+        const leaderboard = leaderboardName === null ? 
+            await LeaderboardModel.findOne().sort({ createdAt: -1 }) :
+            await LeaderboardModel.findOne({ name: { $regex: new RegExp(`^${leaderboardName}$`, 'i') }});
+
+        if (!leaderboard) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(sellItemsInPOIShop) Leaderboard not found.`
+            }
+        }
+
+        // check if user exists in leaderboard. if not, we create a new user data.
+        const userExistsInLeaderboard = leaderboard.userData.find(userData => userData.userId === user._id);
+
+        if (!userExistsInLeaderboard) {
+            leaderboardUpdateOperations.$push = {
+                'userData': {
+                    userId: user._id,
+                    points: leaderboardPoints
+                }
+            }
+        } else {
+            leaderboardUpdateOperations.$inc = {
+                'userData.$.points': leaderboardPoints
+            }
+        }
+
+        // do two things:
+        // 1. update the user's inventory
+        // 2. update the shop's data.
+        items.forEach(item => {
+            if (item.item === 'Bit Orb') {
+                userUpdateOperations.$inc[`inventory.totalBitOrbs`] = -item.amount;
+            } else if (item.item === 'Terra Capsulator') {
+                userUpdateOperations.$inc[`inventory.totalTerraCapsulators`] = -item.amount;
+            } else if (
+                item.item === POIShopItemName.SEAWEED ||
+                item.item === POIShopItemName.STONE ||
+                item.item === POIShopItemName.COPPER ||
+                item.item === POIShopItemName.IRON ||
+                item.item === POIShopItemName.SILVER ||
+                item.item === POIShopItemName.GOLD ||
+                item.item === POIShopItemName.BLUEBERRY ||
+                item.item === POIShopItemName.APPLE ||
+                item.item === POIShopItemName.STAR_FRUIT ||
+                item.item === POIShopItemName.MELON ||
+                item.item === POIShopItemName.DRAGON_FRUIT ||
+                item.item === POIShopItemName.WATER ||
+                item.item === POIShopItemName.MAPLE_SYRUP ||
+                item.item === POIShopItemName.HONEY ||
+                item.item === POIShopItemName.MOONLIGHT_DEW ||
+                item.item === POIShopItemName.PHOENIX_TEAR
+            ) {
+                // get the index of the resource in the user's inventory
+                const resourceIndex = (user.inventory.resources as ExtendedResource[]).findIndex(resource => resource.type === item.item as string);
+
+                // if the resource is not found, return an error.
+                if (resourceIndex === -1) {
+                    return {
+                        status: Status.BAD_REQUEST,
+                        message: `(sellItemsInPOIShop) Resource not found in user's inventory.`
+                    }
+                }
+
+                // if the amount to sell is equal to the amount in the user's inventory, we remove the entire resource.
+                // otherwise, we decrement the amount of the resource.
+                if (item.amount === (user.inventory.resources as ExtendedResource[])[resourceIndex].amount) {
+                    userUpdateOperations.$pull[`inventory.resources`] = { type: item.item };
+                } else {
+                    userUpdateOperations.$inc[`inventory.resources.${resourceIndex}.amount`] = -item.amount;
+                    userUpdateOperations.$set = {
+                        'inventory.resources.$[resource].amount': {
+                            $gte: 0
+                        }
+                    }
+                }
+            } else if (
+                item.item === POIShopItemName.CANDY ||
+                item.item === POIShopItemName.CHOCOLATE ||
+                item.item === POIShopItemName.JUICE ||
+                item.item === POIShopItemName.BURGER
+            ) {
+                // get the index of the food in the user's inventory
+                const foodIndex = (user.inventory.foods as Food[]).findIndex(food => food.type === item.item as string);
+
+                // if the food is not found, return an error.
+                if (foodIndex === -1) {
+                    return {
+                        status: Status.BAD_REQUEST,
+                        message: `(sellItemsInPOIShop) Food not found in user's inventory.`
+                    }
+                }
+
+                // if the amount to sell is equal to the amount in the user's inventory, we remove the entire food.
+                // otherwise, we decrement the amount of the food.
+                if (item.amount === (user.inventory.foods as Food[])[foodIndex].amount) {
+                    userUpdateOperations.$pull[`inventory.foods`] = { type: item.item };
+                } else {
+                    userUpdateOperations.$inc[`inventory.foods.${foodIndex}.amount`] = -item.amount;
+                    userUpdateOperations.$set = {
+                        'inventory.foods.$[food].amount': {
+                            $gte: 0
+                        }
+                    }
+                }
+            } else if (item.item === POIShopItemName.TERRA_CAPSULATOR) {
+                userUpdateOperations.$inc[`inventory.totalTerraCapsulators`] = -item.amount;
+            } else if (item.item === POIShopItemName.BIT_ORB) {
+                userUpdateOperations.$inc[`inventory.totalBitOrbs`] = -item.amount;
+            }
+
+            // now, we update the shop's data.
+            // we check if it's a global item.
+            // if it's a global item, we find the index of the item in the `globalItems` array and reduce the `sellableAmount` of that item by the amount the user wants to sell.
+            // if it's a player item, we:
+            // 1. find the index of the item in the `playerItems` array.
+            // 2. check if the user exists in the `userTransactionData`. if not, we add a new one.
+            // 3. if the user exists, we increment the `soldAmount` by the amount the user wants to sell.
+            const globalItems = poiShop.globalItems;
+            const playerItems = poiShop.playerItems;
+
+            const globalItem = globalItems.find(globalItem => globalItem.name === item.item);
+            const playerItem = playerItems.find(playerItem => playerItem.name === item.item);
+
+            if (globalItem) {
+                const globalItemIndex = globalItems.findIndex(globalItem => globalItem.name === item.item);
+
+                poiUpdateOperations.$inc[`shop.globalItems.${globalItemIndex}.sellableAmount`] = -item.amount;
+            } else if (playerItem) {
+                const playerItemIndex = playerItems.findIndex(playerItem => playerItem.name === item.item);
+                const userTransactionDataIndex = playerItem.userTransactionData.findIndex(transactionData => transactionData.userId === user._id);
+
+                if (userTransactionDataIndex === -1) {
+                    poiUpdateOperations.$push[`shop.playerItems.${playerItemIndex}.userTransactionData`] = {
+                        userId: user._id,
+                        soldAmount: item.amount
+                    }
+                } else {
+                    poiUpdateOperations.$inc[`shop.playerItems.${playerItemIndex}.userTransactionData.${userTransactionDataIndex}.soldAmount`] = item.amount;
+                }
+            }
+        });
+
+        // execute the transactions
+        await Promise.all([
+            UserModel.updateOne({ twitterId }, userUpdateOperations),
+            LeaderboardModel.updateOne({ _id: leaderboard._id }, leaderboardUpdateOperations),
+            POIModel.updateOne({ name: user.inGameData.location }, poiUpdateOperations)
+        ]);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(sellItemsInPOIShop) Items sold. Leaderboard points added.`,
+            data: {
+                leaderboardPoints
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(sellItemsInPOIShop) ${err.message}`
         }
     }
 }

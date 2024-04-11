@@ -85,13 +85,12 @@ export interface POIShopPlayerItem {
     buyingPrice: POIShopItemBuyingPrice;
     /** the item's selling price (what the user can get if they sell 1 of this item) */
     sellingPrice: POIShopItemSellingPrice;
-    // WILL BE USED IN FUTURE SEASONS.
-    // /** 
-    //  * the transaction data for each user for this item.
-    //  * 
-    //  * this includes the amount of this item that has been bought/sold, and the buying/selling limit for each user for this item.
-    //  */
-    // userTransactionData: ShopItemUserTransactionData[];
+    /** 
+     * the transaction data for each user for this item.
+     * 
+     * this includes the amount of this item that has been bought/sold.
+     */
+    userTransactionData: ShopItemUserTransactionData[];
 }
 
 export interface ShopItemUserTransactionData {
@@ -101,18 +100,18 @@ export interface ShopItemUserTransactionData {
     boughtAmount: number;
     /** the amount of this item that has been sold by this user */
     soldAmount: number;
-    /** 
-     * the buying limit for this user for this item 
-     * 
-     * if 'infinite', then there is no limit to the amount that can be bought until otherwise specified.
-     */
-    buyingLimit: number | 'infinite';
-    /** 
-     * the selling limit for this user for this item 
-     * 
-     * if 'infinite', then there is no limit to the amount that can be sold until otherwise specified.
-     */
-    sellingLimit: number | 'infinite';
+    // /** 
+    //  * the buying limit for this user for this item 
+    //  * 
+    //  * if 'infinite', then there is no limit to the amount that can be bought until otherwise specified.
+    //  */
+    // buyingLimit: number | 'infinite';
+    // /** 
+    //  * the selling limit for this user for this item 
+    //  * 
+    //  * if 'infinite', then there is no limit to the amount that can be sold until otherwise specified.
+    //  */
+    // sellingLimit: number | 'infinite';
 }
 
 /**
@@ -161,4 +160,12 @@ export interface POIShopItemBuyingPrice {
 export interface POIShopItemSellingPrice {
     /** leaderboard points (will be divided once more leaderboards are established) */
     leaderboardPoints: number | 'unavailable';
+}
+
+/**
+ * Represents single or batch buying or selling of a POI shop item.
+ */
+export interface POIShopActionItemData {
+    item: POIShopItemName,
+    amount: number,
 }
