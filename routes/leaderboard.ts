@@ -9,15 +9,6 @@ router.post('/add_leaderboard', async (req, res) => {
     const { leaderboardName, startTimestamp, adminKey } = req.body;
 
     try {
-        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'add_leaderboard');
-
-        if (validateStatus !== Status.SUCCESS) {
-            return res.status(validateStatus).json({
-                status: validateStatus,
-                message: validateMessage
-            });
-        }
-
         const { status, message, data } = await addLeaderboard(leaderboardName, startTimestamp, adminKey);
 
         return res.status(status).json({
