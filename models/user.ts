@@ -85,6 +85,8 @@ export interface UserInventory {
 export interface InGameData {
     /** the user's level */
     level: number;
+    /** the user's daily login reward data */
+    dailyLoginRewardData: DailyLoginRewardData;
     /** the current location of the user (either home or in a POI) */
     location: POIName;
     /** 
@@ -99,5 +101,25 @@ export interface InGameData {
      * value will be 0 if not travelling (i.e. if travellingTo is null)
      */
     destinationArrival: number;
+}
+
+/**
+ * Represents the user's daily login reward data.
+ * 
+ * Doesn't require storing rewards earned here, as the rewards are fixed and can be calculated based on the consecutive days (for now).
+ */
+export interface DailyLoginRewardData {
+    /** the last claimed timestamp of the daily login reward */
+    lastClaimedTimestamp: number;
+    /** 
+     * checks if the daily login reward is claimable.
+     * 
+     * this is true by default and will be set to false if the user has claimed the reward for the day.
+     * 
+     * the scheduler will reset this to true every day at 00:00 UTC.
+     */
+    isDailyClaimable: boolean;
+    /** the amount of consecutive days the user claimed the rewards */
+    consecutiveDaysClaimed: number;
 }
 

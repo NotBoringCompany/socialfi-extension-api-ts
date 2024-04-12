@@ -117,6 +117,11 @@ export const handleTwitterLogin = async (twitterId: string): Promise<ReturnValue
                 },
                 inGameData: {
                     level: 1,
+                    dailyLoginRewardData: {
+                        lastClaimedTimestamp: 0,
+                        isDailyClaimable: true,
+                        consecutiveDaysClaimed: 0
+                    },
                     location: POIName.HOME,
                     travellingTo: null,
                     destinationArrival: 0
