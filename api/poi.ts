@@ -1099,3 +1099,61 @@ export const buyItemsInPOIShop = async (
         }
     }
 }
+
+/**
+ * (User) Gets the `userTransactionData` instance of the user for a POI's shop's player items.
+ */
+export const getUserTransactionData = async (
+    twitterId: string
+): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(getUserTransactionData) User not found.`
+            }
+        }
+
+        // get the user's _id
+        const userId = user._id;
+
+        // get the user's current location to get the POI shop.
+        const { status, message, data } = await getCurrentPOI(twitterId);
+
+        if (status !== Status.SUCCESS) {
+            return {
+                status,
+                message
+            }
+        }
+
+        const poiShop = data.currentPOI.shop as POIShop;
+
+        // get the user's transaction data for the player items in the POI shop.
+        const playerItems = poiShop.playerItems;
+
+        const userTransactionData = playerItems.map(playerItem => {
+            const userTransactionData = playerItem.userTransactionData.find(transactionData => transactionData.userId === userId);
+
+            return {
+                name: playerItem.name,
+                userTransactionData: userTransactionData ? userTransactionData : null
+            }
+        });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getUserTransactionData) User transaction data for POI: ${data.currentPOI.name} fetched.`,
+            data: {
+                userTransactionData
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getUserTransactionData) ${err.message}`
+        }
+    }
+}
