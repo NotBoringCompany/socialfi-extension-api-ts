@@ -602,3 +602,73 @@ export const claimDailyRewards = async (
         }
     }
 }
+
+/**
+ * Updates all users' daily login reward data.
+ * This includes:
+ * 
+ * 1. resetting `isDailyClaimable` to true every day at 00:00 UTC.
+ * 2. resetting `consecutiveDaysClaimed` to 0 if the user doesn't claim the reward for the day.
+ */
+export const updateDailyLoginRewardsData = async (): Promise<void> => {
+    try {
+        // fetch all users
+        const users = await UserModel.find().lean();
+
+        // users who have `isDailyClaimable` = false means they already claimed their rewards.
+        // in this case, set `isDailyClaimable` back to true.
+        // users who have `isDailyClaimable` = true means they haven't claimed their daily rewards.
+        // in this case, reset `consecutiveDaysClaimed` to 0.
+        const userUpdateOperations: Array<{
+            userId: string,
+            updateOperations: {
+                $pull: {},
+                $inc: {},
+                $set: {},
+                $push: {}
+            }
+        }> = [];
+
+        for (const user of users) {
+            const dailyLoginRewardData = user.inGameData.dailyLoginRewardData as DailyLoginRewardData;
+
+            if (!dailyLoginRewardData.isDailyClaimable) {
+                userUpdateOperations.push({
+                    userId: user._id,
+                    updateOperations: {
+                        $set: {
+                            'inGameData.dailyLoginRewardData.isDailyClaimable': true
+                        },
+                        $inc: {},
+                        $pull: {},
+                        $push: {}
+                    }
+                });
+            } else {
+                userUpdateOperations.push({
+                    userId: user._id,
+                    updateOperations: {
+                        $set: {
+                            'inGameData.dailyLoginRewardData.consecutiveDaysClaimed': 0
+                        },
+                        $inc: {},
+                        $pull: {},
+                        $push: {}
+                    }
+                });
+            }
+        }
+
+        // execute the update operations
+        const userUpdatePromises = userUpdateOperations.map(async op => {
+            return UserModel.updateOne({ _id: op.userId }, op.updateOperations);
+        });
+        
+        await Promise.all(userUpdatePromises);
+
+        console.log('Daily login rewards data updated.');
+    } catch (err: any) {
+        console.error('Error in updateDailyLoginRewardsData:', err.message);
+    }
+}
+    
