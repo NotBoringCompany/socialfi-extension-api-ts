@@ -537,10 +537,13 @@ export const sellItemsInPOIShop = async (
             }
         }
 
+        console.log('(sellItemsFromShop) running here so far #0');
+
         // get the user's current location to get the POI shop.
         const { status, message, data } = await getCurrentPOI(twitterId);
 
         if (status !== Status.SUCCESS) {
+            console.log('error from getCurrentPOI: ', message);
             return {
                 status,
                 message
@@ -661,6 +664,8 @@ export const sellItemsInPOIShop = async (
             }
         }
 
+        console.log('(sellItemsFromShop) running here so far #1');
+
         // calculate the total leaderboard points to give to the user per item.
         // if a leaderboard is not specified, we give the points to the most recent leaderboard.
         // if a leaderboard is specified, we give the points to that leaderboard.
@@ -680,7 +685,7 @@ export const sellItemsInPOIShop = async (
         // check if leaderboard is specified.
         // if not, we find the most recent one.
         const leaderboard = leaderboardName === null ?
-            await LeaderboardModel.findOne().sort({ createdAt: -1 }) :
+            await LeaderboardModel.findOne().sort({ startTimestamp: -1 }) :
             await LeaderboardModel.findOne({ name: leaderboardName });
 
         if (!leaderboard) {
@@ -689,6 +694,8 @@ export const sellItemsInPOIShop = async (
                 message: `(sellItemsInPOIShop) Leaderboard not found.`
             }
         }
+
+        console.log('(sellItemsFromShop) running here so far #2');
 
         // check if user exists in leaderboard. if not, we create a new user data.
         const userExistsInLeaderboard = leaderboard.userData.find(userData => userData.userId === user._id);
@@ -824,14 +831,16 @@ export const sellItemsInPOIShop = async (
             }
         });
 
+        console.log('(sellItemsFromShop) running here so far #3');
+
         // lastly, reduce the user inventory's weight by `totalWeightToReduce`
         userUpdateOperations.$inc[`inventory.weight`] = -totalWeightToReduce;
 
         // execute the transactions
         await Promise.all([
-            UserModel.updateOne({ twitterId }, userUpdateOperations),
-            LeaderboardModel.updateOne({ _id: leaderboard._id }, leaderboardUpdateOperations),
-            POIModel.updateOne({ name: user.inGameData.location }, poiUpdateOperations)
+            UserModel.updateOne({ twitterId }, userUpdateOperations).catch((err) => console.log('error updating user model: ', err)),
+            LeaderboardModel.updateOne({ _id: leaderboard._id }, leaderboardUpdateOperations).catch((err) => console.log('error updating leaderboard model: ', err)),
+            POIModel.updateOne({ name: user.inGameData.location }, poiUpdateOperations).catch((err) => console.log('error updating poi model: ', err))
         ]);
 
         return {
