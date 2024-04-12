@@ -4,12 +4,27 @@ import { generateJWT, validateJWT } from '../../utils/jwt';
 import { Status } from '../../utils/retVal';
 import passport from '../../configs/passport';
 import { handleTwitterLogin } from '../../api/user';
+import base64url from 'base64url';
+import uuid from 'uuid';
+import { decrypt, encrypt } from '../../utils/crypto';
 
 const router = express.Router();
 
 router.get('/login', async (req, res, next) => {
     // get the jwt token (if it exists) from the request headers
     const token = req.headers.authorization?.split(' ')[1];
+
+    // get the referral and/or starter code from the query params
+    const { referralCode, starterCode } = req.query;
+
+    const statePayload = JSON.stringify({
+        referralCode,
+        starterCode,
+        nonce: uuid.v4(),
+        timestamp: Math.floor(Date.now() / 1000)
+    });
+
+    const state = encrypt(statePayload);
 
     if (token) {
         // check for validation
@@ -20,13 +35,15 @@ router.get('/login', async (req, res, next) => {
         } else {
             // token is invalid, redirect to Twitter for authentication
             passport.authenticate('twitter', {
-                scope: ['tweet.read', 'users.read', 'offline.access']
+                scope: ['tweet.read', 'users.read', 'offline.access'],
+                state
             })(req, res, next);
         }
     } else {
         // token doesn't exist, redirect to Twitter for authentication
         passport.authenticate('twitter', {
-            scope: ['tweet.read', 'users.read', 'offline.access']
+            scope: ['tweet.read', 'users.read', 'offline.access'],
+            state
         })(req, res, next);
     }
 });
@@ -39,7 +56,14 @@ router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/' 
         })
     }
 
-    const { starterCode, referralCode } = req.body;
+    const encryptedState = req.query.state as string;
+    const statePayload = JSON.parse(decrypt(encryptedState));
+    const { referralCode, starterCode, nonce, timestamp } = statePayload;
+
+    console.log('referral code in callback:', referralCode);
+    console.log('starter code in callback:', starterCode);
+    console.log('nonce in callback:', nonce);
+    console.log('timestamp in callback:', timestamp);
 
     try {
         // when logged in via twitter, `id` will be the user's twitter id

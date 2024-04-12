@@ -91,3 +91,31 @@ export const generateStarterCode = (): string => {
     // starter codes start with 'WBSC' and are followed by 12 random characters (all caps)
     return 'WBSC' + CryptoJS.lib.WordArray.random(12).toString().toUpperCase();
 }
+
+/**
+ * Used to encrypt sensitive data, such as state payloads in OAuth2.
+ */
+export const encrypt = (data: string): string => {
+    const secretKey = CryptoJS.enc.Utf8.parse(process.env.ENCRYPTION_KEY!);
+    const iv = CryptoJS.enc.Utf8.parse(process.env.IV); // IV should be 16 bytes
+    const encrypted = CryptoJS.AES.encrypt(CryptoJS.enc.Utf8.parse(data), secretKey, {
+        iv: iv,
+        mode: CryptoJS.mode.CBC,
+        padding: CryptoJS.pad.Pkcs7
+    });
+    return encrypted.toString();
+}
+
+/**
+ * Used to decrypt sensitive data, such as state payloads in OAuth2.
+ */
+export const decrypt = (cipherText: string) => {
+    const secretKey = CryptoJS.enc.Utf8.parse(process.env.ENCRYPTION_KEY);
+    const iv = CryptoJS.enc.Utf8.parse(process.env.IV); // IV should be 16 bytes
+    const decrypted = CryptoJS.AES.decrypt(cipherText, secretKey, {
+        iv: iv,
+        mode: CryptoJS.mode.CBC,
+        padding: CryptoJS.pad.Pkcs7
+    });
+    return CryptoJS.enc.Utf8.stringify(decrypted);
+}

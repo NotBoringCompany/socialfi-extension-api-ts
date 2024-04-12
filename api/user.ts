@@ -26,8 +26,8 @@ import { InviteCodeData, InviteCodeType } from '../models/invite';
  */
 export const handleTwitterLogin = async (
     twitterId: string,
-    starterCode: string | null,
-    referralCode: string | null
+    starterCode: string,
+    referralCode: string,
 ): Promise<ReturnValue> => {
     try {
         const user = await UserModel.findOne({ twitterId }).lean();
@@ -37,7 +37,7 @@ export const handleTwitterLogin = async (
         // if user doesn't exist, create a new user
         if (!user) {
             // if no invite code data, return an error.
-            if (!starterCode && !referralCode) {
+            if (starterCode === 'null' && referralCode === 'null') {
                 return {
                     status: Status.BAD_REQUEST,
                     message: `(handleTwitterLogin) Invite code is required to sign up.`
