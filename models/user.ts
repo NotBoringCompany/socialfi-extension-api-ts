@@ -22,6 +22,8 @@ export interface User {
      * if the user signed up via a referral code, the referrer's id is stored here.
      */
     inviteCodeData: InviteCodeData;
+    /** the user's personal referral code (used to refer other users) */
+    referralCode: string;
     /** the user's wallet data, created when the user signs up for the first time */
     wallet: UserWallet;
     /** users can link up to 10 secondary wallets. this contains the data of each secondary wallet instance, such as the signature. */

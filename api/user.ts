@@ -2,12 +2,12 @@
 import { ReturnValue, Status } from '../utils/retVal';
 import { createUserWallet } from '../utils/wallet';
 import { createRaft } from './raft';
-import { generateHashSalt, generateObjectId } from '../utils/crypto';
+import { generateHashSalt, generateObjectId, generateReferralCode } from '../utils/crypto';
 import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
 import { RANDOMIZE_RARITY_FROM_ORB } from '../utils/constants/bitOrb';
 import { RANDOMIZE_GENDER, getBitStatsModifiersFromTraits, randomizeBitTraits } from '../utils/constants/bit';
 import { ObtainMethod } from '../models/obtainMethod';
-import { LeaderboardModel, UserModel } from '../utils/constants/db';
+import { LeaderboardModel, StarterCodeModel, UserModel } from '../utils/constants/db';
 import { generateBarrenIsland } from './island';
 import { POIName } from '../models/poi';
 import { solidityKeccak256 } from 'ethers/lib/utils';
@@ -16,7 +16,7 @@ import { ExtendedResource, ResourceType, SimplifiedResource } from '../models/re
 import { resources } from '../utils/constants/resource';
 import { DailyLoginRewardData, DailyLoginRewardType } from '../models/user';
 import { GET_DAILY_LOGIN_REWARDS } from '../utils/constants/user';
-import { InviteCodeData } from '../models/invite';
+import { InviteCodeData, InviteCodeType } from '../models/invite';
 
 /**
  * Twitter login logic. Creates a new user or simply log them in if they already exist.
@@ -26,24 +26,76 @@ import { InviteCodeData } from '../models/invite';
  */
 export const handleTwitterLogin = async (
     twitterId: string,
-    // starterCode: string | null,
-    // referralCode: string | null
+    starterCode: string | null,
+    referralCode: string | null
 ): Promise<ReturnValue> => {
     try {
         const user = await UserModel.findOne({ twitterId }).lean();
 
+        let inviteCodeData: InviteCodeData | null = null;
+
         // if user doesn't exist, create a new user
         if (!user) {
-            // // if no invite code data, return an error.
-            // if (!starterCode && !referralCode) {
-            //     return {
-            //         status: Status.BAD_REQUEST,
-            //         message: `(handleTwitterLogin) Invite code is required to sign up.`
-            //     }
-            // }
+            // if no invite code data, return an error.
+            if (!starterCode && !referralCode) {
+                return {
+                    status: Status.BAD_REQUEST,
+                    message: `(handleTwitterLogin) Invite code is required to sign up.`
+                }
+            }
 
-            ///// TO DO: CHECK IF REFERRAL CODE, IF REFERRAL CODE EXISTS.
-            //// IF STARTER CODE, IF STARTER CODE EXISTS.
+            // if referral code is present, query the users collection to check if the referral code belongs to anybody.
+            if (referralCode) {
+                const users = await UserModel.find({}).lean();
+
+                // find the referrer
+                const referrer = users.find(u => u.referralCode.toLowerCase() === referralCode.toLowerCase());
+
+                // if the referrer doesn't exist, return an error
+                if (!referrer) {
+                    return {
+                        status: Status.BAD_REQUEST,
+                        message: `(handleTwitterLogin) Referral code does not exist.`
+                    }
+                }
+
+                inviteCodeData = {
+                    type: InviteCodeType.REFERRAL,
+                    code: referralCode,
+                    referrerId: referrer._id,
+                    maxUses: 'infinite',
+                    usedBy: []
+                }
+            } else if (starterCode) {
+                // query the starter codes collection to check if the starter code exists
+                const code = await StarterCodeModel.findOne({ code: starterCode.toUpperCase() }).lean();
+
+                // if the starter code doesn't exist, return an error
+                if (!code) {
+                    return {
+                        status: Status.BAD_REQUEST,
+                        message: `(handleTwitterLogin) Starter code does not exist.`
+                    }
+                }
+
+                // if the starter code has reached its limit, return an error
+                if (code.usedBy.length >= code.maxUses) {
+                    return {
+                        status: Status.BAD_REQUEST,
+                        message: `(handleTwitterLogin) Starter code has reached its limit.`
+                    }
+                }
+
+                inviteCodeData = {
+                    type: InviteCodeType.STARTER,
+                    code: starterCode,
+                    maxUses: code.maxUses,
+                    usedBy: [
+                        user._id,
+                        ...code.usedBy
+                    ]
+                }
+            }
 
             // generates a new object id for the user
             const userObjectId = generateObjectId();
@@ -115,6 +167,8 @@ export const handleTwitterLogin = async (
             const newUser = new UserModel({
                 _id: userObjectId,
                 twitterId,
+                inviteCodeData,
+                referralCode: generateReferralCode(),
                 wallet: {
                     privateKey,
                     publicKey
