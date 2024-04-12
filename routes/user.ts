@@ -1,5 +1,5 @@
 import express from 'express';
-import { getInGameData, getInventory, getWalletDetails, removeResources } from '../api/user';
+import { claimDailyRewards, getInGameData, getInventory, getWalletDetails, removeResources } from '../api/user';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 
@@ -90,6 +90,34 @@ router.get('/get_in_game_data', async (req, res) => {
         }
 
         const { status, message, data } = await getInGameData(validateData?.twitterId);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
+
+router.post('/claim_daily_rewards', async (req, res) => {
+    const { leaderboardName } = req.body;
+    
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'claim_daily_rewards');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
+        const { status, message, data } = await claimDailyRewards(validateData?.twitterId, leaderboardName);
 
         return res.status(status).json({
             status,

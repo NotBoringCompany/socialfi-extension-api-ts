@@ -7,13 +7,18 @@ import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
 import { RANDOMIZE_RARITY_FROM_ORB } from '../utils/constants/bitOrb';
 import { RANDOMIZE_GENDER, getBitStatsModifiersFromTraits, randomizeBitTraits } from '../utils/constants/bit';
 import { ObtainMethod } from '../models/obtainMethod';
-import { UserModel } from '../utils/constants/db';
+import { LeaderboardModel, UserModel } from '../utils/constants/db';
 import { generateBarrenIsland } from './island';
 import { POIName } from '../models/poi';
 import { solidityKeccak256 } from 'ethers/lib/utils';
 import { ethers } from 'ethers';
 import { ExtendedResource, ResourceType, SimplifiedResource } from '../models/resource';
 import { resources } from '../utils/constants/resource';
+import { DailyLoginRewardData, DailyLoginRewardType } from '../models/user';
+import { GET_DAILY_LOGIN_REWARDS } from '../utils/constants/user';
+import { QuestRewardType } from '../models/quest';
+import { Document, Mongoose } from 'mongoose';
+import { Leaderboard } from '../models/leaderboard';
 
 /**
  * Twitter login logic. Creates a new user or simply log them in if they already exist.
@@ -470,6 +475,130 @@ export const removeResources = async (twitterId: string, resourcesToRemove: Simp
         return {
             status: Status.ERROR,
             message: `(removeResources) ${err.message}`
+        }
+    }
+}
+
+/**
+ * (User) Claims the daily rewards.
+ * 
+ * As daily rewards can contain leaderboard points, optionally specify the leaderboard name to add the points to.
+ * If no leaderboard name is specified, the points will be added to the newest leaderboard.
+ */
+export const claimDailyRewards = async (
+    twitterId: string,
+    leaderboardName: string | null
+): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        const userUpdateOperations = {
+            $set: {},
+            $inc: {},
+            $push: {},
+            $pull: {}
+        }
+
+        const leaderboardUpdateOperations = {
+            $set: {},
+            $inc: {},
+            $push: {},
+            $pull: {}
+        }
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(claimDailyRewards) User not found.`
+            }
+        }
+
+        const leaderboard = leaderboardName === null ?
+            await LeaderboardModel.findOne().sort({ startTimestamp: -1 }) :
+            await LeaderboardModel.findOne({ name: leaderboardName });
+
+        if (!leaderboard) {
+            return {
+                status: Status.ERROR,
+                message: `(claimDailyRewards) Leaderboard not found.`
+            }
+        }
+
+
+        // get the user's daily login reward data
+        const dailyLoginRewardData = user.inGameData.dailyLoginRewardData as DailyLoginRewardData;
+
+        // we don't have to check if it's a new day since a scheduler will change `isDailyClaimable` to true every day at 00:00 UTC.
+        // so, we just check if `isDailyClaimable` is true. if not, return an error
+        if (!dailyLoginRewardData.isDailyClaimable) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(claimDailyRewards) Daily rewards already claimed today.`
+            }
+        }
+
+        // get the user's consecutive days claimed
+        const consecutiveDaysClaimed = dailyLoginRewardData.consecutiveDaysClaimed;
+
+        // get the daily login rewards based on the consecutive days claimed
+        const dailyLoginRewards = GET_DAILY_LOGIN_REWARDS(consecutiveDaysClaimed);
+
+        // 1. add the rewards to the user's inventory
+        // 2. increment the user's `consecutiveDaysClaimed` by 1
+        // 3. set `isDailyClaimable` to false
+        // 4. set `lastClaimedTimestamp` to the current timestamp
+        for (const reward of dailyLoginRewards) {
+            if (reward.type === DailyLoginRewardType.X_COOKIES) {
+                userUpdateOperations.$inc['inventory.xCookies'] = reward.amount;
+            } else if (reward.type === DailyLoginRewardType.LEADERBOARD_POINTS) {
+                // add the points to the leaderboard
+                // get the index of the user in the leaderboard's `userData` array
+                const userIndex = leaderboard.userData.findIndex(userData => userData.userId === user._id);
+
+                // if the user is not found in the leaderboard, add them
+                if (userIndex === -1) {
+                    leaderboardUpdateOperations.$push['userData'] = {
+                        userId: user._id,
+                        points: reward.amount
+                    }
+                } else {
+                    leaderboardUpdateOperations.$inc[`userData.${userIndex}.points`] = reward.amount;
+                }
+                // if the reward is not xCookies or leaderboard points, return an error (for now)
+            } else {
+                return {
+                    status: Status.ERROR,
+                    message: `(claimDailyRewards) Invalid reward type.`
+                }
+            }
+        }
+
+        // increment the user's `consecutiveDaysClaimed` by 1
+        userUpdateOperations.$inc['inGameData.dailyLoginRewardData.consecutiveDaysClaimed'] = 1;
+
+        // set `isDailyClaimable` to false
+        userUpdateOperations.$set['inGameData.dailyLoginRewardData.isDailyClaimable'] = false;
+
+        // set `lastClaimedTimestamp` to the current timestamp
+        userUpdateOperations.$set['inGameData.dailyLoginRewardData.lastClaimedTimestamp'] = Math.floor(Date.now() / 1000);
+
+        // execute the update operations
+        await Promise.all([
+            UserModel.updateOne({ twitterId }, userUpdateOperations),
+            LeaderboardModel.updateOne({ _id: leaderboard._id }, leaderboardUpdateOperations)
+        ]);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(claimDailyRewards) Daily rewards claimed.`,
+            data: {
+                dailyLoginRewards
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(claimDailyRewards) ${err.message}`
         }
     }
 }

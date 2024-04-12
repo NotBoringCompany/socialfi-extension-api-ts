@@ -123,3 +123,21 @@ export interface DailyLoginRewardData {
     consecutiveDaysClaimed: number;
 }
 
+/**
+ * Represents the daily login reward.
+ */
+export interface DailyLoginReward {
+    /** the type of reward */
+    type: DailyLoginRewardType;
+    /** the amount of reward */
+    amount: number;
+}
+
+/**
+ * Represents the type of daily login reward.
+ */
+export enum DailyLoginRewardType {
+    X_COOKIES = 'xCookies',
+    LEADERBOARD_POINTS = 'Leaderboard Points',
+}
+
