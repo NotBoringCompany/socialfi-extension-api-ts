@@ -16,19 +16,35 @@ import { ExtendedResource, ResourceType, SimplifiedResource } from '../models/re
 import { resources } from '../utils/constants/resource';
 import { DailyLoginRewardData, DailyLoginRewardType } from '../models/user';
 import { GET_DAILY_LOGIN_REWARDS } from '../utils/constants/user';
-import { QuestRewardType } from '../models/quest';
-import { Document, Mongoose } from 'mongoose';
-import { Leaderboard } from '../models/leaderboard';
+import { InviteCodeData } from '../models/invite';
 
 /**
  * Twitter login logic. Creates a new user or simply log them in if they already exist.
+ * 
+ * If users sign up, they are required to input an invite code (either from a starter code or a referral code).
+ * Otherwise, they can't sign up.
  */
-export const handleTwitterLogin = async (twitterId: string): Promise<ReturnValue> => {
+export const handleTwitterLogin = async (
+    twitterId: string,
+    // starterCode: string | null,
+    // referralCode: string | null
+): Promise<ReturnValue> => {
     try {
         const user = await UserModel.findOne({ twitterId }).lean();
 
         // if user doesn't exist, create a new user
         if (!user) {
+            // // if no invite code data, return an error.
+            // if (!starterCode && !referralCode) {
+            //     return {
+            //         status: Status.BAD_REQUEST,
+            //         message: `(handleTwitterLogin) Invite code is required to sign up.`
+            //     }
+            // }
+
+            ///// TO DO: CHECK IF REFERRAL CODE, IF REFERRAL CODE EXISTS.
+            //// IF STARTER CODE, IF STARTER CODE EXISTS.
+
             // generates a new object id for the user
             const userObjectId = generateObjectId();
 
@@ -103,7 +119,7 @@ export const handleTwitterLogin = async (twitterId: string): Promise<ReturnValue
                     privateKey,
                     publicKey
                 },
-                secondaryWallet: [],
+                secondaryWallets: [],
                 openedTweetIdsToday: [],
                 inventory: {
                     weight: 0,

@@ -7,6 +7,7 @@ import { CookieDepositSchema, CookieWithdrawalSchema } from '../../schemas/Cooki
 import { QuestSchema } from '../../schemas/Quest';
 import { POISchema } from '../../schemas/POI';
 import { LeaderboardSchema } from '../../schemas/Leaderboard';
+import { StarterCodeSchema } from '../../schemas/Invite';
 
 export const UserModel = mongoose.model('Users', UserSchema, 'Users');
 export const BitModel = mongoose.model('Bits', BitSchema, 'Bits');
@@ -17,3 +18,4 @@ export const CookieWithdrawalModel = mongoose.model('CookieWithdrawals', CookieW
 export const QuestModel = mongoose.model('Quests', QuestSchema, 'Quests');
 export const POIModel = mongoose.model('POI', POISchema, 'POI');
 export const LeaderboardModel = mongoose.model('Leaderboards', LeaderboardSchema, 'Leaderboards');
+export const StarterCodeModel = mongoose.model('StarterCodes', StarterCodeSchema, 'StarterCodes');

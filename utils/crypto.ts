@@ -75,3 +75,19 @@ export const generateHashSalt = (): string => {
     // keccak256 the salt 
     return solidityKeccak256(['string'], [salt]);
 }
+
+/**
+ * Generates a referral code for a user.
+ */
+export const generateReferralCode = (): string => {
+    // referral codes start with 'WBRC' and are followed by 8 random characters (all caps)
+    return 'WBRC' + CryptoJS.lib.WordArray.random(8).toString().toUpperCase();
+}
+
+/**
+ * Generates a starter code for a user.
+ */
+export const generateStarterCode = (): string => {
+    // starter codes start with 'WBSC' and are followed by 12 random characters (all caps)
+    return 'WBSC' + CryptoJS.lib.WordArray.random(12).toString().toUpperCase();
+}

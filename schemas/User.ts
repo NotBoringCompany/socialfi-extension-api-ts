@@ -10,6 +10,7 @@ export const UserSchema = new mongoose.Schema({
         default: generateObjectId()
     },
     twitterId: String,
+    inviteCodeData: Object,
     wallet: Object,
     secondaryWallets: Array,
     openedTweetIdsToday: Array,
