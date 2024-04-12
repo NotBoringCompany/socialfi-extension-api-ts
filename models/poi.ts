@@ -46,17 +46,21 @@ export interface POIShopGlobalItem {
     /** 
      * the amount of this item that can be bought (by everyone)
      * e.g. only 50 can be bought; user 1 buys 40, user 2 buys 10. no other user can buy anymore.
+     * 
+     * if 'infinite', then there is no limit to the amount that can be bought until otherwise specified.
      */
-    buyableAmount: number;
+    buyableAmount: number | 'infinite';
     /** 
      * the amount of this item that can be sold (by everyone) 
      * e.g. only 50 can be sold; user 1 sells 40, user 2 sells 10. no other user can sell anymore.
+     * 
+     * if 'infinite', then there is no limit to the amount that can be bought until otherwise specified.
      */
-    sellableAmount: number;
+    sellableAmount: number | 'infinite';
     /** the item's buying price (if the user wants to buy 1 of this item) */
-    buyingPrice: POIShopItemBuyingPrice[];
+    buyingPrice: POIShopItemBuyingPrice;
     /** the item's selling price (what the user can get if they sell 1 of this item) */
-    sellingPrice: POIShopItemSellingPrice[];
+    sellingPrice: POIShopItemSellingPrice;
 }
 
 /**
@@ -65,14 +69,32 @@ export interface POIShopGlobalItem {
 export interface POIShopPlayerItem {
     /** the item name */
     name: POIShopItemName;
+    /**
+     * the amount of this item that can be bought by each player respectively.
+     * 
+     * unlike `buyableAmount` in `POIShopGlobalItem`, this value doesn't decrease when users buy this item.
+     * instead, the `boughtAmount` in `userTransactionData` will be updated to check if the user has reached the limit.
+     * 
+     * if 'infinite', then there is no limit to the amount that can be bought until otherwise specified.
+     */
+    buyableAmount: number | 'infinite';
+    /**
+     * the amount of this item that can be sold by each player respectively.
+     * 
+     * unlike `sellableAmount` in `POIShopGlobalItem`, this value doesn't decrease when users sell this item.
+     * instead, the `soldAmount` in `userTransactionData` will be updated to check if the user has reached the limit.
+     * 
+     * if 'infinite', then there is no limit to the amount that can be sold until otherwise specified.
+     */
+    sellableAmount: number | 'infinite';
     /** the item's buying price (if the user wants to buy 1 of this item) */
-    buyingPrice: POIShopItemBuyingPrice[];
+    buyingPrice: POIShopItemBuyingPrice;
     /** the item's selling price (what the user can get if they sell 1 of this item) */
-    sellingPrice: POIShopItemSellingPrice[];
+    sellingPrice: POIShopItemSellingPrice;
     /** 
      * the transaction data for each user for this item.
      * 
-     * this includes the amount of this item that has been bought/sold, and the buying/selling limit for each user for this item.
+     * this includes the amount of this item that has been bought/sold.
      */
     userTransactionData: ShopItemUserTransactionData[];
 }
@@ -84,10 +106,18 @@ export interface ShopItemUserTransactionData {
     boughtAmount: number;
     /** the amount of this item that has been sold by this user */
     soldAmount: number;
-    /** the buying limit for this user for this item */
-    buyingLimit: number;
-    /** the selling limit for this user for this item */
-    sellingLimit: number;
+    // /** 
+    //  * the buying limit for this user for this item 
+    //  * 
+    //  * if 'infinite', then there is no limit to the amount that can be bought until otherwise specified.
+    //  */
+    // buyingLimit: number | 'infinite';
+    // /** 
+    //  * the selling limit for this user for this item 
+    //  * 
+    //  * if 'infinite', then there is no limit to the amount that can be sold until otherwise specified.
+    //  */
+    // sellingLimit: number | 'infinite';
 }
 
 /**
@@ -110,6 +140,12 @@ export enum POIShopItemName {
     HONEY = 'Honey',
     MOONLIGHT_DEW = 'Moonlight Dew',
     PHOENIX_TEAR = 'Phoenix Tear',
+    CANDY = 'Candy',
+    CHOCOLATE = 'Chocolate',
+    JUICE = 'Juice',
+    BURGER = 'Burger',
+    TERRA_CAPSULATOR = 'Terra Capsulator',
+    BIT_ORB = 'Bit Orb',
 }
 
 /**
@@ -130,4 +166,12 @@ export interface POIShopItemBuyingPrice {
 export interface POIShopItemSellingPrice {
     /** leaderboard points (will be divided once more leaderboards are established) */
     leaderboardPoints: number | 'unavailable';
+}
+
+/**
+ * Represents single or batch buying or selling of a POI shop item.
+ */
+export interface POIShopActionItemData {
+    item: POIShopItemName,
+    amount: number,
 }

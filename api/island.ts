@@ -8,13 +8,14 @@ import { BarrenResource, ExtendedResource, ExtendedResourceOrigin, Resource, Res
 import { UserSchema } from '../schemas/User';
 import { Modifier } from '../models/modifier';
 import { BitSchema } from '../schemas/Bit';
-import { Bit, BitRarity, BitRarityNumeric, BitStatsModifiers, BitTrait } from '../models/bit';
+import { Bit, BitRarity, BitRarityNumeric, BitStatsModifiers, BitTrait, BitTraitData } from '../models/bit';
 import { generateObjectId } from '../utils/crypto';
 import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
 import { ObtainMethod } from '../models/obtainMethod';
 import { RELOCATION_COOLDOWN } from '../utils/constants/bit';
 import { User } from '../models/user';
 import { getResource, resources } from '../utils/constants/resource';
+import { BoosterItem, Item } from '../models/item';
 
 /**
  * Generates a barren island. This is called when a user signs up or when a user obtains and opens a bottled message.
@@ -660,8 +661,8 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
             islandUpdateOperations.$set[`islandStatsModifiers.gatheringRateModifiers.${gatheringRateModifierIndex}.value`] = newValue;
         }
 
-        // check if the to-be-put bit is the first one; if yes, start the `gatheringStart` timestamp
-        if (island.placedBitIds.length === 0) {
+        // check if the to-be-put bit is the first one; if yes, start the `gatheringStart` timestamp (assuming it hasn't started yet)
+        if (island.placedBitIds.length === 0 && island.islandResourceStats.gatheringStart === 0) {
             islandUpdateOperations.$set['islandResourceStats.gatheringStart'] = Math.floor(Date.now() / 1000);
         }
 
@@ -682,6 +683,7 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
         ]);
 
         // update the other bits' modifiers and also if applicable the island's modifiers with the bit's traits
+        // also updates the to-be-placed bit's modifiers if other bits have traits that impact it
         await updateExtendedTraitEffects(bit, island);
 
         return {
@@ -797,7 +799,7 @@ export const unplaceBit = async (twitterId: string, bitId: number): Promise<Retu
         })
 
         // remove any modifiers that has to do with the bit's traits from the island and its bits
-        const bitTraits = bit.traits;
+        const bitTraits = bit.traits as BitTraitData[];
 
         // loop through each trait and see if they impact the island's modifiers or other bits' modifiers
         // right now, these traits are:
@@ -805,43 +807,79 @@ export const unplaceBit = async (twitterId: string, bitId: number): Promise<Retu
         for (const trait of bitTraits) {
             const otherBits = await BitModel.find({ bitId: { $in: island.placedBitIds } }).lean();
 
-            console.log('current trait to check when unplacing Bit: ', trait);
-
             // if the trait is genius, remove modifiers from the island's `gatheringRateModifiers` and `earningRateModifiers`
             if (
-                trait === BitTrait.GENIUS
+                trait.trait === BitTrait.GENIUS ||
+                trait.trait === BitTrait.SLOW ||
+                trait.trait === BitTrait.QUICK
             ) {
-                // remove the modifier from the island's `gatheringRateModifiers` and `earningRateModifiers`
-                islandUpdateOperations.$pull['islandStatsModifiers.gatheringRateModifiers'] = { origin: `Bit ID #${bit.bitId}'s Trait: ${trait}` };
-                islandUpdateOperations.$pull['islandStatsModifiers.earningRateModifiers'] = { origin: `Bit ID #${bit.bitId}'s Trait: ${trait}` };
+                console.log(`unplaceBit ID ${bit.bitId}'s trait is ${trait}`);
+
+                // find the index of the modifier in the island's `gatheringRateModifiers` and `earningRateModifiers`
+                const gatheringRateModifierIndex = (island.islandStatsModifiers?.gatheringRateModifiers as Modifier[]).findIndex(modifier => modifier.origin.includes(`Bit ID #${bit.bitId}`));
+                const earningRateModifierIndex = (island.islandStatsModifiers?.earningRateModifiers as Modifier[]).findIndex(modifier => modifier.origin.includes(`Bit ID #${bit.bitId}`));
+
+                console.log('gathering rate modifier index: ', gatheringRateModifierIndex);
+                console.log('earning rate modifier index: ', earningRateModifierIndex);
+
+                // if the modifier is found, remove it from the island's `gatheringRateModifiers` and `earningRateModifiers`
+                if (gatheringRateModifierIndex !== -1) {
+                    islandUpdateOperations.$pull['islandStatsModifiers.gatheringRateModifiers'] = island.islandStatsModifiers?.gatheringRateModifiers[gatheringRateModifierIndex];
+                }
+
+                if (earningRateModifierIndex !== -1) {
+                    islandUpdateOperations.$pull['islandStatsModifiers.earningRateModifiers'] = island.islandStatsModifiers?.earningRateModifiers[earningRateModifierIndex];
+                }
                 // if trait is teamworker, leader, cute or lonewolf, remove modifiers for each bit that was impacted by this bit's trait
             } else if (
-                trait === BitTrait.TEAMWORKER ||
-                trait === BitTrait.LEADER ||
-                trait === BitTrait.CUTE ||
-                trait === BitTrait.LONEWOLF
+                trait.trait === BitTrait.TEAMWORKER ||
+                trait.trait === BitTrait.LEADER ||
+                trait.trait === BitTrait.CUTE ||
+                trait.trait === BitTrait.LONEWOLF
             ) {
                 for (const otherBit of otherBits) {
-                    // remove the modifier from the bit's `gatheringRateModifiers` and `earningRateModifiers`
-                    bitUpdateOperations.push({
-                        bitId: otherBit.bitId,
-                        updateOperations: {
-                            $pull: {
-                                'bitStatsModifiers.gatheringRateModifiers': { origin: `Bit ID #${bit.bitId}'s Trait: ${trait}` },
-                                'bitStatsModifiers.earningRateModifiers': { origin: `Bit ID #${bit.bitId}'s Trait: ${trait}` }
-                            },
-                            $inc: {},
-                            $set: {},
-                            $push: {}
-                        }
-                    });
+                    // check the index of the modifier in the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                    const gatheringRateModifierIndex = (otherBit.bitStatsModifiers?.gatheringRateModifiers as Modifier[]).findIndex(modifier => modifier.origin.includes(`Bit ID #${bit.bitId}`));
+                    const earningRateModifierIndex = (otherBit.bitStatsModifiers?.earningRateModifiers as Modifier[]).findIndex(modifier => modifier.origin.includes(`Bit ID #${bit.bitId}`));
+
+                    // if the modifier is found, remove it from the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                    if (gatheringRateModifierIndex !== -1) {
+                        bitUpdateOperations.push({
+                            bitId: otherBit.bitId,
+                            updateOperations: {
+                                $pull: {
+                                    'bitStatsModifiers.gatheringRateModifiers': otherBit.bitStatsModifiers?.gatheringRateModifiers[gatheringRateModifierIndex]
+                                },
+                                $inc: {},
+                                $set: {},
+                                $push: {}
+                            }
+                        });
+                    }
+
+                    if (earningRateModifierIndex !== -1) {
+                        bitUpdateOperations.push({
+                            bitId: otherBit.bitId,
+                            updateOperations: {
+                                $pull: {
+                                    'bitStatsModifiers.earningRateModifiers': otherBit.bitStatsModifiers?.earningRateModifiers[earningRateModifierIndex]
+                                },
+                                $inc: {},
+                                $set: {},
+                                $push: {}
+                            }
+                        });
+                    }
                 }
             }
         }
 
         const bitUpdatePromises = bitUpdateOperations.map(async op => {
             return BitModel.updateOne({ bitId: op.bitId }, op.updateOperations);
-        })
+        });
+
+        console.log('island update operations: ', islandUpdateOperations);
+        console.log('bit update operations: ', bitUpdateOperations);
 
         // execute the update operations
         await Promise.all([
@@ -1100,6 +1138,134 @@ export const updateExtendedTraitEffects = async (
         // if bit trait is none of the above, skip this trait
         } else {
             continue;
+        }
+    }
+
+    // now, we also need to see if the other bits have traits that impact the to-be-placed bit's modifiers
+    // these traits include: teamworker, leader, cute and lonewolf
+    const otherBits = await BitModel.find({ bitId: { $in: otherBitIds } }).lean();
+
+    if (otherBits.length > 0) {
+        // loop through each bit and check if they have the aforementioned traits.
+        for (const otherBit of otherBits) {
+            const traits = otherBit.traits as BitTraitData[];
+
+            for (const trait of traits) {
+                // if this `otherBit`'s trait contains 'teamworker', check if the to-be-placed's bit rarity is the same or lesser rarity than the `otherBit`'s rarity.
+                // if yes, add 5% gathering and earning rate to the to-be-placed bit
+                if (trait.trait === BitTrait.TEAMWORKER) {
+                    if (BitRarityNumeric[bit.rarity] <= BitRarityNumeric[otherBit.rarity]) {
+                        // add the new modifier to the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                        const newGatheringRateModifier: Modifier = {
+                            origin: `Bit ID #${otherBit.bitId}'s Trait: Teamworker`,
+                            value: 1.05
+                        }
+
+                        const newEarningRateModifier: Modifier = {
+                            origin: `Bit ID #${otherBit.bitId}'s Trait: Teamworker`,
+                            value: 1.05
+                        }
+
+                        // add the new modifier to the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                        bitUpdateOperations.push({
+                            bitId: bit.bitId,
+                            updateOperations: {
+                                $push: {
+                                    'bitStatsModifiers.gatheringRateModifiers': newGatheringRateModifier,
+                                    'bitStatsModifiers.earningRateModifiers': newEarningRateModifier
+                                },
+                                $pull: {},
+                                $inc: {},
+                                $set: {}
+                            }
+                        });
+                    } 
+                } 
+
+                // if the other bit's trait is leader, add 10% gathering and earning rate to the to-be-placed bit
+                if (trait.trait === BitTrait.LEADER) {
+                    // add the new modifier to the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                    const newGatheringRateModifier: Modifier = {
+                        origin: `Bit ID #${otherBit.bitId}'s Trait: Leader`,
+                        value: 1.1
+                    }
+
+                    const newEarningRateModifier: Modifier = {
+                        origin: `Bit ID #${otherBit.bitId}'s Trait: Leader`,
+                        value: 1.1
+                    }
+
+                    // add the new modifier to the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                    bitUpdateOperations.push({
+                        bitId: bit.bitId,
+                        updateOperations: {
+                            $push: {
+                                'bitStatsModifiers.gatheringRateModifiers': newGatheringRateModifier,
+                                'bitStatsModifiers.earningRateModifiers': newEarningRateModifier
+                            },
+                            $pull: {},
+                            $inc: {},
+                            $set: {}
+                        }
+                    });
+                }
+
+                // if the other bit's trait is cute, add 12.5% gathering and earning rate to the to-be-placed bit
+                if (trait.trait === BitTrait.CUTE) {
+                    // add the new modifier to the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                    const newGatheringRateModifier: Modifier = {
+                        origin: `Bit ID #${otherBit.bitId}'s Trait: Cute`,
+                        value: 1.125
+                    }
+
+                    const newEarningRateModifier: Modifier = {
+                        origin: `Bit ID #${otherBit.bitId}'s Trait: Cute`,
+                        value: 1.125
+                    }
+
+                    // add the new modifier to the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                    bitUpdateOperations.push({
+                        bitId: bit.bitId,
+                        updateOperations: {
+                            $push: {
+                                'bitStatsModifiers.gatheringRateModifiers': newGatheringRateModifier,
+                                'bitStatsModifiers.earningRateModifiers': newEarningRateModifier
+                            },
+                            $pull: {},
+                            $inc: {},
+                            $set: {}
+                        }
+                    });
+                }
+
+                // if the other bit's trait is lonewolf, reduce 5% gathering and earning rate to the to-be-placed bit
+                if (trait.trait === BitTrait.LONEWOLF) {
+                    // add the new modifier to the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                    const newGatheringRateModifier: Modifier = {
+                        origin: `Bit ID #${otherBit.bitId}'s Trait: Lonewolf`,
+                        value: 0.95
+                    }
+
+                    const newEarningRateModifier: Modifier = {
+                        origin: `Bit ID #${otherBit.bitId}'s Trait: Lonewolf`,
+                        value: 0.95
+                    }
+
+                    // add the new modifier to the bit's `gatheringRateModifiers` and `earningRateModifiers`
+                    bitUpdateOperations.push({
+                        bitId: bit.bitId,
+                        updateOperations: {
+                            $push: {
+                                'bitStatsModifiers.gatheringRateModifiers': newGatheringRateModifier,
+                                'bitStatsModifiers.earningRateModifiers': newEarningRateModifier
+                            },
+                            $pull: {},
+                            $inc: {},
+                            $set: {}
+                        }
+                    });
+                }
+            }
         }
     }
 
@@ -1434,6 +1600,239 @@ export const updateClaimableXCookies = async (): Promise<void> => {
         console.log(`(updateClaimableXCookies) All islands' claimableXCookies have been updated.`);
     } catch (err: any) {
         console.error(`(updateClaimableXCookies) Error: ${err.message}`);
+    }
+}
+
+/**
+ * Applies a Gathering Progress booster to boost an island's gathering progress and potentially drop resources.
+ */
+export const applyGatheringProgressBooster = async (
+    twitterId: string,
+    islandId: number,
+    booster: BoosterItem
+): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        const userUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const islandUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(applyGatheringProgressBooster) User not found.`
+            }
+        }
+
+        // check if the user owns the island
+        if (!(user.inventory?.islandIds as number[]).includes(islandId)) {
+            return {
+                status: Status.UNAUTHORIZED,
+                message: `(applyGatheringProgressBooster) User does not own the island.`
+            }
+        }
+
+        // get the island
+        const island = await IslandModel.findOne({ islandId }).lean();
+
+        if (!island) {
+            return {
+                status: Status.ERROR,
+                message: `(applyGatheringProgressBooster) Island not found.`
+            }
+        }
+
+        // check if the gathering of the island has started. if not, return an error
+        if (island.islandResourceStats?.gatheringStart === 0) {
+            return {
+                status: Status.ERROR,
+                message: `(applyGatheringProgressBooster) Gathering rate has not started for Island ID ${islandId}.`
+            }
+        }
+
+        // check if the gathering of the island has ended. if yes, return an error
+        if (island.islandResourceStats?.gatheringEnd !== 0) {
+            return {
+                status: Status.ERROR,
+                message: `(applyGatheringProgressBooster) Gathering rate has ended for Island ID ${islandId}.`
+            }
+        }
+
+        // check if the user owns the booster
+        const boosterIndex = (user.inventory.items as Item[]).findIndex(item => item.type === booster);
+
+        if (boosterIndex === -1) {
+            return {
+                status: Status.ERROR,
+                message: `(applyGatheringProgressBooster) User does not own the booster.`
+            }
+        }
+
+        // for boosters that are greater than 100%, that means that 1 or more resources will be dropped.
+        // in this case, we need to check if the resources the island can gather left is greater than the resources the booster will drop.
+        // if not, we throw an error.
+        // get only resources that have an origin of `ExtendedResourceOrigin.NORMAL`
+        const normalResourcesGathered = (island.islandResourceStats?.resourcesGathered as ExtendedResource[]).filter(resource => resource.origin === ExtendedResourceOrigin.NORMAL);
+        const resourcesLeft = island.islandResourceStats?.baseResourceCap - normalResourcesGathered.length;
+
+        // boosters will be something like 'Gathering Progress Booster 200%', so we need to get the percentage
+        const boosterPercentage = parseFloat(booster.split(' ')[3]);
+
+        // if the booster is less than 100, get the current `gatheringProgress` of the island.
+        if (boosterPercentage < 100) {
+            const gatheringProgress = island.islandResourceStats?.gatheringProgress;
+
+            // if the gathering progress + booster percentage is greater than 100:
+            // 1. drop a resource
+            // 2. reset the gathering progress to the remaining overflow of %
+            if (gatheringProgress + boosterPercentage > 100) {
+                // check if a single resource can be dropped
+                if (resourcesLeft === 0) {
+                    return {
+                        status: Status.ERROR,
+                        message: `(applyGatheringProgressBooster) Island ID ${islandId} has no resources left to drop. Cannot apply booster.`
+                    }
+                }
+
+                // calculate the remaining overflow of %
+                const finalGatheringProgress = (gatheringProgress + boosterPercentage) - 100;
+
+                // reset the gathering progress back to 0 + the remaining overflow of %
+                islandUpdateOperations.$set['islandResourceStats.gatheringProgress'] = finalGatheringProgress;
+
+                // check if there is only 1 of this booster left. if yes, remove the booster from the user's inventory.
+                // if not, decrement the booster by 1.
+                if ((user.inventory.items as Item[])[boosterIndex].amount === 1) {
+                    userUpdateOperations.$pull[`inventory.items`] = { type: booster };
+                } else {
+                    userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = -1;
+                }
+
+                // drop a resource
+                const { status, message } = await dropResource(islandId);
+
+                if (status !== Status.SUCCESS) {
+                    return {
+                        status: Status.ERROR,
+                        message: `(applyGatheringProgressBooster) Error: ${message}`
+                    }
+                }
+
+                // execute the update operations
+                await Promise.all([
+                    UserModel.updateOne({ twitterId }, userUpdateOperations),
+                    IslandModel.updateOne({ islandId }, islandUpdateOperations)
+                ]);
+
+                return {
+                    status: Status.SUCCESS,
+                    message: `(applyGatheringProgressBooster) Gathering Progress Booster applied successfully for Island ID ${islandId}.`,
+                    data: {
+                        gatheringProgressData: {
+                            prevGatheringProgress: gatheringProgress,
+                            finalGatheringProgress,
+                            resourcesDropped: 1
+                        },
+                        booster
+                    }
+                }
+            // if not, just increment the gathering progress by the booster percentage and deduct the booster from the user's inventory.
+            } else {
+                islandUpdateOperations.$inc['islandResourceStats.gatheringProgress'] = boosterPercentage;
+
+                // check if there is only 1 of this booster left. if yes, remove the booster from the user's inventory.
+                // if not, decrement the booster by 1.
+                if ((user.inventory.items as Item[])[boosterIndex].amount === 1) {
+                    userUpdateOperations.$pull[`inventory.items`] = { type: booster };
+                } else {
+                    userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = -1;
+                }
+
+                // execute the update operations
+                await Promise.all([
+                    UserModel.updateOne({ twitterId }, userUpdateOperations),
+                    IslandModel.updateOne({ islandId }, islandUpdateOperations)
+                ]);
+
+                return {
+                    status: Status.SUCCESS,
+                    message: `(applyGatheringProgressBooster) Gathering Progress Booster applied successfully for Island ID ${islandId}.`,
+                    data: {
+                        gatheringProgressData: {
+                            prevGatheringProgress: gatheringProgress,
+                            finalGatheringProgress: gatheringProgress + boosterPercentage
+                        },
+                        booster
+                    }
+                }
+            }
+        // if the booster is greater than 100,
+        // 1. check the final non-modulo gathering progress. e.g. if the current gathering progress is 70 and a 500% booster is applied, the non-modulo progress will be 570%.
+        // 2. this means that Math.floor(570/100) = 5 resources will be dropped, and the final gathering progress will be 70.
+        } else {
+            const gatheringProgress = island.islandResourceStats?.gatheringProgress;
+            const finalNonModuloGatheringProgress = gatheringProgress + boosterPercentage;
+            const resourcesToDrop = Math.floor(finalNonModuloGatheringProgress / 100);
+
+            // check if the resources to drop is greater than the resources left
+            if (resourcesToDrop > resourcesLeft) {
+                return {
+                    status: Status.ERROR,
+                    message: `(applyGatheringProgressBooster) Island ID ${islandId} does not have enough resources left to drop. Cannot apply booster.`
+                }
+            }
+
+            // update the island's final gathering progress after moduloing it by 100
+            islandUpdateOperations.$set['islandResourceStats.gatheringProgress'] = gatheringProgress % 100;
+
+            // check if there is only 1 of this booster left. if yes, remove the booster from the user's inventory.
+            // if not, decrement the booster by 1.
+            if ((user.inventory.items as Item[])[boosterIndex].amount === 1) {
+                userUpdateOperations.$pull[`inventory.items`] = { type: booster };
+            } else {
+                userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = -1;
+            }
+
+            // call the `dropResource` function `resourcesToDrop` times
+            // we need to efficiently call this though
+            const dropResourcePromises = Array.from({ length: resourcesToDrop }, async () => dropResource(islandId));
+
+            // execute the update operations and the drop resource promises
+            await Promise.all([
+                UserModel.updateOne({ twitterId }, userUpdateOperations),
+                IslandModel.updateOne({ islandId }, islandUpdateOperations),
+                ...dropResourcePromises
+            ]);
+
+            return {
+                status: Status.SUCCESS,
+                message: `(applyGatheringProgressBooster) Gathering Progress Booster applied successfully for Island ID ${islandId}.`,
+                data: {
+                    gatheringProgressData: {
+                        prevGatheringProgress: gatheringProgress,
+                        finalGatheringProgress: gatheringProgress % 100,
+                        resourcesDropped: resourcesToDrop
+                    },
+                    booster
+                }
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(applyGatheringProgressBooster) Error: ${err.message}`
+        }
     }
 }
 

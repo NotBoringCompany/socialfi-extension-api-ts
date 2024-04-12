@@ -16,32 +16,38 @@ export const POISchema = new mongoose.Schema({
     },
     shop: {
         globalItems: [{
+            _id: false,
             name: String,
-            buyableAmount: Number,
-            sellableAmount: Number,
-            buyingPrice: [{
+            buyableAmount: { type: mongoose.SchemaTypes.Mixed },
+            sellableAmount: { type: mongoose.SchemaTypes.Mixed },
+            buyingPrice: {
+                _id: false,
                 xCookies: { type: mongoose.SchemaTypes.Mixed },
                 cookieCrumbs: { type: mongoose.SchemaTypes.Mixed },
-            }],
-            sellingPrice: [{
+            },
+            sellingPrice: {
+                _id: false,
                 leaderboardPoints: { type: mongoose.SchemaTypes.Mixed },
-            }],
+            },
         }],
         playerItems: [{
+            _id: false,
             name: String,
-            buyingPrice: [{
+            buyableAmount: { type: mongoose.SchemaTypes.Mixed },
+            sellableAmount: { type: mongoose.SchemaTypes.Mixed },
+            buyingPrice: {
+                _id: false,
                 xCookies: { type: mongoose.SchemaTypes.Mixed },
                 cookieCrumbs: { type: mongoose.SchemaTypes.Mixed },
-            }],
-            sellingPrice: [{
+            },
+            sellingPrice: {
+                _id: false,
                 leaderboardPoints: { type: mongoose.SchemaTypes.Mixed },
-            }],
+            },
             userTransactionData: [{
                 userId: String,
                 boughtAmount: Number,
                 soldAmount: Number,
-                buyingLimit: Number,
-                sellingLimit: Number,
             }],
         }],
     },

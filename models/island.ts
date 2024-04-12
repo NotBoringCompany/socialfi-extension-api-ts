@@ -95,7 +95,7 @@ export interface IslandResourceStats {
     lastClaimed: number;
     /** gathering progress to gather 1 RESOURCE (not all resources); will be from 0 to 100
      * once progress goes > 100, it will gather 1 resource and reset back to 0 + any overflow of %
-     * (UPDATED PER HOUR)
+     * (UPDATED PER 10 MINS)
      */
     gatheringProgress: number;
 }

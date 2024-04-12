@@ -1,7 +1,7 @@
 import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
-import { addPOI, getAvailablePOIDestinations, getCurrentLocation, travelToPOI, updateArrival } from '../api/poi';
+import { addOrReplacePOIShop, addPOI, applyTravelBooster, buyItemsInPOIShop, getAvailablePOIDestinations, getCurrentLocation, getCurrentPOI, getUserTransactionData, sellItemsInPOIShop, travelToPOI, updateArrival } from '../api/poi';
 
 const router = express.Router();
 
@@ -63,13 +63,15 @@ router.post('/travel_to_poi', async (req, res) => {
     }
 })
 
-router.get('/get_current_location', async (req, res) => {
+router.post('/apply_travel_booster', async (req, res) => {
+    const { booster } = req.body;
+
     try {
         const {
             status: validateStatus,
             message: validateMessage,
             data: validateData,
-        } = await validateRequestAuth(req, res, 'get_current_location');
+        } = await validateRequestAuth(req, res, 'apply_travel_booster');
 
         if (validateStatus !== Status.SUCCESS) {
             return res.status(validateStatus).json({
@@ -78,12 +80,11 @@ router.get('/get_current_location', async (req, res) => {
             });
         }
 
-        const { status, message, data } = await getCurrentLocation(validateData?.twitterId);
+        const { status, message } = await applyTravelBooster(validateData?.twitterId, booster);
 
         return res.status(status).json({
             status,
-            message,
-            data
+            message
         });
     } catch (err: any) {
         return res.status(500).json({
@@ -91,7 +92,8 @@ router.get('/get_current_location', async (req, res) => {
             message: err.message
         })
     }
-});
+
+})
 
 router.get('/get_available_poi_destinations', async (req, res) => {
     try {
@@ -143,6 +145,145 @@ router.post('/update_arrival', async (req, res) => {
         return res.status(status).json({
             status,
             message
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+});
+
+router.post('/add_or_replace_poi_shop', async (req, res) => {
+    const { poiName, shop, adminKey } = req.body;
+
+    try {
+        const { status: validateStatus, message: validateMessage } = await validateRequestAuth(req, res, 'add_or_replace_poi_shop');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
+        const { status, message } = await addOrReplacePOIShop(poiName, shop, adminKey);
+
+        return res.status(status).json({
+            status,
+            message
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
+
+router.get('/get_current_poi', async (req, res) => {
+    try {
+        const {
+            status: validateStatus,
+            message: validateMessage,
+            data: validateData,
+        } = await validateRequestAuth(req, res, 'get_current_poi');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage,
+            });
+        }
+
+        const { status, message, data } = await getCurrentPOI(validateData?.twitterId);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+});
+
+router.post('/sell_items_in_poi_shop', async (req, res) => {
+    const { items, leaderboardName } = req.body;
+
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'sell_items_in_poi_shop');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
+        const { status, message, data } = await sellItemsInPOIShop(validateData?.twitterId, items, leaderboardName);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+});
+
+router.post('/buy_items_in_poi_shop', async (req, res) => {
+    const { items, paymentChoice } = req.body;
+
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'buy_items_in_poi_shop');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
+        const { status, message, data } = await buyItemsInPOIShop(validateData?.twitterId, items, paymentChoice);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+});
+
+router.get('/get_user_transaction_data', async (req, res) => {
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'get_user_transaction_data');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
+        const { status, message, data } = await getUserTransactionData(validateData?.twitterId);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
         });
     } catch (err: any) {
         return res.status(500).json({
