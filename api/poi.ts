@@ -268,180 +268,6 @@ export const applyTravelBooster = async (
     }
 }
 
-// /**
-//  * (User) Travels to a different POI. Requires time.
-//  */
-// export const travelToPOI = async (
-//     twitterId: string,
-//     destination: POIName,
-//     // booster: BoosterItem | null
-// ): Promise<ReturnValue> => {
-//     try {
-//         const user = await UserModel.findOne({ twitterId });
-
-//         const userUpdateOperations = {
-//             $pull: {},
-//             $inc: {},
-//             $set: {},
-//             $push: {}
-//         }
-
-//         if (!user) {
-//             return {
-//                 status: Status.ERROR,
-//                 message: `(travelToPOI) User not found.`
-//             }
-//         }
-
-//         // get the current POI the user is in
-//         const currentPOI: POIName = user.inGameData.location;
-
-//         if (currentPOI === destination) {
-//             return {
-//                 status: Status.BAD_REQUEST,
-//                 message: `(travelToPOI) User is already in ${destination}.`
-//             }
-//         }
-
-//         // if the user is already travelling to a different POI, return an error
-//         if (user.inGameData.travellingTo) {
-//             return {
-//                 status: Status.BAD_REQUEST,
-//                 message: `(travelToPOI) User is already travelling to ${user.inGameData.travellingTo}.`
-//             }
-//         }
-        
-//         // // check if the user has at least 1 of the booster item if specified
-//         // if (booster) {
-//         //     const boosterIndex = (user.inventory.items as Item[]).findIndex(item => item.type === booster);
-
-//         //     if (boosterIndex === -1) {
-//         //         return {
-//         //             status: Status.BAD_REQUEST,
-//         //             message: `(travelToPOI) Booster item not found in user's inventory.`
-//         //         }
-//         //     }
-
-//         //     // if booster specified doesn't contain "Raft Speed Booster", return an error
-//         //     if (!booster.includes('Raft Speed Booster')) {
-//         //         return {
-//         //             status: Status.BAD_REQUEST,
-//         //             message: `(travelToPOI) Invalid booster item.`
-//         //         }
-//         //     }
-//         // }
-
-//         // get the user's raft and current POI data
-//         const [raft, currentPOIData] = await Promise.all([
-//             RaftModel.findOne({ raftId: user.inventory.raftId }).lean(),
-//             POIModel.findOne({ name: currentPOI }).lean()
-//         ]);
-
-//         const distanceToDestination = currentPOIData.distanceTo[destination];
-
-//         // get the raft speed
-//         const raftSpeed = ACTUAL_RAFT_SPEED(raft.stats.baseSpeed, raft.currentLevel);
-
-//         // calculate the time it takes to travel to the destination
-//         let timeToTravel = distanceToDestination / raftSpeed;
-
-//         // get the current timestamp
-//         const currentTime = Math.floor(Date.now() / 1000);
-
-//         // if the booster exists, reduce the time taken to travel by the booster's effect.
-//         if (booster) {
-//             // check if the booster is the 100% booster
-//             // if it is, then the user will immediately arrive at the destination.
-//             if (booster === BoosterItem.RAFT_SPEED_BOOSTER_100) {
-//                 // set the user's in game location to the destination and reduce the booster item by 1.
-//                 const boosterIndex = (user.inventory.items as Item[]).findIndex(item => item.type === booster);
-
-//                 if (boosterIndex === -1) {
-//                     return {
-//                         status: Status.BAD_REQUEST,
-//                         message: `(travelToPOI) Booster item not found in user's inventory.`
-//                     }
-//                 }
-
-//                 // check if there is only 1 of this booster left. if yes, remove the booster from the user's inventory.
-//                 // if not, decrement the booster by 1.
-//                 if ((user.inventory.items as Item[])[boosterIndex].amount === 1) {
-//                     userUpdateOperations.$pull[`inventory.items`] = { type: booster };
-//                 } else {
-//                     userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = -1;
-//                 }
-
-//                 // update the user's location to the destination
-//                 userUpdateOperations.$set = {
-//                     'inGameData.location': destination
-//                 }
-
-//                 // update the user's data
-//                 await UserModel.updateOne({ twitterId }, userUpdateOperations);
-
-//                 return {
-//                     status: Status.SUCCESS,
-//                     message: `(travelToPOI) User arrived at ${destination} instantly due to 100% booster effect.`,
-//                     data: {
-//                         destination,
-//                         timeToTravel: 0,
-//                         booster
-//                     }
-//                 }
-//             // if it's not the 100% booster, then we reduce the time taken to travel by the booster's effect.
-//             } else {
-//                 // the name contains the booster's effect in a percentage of the original time taken to travel.
-//                 // e.g. 'Raft Speed Booster 10%' will reduce the time taken to travel by 10%.
-//                 const boosterEffect = parseInt(booster.split(' ')[3].replace('%', '')) / 100;
-
-//                 timeToTravel -= timeToTravel * boosterEffect;
-
-//                 const boosterIndex = (user.inventory.items as Item[]).findIndex(item => item.type === booster);
-
-//                 if (boosterIndex === -1) {
-//                     return {
-//                         status: Status.BAD_REQUEST,
-//                         message: `(travelToPOI) Booster item not found in user's inventory.`
-//                     }
-//                 }
-
-//                 // check if there is only 1 of this booster left. if yes, remove the booster from the user's inventory.
-//                 // if not, decrement the booster by 1.
-//                 if ((user.inventory.items as Item[])[boosterIndex].amount === 1) {
-//                     userUpdateOperations.$pull[`inventory.items`] = { type: booster };
-//                 } else {
-//                     userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = -1;
-//                 }
-
-//                 // set `travellingTo` in the user's inGameData to the destination
-//                 // set `destinationArrival` in the user's inGameData to the current time + timeToTravel
-//                 userUpdateOperations.$set = {
-//                     'inGameData.travellingTo': destination,
-//                     'inGameData.destinationArrival': Math.ceil(currentTime + timeToTravel)
-//                 }
-
-//                 // update the user's data
-//                 await UserModel.updateOne({ twitterId }, userUpdateOperations);
-
-//                 return {
-//                     status: Status.SUCCESS,
-//                     message: `(travelToPOI) Travelling to ${destination}. Arrival in ${timeToTravel} seconds. Booster ${booster} applied.`,
-//                     data: {
-//                         destination,
-//                         timeToTravel,
-//                         booster
-//                     }
-//                 }
-//             }
-//         }
-//     } catch (err: any) {
-//         return {
-//             status: Status.ERROR,
-//             message: `(travelToPOI) ${err.message}`
-//         }
-//     }
-// }
-
 /**
  * Called when the user has arrived at their destination (from the frontend).
  */
@@ -880,6 +706,9 @@ export const sellItemsInPOIShop = async (
             }
         }
 
+        // total weight from the user's inventory to reduce if resources are removed.
+        let totalWeightToReduce = 0;
+
         // do two things:
         // 1. update the user's inventory
         // 2. update the shop's data.
@@ -925,6 +754,9 @@ export const sellItemsInPOIShop = async (
                         }
                     }
                 }
+
+                // calculate the total weight of the resources to reduce the user's inventory by
+                totalWeightToReduce += (user.inventory.resources as ExtendedResource[])[resourceIndex].weight * item.amount;
             } else if (
                 item.item === POIShopItemName.CANDY ||
                 item.item === POIShopItemName.CHOCOLATE ||
@@ -991,6 +823,9 @@ export const sellItemsInPOIShop = async (
                 }
             }
         });
+
+        // lastly, reduce the user inventory's weight by `totalWeightToReduce`
+        userUpdateOperations.$inc[`inventory.weight`] = -totalWeightToReduce;
 
         // execute the transactions
         await Promise.all([
