@@ -710,8 +710,12 @@ export const sellItemsInPOIShop = async (
                 }
             }
         } else {
+            // get the index of the user in the leaderboard
+            const userIndex = leaderboard.userData.findIndex(userData => userData.userId === user._id);
+
+            // increment the user's points by the leaderboard points
             leaderboardUpdateOperations.$inc = {
-                'userData.$.points': leaderboardPoints
+                [`userData.${userIndex}.points`]: leaderboardPoints
             }
         }
 
@@ -757,11 +761,6 @@ export const sellItemsInPOIShop = async (
                     userUpdateOperations.$pull[`inventory.resources`] = { type: item.item };
                 } else {
                     userUpdateOperations.$inc[`inventory.resources.${resourceIndex}.amount`] = -item.amount;
-                    userUpdateOperations.$set = {
-                        'inventory.resources.$[resource].amount': {
-                            $gte: 0
-                        }
-                    }
                 }
 
                 // calculate the total weight of the resources to reduce the user's inventory by
