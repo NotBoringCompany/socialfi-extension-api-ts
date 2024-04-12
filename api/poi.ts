@@ -499,7 +499,7 @@ export const sellItemsInPOIShop = async (
     leaderboardName: string | null,
 ): Promise<ReturnValue> => {
     try {
-        const user = await UserModel.findOne({ twitterId });
+        const user = await UserModel.findOne({ twitterId }).lean();
 
         const userUpdateOperations = {
             $pull: {},
@@ -681,7 +681,7 @@ export const sellItemsInPOIShop = async (
         // if not, we find the most recent one.
         const leaderboard = leaderboardName === null ?
             await LeaderboardModel.findOne().sort({ createdAt: -1 }) :
-            await LeaderboardModel.findOne({ name: { $regex: new RegExp(`^${leaderboardName}$`, 'i') } });
+            await LeaderboardModel.findOne({ name: leaderboardName });
 
         if (!leaderboard) {
             return {
