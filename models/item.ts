@@ -28,10 +28,14 @@ export enum BoosterItem {
     GATHERING_PROGRESS_BOOSTER_300 = 'Gathering Progress Booster 300%',
     GATHERING_PROGRESS_BOOSTER_500 = 'Gathering Progress Booster 500%',
     GATHERING_PROGRESS_BOOSTER_1000 = 'Gathering Progress Booster 1000%',
-    RAFT_SPEED_BOOSTER_10 = 'Raft Speed Booster 10%',
-    RAFT_SPEED_BOOSTER_25 = 'Raft Speed Booster 25%',
-    RAFT_SPEED_BOOSTER_50 = 'Raft Speed Booster 50%',
-    RAFT_SPEED_BOOSTER_100 = 'Raft Speed Booster 100%',
+    RAFT_SPEED_BOOSTER_1_MIN = 'Raft Speed Booster 1 Min',
+    RAFT_SPEED_BOOSTER_2_MIN = 'Raft Speed Booster 2 Min',
+    RAFT_SPEED_BOOSTER_3_MIN = 'Raft Speed Booster 3 Min',
+    RAFT_SPEED_BOOSTER_5_MIN = 'Raft Speed Booster 5 Min',
+    RAFT_SPEED_BOOSTER_10_MIN = 'Raft Speed Booster 10 Min',
+    RAFT_SPEED_BOOSTER_15_MIN = 'Raft Speed Booster 15 Min',
+    RAFT_SPEED_BOOSTER_30_MIN = 'Raft Speed Booster 30 Min',
+    RAFT_SPEED_BOOSTER_60_MIN = 'Raft Speed Booster 60 Min',
 }
 
 /**

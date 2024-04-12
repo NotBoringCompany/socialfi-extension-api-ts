@@ -1,7 +1,7 @@
 import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
-import { addOrReplacePOIShop, addPOI, buyItemsInPOIShop, getAvailablePOIDestinations, getCurrentLocation, getCurrentPOI, sellItemsInPOIShop, travelToPOI, updateArrival } from '../api/poi';
+import { addOrReplacePOIShop, addPOI, applyTravelBooster, buyItemsInPOIShop, getAvailablePOIDestinations, getCurrentLocation, getCurrentPOI, sellItemsInPOIShop, travelToPOI, updateArrival } from '../api/poi';
 
 const router = express.Router();
 
@@ -61,6 +61,38 @@ router.post('/travel_to_poi', async (req, res) => {
             message: err.message
         })
     }
+})
+
+router.post('/apply_travel_booster', async (req, res) => {
+    const { booster } = req.body;
+
+    try {
+        const {
+            status: validateStatus,
+            message: validateMessage,
+            data: validateData,
+        } = await validateRequestAuth(req, res, 'apply_travel_booster');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage,
+            });
+        }
+
+        const { status, message } = await applyTravelBooster(validateData?.twitterId, booster);
+
+        return res.status(status).json({
+            status,
+            message
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+
 })
 
 router.get('/get_available_poi_destinations', async (req, res) => {
