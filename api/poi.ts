@@ -682,11 +682,13 @@ export const sellItemsInPOIShop = async (
             return acc + (item.amount * (itemData.sellingPrice.leaderboardPoints as number));
         }, 0);
 
-        // check if leaderboard is specified.
+        // check if leaderboard is specified
         // if not, we find the most recent one.
         const leaderboard = leaderboardName === null ?
             await LeaderboardModel.findOne().sort({ startTimestamp: -1 }) :
             await LeaderboardModel.findOne({ name: leaderboardName });
+        
+        console.log('leaderboard: ', leaderboard);
 
         if (!leaderboard) {
             return {
@@ -835,6 +837,10 @@ export const sellItemsInPOIShop = async (
 
         // lastly, reduce the user inventory's weight by `totalWeightToReduce`
         userUpdateOperations.$inc[`inventory.weight`] = -totalWeightToReduce;
+
+        console.log(`(sellItemsInPOIShop) userUpdateOperations: `, userUpdateOperations);
+        console.log(`(sellItemsInPOIShop) leaderboardUpdateOperations: `, leaderboardUpdateOperations);
+        console.log(`(sellItemsInPOIShop) poiUpdateOperations: `, poiUpdateOperations);
 
         // execute the transactions
         await Promise.all([
