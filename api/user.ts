@@ -26,8 +26,6 @@ import { InviteCodeData } from '../models/invite';
  */
 export const handleTwitterLogin = async (
     twitterId: string,
-    // starterCode: string,
-    // referralCode: string,
 ): Promise<ReturnValue> => {
     try {
         const user = await UserModel.findOne({ twitterId }).lean();
@@ -106,11 +104,14 @@ export const handleTwitterLogin = async (
                 twitterId,
                 // invite code data will be null until users input their invite code.
                 inviteCodeData: {
-                    starterCode: null,
-                    referralCode: null,
+                    usedStarterCode: null,
+                    usedReferralCode: null,
                     referrerId: null
                 },
-                referralCode: generateReferralCode(),
+                referralData: {
+                    referralCode: generateReferralCode(),
+                    referredUsers: []
+                },
                 wallet: {
                     privateKey,
                     publicKey
@@ -720,7 +721,7 @@ export const linkInviteCode = async (
         if (starterCode) {
             // check if the user already has a starter code.
             // if they do, return an error.
-            if (user.inviteCodeData.starterCode) {
+            if (user.inviteCodeData.usedStarterCode) {
                 return {
                     status: Status.BAD_REQUEST,
                     message: `(linkInviteCode) User already used a starter code.`
@@ -730,7 +731,7 @@ export const linkInviteCode = async (
             // update the user's starter code data
             await UserModel.updateOne({ twitterId }, {
                 $set: {
-                    'inviteCodeData.starterCode': code.toUpperCase()
+                    'inviteCodeData.usedStarterCode': code.toUpperCase()
                 }
             });
 
@@ -741,7 +742,7 @@ export const linkInviteCode = async (
         } else if (referralCode) {
             // check if the user already has a referral code.
             // if they do, return an error.
-            if (user.inviteCodeData.referralCode) {
+            if (user.inviteCodeData.usedReferralCode) {
                 return {
                     status: Status.BAD_REQUEST,
                     message: `(linkInviteCode) User already used a referral code.`
@@ -751,8 +752,15 @@ export const linkInviteCode = async (
             // update the user's referral code data
             await UserModel.updateOne({ twitterId }, {
                 $set: {
-                    'inviteCodeData.referralCode': code.toUpperCase(),
+                    'inviteCodeData.usedReferralCode': code.toUpperCase(),
                     'inviteCodeData.referrerId': referralCode._id
+                }
+            });
+
+            // also update the referrer's code data to include the referee's id in the `referredUsers` array
+            await UserModel.updateOne({ _id: referralCode._id }, {
+                $push: {
+                    'referralData.referredUsers': user._id
                 }
             });
 
@@ -790,7 +798,7 @@ export const checkInviteCodeLinked = async (twitterId: string): Promise<ReturnVa
             }
         }
 
-        if (!user.inviteCodeData.starterCode && !user.inviteCodeData.referralCode) {
+        if (!user.inviteCodeData.usedStarterCode && !user.inviteCodeData.usedReferralCode) {
             return {
                 status: Status.BAD_REQUEST,
                 message: `(checkInviteCodeLinked) No starter or referral code linked.`

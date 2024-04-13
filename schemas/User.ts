@@ -11,7 +11,7 @@ export const UserSchema = new mongoose.Schema({
     },
     twitterId: String,
     inviteCodeData: Object,
-    referralCode: String,
+    referralData: Object,
     wallet: Object,
     secondaryWallets: Array,
     openedTweetIdsToday: Array,

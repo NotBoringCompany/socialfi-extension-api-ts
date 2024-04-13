@@ -2,7 +2,7 @@ import { POIName } from './poi';
 import { Food } from './food';
 import { Item } from './item';
 import { ExtendedResource } from './resource';
-import { InviteCodeData } from './invite';
+import { InviteCodeData, ReferralData } from './invite';
 
 /****************
  * USER-RELATED MODELS
@@ -22,8 +22,8 @@ export interface User {
      * if the user signed up via a referral code, the referrer's id is stored here.
      */
     inviteCodeData: InviteCodeData;
-    /** the user's personal referral code (used to refer other users) */
-    referralCode: string;
+    /** the user's personal referral data (including their code, the amount of people they referred and so on) */
+    referralData: ReferralData;
     /** the user's wallet data, created when the user signs up for the first time */
     wallet: UserWallet;
     /** users can link up to 10 secondary wallets. this contains the data of each secondary wallet instance, such as the signature. */
@@ -149,4 +149,3 @@ export enum DailyLoginRewardType {
     X_COOKIES = 'xCookies',
     LEADERBOARD_POINTS = 'Leaderboard Points',
 }
-
