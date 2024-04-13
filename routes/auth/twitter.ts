@@ -28,13 +28,19 @@ router.get('/login', async (req, res, next) => {
 
     const state = encrypt(statePayload);
 
+    console.log('state: ', state);
+
     if (token) {
+        console.log('token exists: ', token);
+
         // check for validation
         const { status } = validateJWT(token);
         if (status === Status.SUCCESS) {
             // token is valid, redirect to Twitter with the token
             return res.redirect(`https://twitter.com?jwt=${token}`);
         } else {
+            console.log('token is invalid from login. redirecting to twitter for authentication');
+            
             // token is invalid, redirect to Twitter for authentication
             passport.authenticate('twitter', {
                 scope: ['tweet.read', 'users.read', 'offline.access'],
@@ -42,6 +48,8 @@ router.get('/login', async (req, res, next) => {
             })(req, res, next);
         }
     } else {
+        console.log('token doesnt exist, redirecting to twitter for authentication from /login');
+
         // token doesn't exist, redirect to Twitter for authentication
         passport.authenticate('twitter', {
             scope: ['tweet.read', 'users.read', 'offline.access'],
