@@ -114,48 +114,102 @@ router.get('/login', async (req, res, next) => {
     }
 });
 
-router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/lol', failureMessage: 'Error from callback.' }), async (req, res) => {
-    if (!req.user) {
-        return res.status(401).json({
-            status: Status.UNAUTHORIZED,
-            message: 'You denied the app or your session has expired. Please log in again.'
-        })
-    }
-
-    const encryptedState = req.query.state as string;
-
-    console.log('encrypted state in callback:', encryptedState);
-
-    const statePayload = JSON.parse(decrypt(encryptedState));
-    const { referralCode, starterCode, nonce, timestamp } = statePayload;
-
-    console.log('referral code in callback:', referralCode);
-    console.log('starter code in callback:', starterCode);
-    console.log('nonce in callback:', nonce);
-    console.log('timestamp in callback:', timestamp);
-
-    try {
-        // when logged in via twitter, `id` will be the user's twitter id
-        const { id: twitterId, twitterAccessToken, twitterRefreshToken, twitterExpiryDate } = req.user as ExtendedProfile;
-
-        const { status, message } = await handleTwitterLogin(twitterId, starterCode, referralCode);
-
-        if (status !== Status.SUCCESS) {
-            return res.status(status).json({
-                status,
-                message
-            })
-        } else {
-            const token = generateJWT(twitterId, twitterAccessToken, twitterRefreshToken, twitterExpiryDate - Math.floor(Date.now() / 1000));
-
-            return res.redirect(`https://twitter.com?jwt=${token}`);
+router.get('/callback', (req, res, next) => {
+    passport.authenticate('twitter', (err, user, info) => {
+        if (err) {
+            console.error('Error during passport authentication:', err);
+            return res.status(500).json({ message: 'Internal Server Error', error: err });
         }
-    } catch (err: any) {
-        return res.status(500).json({
-            status: Status.ERROR,
-            message: err.message
-        })
-    }
+        if (!user) {
+            console.error('No user returned from passport authentication:', info);
+            return res.redirect('/lol');  // Use the failure redirect as before
+        }
+        req.logIn(user, async (err) => {
+            if (err) {
+                console.error('Error during log in:', err);
+                return res.status(500).json({ message: 'Login failed', error: err });
+            }
+
+            // User is now logged in, continue with your logic
+            const encryptedState = req.query.state as string;
+            console.log('encrypted state in callback:', encryptedState);
+
+            try {
+                const statePayload = JSON.parse(decrypt(encryptedState));
+                const { referralCode, starterCode, nonce, timestamp } = statePayload;
+
+                console.log('referral code in callback:', referralCode);
+                console.log('starter code in callback:', starterCode);
+                console.log('nonce in callback:', nonce);
+                console.log('timestamp in callback:', timestamp);
+
+                // when logged in via twitter, `id` will be the user's twitter id
+                const { id: twitterId, twitterAccessToken, twitterRefreshToken, twitterExpiryDate } = req.user as ExtendedProfile;
+
+                const { status, message } = await handleTwitterLogin(twitterId, starterCode, referralCode);
+
+                if (status !== Status.SUCCESS) {
+                    return res.status(status).json({
+                        status,
+                        message
+                    });
+                } else {
+                    const token = generateJWT(twitterId, twitterAccessToken, twitterRefreshToken, twitterExpiryDate - Math.floor(Date.now() / 1000));
+                    return res.redirect(`https://twitter.com?jwt=${token}`);
+                }
+            } catch (err: any) {
+                console.error('Error processing the state or handling the login:', err);
+                return res.status(500).json({
+                    status: Status.ERROR,
+                    message: err.message
+                });
+            }
+        });
+    })(req, res, next);
 });
+
+// router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/lol', failureMessage: 'Error from callback.' }), async (req, res) => {
+//     if (!req.user) {
+//         return res.status(401).json({
+//             status: Status.UNAUTHORIZED,
+//             message: 'You denied the app or your session has expired. Please log in again.'
+//         })
+//     }
+
+//     const encryptedState = req.query.state as string;
+
+//     console.log('encrypted state in callback:', encryptedState);
+
+//     const statePayload = JSON.parse(decrypt(encryptedState));
+//     const { referralCode, starterCode, nonce, timestamp } = statePayload;
+
+//     console.log('referral code in callback:', referralCode);
+//     console.log('starter code in callback:', starterCode);
+//     console.log('nonce in callback:', nonce);
+//     console.log('timestamp in callback:', timestamp);
+
+//     try {
+//         // when logged in via twitter, `id` will be the user's twitter id
+//         const { id: twitterId, twitterAccessToken, twitterRefreshToken, twitterExpiryDate } = req.user as ExtendedProfile;
+
+//         const { status, message } = await handleTwitterLogin(twitterId, starterCode, referralCode);
+
+//         if (status !== Status.SUCCESS) {
+//             return res.status(status).json({
+//                 status,
+//                 message
+//             })
+//         } else {
+//             const token = generateJWT(twitterId, twitterAccessToken, twitterRefreshToken, twitterExpiryDate - Math.floor(Date.now() / 1000));
+
+//             return res.redirect(`https://twitter.com?jwt=${token}`);
+//         }
+//     } catch (err: any) {
+//         return res.status(500).json({
+//             status: Status.ERROR,
+//             message: err.message
+//         })
+//     }
+// });
 
 export default router;
