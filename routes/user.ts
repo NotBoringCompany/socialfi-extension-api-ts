@@ -1,5 +1,5 @@
 import express from 'express';
-import { claimDailyRewards, getInGameData, getInventory, getWalletDetails, linkStarterOrReferralCode, removeResources } from '../api/user';
+import { checkInviteCodeLinked, claimDailyRewards, getInGameData, getInventory, getWalletDetails, linkInviteCode, removeResources } from '../api/user';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 
@@ -132,7 +132,7 @@ router.post('/claim_daily_rewards', async (req, res) => {
     }
 })
 
-router.post('/link_starter_or_referral_code', async (req, res) => {
+router.post('/link_invite_code', async (req, res) => {
     const { code } = req.body;
 
     try {
@@ -145,7 +145,7 @@ router.post('/link_starter_or_referral_code', async (req, res) => {
             })
         }
 
-        const { status, message, data } = await linkStarterOrReferralCode(validateData?.twitterId, code);
+        const { status, message, data } = await linkInviteCode(validateData?.twitterId, code);
 
         return res.status(status).json({
             status,
@@ -160,4 +160,22 @@ router.post('/link_starter_or_referral_code', async (req, res) => {
     }
 })
 
+router.get('/check_invite_code_linked/:twitterId', async (req, res) => {
+    const { twitterId } = req.params;
+
+    try {
+        const { status, message, data } = await checkInviteCodeLinked(twitterId);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
 export default router;

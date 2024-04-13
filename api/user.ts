@@ -687,11 +687,11 @@ export const updateDailyLoginRewardsData = async (): Promise<void> => {
 }
 
 /**
- * Links either a starter or a referral code to play the game.
+ * Links either a starter or a referral code to play the game (i.e. invite code).
  * 
  * The current version only allows users to input EITHER, not both.
  */
-export const linkStarterOrReferralCode = async (
+export const linkInviteCode = async (
     twitterId: string,
     code: string
 ): Promise<ReturnValue> => {
@@ -701,7 +701,7 @@ export const linkStarterOrReferralCode = async (
         if (!user) {
             return {
                 status: Status.ERROR,
-                message: `(linkStarterOrReferralCode) User not found.`
+                message: `(linkInviteCode) User not found.`
             }
         }
 
@@ -712,7 +712,7 @@ export const linkStarterOrReferralCode = async (
         if (!starterCode && !referralCode) {
             return {
                 status: Status.BAD_REQUEST,
-                message: `(linkStarterOrReferralCode) Invalid code.`
+                message: `(linkInviteCode) Invalid code.`
             }
         }
 
@@ -723,7 +723,7 @@ export const linkStarterOrReferralCode = async (
             if (user.inviteCodeData.starterCode) {
                 return {
                     status: Status.BAD_REQUEST,
-                    message: `(linkStarterOrReferralCode) User already used a starter code.`
+                    message: `(linkInviteCode) User already used a starter code.`
                 }
             }
 
@@ -736,7 +736,7 @@ export const linkStarterOrReferralCode = async (
 
             return {
                 status: Status.SUCCESS,
-                message: `(linkStarterOrReferralCode) Starter code linked.`,
+                message: `(linkInviteCode) Starter code linked.`,
             }
         } else if (referralCode) {
             // check if the user already has a referral code.
@@ -744,7 +744,7 @@ export const linkStarterOrReferralCode = async (
             if (user.inviteCodeData.referralCode) {
                 return {
                     status: Status.BAD_REQUEST,
-                    message: `(linkStarterOrReferralCode) User already used a referral code.`
+                    message: `(linkInviteCode) User already used a referral code.`
                 }
             }
 
@@ -758,18 +758,53 @@ export const linkStarterOrReferralCode = async (
 
             return {
                 status: Status.SUCCESS,
-                message: `(linkStarterOrReferralCode) Referral code linked.`,
+                message: `(linkInviteCode) Referral code linked.`,
             }
         } else {
             return {
                 status: Status.ERROR,
-                message: `(linkStarterOrReferralCode) Code not found.`
+                message: `(linkInviteCode) Code not found.`
             }
         }
     } catch (err: any) {
         return {
             status: Status.ERROR,
-            message: `(linkStarterOrReferralCode) ${err.message}`
+            message: `(linkInviteCode) ${err.message}`
+        }
+    }
+}
+
+/**
+ * Checks if the user has a starter or referral code (i.e. invite code) linked.
+ * 
+ * One must exist to be allowed to play the game.
+ */
+export const checkInviteCodeLinked = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(checkInviteCodeLinked) User not found.`
+            }
+        }
+
+        if (!user.inviteCodeData.starterCode && !user.inviteCodeData.referralCode) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(checkInviteCodeLinked) No starter or referral code linked.`
+            }
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(checkInviteCodeLinked) User has an invite code.`,
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(checkInviteCodeLinked) ${err.message}`
         }
     }
 }
