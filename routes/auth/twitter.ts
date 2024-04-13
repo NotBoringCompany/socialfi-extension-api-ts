@@ -4,17 +4,12 @@ import { generateJWT, validateJWT } from '../../utils/jwt';
 import { Status } from '../../utils/retVal';
 import passport from '../../configs/passport';
 import { handleTwitterLogin } from '../../api/user';
-import { v4 } from 'uuid';
-import { decrypt, encrypt } from '../../utils/crypto';
 
 const router = express.Router();
 
 router.get('/login', async (req, res, next) => {
     // get the jwt token (if it exists) from the request headers
     const token = req.headers.authorization?.split(' ')[1];
-
-    req.session.referralCode = req.query.referralCode;
-    req.session.starterCode = req.query.starterCode;
 
     if (token) {
         // check for validation
