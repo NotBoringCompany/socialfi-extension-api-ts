@@ -8,7 +8,6 @@ passport.use(new TwitterStrategy({
     clientSecret: process.env.TWITTER_CLIENT_SECRET!,
     callbackURL: process.env.TWITTER_CALLBACK_URL!,
     scope: ['tweet.read', 'users.read', 'offline.access'],
-    state: true,
     },
     async (accessToken, refreshToken, profile, done) => {
         try {

@@ -26,8 +26,8 @@ import { InviteCodeData, InviteCodeType } from '../models/invite';
  */
 export const handleTwitterLogin = async (
     twitterId: string,
-    starterCode: string,
-    referralCode: string,
+    // starterCode: string,
+    // referralCode: string,
 ): Promise<ReturnValue> => {
     try {
         const user = await UserModel.findOne({ twitterId }).lean();
@@ -38,66 +38,66 @@ export const handleTwitterLogin = async (
         if (!user) {
             console.log('no user. creating new user.');
 
-            // if no invite code data, return an error.
-            if (starterCode === 'null' && referralCode === 'null') {
-                return {
-                    status: Status.BAD_REQUEST,
-                    message: `(handleTwitterLogin) Invite code is required to sign up.`
-                }
-            }
+            // // if no invite code data, return an error.
+            // if (starterCode === 'null' && referralCode === 'null') {
+            //     return {
+            //         status: Status.BAD_REQUEST,
+            //         message: `(handleTwitterLogin) Invite code is required to sign up.`
+            //     }
+            // }
 
-            // if referral code is present, query the users collection to check if the referral code belongs to anybody.
-            if (referralCode) {
-                const users = await UserModel.find({}).lean();
+            // // if referral code is present, query the users collection to check if the referral code belongs to anybody.
+            // if (referralCode) {
+            //     const users = await UserModel.find({}).lean();
 
-                // find the referrer
-                const referrer = users.find(u => u.referralCode.toLowerCase() === referralCode.toLowerCase());
+            //     // find the referrer
+            //     const referrer = users.find(u => u.referralCode.toLowerCase() === referralCode.toLowerCase());
 
-                // if the referrer doesn't exist, return an error
-                if (!referrer) {
-                    return {
-                        status: Status.BAD_REQUEST,
-                        message: `(handleTwitterLogin) Referral code does not exist.`
-                    }
-                }
+            //     // if the referrer doesn't exist, return an error
+            //     if (!referrer) {
+            //         return {
+            //             status: Status.BAD_REQUEST,
+            //             message: `(handleTwitterLogin) Referral code does not exist.`
+            //         }
+            //     }
 
-                inviteCodeData = {
-                    type: InviteCodeType.REFERRAL,
-                    code: referralCode,
-                    referrerId: referrer._id,
-                    maxUses: 'infinite',
-                    usedBy: []
-                }
-            } else if (starterCode) {
-                // query the starter codes collection to check if the starter code exists
-                const code = await StarterCodeModel.findOne({ code: starterCode.toUpperCase() }).lean();
+            //     inviteCodeData = {
+            //         type: InviteCodeType.REFERRAL,
+            //         code: referralCode,
+            //         referrerId: referrer._id,
+            //         maxUses: 'infinite',
+            //         usedBy: []
+            //     }
+            // } else if (starterCode) {
+            //     // query the starter codes collection to check if the starter code exists
+            //     const code = await StarterCodeModel.findOne({ code: starterCode.toUpperCase() }).lean();
 
-                // if the starter code doesn't exist, return an error
-                if (!code) {
-                    return {
-                        status: Status.BAD_REQUEST,
-                        message: `(handleTwitterLogin) Starter code does not exist.`
-                    }
-                }
+            //     // if the starter code doesn't exist, return an error
+            //     if (!code) {
+            //         return {
+            //             status: Status.BAD_REQUEST,
+            //             message: `(handleTwitterLogin) Starter code does not exist.`
+            //         }
+            //     }
 
-                // if the starter code has reached its limit, return an error
-                if (code.usedBy.length >= code.maxUses) {
-                    return {
-                        status: Status.BAD_REQUEST,
-                        message: `(handleTwitterLogin) Starter code has reached its limit.`
-                    }
-                }
+            //     // if the starter code has reached its limit, return an error
+            //     if (code.usedBy.length >= code.maxUses) {
+            //         return {
+            //             status: Status.BAD_REQUEST,
+            //             message: `(handleTwitterLogin) Starter code has reached its limit.`
+            //         }
+            //     }
 
-                inviteCodeData = {
-                    type: InviteCodeType.STARTER,
-                    code: starterCode,
-                    maxUses: code.maxUses,
-                    usedBy: [
-                        user._id,
-                        ...code.usedBy
-                    ]
-                }
-            }
+            //     inviteCodeData = {
+            //         type: InviteCodeType.STARTER,
+            //         code: starterCode,
+            //         maxUses: code.maxUses,
+            //         usedBy: [
+            //             user._id,
+            //             ...code.usedBy
+            //         ]
+            //     }
+            // }
 
             // generates a new object id for the user
             const userObjectId = generateObjectId();
@@ -169,7 +169,8 @@ export const handleTwitterLogin = async (
             const newUser = new UserModel({
                 _id: userObjectId,
                 twitterId,
-                inviteCodeData: inviteCodeData,
+                // invite code data will be null until users input their invite code.
+                inviteCodeData: null,
                 referralCode: generateReferralCode(),
                 wallet: {
                     privateKey,
@@ -217,7 +218,7 @@ export const handleTwitterLogin = async (
             }
         } else {
             console.log('user found. user id: ', user._id);
-            
+
             // user exists, return
             return {
                 status: Status.SUCCESS,
