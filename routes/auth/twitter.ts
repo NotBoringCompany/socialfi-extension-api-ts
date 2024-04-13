@@ -114,7 +114,7 @@ router.get('/login', async (req, res, next) => {
     }
 });
 
-router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/', failureFlash: 'Error from callback.', failWithError: true }), async (req, res) => {
+router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/', failureMessage: 'Error from callback.' }), async (req, res) => {
     if (!req.user) {
         return res.status(401).json({
             status: Status.UNAUTHORIZED,
