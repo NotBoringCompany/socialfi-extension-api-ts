@@ -1,5 +1,5 @@
 import express from 'express';
-import { claimDailyRewards, getInGameData, getInventory, getWalletDetails, removeResources } from '../api/user';
+import { claimDailyRewards, getInGameData, getInventory, getWalletDetails, linkStarterOrReferralCode, removeResources } from '../api/user';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 
@@ -118,6 +118,34 @@ router.post('/claim_daily_rewards', async (req, res) => {
         }
 
         const { status, message, data } = await claimDailyRewards(validateData?.twitterId, leaderboardName);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
+
+router.post('/link_starter_or_referral_code', async (req, res) => {
+    const { code } = req.body;
+
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'link_starter_or_referral_code');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
+        const { status, message, data } = await linkStarterOrReferralCode(validateData?.twitterId, code);
 
         return res.status(status).json({
             status,

@@ -685,4 +685,91 @@ export const updateDailyLoginRewardsData = async (): Promise<void> => {
         console.error('Error in updateDailyLoginRewardsData:', err.message);
     }
 }
-    
+
+/**
+ * Links either a starter or a referral code to play the game.
+ * 
+ * The current version only allows users to input EITHER, not both.
+ */
+export const linkStarterOrReferralCode = async (
+    twitterId: string,
+    code: string
+): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(linkStarterOrReferralCode) User not found.`
+            }
+        }
+
+        // check if the code is a starter code or a referral code
+        const starterCode = await StarterCodeModel.findOne({ code: code.toUpperCase() }).lean();
+        const referralCode = await UserModel.findOne({ referralCode: code.toUpperCase() }).lean();
+
+        if (!starterCode && !referralCode) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(linkStarterOrReferralCode) Invalid code.`
+            }
+        }
+
+        // if the code is a starter code
+        if (starterCode) {
+            // check if the user already has a starter code.
+            // if they do, return an error.
+            if (user.inviteCodeData.starterCode) {
+                return {
+                    status: Status.BAD_REQUEST,
+                    message: `(linkStarterOrReferralCode) User already used a starter code.`
+                }
+            }
+
+            // update the user's starter code data
+            await UserModel.updateOne({ twitterId }, {
+                $set: {
+                    'inviteCodeData.starterCode': code.toUpperCase()
+                }
+            });
+
+            return {
+                status: Status.SUCCESS,
+                message: `(linkStarterOrReferralCode) Starter code linked.`,
+            }
+        } else if (referralCode) {
+            // check if the user already has a referral code.
+            // if they do, return an error.
+            if (user.inviteCodeData.referralCode) {
+                return {
+                    status: Status.BAD_REQUEST,
+                    message: `(linkStarterOrReferralCode) User already used a referral code.`
+                }
+            }
+
+            // update the user's referral code data
+            await UserModel.updateOne({ twitterId }, {
+                $set: {
+                    'inviteCodeData.referralCode': code.toUpperCase(),
+                    'inviteCodeData.referrerId': referralCode._id
+                }
+            });
+
+            return {
+                status: Status.SUCCESS,
+                message: `(linkStarterOrReferralCode) Referral code linked.`,
+            }
+        } else {
+            return {
+                status: Status.ERROR,
+                message: `(linkStarterOrReferralCode) Code not found.`
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(linkStarterOrReferralCode) ${err.message}`
+        }
+    }
+}
