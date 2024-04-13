@@ -4,8 +4,7 @@ import { generateJWT, validateJWT } from '../../utils/jwt';
 import { Status } from '../../utils/retVal';
 import passport from '../../configs/passport';
 import { handleTwitterLogin } from '../../api/user';
-import base64url from 'base64url';
-import uuid from 'uuid';
+import { v4 } from 'uuid';
 import { decrypt, encrypt } from '../../utils/crypto';
 
 const router = express.Router();
@@ -20,7 +19,7 @@ router.get('/login', async (req, res, next) => {
     const statePayload = JSON.stringify({
         referralCode,
         starterCode,
-        nonce: uuid.v4(),
+        nonce: v4(),
         timestamp: Math.floor(Date.now() / 1000)
     });
 
