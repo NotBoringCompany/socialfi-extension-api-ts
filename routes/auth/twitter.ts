@@ -16,6 +16,9 @@ router.get('/login', async (req, res, next) => {
     // get the referral and/or starter code from the query params
     const { referralCode, starterCode } = req.query;
 
+    console.log('referral code from /login:', referralCode);
+    console.log('starter code from /login:', starterCode);
+
     const statePayload = JSON.stringify({
         referralCode,
         starterCode,

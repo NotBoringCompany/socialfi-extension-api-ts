@@ -36,6 +36,8 @@ export const handleTwitterLogin = async (
 
         // if user doesn't exist, create a new user
         if (!user) {
+            console.log('no user. creating new user.');
+
             // if no invite code data, return an error.
             if (starterCode === 'null' && referralCode === 'null') {
                 return {
@@ -167,7 +169,7 @@ export const handleTwitterLogin = async (
             const newUser = new UserModel({
                 _id: userObjectId,
                 twitterId,
-                inviteCodeData,
+                inviteCodeData: inviteCodeData,
                 referralCode: generateReferralCode(),
                 wallet: {
                     privateKey,
@@ -214,6 +216,8 @@ export const handleTwitterLogin = async (
                 }
             }
         } else {
+            console.log('user found. user id: ', user._id);
+            
             // user exists, return
             return {
                 status: Status.SUCCESS,
