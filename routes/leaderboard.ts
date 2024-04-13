@@ -24,8 +24,8 @@ router.post('/add_leaderboard', async (req, res) => {
     }
 });
 
-router.get('/get_leaderboard_ranking', async (req, res) => {
-    const { leaderboardName } = req.body;
+router.get('/get_leaderboard_ranking/:leaderboardName', async (req, res) => {
+    const { leaderboardName } = req.params;
 
     try {
         const { status, message, data } = await getLeaderboardRanking(leaderboardName);

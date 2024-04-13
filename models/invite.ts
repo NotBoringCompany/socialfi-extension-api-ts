@@ -1,5 +1,5 @@
 /**
- * Represents an invite code's data used to play the game (or works as a referral code).
+ * Represents an invite code's data used to play the game.
  */
 export interface InviteCodeData {
     /** will be added here if the user signed up with a starter code */
