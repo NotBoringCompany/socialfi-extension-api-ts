@@ -149,15 +149,6 @@ router.post('/add_or_replace_poi_shop', async (req, res) => {
     const { poiName, shop, adminKey } = req.body;
 
     try {
-        const { status: validateStatus, message: validateMessage } = await validateRequestAuth(req, res, 'add_or_replace_poi_shop');
-
-        if (validateStatus !== Status.SUCCESS) {
-            return res.status(validateStatus).json({
-                status: validateStatus,
-                message: validateMessage
-            })
-        }
-
         const { status, message } = await addOrReplacePOIShop(poiName, shop, adminKey);
 
         return res.status(status).json({
