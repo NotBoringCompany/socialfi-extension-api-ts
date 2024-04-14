@@ -12,22 +12,14 @@ export interface Leaderboard {
     userData: LeaderboardUserData[];
 }
 
-// /**
-//  * Lists the types of leaderboards.
-//  */
-// export enum LeaderboardType {
-//     /** main leaderboards are standalone leaderboards */
-//     MAIN = 'Main',
-//     /** weekly leaderboards may get reset and/or get added to main leaderboards */
-//     WEEKLY = 'Weekly'
-// }
-
 /**
  * Represents user data for a leaderboard.
  */
 export interface LeaderboardUserData {
     /** the user's database ID */
     userId: string;
+    /** the user's profile picture URL */
+    userPictureUrl: string;
     /** the user's points */
     points: number;
 }

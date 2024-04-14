@@ -2,6 +2,7 @@ import express from 'express';
 import { checkInviteCodeLinked, claimDailyRewards, getInGameData, getInventory, getWalletDetails, linkInviteCode, removeResources } from '../api/user';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
+import { ExtendedProfile } from '../utils/types';
 
 const router = express.Router();
 
@@ -117,7 +118,10 @@ router.post('/claim_daily_rewards', async (req, res) => {
             })
         }
 
-        const { status, message, data } = await claimDailyRewards(validateData?.twitterId, leaderboardName);
+        // get the twitter profile picture of the user for leaderboard
+        const { photos } = req.user as ExtendedProfile;
+
+        const { status, message, data } = await claimDailyRewards(validateData?.twitterId, photos.values[0], leaderboardName);
 
         return res.status(status).json({
             status,

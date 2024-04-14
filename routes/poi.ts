@@ -2,6 +2,7 @@ import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { addOrReplacePOIShop, addPOI, applyTravelBooster, buyItemsInPOIShop, getAvailablePOIDestinations, getCurrentLocation, getCurrentPOI, getUserTransactionData, sellItemsInPOIShop, travelToPOI, updateArrival } from '../api/poi';
+import { ExtendedProfile } from '../utils/types';
 
 const router = express.Router();
 
@@ -206,7 +207,10 @@ router.post('/sell_items_in_poi_shop', async (req, res) => {
             })
         }
 
-        const { status, message, data } = await sellItemsInPOIShop(validateData?.twitterId, items, leaderboardName);
+        // get the twitter profile picture of the user for leaderboard
+        const { photos } = req.user as ExtendedProfile;
+
+        const { status, message, data } = await sellItemsInPOIShop(validateData?.twitterId, photos.values[0], items, leaderboardName);
 
         return res.status(status).json({
             status,

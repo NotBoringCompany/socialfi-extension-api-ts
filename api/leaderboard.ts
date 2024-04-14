@@ -49,72 +49,6 @@ export const addLeaderboard = async (
     }
 }
 
-// /**
-//  * Adds the user data from the weekly leaderboard to the main leaderboard.
-//  * 
-//  * Should be called by a scheduler weekly every Sunday 23:59 UTC.
-//  */
-// export const addWeeklyToMainLeaderboard = async (): Promise<void> => {
-//     try {
-//         // get both leaderboards
-//         const [weeklyLeaderboard, mainLeaderboard] = await Promise.all([
-//             LeaderboardModel.findOne({ type: LeaderboardType.WEEKLY }).lean(),
-//             LeaderboardModel.findOne({ type: LeaderboardType.MAIN }).lean()
-//         ]);
-
-//         if (!weeklyLeaderboard || !mainLeaderboard) {
-//             throw new Error(`(addWeeklyToMainLeaderboard) Leaderboards not found.`);
-//         }
-
-//         // for each user in the weekly leaderboard's user data:
-//         // 1. if the user is found in the main leaderboard, increment their points
-//         // 2. if the user is not found in the main leaderboard, create a new instance with the points they received in the weekly leaderboard
-//         const bulkWriteOperations = weeklyLeaderboard.userData.map(weeklyUserData => {
-//             let updateOperations = [];
-
-//             const userExists = mainLeaderboard.userData.find(user => user.userId === weeklyUserData.userId);
-
-//             if (userExists) {
-//                 updateOperations.push({
-//                     updateOne: {
-//                         filter: { _id: mainLeaderboard._id, 'userData.userId': weeklyUserData.userId },
-//                         update: {
-//                             // TO DO: increment the points with a multiplier if the user owns keys
-//                             $inc: {
-//                                 'userData.$.points': weeklyUserData.points
-//                             }
-//                         }
-//                     }
-//                 });
-//             } else {
-//                 updateOperations.push({
-//                     updateOne: {
-//                         filter: { _id: mainLeaderboard._id },
-//                         update: {
-//                             $push: {
-//                                 // TO DO: increment the points with a multiplier if the user owns keys
-//                                 userData: {
-//                                     userId: weeklyUserData.userId,
-//                                     points: weeklyUserData.points
-//                                 }
-//                             }
-//                         }
-//                     }
-//                 });
-//             }
-
-//             return updateOperations;
-//         }).flat();
-
-//         // execute the bulk write operations
-//         await LeaderboardModel.bulkWrite(bulkWriteOperations);
-
-//         console.log(`(addWeeklyToMainLeaderboard) Added weekly leaderboard data to the main leaderboard.`);
-//     } catch (err: any) {
-//         console.error(`(addWeeklyToMainLeaderboard) ${err.message}`);
-//     }
-// }
-
 /**
  * Gets a leaderboard's rankings for users.
  * 
@@ -150,6 +84,7 @@ export const getLeaderboardRanking = async (leaderboardName: string): Promise<Re
         const rankedUserData = descendingPoints.map((userData, index) => ({
             rank: index + 1,
             userId: userIdToTwitterIdMap[userData.userId] || 'N/A',
+            userPictureUrl: userData.userPictureUrl,
             points: userData.points
         }));
 
@@ -221,6 +156,7 @@ export const getOwnLeaderboardRanking = async (
                 ranking: {
                     rank: userRank,
                     userId: twitterId,
+                    userPictureUrl: userData.userPictureUrl,
                     points: userData.points
                 }
             }
