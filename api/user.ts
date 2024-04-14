@@ -945,6 +945,84 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
             }
         }
     } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(claimBeginnerRewards) ${err.message}`
+        }
+    }
+}
 
+/**
+ * Updates all users' beginner reward data daily. Called by a scheduler every 00:00 UTC.
+ * 
+ * This includes:
+ * 1. only updating users whose `daysMissed` + `daysClaimed` < 7.
+ * 2. resetting `isClaimable` to true every day at 00:00 UTC.
+ * 3. add the current day to the user's `daysMissed` if they don't claim the rewards for the day (i.e. `isClaimable` is still true).
+ */
+export const updateBeginnerRewardsData = async (): Promise<void> => {
+    try {
+        const users = await UserModel.find().lean();
+
+        // filter out users who are not eligible for beginner rewards
+        const eligibleUsers = users.filter(user => {
+            const beginnerRewardData = user.inGameData.beginnerRewardData as BeginnerRewardData;
+            return beginnerRewardData.daysClaimed.length + beginnerRewardData.daysMissed.length < 7;
+        });
+
+        const userUpdateOperations: Array<{
+            userId: string,
+            updateOperations: {
+                $pull: {},
+                $inc: {},
+                $set: {},
+                $push: {}
+            }
+        }> = [];
+
+        for (const user of eligibleUsers) {
+            const beginnerRewardData = user.inGameData.beginnerRewardData as BeginnerRewardData;
+
+            // for users that have `isClaimable` as false, it means they claimed the rewards already.
+            // simply convert `isClaimable` to true.
+            if (!beginnerRewardData.isClaimable) {
+                userUpdateOperations.push({
+                    userId: user._id,
+                    updateOperations: {
+                        $set: {
+                            'inGameData.beginnerRewardData.isClaimable': true
+                        },
+                        $inc: {},
+                        $pull: {},
+                        $push: {}
+                    }
+                });
+            } else {
+                // if `isClaimable` is true, it means the user missed claiming the rewards for the day.
+                // add the current day to `daysMissed`.
+                const latestDay = Math.max(...beginnerRewardData.daysClaimed, ...beginnerRewardData.daysMissed);
+                
+                userUpdateOperations.push({
+                    userId: user._id,
+                    updateOperations: {
+                        $push: {
+                            'inGameData.beginnerRewardData.daysMissed': latestDay + 1
+                        },
+                        $inc: {},
+                        $set: {},
+                        $pull: {}
+                    }
+                });
+            }
+        }
+
+        // execute the update operations
+        const userUpdatePromises = userUpdateOperations.map(async op => {
+            return UserModel.updateOne({ _id: op.userId }, op.updateOperations);
+        });
+
+        await Promise.all(userUpdatePromises);
+    } catch (err: any) {
+        console.error('Error in updateBeginnerRewardsData:', err.message);
     }
 }
