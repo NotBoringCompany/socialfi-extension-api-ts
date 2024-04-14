@@ -16,6 +16,8 @@ export interface User {
     userId: string;
     /** the twitter user ID of the user */
     twitterId: string;
+    /** the user's twitter profile picture URL */
+    twitterProfilePicture: string;
     /** when the account was created */
     createdTimestamp: number;
     /** 

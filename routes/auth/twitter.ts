@@ -41,9 +41,11 @@ router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/' 
 
     try {
         // when logged in via twitter, `id` will be the user's twitter id
-        const { id: twitterId, twitterAccessToken, twitterRefreshToken, twitterExpiryDate } = req.user as ExtendedProfile;
+        const { id: twitterId, twitterAccessToken, twitterRefreshToken, twitterExpiryDate, photos } = req.user as ExtendedProfile;
 
-        const { status, message } = await handleTwitterLogin(twitterId);
+        console.log('user photo: ', photos?.values[0]);
+        
+        const { status, message } = await handleTwitterLogin(twitterId, photos?.values[0] ?? '');
 
         if (status !== Status.SUCCESS) {
             return res.status(status).json({

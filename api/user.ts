@@ -25,7 +25,9 @@ import { InviteCodeData } from '../models/invite';
  * Otherwise, they can't sign up.
  */
 export const handleTwitterLogin = async (
-    twitterId: string
+    twitterId: string,
+    // the user's twitter profile picture
+    twitterProfilePicture: string,
 ): Promise<ReturnValue> => {
     try {
         const user = await UserModel.findOne({ twitterId }).lean();
@@ -102,6 +104,7 @@ export const handleTwitterLogin = async (
             const newUser = new UserModel({
                 _id: userObjectId,
                 twitterId,
+                twitterProfilePicture,
                 createdTimestamp: Math.floor(Date.now() / 1000),
                 // invite code data will be null until users input their invite code.
                 inviteCodeData: {
@@ -509,8 +512,6 @@ export const removeResources = async (twitterId: string, resourcesToRemove: Simp
  */
 export const claimDailyRewards = async (
     twitterId: string,
-    /** the user's twitter profile picture url */
-    userPictureUrl: string,
     leaderboardName: string | null
 ): Promise<ReturnValue> => {
     try {
@@ -583,7 +584,7 @@ export const claimDailyRewards = async (
                 if (userIndex === -1) {
                     leaderboardUpdateOperations.$push['userData'] = {
                         userId: user._id,
-                        userPictureUrl: userPictureUrl,
+                        twitterProfilePicture: user.twitterProfilePicture,
                         points: reward.amount
                     }
                 } else {

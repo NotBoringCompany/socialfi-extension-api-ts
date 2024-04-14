@@ -118,10 +118,7 @@ router.post('/claim_daily_rewards', async (req, res) => {
             })
         }
 
-        // get the twitter profile picture of the user for leaderboard
-        const { photos } = req.user as ExtendedProfile;
-
-        const { status, message, data } = await claimDailyRewards(validateData?.twitterId, photos.values[0], leaderboardName);
+        const { status, message, data } = await claimDailyRewards(validateData?.twitterId, leaderboardName);
 
         return res.status(status).json({
             status,

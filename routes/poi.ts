@@ -207,13 +207,7 @@ router.post('/sell_items_in_poi_shop', async (req, res) => {
             })
         }
 
-        
-        console.log('req user in sell_items_in_poi_shop: ', req.user);
-
-        // get the twitter profile picture of the user for leaderboard
-        const { photos } = req.user as ExtendedProfile;
-
-        const { status, message, data } = await sellItemsInPOIShop(validateData?.twitterId, photos.values[0], items, leaderboardName);
+        const { status, message, data } = await sellItemsInPOIShop(validateData?.twitterId, items, leaderboardName);
 
         return res.status(status).json({
             status,

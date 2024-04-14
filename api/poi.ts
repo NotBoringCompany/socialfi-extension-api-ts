@@ -494,8 +494,6 @@ export const getCurrentPOI = async (twitterId: string): Promise<ReturnValue> => 
  */
 export const sellItemsInPOIShop = async (
     twitterId: string,
-    /** the user's twitter profile picture URL */
-    userPictureUrl: string,
     items: POIShopActionItemData[],
     leaderboardName: string | null,
 ): Promise<ReturnValue> => {
@@ -698,7 +696,7 @@ export const sellItemsInPOIShop = async (
             leaderboardUpdateOperations.$push = {
                 'userData': {
                     userId: user._id,
-                    userPictureUrl: userPictureUrl,
+                    twitterProfilePicture: user.twitterProfilePicture,
                     points: leaderboardPoints
                 }
             }

@@ -84,7 +84,7 @@ export const getLeaderboardRanking = async (leaderboardName: string): Promise<Re
         const rankedUserData = descendingPoints.map((userData, index) => ({
             rank: index + 1,
             userId: userIdToTwitterIdMap[userData.userId] || 'N/A',
-            userPictureUrl: userData.userPictureUrl,
+            twitterProfilePicture: userData.twitterProfilePicture,
             points: userData.points
         }));
 
@@ -156,7 +156,7 @@ export const getOwnLeaderboardRanking = async (
                 ranking: {
                     rank: userRank,
                     userId: twitterId,
-                    userPictureUrl: userData.userPictureUrl,
+                    twitterProfilePicture: userData.twitterProfilePicture,
                     points: userData.points
                 }
             }
