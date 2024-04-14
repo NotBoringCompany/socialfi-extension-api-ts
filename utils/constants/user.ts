@@ -1,7 +1,10 @@
-import { DailyLoginReward, DailyLoginRewardType } from '../../models/user';
+import { BeginnerReward, BeginnerRewardType, DailyLoginReward, DailyLoginRewardType } from '../../models/user';
 
 /** The maximum weight a user's inventory can be */
 export const MAX_INVENTORY_WEIGHT = 200;
+
+/** the last day to claim beginner rewards */
+export const MAX_BEGINNER_REWARD_DAY = 7;
 
 /**
  * Gets the daily login rewards. Currently only supports xCookies and leaderboard points.
@@ -71,5 +74,58 @@ export const GET_DAILY_LOGIN_REWARDS = (
                 }
             ];
         }
+    }
+}
+
+/**
+ * Gets the beginner rewards for a specific day.
+ * 
+ * `day` refers to the current day the user wants to the claim the rewards for.
+ */
+export const GET_BEGINNER_REWARDS = (day: number): BeginnerReward[] => {
+    if (day >= MAX_BEGINNER_REWARD_DAY) {
+        // return an empty array if the user has passed the 7 day mark.
+        return [];
+    }
+
+    // logic is as follows:
+    // for xCookies: in the 1st day, users get 100 xCookies. 2nd-7th day, users get 25 xCookies.
+    // for bit orbs: users get 1 bit orb on the 1st, 3rd, 5th and 7th day
+    // for terra caps: users get 1 terra cap only on the first day
+    if (day === 1) {
+        return [
+            {
+                type: BeginnerRewardType.X_COOKIES,
+                amount: 100
+            },
+            {
+                type: BeginnerRewardType.BIT_ORB,
+                amount: 1
+            },
+            {
+                type: BeginnerRewardType.TERRA_CAPSULATOR,
+                amount: 1
+            }
+        ];
+    }
+
+    if (day % 2 === 0) {
+        return [
+            {
+                type: BeginnerRewardType.X_COOKIES,
+                amount: 25
+            }
+        ];
+    } else {
+        return [
+            {
+                type: BeginnerRewardType.X_COOKIES,
+                amount: 25
+            },
+            {
+                type: BeginnerRewardType.BIT_ORB,
+                amount: 1
+            }
+        ];
     }
 }

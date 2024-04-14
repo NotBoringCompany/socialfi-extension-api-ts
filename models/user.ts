@@ -16,6 +16,8 @@ export interface User {
     userId: string;
     /** the twitter user ID of the user */
     twitterId: string;
+    /** when the account was created */
+    createdTimestamp: number;
     /** 
      * the invite code used for the user to play the game 
      * 
@@ -94,6 +96,12 @@ export interface UserInventory {
 export interface InGameData {
     /** the user's level */
     level: number;
+    /** 
+     * the user's beginner reward data 
+     * 
+     * this is a 7-day reward system when the user signs up for the first time.
+     */
+    beginnerRewardData: BeginnerRewardData;
     /** the user's daily login reward data */
     dailyLoginRewardData: DailyLoginRewardData;
     /** the current location of the user (either home or in a POI) */
@@ -110,6 +118,33 @@ export interface InGameData {
      * value will be 0 if not travelling (i.e. if travellingTo is null)
      */
     destinationArrival: number;
+}
+
+/**
+ * Represents the user's beginner reward data.
+ */
+export interface BeginnerRewardData {
+    /** the last claimed timestamp of the beginner reward */
+    lastClaimedTimestamp: number;
+    /** 
+     * checks if the beginner reward is claimable.
+     * 
+     * this is true by default and will be set to false if the user has claimed the reward for the day.
+     * 
+     * the scheduler will reset this to true every day at 00:00 UTC.
+     */
+    isClaimable: boolean;
+    /**
+     * the days the user has claimed the beginner rewards.
+     * 
+     * if a user misses a day (i.e. not claiming the beginner rewards between 00:00 - 23:59 of that day, the day will be added to `daysMissed`).
+     */
+    daysClaimed: number[];
+    /**
+     * the days the user has missed claiming the beginner rewards.
+     */
+    daysMissed: number[];
+
 }
 
 /**
@@ -148,4 +183,23 @@ export interface DailyLoginReward {
 export enum DailyLoginRewardType {
     X_COOKIES = 'xCookies',
     LEADERBOARD_POINTS = 'Leaderboard Points',
+}
+
+/**
+ * Represents the beginner reward.
+ */
+export interface BeginnerReward {
+    /** the type of reward */
+    type: BeginnerRewardType;
+    /** the amount of reward */
+    amount: number;
+}
+
+/**
+ * Represents the type of beginner reward.
+ */
+export enum BeginnerRewardType {
+    X_COOKIES = 'xCookies',
+    BIT_ORB = 'Bit Orb',
+    TERRA_CAPSULATOR = 'Terra Capsulator',
 }

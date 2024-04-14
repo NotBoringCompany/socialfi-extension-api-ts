@@ -14,7 +14,7 @@ import { solidityKeccak256 } from 'ethers/lib/utils';
 import { ethers } from 'ethers';
 import { ExtendedResource, ResourceType, SimplifiedResource } from '../models/resource';
 import { resources } from '../utils/constants/resource';
-import { DailyLoginRewardData, DailyLoginRewardType } from '../models/user';
+import { BeginnerRewardData, DailyLoginRewardData, DailyLoginRewardType } from '../models/user';
 import { GET_DAILY_LOGIN_REWARDS } from '../utils/constants/user';
 import { InviteCodeData } from '../models/invite';
 
@@ -102,6 +102,7 @@ export const handleTwitterLogin = async (
             const newUser = new UserModel({
                 _id: userObjectId,
                 twitterId,
+                createdTimestamp: Math.floor(Date.now() / 1000),
                 // invite code data will be null until users input their invite code.
                 inviteCodeData: {
                     usedStarterCode: null,
@@ -135,6 +136,12 @@ export const handleTwitterLogin = async (
                 },
                 inGameData: {
                     level: 1,
+                    beginnerRewardData: {
+                        lastClaimedTimestamp: 0,
+                        isClaimable: true,
+                        daysClaimed: [],
+                        daysMissed: []
+                    },
                     dailyLoginRewardData: {
                         lastClaimedTimestamp: 0,
                         isDailyClaimable: true,
@@ -816,6 +823,42 @@ export const checkInviteCodeLinked = async (twitterId: string): Promise<ReturnVa
         return {
             status: Status.ERROR,
             message: `(checkInviteCodeLinked) ${err.message}`
+        }
+    }
+}
+
+/**
+ * Checks if the user is eligible for beginner rewards (the first 7 days only) 
+ */
+export const checkBeginnerRewardsEligiblity = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(checkBeginnerRewardsEligiblity) User not found.`
+            }
+        }
+
+        // get the user's `inGameData.beginnerRewardData`
+        const beginnerRewardData = user.inGameData.beginnerRewardData as BeginnerRewardData;
+
+        // check if the total length of `daysClaimed` and `daysMissed` >= 7.
+        // if it is, return false for eligibility.
+        const isEligible = beginnerRewardData.daysClaimed.length + beginnerRewardData.daysMissed.length < 7;
+        return {
+            status: Status.SUCCESS,
+            message: `(checkBeginnerRewardsEligiblity) ${isEligible ? 'User is eligible for beginner rewards.' : 'User is not eligible for beginner rewards.'}`,
+            data: {
+                isEligible: beginnerRewardData.daysClaimed.length + beginnerRewardData.daysMissed.length < 7
+            }
+        
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(checkBeginnerRewardsEligiblity) ${err.message}`
         }
     }
 }
