@@ -432,6 +432,11 @@ export const addOrReplacePOIShop = async (
                 shop: shop
             }
         });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(addOrUpdatePOIShop) POI shop added/updated.`
+        }
     } catch (err: any) {
         return {
             status: Status.ERROR,
