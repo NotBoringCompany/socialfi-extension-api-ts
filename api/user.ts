@@ -14,8 +14,8 @@ import { solidityKeccak256 } from 'ethers/lib/utils';
 import { ethers } from 'ethers';
 import { ExtendedResource, ResourceType, SimplifiedResource } from '../models/resource';
 import { resources } from '../utils/constants/resource';
-import { BeginnerRewardData, DailyLoginRewardData, DailyLoginRewardType } from '../models/user';
-import { GET_DAILY_LOGIN_REWARDS } from '../utils/constants/user';
+import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType } from '../models/user';
+import { GET_BEGINNER_REWARDS, GET_DAILY_LOGIN_REWARDS } from '../utils/constants/user';
 import { InviteCodeData } from '../models/invite';
 
 /**
@@ -889,6 +889,60 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
 
         // check for beginner reward eligiblity
         const isEligible = beginnerRewardData.daysClaimed.length + beginnerRewardData.daysMissed.length < 7;
+
+        if (!isEligible) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(claimBeginnerRewards) User is not eligible for beginner rewards.`
+            }
+        }
+
+        // get the latest day from both arrays
+        // e.g: if daysClaimed is [1, 3, 4] and daysMissed is [2, 5], then get 5
+        const latestClaimedDay = beginnerRewardData.daysClaimed.length > 0 ? Math.max(...beginnerRewardData.daysClaimed) : 0;
+        const latestMissedDay = beginnerRewardData.daysMissed.length > 0 ? Math.max(...beginnerRewardData.daysMissed) : 0;
+
+        // get the next day to claim
+        const nextDayToClaim = Math.max(latestClaimedDay, latestMissedDay) + 1;
+
+        // if the user has already claimed the rewards for the day, return an error
+        if (!beginnerRewardData.isClaimable) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(claimBeginnerRewards) Rewards already claimed for the day.`
+            }
+        }
+
+        // get the beginner rewards for the day
+        const rewards = GET_BEGINNER_REWARDS(nextDayToClaim);
+
+        // 1. add the rewards to the user's inventory
+        // 2. set `isClaimable` to false
+        // 3. set `lastClaimedTimestamp` to now
+        // 4. add the day to `daysClaimed`
+        for (const reward of rewards) {
+            if (reward.type === BeginnerRewardType.X_COOKIES) {
+                userUpdateOperations.$inc['inventory.xCookies'] = reward.amount;
+            } else if (reward.type === BeginnerRewardType.BIT_ORB) {
+                userUpdateOperations.$inc['inventory.totalBitOrbs'] = reward.amount;
+            } else if (reward.type === BeginnerRewardType.TERRA_CAPSULATOR) {
+                userUpdateOperations.$inc['inventory.totalTerraCapsulators'] = reward.amount;
+            }
+        }
+        userUpdateOperations.$set['inGameData.beginnerRewardData.isClaimable'] = false;
+        userUpdateOperations.$set['inGameData.beginnerRewardData.lastClaimedTimestamp'] = Math.floor(Date.now() / 1000);
+        userUpdateOperations.$push['inGameData.beginnerRewardData.daysClaimed'] = nextDayToClaim;
+
+        // execute the update operations
+        await UserModel.updateOne({twitterId}, userUpdateOperations);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(claimBeginnerRewards) Beginner rewards claimed for day ${nextDayToClaim}.`,
+            data: {
+                rewards
+            }
+        }
     } catch (err: any) {
 
     }
