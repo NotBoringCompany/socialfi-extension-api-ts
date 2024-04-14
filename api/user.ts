@@ -15,7 +15,7 @@ import { ethers } from 'ethers';
 import { ExtendedResource, ResourceType, SimplifiedResource } from '../models/resource';
 import { resources } from '../utils/constants/resource';
 import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType } from '../models/user';
-import { GET_BEGINNER_REWARDS, GET_DAILY_LOGIN_REWARDS } from '../utils/constants/user';
+import { GET_BEGINNER_REWARDS, GET_DAILY_LOGIN_REWARDS, MAX_BEGINNER_REWARD_DAY } from '../utils/constants/user';
 import { InviteCodeData } from '../models/invite';
 
 /**
@@ -829,41 +829,35 @@ export const checkInviteCodeLinked = async (twitterId: string): Promise<ReturnVa
 }
 
 /**
- * Checks if the user is eligible for beginner rewards (the first 7 days only) 
+ * Fetches the user's beginner rewards data.
  */
-export const checkBeginnerRewardsEligiblity = async (twitterId: string): Promise<ReturnValue> => {
+export const getBeginnerRewardsData = async (twitterId: string): Promise<ReturnValue> => {
     try {
         const user = await UserModel.findOne({ twitterId }).lean();
 
         if (!user) {
             return {
                 status: Status.ERROR,
-                message: `(checkBeginnerRewardsEligiblity) User not found.`
+                message: `(getBeginnerRewardsData) User not found.`
             }
         }
 
-        // get the user's `inGameData.beginnerRewardData`
         const beginnerRewardData = user.inGameData.beginnerRewardData as BeginnerRewardData;
 
-        // check if the total length of `daysClaimed` and `daysMissed` >= 7.
-        // if it is, return false for eligibility.
-        const isEligible = beginnerRewardData.daysClaimed.length + beginnerRewardData.daysMissed.length < 7;
         return {
             status: Status.SUCCESS,
-            message: `(checkBeginnerRewardsEligiblity) ${isEligible ? 'User is eligible for beginner rewards.' : 'User is not eligible for beginner rewards.'}`,
+            message: `(getBeginnerRewardsData) Beginner rewards data fetched.`,
             data: {
-                isEligible: beginnerRewardData.daysClaimed.length + beginnerRewardData.daysMissed.length < 7
+                beginnerRewardData
             }
-        
         }
     } catch (err: any) {
         return {
             status: Status.ERROR,
-            message: `(checkBeginnerRewardsEligiblity) ${err.message}`
+            message: `(getBeginnerRewardsData) ${err.message}`
         }
     }
 }
-
 /**
  * Claims the beginner rewards for the user for a particular day.
  */
@@ -956,7 +950,7 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
  * Updates all users' beginner reward data daily. Called by a scheduler every 00:00 UTC.
  * 
  * This includes:
- * 1. only updating users whose `daysMissed` + `daysClaimed` < 7.
+ * 1. only updating users whose `daysMissed` + `daysClaimed` < MAX_BEGINNER_REWARD_DAY.
  * 2. resetting `isClaimable` to true every day at 00:00 UTC.
  * 3. add the current day to the user's `daysMissed` if they don't claim the rewards for the day (i.e. `isClaimable` is still true).
  */
@@ -967,7 +961,7 @@ export const updateBeginnerRewardsData = async (): Promise<void> => {
         // filter out users who are not eligible for beginner rewards
         const eligibleUsers = users.filter(user => {
             const beginnerRewardData = user.inGameData.beginnerRewardData as BeginnerRewardData;
-            return beginnerRewardData.daysClaimed.length + beginnerRewardData.daysMissed.length < 7;
+            return beginnerRewardData.daysClaimed.length + beginnerRewardData.daysMissed.length < MAX_BEGINNER_REWARD_DAY;
         });
 
         const userUpdateOperations: Array<{

@@ -1,5 +1,5 @@
 import express from 'express';
-import { checkBeginnerRewardsEligiblity, checkInviteCodeLinked, claimBeginnerRewards, claimDailyRewards, getInGameData, getInventory, getWalletDetails, linkInviteCode, removeResources } from '../api/user';
+import { checkInviteCodeLinked, claimBeginnerRewards, claimDailyRewards, getBeginnerRewardsData, getInGameData, getInventory, getWalletDetails, linkInviteCode, removeResources } from '../api/user';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { ExtendedProfile } from '../utils/types';
@@ -166,25 +166,6 @@ router.get('/check_invite_code_linked/:twitterId', async (req, res) => {
 
     try {
         const { status, message, data } = await checkInviteCodeLinked(twitterId);
-
-        return res.status(status).json({
-            status,
-            message,
-            data
-        });
-    } catch (err: any) {
-        return res.status(500).json({
-            status: 500,
-            message: err.message
-        })
-    }
-});
-
-router.get('/check_beginner_rewards_eligiblity/:twitterId', async (req, res) => {
-    const { twitterId } = req.params;
-
-    try {
-        const { status, message, data } = await checkBeginnerRewardsEligiblity(twitterId);
 
         return res.status(status).json({
             status,
