@@ -7,6 +7,9 @@ declare namespace Express {
 }
 
 export interface ExtendedProfile extends TwitterProfile {
+    photos?: {
+        value: string;
+    }[];
     twitterAccessToken?: string;
     twitterRefreshToken?: string;
     twitterExpiryDate?: number;
