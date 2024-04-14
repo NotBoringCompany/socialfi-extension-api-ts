@@ -862,3 +862,34 @@ export const checkBeginnerRewardsEligiblity = async (twitterId: string): Promise
         }
     }
 }
+
+/**
+ * Claims the beginner rewards for the user for a particular day.
+ */
+export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        const userUpdateOperations = {
+            $set: {},
+            $inc: {},
+            $push: {},
+            $pull: {}
+        }
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(claimBeginnerRewards) User not found.`
+            }
+        }
+
+        // get the user's beginner reward data
+        const beginnerRewardData = user.inGameData.beginnerRewardData as BeginnerRewardData;
+
+        // check for beginner reward eligiblity
+        const isEligible = beginnerRewardData.daysClaimed.length + beginnerRewardData.daysMissed.length < 7;
+    } catch (err: any) {
+
+    }
+}
