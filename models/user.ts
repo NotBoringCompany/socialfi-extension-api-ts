@@ -98,6 +98,8 @@ export interface UserInventory {
 export interface InGameData {
     /** the user's level */
     level: number;
+    /** the list of tutorial IDs the user has completed at the start */
+    completedTutorialIds: number[];
     /** 
      * the user's beginner reward data 
      * 

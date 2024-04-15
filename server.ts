@@ -48,6 +48,7 @@ import { schedulers } from './schedulers/schedulers';
 import { addOrReplacePOIShop } from './api/poi';
 import { POIName, POIShopItemName } from './models/poi';
 import { generateStarterCodes } from './api/invite';
+import { addTutorial } from './api/tutorial';
 
 app.use('/auth/twitter', twitterAuth);
 app.use('/jwt', jwt);

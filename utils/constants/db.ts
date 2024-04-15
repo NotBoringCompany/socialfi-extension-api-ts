@@ -8,6 +8,7 @@ import { QuestSchema } from '../../schemas/Quest';
 import { POISchema } from '../../schemas/POI';
 import { LeaderboardSchema } from '../../schemas/Leaderboard';
 import { StarterCodeSchema } from '../../schemas/Invite';
+import { TutorialSchema } from '../../schemas/Tutorial';
 
 export const UserModel = mongoose.model('Users', UserSchema, 'Users');
 export const BitModel = mongoose.model('Bits', BitSchema, 'Bits');
@@ -19,3 +20,4 @@ export const QuestModel = mongoose.model('Quests', QuestSchema, 'Quests');
 export const POIModel = mongoose.model('POI', POISchema, 'POI');
 export const LeaderboardModel = mongoose.model('Leaderboards', LeaderboardSchema, 'Leaderboards');
 export const StarterCodeModel = mongoose.model('StarterCodes', StarterCodeSchema, 'StarterCodes');
+export const TutorialModel = mongoose.model('Tutorials', TutorialSchema, 'Tutorials');

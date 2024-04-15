@@ -46,5 +46,3 @@ export enum BoosterItem {
  * This however doesn't include resources, food, bit orbs, terra caps and others, which have their own interfaces/types.
  */
 export type ItemType = BoosterItem;
-// export type ItemType = 
-//     ResourceType | 'Terra Capsulator' | 'Bit Orb' | FoodType | BoosterItem;
