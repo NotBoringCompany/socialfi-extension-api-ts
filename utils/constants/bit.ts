@@ -553,15 +553,15 @@ export const RANDOMIZE_GENDER = (): BitGender => {
 export const DEFAULT_GATHERING_RATE = (rarity: BitRarity): number => {
     switch (rarity) {
         case BitRarity.COMMON:
-            return 0.02;
+            return 0.04;
         case BitRarity.UNCOMMON:
-            return 0.025;
+            return 0.055;
         case BitRarity.RARE:
-            return 0.031;
+            return 0.0750;
         case BitRarity.EPIC:
-            return 0.039;
+            return 0.01142;
         case BitRarity.LEGENDARY:
-            return 0.05;
+            return 0.2723;
         default:
             throw new Error(`(BASE_GATHERING_RATE) Invalid rarity: ${rarity}`);
     }
@@ -573,15 +573,15 @@ export const DEFAULT_GATHERING_RATE = (rarity: BitRarity): number => {
 export const DEFAULT_GATHERING_RATE_GROWTH = (rarity: BitRarity): number => {
     switch (rarity) {
         case BitRarity.COMMON:
-            return 0.0002;
+            return 0.006;
         case BitRarity.UNCOMMON:
-            return 0.00025;
+            return 0.0075;
         case BitRarity.RARE:
-            return 0.00033;
+            return 0.0099;
         case BitRarity.EPIC:
-            return 0.00045;
+            return 0.0135;
         case BitRarity.LEGENDARY:
-            return 0.0006;
+            return 0.018;
         default:
             throw new Error(`(BASE_GATHERING_RATE_GROWTH) Invalid rarity: ${rarity}`);
     }
@@ -593,15 +593,15 @@ export const DEFAULT_GATHERING_RATE_GROWTH = (rarity: BitRarity): number => {
 export const DEFAULT_EARNING_RATE = (rarity: BitRarity): number => {
     switch (rarity) {
         case BitRarity.COMMON:
-            return 0.03;
+            return 0.045;
         case BitRarity.UNCOMMON:
-            return 0.036;
+            return 0.054;
         case BitRarity.RARE:
-            return 0.044;
+            return 0.066;
         case BitRarity.EPIC:
-            return 0.055;
+            return 0.0825;
         case BitRarity.LEGENDARY:
-            return 0.07;
+            return 0.105;
         default:
             throw new Error(`(BASE_EARNING_RATE) Invalid rarity: ${rarity}`);
     }
@@ -613,15 +613,15 @@ export const DEFAULT_EARNING_RATE = (rarity: BitRarity): number => {
 export const DEFAULT_EARNING_RATE_GROWTH = (rarity: BitRarity): number => {
     switch (rarity) {
         case BitRarity.COMMON:
-            return 0.00025;
+            return 0.000375;
         case BitRarity.UNCOMMON:
-            return 0.00032;
+            return 0.0048;
         case BitRarity.RARE:
-            return 0.0004;
+            return 0.006;
         case BitRarity.EPIC:
-            return 0.0005;
+            return 0.0075;
         case BitRarity.LEGENDARY:
-            return 0.00065;
+            return 0.00975;
         default:
             throw new Error(`(EARNING_RATE_GROWTH) Invalid rarity: ${rarity}`);
     }
