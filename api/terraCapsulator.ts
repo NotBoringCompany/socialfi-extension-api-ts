@@ -7,6 +7,7 @@ import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
 import { GET_TOTAL_COOKIE_CRUMBS_EARNABLE, GET_TOTAL_X_COOKIES_EARNABLE, randomizeIslandTraits } from '../utils/constants/island';
 import { BitTrait, BitTraitData } from '../models/bit';
 import { Modifier } from '../models/modifier';
+import { TerraCapsulatorType, UserTerraCapsulator } from '../models/terraCapsulator';
 
 /**
  * (User) Consumes a Terra Capsulator to obtain an island.
@@ -29,8 +30,10 @@ export const consumeTerraCapsulator = async (twitterId: string): Promise<ReturnV
             }
         }
 
-        // check if the user has at least 1 Terra Capsulator to consume
-        if (user.inventory?.totalTerraCapsulators < 1) {
+        // check if the user has at least 1 of this Terra Capsulator type to consume
+        const terraCapsulatorAmount = (user.inventory?.terraCapsulators as UserTerraCapsulator[]).find(terraCap => terraCap.type === TerraCapsulatorType.TERRA_CAPSULATOR_I)?.amount;
+        
+        if (!terraCapsulatorAmount || terraCapsulatorAmount < 1) {
             return {
                 status: Status.ERROR,
                 message: `(consumeTerraCapsulator) Not enough Terra Capsulators to consume.`

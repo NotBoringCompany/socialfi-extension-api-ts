@@ -607,7 +607,7 @@ export const sellItemsInPOIShop = async (
             }
 
             // search for this item in the user's inventory (which includes resources, items, foods)
-            // if the item specified is `Bit Orb (I)` or `Terra Capsulator (I)`, check the totalBitOrbs or totalTerraCapsulators count respectively.
+            // if the item specified is `Bit Orb (I)` or `Terra Capsulator (I)`, check the count for these types respectively.
             // otherwise, check the items array.
             if (
                 item.item === POIShopItemName.SEAWEED ||
