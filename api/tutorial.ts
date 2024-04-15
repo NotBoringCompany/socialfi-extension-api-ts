@@ -1,3 +1,4 @@
+import { Tutorial } from '../models/tutorial';
 import { TutorialModel } from '../utils/constants/db';
 import { generateObjectId } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
@@ -30,6 +31,36 @@ export const addTutorial = async (name: string): Promise<ReturnValue> => {
         return {
             status: Status.ERROR,
             message: `(addTutorial) Error: ${err.message}`
+        }
+    }
+}
+
+/**
+ * Gets all tutorials from the database.
+ */
+export const getTutorials = async (): Promise<ReturnValue> => {
+    try {
+        const tutorials = await TutorialModel.find();
+
+        if (!tutorials || tutorials.length === 0) {
+            return {
+                status: Status.ERROR,
+                message: '(getTutorials) No tutorials found.'
+            }
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: '(getTutorials) Successfully retrieved tutorials',
+            data: {
+                tutorials: tutorials as Tutorial[]
+            }
+        }
+    } catch (err: any) {
+        console.log('(getTutorials) Error:', err.message);
+        return {
+            status: Status.ERROR,
+            message: `(getTutorials) Error: ${err.message}`
         }
     }
 }

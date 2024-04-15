@@ -44,11 +44,8 @@ import poi from './routes/poi';
 import leaderboard from './routes/leaderboard';
 import kos from './routes/kos';
 import asset from './routes/asset';
+import tutorial from './routes/tutorial';
 import { schedulers } from './schedulers/schedulers';
-import { addOrReplacePOIShop } from './api/poi';
-import { POIName, POIShopItemName } from './models/poi';
-import { generateStarterCodes } from './api/invite';
-import { addTutorial } from './api/tutorial';
 
 app.use('/auth/twitter', twitterAuth);
 app.use('/jwt', jwt);
@@ -66,6 +63,7 @@ app.use('/cookie', cookie);
 app.use('/leaderboard', leaderboard);
 app.use('/kos', kos);
 app.use('/asset', asset);
+app.use('/tutorial', tutorial);
 
 app.listen(port, async () => {
     console.log(`Server running on port ${port}`);
