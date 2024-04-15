@@ -5,9 +5,9 @@
 //  * BIT ORB-RELATED MODELS
 //  ****************/
 /**
- * Represents all Bit Orbs in the game.
+ * Represents all Bit Orb types in the game.
  */
-export enum BitOrbItem {
+export enum BitOrbType {
     BIT_ORB_I = 'Bit Orb (I)',
     BIT_ORB_II = 'Bit Orb (II)',
     BIT_ORB_III = 'Bit Orb (III)'
@@ -18,7 +18,7 @@ export enum BitOrbItem {
  */
 export interface UserBitOrb {
     /** the type of bit orb */
-    type: BitOrbItem;
+    type: BitOrbType;
     /** the amount of this particular bit orb type owned */
     amount: number;
 }

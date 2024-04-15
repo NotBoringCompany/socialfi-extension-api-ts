@@ -163,8 +163,8 @@ export const handleTwitterLogin = async (
                     // add the free barren island to the `islandIds` array
                     islandIds: [islandData.island.islandId],
                     bitIds: [bitIdData?.latestBitId + 1],
-                    totalBitOrbs: 0,
-                    totalTerraCapsulators: 0
+                    bitOrbs: [],
+                    terraCapsulators: [],
                 },
                 inGameData: {
                     level: 1,

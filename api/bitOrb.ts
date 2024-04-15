@@ -6,11 +6,12 @@ import { ReturnValue, Status } from '../utils/retVal';
 import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
 import { IslandModel, UserModel } from '../utils/constants/db';
 import { Modifier } from '../models/modifier';
+import { BitOrbType, UserBitOrb } from '../models/bitOrb';
 
 /**
  * (User) Consumes a Bit Orb to obtain a Bit.
  */
-export const consumeBitOrb = async (twitterId: string): Promise<ReturnValue> => {
+export const consumeBitOrb = async (twitterId: string, bitOrbType: BitOrbType): Promise<ReturnValue> => {
     try {
         const user = await UserModel.findOne({ twitterId }).lean();
 
@@ -38,8 +39,10 @@ export const consumeBitOrb = async (twitterId: string): Promise<ReturnValue> => 
             }
         }
 
-        // check if the user has at least 1 Bit Orb to consume
-        if (user.inventory?.totalBitOrbs < 1) {
+        // check if the user has at least 1 of the bit orb type to consume
+        const bitOrbAmount = (user.inventory?.bitOrbs as UserBitOrb[]).find(bitOrb => bitOrb.type === bitOrbType)?.amount;
+
+        if (!bitOrbAmount || bitOrbAmount < 1) {
             return {
                 status: Status.ERROR,
                 message: `(consumeBitOrb) Not enough Bit Orbs to consume.`
@@ -47,7 +50,15 @@ export const consumeBitOrb = async (twitterId: string): Promise<ReturnValue> => 
         }
 
         // consume the Bit Orb
-        userUpdateOperations.$inc['inventory.totalBitOrbs'] = -1;
+        // check if the user has only 1 of this bit orb type left.
+        // if so, remove the bit orb from the user's inventory
+        // else, decrement the amount of the bit orb by 1
+        if (bitOrbAmount === 1) {
+            userUpdateOperations.$pull['inventory.bitOrbs'] = { type: bitOrbType };
+        } else {
+            const bitOrbIndex = (user.inventory?.bitOrbs as UserBitOrb[]).findIndex(bitOrb => bitOrb.type === bitOrbType);
+            userUpdateOperations.$inc[`inventory.bitOrbs.${bitOrbIndex}.amount`] = -1;
+        }
 
         // call `summonBit` to summon a Bit
         const { status: summonBitStatus, message: summonBitMessage, data: summonBitData } = await summonBit(user._id);

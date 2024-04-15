@@ -4,9 +4,9 @@
 //  * TERRA CAPSULATOR-RELATED MODELS
 //  ****************/
 /**
- * Represents all Terra Capsulators in the game.
+ * Represents all Terra Capsulator types in the game.
  */
-export enum TerraCapsulatorItem {
+export enum TerraCapsulatorType {
     TERRA_CAPSULATOR_I = 'Terra Capsulator (I)',
     TERRA_CAPSULATOR_II = 'Terra Capsulator (II)',
     TERRA_CAPSULATOR_III = 'Terra Capsulator (III)'
@@ -17,7 +17,7 @@ export enum TerraCapsulatorItem {
  */
 export interface UserTerraCapsulator {
     /** the type of terra capsulator */
-    type: TerraCapsulatorItem;
+    type: TerraCapsulatorType;
     /** the amount of this particular terra capsulator type owned */
     amount: number;
 }
