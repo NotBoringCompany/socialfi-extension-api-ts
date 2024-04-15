@@ -146,7 +146,6 @@ export interface BeginnerRewardData {
      * the days the user has missed claiming the beginner rewards.
      */
     daysMissed: number[];
-
 }
 
 /**

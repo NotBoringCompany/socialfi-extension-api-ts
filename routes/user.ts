@@ -204,6 +204,6 @@ router.post('/claim_beginner_rewards', async (req, res) => {
             message: err.message
         })
     }
-})
+});
 
 export default router;

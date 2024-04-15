@@ -811,14 +811,20 @@ export const checkInviteCodeLinked = async (twitterId: string): Promise<ReturnVa
 
         if (!user.inviteCodeData.usedStarterCode && !user.inviteCodeData.usedReferralCode) {
             return {
-                status: Status.BAD_REQUEST,
-                message: `(checkInviteCodeLinked) No starter or referral code linked.`
+                status: Status.SUCCESS,
+                message: `(checkInviteCodeLinked) No starter or referral code linked.`,
+                data: {
+                    hasInviteCodeLinked: false
+                }
             }
         }
 
         return {
             status: Status.SUCCESS,
             message: `(checkInviteCodeLinked) User has an invite code.`,
+            data: {
+                hasInviteCodeLinked: true
+            }
         }
     } catch (err: any) {
         return {
