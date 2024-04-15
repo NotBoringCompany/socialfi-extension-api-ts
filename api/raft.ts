@@ -57,7 +57,7 @@ export const getLatestRaftId = async (): Promise<ReturnValue> => {
             status: Status.SUCCESS,
             message: `(getLatestRaftId) Successfully retrieved latest raft ID.`,
             data: { 
-                latestRaftId: latestRaft.raftId
+                latestRaftId: latestRaft ? latestRaft.raftId : 0
             }
         }
     } catch (err: any) {
