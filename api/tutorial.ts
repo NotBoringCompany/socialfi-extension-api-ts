@@ -1,5 +1,5 @@
 import { Tutorial } from '../models/tutorial';
-import { TutorialModel } from '../utils/constants/db';
+import { TutorialModel, UserModel } from '../utils/constants/db';
 import { generateObjectId } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
 
@@ -61,6 +61,59 @@ export const getTutorials = async (): Promise<ReturnValue> => {
         return {
             status: Status.ERROR,
             message: `(getTutorials) Error: ${err.message}`
+        }
+    }
+}
+
+/**
+ * Gets called when a user completes a specific tutorial.
+ */
+export const completeTutorial = async (twitterId: string, tutorialId: number): Promise<ReturnValue> => {
+    try {
+        const tutorial = await TutorialModel.findOne({ id: tutorialId });
+
+        if (!tutorial) {
+            return {
+                status: Status.ERROR,
+                message: `(completeTutorial) Tutorial ID ${tutorialId} not found.`
+            }
+        }
+
+        // get the user's list of tutorials
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(completeTutorial) User not found.`
+            }
+        }
+
+        const userTutorials = user.inGameData.completedTutorialIds as number[];
+
+        // check if the user has already completed this tutorial
+        if (userTutorials.includes(tutorialId)) {
+            return {
+                status: Status.ERROR,
+                message: `(completeTutorial) User has already completed tutorial ID ${tutorialId}.`
+            }
+        }
+
+        // add the tutorial to the user's list of completed tutorials
+        await UserModel.updateOne({ twitterId }, {
+            $push: {
+                'inGameData.completedTutorialIds': tutorialId
+            }
+        });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(completeTutorial) User has completed tutorial ID ${tutorialId}.`
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(completeTutorial) Error: ${err.message}`
         }
     }
 }
