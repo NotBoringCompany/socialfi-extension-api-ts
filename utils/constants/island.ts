@@ -134,60 +134,60 @@ export const ISLAND_EVOLUTION_COST = (type: IslandType, currentLevel: number): {
             if (currentLevel === 1) {
                 return {
                     xCookies: 50,
-                    cookieCrumbs: 100
+                    cookieCrumbs: 0
                 }
             } else {
                 return {
                     xCookies: 50 + (15 * (currentLevel - 1)),
-                    cookieCrumbs: 100 + (30 * (currentLevel - 1))
+                    cookieCrumbs: 0
                 }
             }
         case IslandType.VERDANT_ISLES:
             if (currentLevel === 1) {
                 return {
                     xCookies: 100,
-                    cookieCrumbs: 200
+                    cookieCrumbs: 0
                 }
             } else {
                 return {
                     xCookies: 100 + (30 * (currentLevel - 1)),
-                    cookieCrumbs: 200 + (60 * (currentLevel - 1))
+                    cookieCrumbs: 0
                 }
             }
         case IslandType.EXOTIC_ISLES:
             if (currentLevel === 1) {
                 return {
                     xCookies: 250,
-                    cookieCrumbs: 500
+                    cookieCrumbs: 0
                 }
             } else {
                 return {
                     xCookies: 250 + (75 * (currentLevel - 1)),
-                    cookieCrumbs: 500 + (150 * (currentLevel - 1))
+                    cookieCrumbs: 0
                 }
             }
         case IslandType.CRYSTAL_ISLES:
             if (currentLevel === 1) {
                 return {
                     xCookies: 700,
-                    cookieCrumbs: 1400
+                    cookieCrumbs: 0
                 }
             } else {
                 return {
                     xCookies: 700 + (210 * (currentLevel - 1)),
-                    cookieCrumbs: 1400 + (420 * (currentLevel - 1))
+                    cookieCrumbs: 0
                 }
             }
         case IslandType.CELESTIAL_ISLES:
             if (currentLevel === 1) {
                 return {
                     xCookies: 1500,
-                    cookieCrumbs: 3000
+                    cookieCrumbs: 0
                 }
             } else {
                 return {
                     xCookies: 1500 + (450 * (currentLevel - 1)),
-                    cookieCrumbs: 3000 + (900 * (currentLevel - 1))
+                    cookieCrumbs: 0
                 }
             }
         // if barren or invalid type, throw error
