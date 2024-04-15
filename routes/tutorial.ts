@@ -19,3 +19,5 @@ router.get('/get_tutorials', async (req, res) => {
         })
     }
 })
+
+export default router;
