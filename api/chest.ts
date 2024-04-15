@@ -4,6 +4,8 @@ import { Food, FoodType } from '../models/food';
 import { BarrenResource, CombinedResources, ExtendedResource, Resource, ResourceType } from '../models/resource';
 import { UserModel } from '../utils/constants/db';
 import { resources } from '../utils/constants/resource';
+import { BitOrbType } from '../models/bitOrb';
+import { TerraCapsulatorType } from '../models/terraCapsulator';
 
 /**
  * Opens a chest found across Twitter's timeline, randomizing a chest item and adding it to the user's inventory.
@@ -43,8 +45,8 @@ export const openChest = async (twitterId: string, tweetId: string): Promise<Ret
         const isFood = Object.values(FoodType).includes(item as FoodType);
         const isResource = Object.values(CombinedResources).includes(item as ResourceType);
         const isXCookies = item === 'xCookies';
-        const isBitOrb = item === 'Bit Orb';
-        const isTerraCapsulator = item === 'Terra Capsulator';
+        const isBitOrbI = item === BitOrbType.BIT_ORB_I;
+        const isTerraCapsulatorI = item === TerraCapsulatorType.TERRA_CAPSULATOR_I;
 
         // check if the user already has the food, if yes, increment the amount, if not, add it to the user's inventory
         if (isFood) {
@@ -98,19 +100,47 @@ export const openChest = async (twitterId: string, tweetId: string): Promise<Ret
             
             })
         // increment the user's bit orb count
-        } else if (isBitOrb) {
-            await UserModel.updateOne({ twitterId }, {
-                $inc: {
-                    'inventory.totalBitOrbs': amount
-                }
-            })
+        } else if (isBitOrbI) {
+            // check if the user already has the bit orb, if yes, increment the amount, if not, add it to the user's inventory
+            const existingBitOrbIndex = (user.inventory?.bitOrbs as BitOrbType[]).findIndex(bitOrb => bitOrb === item);
+
+            if (existingBitOrbIndex !== -1) {
+                await UserModel.updateOne({ twitterId }, {
+                    $inc: {
+                        [`inventory.bitOrbs.${existingBitOrbIndex}.amount`]: amount
+                    }
+                })
+            } else {
+                await UserModel.updateOne({ twitterId }, {
+                    $push: {
+                        'inventory.bitOrbs': {
+                            type: item,
+                            amount
+                        }
+                    }
+                })
+            }
         // increment the user's terra capsulator count
-        } else if (isTerraCapsulator) {
-            await UserModel.updateOne({ twitterId }, {
-                $inc: {
-                    'inventory.totalTerraCapsulators': amount
-                }
-            })
+        } else if (isTerraCapsulatorI) {
+            // check if the user already has the terra capsulator, if yes, increment the amount, if not, add it to the user's inventory
+            const existingTerraCapsulatorIndex = (user.inventory?.terraCapsulators as TerraCapsulatorType[]).findIndex(terraCapsulator => terraCapsulator === item);
+
+            if (existingTerraCapsulatorIndex !== -1) {
+                await UserModel.updateOne({ twitterId }, {
+                    $inc: {
+                        [`inventory.terraCapsulators.${existingTerraCapsulatorIndex}.amount`]: amount
+                    }
+                })
+            } else {
+                await UserModel.updateOne({ twitterId }, {
+                    $push: {
+                        'inventory.terraCapsulators': {
+                            type: item,
+                            amount
+                        }
+                    }
+                })
+            }
         }
 
         // add the tweet ID to the user's openedTweetIdsToday
