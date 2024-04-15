@@ -2958,7 +2958,7 @@ export const getLatestIslandId = async (): Promise<ReturnValue> => {
             status: Status.SUCCESS,
             message: `(getLatestIslandId) Latest island id fetched.`,
             data: {
-                latestIslandId: latestIsland.islandId
+                latestIslandId: latestIsland ? latestIsland.islandId : 0
             }
         }
     } catch (err: any) {
