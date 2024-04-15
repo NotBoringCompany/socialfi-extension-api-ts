@@ -3,6 +3,8 @@ import { Food } from './food';
 import { Item } from './item';
 import { ExtendedResource } from './resource';
 import { InviteCodeData, ReferralData } from './invite';
+import { UserTerraCapsulator } from './terraCapsulator';
+import { UserBitOrb } from './bitOrb';
 
 /****************
  * USER-RELATED MODELS
@@ -86,10 +88,10 @@ export interface UserInventory {
     islandIds: number[];
     /** a list of owned bit IDs */
     bitIds: number[];    
-    /** total amount of bit orbs owned */
-    totalBitOrbs: number;
-    /** total amount of terra caps owned */
-    totalTerraCapsulators: number;
+    /** owned bit orbs */
+    bitOrbs: UserBitOrb[];
+    /** owned terra capsulators */
+    terraCapsulators: UserTerraCapsulator[];
 }
 
 /**

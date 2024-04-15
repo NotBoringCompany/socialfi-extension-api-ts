@@ -11,3 +11,13 @@ export enum TerraCapsulatorItem {
     TERRA_CAPSULATOR_II = 'Terra Capsulator (II)',
     TERRA_CAPSULATOR_III = 'Terra Capsulator (III)'
 }
+
+/**
+ * Represents the interface for a user's terra capsulators owned.
+ */
+export interface UserTerraCapsulator {
+    /** the type of terra capsulator */
+    type: TerraCapsulatorItem;
+    /** the amount of this particular terra capsulator type owned */
+    amount: number;
+}
