@@ -175,7 +175,7 @@ export const getLatestDepositId = async (): Promise<ReturnValue> => {
             status: Status.SUCCESS,
             message: `(getLatestDepositId) Latest deposit ID: ${latestDeposit}`,
             data: {
-                depositId: latestDeposit.depositId
+                depositId: latestDeposit ? latestDeposit.depositId : 0
             }
         }
     } catch (err: any) {
@@ -195,7 +195,7 @@ export const getLatestWithdrawalId = async (): Promise<ReturnValue> => {
             status: Status.SUCCESS,
             message: `(getLatestWithdrawalId) Latest withdrawal ID: ${latestWithdrawal}`,
             data: {
-                withdrawalId: latestWithdrawal.withdrawalId
+                withdrawalId: latestWithdrawal ? latestWithdrawal.withdrawalId : 0
             }
         }
     } catch (err: any) {
