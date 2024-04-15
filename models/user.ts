@@ -3,8 +3,8 @@ import { Food } from './food';
 import { Item } from './item';
 import { ExtendedResource } from './resource';
 import { InviteCodeData, ReferralData } from './invite';
-import { UserTerraCapsulator } from './terraCapsulator';
-import { UserBitOrb } from './bitOrb';
+import { TerraCapsulatorType, UserTerraCapsulator } from './terraCapsulator';
+import { BitOrbType, UserBitOrb } from './bitOrb';
 
 /****************
  * USER-RELATED MODELS
@@ -205,6 +205,6 @@ export interface BeginnerReward {
  */
 export enum BeginnerRewardType {
     X_COOKIES = 'xCookies',
-    BIT_ORB = 'Bit Orb',
-    TERRA_CAPSULATOR = 'Terra Capsulator',
+    BIT_ORB_I = BitOrbType.BIT_ORB_I,
+    TERRA_CAPSULATOR_I = TerraCapsulatorType.TERRA_CAPSULATOR_I
 }

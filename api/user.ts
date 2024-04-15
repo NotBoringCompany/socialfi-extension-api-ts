@@ -17,6 +17,8 @@ import { resources } from '../utils/constants/resource';
 import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType } from '../models/user';
 import { GET_BEGINNER_REWARDS, GET_DAILY_LOGIN_REWARDS, MAX_BEGINNER_REWARD_DAY } from '../utils/constants/user';
 import { InviteCodeData } from '../models/invite';
+import { BitOrbType, UserBitOrb } from '../models/bitOrb';
+import { TerraCapsulatorType, UserTerraCapsulator } from '../models/terraCapsulator';
 
 /**
  * Returns the user's data.
@@ -954,12 +956,37 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
         for (const reward of rewards) {
             if (reward.type === BeginnerRewardType.X_COOKIES) {
                 userUpdateOperations.$inc['inventory.xCookies'] = reward.amount;
-            } else if (reward.type === BeginnerRewardType.BIT_ORB) {
-                userUpdateOperations.$inc['inventory.totalBitOrbs'] = reward.amount;
-            } else if (reward.type === BeginnerRewardType.TERRA_CAPSULATOR) {
-                userUpdateOperations.$inc['inventory.totalTerraCapsulators'] = reward.amount;
+            } else if (reward.type === BeginnerRewardType.BIT_ORB_I) {
+                // check if the user already has Bit Orb (I) in their inventory
+                const bitOrbIIndex = (user.inventory.bitOrbs as UserBitOrb[]).findIndex(orb => orb.type === BitOrbType.BIT_ORB_I);
+
+                // if the user already has Bit Orb (I), increment the amount
+                // otherwise, add Bit Orb (I) to the user's inventory
+                if (bitOrbIIndex !== -1) {
+                    userUpdateOperations.$inc[`inventory.bitOrbs.${bitOrbIIndex}.amount`] = reward.amount;
+                } else {
+                    userUpdateOperations.$push['inventory.bitOrbs'] = {
+                        type: BitOrbType.BIT_ORB_I,
+                        amount: reward.amount
+                    }
+                }
+            } else if (reward.type === BeginnerRewardType.TERRA_CAPSULATOR_I) {
+                // check if the user already has Terra Capsulator (I) in their inventory
+                const terraCapsulatorIIndex = (user.inventory.terraCapsulators as UserTerraCapsulator[]).findIndex(terraCap => terraCap.type === TerraCapsulatorType.TERRA_CAPSULATOR_I);
+
+                // if the user already has Terra Capsulator (I), increment the amount
+                // otherwise, add Terra Capsulator (I) to the user's inventory
+                if (terraCapsulatorIIndex !== -1) {
+                    userUpdateOperations.$inc[`inventory.terraCapsulators.${terraCapsulatorIIndex}.amount`] = reward.amount;
+                } else {
+                    userUpdateOperations.$push['inventory.terraCapsulators'] = {
+                        type: TerraCapsulatorType.TERRA_CAPSULATOR_I,
+                        amount: reward.amount
+                    }
+                }
             }
         }
+        
         userUpdateOperations.$set['inGameData.beginnerRewardData.isClaimable'] = false;
         userUpdateOperations.$set['inGameData.beginnerRewardData.lastClaimedTimestamp'] = Math.floor(Date.now() / 1000);
         userUpdateOperations.$push['inGameData.beginnerRewardData.daysClaimed'] = nextDayToClaim;
