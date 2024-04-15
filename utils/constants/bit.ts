@@ -25,25 +25,25 @@ export const RELOCATION_COOLDOWN = 86400;
 export const BIT_EVOLUTION_COST = (currentLevel: number): number => {
     // level once upgraded = 2 to 9
     if (currentLevel >= 1 && currentLevel <= 8) {
-        return 30;
+        return 5;
     // level once upgraded = 10 to 19
     } else if (currentLevel >= 9 && currentLevel <= 18) {
-        return 60; // 2x of prev level range
+        return 10; // 2x of prev level range
     // level once upgraded = 20 to 29
     } else if (currentLevel >= 19 && currentLevel <= 28) {
-        return 120; // 2x of prev level range
+        return 20; // 2x of prev level range
     // level once upgraded = 30 to 39
     } else if (currentLevel >= 29 && currentLevel <= 38) {
-        return 360; // 3x of prev level range
+        return 60; // 3x of prev level range
     // level once upgraded = 40 to 49
     } else if (currentLevel >= 39 && currentLevel <= 48) {
-        return 1080; // 3x of prev level range
+        return 180; // 3x of prev level range
     // level once upgraded = 50 to 59
     } else if (currentLevel >= 49 && currentLevel <= 58) {
-        return 3240; // 3x of prev level range
+        return 360; // 3x of prev level range
     // level once upgraded = 60 to 65
     } else if (currentLevel >= 59 && currentLevel <= 64) {
-        return 12960; // 4x of prev level range
+        return 720; // 4x of prev level range
     }
 }
 
