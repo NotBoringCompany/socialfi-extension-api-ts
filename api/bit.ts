@@ -812,7 +812,7 @@ export const getLatestBitId = async (): Promise<ReturnValue> => {
             status: Status.SUCCESS,
             message: `(getLatestBitId) Latest bit id fetched.`,
             data: {
-                latestBitId: latestBit.bitId
+                latestBitId: latestBit ? latestBit.bitId : 0,
             },
         };
     } catch (err: any) {
