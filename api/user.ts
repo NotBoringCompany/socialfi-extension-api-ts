@@ -19,6 +19,35 @@ import { GET_BEGINNER_REWARDS, GET_DAILY_LOGIN_REWARDS, MAX_BEGINNER_REWARD_DAY 
 import { InviteCodeData } from '../models/invite';
 
 /**
+ * Returns the user's data.
+ */
+export const getUserData = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(getUserData) User not found.`
+            }
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getUserData) User data fetched.`,
+            data: {
+                user
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getUserData) ${err.message}`
+        }    
+    }
+}
+
+/**
  * Twitter login logic. Creates a new user or simply log them in if they already exist.
  * 
  * If users sign up, they are required to input an invite code (either from a starter code or a referral code).
