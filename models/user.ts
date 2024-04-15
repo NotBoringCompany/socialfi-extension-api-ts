@@ -85,7 +85,7 @@ export interface UserInventory {
     /** a list of owned island IDs */
     islandIds: number[];
     /** a list of owned bit IDs */
-    bitIds: number[];
+    bitIds: number[];    
     /** total amount of bit orbs owned */
     totalBitOrbs: number;
     /** total amount of terra caps owned */
