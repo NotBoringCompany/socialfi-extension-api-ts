@@ -2,9 +2,6 @@
  * ITEM-RELATED MODELS
  ****************/
 
-import { FoodType } from './food';
-import { ResourceType } from './resource';
-
 /**
  * Represents an item.
  */
@@ -39,10 +36,24 @@ export enum BoosterItem {
 }
 
 /**
- * Represents the type of item.
- * 
- * An item is a general term used for various things that can be obtained and used in the game.
- * 
- * This however doesn't include resources, food, bit orbs, terra caps and others, which have their own interfaces/types.
+ * Represents all Bit Orbs in the game.
  */
-export type ItemType = BoosterItem;
+export enum BitOrbItem {
+    BIT_ORB_I = 'Bit Orb (I)',
+    BIT_ORB_II = 'Bit Orb (II)',
+    BIT_ORB_III = 'Bit Orb (III)'
+}
+
+/**
+ * Represents all Terra Capsulators in the game.
+ */
+export enum TerraCapsulatorItem {
+    TERRA_CAPSULATOR_I = 'Terra Capsulator (I)',
+    TERRA_CAPSULATOR_II = 'Terra Capsulator (II)',
+    TERRA_CAPSULATOR_III = 'Terra Capsulator (III)'
+}
+
+/**
+ * Represents the type of item, which are generic assets that are usable in-game.
+ */
+export type ItemType = BoosterItem | BitOrbItem | TerraCapsulatorItem;

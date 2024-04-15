@@ -89,7 +89,7 @@ export const completeTutorial = async (twitterId: string, tutorialId: number): P
             }
         }
 
-        const userTutorials: number[] = user.inGameData.completedTutorialIds ?? [];
+        const userTutorials = user.inGameData.completedTutorialIds as number[];
 
         // check if the user has already completed this tutorial
         if (userTutorials.includes(tutorialId)) {

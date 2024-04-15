@@ -168,6 +168,7 @@ export const handleTwitterLogin = async (
                 },
                 inGameData: {
                     level: 1,
+                    completedTutorialIds: [],
                     beginnerRewardData: {
                         lastClaimedTimestamp: 0,
                         isClaimable: true,
