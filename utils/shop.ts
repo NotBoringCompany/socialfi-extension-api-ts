@@ -1,4 +1,5 @@
 import { BitOrbType } from '../models/bitOrb';
+import { BoosterItem } from '../models/booster';
 import { FoodType } from '../models/food';
 import { Shop } from '../models/shop';
 import { TerraCapsulatorType } from '../models/terraCapsulator';
@@ -18,6 +19,96 @@ export const shop: Shop = {
             type: TerraCapsulatorType.TERRA_CAPSULATOR_I,
             price: {
                 xCookies: 600
+            }
+        },
+        {
+            type: BoosterItem.GATHERING_PROGRESS_BOOSTER_25,
+            price: {
+                xCookies: 20
+            }
+        },
+        {
+            type: BoosterItem.GATHERING_PROGRESS_BOOSTER_50,
+            price: {
+                xCookies: 40
+            }
+        },
+        {
+            type: BoosterItem.GATHERING_PROGRESS_BOOSTER_100,
+            price: {
+                xCookies: 80
+            }
+        },
+        {
+            type: BoosterItem.GATHERING_PROGRESS_BOOSTER_200,
+            price: {
+                xCookies: 160
+            }
+        },
+        {
+            type: BoosterItem.GATHERING_PROGRESS_BOOSTER_300,
+            price: {
+                xCookies: 320
+            }
+        },
+        {
+            type: BoosterItem.GATHERING_PROGRESS_BOOSTER_500,
+            price: {
+                xCookies: 500
+            }
+        },
+        {
+            type: BoosterItem.GATHERING_PROGRESS_BOOSTER_1000,
+            price: {
+                xCookies: 900
+            }
+        },
+        {
+            type: BoosterItem.RAFT_SPEED_BOOSTER_1_MIN,
+            price: {
+                xCookies: 5
+            }
+        },
+        {
+            type: BoosterItem.RAFT_SPEED_BOOSTER_2_MIN,
+            price: {
+                xCookies: 7
+            }
+        },
+        {
+            type: BoosterItem.RAFT_SPEED_BOOSTER_3_MIN,
+            price: {
+                xCookies: 10
+            }
+        },
+        {
+            type: BoosterItem.RAFT_SPEED_BOOSTER_5_MIN,
+            price: {
+                xCookies: 15
+            }
+        },
+        {
+            type: BoosterItem.RAFT_SPEED_BOOSTER_10_MIN,
+            price: {
+                xCookies: 20
+            }
+        },
+        {
+            type: BoosterItem.RAFT_SPEED_BOOSTER_15_MIN,
+            price: {
+                xCookies: 30
+            }
+        },
+        {
+            type: BoosterItem.RAFT_SPEED_BOOSTER_30_MIN,
+            price: {
+                xCookies: 60
+            }
+        },
+        {
+            type: BoosterItem.RAFT_SPEED_BOOSTER_60_MIN,
+            price: {
+                xCookies: 120
             }
         }
     ],
