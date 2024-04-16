@@ -644,12 +644,12 @@ export const sellItemsInPOIShop = async (
                 // if terra cap or bit orb (which at this point is 'else')
             } else if (item.item === POIShopItemName.TERRA_CAPSULATOR_I) {
                 // check if the user owns this terra capsulator type. if they do, check if the amount they want to sell is less than the amount they own.
-                const terraCapsulator = (user.inventory.terraCapsulators as UserTerraCapsulator[]).find(terraCapsulator => terraCapsulator.type === item.item as string);
+                const terraCapsulator = (user.inventory.items as Item[]).find(i => i.type === item.item as string);
 
                 return !terraCapsulator || terraCapsulator.amount < item.amount;
             } else if (item.item === POIShopItemName.BIT_ORB_I) {
                 // check if the user owns this bit orb type. if they do, check if the amount they want to sell is less than the amount they own.
-                const bitOrb = (user.inventory.bitOrbs as UserBitOrb[]).find(bitOrb => bitOrb.type === item.item as string);
+                const bitOrb = (user.inventory.items as Item[]).find(i => i.type === item.item as string);
 
                 return !bitOrb || bitOrb.amount < item.amount;
                 // right now, we don't have any other items in the POI shop, so we just return true since it's invalid.
@@ -792,7 +792,7 @@ export const sellItemsInPOIShop = async (
                 }
             } else if (item.item === POIShopItemName.TERRA_CAPSULATOR_I) {
                 // get the index of the terra capsulator in the user's inventory
-                const terraCapsulatorIndex = (user.inventory.terraCapsulators as UserTerraCapsulator[]).findIndex(terraCapsulator => terraCapsulator.type === item.item as string);
+                const terraCapsulatorIndex = (user.inventory.items as Item[]).findIndex(i => i.type === item.item as string);
 
                 // if not found, return an error.
                 if (terraCapsulatorIndex === -1) {
@@ -804,14 +804,14 @@ export const sellItemsInPOIShop = async (
 
                 // if the amount to sell is equal to the amount in the user's inventory, we remove the entire terra capsulator.
                 // otherwise, we decrement the amount of the terra capsulator.
-                if (item.amount === (user.inventory.terraCapsulators as UserTerraCapsulator[])[terraCapsulatorIndex].amount) {
-                    userUpdateOperations.$pull[`inventory.terraCapsulators`] = { type: item.item };
+                if (item.amount === (user.inventory.items as Item[])[terraCapsulatorIndex].amount) {
+                    userUpdateOperations.$pull[`inventory.items`] = { type: item.item };
                 } else {
-                    userUpdateOperations.$inc[`inventory.terraCapsulators.${terraCapsulatorIndex}.amount`] = -item.amount;
+                    userUpdateOperations.$inc[`inventory.items.${terraCapsulatorIndex}.amount`] = -item.amount;
                 }
             } else if (item.item === POIShopItemName.BIT_ORB_I) {
                 // get the index of the bit orb in the user's inventory
-                const bitOrbIndex = (user.inventory.bitOrbs as UserBitOrb[]).findIndex(bitOrb => bitOrb.type === item.item as string);
+                const bitOrbIndex = (user.inventory.items as Item[]).findIndex(i => i.type === item.item as string);
 
                 // if not found, return an error.
                 if (bitOrbIndex === -1) {
@@ -823,10 +823,10 @@ export const sellItemsInPOIShop = async (
 
                 // if the amount to sell is equal to the amount in the user's inventory, we remove the entire bit orb.
                 // otherwise, we decrement the amount of the bit orb.
-                if (item.amount === (user.inventory.bitOrbs as UserBitOrb[])[bitOrbIndex].amount) {
-                    userUpdateOperations.$pull[`inventory.bitOrbs`] = { type: item.item };
+                if (item.amount === (user.inventory.items as Item[])[bitOrbIndex].amount) {
+                    userUpdateOperations.$pull[`inventory.items`] = { type: item.item };
                 } else {
-                    userUpdateOperations.$inc[`inventory.bitOrbs.${bitOrbIndex}.amount`] = -item.amount;
+                    userUpdateOperations.$inc[`inventory.items.${bitOrbIndex}.amount`] = -item.amount;
                 }
             }
 
@@ -1095,29 +1095,29 @@ export const buyItemsInPOIShop = async (
                 // check if the terra capsulator exists in the user's inventory.
                 // if it does, increment the amount of the terra capsulator.
                 // if it doesn't, add a new terra capsulator.
-                const terraCapsulatorIndex = (user.inventory.terraCapsulators as UserTerraCapsulator[]).findIndex(terraCapsulator => terraCapsulator.type === item.item as string);
+                const terraCapsulatorIndex = (user.inventory.items as Item[]).findIndex(i => i.type === item.item as string);
 
                 if (terraCapsulatorIndex === -1) {
-                    userUpdateOperations.$push[`inventory.terraCapsulators`] = {
+                    userUpdateOperations.$push[`inventory.items`] = {
                         type: item.item,
                         amount: item.amount
                     }
                 } else {
-                    userUpdateOperations.$inc[`inventory.terraCapsulators.${terraCapsulatorIndex}.amount`] = item.amount;
+                    userUpdateOperations.$inc[`inventory.items.${terraCapsulatorIndex}.amount`] = item.amount;
                 }
             } else if (item.item === POIShopItemName.BIT_ORB_I) {
                 // check if the bit orb exists in the user's inventory.
                 // if it does, increment the amount of the bit orb.
                 // if it doesn't, add a new bit orb.
-                const bitOrbIndex = (user.inventory.bitOrbs as UserBitOrb[]).findIndex(bitOrb => bitOrb.type === item.item as string);
+                const bitOrbIndex = (user.inventory.items as Item[]).findIndex(i => i.type === item.item as string);
 
                 if (bitOrbIndex === -1) {
-                    userUpdateOperations.$push[`inventory.bitOrbs`] = {
+                    userUpdateOperations.$push[`inventory.items`] = {
                         type: item.item,
                         amount: item.amount
                     }
                 } else {
-                    userUpdateOperations.$inc[`inventory.bitOrbs.${bitOrbIndex}.amount`] = item.amount;
+                    userUpdateOperations.$inc[`inventory.items.${bitOrbIndex}.amount`] = item.amount;
                 }
             }
 

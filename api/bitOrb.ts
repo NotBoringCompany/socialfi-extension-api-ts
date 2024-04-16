@@ -7,6 +7,7 @@ import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
 import { IslandModel, UserModel } from '../utils/constants/db';
 import { Modifier } from '../models/modifier';
 import { BitOrbType, UserBitOrb } from '../models/bitOrb';
+import { Item } from '../models/item';
 
 /**
  * (User) Consumes a Bit Orb to obtain a Bit.
@@ -40,7 +41,7 @@ export const consumeBitOrb = async (twitterId: string, bitOrbType: BitOrbType): 
         }
 
         // check if the user has at least 1 of the bit orb type to consume
-        const bitOrbAmount = (user.inventory?.bitOrbs as UserBitOrb[]).find(bitOrb => bitOrb.type === bitOrbType)?.amount;
+        const bitOrbAmount = (user.inventory?.items as Item[]).find(item => item.type === bitOrbType)?.amount;
 
         if (!bitOrbAmount || bitOrbAmount < 1) {
             return {
@@ -54,10 +55,11 @@ export const consumeBitOrb = async (twitterId: string, bitOrbType: BitOrbType): 
         // if so, remove the bit orb from the user's inventory
         // else, decrement the amount of the bit orb by 1
         if (bitOrbAmount === 1) {
-            userUpdateOperations.$pull['inventory.bitOrbs'] = { type: bitOrbType };
+            // pull the bit orb from the user inventory's items
+            userUpdateOperations.$pull['inventory.items'] = { type: bitOrbType };
         } else {
-            const bitOrbIndex = (user.inventory?.bitOrbs as UserBitOrb[]).findIndex(bitOrb => bitOrb.type === bitOrbType);
-            userUpdateOperations.$inc[`inventory.bitOrbs.${bitOrbIndex}.amount`] = -1;
+            const bitOrbIndex = (user.inventory?.items as Item[]).findIndex(item => item.type === bitOrbType);
+            userUpdateOperations.$inc[`inventory.items.${bitOrbIndex}.amount`] = -1;
         }
 
         // call `summonBit` to summon a Bit

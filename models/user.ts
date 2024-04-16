@@ -88,10 +88,10 @@ export interface UserInventory {
     islandIds: number[];
     /** a list of owned bit IDs */
     bitIds: number[];    
-    /** owned bit orbs */
-    bitOrbs: UserBitOrb[];
-    /** owned terra capsulators */
-    terraCapsulators: UserTerraCapsulator[];
+    // /** owned bit orbs */
+    // bitOrbs: UserBitOrb[];
+    // /** owned terra capsulators */
+    // terraCapsulators: UserTerraCapsulator[];
 }
 
 /**

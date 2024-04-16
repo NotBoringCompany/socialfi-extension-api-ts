@@ -8,6 +8,7 @@ import { GET_TOTAL_COOKIE_CRUMBS_EARNABLE, GET_TOTAL_X_COOKIES_EARNABLE, randomi
 import { BitTrait, BitTraitData } from '../models/bit';
 import { Modifier } from '../models/modifier';
 import { TerraCapsulatorType, UserTerraCapsulator } from '../models/terraCapsulator';
+import { Item } from '../models/item';
 
 /**
  * (User) Consumes a Terra Capsulator to obtain an island.
@@ -31,7 +32,7 @@ export const consumeTerraCapsulator = async (twitterId: string): Promise<ReturnV
         }
 
         // check if the user has at least 1 of this Terra Capsulator type to consume
-        const terraCapsulatorAmount = (user.inventory?.terraCapsulators as UserTerraCapsulator[]).find(terraCap => terraCap.type === TerraCapsulatorType.TERRA_CAPSULATOR_I)?.amount;
+        const terraCapsulatorAmount = (user.inventory?.items as Item[]).find(i => i.type === TerraCapsulatorType.TERRA_CAPSULATOR_I)?.amount;
         
         if (!terraCapsulatorAmount || terraCapsulatorAmount < 1) {
             return {

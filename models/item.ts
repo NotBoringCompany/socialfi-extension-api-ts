@@ -11,9 +11,7 @@ import { TerraCapsulatorType } from './terraCapsulator';
 export interface Item {
     /** the type of item */
     type: ItemType;
-    /** the item's description */
-    description: string;
-    /** the amount of item (used only for methods that require amount, such as for rewards) */
+    /** the amount of item (used only for methods that require amount, such as for rewards or in the inventory) */
     amount?: number;
 }
 

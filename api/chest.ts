@@ -6,6 +6,7 @@ import { UserModel } from '../utils/constants/db';
 import { resources } from '../utils/constants/resource';
 import { BitOrbType } from '../models/bitOrb';
 import { TerraCapsulatorType } from '../models/terraCapsulator';
+import { Item } from '../models/item';
 
 /**
  * Opens a chest found across Twitter's timeline, randomizing a chest item and adding it to the user's inventory.
@@ -102,18 +103,18 @@ export const openChest = async (twitterId: string, tweetId: string): Promise<Ret
         // increment the user's bit orb count
         } else if (isBitOrbI) {
             // check if the user already has the bit orb, if yes, increment the amount, if not, add it to the user's inventory
-            const existingBitOrbIndex = (user.inventory?.bitOrbs as BitOrbType[]).findIndex(bitOrb => bitOrb === item);
+            const existingBitOrbIndex = (user.inventory?.items as Item[]).findIndex(i => i.type === item);
 
             if (existingBitOrbIndex !== -1) {
                 await UserModel.updateOne({ twitterId }, {
                     $inc: {
-                        [`inventory.bitOrbs.${existingBitOrbIndex}.amount`]: amount
+                        [`inventory.items.${existingBitOrbIndex}.amount`]: amount
                     }
                 })
             } else {
                 await UserModel.updateOne({ twitterId }, {
                     $push: {
-                        'inventory.bitOrbs': {
+                        'inventory.items': {
                             type: item,
                             amount
                         }
@@ -123,18 +124,18 @@ export const openChest = async (twitterId: string, tweetId: string): Promise<Ret
         // increment the user's terra capsulator count
         } else if (isTerraCapsulatorI) {
             // check if the user already has the terra capsulator, if yes, increment the amount, if not, add it to the user's inventory
-            const existingTerraCapsulatorIndex = (user.inventory?.terraCapsulators as TerraCapsulatorType[]).findIndex(terraCapsulator => terraCapsulator === item);
+            const existingTerraCapsulatorIndex = (user.inventory?.items as Item[]).findIndex(i => i.type === item);
 
             if (existingTerraCapsulatorIndex !== -1) {
                 await UserModel.updateOne({ twitterId }, {
                     $inc: {
-                        [`inventory.terraCapsulators.${existingTerraCapsulatorIndex}.amount`]: amount
+                        [`inventory.items.${existingTerraCapsulatorIndex}.amount`]: amount
                     }
                 })
             } else {
                 await UserModel.updateOne({ twitterId }, {
                     $push: {
-                        'inventory.terraCapsulators': {
+                        'inventory.items': {
                             type: item,
                             amount
                         }
