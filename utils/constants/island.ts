@@ -58,32 +58,6 @@ export const DAILY_BONUS_RESOURCES_GATHERABLE = (type: IslandType) => {
 }
 
 /**
- * Gets the total xCookies earnable back for an island based on its type (i.e. rarity) when opening from a Terra Capsulator.
- */
-export const GET_TOTAL_X_COOKIES_EARNABLE = (type: IslandType) => {
-    // get the price of a terra capsulator to determine the total xCookies earnable
-    const terraCapsulatorPrice = shop.terraCapsulators.xCookies;
-
-    switch (type) {
-        case IslandType.BARREN:
-            return 0;
-        case IslandType.PRIMAL_ISLES:
-            return 0.6 * terraCapsulatorPrice;
-        case IslandType.VERDANT_ISLES:
-            return 0.925 * terraCapsulatorPrice;
-        case IslandType.EXOTIC_ISLES:
-            return 1.3 * terraCapsulatorPrice;
-        // currently, terra caps won't give out crystal or celestial isles; these values are only for future-proofing.
-        case IslandType.CRYSTAL_ISLES:
-            return 2 * terraCapsulatorPrice;
-        case IslandType.CELESTIAL_ISLES:
-            return 4.5 * terraCapsulatorPrice;
-        default:
-            throw new Error(`(GET_TOTAL_X_COOKIES_EARNABLE) Invalid Island Type: ${type}`);
-    }
-}
-
-/**
  * Gets the total cookie crumbs earnable for an island based on its type.
  */
 export const GET_TOTAL_COOKIE_CRUMBS_EARNABLE = (type: IslandType) => {

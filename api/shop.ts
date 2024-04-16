@@ -1,11 +1,7 @@
-import mongoose from 'mongoose';
-import { Food, FoodType } from '../models/food';
-import { ShopAsset, ShopFood, ShopPrice } from '../models/shop';
+import { Food } from '../models/food';
+import { ShopAsset } from '../models/shop';
 import { ReturnValue, Status } from '../utils/retVal';
 import { shop } from '../utils/shop';
-import { getOwnedXCookies } from './cookie';
-import { UserSchema } from '../schemas/User';
-import { User } from '../models/user';
 import { UserModel } from '../utils/constants/db';
 import { ItemType } from '../models/item';
 
