@@ -6,7 +6,7 @@ import { Status } from '../utils/retVal';
 const router = express.Router();
 
 router.post('/consume', async (req, res) => {
-    const { bitOrbType } = req.body;
+    const { type } = req.body;
     try {
         const {
             status: validateStatus,
@@ -22,7 +22,7 @@ router.post('/consume', async (req, res) => {
         }
         const { status, message, data } = await consumeBitOrb(
             validateData?.twitterId,
-            bitOrbType
+            type
         );
 
         return res.status(status).json({
