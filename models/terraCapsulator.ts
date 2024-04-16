@@ -8,6 +8,5 @@
  */
 export enum TerraCapsulatorType {
     TERRA_CAPSULATOR_I = 'Terra Capsulator (I)',
-    TERRA_CAPSULATOR_II = 'Terra Capsulator (II)',
-    TERRA_CAPSULATOR_III = 'Terra Capsulator (III)'
+    TERRA_CAPSULATOR_II = 'Terra Capsulator (II)'
 }

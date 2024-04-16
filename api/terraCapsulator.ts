@@ -11,9 +11,9 @@ import { TerraCapsulatorType } from '../models/terraCapsulator';
 import { Item } from '../models/item';
 
 /**
- * (User) Consumes a Terra Capsulator (I) to obtain an island.
+ * (User) Consumes a Terra Capsulator to obtain an island.
  */
-export const consumeTerraCapsulator = async (twitterId: string): Promise<ReturnValue> => {
+export const consumeTerraCapsulator = async (type: TerraCapsulatorType, twitterId: string): Promise<ReturnValue> => {
     try {
         const user = await UserModel.findOne({ twitterId }).lean();
 
@@ -32,7 +32,7 @@ export const consumeTerraCapsulator = async (twitterId: string): Promise<ReturnV
         }
 
         // check if the user has at least 1 of this Terra Capsulator type to consume
-        const terraCapsulatorAmount = (user.inventory?.items as Item[]).find(i => i.type === TerraCapsulatorType.TERRA_CAPSULATOR_I)?.amount;
+        const terraCapsulatorAmount = (user.inventory?.items as Item[]).find(i => i.type === type)?.amount;
         
         if (!terraCapsulatorAmount || terraCapsulatorAmount < 1) {
             return {
@@ -41,7 +41,7 @@ export const consumeTerraCapsulator = async (twitterId: string): Promise<ReturnV
             }
         }
 
-        // consume the Terra Capsulator (I)
+        // consume the Terra Capsulator
         // check if the user only has 1 of this Terra Capsulator type left.
         // if so, remove the Terra Capsulator from the user's inventory
         // else, decrement the amount of the Terra Capsulator by 1
@@ -54,7 +54,7 @@ export const consumeTerraCapsulator = async (twitterId: string): Promise<ReturnV
         }
 
         // call `summonIsland` to summon an Island
-        const { status: summonIslandStatus, message: summonIslandMessage, data: summonIslandData } = await summonIsland(user._id);
+        const { status: summonIslandStatus, message: summonIslandMessage, data: summonIslandData } = await summonIsland(type, user._id);
 
         if (summonIslandStatus !== Status.SUCCESS) {
             return {
@@ -99,6 +99,7 @@ export const consumeTerraCapsulator = async (twitterId: string): Promise<ReturnV
  * Summons an island obtained from a Terra Capsulator.
  */
 export const summonIsland = async (
+    terraCapsulatorType: TerraCapsulatorType,
     owner: string,
 ): Promise<ReturnValue> => {
     try {
@@ -115,7 +116,7 @@ export const summonIsland = async (
         const latestIslandId = data?.latestIslandId as number;
 
         // get the island type based on the probability of obtaining it
-        const islandType = randomizeTypeFromCapsulator();
+        const islandType = randomizeTypeFromCapsulator(terraCapsulatorType);
 
         // randomize the base resource cap
         const baseResourceCap = randomizeBaseResourceCap(islandType);

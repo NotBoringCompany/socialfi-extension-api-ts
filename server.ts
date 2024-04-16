@@ -46,6 +46,7 @@ import kos from './routes/kos';
 import asset from './routes/asset';
 import tutorial from './routes/tutorial';
 import { schedulers } from './schedulers/schedulers';
+import { addLeaderboard } from './api/leaderboard';
 
 app.use('/auth/twitter', twitterAuth);
 app.use('/jwt', jwt);
