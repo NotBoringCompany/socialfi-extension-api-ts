@@ -151,7 +151,7 @@ export const consumeBitOrb = async (twitterId: string, bitOrbType: BitOrbType): 
 }
 
 /**
- * Summons a Bit obtained from a Bit Orb.
+ * Summons a Bit obtained from a Bit Orb (I).
  */
 export const summonBit = async (
     owner: string,
@@ -186,7 +186,7 @@ export const summonBit = async (
             premium: true,
             owner,
             purchaseDate: Math.floor(Date.now() / 1000),
-            obtainMethod: ObtainMethod.BIT_ORB,
+            obtainMethod: ObtainMethod.BIT_ORB_I,
             placedIslandId: 0,
             lastRelocationTimestamp: 0,
             currentFarmingLevel: 1,

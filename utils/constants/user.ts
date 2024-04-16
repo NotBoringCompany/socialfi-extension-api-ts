@@ -99,11 +99,11 @@ export const GET_BEGINNER_REWARDS = (day: number): BeginnerReward[] => {
                 amount: 100
             },
             {
-                type: BeginnerRewardType.BIT_ORB,
+                type: BeginnerRewardType.BIT_ORB_I,
                 amount: 1
             },
             {
-                type: BeginnerRewardType.TERRA_CAPSULATOR,
+                type: BeginnerRewardType.TERRA_CAPSULATOR_I,
                 amount: 1
             }
         ];
@@ -123,7 +123,7 @@ export const GET_BEGINNER_REWARDS = (day: number): BeginnerReward[] => {
                 amount: 25
             },
             {
-                type: BeginnerRewardType.BIT_ORB,
+                type: BeginnerRewardType.BIT_ORB_I,
                 amount: 1
             }
         ];
