@@ -1,32 +1,50 @@
+import { BitOrbType } from '../models/bitOrb';
 import { FoodType } from '../models/food';
 import { Shop } from '../models/shop';
+import { TerraCapsulatorType } from '../models/terraCapsulator';
 
 /**
  * Since we don't require the shop to be dynamic for now (i.e. not requiring the database), we can just hardcode the shop.
  */
 export const shop: Shop = {
-    bitOrbs: {
-        xCookies: 200
-    },
-    terraCapsulators: {
-        xCookies: 600
-    },
+    items: [
+        {
+            type: BitOrbType.BIT_ORB_I,
+            price: {
+                xCookies: 200
+            }
+        },
+        {
+            type: TerraCapsulatorType.TERRA_CAPSULATOR_I,
+            price: {
+                xCookies: 600
+            }
+        }
+    ],
     foods: [
         {
             type: FoodType.CANDY,
-            xCookies: 0.1
+            price: {
+                xCookies: 0.1
+            }
         },
         {
             type: FoodType.CHOCOLATE,
-            xCookies: 0.2
+            price: {
+                xCookies: 0.2
+            }
         },
         {
             type: FoodType.JUICE,
-            xCookies: 0.35
+            price: {
+                xCookies: 0.35
+            }
         },
         {
             type: FoodType.BURGER,
-            xCookies: 0.6
+            price: {
+                xCookies: 0.6
+            }
         }
     ]
 }

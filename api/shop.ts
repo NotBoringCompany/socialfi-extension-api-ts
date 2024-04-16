@@ -1,12 +1,13 @@
 import mongoose from 'mongoose';
 import { Food, FoodType } from '../models/food';
-import { ShopAsset, ShopFood } from '../models/shop';
+import { ShopAsset, ShopFood, ShopPrice } from '../models/shop';
 import { ReturnValue, Status } from '../utils/retVal';
 import { shop } from '../utils/shop';
 import { getOwnedXCookies } from './cookie';
 import { UserSchema } from '../schemas/User';
 import { User } from '../models/user';
 import { UserModel } from '../utils/constants/db';
+import { ItemType } from '../models/item';
 
 /**
  * Fetches the shop.
@@ -27,8 +28,7 @@ export const getShop = (): ReturnValue => {
 export const purchaseShopAsset = async (
     twitterId: string,
     amount: number,
-    asset: ShopAsset,
-    foodType?: FoodType
+    asset: ShopAsset
 ): Promise<ReturnValue> => {
     if (!twitterId) {
         return {
@@ -44,79 +44,29 @@ export const purchaseShopAsset = async (
         }
     }
 
-    if (asset === ShopAsset.FOOD && !foodType) {
-        return {
-            status: Status.ERROR,
-            message: `(purchaseShopAsset) No foodType provided.`
-        }
+    const userUpdateOperations = {
+        $pull: {},
+        $inc: {},
+        $set: {},
+        $push: {}
     }
 
     try {
-        // fetch user's xCookies
-        const { status, message, data } = await getOwnedXCookies(twitterId);
+        // since prices are currently only available in xCookies, we dont check for other payment methods
+        let assetPrice = 0;
 
-        if (status !== Status.SUCCESS) {
+        // check if the asset specified exists in `shop.items` or `shop.foods`
+        const shopItem = shop.items.find(i => i.type === asset);
+        const shopFood = shop.foods.find(f => f.type === asset);
+
+        if (!shopItem && !shopFood) {
             return {
-                status,
-                message: `(purchaseShopAsset) Error from getOwnedXCookies: ${message}`
+                status: Status.ERROR,
+                message: `(purchaseShopAsset) Asset not found.`
             }
         }
 
-        const xCookies = data.xCookies;
-        // fetch the price via the switch statement
-        let assetPrice = 0;
-
-        // check if user has enough xCookies by checking the price of the asset
-        switch (asset) {
-            // food will be handled differently because it has different prices for different foods
-            case ShopAsset.FOOD:
-                // find the food instance that matches `foodType`
-                const food = shop.foods.find((f: ShopFood) => f.type === foodType);
-
-                // if food is not found, return an error
-                if (!food) {
-                    return {
-                        status: Status.ERROR,
-                        message: `(purchaseShopAsset) Food not found.`
-                    }
-                }
-
-                assetPrice = food.xCookies;
-
-                // if user doesn't have enough xCookies, return an error
-                if (xCookies < assetPrice * amount) {
-                    return {
-                        status: Status.ERROR,
-                        message: `(purchaseShopAsset) Not enough xCookies.`
-                    }
-                }
-
-                break;
-            case ShopAsset.BIT_ORB:
-                assetPrice = shop.bitOrbs.xCookies;
-
-                if (xCookies < assetPrice * amount) {
-                    return {
-                        status: Status.ERROR,
-                        message: `(purchaseShopAsset) Not enough xCookies.`
-                    }
-                }
-
-                break;
-            case ShopAsset.TERRA_CAPSULATOR:
-                assetPrice = shop.terraCapsulators.xCookies;
-
-                if (xCookies < assetPrice * amount) {
-                    return {
-                        status: Status.ERROR,
-                        message: `(purchaseShopAsset) Not enough xCookies.`
-                    }
-                }
-
-                break;
-        }
-
-        // deduct the price of the asset from the user's xCookies
+        // fetch user
         const user = await UserModel.findOne({ twitterId }).lean();
 
         if (!user) {
@@ -126,47 +76,59 @@ export const purchaseShopAsset = async (
             }
         }
 
-        // Prepare the update operation to deduct the asset price from the user's xCookies
-        const updateOperation: any = {
-            $set: { 'inventory.xCookies': xCookies - (assetPrice * amount) }
-        };
+        // fetch user's xCookies
+        const userXCookies = user.inventory?.xCookies;
 
-        // Update the user's inventory based on the asset type
-        switch (asset) {
-            case ShopAsset.FOOD:
-                // Prepare the update operation to add the food item to the inventory or increment its amount
-                const existingFoodIndex = user.inventory.foods.findIndex(f => f.type === foodType);
-                if (existingFoodIndex !== -1) {
-                    // If the food already exists, increment its amount
-                    updateOperation.$inc = { [`inventory.foods.${existingFoodIndex}.amount`]: amount };
-                } else {
-                    // If the food doesn't exist, push a new food item
-                    updateOperation.$push = { 'inventory.foods': { type: foodType, amount: amount } };
-                }
-                break;
-            case ShopAsset.BIT_ORB:
-                // Increment totalBitOrbs count
-                updateOperation.$inc = { 'inventory.totalBitOrbs': amount };
-                break;
-            case ShopAsset.TERRA_CAPSULATOR:
-                // Increment totalTerraCapsulators count
-                updateOperation.$inc = { 'inventory.totalTerraCapsulators': amount };
-                break;
+        // check if the user has enough xCookies to purchase the asset
+        if (shopItem) {
+            assetPrice = shopItem.price.xCookies;
+        } else {
+            assetPrice = shopFood.price.xCookies;
         }
 
-        // Execute the update operation
-        await UserModel.updateOne({ twitterId }, updateOperation);
-
-        return {
-            status: Status.SUCCESS,
-            message: `(purchaseShopAsset) Asset purchased and xCookies deducted.`,
-            data: {
-                amount,
-                asset,
-                foodType
+        if (userXCookies < (assetPrice * amount)) {
+            return {
+                status: Status.ERROR,
+                message: `(purchaseShopAsset) Not enough xCookies.`
             }
         }
 
+        if (shopItem) {
+
+            // add the item to the user's inventory
+            const existingItemIndex = (user.inventory?.items as ItemType[]).findIndex(i => i === asset);
+
+            if (existingItemIndex !== -1) {
+                userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = amount;
+            } else {
+                userUpdateOperations.$push['inventory.items'] = { type: asset, amount };
+            }
+        // if item is food
+        } else {
+            // add the food to the user's inventory
+            const existingFoodIndex = (user.inventory?.foods as Food[]).findIndex(f => f.type === asset);
+
+            if (existingFoodIndex !== -1) {
+                userUpdateOperations.$inc[`inventory.foods.${existingFoodIndex}.amount`] = amount;
+            } else {
+                userUpdateOperations.$push['inventory.foods'] = { type: asset, amount };
+            }
+        }
+
+        // deduct the asset price from the user's xCookies
+        userUpdateOperations.$inc['inventory.xCookies'] = -(assetPrice * amount);
+
+        // update the user's inventory
+        await UserModel.updateOne({ twitterId }, userUpdateOperations);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(purchaseShopAsset) Asset purchased.`,
+            data: {
+                asset,
+                amount
+            }
+        }
     } catch (err: any) {
         return {
             status: Status.ERROR,

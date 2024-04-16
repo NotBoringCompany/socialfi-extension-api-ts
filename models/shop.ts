@@ -3,33 +3,24 @@
  ****************/
 
 import { FoodType } from './food';
+import { ItemType } from './item';
 
 /**
  * Represents the in-game shop.
  */
 export interface Shop {
-    /** the bit orbs in the shop */
-    bitOrbs: ShopBitOrb;
-    /** the terra capsulators in the shop */
-    terraCapsulators: ShopTerraCapsulator;
-    /** the foods in the shop */
+    /** a list of items with their respective prices */
+    items: ShopItem[];
+    /** a list of foods with their respective prices */
     foods: ShopFood[];
 }
 
 /**
- * Represents the bit orb in the shop.
+ * Represents an item in the shop.
  */
-export interface ShopBitOrb {
-    /** the price of 1 bit orb in xCookies */
-    xCookies: number;
-}
-
-/**
- * Represents the terra capsulator in the shop.
- */
-export interface ShopTerraCapsulator {
-    /** the price of 1 terra capsulator in xCookies */
-    xCookies: number;
+export interface ShopItem {
+    type: ItemType;
+    price: ShopPrice;
 }
 
 /**
@@ -38,17 +29,16 @@ export interface ShopTerraCapsulator {
 export interface ShopFood {
     /** the type of food */
     type: FoodType;
-    /** the price of one of this food type in xCookies */
-    xCookies: number;
+    price: ShopPrice;
 }
 
 /**
- * Represents the type of shop asset.
- * 
- * Used to determine which asset the user is purchasing from the shop.
+ * Represents the price of a shop asset.
  */
-export enum ShopAsset {
-    BIT_ORB = 'Bit Orb',
-    TERRA_CAPSULATOR = 'Terra Capsulator',
-    FOOD = 'Food',
+export interface ShopPrice {
+    /** the price of the asset in xCookies */
+    xCookies: number;
 }
+
+/** Represents all available assets in the shop */
+export type ShopAsset = ItemType | FoodType;
