@@ -7,7 +7,7 @@ import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
 import { GET_TOTAL_COOKIE_CRUMBS_EARNABLE, GET_TOTAL_X_COOKIES_EARNABLE, randomizeIslandTraits } from '../utils/constants/island';
 import { BitTrait, BitTraitData } from '../models/bit';
 import { Modifier } from '../models/modifier';
-import { TerraCapsulatorType, UserTerraCapsulator } from '../models/terraCapsulator';
+import { TerraCapsulatorType } from '../models/terraCapsulator';
 import { Item } from '../models/item';
 
 /**

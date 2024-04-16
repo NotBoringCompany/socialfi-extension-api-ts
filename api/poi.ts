@@ -1,10 +1,8 @@
-import { UserBitOrb } from '../models/bitOrb';
 import { BoosterItem } from '../models/booster';
 import { Food } from '../models/food';
 import { Item } from '../models/item';
 import { POIName, POIShop, POIShopActionItemData, POIShopItemName } from '../models/poi';
 import { ExtendedResource } from '../models/resource';
-import { UserTerraCapsulator } from '../models/terraCapsulator';
 import { LeaderboardModel, POIModel, RaftModel, UserModel } from '../utils/constants/db';
 import { ACTUAL_RAFT_SPEED } from '../utils/constants/raft';
 import { ReturnValue, Status } from '../utils/retVal';
