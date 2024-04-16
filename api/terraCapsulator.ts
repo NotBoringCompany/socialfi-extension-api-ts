@@ -4,7 +4,7 @@ import { randomizeTypeFromCapsulator } from '../utils/constants/terraCapsulator'
 import { Island, IslandStatsModifiers } from '../models/island';
 import { ObtainMethod } from '../models/obtainMethod';
 import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
-import { GET_TOTAL_COOKIE_CRUMBS_EARNABLE, randomizeIslandTraits } from '../utils/constants/island';
+import { GET_TOTAL_COOKIE_CRUMBS_EARNABLE, GET_TOTAL_X_COOKIES_EARNABLE, randomizeIslandTraits } from '../utils/constants/island';
 import { BitTrait, BitTraitData } from '../models/bit';
 import { Modifier } from '../models/modifier';
 import { TerraCapsulatorType } from '../models/terraCapsulator';
@@ -124,6 +124,9 @@ export const summonIsland = async (
         // randomize the 5 island traits
         const traits = randomizeIslandTraits();
 
+        // get total xCookies earnable based on rarity
+        const totalXCookiesEarnable = GET_TOTAL_X_COOKIES_EARNABLE(terraCapsulatorType, islandType);
+
         // get total cookie crumbs earnable based on rarity
         const totalCookieCrumbsEarnable = GET_TOTAL_COOKIE_CRUMBS_EARNABLE(islandType);
 
@@ -219,15 +222,15 @@ export const summonIsland = async (
             },
             islandEarningStats: {
                 totalXCookiesSpent: 0,
-                totalXCookiesEarnable: 0,
+                totalXCookiesEarnable,
                 totalXCookiesEarned: 0,
                 claimableXCookies: 0,
                 totalCookieCrumbsSpent: 0,
                 totalCookieCrumbsEarnable,
                 totalCookieCrumbsEarned: 0,
                 claimableCookieCrumbs: 0,
-                earningStart: 0,
-                crumbsEarningStart: 0,
+                earningStart: Math.floor(Date.now() / 1000),
+                crumbsEarningStart: Math.floor(Date.now() / 1000),
                 earningEnd: 0,
                 crumbsEarningEnd: 0,
                 lastClaimed: 0,
