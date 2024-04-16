@@ -63,7 +63,7 @@ export const consumeBitOrb = async (twitterId: string, bitOrbType: BitOrbType): 
         }
 
         // call `summonBit` to summon a Bit
-        const { status: summonBitStatus, message: summonBitMessage, data: summonBitData } = await summonBit(user._id);
+        const { status: summonBitStatus, message: summonBitMessage, data: summonBitData } = await summonBit(user._id, bitOrbType);
 
         if (summonBitStatus !== Status.SUCCESS) {
             return {
@@ -157,6 +157,7 @@ export const consumeBitOrb = async (twitterId: string, bitOrbType: BitOrbType): 
  */
 export const summonBit = async (
     owner: string,
+    bitOrbType: BitOrbType
 ): Promise<ReturnValue> => {
     try {
         // get the latest bit id from the database
@@ -171,7 +172,7 @@ export const summonBit = async (
         const latestBitId = data?.latestBitId as number;
 
         // get the Bit's rarity based on the probability of obtaining it
-        const rarity = RANDOMIZE_RARITY_FROM_ORB();
+        const rarity = RANDOMIZE_RARITY_FROM_ORB(bitOrbType);
 
         // randomize the gender 
         const gender = RANDOMIZE_GENDER();

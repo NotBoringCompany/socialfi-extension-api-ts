@@ -89,8 +89,8 @@ export const handleTwitterLogin = async (
                 }
             }
 
-            // randomize bit rarity; follows the same rarity as when obtaining a bit from a bit orb
-            const rarity = RANDOMIZE_RARITY_FROM_ORB();
+            // randomize bit rarity; follows the same rarity as when obtaining a bit from bit orb (I)
+            const rarity = RANDOMIZE_RARITY_FROM_ORB(BitOrbType.BIT_ORB_I);
 
             const traits = randomizeBitTraits(rarity);
 
