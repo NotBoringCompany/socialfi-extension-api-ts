@@ -2327,15 +2327,23 @@ export const claimResources = async (
         await UserModel.updateOne({ twitterId }, {
             $set: Object.keys(userUpdateOperations.$set).length > 0 ? userUpdateOperations.$set : {},
             $inc: Object.keys(userUpdateOperations.$inc).length > 0 ? userUpdateOperations.$inc : {},
-            $pull: Object.keys(userUpdateOperations.$pull).length > 0 ? userUpdateOperations.$pull : {},
-            $push: Object.keys(userUpdateOperations.$push).length > 0 ? userUpdateOperations.$push : {}
         });
+        
+        await UserModel.updateOne({ twitterId }, {
+            $pull: Object.keys(userUpdateOperations.$pull).length > 0 ? userUpdateOperations.$pull : {},
+            $push: Object.keys(userUpdateOperations.$push).length > 0 ? userUpdateOperations.$push : {},
+        });
+
+
 
         await IslandModel.updateOne({ islandId }, {
             $set: Object.keys(islandUpdateOperations.$set).length > 0 ? islandUpdateOperations.$set : {},
             $inc: Object.keys(islandUpdateOperations.$inc).length > 0 ? islandUpdateOperations.$inc : {},
+        });
+
+        await IslandModel.updateOne({ islandId }, {
             $pull: Object.keys(islandUpdateOperations.$pull).length > 0 ? islandUpdateOperations.$pull : {},
-            $push: Object.keys(islandUpdateOperations.$push).length > 0 ? islandUpdateOperations.$push : {}
+            $push: Object.keys(islandUpdateOperations.$push).length > 0 ? islandUpdateOperations.$push : {},
         });
 
         return {
