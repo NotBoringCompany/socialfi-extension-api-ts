@@ -90,9 +90,10 @@ export const purchaseShopAsset = async (
         }
 
         if (shopItem) {
-
             // add the item to the user's inventory
             const existingItemIndex = (user.inventory?.items as ItemType[]).findIndex(i => i === asset);
+
+            console.log(`existing item index for asset: ${asset}: ${existingItemIndex}`);
 
             if (existingItemIndex !== -1) {
                 userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = amount;
