@@ -2842,13 +2842,19 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
             }
         }
 
-        console.log('(dropResource) Claimable resources to add: ', claimableResourcesToAdd);
-        console.log('(dropResource) Gathered resources to add: ', gatheredResourcesToAdd);
-
         // add the resources to the island's `claimableResources` and `resourcesGathered`
         islandUpdateOperations.$push['islandResourceStats.claimableResources'] = { $each: claimableResourcesToAdd }
         islandUpdateOperations.$push['islandResourceStats.resourcesGathered'] = { $each: gatheredResourcesToAdd }
 
+        console.log(`(dropResource) Island ${island.islandId}'s claimable resources: `, claimableResources);
+        console.log(`(dropResource) Island ${island.islandId}'s claimable resources to add: `, claimableResourcesToAdd);
+        console.log(`(dropResource) Island ${island.islandId}'s resources gathered: `, resourcesGathered);
+        console.log(`(dropResource) Island ${island.islandId}'s resources gathered to add: `, gatheredResourcesToAdd);
+        
+
+
+        console.log(`(dropResource) Claimable resources to add for island ${island.islandId}: `, claimableResourcesToAdd);
+        console.log(`(dropResource) Gathered resources to add for island ${island.islandId}: `, gatheredResourcesToAdd);
         console.log(`(dropResource) Island ID ${island.islandId}'s updateOperations: `, islandUpdateOperations);
 
         // execute the update operations
