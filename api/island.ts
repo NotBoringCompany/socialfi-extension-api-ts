@@ -1849,7 +1849,7 @@ export const applyGatheringProgressBooster = async (
         }
     } catch (err: any) {
         console.log(`(applyGatheringProgressBooster) Error: ${err.message}`);
-        
+
         return {
             status: Status.ERROR,
             message: `(applyGatheringProgressBooster) Error: ${err.message}`
@@ -2297,11 +2297,8 @@ export const claimResources = async (
                             // increment the current weight by the total weight of this resource
                             currentWeight += totalWeight;
 
-                            console.log('pulling claimable resources with type: ', resource.type);
-
                             // since this essentially means we can claim all of this resource, we will pull this resource from the island's claimable resources.
                             islandResourcesPulled.push(resource.type);
-                            // islandUpdateOperations.$pull[`islandResourceStats.claimableResources`] = { type: resource.type };
 
                             // add the claimed resource to the claimedResources array
                             claimedResources.push({
@@ -2598,9 +2595,9 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
         const resourceToDrop: Resource = randomizeResourceFromChances(<IslandType>island.type, island.traits, island.currentLevel);
 
         // firstly check if `claimableResources` is empty.
-        const claimableResources: Resource[] = island.islandResourceStats?.claimableResources;
+        const claimableResources: ExtendedResource[] = island.islandResourceStats?.claimableResources;
 
-        if (claimableResources.length === 0 || !claimableResources) {
+        if (!claimableResources || claimableResources.length === 0) {
             // if empty, create a new resource and add it to the island's `claimableResources`
             const newResource: ExtendedResource = {
                 ...resourceToDrop,
@@ -2636,7 +2633,7 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
             }
         }
 
-        if (resourcesGathered.length === 0 || !resourcesGathered) {
+        if (!resourcesGathered || resourcesGathered.length === 0) {
             // if empty, create a new resource and add it to the island's `resourcesGathered`
             const newResource: ExtendedResource = {
                 ...resourceToDrop,
@@ -2719,7 +2716,7 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
         }
 
         // only run the next logic if `dailyBonusResourcesGathered` hasn't exceeded the limit yet.
-        if (island.islandResourceStats?.dailyBonusResourcesGathered < DAILY_BONUS_RESOURCES_GATHERABLE(<IslandType>island.type)) {
+        if ((island.islandResourceStats?.dailyBonusResourcesGathered as number) < DAILY_BONUS_RESOURCES_GATHERABLE(<IslandType>island.type)) {
             // finally, if the island has bits that have either the lucky, unlucky, trickster or hapless trait, they have a chance to drop a bonus resource.
             // there is a 5% base chance to drop a bonus resource everytime a resource is dropped.
             // each bit with a lucky trait gives a 2.5% chance to drop a bonus resource (stacks)
@@ -2732,19 +2729,19 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
             const bits = await BitModel.find({ bitId: { $in: placedBitIds } }).lean();
 
             for (const bit of bits) {
-                if (bit.traits.includes(BitTrait.LUCKY)) {
+                if ((bit.traits as BitTraitData[]).some(trait => trait.trait === BitTrait.LUCKY)) {
                     bonusResourceChance += 2.5;
                 }
 
-                if (bit.traits.includes(BitTrait.UNLUCKY)) {
+                if ((bit.traits as BitTraitData[]).some(trait => trait.trait === BitTrait.UNLUCKY)) {
                     bonusResourceChance -= 2.5;
                 }
 
-                if (bit.traits.includes(BitTrait.TRICKSTER)) {
+                if ((bit.traits as BitTraitData[]).some(trait => trait.trait === BitTrait.TRICKSTER)) {
                     bonusResourceChance += 5;
                 }
 
-                if (bit.traits.includes(BitTrait.HAPLESS)) {
+                if ((bit.traits as BitTraitData[]).some(trait => trait.trait === BitTrait.HAPLESS)) {
                     bonusResourceChance -= 5;
                 }
             }
@@ -2757,6 +2754,8 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
                 if (rand <= bonusResourceChance) {
                     // randomize a resource based on the island's resource drop chances
                     const bonusResource = randomizeResourceFromChances(<IslandType>island.type, island.traits, island.currentLevel);
+
+                    console.log(`(dropResource) Island ${island.islandId} has dropped a bonus resource: ${bonusResource}`);
 
                     // at this point, the island update operations' `$push` should already have `$each` initialized and with at least 1 resource.
                     // if the resource inside this array is the same as the bonus resource, increment its amount.
