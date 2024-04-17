@@ -3,7 +3,7 @@ import { ShopAsset } from '../models/shop';
 import { ReturnValue, Status } from '../utils/retVal';
 import { shop } from '../utils/shop';
 import { UserModel } from '../utils/constants/db';
-import { ItemType } from '../models/item';
+import { Item, ItemType } from '../models/item';
 
 /**
  * Fetches the shop.
@@ -91,7 +91,7 @@ export const purchaseShopAsset = async (
 
         if (shopItem) {
             // add the item to the user's inventory
-            const existingItemIndex = (user.inventory?.items as ItemType[]).findIndex(i => i === asset);
+            const existingItemIndex = (user.inventory?.items as Item[]).findIndex(i => i.type === asset);
 
             console.log(`existing item index for asset: ${asset}: ${existingItemIndex}`);
 
