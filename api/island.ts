@@ -1815,7 +1815,7 @@ export const applyGatheringProgressBooster = async (
                 // drop a resource
                 const { status, message } = await dropResource(islandId);
 
-                console.log(`dropped a resource for Island ${islandId} x${i+1}.`)
+                console.log(`dropped a resource for Island ${islandId} x${i+1}.`);
 
                 if (status !== Status.SUCCESS) {
                     console.error(`(applyGatheringProgressBooster) Error from dropResource in loop: ${message}`);
@@ -2910,6 +2910,7 @@ export const randomizeResourceFromChances = (
                     return r.line === ResourceLine.FRUIT && r.rarity === <ResourceRarity>resourceRarity;
                 }
             });
+            console.log(`(randomizeResourceFromChances): resource obtained: `, resource);
 
             return resource;
         }
