@@ -1786,6 +1786,10 @@ export const applyGatheringProgressBooster = async (
             const finalNonModuloGatheringProgress = gatheringProgress + boosterPercentage;
             const resourcesToDrop = Math.floor(finalNonModuloGatheringProgress / 100);
 
+            console.log(`gathering progress of island ${island.islandId}: `, gatheringProgress);
+            console.log(`final non-modulo gathering progress of island ${island.islandId}: `, finalNonModuloGatheringProgress);
+            console.log(`resources to drop: `, resourcesToDrop);
+
             // check if the resources to drop is greater than the resources left
             if (resourcesToDrop > resourcesLeft) {
                 return {
