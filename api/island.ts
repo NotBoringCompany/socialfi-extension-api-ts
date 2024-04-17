@@ -1813,9 +1813,9 @@ export const applyGatheringProgressBooster = async (
             // we will need to loop through the resources to drop and drop them one by one
             for (let i = 0; i < resourcesToDrop; i++) {
                 // drop a resource
-                const { status, message } = await dropResource(islandId);
+                const { status, message, data } = await dropResource(islandId);
 
-                console.log(`dropped a resource for Island ${islandId} x${i+1}.`);
+                console.log(`dropped a resource for Island ${islandId} x${i+1}. resource: ${data.resource}`);
 
                 if (status !== Status.SUCCESS) {
                     console.error(`(applyGatheringProgressBooster) Error from dropResource in loop: ${message}`);
