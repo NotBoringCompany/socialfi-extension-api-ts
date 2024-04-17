@@ -1809,21 +1809,21 @@ export const applyGatheringProgressBooster = async (
                 userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = -1;
             }
 
-            // call the `dropResource` function `resourcesToDrop` times
-            // we need to efficiently call this though
-            const dropResourcePromises = Array.from({ length: resourcesToDrop }, async () => {
-                try {
-                    await dropResource(islandId);
-                } catch (err: any) {
-                    console.error(`(applyGatheringProgressBooster) Error from dropResourcePromises: ${err.message}`);
+            // we cannot use Promise.all to drop all resources at once as it will cause existing resource type issues
+            // we will need to loop through the resources to drop and drop them one by one
+            for (let i = 0; i < resourcesToDrop; i++) {
+                // drop a resource
+                const { status, message } = await dropResource(islandId);
+
+                if (status !== Status.SUCCESS) {
+                    console.error(`(applyGatheringProgressBooster) Error from dropResource in loop: ${message}`);
                 }
-            });
+            }
 
             // execute the update operations and the drop resource promises
             await Promise.all([
                 UserModel.updateOne({ twitterId }, userUpdateOperations),
                 IslandModel.updateOne({ islandId }, islandUpdateOperations),
-                ...dropResourcePromises
             ]);
 
             return {
