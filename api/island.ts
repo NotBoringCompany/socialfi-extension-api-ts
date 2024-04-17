@@ -1700,6 +1700,8 @@ export const applyGatheringProgressBooster = async (
             if (gatheringProgress + boosterPercentage > 100) {
                 // check if a single resource can be dropped
                 if (resourcesLeft === 0) {
+                    console.log(`(applyGatheringProgressBooster) Island ID ${islandId} has no resources left to drop. Cannot apply booster.`);
+
                     return {
                         status: Status.ERROR,
                         message: `(applyGatheringProgressBooster) Island ID ${islandId} has no resources left to drop. Cannot apply booster.`
@@ -1720,21 +1722,23 @@ export const applyGatheringProgressBooster = async (
                     userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = -1;
                 }
 
-                // drop a resource
-                const { status, message } = await dropResource(islandId);
-
-                if (status !== Status.SUCCESS) {
-                    return {
-                        status: Status.ERROR,
-                        message: `(applyGatheringProgressBooster) Error: ${message}`
-                    }
-                }
-
                 // execute the update operations
                 await Promise.all([
                     UserModel.updateOne({ twitterId }, userUpdateOperations),
                     IslandModel.updateOne({ islandId }, islandUpdateOperations)
                 ]);
+
+                // drop a resource
+                const { status, message } = await dropResource(islandId);
+
+                if (status !== Status.SUCCESS) {
+                    console.log(`(applyGatheringProgressBooster) Error from dropResource: ${message}`);
+
+                    return {
+                        status: Status.ERROR,
+                        message: `(applyGatheringProgressBooster) Error: ${message}`
+                    }
+                }
 
                 return {
                     status: Status.SUCCESS,
@@ -1792,6 +1796,8 @@ export const applyGatheringProgressBooster = async (
 
             // check if the resources to drop is greater than the resources left
             if (resourcesToDrop > resourcesLeft) {
+                console.log(`(applyGatheringProgressBooster) Island ID ${islandId} does not have enough resources left to drop. Cannot apply booster.`);
+
                 return {
                     status: Status.ERROR,
                     message: `(applyGatheringProgressBooster) Island ID ${islandId} does not have enough resources left to drop. Cannot apply booster.`
@@ -1824,7 +1830,7 @@ export const applyGatheringProgressBooster = async (
                 console.log(`dropped a resource for Island ${islandId} x${i+1}. resource: ${data.resource}`);
 
                 if (status !== Status.SUCCESS) {
-                    console.error(`(applyGatheringProgressBooster) Error from dropResource in loop: ${message}`);
+                    console.log(`(applyGatheringProgressBooster) Error from dropResource in loop: ${message}`);
                 }
             }
 
@@ -1842,6 +1848,8 @@ export const applyGatheringProgressBooster = async (
             }
         }
     } catch (err: any) {
+        console.log(`(applyGatheringProgressBooster) Error: ${err.message}`);
+        
         return {
             status: Status.ERROR,
             message: `(applyGatheringProgressBooster) Error: ${err.message}`
@@ -2567,6 +2575,8 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
         if (<IslandType>island.type === IslandType.BARREN) {
             const seaweedGathered = resourcesGathered.filter(r => r.type === BarrenResource.SEAWEED);
             if (baseResourceCap - seaweedGathered.length <= 0) {
+                console.log(`(dropResource) No resources left to drop for Island ${islandId}.`);
+
                 return {
                     status: Status.ERROR,
                     message: `(dropResource) No resources left to drop.`
@@ -2576,6 +2586,8 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
 
         // for any other isles, check the entire length of resources gathered.
         if (baseResourceCap - resourcesGathered.length <= 0) {
+            console.log(`(dropResource) No resources left to drop for Island ${islandId}.`);
+
             return {
                 status: Status.ERROR,
                 message: `(dropResource) No resources left to drop.`
@@ -2813,6 +2825,8 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
             }
         }
     } catch (err: any) {
+        console.log(`(dropResource) Error: ${err.message}`);
+
         return {
             status: Status.ERROR,
             message: `(dropResource) Error: ${err.message}`
