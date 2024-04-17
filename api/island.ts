@@ -1685,7 +1685,9 @@ export const applyGatheringProgressBooster = async (
         // if not, we throw an error.
         // get only resources that have an origin of `ExtendedResourceOrigin.NORMAL`
         const normalResourcesGathered = (island.islandResourceStats?.resourcesGathered as ExtendedResource[]).filter(resource => resource.origin === ExtendedResourceOrigin.NORMAL);
-        const resourcesLeft = island.islandResourceStats?.baseResourceCap - normalResourcesGathered.length;
+        // add the amount of resources per `normalResourcesGathered` instance
+        const normalResourcesGatheredAmount = normalResourcesGathered.reduce((acc, resource) => acc + resource.amount, 0);
+        const resourcesLeft = island.islandResourceStats?.baseResourceCap - normalResourcesGatheredAmount;
 
         console.log(`resources left for island ${island.islandId}: `, resourcesLeft);
 
@@ -2568,6 +2570,8 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
         const baseResourceCap = island.islandResourceStats?.baseResourceCap as number;
         // check resourcesGathered (which only counts resources gathered with a 'NORMAL' origin. bonus resources are not counted towards the base resource cap.)
         const resourcesGathered: ExtendedResource[] = island.islandResourceStats?.resourcesGathered.filter((r: ExtendedResource) => r.origin === ExtendedResourceOrigin.NORMAL);
+        // get the amount per `resourcesGathered` instance
+        const resourcesGatheredAmount = resourcesGathered.reduce((acc, r) => acc + r.amount, 0);
 
         // for barren isles, check only for resources gathered that are seaweed instead of the entire length.
         // this is because for barren isles, there is a small chance to drop common resources that won't be counted towards the base resource cap.
@@ -2584,7 +2588,7 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
         }
 
         // for any other isles, check the entire length of resources gathered.
-        if (baseResourceCap - resourcesGathered.length <= 0) {
+        if (baseResourceCap - resourcesGatheredAmount <= 0) {
             console.log(`(dropResource) No resources left to drop for Island ${islandId}.`);
 
             return {
