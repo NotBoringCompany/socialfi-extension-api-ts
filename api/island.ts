@@ -1809,11 +1809,13 @@ export const applyGatheringProgressBooster = async (
                 userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = -1;
             }
 
-            // we cannot use Promise.all to drop all resources at once as it will cause existing resource type issues
+            // we cannot use Promise.all to drop all resources at once as it will cause race issues with existing resource types.
             // we will need to loop through the resources to drop and drop them one by one
             for (let i = 0; i < resourcesToDrop; i++) {
                 // drop a resource
                 const { status, message } = await dropResource(islandId);
+
+                console.log(`dropped a resource for Island ${islandId} x${i+1}.`)
 
                 if (status !== Status.SUCCESS) {
                     console.error(`(applyGatheringProgressBooster) Error from dropResource in loop: ${message}`);
