@@ -2189,7 +2189,10 @@ export const claimResources = async (
 
                         userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = resource.amount;
                     } else {
-                        userUpdateOperations.$push['inventory.resources'] = { $each: [{ ...resource, origin: ExtendedResourceOrigin.NORMAL }] };
+                        // userUpdateOperations.$push['inventory.resources'] = { $each: [{ ...resource, origin: ExtendedResourceOrigin.NORMAL }] };
+
+                        console.log(`(claimResources) User doesn't own resource ${resource.type}. Adding to user inventory...`);
+                        userUpdateOperations.$push['inventory.resources'].$each.push({ ...resource, origin: ExtendedResourceOrigin.NORMAL });
                     }
                 }
 
@@ -2323,7 +2326,8 @@ export const claimResources = async (
         // set the island's `lastClaimed` to the current time
         islandUpdateOperations.$set['islandResourceStats.lastClaimed'] = currentTime;
 
-        console.log(`Island ${island.islandId} claimed resources: `, claimedResources);
+        console.log(`Island ${island.islandId} userUpdateOperations: `, userUpdateOperations);
+        console.log(`Island ${island.islandId} islandUpdateOperations: `, islandUpdateOperations);
 
         await UserModel.updateOne({ twitterId }, {
             $set: Object.keys(userUpdateOperations.$set).length > 0 ? userUpdateOperations.$set : {},
