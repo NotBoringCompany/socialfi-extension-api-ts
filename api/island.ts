@@ -2592,8 +2592,6 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
         // randomize the resource from the effective drop chances based on the island's type and level
         const resourceToDrop: Resource = randomizeResourceFromChances(<IslandType>island.type, island.traits, island.currentLevel);
 
-        console.log(`(dropResource) resource to drop for island ${island.islandId}: `, resourceToDrop);
-
         // firstly check if `claimableResources` is empty.
         const claimableResources: Resource[] = island.islandResourceStats?.claimableResources;
 
@@ -2775,8 +2773,6 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
                             amount: 1
                         }
 
-                        // islandUpdateOperations.$push['islandResourceStats.claimableResources'].$each.push(newResource);
-                        // islandUpdateOperations.$push['islandResourceStats.claimableResources'] = { $each: [newResource] };
                         claimableResourcesToAdd.push(newResource);
                     }
 
@@ -2798,7 +2794,6 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
                             amount: 1
                         }
 
-                        // islandUpdateOperations.$push['islandResourceStats.resourcesGathered'].$each.push(newResource);
                         gatheredResourcesToAdd.push(newResource);
                     }
                 }
@@ -2808,46 +2803,20 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
         // add the resources to the island's `claimableResources` and `resourcesGathered`
         islandUpdateOperations.$push['islandResourceStats.claimableResources'] = { $each: claimableResourcesToAdd }
         islandUpdateOperations.$push['islandResourceStats.resourcesGathered'] = { $each: gatheredResourcesToAdd }
-
-        console.log(`(dropResource) Island ${island.islandId}'s claimable resources: `, claimableResources);
-        console.log(`(dropResource) Island ${island.islandId}'s claimable resources to add: `, claimableResourcesToAdd);
-        console.log(`(dropResource) Island ${island.islandId}'s resources gathered: `, resourcesGathered);
-        console.log(`(dropResource) Island ${island.islandId}'s resources gathered to add: `, gatheredResourcesToAdd);
         
-
-
         console.log(`(dropResource) Claimable resources to add for island ${island.islandId}: `, claimableResourcesToAdd);
         console.log(`(dropResource) Gathered resources to add for island ${island.islandId}: `, gatheredResourcesToAdd);
-        console.log(`(dropResource) Island ID ${island.islandId}'s updateOperations: `, islandUpdateOperations);
 
         // execute the update operations
-        if (Object.keys(islandUpdateOperations.$set).length > 0) {
-            console.log('$set is not empty for island ID ', island.islandId);
-            await IslandModel.updateOne({ islandId }, {
-                $set: islandUpdateOperations.$set
-            });
-        }
+        await IslandModel.updateOne({ islandId }, {
+            $set: Object.keys(islandUpdateOperations.$set).length > 0 ? islandUpdateOperations.$set : {},
+            $inc: Object.keys(islandUpdateOperations.$inc).length > 0 ? islandUpdateOperations.$inc : {},
+        });
 
-        if (Object.keys(islandUpdateOperations.$push).length > 0) {
-            console.log('$push is not empty for island ID ', island.islandId);
-            await IslandModel.updateOne({ islandId }, {
-                $push: islandUpdateOperations.$push
-            });
-        }
-
-        if (Object.keys(islandUpdateOperations.$pull).length > 0) {
-            console.log('$pull is not empty for island ID ', island.islandId);
-            await IslandModel.updateOne({ islandId }, {
-                $pull: islandUpdateOperations.$pull
-            });
-        }
-
-        if (Object.keys(islandUpdateOperations.$inc).length > 0) {
-            console.log('$inc is not empty for island ID ', island.islandId);
-            await IslandModel.updateOne({ islandId }, {
-                $inc: islandUpdateOperations.$inc
-            })
-        }
+        await IslandModel.updateOne({ islandId }, {
+            $pull: Object.keys(islandUpdateOperations.$pull).length > 0 ? islandUpdateOperations.$pull : {},
+            $push: Object.keys(islandUpdateOperations.$push).length > 0 ? islandUpdateOperations.$push : {},
+        });
 
         return {
             status: Status.SUCCESS,
