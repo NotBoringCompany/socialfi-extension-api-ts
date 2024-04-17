@@ -1687,6 +1687,8 @@ export const applyGatheringProgressBooster = async (
         const normalResourcesGathered = (island.islandResourceStats?.resourcesGathered as ExtendedResource[]).filter(resource => resource.origin === ExtendedResourceOrigin.NORMAL);
         const resourcesLeft = island.islandResourceStats?.baseResourceCap - normalResourcesGathered.length;
 
+        console.log(`resources left for island ${island.islandId}: `, resourcesLeft);
+
         // boosters will be something like 'Gathering Progress Booster 200%', so we need to get the percentage
         const boosterPercentage = parseFloat(booster.split(' ')[3]);
 
