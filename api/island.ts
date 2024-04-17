@@ -2322,8 +2322,8 @@ export const claimResources = async (
             }
         }
 
-        console.log('user update operations: ', userUpdateOperations);
-        console.log('island update operations: ', islandUpdateOperations);
+        console.log(`(claimResources) user update operations: `, userUpdateOperations);
+        console.log(`(claimResources) island update operations: `, islandUpdateOperations);
 
         // execute the update operations
         if (Object.keys(userUpdateOperations.$push).length > 0) {
