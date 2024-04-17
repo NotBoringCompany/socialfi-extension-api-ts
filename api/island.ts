@@ -2323,8 +2323,7 @@ export const claimResources = async (
         // set the island's `lastClaimed` to the current time
         islandUpdateOperations.$set['islandResourceStats.lastClaimed'] = currentTime;
 
-        console.log(`(claimResources) user update operations: `, userUpdateOperations);
-        console.log(`(claimResources) island update operations: `, islandUpdateOperations);
+        console.log(`Island ${island.islandId} claimed resources: `, claimedResources);
 
         await UserModel.updateOne({ twitterId }, {
             $set: Object.keys(userUpdateOperations.$set).length > 0 ? userUpdateOperations.$set : {},
