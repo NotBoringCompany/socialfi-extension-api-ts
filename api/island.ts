@@ -2910,8 +2910,9 @@ export const randomizeResourceFromChances = (
                     return r.line === ResourceLine.FRUIT && r.rarity === <ResourceRarity>resourceRarity;
                 }
             });
-            console.log(`(randomizeResourceFromChances): resource obtained: `, resource);
 
+            console.log(`(randomizeResourceFromChances) Randomized resource: `, resource);
+            console.log(`(randomizeResourceFromChances) Cumulative probability of this resource ${resource}: `, probability);
             return resource;
         }
     }
