@@ -1811,7 +1811,13 @@ export const applyGatheringProgressBooster = async (
 
             // call the `dropResource` function `resourcesToDrop` times
             // we need to efficiently call this though
-            const dropResourcePromises = Array.from({ length: resourcesToDrop }, async () => dropResource(islandId));
+            const dropResourcePromises = Array.from({ length: resourcesToDrop }, async () => {
+                try {
+                    await dropResource(islandId);
+                } catch (err: any) {
+                    console.error(`(applyGatheringProgressBooster) Error from dropResourcePromises: ${err.message}`);
+                }
+            });
 
             // execute the update operations and the drop resource promises
             await Promise.all([
