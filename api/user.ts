@@ -46,7 +46,7 @@ export const getUserData = async (twitterId: string): Promise<ReturnValue> => {
         return {
             status: Status.ERROR,
             message: `(getUserData) ${err.message}`
-        }    
+        }
     }
 }
 
@@ -720,7 +720,7 @@ export const updateDailyLoginRewardsData = async (): Promise<void> => {
         const userUpdatePromises = userUpdateOperations.map(async op => {
             return UserModel.updateOne({ _id: op.userId }, op.updateOperations);
         });
-        
+
         await Promise.all(userUpdatePromises);
 
         console.log('Daily login rewards data updated.');
@@ -770,13 +770,28 @@ export const linkInviteCode = async (
                 }
             }
 
-            // update the user's starter code data
-            await UserModel.updateOne({ twitterId }, {
-                $set: {
-                    'inviteCodeData.usedStarterCode': code.toUpperCase()
+            // check if the starter code is already used by more than its allowed uses.
+            // if it is, return an error.
+            if (starterCode.usedBy.length >= starterCode.maxUses) {
+                return {
+                    status: Status.BAD_REQUEST,
+                    message: `(linkInviteCode) Starter code has already reached its limit.`
                 }
-            });
+            }
 
+            // update the user's starter code data and the starter code's `usedBy` array
+            await Promise.all([
+                await UserModel.updateOne({ twitterId }, {
+                    $set: {
+                        'inviteCodeData.usedStarterCode': code.toUpperCase()
+                    }
+                }),
+                await StarterCodeModel.updateOne({ code: code.toUpperCase() }, {
+                    $push: {
+                        usedBy: user._id
+                    }
+                })
+            ]);
             return {
                 status: Status.SUCCESS,
                 message: `(linkInviteCode) Starter code linked.`,
@@ -985,13 +1000,13 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
                 }
             }
         }
-        
+
         userUpdateOperations.$set['inGameData.beginnerRewardData.isClaimable'] = false;
         userUpdateOperations.$set['inGameData.beginnerRewardData.lastClaimedTimestamp'] = Math.floor(Date.now() / 1000);
         userUpdateOperations.$push['inGameData.beginnerRewardData.daysClaimed'] = nextDayToClaim;
 
         // execute the update operations
-        await UserModel.updateOne({twitterId}, userUpdateOperations);
+        await UserModel.updateOne({ twitterId }, userUpdateOperations);
 
         return {
             status: Status.SUCCESS,
@@ -1057,7 +1072,7 @@ export const updateBeginnerRewardsData = async (): Promise<void> => {
                 // if `isClaimable` is true, it means the user missed claiming the rewards for the day.
                 // add the current day to `daysMissed`.
                 const latestDay = Math.max(...beginnerRewardData.daysClaimed, ...beginnerRewardData.daysMissed);
-                
+
                 userUpdateOperations.push({
                     userId: user._id,
                     updateOperations: {
