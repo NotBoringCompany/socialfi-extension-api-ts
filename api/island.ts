@@ -2615,6 +2615,8 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
         // randomize the resource from the effective drop chances based on the island's type and level
         const resourceToDrop: Resource = randomizeResourceFromChances(<IslandType>island.type, island.traits, island.currentLevel);
 
+        console.log(`(dropResource) resource to drop for island ${island.islandId}: `, resourceToDrop);
+
         // firstly check if `claimableResources` is empty.
         const claimableResources: Resource[] = island.islandResourceStats?.claimableResources;
 
@@ -2626,6 +2628,8 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
                 amount: 1
             }
 
+            console.log(`(dropResource) resourceToDrop is not in claimable resources. adding new resource: `, newResource);
+
             // add the new resource to the island's `claimableResources`
             // islandUpdateOperations.$push['islandResourceStats.claimableResources'] = newResource;
             claimableResourcesToAdd.push(newResource);
@@ -2635,6 +2639,7 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
 
             // if the resource already exists, increment its amount
             if (existingResourceIndex !== -1) {
+                console.log(`(dropResource) resourceToDrop is in claimable resources. incrementing amount.`);
                 islandUpdateOperations.$inc[`islandResourceStats.claimableResources.${existingResourceIndex}.amount`] = 1;
             } else {
                 // if the resource doesn't exist, push a new resource
@@ -2643,6 +2648,8 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
                     origin: ExtendedResourceOrigin.NORMAL,
                     amount: 1
                 }
+
+                console.log(`(dropResource) resourceToDrop is not in claimable resources. adding new resource: `, newResource);
 
                 // add the new resource to the island's `claimableResources`
                 // islandUpdateOperations.$push['islandResourceStats.claimableResources'] = { $each: [newResource] };
