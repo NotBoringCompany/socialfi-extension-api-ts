@@ -2781,10 +2781,19 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
 
                     // if the resource inside the `claimableResources` is the same as the bonus resource, increment its amount.
                     // if not, push a new resource.
-                    const existingResourceIndex = claimableResources.findIndex(r => r.type === bonusResource.type);
+                    // check if the resource exists in the island's `claimableResources` OR the new `claimableResourcesToAdd`.
+                    // `claimableResources` means that the resource is already in the island's claimable resources.
+                    // `claimableResourcesToAdd` means that the resource isn't in the island's claimable resources, but the user has obtained it from the resource to drop.
+                    const existingClaimableResourceToAddIndex = claimableResourcesToAdd.findIndex(r => r.type === bonusResource.type);
+                    const existingClaimableResourceIndex = claimableResources.findIndex(r => r.type === bonusResource.type);
 
-                    if (existingResourceIndex !== -1) {
-                        islandUpdateOperations.$inc[`islandResourceStats.claimableResources.${existingResourceIndex}.amount`] = 1;
+                    // if the resource exists in `claimableResources`, increment its amount via the $inc operator.
+                    // if not, check if the resource exists in `claimableResourcesToAdd`. if it does, increment its amount directly in the array.
+                    // if not, push a new resource to `claimableResourcesToAdd`.
+                    if (existingClaimableResourceIndex !== -1) {
+                        islandUpdateOperations.$inc[`islandResourceStats.claimableResources.${existingClaimableResourceIndex}.amount`] = 1;
+                    } else if (existingClaimableResourceToAddIndex !== -1) {
+                        claimableResourcesToAdd[existingClaimableResourceToAddIndex].amount += 1;
                     } else {
                         const newResource: ExtendedResource = {
                             ...bonusResource,
@@ -2798,15 +2807,18 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
                     // increment the island's `islandResourceStats.dailyBonusResourcesGathered` by 1.
                     islandUpdateOperations.$inc['islandResourceStats.dailyBonusResourcesGathered'] = 1;
 
-                    // add to the island's `resourcesGathered` as well
-                    // check if the bonus resource already exists in `resourcesGatheredToAdd`
+                    // check if the bonus resource already exists in `resourcesGathered` or `gatheredResourcesToAdd`.
                     const existingGatheredResourceIndex = resourcesGathered.findIndex(r => r.type === bonusResource.type);
+                    const existingGatheredResourceToAddIndex = gatheredResourcesToAdd.findIndex(r => r.type === bonusResource.type);
 
-                    // if the resource already exists, increment its amount
+                    // if the bonus resource exists in `resourcesGathered`, increment its amount via the $inc operator.
+                    // if not, check if the bonus resource exists in `gatheredResourcesToAdd`. if it does, increment its amount directly in the array.
+                    // if not, push a new resource to `gatheredResourcesToAdd`.
                     if (existingGatheredResourceIndex !== -1) {
                         islandUpdateOperations.$inc[`islandResourceStats.resourcesGathered.${existingGatheredResourceIndex}.amount`] = 1;
+                    } else if (existingGatheredResourceToAddIndex !== -1) {
+                        gatheredResourcesToAdd[existingGatheredResourceToAddIndex].amount += 1;
                     } else {
-                        // if the resource doesn't exist, push a new resource
                         const newResource: ExtendedResource = {
                             ...bonusResource,
                             origin: ExtendedResourceOrigin.BONUS,
