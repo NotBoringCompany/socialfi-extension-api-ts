@@ -2771,6 +2771,7 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
                 const rand = Math.random() * 100 + 1;
 
                 if (rand <= bonusResourceChance) {
+                    console.log(`(dropResource) rand is below bonusResourceChance. dropping bonus resource!`);
                     // randomize a resource based on the island's resource drop chances
                     let bonusResource: Resource | undefined | null = null;
 
