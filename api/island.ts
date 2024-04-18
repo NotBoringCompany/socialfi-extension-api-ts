@@ -2908,6 +2908,7 @@ export const randomizeResourceFromChances = (
             });
 
             console.log(`(randomizeResourceFromChances) Randomized resource: `, resource);
+            console.log(`(randomizeResourceFromChances) resource is undefined: `, resource === undefined);
             return resource;
         }
     }
