@@ -2600,9 +2600,14 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
         }
 
         // randomize the resource from the effective drop chances based on the island's type and level
-        const resourceToDrop: Resource = randomizeResourceFromChances(<IslandType>island.type, island.traits, island.currentLevel);
+        let resourceToDrop: Resource | undefined | null = null;
 
-        console.log(`(dropResource) works #1. resourceToDrop is: `, resourceToDrop);
+        // keep fetching a resource until it's not undefined (just in case it returns undefined at times)
+        while (!resourceToDrop) {
+            resourceToDrop = randomizeResourceFromChances(<IslandType>island.type, island.traits, island.currentLevel);
+        }
+
+        // console.log(`(dropResource) works #1. resourceToDrop is: `, resourceToDrop);
 
         // firstly check if `claimableResources` is empty.
         const claimableResources: ExtendedResource[] = island.islandResourceStats?.claimableResources;
@@ -2907,7 +2912,6 @@ export const randomizeResourceFromChances = (
                 }
             });
 
-            console.log(`(randomizeResourceFromChances) Randomized resource: `, resource);
             console.log(`(randomizeResourceFromChances) resource is undefined: `, resource === undefined);
             return resource;
         }
