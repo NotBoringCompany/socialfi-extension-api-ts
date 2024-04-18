@@ -2779,9 +2779,9 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
 
                     console.log(`(dropResource) Island ${island.islandId} has dropped a bonus resource: ${bonusResource}`);
 
-                    // if the resource inside the `claimableResourcesToAdd` is the same as the bonus resource, increment its amount.
+                    // if the resource inside the `claimableResources` is the same as the bonus resource, increment its amount.
                     // if not, push a new resource.
-                    const existingResourceIndex = claimableResourcesToAdd.findIndex(r => r.type === bonusResource.type);
+                    const existingResourceIndex = claimableResources.findIndex(r => r.type === bonusResource.type);
 
                     if (existingResourceIndex !== -1) {
                         islandUpdateOperations.$inc[`islandResourceStats.claimableResources.${existingResourceIndex}.amount`] = 1;
@@ -2800,7 +2800,7 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
 
                     // add to the island's `resourcesGathered` as well
                     // check if the bonus resource already exists in `resourcesGatheredToAdd`
-                    const existingGatheredResourceIndex = gatheredResourcesToAdd.findIndex(r => r.type === bonusResource.type);
+                    const existingGatheredResourceIndex = resourcesGathered.findIndex(r => r.type === bonusResource.type);
 
                     // if the resource already exists, increment its amount
                     if (existingGatheredResourceIndex !== -1) {
