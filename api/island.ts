@@ -2776,7 +2776,12 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
 
                 if (rand <= bonusResourceChance) {
                     // randomize a resource based on the island's resource drop chances
-                    const bonusResource = randomizeResourceFromChances(<IslandType>island.type, island.traits, island.currentLevel);
+                    let bonusResource: Resource | undefined | null = null;
+
+                    // keep fetching a resource until it's not undefined (just in case it returns undefined at times)
+                    while (!bonusResource) {
+                        bonusResource = randomizeResourceFromChances(<IslandType>island.type, island.traits, island.currentLevel);
+                    }
 
                     console.log(`(dropResource) works #6`);
 
