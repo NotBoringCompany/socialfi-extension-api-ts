@@ -2779,10 +2779,9 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
 
                     console.log(`(dropResource) Island ${island.islandId} has dropped a bonus resource: ${bonusResource}`);
 
-                    // at this point, the island update operations' `$push` should already have `$each` initialized and with at least 1 resource.
-                    // if the resource inside this array is the same as the bonus resource, increment its amount.
+                    // if the resource inside the `claimableResourcesToAdd` is the same as the bonus resource, increment its amount.
                     // if not, push a new resource.
-                    const existingResourceIndex = islandUpdateOperations.$push['islandResourceStats.claimableResources'].$each.findIndex((r: ExtendedResource) => r.type === bonusResource.type);
+                    const existingResourceIndex = claimableResourcesToAdd.findIndex(r => r.type === bonusResource.type);
 
                     if (existingResourceIndex !== -1) {
                         islandUpdateOperations.$inc[`islandResourceStats.claimableResources.${existingResourceIndex}.amount`] = 1;
@@ -2800,8 +2799,8 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
                     islandUpdateOperations.$inc['islandResourceStats.dailyBonusResourcesGathered'] = 1;
 
                     // add to the island's `resourcesGathered` as well
-                    // check if the bonus resource already exists in `resourcesGathered`
-                    const existingGatheredResourceIndex = resourcesGathered.findIndex(r => r.type === bonusResource.type);
+                    // check if the bonus resource already exists in `resourcesGatheredToAdd`
+                    const existingGatheredResourceIndex = gatheredResourcesToAdd.findIndex(r => r.type === bonusResource.type);
 
                     // if the resource already exists, increment its amount
                     if (existingGatheredResourceIndex !== -1) {
