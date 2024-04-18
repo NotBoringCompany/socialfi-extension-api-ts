@@ -2763,6 +2763,8 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
                 }
             }
 
+            console.log(`Island ${island.islandId} bonusResourceChance: ${bonusResourceChance}%`);
+
             // only if bonus resource chance is above 0 will we proceed to check if we can drop a bonus resource.
             if (bonusResourceChance > 0) {
                 // roll a dice between 1-100
