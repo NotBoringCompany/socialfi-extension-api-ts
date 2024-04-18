@@ -2597,6 +2597,15 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
             }
         }
 
+        // initialize $each on the $push operators for claimableResources and resourcesGathered
+        if (!islandUpdateOperations.$push['islandResourceStats.claimableResources']) {
+            islandUpdateOperations.$push['islandResourceStats.claimableResources'] = { $each: [] }
+        }
+
+        if (!islandUpdateOperations.$push['islandResourceStats.resourcesGathered']) {
+            islandUpdateOperations.$push['islandResourceStats.resourcesGathered'] = { $each: [] }
+        }
+
         // randomize the resource from the effective drop chances based on the island's type and level
         let resourceToDrop: Resource | undefined | null = null;
 
@@ -2812,8 +2821,8 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
         }
 
         // add the resources to the island's `claimableResources` and `resourcesGathered`
-        islandUpdateOperations.$push['islandResourceStats.claimableResources'] = { $each: claimableResourcesToAdd }
-        islandUpdateOperations.$push['islandResourceStats.resourcesGathered'] = { $each: gatheredResourcesToAdd }
+        islandUpdateOperations.$push['islandResourceStats.claimableResources'].$each.push(...claimableResourcesToAdd);
+        islandUpdateOperations.$push['islandResourceStats.resourcesGathered'].$each.push(...gatheredResourcesToAdd);
 
         // execute the update operations
         await IslandModel.updateOne({ islandId }, {
