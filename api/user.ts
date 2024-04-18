@@ -750,7 +750,9 @@ export const linkInviteCode = async (
 
         // check if the code is a starter code or a referral code
         const starterCode = await StarterCodeModel.findOne({ code: code.toUpperCase() }).lean();
-        const referralCode = await UserModel.findOne({ referralCode: code.toUpperCase() }).lean();
+
+        // find the referralCode inside a user's `referralData` instance
+        const referralCode = await UserModel.findOne({ 'referralData.referralCode': code.toUpperCase() }).lean();
 
         if (!starterCode && !referralCode) {
             return {
