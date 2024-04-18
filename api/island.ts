@@ -2587,8 +2587,6 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
             }
         }
 
-        console.log(`(dropResource) works #0`);
-
         // for any other isles, check the entire length of resources gathered.
         if (baseResourceCap - resourcesGatheredAmount <= 0) {
             console.log(`(dropResource) No resources left to drop for Island ${islandId}.`);
@@ -2607,8 +2605,6 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
             resourceToDrop = randomizeResourceFromChances(<IslandType>island.type, island.traits, island.currentLevel);
         }
 
-        // console.log(`(dropResource) works #1. resourceToDrop is: `, resourceToDrop);
-
         // firstly check if `claimableResources` is empty.
         const claimableResources: ExtendedResource[] = island.islandResourceStats?.claimableResources;
 
@@ -2620,8 +2616,6 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
                 amount: 1
             }
 
-            console.log(`(dropResource) resourceToDrop is not in claimable resources. adding new resource: `, newResource);
-
             // add the new resource to the island's `claimableResources`
             // islandUpdateOperations.$push['islandResourceStats.claimableResources'] = newResource;
             claimableResourcesToAdd.push(newResource);
@@ -2629,11 +2623,8 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
             // if not empty, check if the resource already exists in `claimableResources`
             const existingResourceIndex = claimableResources.findIndex(r => r.type === resourceToDrop.type);
 
-            console.log(`(dropResource) works #2`);
-
             // if the resource already exists, increment its amount
             if (existingResourceIndex !== -1) {
-                console.log(`(dropResource) resourceToDrop is in claimable resources. incrementing amount.`);
                 islandUpdateOperations.$inc[`islandResourceStats.claimableResources.${existingResourceIndex}.amount`] = 1;
             } else {
                 // if the resource doesn't exist, push a new resource
@@ -2642,8 +2633,6 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
                     origin: ExtendedResourceOrigin.NORMAL,
                     amount: 1
                 }
-
-                console.log(`(dropResource) resourceToDrop is not in claimable resources. adding new resource: `, newResource);
 
                 // add the new resource to the island's `claimableResources`
                 claimableResourcesToAdd.push(newResource);
@@ -2663,8 +2652,6 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
         } else {
             // if not empty, check if the resource already exists in `resourcesGathered`
             const existingResourceIndex = resourcesGathered.findIndex(r => r.type === resourceToDrop.type);
-
-            console.log(`(dropResource) works #3`);
 
             // if the resource already exists, increment its amount
             if (existingResourceIndex !== -1) {
@@ -2716,8 +2703,6 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
                 // add to the island's `resourcesGathered` as well
                 // check if the common resource already exists in `resourcesGathered`
                 const existingGatheredResourceIndex = resourcesGathered.findIndex(r => r.type === commonResourceToDrop.type);
-
-                console.log(`(dropResource) works #5`);
 
                 // if the resource already exists, increment its amount
                 if (existingGatheredResourceIndex !== -1) {
@@ -2783,16 +2768,12 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
                         bonusResource = randomizeResourceFromChances(<IslandType>island.type, island.traits, island.currentLevel);
                     }
 
-                    console.log(`(dropResource) works #6`);
-
                     console.log(`(dropResource) Island ${island.islandId} has dropped a bonus resource: ${bonusResource}`);
 
                     // at this point, the island update operations' `$push` should already have `$each` initialized and with at least 1 resource.
                     // if the resource inside this array is the same as the bonus resource, increment its amount.
                     // if not, push a new resource.
                     const existingResourceIndex = islandUpdateOperations.$push['islandResourceStats.claimableResources'].$each.findIndex((r: ExtendedResource) => r.type === bonusResource.type);
-
-                    console.log(`(dropResource) works #7`);
 
                     if (existingResourceIndex !== -1) {
                         islandUpdateOperations.$inc[`islandResourceStats.claimableResources.${existingResourceIndex}.amount`] = 1;
@@ -2812,8 +2793,6 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
                     // add to the island's `resourcesGathered` as well
                     // check if the bonus resource already exists in `resourcesGathered`
                     const existingGatheredResourceIndex = resourcesGathered.findIndex(r => r.type === bonusResource.type);
-
-                    console.log(`(dropResource) works #8`);
 
                     // if the resource already exists, increment its amount
                     if (existingGatheredResourceIndex !== -1) {
@@ -2835,9 +2814,6 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
         // add the resources to the island's `claimableResources` and `resourcesGathered`
         islandUpdateOperations.$push['islandResourceStats.claimableResources'] = { $each: claimableResourcesToAdd }
         islandUpdateOperations.$push['islandResourceStats.resourcesGathered'] = { $each: gatheredResourcesToAdd }
-        
-        console.log(`(dropResource) Claimable resources to add for island ${island.islandId}: `, claimableResourcesToAdd);
-        console.log(`(dropResource) Gathered resources to add for island ${island.islandId}: `, gatheredResourcesToAdd);
 
         // execute the update operations
         await IslandModel.updateOne({ islandId }, {
