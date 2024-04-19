@@ -15,7 +15,7 @@ import { ethers } from 'ethers';
 import { ExtendedResource, ResourceType, SimplifiedResource } from '../models/resource';
 import { resources } from '../utils/constants/resource';
 import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType } from '../models/user';
-import { GET_BEGINNER_REWARDS, GET_DAILY_LOGIN_REWARDS, MAX_BEGINNER_REWARD_DAY } from '../utils/constants/user';
+import { GET_BEGINNER_REWARDS, GET_DAILY_LOGIN_REWARDS, GET_SEASON_0_PLAYER_LEVEL, MAX_BEGINNER_REWARD_DAY } from '../utils/constants/user';
 import { InviteCodeData, ReferredUserData } from '../models/invite';
 import { BitOrbType } from '../models/bitOrb';
 import { TerraCapsulatorType } from '../models/terraCapsulator';
@@ -23,6 +23,7 @@ import { Item } from '../models/item';
 import { BitTrait } from '../models/bit';
 import { IslandStatsModifiers } from '../models/island';
 import { Modifier } from '../models/modifier';
+import { LeaderboardUserData } from '../models/leaderboard';
 
 /**
  * Returns the user's data.

@@ -5,6 +5,7 @@ import { POIName, POIShop, POIShopActionItemData, POIShopItemName } from '../mod
 import { ExtendedResource } from '../models/resource';
 import { LeaderboardModel, POIModel, RaftModel, UserModel } from '../utils/constants/db';
 import { ACTUAL_RAFT_SPEED } from '../utils/constants/raft';
+import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
 import { ReturnValue, Status } from '../utils/retVal';
 
 /**
@@ -696,21 +697,53 @@ export const sellItemsInPOIShop = async (
         const userExistsInLeaderboard = leaderboard.userData.find(userData => userData.userId === user._id);
 
         if (!userExistsInLeaderboard) {
+            let additionalPoints = 0;
+
+            // check if this is enough to level the user up to the next player level.
+            const currentLevel = user.inGameData.level;
+            // use `leaderboardPoints` since the user has just created a new user instance in the leaderboard
+            // meaning that they prev had no points.
+            const newLevel = GET_SEASON_0_PLAYER_LEVEL(leaderboardPoints);
+
+            // if new level is greater than the current level, we update the user's data
+            // 1. set the new level
+            // 2. increment the `additionalPoints` to give the user in the leaderboard
+            if (newLevel > currentLevel) {
+                userUpdateOperations.$set[`inGameData.level`] = newLevel;
+                additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
+            }
+
             leaderboardUpdateOperations.$push = {
                 'userData': {
                     userId: user._id,
                     twitterProfilePicture: user.twitterProfilePicture,
                     points: leaderboardPoints,
-                    additionalPoints: 0
+                    additionalPoints
                 }
             }
         } else {
+            let additionalPoints = 0;
+
+            // check if this is enough to level the user up to the next player level.
+            const currentLevel = user.inGameData.level;
+            // get the user's total leaderboard points with the new `leaderboardPoints` added to the existing user's points.
+            const newLevel = GET_SEASON_0_PLAYER_LEVEL(leaderboardPoints + userExistsInLeaderboard.points);
+
+            // if new level is greater than the current level, we update the user's data
+            // 1. set the new level
+            // 2. increment the `additionalPoints` to give the user in the leaderboard
+            if (newLevel > currentLevel) {
+                userUpdateOperations.$set[`inGameData.level`] = newLevel;
+                additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
+            }
+
             // get the index of the user in the leaderboard
             const userIndex = leaderboard.userData.findIndex(userData => userData.userId === user._id);
 
-            // increment the user's points by the leaderboard points
+            // increment the user's points and if eligible `additionalPoints` by the leaderboard points and additionalPoints respectively
             leaderboardUpdateOperations.$inc = {
-                [`userData.${userIndex}.points`]: leaderboardPoints
+                [`userData.${userIndex}.points`]: leaderboardPoints,
+                [`userData.${userIndex}.additionalPoints`]: additionalPoints
             }
         }
 
