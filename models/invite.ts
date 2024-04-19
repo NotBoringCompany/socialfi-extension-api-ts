@@ -40,6 +40,8 @@ export interface ReferralData {
     referralCode: string;
     /** the data of the users who got referred by this user (i.e. the users who use this user's referral code to sign up) */
     referredUsersData: ReferredUserData[];
+    /** the claimable referral rewards based on referred users */
+    claimableReferralRewards: ReferralReward;
 }
 
 /**
@@ -48,11 +50,7 @@ export interface ReferralData {
 export interface ReferredUserData {
     /** the referred user's database id */
     userId: string;
-    /** 
-     * if the user has reached level 3 
-     * 
-     * run by a scheduler every day at 00:00 UTC to check
-     */
+    /** if the user has reached level 3 (requirement to receive referral rewards from this user) */
     hasReachedLevel3: boolean;
 }
 

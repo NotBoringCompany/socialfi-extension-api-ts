@@ -15,7 +15,7 @@ import { ethers } from 'ethers';
 import { ExtendedResource, ResourceType, SimplifiedResource } from '../models/resource';
 import { resources } from '../utils/constants/resource';
 import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType } from '../models/user';
-import { GET_BEGINNER_REWARDS, GET_DAILY_LOGIN_REWARDS, GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS, MAX_BEGINNER_REWARD_DAY } from '../utils/constants/user';
+import { GET_BEGINNER_REWARDS, GET_DAILY_LOGIN_REWARDS, GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS, GET_SEASON_0_REFERRAL_REWARDS, MAX_BEGINNER_REWARD_DAY } from '../utils/constants/user';
 import { InviteCodeData, ReferredUserData } from '../models/invite';
 import { BitOrbType } from '../models/bitOrb';
 import { TerraCapsulatorType } from '../models/terraCapsulator';
@@ -229,7 +229,11 @@ export const handleTwitterLogin = async (
                 },
                 referralData: {
                     referralCode: generateReferralCode(),
-                    referredUsersData: []
+                    referredUsersData: [],
+                    claimableReferralRewards: {
+                        xCookies: 0,
+                        leaderboardPoints: 0
+                    }
                 },
                 wallet: {
                     privateKey,
@@ -753,6 +757,31 @@ export const claimDailyRewards = async (
             LeaderboardModel.updateOne({ _id: leaderboard._id }, leaderboardUpdateOperations)
         ]);
 
+        // check if the user update operations included a level up
+        const setUserLevel = userUpdateOperations.$set['inGameData.level'];
+
+        // if it included a level, check if it's set to 3.
+        // if it is, check if the user has a referrer.
+        // the referrer will then have this user's `hasReachedLevel3` set to true.
+        if (setUserLevel && setUserLevel === 3) {
+            // check if the user has a referrer
+            const referrerId: string | null = user.inviteCodeData.referrerId;
+
+            if (referrerId) {
+                // update the referrer's referred users data where applicable
+                const { status, message } = await updateReferredUsersData(
+                    referrerId,
+                    user._id
+                );
+
+                if (status === Status.ERROR) {
+                    return {
+                        status,
+                        message: `(claimDailyRewards) Err from updateReferredUsersData: ${message}`
+                    }
+                }
+            }
+        }
         return {
             status: Status.SUCCESS,
             message: `(claimDailyRewards) Daily rewards claimed.`,
@@ -1208,5 +1237,90 @@ export const updateBeginnerRewardsData = async (): Promise<void> => {
         await Promise.all(userUpdatePromises);
     } catch (err: any) {
         console.error('Error in updateBeginnerRewardsData:', err.message);
+    }
+}
+
+/**
+ * (Season 0) Updates and sets the referred user's `hasReachedLevel3` of the referrer's `referredUsersData` to true.
+ * 
+ * Additionally, give the referrer their referral rewards to claim if applicable.
+ */
+export const updateReferredUsersData = async (
+    referrerUserId: string,
+    referredUserUserId: string
+): Promise<ReturnValue> => {
+    try {
+        const [referrer, referredUser] = await Promise.all([
+            UserModel.findOne({ _id: referrerUserId }).lean(),
+            UserModel.findOne({ _id: referredUserUserId }).lean()
+        ]);
+
+        if (!referrer || !referredUser) {
+            return {
+                status: Status.ERROR,
+                message: `(updateReferredUsersData) User not found.`
+            }
+        }
+
+        const referrerUpdateOperations = {
+            $set: {},
+            $inc: {},
+            $push: {},
+            $pull: {}
+        }
+
+        // check if the referrer's `referredUsersData` contains the referred user
+        const referredUserIndex = (referrer.referralData.referredUsersData as ReferredUserData[]).findIndex(data => data.userId === referredUser._id);
+
+        if (referredUserIndex === -1) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(updateReferredUsersData) Referred user data not found.`
+            }
+        }
+
+        // at this point, the level of the referred user should already be set to level 3 from the parent function.
+        // we double check it here just in case.
+        if (referredUser.inGameData.level !== 3) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(updateReferredUsersData) Referred user is not level 3.`
+            }
+        }
+
+        // set `hasReachedLevel3` to true
+        referrerUpdateOperations.$set[`referralData.referredUsersData.${referredUserIndex}.hasReachedLevel3`] = true;
+
+        // now check the amount of referred users the referrer has that reached level 3.
+        // we add 1 because the set operation for the newest referred user hasn't been executed yet.
+        const totalReferredUsersReachedLevel3 = (referrer.referralData.referredUsersData as ReferredUserData[]).filter(data => data.hasReachedLevel3).length + 1;
+
+        // get the referral rewards based on the total referred users that reached level 3
+        const referralRewards = GET_SEASON_0_REFERRAL_REWARDS(totalReferredUsersReachedLevel3);
+
+        // if any of the rewards aren't 0, update the referrer's `referralData.claimableReferralRewards`
+        if (referralRewards.leaderboardPoints !== 0) {
+            referrerUpdateOperations.$inc['referralData.claimableReferralRewards.leaderboardPoints'] = referralRewards.leaderboardPoints;
+        }
+
+        if (referralRewards.xCookies !== 0) {
+            referrerUpdateOperations.$inc['referralData.claimableReferralRewards.xCookies'] = referralRewards.xCookies;
+        }
+
+        // execute the update operations
+        await UserModel.updateOne({ _id: referrerUserId }, referrerUpdateOperations);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(updateReferredUsersData) Referred user data updated.`,
+            data: {
+                newReferralRewards: referralRewards
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(updateReferredUsersData) ${err.message}`
+        }
     }
 }

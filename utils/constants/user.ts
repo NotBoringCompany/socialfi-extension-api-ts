@@ -138,37 +138,37 @@ export const GET_BEGINNER_REWARDS = (day: number): BeginnerReward[] => {
  * The more referred users the user has, the more rewards they can obtain once the referred users reach Level 3.
  */
 export const GET_SEASON_0_REFERRAL_REWARDS = (userCount: number): ReferralReward => {
-    if (userCount >= 1 && userCount <= 2) {
+    if (userCount === 1) {
         return {
             xCookies: 10,
             leaderboardPoints: 100
         }
-    } else if (userCount >= 3 && userCount <= 4) {
+    } else if (userCount === 3) {
         return {
             xCookies: 60,
             leaderboardPoints: 600
         }
-    } else if (userCount >= 5 && userCount <= 9) {
+    } else if (userCount === 5) {
         return {
             xCookies: 100,
             leaderboardPoints: 1000
         }
-    } else if (userCount >= 10 && userCount <= 19) {
+    } else if (userCount === 10) {
         return {
             xCookies: 200,
             leaderboardPoints: 2000
         }
-    } else if (userCount >= 20 && userCount <= 29) {
+    } else if (userCount === 20) {
         return {
             xCookies: 400,
             leaderboardPoints: 4000
         }
-    } else if (userCount >= 30) {
+    } else if (userCount === 30) {
         return {
             xCookies: 600,
             leaderboardPoints: 6000
         }
-    // shouldn't happen, but just in case the number is invalid, NaN or negative
+    // if any number between the user counts, NaN or is invalid, this will be returned.
     } else {
         return {
             xCookies: 0,
