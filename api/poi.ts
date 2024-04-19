@@ -7,6 +7,7 @@ import { LeaderboardModel, POIModel, RaftModel, UserModel } from '../utils/const
 import { ACTUAL_RAFT_SPEED } from '../utils/constants/raft';
 import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
 import { ReturnValue, Status } from '../utils/retVal';
+import { updateReferredUsersData } from './user';
 
 /**
  * Adds a new POI to the database. Only callable by admin.
@@ -897,7 +898,7 @@ export const sellItemsInPOIShop = async (
         // lastly, reduce the user inventory's weight by `totalWeightToReduce`
         userUpdateOperations.$inc[`inventory.weight`] = -totalWeightToReduce;
 
-        // execute the transactions
+        // execute the update operations
         await Promise.all([
             UserModel.updateOne({ twitterId }, userUpdateOperations).catch((err) => {
                 return {
@@ -919,6 +920,32 @@ export const sellItemsInPOIShop = async (
                 }
             })
         ]);
+
+        // check if the user update operations included a level up
+        const setUserLevel = userUpdateOperations.$set['inGameData.level'];
+
+        // if it included a level, check if it's set to 3.
+        // if it is, check if the user has a referrer.
+        // the referrer will then have this user's `hasReachedLevel3` set to true.
+        if (setUserLevel && setUserLevel === 3) {
+            // check if the user has a referrer
+            const referrerId: string | null = user.inviteCodeData.referrerId;
+
+            if (referrerId) {
+                // update the referrer's referred users data where applicable
+                const { status, message } = await updateReferredUsersData(
+                    referrerId,
+                    user._id
+                );
+
+                if (status === Status.ERROR) {
+                    return {
+                        status,
+                        message: `(claimDailyRewards) Err from updateReferredUsersData: ${message}`
+                    }
+                }
+            }
+        }
 
         return {
             status: Status.SUCCESS,
