@@ -176,3 +176,64 @@ export const GET_SEASON_0_REFERRAL_REWARDS = (userCount: number): ReferralReward
         }
     }
 }
+
+/**
+ * Gets a user's player level based on the amount of points they have on the Season 0 leaderboard.
+ */
+export const GET_SEASON_0_PLAYER_LEVEL = (points: number): number => {
+    if (points >= 0 && points <= 999) {
+        return 1;
+    } else if (points >= 1000 && points <= 2499) {
+        return 2;
+    } else if (points >= 2500 && points <= 4499) {
+        return 3;
+    } else if (points >= 4500 && points <= 6999) {
+        return 4;
+    } else if (points >= 7000 && points <= 9999) {
+        return 5;
+    } else if (points >= 10000 && points <= 13499) {
+        return 6;
+    } else if (points >= 13500 && points <= 17499) {
+        return 7;
+    } else if (points >= 17500 && points <= 21999) {
+        return 8;
+    } else if (points >= 22000 && points <= 26999) {
+        return 9;
+    } else {
+        // for every 5000 points obtained after 27000, the player level increases by 1
+        return Math.floor((points - 27000) / 5000) + 10;
+    }
+}
+
+/**
+ * Gets the `additionalPoints` to give to the user for Season 0 based on their player level.
+ * 
+ * Will be given once the user reaches that level.
+ */
+export const GET_SEASON_0_PLAYER_LEVEL_REWARDS = (level: number): number => {
+    switch (level) {
+        case 1:
+            return 0;
+        case 2:
+            return 100;
+        case 3:
+            return 250;
+        case 4:
+            return 450;
+        case 5:
+            return 700;
+        case 6:
+            return 1000;
+        case 7:
+            return 1350;
+        case 8:
+            return 1750;
+        case 9:
+            return 2200;
+        case 10:
+            return 2700;
+        // default values can be levels above 10 (no extra rewards), or 0, NaN and invalid levels.
+        default:
+            return 0;
+    }
+}

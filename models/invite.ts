@@ -51,7 +51,7 @@ export interface ReferredUserData {
     /** 
      * if the user has reached level 3 
      * 
-     * run by a scheduler every day at 23:59 UTC to check
+     * run by a scheduler every day at 00:00 UTC to check
      */
     hasReachedLevel3: boolean;
 }

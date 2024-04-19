@@ -16,7 +16,7 @@ import { ExtendedResource, ResourceType, SimplifiedResource } from '../models/re
 import { resources } from '../utils/constants/resource';
 import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType } from '../models/user';
 import { GET_BEGINNER_REWARDS, GET_DAILY_LOGIN_REWARDS, MAX_BEGINNER_REWARD_DAY } from '../utils/constants/user';
-import { InviteCodeData } from '../models/invite';
+import { InviteCodeData, ReferredUserData } from '../models/invite';
 import { BitOrbType } from '../models/bitOrb';
 import { TerraCapsulatorType } from '../models/terraCapsulator';
 import { Item } from '../models/item';
