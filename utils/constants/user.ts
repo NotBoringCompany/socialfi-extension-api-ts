@@ -1,3 +1,4 @@
+import { ReferralReward } from '../../models/invite';
 import { BeginnerReward, BeginnerRewardType, DailyLoginReward, DailyLoginRewardType } from '../../models/user';
 
 /** The maximum weight a user's inventory can be */
@@ -127,5 +128,51 @@ export const GET_BEGINNER_REWARDS = (day: number): BeginnerReward[] => {
                 amount: 1
             }
         ];
+    }
+}
+
+/**
+ * Gets Season 0's referral rewards.
+ * 
+ * The current referral system works where:
+ * The more referred users the user has, the more rewards they can obtain once the referred users reach Level 3.
+ */
+export const GET_SEASON_0_REFERRAL_REWARDS = (userCount: number): ReferralReward => {
+    if (userCount >= 1 && userCount <= 2) {
+        return {
+            xCookies: 10,
+            leaderboardPoints: 100
+        }
+    } else if (userCount >= 3 && userCount <= 4) {
+        return {
+            xCookies: 60,
+            leaderboardPoints: 600
+        }
+    } else if (userCount >= 5 && userCount <= 9) {
+        return {
+            xCookies: 100,
+            leaderboardPoints: 1000
+        }
+    } else if (userCount >= 10 && userCount <= 19) {
+        return {
+            xCookies: 200,
+            leaderboardPoints: 2000
+        }
+    } else if (userCount >= 20 && userCount <= 29) {
+        return {
+            xCookies: 400,
+            leaderboardPoints: 4000
+        }
+    } else if (userCount >= 30) {
+        return {
+            xCookies: 600,
+            leaderboardPoints: 6000
+        }
+    // shouldn't happen, but just in case the number is invalid, NaN or negative
+    } else {
+        return {
+            xCookies: 0,
+            leaderboardPoints: 0
+        }
     }
 }

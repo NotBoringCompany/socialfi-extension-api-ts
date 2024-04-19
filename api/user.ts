@@ -228,7 +228,7 @@ export const handleTwitterLogin = async (
                 },
                 referralData: {
                     referralCode: generateReferralCode(),
-                    referredUsers: []
+                    referredUsersData: []
                 },
                 wallet: {
                     privateKey,
@@ -898,10 +898,13 @@ export const linkInviteCode = async (
                 }
             });
 
-            // also update the referrer's code data to include the referee's id in the `referredUsers` array
+            // also update the referrer's data to include the referred user's data in the `referredUsersData` array
             await UserModel.updateOne({ _id: referralCode._id }, {
                 $push: {
-                    'referralData.referredUsers': user._id
+                    'referralData.referredUsersData': {
+                        userId: user._id,
+                        hasReachedLevel3: false
+                    }
                 }
             });
 

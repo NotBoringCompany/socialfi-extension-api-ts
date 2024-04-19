@@ -38,6 +38,30 @@ export interface StarterCodeData {
 export interface ReferralData {
     /** the user's personal referral code */
     referralCode: string;
-    /** the users who got referred by this user (i.e. the users who use this user's referral code to sign up) */
-    referredUsers: string[];
+    /** the data of the users who got referred by this user (i.e. the users who use this user's referral code to sign up) */
+    referredUsersData: ReferredUserData[];
+}
+
+/**
+ * Represents a user who was referred by another user.
+ */
+export interface ReferredUserData {
+    /** the referred user's database id */
+    userId: string;
+    /** 
+     * if the user has reached level 3 
+     * 
+     * run by a scheduler every day at 23:59 UTC to check
+     */
+    hasReachedLevel3: boolean;
+}
+
+/**
+ * Represents a referral reward instance.
+ */
+export interface ReferralReward {
+    /** the amount of xCookies the user gets */
+    xCookies: number;
+    /** the amount of leaderboard points the user gets */
+    leaderboardPoints: number;
 }
