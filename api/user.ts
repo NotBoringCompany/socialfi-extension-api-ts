@@ -15,7 +15,7 @@ import { ethers } from 'ethers';
 import { ExtendedResource, ResourceType, SimplifiedResource } from '../models/resource';
 import { resources } from '../utils/constants/resource';
 import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType } from '../models/user';
-import { GET_BEGINNER_REWARDS, GET_DAILY_LOGIN_REWARDS, GET_SEASON_0_PLAYER_LEVEL, MAX_BEGINNER_REWARD_DAY } from '../utils/constants/user';
+import { GET_BEGINNER_REWARDS, GET_DAILY_LOGIN_REWARDS, GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS, MAX_BEGINNER_REWARD_DAY } from '../utils/constants/user';
 import { InviteCodeData, ReferredUserData } from '../models/invite';
 import { BitOrbType } from '../models/bitOrb';
 import { TerraCapsulatorType } from '../models/terraCapsulator';
@@ -696,14 +696,38 @@ export const claimDailyRewards = async (
 
                 // if the user is not found in the leaderboard, add them
                 if (userIndex === -1) {
+                    let additionalPoints = 0;
+                    // check if the points rewarded will level the user up
+                    const currentLevel = user.inGameData.level;
+                    // we don't add the user's existing leaderboard points because the user doesn't exist yet
+                    const newLevel = GET_SEASON_0_PLAYER_LEVEL(reward.amount);
+
+                    if (newLevel > currentLevel) {
+                        userUpdateOperations.$set['inGameData.level'] = newLevel;
+                        additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
+                    }
+
                     leaderboardUpdateOperations.$push['userData'] = {
                         userId: user._id,
                         twitterProfilePicture: user.twitterProfilePicture,
                         points: reward.amount,
-                        additionalPoints: 0,
+                        additionalPoints
                     }
                 } else {
-                    leaderboardUpdateOperations.$inc[`userData.${userIndex}.additionalPoints`] = reward.amount;
+                    let additionalPoints = 0;
+                    
+                    // check if the points rewarded will level the user up
+                    const currentLevel = user.inGameData.level;
+                    const newLevel = GET_SEASON_0_PLAYER_LEVEL(leaderboard.userData[userIndex].points + reward.amount);
+
+                    if (newLevel > currentLevel) {
+                        userUpdateOperations.$set['inGameData.level'] = newLevel;
+                        additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
+                    }
+
+                    // increment the user's points and additionalPoints (it will be incrementing by 0 anyway if not applicable)
+                    leaderboardUpdateOperations.$inc[`userData.${userIndex}.points`] = reward.amount;
+                    leaderboardUpdateOperations.$inc[`userData.${userIndex}.additionalPoints`] = additionalPoints;
                 }
                 // if the reward is not xCookies or leaderboard points, return an error (for now)
             } else {
