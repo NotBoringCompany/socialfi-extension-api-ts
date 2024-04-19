@@ -700,7 +700,8 @@ export const sellItemsInPOIShop = async (
                 'userData': {
                     userId: user._id,
                     twitterProfilePicture: user.twitterProfilePicture,
-                    points: leaderboardPoints
+                    points: leaderboardPoints,
+                    additionalPoints: 0
                 }
             }
         } else {

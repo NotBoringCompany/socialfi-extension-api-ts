@@ -689,7 +689,7 @@ export const claimDailyRewards = async (
             if (reward.type === DailyLoginRewardType.X_COOKIES) {
                 userUpdateOperations.$inc['inventory.xCookies'] = reward.amount;
             } else if (reward.type === DailyLoginRewardType.LEADERBOARD_POINTS) {
-                // add the points to the leaderboard
+                // add the additional points to the leaderboard
                 // get the index of the user in the leaderboard's `userData` array
                 const userIndex = leaderboard.userData.findIndex(userData => userData.userId === user._id);
 
@@ -698,10 +698,11 @@ export const claimDailyRewards = async (
                     leaderboardUpdateOperations.$push['userData'] = {
                         userId: user._id,
                         twitterProfilePicture: user.twitterProfilePicture,
-                        points: reward.amount
+                        points: 0,
+                        additionalPoints: reward.amount 
                     }
                 } else {
-                    leaderboardUpdateOperations.$inc[`userData.${userIndex}.points`] = reward.amount;
+                    leaderboardUpdateOperations.$inc[`userData.${userIndex}.additionalPoints`] = reward.amount;
                 }
                 // if the reward is not xCookies or leaderboard points, return an error (for now)
             } else {
