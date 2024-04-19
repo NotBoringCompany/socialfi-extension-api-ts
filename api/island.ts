@@ -23,7 +23,10 @@ import { BoosterItem } from '../models/booster';
  */
 export const generateBarrenIsland = async (
     userId: string,
-    obtainMethod: ObtainMethod.SIGN_UP | ObtainMethod.BOTTLED_MESSAGE
+    obtainMethod: ObtainMethod.SIGN_UP | ObtainMethod.BOTTLED_MESSAGE,
+    // leave empty if no modifiers are to be applied.
+    // however, when signing up, users will at times get bits that will impact the barren island's stats modifiers
+    islandStatsModifiers: IslandStatsModifiers,
 ): Promise<ReturnValue> => {
     try {
         const { status, message, data } = await getLatestIslandId();
@@ -71,11 +74,7 @@ export const generateBarrenIsland = async (
                 crumbsEarningEnd: 0,
                 lastClaimed: 0,
             },
-            islandStatsModifiers: {
-                resourceCapModifiers: [],
-                gatheringRateModifiers: [],
-                earningRateModifiers: []
-            }
+            islandStatsModifiers: islandStatsModifiers
         });
 
         await newIsland.save();
