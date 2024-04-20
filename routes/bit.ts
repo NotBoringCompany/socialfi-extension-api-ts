@@ -1,5 +1,5 @@
 import express from 'express';
-import { calcBitCurrentRate, evolveBit, feedBit, getBits, releaseBit } from '../api/bit';
+import { calcBitCurrentRate, evolveBit, feedBit, getBits, releaseBit, renameBit } from '../api/bit';
 import { FoodType } from '../models/food';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
@@ -10,6 +10,34 @@ import { BIT_EVOLUTION_COST, FREE_BIT_EVOLUTION_COST } from '../utils/constants/
 import { BitModel } from '../utils/constants/db';
 
 const router = express.Router();
+
+router.post('/rename_bit', async (req, res) => {
+    const { bitId, newName } = req.body;
+
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'rename_bit');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
+        const { status, message, data } = await renameBit(validateData?.twitterId, bitId, newName);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
 
 router.post('/release_bit', async (req, res) => {
     const { bitId } = req.body;
