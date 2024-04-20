@@ -24,6 +24,8 @@ import { BitTrait } from '../models/bit';
 import { IslandStatsModifiers } from '../models/island';
 import { Modifier } from '../models/modifier';
 import { LeaderboardUserData } from '../models/leaderboard';
+import { Food, FoodType } from '../models/food';
+import { BoosterItem } from '../models/booster';
 
 /**
  * Returns the user's data.
@@ -113,7 +115,10 @@ export const handleTwitterLogin = async (
                 lastRelocationTimestamp: 0,
                 currentFarmingLevel: 1, // starts at level 1
                 traits,
-                farmingStats: randomizeFarmingStats(rarity), // although free bits don't use farming stats, we still need to randomize it just in case for future events
+                farmingStats: { // although free bits don't use farming stats, we still need to randomize it just in case for future events
+                    ...randomizeFarmingStats(rarity),
+                    currentEnergy: 50 // set energy to half for tutorial purpose
+                },
                 bitStatsModifiers
             });
 
@@ -247,8 +252,18 @@ export const handleTwitterLogin = async (
                     xCookies: 0,
                     cookieCrumbs: 0,
                     resources: [],
-                    items: [],
-                    foods: [],
+                    items: [
+                        {
+                            type: BoosterItem['GATHERING_PROGRESS_BOOSTER_1000'],
+                            amount: 1
+                        }
+                    ] as Item[],
+                    foods: [
+                        {
+                            type: FoodType['BURGER'],
+                            amount: 1
+                        }   
+                    ] as Food[],
                     raftId: data.raft.raftId,
                     // add the free barren island to the `islandIds` array
                     islandIds: [islandData.island.islandId],
