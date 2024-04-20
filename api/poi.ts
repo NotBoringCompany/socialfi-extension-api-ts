@@ -1,6 +1,7 @@
 import { BoosterItem } from '../models/booster';
 import { Food } from '../models/food';
 import { Item } from '../models/item';
+import { LeaderboardPointsSource } from '../models/leaderboard';
 import { POIName, POIShop, POIShopActionItemData, POIShopItemName } from '../models/poi';
 import { ExtendedResource } from '../models/resource';
 import { LeaderboardModel, POIModel, RaftModel, UserModel } from '../utils/constants/db';
@@ -727,8 +728,18 @@ export const sellItemsInPOIShop = async (
 
             // check if this is enough to level the user up to the next player level.
             const currentLevel = user.inGameData.level;
-            // get the user's total leaderboard points with the new `leaderboardPoints` added to the existing user's points.
-            const newLevel = GET_SEASON_0_PLAYER_LEVEL(leaderboardPoints + userExistsInLeaderboard.points);
+            // get the user's total leaderboard points
+            // this is done by summing up all the points from the `pointsData` array, BUT EXCLUDING SOURCES FROM:
+            // 1. LeaderboardPointsSource.LEVELLING_UP
+            const totalLeaderboardPoints = userExistsInLeaderboard.pointsData.reduce((acc, pointsData) => {
+                if (pointsData.source !== LeaderboardPointsSource.LEVELLING_UP) {
+                    return acc + pointsData.points;
+                }
+
+                return acc;
+            }, 0);
+            
+            const newLevel = GET_SEASON_0_PLAYER_LEVEL(leaderboardPoints + totalLeaderboardPoints);
 
             // if new level is greater than the current level, we update the user's data
             // 1. set the new level
@@ -741,10 +752,29 @@ export const sellItemsInPOIShop = async (
             // get the index of the user in the leaderboard
             const userIndex = leaderboard.userData.findIndex(userData => userData.userId === user._id);
 
-            // increment the user's points and if eligible `additionalPoints` by the leaderboard points and additionalPoints respectively
-            leaderboardUpdateOperations.$inc = {
-                [`userData.${userIndex}.points`]: leaderboardPoints,
-                [`userData.${userIndex}.additionalPoints`]: additionalPoints
+            // increment the user's points for source `LeaderboardPointsSource.RESOURCE_SELLING`
+            // additionally, if the user did get additionalPoints (i.e. they levelled up), we increment the source LEVELLING_UP as well.
+            const resourceSellingIndex = leaderboard.userData[userIndex].pointsData.findIndex(pointsData => pointsData.source === LeaderboardPointsSource.RESOURCE_SELLING);
+            const levellingUpIndex = leaderboard.userData[userIndex].pointsData.findIndex(pointsData => pointsData.source === LeaderboardPointsSource.LEVELLING_UP);
+
+            if (resourceSellingIndex === -1) {
+                leaderboardUpdateOperations.$push[`userData.${userIndex}.pointsData`] = {
+                    points: leaderboardPoints,
+                    source: LeaderboardPointsSource.RESOURCE_SELLING
+                }
+            } else {
+                leaderboardUpdateOperations.$inc[`userData.${userIndex}.pointsData.${resourceSellingIndex}.points`] = leaderboardPoints;
+            }
+
+            if (additionalPoints > 0) {
+                if (levellingUpIndex === -1) {
+                    leaderboardUpdateOperations.$push[`userData.${userIndex}.pointsData`] = {
+                        points: additionalPoints,
+                        source: LeaderboardPointsSource.LEVELLING_UP
+                    }
+                } else {
+                    leaderboardUpdateOperations.$inc[`userData.${userIndex}.pointsData.${levellingUpIndex}.points`] = additionalPoints;
+                }
             }
         }
 

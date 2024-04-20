@@ -3,7 +3,7 @@ import { ReferralReward, StarterCodeData } from '../models/invite';
 import { LeaderboardModel, StarterCodeModel, UserModel } from '../utils/constants/db';
 import { generateObjectId, generateStarterCode } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
-import { LeaderboardUserData } from '../models/leaderboard';
+import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
 
 /**
  * Generates starter codes and stores them in the database.
@@ -120,11 +120,35 @@ export const claimReferralRewards = async (twitterId: string): Promise<ReturnVal
                 leaderboardUpdateOperations.$push['userData'] = {
                     userId: user._id,
                     twitterProfilePicture: user.twitterProfilePicture,
-                    points: claimableReferralRewards.leaderboardPoints,
-                    additionalPoints: 0
+                    pointsData: [{
+                        points: claimableReferralRewards.leaderboardPoints,
+                        source: LeaderboardPointsSource.REFERRAL_REWARDS
+                    }]
                 }
             } else {
-                leaderboardUpdateOperations.$inc[`userData.${userIndex}.points`] = claimableReferralRewards.leaderboardPoints;
+                // check if `userData[userIndex].pointsData` exists
+                // if not, we create a new entry for the user's points data
+                // if it does, we check if the source `LeaderboardPointsSource.REFERRAL_REWARDS` exists
+                // if it does, we increment the points, if not, we create a new entry for the source
+                const pointsData = leaderboard.userData[userIndex].pointsData;
+
+                if (!pointsData || pointsData.length === 0) {
+                    leaderboardUpdateOperations.$set[`userData.${userIndex}.pointsData`] = [{
+                        points: claimableReferralRewards.leaderboardPoints,
+                        source: LeaderboardPointsSource.REFERRAL_REWARDS
+                    }]
+                } else {
+                    const sourceIndex = pointsData.findIndex(pointsData => pointsData.source === LeaderboardPointsSource.REFERRAL_REWARDS);
+
+                    if (sourceIndex === -1) {
+                        leaderboardUpdateOperations.$push[`userData.${userIndex}.pointsData`] = {
+                            points: claimableReferralRewards.leaderboardPoints,
+                            source: LeaderboardPointsSource.REFERRAL_REWARDS
+                        }
+                    } else {
+                        leaderboardUpdateOperations.$inc[`userData.${userIndex}.pointsData.${sourceIndex}.points`] = claimableReferralRewards.leaderboardPoints;
+                    }
+                }
             }
         }
 

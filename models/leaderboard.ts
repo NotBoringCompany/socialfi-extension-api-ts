@@ -20,14 +20,29 @@ export interface LeaderboardUserData {
     userId: string;
     /** the user's twitter profile picture URL */
     twitterProfilePicture: string;
+    /** the user's points data */
+    pointsData: LeaderboardPointsData[];
+}
+
+/**
+ * Represents points data for a leaderboard user for a specific source.
+ */
+export interface LeaderboardPointsData {
     /** the user's points */
     points: number;
-    /** 
-     * the user's additional points 
-     * 
-     * the main difference between this and `points` is that `additionalPoints` 
-     * don't get counted into the user's player level and other calculations where necessary.
-     * however, it still does get added to the user's total points on the leaderboard later on.
-     */
-    additionalPoints: number;
+    /** the source of this particular points data */
+    source: LeaderboardPointsSource;
+}
+
+/**
+ * Represents the source of points data for a leaderboard user.
+ */
+export enum LeaderboardPointsSource {
+    RESOURCE_SELLING = 'Resource Selling',
+    REFERRAL_REWARDS = 'Referral Rewards',
+    DAILY_LOGIN_REWARDS = 'Daily Login Rewards',
+    BEGINNER_REWARDS = 'Beginner Rewards',
+    CHEST_REWARDS = 'Chest Rewards',
+    COLLAB_REWARDS = 'Collab Rewards',
+    LEVELLING_UP = 'Levelling Up',
 }

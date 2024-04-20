@@ -23,7 +23,7 @@ import { Item } from '../models/item';
 import { BitRarity, BitTrait } from '../models/bit';
 import { IslandStatsModifiers } from '../models/island';
 import { Modifier } from '../models/modifier';
-import { LeaderboardUserData } from '../models/leaderboard';
+import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
 import { FoodType } from '../models/food';
 import { BoosterItem } from '../models/booster';
 
@@ -265,7 +265,7 @@ export const handleTwitterLogin = async (
                         {
                             type: FoodType['BURGER'],
                             amount: 1
-                        }   
+                        }
                     ],
                     raftId: data.raft.raftId,
                     // add the free barren island to the `islandIds` array
@@ -725,31 +725,72 @@ export const claimDailyRewards = async (
                     const newLevel = GET_SEASON_0_PLAYER_LEVEL(reward.amount);
 
                     if (newLevel > currentLevel) {
+                        // if the user levels up, set the user's level to the new level
                         userUpdateOperations.$set['inGameData.level'] = newLevel;
+                        // get the additional points for the new level
                         additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
                     }
 
                     leaderboardUpdateOperations.$push['userData'] = {
                         userId: user._id,
                         twitterProfilePicture: user.twitterProfilePicture,
-                        points: reward.amount,
-                        additionalPoints
+                        pointsData: [{
+                            points: reward.amount,
+                            source: LeaderboardPointsSource.DAILY_LOGIN_REWARDS
+                        }]
                     }
                 } else {
                     let additionalPoints = 0;
-                    
+
                     // check if the points rewarded will level the user up
                     const currentLevel = user.inGameData.level;
-                    const newLevel = GET_SEASON_0_PLAYER_LEVEL(leaderboard.userData[userIndex].points + reward.amount);
+
+                    // get the user's total leaderboard points
+                    // this is done by summing up all the points from the `pointsData` array, BUT EXCLUDING SOURCES FROM:
+                    // 1. LeaderboardPointsSource.LEVELLING_UP
+                    const totalLeaderboardPoints = leaderboard.userData[userIndex].pointsData.reduce((acc, pointsData) => {
+                        if (pointsData.source !== LeaderboardPointsSource.LEVELLING_UP) {
+                            return acc + pointsData.points;
+                        }
+
+                        return acc;
+                    }, 0);
+
+                    const newLevel = GET_SEASON_0_PLAYER_LEVEL(totalLeaderboardPoints + reward.amount);
 
                     if (newLevel > currentLevel) {
                         userUpdateOperations.$set['inGameData.level'] = newLevel;
                         additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
                     }
 
-                    // increment the user's points and additionalPoints (it will be incrementing by 0 anyway if not applicable)
-                    leaderboardUpdateOperations.$inc[`userData.${userIndex}.points`] = reward.amount;
-                    leaderboardUpdateOperations.$inc[`userData.${userIndex}.additionalPoints`] = additionalPoints;
+                    // get the source index for `LeaderboardPointsSource.DAILY_LOGIN_REWARDS` and increment that
+                    // if the source doesn't exist, push a new entry
+                    const pointsData = leaderboard.userData[userIndex].pointsData;
+
+                    const sourceIndex = pointsData.findIndex(pointsData => pointsData.source === LeaderboardPointsSource.DAILY_LOGIN_REWARDS);
+
+                    if (sourceIndex === -1) {
+                        leaderboardUpdateOperations.$push[`userData.${userIndex}.pointsData`] = {
+                            points: reward.amount,
+                            source: LeaderboardPointsSource.DAILY_LOGIN_REWARDS
+                        }
+                    } else {
+                        leaderboardUpdateOperations.$inc[`userData.${userIndex}.pointsData.${sourceIndex}.points`] = reward.amount;
+                    }
+
+                    // if the additionalPoints is > 0, increment the source for `LeaderboardPointsSource.LEVELLING_UP`
+                    if (additionalPoints > 0) {
+                        const levellingUpSourceIndex = pointsData.findIndex(pointsData => pointsData.source === LeaderboardPointsSource.LEVELLING_UP);
+
+                        if (levellingUpSourceIndex === -1) {
+                            leaderboardUpdateOperations.$push[`userData.${userIndex}.pointsData`] = {
+                                points: additionalPoints,
+                                source: LeaderboardPointsSource.LEVELLING_UP
+                            }
+                        } else {
+                            leaderboardUpdateOperations.$inc[`userData.${userIndex}.pointsData.${levellingUpSourceIndex}.points`] = additionalPoints;
+                        }
+                    }
                 }
                 // if the reward is not xCookies or leaderboard points, return an error (for now)
             } else {

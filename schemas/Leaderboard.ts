@@ -12,9 +12,13 @@ export const LeaderboardSchema = new mongoose.Schema({
     name: String,
     startTimestamp: Number,
     userData: [{
+        _id: false,
         userId: String,
         twitterProfilePicture: String,
-        points: Number,
-        additionalPoints: Number
+        pointsData: [{
+            _id: false,
+            points: Number,
+            source: String
+        }]
     }]
 });
