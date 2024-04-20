@@ -24,7 +24,7 @@ import { BitTrait } from '../models/bit';
 import { IslandStatsModifiers } from '../models/island';
 import { Modifier } from '../models/modifier';
 import { LeaderboardUserData } from '../models/leaderboard';
-import { Food, FoodType } from '../models/food';
+import { FoodType } from '../models/food';
 import { BoosterItem } from '../models/booster';
 
 /**
@@ -257,13 +257,13 @@ export const handleTwitterLogin = async (
                             type: BoosterItem['GATHERING_PROGRESS_BOOSTER_1000'],
                             amount: 1
                         }
-                    ] as Item[],
+                    ],
                     foods: [
                         {
                             type: FoodType['BURGER'],
                             amount: 1
                         }   
-                    ] as Food[],
+                    ],
                     raftId: data.raft.raftId,
                     // add the free barren island to the `islandIds` array
                     islandIds: [islandData.island.islandId],
