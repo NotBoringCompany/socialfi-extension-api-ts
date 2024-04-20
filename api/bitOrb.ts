@@ -186,6 +186,10 @@ export const summonBit = async (
         // summon and return the Bit. DOESN'T SAVE TO DATABASE YET.
         const bit: Bit = {
             bitId: latestBitId + 1,
+            bitNameData: {
+                name: `Bit #${latestBitId + 1}`,
+                lastChanged: 0
+            },
             rarity,
             gender,
             premium: true,

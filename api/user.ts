@@ -20,7 +20,7 @@ import { InviteCodeData, ReferredUserData } from '../models/invite';
 import { BitOrbType } from '../models/bitOrb';
 import { TerraCapsulatorType } from '../models/terraCapsulator';
 import { Item } from '../models/item';
-import { BitTrait } from '../models/bit';
+import { BitRarity, BitTrait } from '../models/bit';
 import { IslandStatsModifiers } from '../models/island';
 import { Modifier } from '../models/modifier';
 import { LeaderboardUserData } from '../models/leaderboard';
@@ -95,19 +95,22 @@ export const handleTwitterLogin = async (
                 }
             }
 
-            // randomize bit rarity; follows the same rarity as when obtaining a bit from bit orb (I)
-            const rarity = RANDOMIZE_RARITY_FROM_ORB(BitOrbType.BIT_ORB_I);
+            const rarity = BitRarity.COMMON;
 
             const traits = randomizeBitTraits(rarity);
 
             const bitStatsModifiers = getBitStatsModifiersFromTraits(traits.map(trait => trait.trait));
 
-            // add a free bit to the user's inventory (users get 1 for free when they sign up)
+            // add a premium common bit to the user's inventory (users get 1 for free when they sign up)
             const { status: bitStatus, message: bitMessage, data: bitData } = await addBitToDatabase({
                 bitId: bitIdData?.latestBitId + 1,
+                bitNameData: {
+                    name: `Bit #${bitIdData?.latestBitId + 1}`,
+                    lastChanged: 0,
+                },
                 rarity,
                 gender: RANDOMIZE_GENDER(),
-                premium: false, // free bit, so not premium
+                premium: true,
                 owner: userObjectId,
                 purchaseDate: Math.floor(Date.now() / 1000),
                 obtainMethod: ObtainMethod.SIGN_UP,
@@ -115,7 +118,7 @@ export const handleTwitterLogin = async (
                 lastRelocationTimestamp: 0,
                 currentFarmingLevel: 1, // starts at level 1
                 traits,
-                farmingStats: { // although free bits don't use farming stats, we still need to randomize it just in case for future events
+                farmingStats: {
                     ...randomizeFarmingStats(rarity),
                     currentEnergy: 50 // set energy to half for tutorial purpose
                 },

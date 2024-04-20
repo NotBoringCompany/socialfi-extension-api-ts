@@ -11,6 +11,8 @@ import { ObtainMethod } from './obtainMethod';
 export interface Bit {
     /** unique id to distinguish the bit, starts from 1 */
     bitId: number;
+    /** the bit's name data */
+    bitNameData: BitNameData;
     /** bit rarity */
     rarity: BitRarity;
     /** bit gender */
@@ -35,6 +37,16 @@ export interface Bit {
     farmingStats: BitFarmingStats;
     /** stat modifiers for the bit's farming stats */
     bitStatsModifiers: BitStatsModifiers;
+}
+
+/**
+ * Represents the data of a Bit name.
+ */
+export interface BitNameData {
+    /** the bit's name */
+    name: string;
+    /** when the name was last changed */
+    lastChanged: number;
 }
 
 /**
