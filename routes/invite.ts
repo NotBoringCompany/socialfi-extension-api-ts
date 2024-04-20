@@ -30,3 +30,5 @@ router.post('/claim_referral_rewards', async (req, res) => {
         })
     }
 })
+
+export default router;
