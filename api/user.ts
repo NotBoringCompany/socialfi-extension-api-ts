@@ -1092,7 +1092,7 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
         const beginnerRewardData = user.inGameData.beginnerRewardData as BeginnerRewardData;
 
         // check for beginner reward eligiblity
-        const isEligible = beginnerRewardData.daysClaimed.length + beginnerRewardData.daysMissed.length < 7;
+        const isEligible = beginnerRewardData.daysClaimed.length + beginnerRewardData.daysMissed.length < MAX_BEGINNER_REWARD_DAY;
 
         if (!isEligible) {
             return {
@@ -1228,7 +1228,9 @@ export const updateBeginnerRewardsData = async (): Promise<void> => {
             } else {
                 // if `isClaimable` is true, it means the user missed claiming the rewards for the day.
                 // add the current day to `daysMissed`.
-                const latestDay = Math.max(...beginnerRewardData.daysClaimed, ...beginnerRewardData.daysMissed);
+                const latestClaimedDay = beginnerRewardData.daysClaimed.length > 0 ? Math.max(...beginnerRewardData.daysClaimed) : 0;
+                const latestMissedDay = beginnerRewardData.daysMissed.length > 0 ? Math.max(...beginnerRewardData.daysMissed) : 0;
+                const latestDay = Math.max(latestClaimedDay, latestMissedDay);
 
                 userUpdateOperations.push({
                     userId: user._id,
