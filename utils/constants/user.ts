@@ -84,7 +84,7 @@ export const GET_DAILY_LOGIN_REWARDS = (
  * `day` refers to the current day the user wants to the claim the rewards for.
  */
 export const GET_BEGINNER_REWARDS = (day: number): BeginnerReward[] => {
-    if (day >= MAX_BEGINNER_REWARD_DAY) {
+    if (day > MAX_BEGINNER_REWARD_DAY) {
         // return an empty array if the user has passed the 7 day mark.
         return [];
     }
