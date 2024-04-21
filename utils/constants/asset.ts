@@ -1,6 +1,8 @@
 import { Asset } from '../../models/asset';
+import { BitOrbType } from '../../models/bitOrb';
 import { Item } from '../../models/item';
 import { BarrenResource, FruitResource, LiquidResource, OreResource } from '../../models/resource';
+import { TerraCapsulatorType } from '../../models/terraCapsulator';
 
 /**
  * Represents the list of assets available in our game.
@@ -71,11 +73,27 @@ export const assets: Asset[] = [
         description: 'Heals like a warm hug from a mythical bird.'
     },
     {
-        type: 'Terra Capsulator',
+        type: TerraCapsulatorType.TERRA_CAPSULATOR_I,
         description: 'This mysterious capsule summons a mysterious island at your disposal.'
     },
     {
-        type: 'Bit Orb',
+        type: TerraCapsulatorType.TERRA_CAPSULATOR_II,
+        description: 'This mysterious capsule summons a mysterious island at your disposal. Higher chances of getting higher rarity islands.'
+    },
+    {
+        type: TerraCapsulatorType.TERRA_CAPSULATOR_I,
+        description: 'This mysterious capsule summons a mysterious island at your disposal. Highest chances of getting higher rarity islands.'
+    },
+    {
+        type: BitOrbType.BIT_ORB_I,
         description: 'A shiny orb that holds the power of your own companion.'
+    },
+    {
+        type: BitOrbType.BIT_ORB_II,
+        description: 'A shiny orb that holds the power of your own companion. Higher chances of getting higher rarity Bits.'
+    },
+    {
+        type: BitOrbType.BIT_ORB_III,
+        description: 'A shiny orb that holds the power of your own companion. Highest chances of getting higher rarity Bits.'
     }
 ]

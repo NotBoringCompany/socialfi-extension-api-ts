@@ -1,10 +1,36 @@
 import express from 'express';
-import { checkInviteCodeLinked, claimBeginnerRewards, claimDailyRewards, getBeginnerRewardsData, getInGameData, getInventory, getWalletDetails, linkInviteCode, removeResources } from '../api/user';
+import { checkInviteCodeLinked, claimBeginnerRewards, claimDailyRewards, getBeginnerRewardsData, getInGameData, getInventory, getUserData, getWalletDetails, linkInviteCode, removeResources } from '../api/user';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { ExtendedProfile } from '../utils/types';
 
 const router = express.Router();
+
+router.get('/get_user_data', async (req, res) => {
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'get_user_data');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
+        const { status, message, data } = await getUserData(validateData?.twitterId);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
 
 router.get('/get_inventory/:twitterId', async (req, res) => {
     const { twitterId } = req.params;

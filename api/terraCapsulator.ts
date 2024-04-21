@@ -7,11 +7,13 @@ import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
 import { GET_TOTAL_COOKIE_CRUMBS_EARNABLE, GET_TOTAL_X_COOKIES_EARNABLE, randomizeIslandTraits } from '../utils/constants/island';
 import { BitTrait, BitTraitData } from '../models/bit';
 import { Modifier } from '../models/modifier';
+import { TerraCapsulatorType } from '../models/terraCapsulator';
+import { Item } from '../models/item';
 
 /**
  * (User) Consumes a Terra Capsulator to obtain an island.
  */
-export const consumeTerraCapsulator = async (twitterId: string): Promise<ReturnValue> => {
+export const consumeTerraCapsulator = async (type: TerraCapsulatorType, twitterId: string): Promise<ReturnValue> => {
     try {
         const user = await UserModel.findOne({ twitterId }).lean();
 
@@ -29,8 +31,10 @@ export const consumeTerraCapsulator = async (twitterId: string): Promise<ReturnV
             }
         }
 
-        // check if the user has at least 1 Terra Capsulator to consume
-        if (user.inventory?.totalTerraCapsulators < 1) {
+        // check if the user has at least 1 of this Terra Capsulator type to consume
+        const terraCapsulatorAmount = (user.inventory?.items as Item[]).find(i => i.type === type)?.amount;
+        
+        if (!terraCapsulatorAmount || terraCapsulatorAmount < 1) {
             return {
                 status: Status.ERROR,
                 message: `(consumeTerraCapsulator) Not enough Terra Capsulators to consume.`
@@ -38,10 +42,19 @@ export const consumeTerraCapsulator = async (twitterId: string): Promise<ReturnV
         }
 
         // consume the Terra Capsulator
-        userUpdateOperations.$inc['inventory.totalTerraCapsulators'] = -1;
+        // check if the user only has 1 of this Terra Capsulator type left.
+        // if so, remove the Terra Capsulator from the user's inventory
+        // else, decrement the amount of the Terra Capsulator by 1
+        if (terraCapsulatorAmount === 1) {
+            // pull the Terra Capsulator from the user inventory's items
+            userUpdateOperations.$pull['inventory.items'] = { type: TerraCapsulatorType.TERRA_CAPSULATOR_I };
+        } else {
+            const terraCapsulatorIndex = (user.inventory?.items as Item[]).findIndex(i => i.type === TerraCapsulatorType.TERRA_CAPSULATOR_I);
+            userUpdateOperations.$inc[`inventory.items.${terraCapsulatorIndex}.amount`] = -1;
+        }
 
         // call `summonIsland` to summon an Island
-        const { status: summonIslandStatus, message: summonIslandMessage, data: summonIslandData } = await summonIsland(user._id);
+        const { status: summonIslandStatus, message: summonIslandMessage, data: summonIslandData } = await summonIsland(type, user._id);
 
         if (summonIslandStatus !== Status.SUCCESS) {
             return {
@@ -86,6 +99,7 @@ export const consumeTerraCapsulator = async (twitterId: string): Promise<ReturnV
  * Summons an island obtained from a Terra Capsulator.
  */
 export const summonIsland = async (
+    terraCapsulatorType: TerraCapsulatorType,
     owner: string,
 ): Promise<ReturnValue> => {
     try {
@@ -102,7 +116,7 @@ export const summonIsland = async (
         const latestIslandId = data?.latestIslandId as number;
 
         // get the island type based on the probability of obtaining it
-        const islandType = randomizeTypeFromCapsulator();
+        const islandType = randomizeTypeFromCapsulator(terraCapsulatorType);
 
         // randomize the base resource cap
         const baseResourceCap = randomizeBaseResourceCap(islandType);
@@ -110,8 +124,8 @@ export const summonIsland = async (
         // randomize the 5 island traits
         const traits = randomizeIslandTraits();
 
-        // get total xCookies earnable based on rarity of island
-        const totalXCookiesEarnable = GET_TOTAL_X_COOKIES_EARNABLE(islandType);
+        // get total xCookies earnable based on rarity
+        const totalXCookiesEarnable = GET_TOTAL_X_COOKIES_EARNABLE(terraCapsulatorType, islandType);
 
         // get total cookie crumbs earnable based on rarity
         const totalCookieCrumbsEarnable = GET_TOTAL_COOKIE_CRUMBS_EARNABLE(islandType);
@@ -215,8 +229,8 @@ export const summonIsland = async (
                 totalCookieCrumbsEarnable,
                 totalCookieCrumbsEarned: 0,
                 claimableCookieCrumbs: 0,
-                earningStart: 0,
-                crumbsEarningStart: 0,
+                earningStart: Math.floor(Date.now() / 1000),
+                crumbsEarningStart: Math.floor(Date.now() / 1000),
                 earningEnd: 0,
                 crumbsEarningEnd: 0,
                 lastClaimed: 0,

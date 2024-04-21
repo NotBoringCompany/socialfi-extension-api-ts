@@ -28,6 +28,7 @@ export const BIT_EVOLUTION_COST = (currentLevel: number): number => {
         return 5;
     // level once upgraded = 10 to 19
     } else if (currentLevel >= 9 && currentLevel <= 18) {
+<<<<<<< HEAD
         return 10; // 2x of prev level range
     // level once upgraded = 20 to 29
     } else if (currentLevel >= 19 && currentLevel <= 28) {
@@ -44,6 +45,24 @@ export const BIT_EVOLUTION_COST = (currentLevel: number): number => {
     // level once upgraded = 60 to 65
     } else if (currentLevel >= 59 && currentLevel <= 64) {
         return 720; // 4x of prev level range
+=======
+        return 10; 
+    // level once upgraded = 20 to 29
+    } else if (currentLevel >= 19 && currentLevel <= 28) {
+        return 20; 
+    // level once upgraded = 30 to 39
+    } else if (currentLevel >= 29 && currentLevel <= 38) {
+        return 60; 
+    // level once upgraded = 40 to 49
+    } else if (currentLevel >= 39 && currentLevel <= 48) {
+        return 180;
+    // level once upgraded = 50 to 59
+    } else if (currentLevel >= 49 && currentLevel <= 58) {
+        return 360;
+    // level once upgraded = 60 to 65
+    } else if (currentLevel >= 59 && currentLevel <= 64) {
+        return 720;
+>>>>>>> 9fcd391b46ad3c8a7df871148f35b8eefb9de7ff
     }
 }
 
@@ -557,9 +576,15 @@ export const DEFAULT_GATHERING_RATE = (rarity: BitRarity): number => {
         case BitRarity.UNCOMMON:
             return 0.055;
         case BitRarity.RARE:
+<<<<<<< HEAD
             return 0.0750;
         case BitRarity.EPIC:
             return 0.01142;
+=======
+            return 0.075;
+        case BitRarity.EPIC:
+            return 0.1142;
+>>>>>>> 9fcd391b46ad3c8a7df871148f35b8eefb9de7ff
         case BitRarity.LEGENDARY:
             return 0.2723;
         default:
@@ -573,7 +598,11 @@ export const DEFAULT_GATHERING_RATE = (rarity: BitRarity): number => {
 export const DEFAULT_GATHERING_RATE_GROWTH = (rarity: BitRarity): number => {
     switch (rarity) {
         case BitRarity.COMMON:
+<<<<<<< HEAD
             return 0.006;
+=======
+            return 0.0006;
+>>>>>>> 9fcd391b46ad3c8a7df871148f35b8eefb9de7ff
         case BitRarity.UNCOMMON:
             return 0.0075;
         case BitRarity.RARE:
@@ -613,7 +642,11 @@ export const DEFAULT_EARNING_RATE = (rarity: BitRarity): number => {
 export const DEFAULT_EARNING_RATE_GROWTH = (rarity: BitRarity): number => {
     switch (rarity) {
         case BitRarity.COMMON:
+<<<<<<< HEAD
             return 0.000375;
+=======
+            return 0.00375;
+>>>>>>> 9fcd391b46ad3c8a7df871148f35b8eefb9de7ff
         case BitRarity.UNCOMMON:
             return 0.0048;
         case BitRarity.RARE:

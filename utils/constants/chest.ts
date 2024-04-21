@@ -1,12 +1,14 @@
+import { BitOrbType } from '../../models/bitOrb';
 import { FoodType } from '../../models/food';
 import { BarrenResource, ResourceRarity, ResourceType } from '../../models/resource';
+import { TerraCapsulatorType } from '../../models/terraCapsulator';
 import { resources } from './resource';
 
 /** 
  * Returns an item from a chest to be given when the chest is opened.
  */
 export const RANDOMIZE_CHEST_ITEM = (): {
-    item: FoodType | ResourceType | 'xCookies' | 'Terra Capsulator' | 'Bit Orb', 
+    item: FoodType | ResourceType | 'xCookies' | TerraCapsulatorType.TERRA_CAPSULATOR_I | BitOrbType.BIT_ORB_I 
     amount: number
 } => {
     const rand = Math.floor(Math.random() * 10000) + 1;
@@ -68,9 +70,9 @@ export const RANDOMIZE_CHEST_ITEM = (): {
             return { item: 'xCookies', amount: 10 }
         // 0.01% chance for Terra Capsulator
         case rand < 10000:
-            return { item: 'Terra Capsulator', amount: 1 }
+            return { item: TerraCapsulatorType.TERRA_CAPSULATOR_I, amount: 1 }
         // 0.01% chance for Bit Orb
         default:
-            return { item: 'Bit Orb', amount: 1 }
+            return { item: BitOrbType.BIT_ORB_I, amount: 1 }
     }
 }

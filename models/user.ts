@@ -3,6 +3,8 @@ import { Food } from './food';
 import { Item } from './item';
 import { ExtendedResource } from './resource';
 import { InviteCodeData, ReferralData } from './invite';
+import { TerraCapsulatorType } from './terraCapsulator';
+import { BitOrbType } from './bitOrb';
 
 /****************
  * USER-RELATED MODELS
@@ -85,11 +87,7 @@ export interface UserInventory {
     /** a list of owned island IDs */
     islandIds: number[];
     /** a list of owned bit IDs */
-    bitIds: number[];
-    /** total amount of bit orbs owned */
-    totalBitOrbs: number;
-    /** total amount of terra caps owned */
-    totalTerraCapsulators: number;
+    bitIds: number[];    
 }
 
 /**
@@ -203,6 +201,6 @@ export interface BeginnerReward {
  */
 export enum BeginnerRewardType {
     X_COOKIES = 'xCookies',
-    BIT_ORB = 'Bit Orb',
-    TERRA_CAPSULATOR = 'Terra Capsulator',
+    BIT_ORB_I = BitOrbType.BIT_ORB_I,
+    TERRA_CAPSULATOR_I = TerraCapsulatorType.TERRA_CAPSULATOR_I
 }

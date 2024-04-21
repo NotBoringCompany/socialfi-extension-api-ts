@@ -1,5 +1,6 @@
 import { BitRarity } from '../../models/bit';
 import { IslandTrait, IslandType, RarityDeviationReduction, ResourceDropChance, ResourceDropChanceDiff } from '../../models/island';
+import { TerraCapsulatorType } from '../../models/terraCapsulator';
 import { shop } from '../shop';
 
 /** max level for any island type */
@@ -60,26 +61,44 @@ export const DAILY_BONUS_RESOURCES_GATHERABLE = (type: IslandType) => {
 /**
  * Gets the total xCookies earnable back for an island based on its type (i.e. rarity) when opening from a Terra Capsulator.
  */
-export const GET_TOTAL_X_COOKIES_EARNABLE = (type: IslandType) => {
-    // get the price of a terra capsulator to determine the total xCookies earnable
-    const terraCapsulatorPrice = shop.terraCapsulators.xCookies;
+export const GET_TOTAL_X_COOKIES_EARNABLE = (terraCapType: TerraCapsulatorType, islandType: IslandType) => {
+    // check if the given terra cap type exists in the shop and get the price
+    const terraCapsulatorPrice = shop.items.find(i => i.type === terraCapType)?.price.xCookies;
 
-    switch (type) {
-        case IslandType.BARREN:
-            return 0;
-        case IslandType.PRIMAL_ISLES:
-            return 0.6 * terraCapsulatorPrice;
-        case IslandType.VERDANT_ISLES:
-            return 0.925 * terraCapsulatorPrice;
-        case IslandType.EXOTIC_ISLES:
-            return 1.3 * terraCapsulatorPrice;
-        // currently, terra caps won't give out crystal or celestial isles; these values are only for future-proofing.
-        case IslandType.CRYSTAL_ISLES:
-            return 2 * terraCapsulatorPrice;
-        case IslandType.CELESTIAL_ISLES:
-            return 4.5 * terraCapsulatorPrice;
-        default:
-            throw new Error(`(GET_TOTAL_X_COOKIES_EARNABLE) Invalid Island Type: ${type}`);
+    if (terraCapType === TerraCapsulatorType.TERRA_CAPSULATOR_I) {
+        switch (islandType) {
+            case IslandType.BARREN:
+                return 0;
+            case IslandType.PRIMAL_ISLES:
+                return 0.6 * terraCapsulatorPrice;
+            case IslandType.VERDANT_ISLES:
+                return 0.925 * terraCapsulatorPrice;
+            case IslandType.EXOTIC_ISLES:
+                return 1.3 * terraCapsulatorPrice;
+            case IslandType.CRYSTAL_ISLES:
+                return 2 * terraCapsulatorPrice;
+            case IslandType.CELESTIAL_ISLES:
+                return 4.5 * terraCapsulatorPrice;
+            default:
+                throw new Error(`(GET_TOTAL_X_COOKIES_EARNABLE) Invalid Island Type: ${islandType}`);
+        }
+    } else if (terraCapType === TerraCapsulatorType.TERRA_CAPSULATOR_II) {
+        switch (islandType) {
+            case IslandType.BARREN:
+                return 0;
+            case IslandType.PRIMAL_ISLES:
+                return 0 * terraCapsulatorPrice;
+            case IslandType.VERDANT_ISLES:
+                return 0.75 * terraCapsulatorPrice;
+            case IslandType.EXOTIC_ISLES:
+                return 0.98 * terraCapsulatorPrice;
+            case IslandType.CRYSTAL_ISLES:
+                return 1.25 * terraCapsulatorPrice;
+            case IslandType.CELESTIAL_ISLES:
+                return 2 * terraCapsulatorPrice;
+            default:
+                throw new Error(`(GET_TOTAL_X_COOKIES_EARNABLE) Invalid Island Type: ${islandType}`);
+        }
     }
 }
 

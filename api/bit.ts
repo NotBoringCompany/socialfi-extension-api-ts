@@ -1,5 +1,5 @@
 import { ReturnValue, Status } from '../utils/retVal';
-import { Bit, BitFarmingStats, BitRarity } from '../models/bit';
+import { Bit, BitFarmingStats, BitNameData, BitRarity } from '../models/bit';
 import {
     BASE_ENERGY_DEPLETION_RATE,
     BIT_EVOLUTION_COST,
@@ -22,6 +22,84 @@ import { FOOD_ENERGY_REPLENISHMENT } from '../utils/constants/food';
 import { BarrenResource, ExtendedResource } from '../models/resource';
 import { generateObjectId } from '../utils/crypto';
 import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
+
+/**
+ * (User) Renames a bit to a new name.
+ */
+export const renameBit = async (
+    twitterId: string, 
+    bitId: number,
+    newName: string
+): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(renameBit) User not found.`,
+            };
+        }
+
+        const bitUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {},
+        }
+
+        // check if the user owns this bit
+        if (!(user.inventory?.bitIds as number[]).includes(bitId)) {
+            return {
+                status: Status.ERROR,
+                message: `(renameBit) User does not own the bit.`,
+            };
+        }
+
+        // get the bit
+        const bit = await BitModel.findOne({ bitId }).lean();
+
+        if (!bit) {
+            return {
+                status: Status.ERROR,
+                message: `(renameBit) Bit not found.`,
+            };
+        }
+
+        // get the current name
+        const currentName = (bit.bitNameData as BitNameData).name;
+
+        // the new name must be maximum 16 characters long and CANNOT have any special characters
+        // underscore and dots are allowed
+        if (newName.length > 16 || !newName.match(/^[a-zA-Z0-9_.-]*$/)) {
+            return {
+                status: Status.ERROR,
+                message: `(renameBit) New name is invalid.`,
+            };
+        }
+
+        // update the bit's name
+        bitUpdateOperations.$set['bitNameData.name'] = newName;
+
+        // execute the update operation
+        await BitModel.updateOne({ bitId }, bitUpdateOperations);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(renameBit) Bit renamed.`,
+            data: {
+                bitId: bitId,
+                oldName: currentName,
+                newName: newName,
+            },
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(renameBit) Error: ${err.message}`
+        }
+    }
+}
 
 /**
  * (User) Manually releases a bit from the user's inventory. 

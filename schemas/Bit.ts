@@ -10,6 +10,7 @@ export const BitSchema = new mongoose.Schema({
         default: generateObjectId()
     },
     bitId: Number,
+    bitNameData: Object,
     rarity: String,
     gender: String,
     premium: Boolean,

@@ -1,8 +1,9 @@
 import mongoose from 'mongoose';
-import { StarterCodeData } from '../models/invite';
-import { StarterCodeModel } from '../utils/constants/db';
+import { ReferralReward, StarterCodeData } from '../models/invite';
+import { LeaderboardModel, StarterCodeModel, UserModel } from '../utils/constants/db';
 import { generateObjectId, generateStarterCode } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
+import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
 
 /**
  * Generates starter codes and stores them in the database.
@@ -58,6 +59,116 @@ export const generateStarterCodes = async (
         return {
             status: Status.ERROR,
             message: `(generateStarterCodes) ${err.message}`
+        }
+    }
+}
+
+/**
+ * (User) Claims a user's referral rewards (if any) (For Season 0).
+ */
+export const claimReferralRewards = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(claimReferralRewards) User not found.`
+            }
+        }
+
+        const userUpdateOperations = {
+            $set: {},
+            $inc: {},
+            $push: {},
+            $pull: {}
+        }
+
+        const leaderboardUpdateOperations = {
+            $set: {},
+            $inc: {},
+            $push: {},
+            $pull: {}
+        }
+
+        // check if the user's `referralData.claimableReferralRewards` is empty
+        const claimableReferralRewards: ReferralReward = user.referralData?.claimableReferralRewards;
+
+        // if the user has claimable xCookies, add to the user's inventory and reset the claimable xCookies
+        if (claimableReferralRewards.xCookies > 0) {
+            userUpdateOperations.$inc['inventory.xCookies'] = claimableReferralRewards.xCookies;
+            userUpdateOperations.$set['referralData.claimableReferralRewards.xCookies'] = 0;
+        }
+
+        // if the user has claimable leaderboard points, add to the Season 0 leaderboard and reset the claimable leaderboard points
+        if (claimableReferralRewards.leaderboardPoints > 0) {
+            // get the leaderboard for season 0
+            const leaderboard = await LeaderboardModel.findOne({ name: 'Season 0' }).lean();
+
+            if (!leaderboard) {
+                return {
+                    status: Status.ERROR,
+                    message: `(claimReferralRewards) Leaderboard not found.`
+                }
+            }
+
+            // check if the user exists in the leaderboard's `userData`
+            const userIndex = (leaderboard.userData as LeaderboardUserData[]).findIndex(userData => userData.userId === user._id);
+
+            // if the user is not found, we create a new entry for the user
+            if (userIndex === -1) {
+                leaderboardUpdateOperations.$push['userData'] = {
+                    userId: user._id,
+                    twitterProfilePicture: user.twitterProfilePicture,
+                    pointsData: [{
+                        points: claimableReferralRewards.leaderboardPoints,
+                        source: LeaderboardPointsSource.REFERRAL_REWARDS
+                    }]
+                }
+            } else {
+                // check if `userData[userIndex].pointsData` exists
+                // if not, we create a new entry for the user's points data
+                // if it does, we check if the source `LeaderboardPointsSource.REFERRAL_REWARDS` exists
+                // if it does, we increment the points, if not, we create a new entry for the source
+                const pointsData = leaderboard.userData[userIndex].pointsData;
+
+                if (!pointsData || pointsData.length === 0) {
+                    leaderboardUpdateOperations.$set[`userData.${userIndex}.pointsData`] = [{
+                        points: claimableReferralRewards.leaderboardPoints,
+                        source: LeaderboardPointsSource.REFERRAL_REWARDS
+                    }]
+                } else {
+                    const sourceIndex = pointsData.findIndex(pointsData => pointsData.source === LeaderboardPointsSource.REFERRAL_REWARDS);
+
+                    if (sourceIndex === -1) {
+                        leaderboardUpdateOperations.$push[`userData.${userIndex}.pointsData`] = {
+                            points: claimableReferralRewards.leaderboardPoints,
+                            source: LeaderboardPointsSource.REFERRAL_REWARDS
+                        }
+                    } else {
+                        leaderboardUpdateOperations.$inc[`userData.${userIndex}.pointsData.${sourceIndex}.points`] = claimableReferralRewards.leaderboardPoints;
+                    }
+                }
+            }
+        }
+
+        // execute the update operations
+        await Promise.all([
+            UserModel.updateOne({ twitterId }, userUpdateOperations),
+            LeaderboardModel.updateOne({ name: 'Season 0' }, leaderboardUpdateOperations)
+        ]);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(claimReferralRewards) Referral rewards claimed.`,
+            data: {
+                claimableReferralRewards
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(claimReferralRewards) ${err.message}`
         }
     }
 }

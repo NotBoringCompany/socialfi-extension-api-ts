@@ -1,32 +1,141 @@
+import { BitOrbType } from '../models/bitOrb';
+import { BoosterItem } from '../models/booster';
 import { FoodType } from '../models/food';
 import { Shop } from '../models/shop';
+import { TerraCapsulatorType } from '../models/terraCapsulator';
 
 /**
  * Since we don't require the shop to be dynamic for now (i.e. not requiring the database), we can just hardcode the shop.
  */
 export const shop: Shop = {
-    bitOrbs: {
-        xCookies: 200
-    },
-    terraCapsulators: {
-        xCookies: 600
-    },
+    items: [
+        {
+            type: BitOrbType.BIT_ORB_I,
+            price: {
+                xCookies: 200
+            }
+        },
+        {
+            type: TerraCapsulatorType.TERRA_CAPSULATOR_I,
+            price: {
+                xCookies: 600
+            }
+        },
+        {
+            type: BoosterItem.GATHERING_PROGRESS_BOOSTER_25,
+            price: {
+                xCookies: 20
+            }
+        },
+        {
+            type: BoosterItem.GATHERING_PROGRESS_BOOSTER_50,
+            price: {
+                xCookies: 40
+            }
+        },
+        {
+            type: BoosterItem.GATHERING_PROGRESS_BOOSTER_100,
+            price: {
+                xCookies: 80
+            }
+        },
+        {
+            type: BoosterItem.GATHERING_PROGRESS_BOOSTER_200,
+            price: {
+                xCookies: 160
+            }
+        },
+        {
+            type: BoosterItem.GATHERING_PROGRESS_BOOSTER_300,
+            price: {
+                xCookies: 320
+            }
+        },
+        {
+            type: BoosterItem.GATHERING_PROGRESS_BOOSTER_500,
+            price: {
+                xCookies: 500
+            }
+        },
+        {
+            type: BoosterItem.GATHERING_PROGRESS_BOOSTER_1000,
+            price: {
+                xCookies: 900
+            }
+        },
+        {
+            type: BoosterItem.RAFT_SPEED_BOOSTER_1_MIN,
+            price: {
+                xCookies: 5
+            }
+        },
+        {
+            type: BoosterItem.RAFT_SPEED_BOOSTER_2_MIN,
+            price: {
+                xCookies: 7
+            }
+        },
+        {
+            type: BoosterItem.RAFT_SPEED_BOOSTER_3_MIN,
+            price: {
+                xCookies: 10
+            }
+        },
+        {
+            type: BoosterItem.RAFT_SPEED_BOOSTER_5_MIN,
+            price: {
+                xCookies: 15
+            }
+        },
+        {
+            type: BoosterItem.RAFT_SPEED_BOOSTER_10_MIN,
+            price: {
+                xCookies: 20
+            }
+        },
+        {
+            type: BoosterItem.RAFT_SPEED_BOOSTER_15_MIN,
+            price: {
+                xCookies: 30
+            }
+        },
+        {
+            type: BoosterItem.RAFT_SPEED_BOOSTER_30_MIN,
+            price: {
+                xCookies: 60
+            }
+        },
+        {
+            type: BoosterItem.RAFT_SPEED_BOOSTER_60_MIN,
+            price: {
+                xCookies: 120
+            }
+        }
+    ],
     foods: [
         {
             type: FoodType.CANDY,
-            xCookies: 0.1
+            price: {
+                xCookies: 0.1
+            }
         },
         {
             type: FoodType.CHOCOLATE,
-            xCookies: 0.2
+            price: {
+                xCookies: 0.2
+            }
         },
         {
             type: FoodType.JUICE,
-            xCookies: 0.35
+            price: {
+                xCookies: 0.35
+            }
         },
         {
             type: FoodType.BURGER,
-            xCookies: 0.6
+            price: {
+                xCookies: 0.6
+            }
         }
     ]
 }

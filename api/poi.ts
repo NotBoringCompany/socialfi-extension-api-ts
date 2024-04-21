@@ -1,10 +1,14 @@
+import { BoosterItem } from '../models/booster';
 import { Food } from '../models/food';
-import { BoosterItem, Item } from '../models/item';
+import { Item } from '../models/item';
+import { LeaderboardPointsSource } from '../models/leaderboard';
 import { POIName, POIShop, POIShopActionItemData, POIShopItemName } from '../models/poi';
 import { ExtendedResource } from '../models/resource';
 import { LeaderboardModel, POIModel, RaftModel, UserModel } from '../utils/constants/db';
 import { ACTUAL_RAFT_SPEED } from '../utils/constants/raft';
+import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
 import { ReturnValue, Status } from '../utils/retVal';
+import { updateReferredUsersData } from './user';
 
 /**
  * Adds a new POI to the database. Only callable by admin.
@@ -604,13 +608,9 @@ export const sellItemsInPOIShop = async (
             }
 
             // search for this item in the user's inventory (which includes resources, items, foods)
-            // if the item specified is `Bit Orb` or `Terra Capsulator`, check the totalBitOrbs or totalTerraCapsulators count respectively.
+            // if the item specified is `Bit Orb (I)` or `Terra Capsulator (I)`, check the count for these types respectively.
             // otherwise, check the items array.
-            if (item.item === 'Bit Orb') {
-                return user.inventory.totalBitOrbs < item.amount;
-            } else if (item.item === 'Terra Capsulator') {
-                return user.inventory.totalTerraCapsulators < item.amount;
-            } else if (
+            if (
                 item.item === POIShopItemName.SEAWEED ||
                 item.item === POIShopItemName.STONE ||
                 item.item === POIShopItemName.COPPER ||
@@ -643,10 +643,16 @@ export const sellItemsInPOIShop = async (
 
                 return !food || food.amount < item.amount;
                 // if terra cap or bit orb (which at this point is 'else')
-            } else if (item.item === POIShopItemName.TERRA_CAPSULATOR) {
-                return user.inventory.totalTerraCapsulators < item.amount;
-            } else if (item.item === POIShopItemName.BIT_ORB) {
-                return user.inventory.totalBitOrbs < item.amount;
+            } else if (item.item === POIShopItemName.TERRA_CAPSULATOR_I) {
+                // check if the user owns this terra capsulator type. if they do, check if the amount they want to sell is less than the amount they own.
+                const terraCapsulator = (user.inventory.items as Item[]).find(i => i.type === item.item as string);
+
+                return !terraCapsulator || terraCapsulator.amount < item.amount;
+            } else if (item.item === POIShopItemName.BIT_ORB_I) {
+                // check if the user owns this bit orb type. if they do, check if the amount they want to sell is less than the amount they own.
+                const bitOrb = (user.inventory.items as Item[]).find(i => i.type === item.item as string);
+
+                return !bitOrb || bitOrb.amount < item.amount;
                 // right now, we don't have any other items in the POI shop, so we just return true since it's invalid.
             } else {
                 return true;
@@ -693,20 +699,82 @@ export const sellItemsInPOIShop = async (
         const userExistsInLeaderboard = leaderboard.userData.find(userData => userData.userId === user._id);
 
         if (!userExistsInLeaderboard) {
+            let additionalPoints = 0;
+
+            // check if this is enough to level the user up to the next player level.
+            const currentLevel = user.inGameData.level;
+            // use `leaderboardPoints` since the user has just created a new user instance in the leaderboard
+            // meaning that they prev had no points.
+            const newLevel = GET_SEASON_0_PLAYER_LEVEL(leaderboardPoints);
+
+            // if new level is greater than the current level, we update the user's data
+            // 1. set the new level
+            // 2. increment the `additionalPoints` to give the user in the leaderboard
+            if (newLevel > currentLevel) {
+                userUpdateOperations.$set[`inGameData.level`] = newLevel;
+                additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
+            }
+
             leaderboardUpdateOperations.$push = {
                 'userData': {
                     userId: user._id,
                     twitterProfilePicture: user.twitterProfilePicture,
-                    points: leaderboardPoints
+                    points: leaderboardPoints,
+                    additionalPoints
                 }
             }
         } else {
+            let additionalPoints = 0;
+
+            // check if this is enough to level the user up to the next player level.
+            const currentLevel = user.inGameData.level;
+            // get the user's total leaderboard points
+            // this is done by summing up all the points from the `pointsData` array, BUT EXCLUDING SOURCES FROM:
+            // 1. LeaderboardPointsSource.LEVELLING_UP
+            const totalLeaderboardPoints = userExistsInLeaderboard.pointsData.reduce((acc, pointsData) => {
+                if (pointsData.source !== LeaderboardPointsSource.LEVELLING_UP) {
+                    return acc + pointsData.points;
+                }
+
+                return acc;
+            }, 0);
+            
+            const newLevel = GET_SEASON_0_PLAYER_LEVEL(leaderboardPoints + totalLeaderboardPoints);
+
+            // if new level is greater than the current level, we update the user's data
+            // 1. set the new level
+            // 2. increment the `additionalPoints` to give the user in the leaderboard
+            if (newLevel > currentLevel) {
+                userUpdateOperations.$set[`inGameData.level`] = newLevel;
+                additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
+            }
+
             // get the index of the user in the leaderboard
             const userIndex = leaderboard.userData.findIndex(userData => userData.userId === user._id);
 
-            // increment the user's points by the leaderboard points
-            leaderboardUpdateOperations.$inc = {
-                [`userData.${userIndex}.points`]: leaderboardPoints
+            // increment the user's points for source `LeaderboardPointsSource.RESOURCE_SELLING`
+            // additionally, if the user did get additionalPoints (i.e. they levelled up), we increment the source LEVELLING_UP as well.
+            const resourceSellingIndex = leaderboard.userData[userIndex].pointsData.findIndex(pointsData => pointsData.source === LeaderboardPointsSource.RESOURCE_SELLING);
+            const levellingUpIndex = leaderboard.userData[userIndex].pointsData.findIndex(pointsData => pointsData.source === LeaderboardPointsSource.LEVELLING_UP);
+
+            if (resourceSellingIndex === -1) {
+                leaderboardUpdateOperations.$push[`userData.${userIndex}.pointsData`] = {
+                    points: leaderboardPoints,
+                    source: LeaderboardPointsSource.RESOURCE_SELLING
+                }
+            } else {
+                leaderboardUpdateOperations.$inc[`userData.${userIndex}.pointsData.${resourceSellingIndex}.points`] = leaderboardPoints;
+            }
+
+            if (additionalPoints > 0) {
+                if (levellingUpIndex === -1) {
+                    leaderboardUpdateOperations.$push[`userData.${userIndex}.pointsData`] = {
+                        points: additionalPoints,
+                        source: LeaderboardPointsSource.LEVELLING_UP
+                    }
+                } else {
+                    leaderboardUpdateOperations.$inc[`userData.${userIndex}.pointsData.${levellingUpIndex}.points`] = additionalPoints;
+                }
             }
         }
 
@@ -785,10 +853,44 @@ export const sellItemsInPOIShop = async (
                         }
                     }
                 }
-            } else if (item.item === POIShopItemName.TERRA_CAPSULATOR) {
-                userUpdateOperations.$inc[`inventory.totalTerraCapsulators`] = -item.amount;
-            } else if (item.item === POIShopItemName.BIT_ORB) {
-                userUpdateOperations.$inc[`inventory.totalBitOrbs`] = -item.amount;
+            } else if (item.item === POIShopItemName.TERRA_CAPSULATOR_I) {
+                // get the index of the terra capsulator in the user's inventory
+                const terraCapsulatorIndex = (user.inventory.items as Item[]).findIndex(i => i.type === item.item as string);
+
+                // if not found, return an error.
+                if (terraCapsulatorIndex === -1) {
+                    return {
+                        status: Status.BAD_REQUEST,
+                        message: `(sellItemsInPOIShop) Terra capsulator type not found in user's inventory.`
+                    }
+                }
+
+                // if the amount to sell is equal to the amount in the user's inventory, we remove the entire terra capsulator.
+                // otherwise, we decrement the amount of the terra capsulator.
+                if (item.amount === (user.inventory.items as Item[])[terraCapsulatorIndex].amount) {
+                    userUpdateOperations.$pull[`inventory.items`] = { type: item.item };
+                } else {
+                    userUpdateOperations.$inc[`inventory.items.${terraCapsulatorIndex}.amount`] = -item.amount;
+                }
+            } else if (item.item === POIShopItemName.BIT_ORB_I) {
+                // get the index of the bit orb in the user's inventory
+                const bitOrbIndex = (user.inventory.items as Item[]).findIndex(i => i.type === item.item as string);
+
+                // if not found, return an error.
+                if (bitOrbIndex === -1) {
+                    return {
+                        status: Status.BAD_REQUEST,
+                        message: `(sellItemsInPOIShop) Bit orb type not found in user's inventory.`
+                    }
+                }
+
+                // if the amount to sell is equal to the amount in the user's inventory, we remove the entire bit orb.
+                // otherwise, we decrement the amount of the bit orb.
+                if (item.amount === (user.inventory.items as Item[])[bitOrbIndex].amount) {
+                    userUpdateOperations.$pull[`inventory.items`] = { type: item.item };
+                } else {
+                    userUpdateOperations.$inc[`inventory.items.${bitOrbIndex}.amount`] = -item.amount;
+                }
             }
 
             // now, we update the shop's data.
@@ -826,7 +928,7 @@ export const sellItemsInPOIShop = async (
         // lastly, reduce the user inventory's weight by `totalWeightToReduce`
         userUpdateOperations.$inc[`inventory.weight`] = -totalWeightToReduce;
 
-        // execute the transactions
+        // execute the update operations
         await Promise.all([
             UserModel.updateOne({ twitterId }, userUpdateOperations).catch((err) => {
                 return {
@@ -848,6 +950,32 @@ export const sellItemsInPOIShop = async (
                 }
             })
         ]);
+
+        // check if the user update operations included a level up
+        const setUserLevel = userUpdateOperations.$set['inGameData.level'];
+
+        // if it included a level, check if it's set to 3.
+        // if it is, check if the user has a referrer.
+        // the referrer will then have this user's `hasReachedLevel3` set to true.
+        if (setUserLevel && setUserLevel === 3) {
+            // check if the user has a referrer
+            const referrerId: string | null = user.inviteCodeData.referrerId;
+
+            if (referrerId) {
+                // update the referrer's referred users data where applicable
+                const { status, message } = await updateReferredUsersData(
+                    referrerId,
+                    user._id
+                );
+
+                if (status === Status.ERROR) {
+                    return {
+                        status,
+                        message: `(claimDailyRewards) Err from updateReferredUsersData: ${message}`
+                    }
+                }
+            }
+        }
 
         return {
             status: Status.SUCCESS,
@@ -1052,10 +1180,34 @@ export const buyItemsInPOIShop = async (
                 } else {
                     userUpdateOperations.$inc[`inventory.foods.${foodIndex}.amount`] = item.amount;
                 }
-            } else if (item.item === POIShopItemName.TERRA_CAPSULATOR) {
-                userUpdateOperations.$inc[`inventory.totalTerraCapsulators`] = item.amount;
-            } else if (item.item === POIShopItemName.BIT_ORB) {
-                userUpdateOperations.$inc[`inventory.totalBitOrbs`] = item.amount;
+            } else if (item.item === POIShopItemName.TERRA_CAPSULATOR_I) {
+                // check if the terra capsulator exists in the user's inventory.
+                // if it does, increment the amount of the terra capsulator.
+                // if it doesn't, add a new terra capsulator.
+                const terraCapsulatorIndex = (user.inventory.items as Item[]).findIndex(i => i.type === item.item as string);
+
+                if (terraCapsulatorIndex === -1) {
+                    userUpdateOperations.$push[`inventory.items`] = {
+                        type: item.item,
+                        amount: item.amount
+                    }
+                } else {
+                    userUpdateOperations.$inc[`inventory.items.${terraCapsulatorIndex}.amount`] = item.amount;
+                }
+            } else if (item.item === POIShopItemName.BIT_ORB_I) {
+                // check if the bit orb exists in the user's inventory.
+                // if it does, increment the amount of the bit orb.
+                // if it doesn't, add a new bit orb.
+                const bitOrbIndex = (user.inventory.items as Item[]).findIndex(i => i.type === item.item as string);
+
+                if (bitOrbIndex === -1) {
+                    userUpdateOperations.$push[`inventory.items`] = {
+                        type: item.item,
+                        amount: item.amount
+                    }
+                } else {
+                    userUpdateOperations.$inc[`inventory.items.${bitOrbIndex}.amount`] = item.amount;
+                }
             }
 
             // now, we update the shop's data.

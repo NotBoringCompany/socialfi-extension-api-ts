@@ -16,4 +16,4 @@ export interface Asset {
  * This includes resources, food, items, and other assets (essentially every single 'thing' in the game).
  */
 export type AssetType = 
-    ResourceType | FoodType | 'Bit Orb' | 'Terra Capsulator' | ItemType;
+    ResourceType | FoodType | ItemType;

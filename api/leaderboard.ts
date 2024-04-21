@@ -66,7 +66,13 @@ export const getLeaderboardRanking = async (leaderboardName: string): Promise<Re
         }
 
         // Sort the user data by points in descending order
-        const descendingPoints = leaderboard.userData.sort((a, b) => b.points - a.points);
+        // userData contains `pointsData` which is an array of points data for different sources
+        // we loop through each `pointsData` and sum up the points to get the total points for each user
+        const descendingPoints = leaderboard.userData.sort((a, b) => {
+            const aTotalPoints = a.pointsData.reduce((acc, data) => acc + data.points, 0);
+            const bTotalPoints = b.pointsData.reduce((acc, data) => acc + data.points, 0);
+            return bTotalPoints - aTotalPoints;
+        });
 
         // Extract user IDs from sorted data
         const userIds = descendingPoints.map(userData => userData.userId);
@@ -85,7 +91,7 @@ export const getLeaderboardRanking = async (leaderboardName: string): Promise<Re
             rank: index + 1,
             userId: userIdToTwitterIdMap[userData.userId] || 'N/A',
             twitterProfilePicture: userData.twitterProfilePicture,
-            points: userData.points
+            points: userData.pointsData.reduce((acc, data) => acc + data.points, 0)
         }));
 
         return {
@@ -129,12 +135,18 @@ export const getOwnLeaderboardRanking = async (
             };
         }
 
-        // Sort the leaderboard.userData by points in descending order to ensure ranking correctness
-        const sortedUserData = leaderboard.userData.sort((a, b) => b.points - a.points);
+        // Sort the user data by points in descending order
+        // userData contains `pointsData` which is an array of points data for different sources
+        // we loop through each `pointsData` and sum up the points to get the total points for each user
+        const descendingPoints = leaderboard.userData.sort((a, b) => {
+            const aTotalPoints = a.pointsData.reduce((acc, data) => acc + data.points, 0);
+            const bTotalPoints = b.pointsData.reduce((acc, data) => acc + data.points, 0);
+            return bTotalPoints - aTotalPoints;
+        });
 
         // Find the user's data and determine the rank simultaneously
         let userRank = -1; // Default value indicating not found
-        const userData = sortedUserData.find((data, index) => {
+        const userData = descendingPoints.find((data, index) => {
             if (data.userId === user._id.toString()) {
                 userRank = index + 1; // Adjust for zero-based index
                 return true;
@@ -157,7 +169,7 @@ export const getOwnLeaderboardRanking = async (
                     rank: userRank,
                     userId: twitterId,
                     twitterProfilePicture: userData.twitterProfilePicture,
-                    points: userData.points
+                    points: userData.pointsData.reduce((acc, data) => acc + data.points, 0)
                 }
             }
         };

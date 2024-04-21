@@ -1,3 +1,6 @@
+import { BitOrbType } from './bitOrb';
+import { TerraCapsulatorType } from './terraCapsulator';
+
 /**
  * Represents a Point of Interest (POI).
  */
@@ -144,8 +147,8 @@ export enum POIShopItemName {
     CHOCOLATE = 'Chocolate',
     JUICE = 'Juice',
     BURGER = 'Burger',
-    TERRA_CAPSULATOR = 'Terra Capsulator',
-    BIT_ORB = 'Bit Orb',
+    TERRA_CAPSULATOR_I = TerraCapsulatorType.TERRA_CAPSULATOR_I,
+    BIT_ORB_I = BitOrbType.BIT_ORB_I
 }
 
 /**

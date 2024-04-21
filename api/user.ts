@@ -15,8 +15,46 @@ import { ethers } from 'ethers';
 import { ExtendedResource, ResourceType, SimplifiedResource } from '../models/resource';
 import { resources } from '../utils/constants/resource';
 import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType } from '../models/user';
-import { GET_BEGINNER_REWARDS, GET_DAILY_LOGIN_REWARDS, MAX_BEGINNER_REWARD_DAY } from '../utils/constants/user';
-import { InviteCodeData } from '../models/invite';
+import { GET_BEGINNER_REWARDS, GET_DAILY_LOGIN_REWARDS, GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS, GET_SEASON_0_REFERRAL_REWARDS, MAX_BEGINNER_REWARD_DAY } from '../utils/constants/user';
+import { InviteCodeData, ReferredUserData } from '../models/invite';
+import { BitOrbType } from '../models/bitOrb';
+import { TerraCapsulatorType } from '../models/terraCapsulator';
+import { Item } from '../models/item';
+import { BitRarity, BitTrait } from '../models/bit';
+import { IslandStatsModifiers } from '../models/island';
+import { Modifier } from '../models/modifier';
+import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
+import { FoodType } from '../models/food';
+import { BoosterItem } from '../models/booster';
+
+/**
+ * Returns the user's data.
+ */
+export const getUserData = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(getUserData) User not found.`
+            }
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getUserData) User data fetched.`,
+            data: {
+                user
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getUserData) ${err.message}`
+        }
+    }
+}
 
 /**
  * Twitter login logic. Creates a new user or simply log them in if they already exist.
@@ -57,19 +95,22 @@ export const handleTwitterLogin = async (
                 }
             }
 
-            // randomize bit rarity; follows the same rarity as when obtaining a bit from a bit orb
-            const rarity = RANDOMIZE_RARITY_FROM_ORB();
+            const rarity = BitRarity.COMMON;
 
             const traits = randomizeBitTraits(rarity);
 
             const bitStatsModifiers = getBitStatsModifiersFromTraits(traits.map(trait => trait.trait));
 
-            // add a free bit to the user's inventory (users get 1 for free when they sign up)
+            // add a premium common bit to the user's inventory (users get 1 for free when they sign up)
             const { status: bitStatus, message: bitMessage, data: bitData } = await addBitToDatabase({
                 bitId: bitIdData?.latestBitId + 1,
+                bitNameData: {
+                    name: `Bit #${bitIdData?.latestBitId + 1}`,
+                    lastChanged: 0,
+                },
                 rarity,
                 gender: RANDOMIZE_GENDER(),
-                premium: false, // free bit, so not premium
+                premium: true,
                 owner: userObjectId,
                 purchaseDate: Math.floor(Date.now() / 1000),
                 obtainMethod: ObtainMethod.SIGN_UP,
@@ -77,7 +118,10 @@ export const handleTwitterLogin = async (
                 lastRelocationTimestamp: 0,
                 currentFarmingLevel: 1, // starts at level 1
                 traits,
-                farmingStats: randomizeFarmingStats(rarity), // although free bits don't use farming stats, we still need to randomize it just in case for future events
+                farmingStats: {
+                    ...randomizeFarmingStats(rarity),
+                    currentEnergy: 50 // set energy to half for tutorial purpose
+                },
                 bitStatsModifiers
             });
 
@@ -88,8 +132,87 @@ export const handleTwitterLogin = async (
                 }
             }
 
+            const islandStatsModifiers: IslandStatsModifiers = {
+                resourceCapModifiers: [],
+                gatheringRateModifiers: [],
+                earningRateModifiers: []
+            }
+
+            // check the bit's traits
+            // if it has influential, antagonistic, famous or mannerless, then:
+            // if influential, add 1% to earning and gathering rate modifiers of the island
+            // if antagonistic, reduce 1% to earning and gathering rate modifiers of the island
+            // if famous, add 0.5% to earning and gathering rate modifiers of the island
+            // if mannerless, reduce 0.5% to earning and gathering rate modifiers of the island
+            if (traits.some(trait => trait.trait === BitTrait.INFLUENTIAL)) {
+                // add 1% to earning and gathering rate modifiers of the island
+                const gatheringRateModifier: Modifier = {
+                    origin: `Bit ID ${bitData.bit.bitId}'s Trait: Influential`,
+                    value: 1.01
+                }
+
+                const earningRateModifier: Modifier = {
+                    origin: `Bit ID ${bitData.bit.bitId}'s Trait: Influential`,
+                    value: 1.01
+                }
+
+                islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
+                islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
+            }
+
+            // if the bit has antagonistic trait
+            if (traits.some(trait => trait.trait === BitTrait.ANTAGONISTIC)) {
+                // reduce 1% to earning and gathering rate modifiers of the island
+                const gatheringRateModifier: Modifier = {
+                    origin: `Bit ID ${bitData.bit.bitId}'s Trait: Antagonistic`,
+                    value: 0.99
+                }
+
+                const earningRateModifier: Modifier = {
+                    origin: `Bit ID ${bitData.bit.bitId}'s Trait: Antagonistic`,
+                    value: 0.99
+                }
+
+                islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
+                islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
+            }
+
+            // if the bit has famous trait
+            if (traits.some(trait => trait.trait === BitTrait.FAMOUS)) {
+                // add 0.5% to earning and gathering rate modifiers of the island
+                const gatheringRateModifier: Modifier = {
+                    origin: `Bit ID ${bitData.bit.bitId}'s Trait: Famous`,
+                    value: 1.005
+                }
+
+                const earningRateModifier: Modifier = {
+                    origin: `Bit ID ${bitData.bit.bitId}'s Trait: Famous`,
+                    value: 1.005
+                }
+
+                islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
+                islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
+            }
+
+            // if the bit has mannerless trait
+            if (traits.some(trait => trait.trait === BitTrait.MANNERLESS)) {
+                // reduce 0.5% to earning and gathering rate modifiers of the island
+                const gatheringRateModifier: Modifier = {
+                    origin: `Bit ID ${bitData.bit.bitId}'s Trait: Mannerless`,
+                    value: 0.995
+                }
+
+                const earningRateModifier: Modifier = {
+                    origin: `Bit ID ${bitData.bit.bitId}'s Trait: Mannerless`,
+                    value: 0.995
+                }
+
+                islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
+                islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
+            }
+
             // creates a new barren island for the user for free as well
-            const { status: islandStatus, message: islandMessage, data: islandData } = await generateBarrenIsland(userObjectId, ObtainMethod.SIGN_UP);
+            const { status: islandStatus, message: islandMessage, data: islandData } = await generateBarrenIsland(userObjectId, ObtainMethod.SIGN_UP, islandStatsModifiers);
 
             if (islandStatus !== Status.SUCCESS) {
                 return {
@@ -114,7 +237,11 @@ export const handleTwitterLogin = async (
                 },
                 referralData: {
                     referralCode: generateReferralCode(),
-                    referredUsers: []
+                    referredUsersData: [],
+                    claimableReferralRewards: {
+                        xCookies: 0,
+                        leaderboardPoints: 0
+                    }
                 },
                 wallet: {
                     privateKey,
@@ -128,17 +255,26 @@ export const handleTwitterLogin = async (
                     xCookies: 0,
                     cookieCrumbs: 0,
                     resources: [],
-                    items: [],
-                    foods: [],
+                    items: [
+                        {
+                            type: BoosterItem['GATHERING_PROGRESS_BOOSTER_1000'],
+                            amount: 1
+                        }
+                    ],
+                    foods: [
+                        {
+                            type: FoodType['BURGER'],
+                            amount: 1
+                        }
+                    ],
                     raftId: data.raft.raftId,
                     // add the free barren island to the `islandIds` array
                     islandIds: [islandData.island.islandId],
                     bitIds: [bitIdData?.latestBitId + 1],
-                    totalBitOrbs: 0,
-                    totalTerraCapsulators: 0
                 },
                 inGameData: {
                     level: 1,
+                    completedTutorialIds: [],
                     beginnerRewardData: {
                         lastClaimedTimestamp: 0,
                         isClaimable: true,
@@ -582,13 +718,79 @@ export const claimDailyRewards = async (
 
                 // if the user is not found in the leaderboard, add them
                 if (userIndex === -1) {
+                    let additionalPoints = 0;
+                    // check if the points rewarded will level the user up
+                    const currentLevel = user.inGameData.level;
+                    // we don't add the user's existing leaderboard points because the user doesn't exist yet
+                    const newLevel = GET_SEASON_0_PLAYER_LEVEL(reward.amount);
+
+                    if (newLevel > currentLevel) {
+                        // if the user levels up, set the user's level to the new level
+                        userUpdateOperations.$set['inGameData.level'] = newLevel;
+                        // get the additional points for the new level
+                        additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
+                    }
+
                     leaderboardUpdateOperations.$push['userData'] = {
                         userId: user._id,
                         twitterProfilePicture: user.twitterProfilePicture,
-                        points: reward.amount
+                        pointsData: [{
+                            points: reward.amount,
+                            source: LeaderboardPointsSource.DAILY_LOGIN_REWARDS
+                        }]
                     }
                 } else {
-                    leaderboardUpdateOperations.$inc[`userData.${userIndex}.points`] = reward.amount;
+                    let additionalPoints = 0;
+
+                    // check if the points rewarded will level the user up
+                    const currentLevel = user.inGameData.level;
+
+                    // get the user's total leaderboard points
+                    // this is done by summing up all the points from the `pointsData` array, BUT EXCLUDING SOURCES FROM:
+                    // 1. LeaderboardPointsSource.LEVELLING_UP
+                    const totalLeaderboardPoints = leaderboard.userData[userIndex].pointsData.reduce((acc, pointsData) => {
+                        if (pointsData.source !== LeaderboardPointsSource.LEVELLING_UP) {
+                            return acc + pointsData.points;
+                        }
+
+                        return acc;
+                    }, 0);
+
+                    const newLevel = GET_SEASON_0_PLAYER_LEVEL(totalLeaderboardPoints + reward.amount);
+
+                    if (newLevel > currentLevel) {
+                        userUpdateOperations.$set['inGameData.level'] = newLevel;
+                        additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
+                    }
+
+                    // get the source index for `LeaderboardPointsSource.DAILY_LOGIN_REWARDS` and increment that
+                    // if the source doesn't exist, push a new entry
+                    const pointsData = leaderboard.userData[userIndex].pointsData;
+
+                    const sourceIndex = pointsData.findIndex(pointsData => pointsData.source === LeaderboardPointsSource.DAILY_LOGIN_REWARDS);
+
+                    if (sourceIndex === -1) {
+                        leaderboardUpdateOperations.$push[`userData.${userIndex}.pointsData`] = {
+                            points: reward.amount,
+                            source: LeaderboardPointsSource.DAILY_LOGIN_REWARDS
+                        }
+                    } else {
+                        leaderboardUpdateOperations.$inc[`userData.${userIndex}.pointsData.${sourceIndex}.points`] = reward.amount;
+                    }
+
+                    // if the additionalPoints is > 0, increment the source for `LeaderboardPointsSource.LEVELLING_UP`
+                    if (additionalPoints > 0) {
+                        const levellingUpSourceIndex = pointsData.findIndex(pointsData => pointsData.source === LeaderboardPointsSource.LEVELLING_UP);
+
+                        if (levellingUpSourceIndex === -1) {
+                            leaderboardUpdateOperations.$push[`userData.${userIndex}.pointsData`] = {
+                                points: additionalPoints,
+                                source: LeaderboardPointsSource.LEVELLING_UP
+                            }
+                        } else {
+                            leaderboardUpdateOperations.$inc[`userData.${userIndex}.pointsData.${levellingUpSourceIndex}.points`] = additionalPoints;
+                        }
+                    }
                 }
                 // if the reward is not xCookies or leaderboard points, return an error (for now)
             } else {
@@ -614,6 +816,31 @@ export const claimDailyRewards = async (
             LeaderboardModel.updateOne({ _id: leaderboard._id }, leaderboardUpdateOperations)
         ]);
 
+        // check if the user update operations included a level up
+        const setUserLevel = userUpdateOperations.$set['inGameData.level'];
+
+        // if it included a level, check if it's set to 3.
+        // if it is, check if the user has a referrer.
+        // the referrer will then have this user's `hasReachedLevel3` set to true.
+        if (setUserLevel && setUserLevel === 3) {
+            // check if the user has a referrer
+            const referrerId: string | null = user.inviteCodeData.referrerId;
+
+            if (referrerId) {
+                // update the referrer's referred users data where applicable
+                const { status, message } = await updateReferredUsersData(
+                    referrerId,
+                    user._id
+                );
+
+                if (status === Status.ERROR) {
+                    return {
+                        status,
+                        message: `(claimDailyRewards) Err from updateReferredUsersData: ${message}`
+                    }
+                }
+            }
+        }
         return {
             status: Status.SUCCESS,
             message: `(claimDailyRewards) Daily rewards claimed.`,
@@ -689,7 +916,7 @@ export const updateDailyLoginRewardsData = async (): Promise<void> => {
         const userUpdatePromises = userUpdateOperations.map(async op => {
             return UserModel.updateOne({ _id: op.userId }, op.updateOperations);
         });
-        
+
         await Promise.all(userUpdatePromises);
 
         console.log('Daily login rewards data updated.');
@@ -719,7 +946,9 @@ export const linkInviteCode = async (
 
         // check if the code is a starter code or a referral code
         const starterCode = await StarterCodeModel.findOne({ code: code.toUpperCase() }).lean();
-        const referralCode = await UserModel.findOne({ referralCode: code.toUpperCase() }).lean();
+
+        // find the referralCode inside a user's `referralData` instance
+        const referralCode = await UserModel.findOne({ 'referralData.referralCode': code.toUpperCase() }).lean();
 
         if (!starterCode && !referralCode) {
             return {
@@ -739,13 +968,28 @@ export const linkInviteCode = async (
                 }
             }
 
-            // update the user's starter code data
-            await UserModel.updateOne({ twitterId }, {
-                $set: {
-                    'inviteCodeData.usedStarterCode': code.toUpperCase()
+            // check if the starter code is already used by more than its allowed uses.
+            // if it is, return an error.
+            if (starterCode.usedBy.length >= starterCode.maxUses) {
+                return {
+                    status: Status.BAD_REQUEST,
+                    message: `(linkInviteCode) Starter code has already reached its limit.`
                 }
-            });
+            }
 
+            // update the user's starter code data and the starter code's `usedBy` array
+            await Promise.all([
+                await UserModel.updateOne({ twitterId }, {
+                    $set: {
+                        'inviteCodeData.usedStarterCode': code.toUpperCase()
+                    }
+                }),
+                await StarterCodeModel.updateOne({ code: code.toUpperCase() }, {
+                    $push: {
+                        usedBy: user._id
+                    }
+                })
+            ]);
             return {
                 status: Status.SUCCESS,
                 message: `(linkInviteCode) Starter code linked.`,
@@ -768,10 +1012,13 @@ export const linkInviteCode = async (
                 }
             });
 
-            // also update the referrer's code data to include the referee's id in the `referredUsers` array
+            // also update the referrer's data to include the referred user's data in the `referredUsersData` array
             await UserModel.updateOne({ _id: referralCode._id }, {
                 $push: {
-                    'referralData.referredUsers': user._id
+                    'referralData.referredUsersData': {
+                        userId: user._id,
+                        hasReachedLevel3: false
+                    }
                 }
             });
 
@@ -889,7 +1136,7 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
         const beginnerRewardData = user.inGameData.beginnerRewardData as BeginnerRewardData;
 
         // check for beginner reward eligiblity
-        const isEligible = beginnerRewardData.daysClaimed.length + beginnerRewardData.daysMissed.length < 7;
+        const isEligible = beginnerRewardData.daysClaimed.length + beginnerRewardData.daysMissed.length < MAX_BEGINNER_REWARD_DAY;
 
         if (!isEligible) {
             return {
@@ -924,18 +1171,43 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
         for (const reward of rewards) {
             if (reward.type === BeginnerRewardType.X_COOKIES) {
                 userUpdateOperations.$inc['inventory.xCookies'] = reward.amount;
-            } else if (reward.type === BeginnerRewardType.BIT_ORB) {
-                userUpdateOperations.$inc['inventory.totalBitOrbs'] = reward.amount;
-            } else if (reward.type === BeginnerRewardType.TERRA_CAPSULATOR) {
-                userUpdateOperations.$inc['inventory.totalTerraCapsulators'] = reward.amount;
+            } else if (reward.type === BeginnerRewardType.BIT_ORB_I) {
+                // check if the user already has Bit Orb (I) in their inventory
+                const bitOrbIIndex = (user.inventory.items as Item[]).findIndex(i => i.type === BitOrbType.BIT_ORB_I);
+
+                // if the user already has Bit Orb (I), increment the amount
+                // otherwise, add Bit Orb (I) to the user's inventory
+                if (bitOrbIIndex !== -1) {
+                    userUpdateOperations.$inc[`inventory.items.${bitOrbIIndex}.amount`] = reward.amount;
+                } else {
+                    userUpdateOperations.$push['inventory.items'] = {
+                        type: BitOrbType.BIT_ORB_I,
+                        amount: reward.amount
+                    }
+                }
+            } else if (reward.type === BeginnerRewardType.TERRA_CAPSULATOR_I) {
+                // check if the user already has Terra Capsulator (I) in their inventory
+                const terraCapsulatorIIndex = (user.inventory.items as Item[]).findIndex(i => i.type === TerraCapsulatorType.TERRA_CAPSULATOR_I);
+
+                // if the user already has Terra Capsulator (I), increment the amount
+                // otherwise, add Terra Capsulator (I) to the user's inventory
+                if (terraCapsulatorIIndex !== -1) {
+                    userUpdateOperations.$inc[`inventory.items.${terraCapsulatorIIndex}.amount`] = reward.amount;
+                } else {
+                    userUpdateOperations.$push['inventory.items'] = {
+                        type: TerraCapsulatorType.TERRA_CAPSULATOR_I,
+                        amount: reward.amount
+                    }
+                }
             }
         }
+
         userUpdateOperations.$set['inGameData.beginnerRewardData.isClaimable'] = false;
         userUpdateOperations.$set['inGameData.beginnerRewardData.lastClaimedTimestamp'] = Math.floor(Date.now() / 1000);
         userUpdateOperations.$push['inGameData.beginnerRewardData.daysClaimed'] = nextDayToClaim;
 
         // execute the update operations
-        await UserModel.updateOne({twitterId}, userUpdateOperations);
+        await UserModel.updateOne({ twitterId }, userUpdateOperations);
 
         return {
             status: Status.SUCCESS,
@@ -1000,8 +1272,10 @@ export const updateBeginnerRewardsData = async (): Promise<void> => {
             } else {
                 // if `isClaimable` is true, it means the user missed claiming the rewards for the day.
                 // add the current day to `daysMissed`.
-                const latestDay = Math.max(...beginnerRewardData.daysClaimed, ...beginnerRewardData.daysMissed);
-                
+                const latestClaimedDay = beginnerRewardData.daysClaimed.length > 0 ? Math.max(...beginnerRewardData.daysClaimed) : 0;
+                const latestMissedDay = beginnerRewardData.daysMissed.length > 0 ? Math.max(...beginnerRewardData.daysMissed) : 0;
+                const latestDay = Math.max(latestClaimedDay, latestMissedDay);
+
                 userUpdateOperations.push({
                     userId: user._id,
                     updateOperations: {
@@ -1024,5 +1298,90 @@ export const updateBeginnerRewardsData = async (): Promise<void> => {
         await Promise.all(userUpdatePromises);
     } catch (err: any) {
         console.error('Error in updateBeginnerRewardsData:', err.message);
+    }
+}
+
+/**
+ * (Season 0) Updates and sets the referred user's `hasReachedLevel3` of the referrer's `referredUsersData` to true.
+ * 
+ * Additionally, give the referrer their referral rewards to claim if applicable.
+ */
+export const updateReferredUsersData = async (
+    referrerUserId: string,
+    referredUserUserId: string
+): Promise<ReturnValue> => {
+    try {
+        const [referrer, referredUser] = await Promise.all([
+            UserModel.findOne({ _id: referrerUserId }).lean(),
+            UserModel.findOne({ _id: referredUserUserId }).lean()
+        ]);
+
+        if (!referrer || !referredUser) {
+            return {
+                status: Status.ERROR,
+                message: `(updateReferredUsersData) User not found.`
+            }
+        }
+
+        const referrerUpdateOperations = {
+            $set: {},
+            $inc: {},
+            $push: {},
+            $pull: {}
+        }
+
+        // check if the referrer's `referredUsersData` contains the referred user
+        const referredUserIndex = (referrer.referralData.referredUsersData as ReferredUserData[]).findIndex(data => data.userId === referredUser._id);
+
+        if (referredUserIndex === -1) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(updateReferredUsersData) Referred user data not found.`
+            }
+        }
+
+        // at this point, the level of the referred user should already be set to level 3 from the parent function.
+        // we double check it here just in case.
+        if (referredUser.inGameData.level !== 3) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(updateReferredUsersData) Referred user is not level 3.`
+            }
+        }
+
+        // set `hasReachedLevel3` to true
+        referrerUpdateOperations.$set[`referralData.referredUsersData.${referredUserIndex}.hasReachedLevel3`] = true;
+
+        // now check the amount of referred users the referrer has that reached level 3.
+        // we add 1 because the set operation for the newest referred user hasn't been executed yet.
+        const totalReferredUsersReachedLevel3 = (referrer.referralData.referredUsersData as ReferredUserData[]).filter(data => data.hasReachedLevel3).length + 1;
+
+        // get the referral rewards based on the total referred users that reached level 3
+        const referralRewards = GET_SEASON_0_REFERRAL_REWARDS(totalReferredUsersReachedLevel3);
+
+        // if any of the rewards aren't 0, update the referrer's `referralData.claimableReferralRewards`
+        if (referralRewards.leaderboardPoints !== 0) {
+            referrerUpdateOperations.$inc['referralData.claimableReferralRewards.leaderboardPoints'] = referralRewards.leaderboardPoints;
+        }
+
+        if (referralRewards.xCookies !== 0) {
+            referrerUpdateOperations.$inc['referralData.claimableReferralRewards.xCookies'] = referralRewards.xCookies;
+        }
+
+        // execute the update operations
+        await UserModel.updateOne({ _id: referrerUserId }, referrerUpdateOperations);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(updateReferredUsersData) Referred user data updated.`,
+            data: {
+                newReferralRewards: referralRewards
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(updateReferredUsersData) ${err.message}`
+        }
     }
 }

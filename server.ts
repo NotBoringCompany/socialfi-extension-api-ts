@@ -45,6 +45,7 @@ import leaderboard from './routes/leaderboard';
 import kos from './routes/kos';
 import asset from './routes/asset';
 import tutorial from './routes/tutorial';
+import invite from './routes/invite';
 import { schedulers } from './schedulers/schedulers';
 
 app.use('/auth/twitter', twitterAuth);
@@ -64,6 +65,7 @@ app.use('/leaderboard', leaderboard);
 app.use('/kos', kos);
 app.use('/asset', asset);
 app.use('/tutorial', tutorial);
+app.use('/invite', invite);
 
 app.listen(port, async () => {
     console.log(`Server running on port ${port}`);

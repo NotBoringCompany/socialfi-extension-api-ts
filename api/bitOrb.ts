@@ -6,11 +6,13 @@ import { ReturnValue, Status } from '../utils/retVal';
 import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
 import { IslandModel, UserModel } from '../utils/constants/db';
 import { Modifier } from '../models/modifier';
+import { BitOrbType } from '../models/bitOrb';
+import { Item } from '../models/item';
 
 /**
  * (User) Consumes a Bit Orb to obtain a Bit.
  */
-export const consumeBitOrb = async (twitterId: string): Promise<ReturnValue> => {
+export const consumeBitOrb = async (twitterId: string, bitOrbType: BitOrbType): Promise<ReturnValue> => {
     try {
         const user = await UserModel.findOne({ twitterId }).lean();
 
@@ -38,8 +40,12 @@ export const consumeBitOrb = async (twitterId: string): Promise<ReturnValue> => 
             }
         }
 
-        // check if the user has at least 1 Bit Orb to consume
-        if (user.inventory?.totalBitOrbs < 1) {
+        // check if the user has at least 1 of the bit orb type to consume
+        const bitOrbAmount = (user.inventory?.items as Item[]).find(item => item.type === bitOrbType)?.amount;
+
+        console.log(`user ${user.twitterId} has ${bitOrbAmount} ${bitOrbType} bit orbs.`);
+
+        if (!bitOrbAmount || bitOrbAmount < 1) {
             return {
                 status: Status.ERROR,
                 message: `(consumeBitOrb) Not enough Bit Orbs to consume.`
@@ -47,10 +53,19 @@ export const consumeBitOrb = async (twitterId: string): Promise<ReturnValue> => 
         }
 
         // consume the Bit Orb
-        userUpdateOperations.$inc['inventory.totalBitOrbs'] = -1;
+        // check if the user has only 1 of this bit orb type left.
+        // if so, remove the bit orb from the user's inventory
+        // else, decrement the amount of the bit orb by 1
+        if (bitOrbAmount === 1) {
+            // pull the bit orb from the user inventory's items
+            userUpdateOperations.$pull['inventory.items'] = { type: bitOrbType };
+        } else {
+            const bitOrbIndex = (user.inventory?.items as Item[]).findIndex(item => item.type === bitOrbType);
+            userUpdateOperations.$inc[`inventory.items.${bitOrbIndex}.amount`] = -1;
+        }
 
         // call `summonBit` to summon a Bit
-        const { status: summonBitStatus, message: summonBitMessage, data: summonBitData } = await summonBit(user._id);
+        const { status: summonBitStatus, message: summonBitMessage, data: summonBitData } = await summonBit(user._id, bitOrbType);
 
         if (summonBitStatus !== Status.SUCCESS) {
             return {
@@ -140,10 +155,11 @@ export const consumeBitOrb = async (twitterId: string): Promise<ReturnValue> => 
 }
 
 /**
- * Summons a Bit obtained from a Bit Orb.
+ * Summons a Bit obtained from a Bit Orb (I).
  */
 export const summonBit = async (
     owner: string,
+    bitOrbType: BitOrbType
 ): Promise<ReturnValue> => {
     try {
         // get the latest bit id from the database
@@ -158,7 +174,7 @@ export const summonBit = async (
         const latestBitId = data?.latestBitId as number;
 
         // get the Bit's rarity based on the probability of obtaining it
-        const rarity = RANDOMIZE_RARITY_FROM_ORB();
+        const rarity = RANDOMIZE_RARITY_FROM_ORB(bitOrbType);
 
         // randomize the gender 
         const gender = RANDOMIZE_GENDER();
@@ -170,12 +186,16 @@ export const summonBit = async (
         // summon and return the Bit. DOESN'T SAVE TO DATABASE YET.
         const bit: Bit = {
             bitId: latestBitId + 1,
+            bitNameData: {
+                name: `Bit #${latestBitId + 1}`,
+                lastChanged: 0
+            },
             rarity,
             gender,
             premium: true,
             owner,
             purchaseDate: Math.floor(Date.now() / 1000),
-            obtainMethod: ObtainMethod.BIT_ORB,
+            obtainMethod: ObtainMethod.BIT_ORB_I,
             placedIslandId: 0,
             lastRelocationTimestamp: 0,
             currentFarmingLevel: 1,

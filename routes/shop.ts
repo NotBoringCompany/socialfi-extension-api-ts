@@ -23,7 +23,7 @@ router.get('/get_shop', async (_, res) => {
 });
 
 router.post('/purchase_shop_asset', async (req, res) => {
-    const { amount, asset, foodType } = req.body;
+    const { amount, asset } = req.body;
 
     try {
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'purchase_shop_asset');
@@ -35,7 +35,7 @@ router.post('/purchase_shop_asset', async (req, res) => {
             })
         }
 
-        const { status, message, data } = await purchaseShopAsset(validateData?.twitterId, amount, asset, foodType);
+        const { status, message, data } = await purchaseShopAsset(validateData?.twitterId, amount, asset);
 
         return res.status(status).json({
             status,

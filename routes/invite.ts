@@ -1,14 +1,13 @@
 import express from 'express';
-import { consumeTerraCapsulator } from '../api/terraCapsulator';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
+import { claimReferralRewards } from '../api/invite';
 
 const router = express.Router();
 
-router.post('/consume', async (req, res) => {
-    const { type } = req.body;
+router.post('/claim_referral_rewards', async (req, res) => {
     try {
-        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'consume_terra_capsulator');
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'claim_referral_rewards');
 
         if (validateStatus !== Status.SUCCESS) {
             return res.status(validateStatus).json({
@@ -17,7 +16,7 @@ router.post('/consume', async (req, res) => {
             })
         }
 
-        const { status, message, data } = await consumeTerraCapsulator(type, validateData?.twitterId);
+        const { status, message, data } = await claimReferralRewards(validateData?.twitterId);
 
         return res.status(status).json({
             status,
@@ -30,6 +29,6 @@ router.post('/consume', async (req, res) => {
             message: err.message
         })
     }
-});
+})
 
 export default router;
