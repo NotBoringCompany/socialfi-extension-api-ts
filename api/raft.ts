@@ -1,6 +1,6 @@
 import { ReturnValue, Status } from '../utils/retVal';
 import { generateObjectId } from '../utils/crypto';
-import { ACTUAL_RAFT_SPEED, RAFT_EVOLUTION_COST, randomizeRaftBaseSpeed } from '../utils/constants/raft';
+import { ACTUAL_RAFT_SPEED, RAFT_BASE_SPEED, RAFT_EVOLUTION_COST } from '../utils/constants/raft';
 import { BitModel, RaftModel, UserModel } from '../utils/constants/db';
 
 /**
@@ -24,7 +24,7 @@ export const createRaft = async (userId: string): Promise<ReturnValue> => {
             owner: userId,
             currentLevel: 1,
             stats: {
-                baseSpeed: randomizeRaftBaseSpeed(),
+                baseSpeed: RAFT_BASE_SPEED
             }
         });
 

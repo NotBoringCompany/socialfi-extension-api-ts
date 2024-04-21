@@ -1,9 +1,7 @@
 /**
- * Randomizes the raft's base speed (+- 10% of 10 m/s)
+ * The base speed of the raft at level 1 (in m/s).
  */
-export const randomizeRaftBaseSpeed = () => {
-    return 10 + Math.random() * 2 - 1;
-}
+export const RAFT_BASE_SPEED = 10;
 
 /**
  * Gets the actual raft speed based on its level.
