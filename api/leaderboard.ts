@@ -69,8 +69,8 @@ export const getLeaderboardRanking = async (leaderboardName: string): Promise<Re
         // userData contains `pointsData` which is an array of points data for different sources
         // we loop through each `pointsData` and sum up the points to get the total points for each user
         const descendingPoints = leaderboard.userData.sort((a, b) => {
-            const aTotalPoints = a.pointsData.reduce((acc, data) => acc + data.points, 0);
-            const bTotalPoints = b.pointsData.reduce((acc, data) => acc + data.points, 0);
+            const aTotalPoints = a.pointsData?.reduce((acc, data) => acc + data.points, 0) ?? 0;
+            const bTotalPoints = b.pointsData?.reduce((acc, data) => acc + data.points, 0) ?? 0;
             return bTotalPoints - aTotalPoints;
         });
 
