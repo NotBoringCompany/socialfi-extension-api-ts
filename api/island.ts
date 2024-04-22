@@ -1400,6 +1400,7 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
             // calculate current island gathering rate
             const gatheringRate = calcIslandCurrentRate(
                 RateType.GATHERING,
+                <IslandType>island.type,
                 baseRates,
                 bitLevels,
                 initialGrowthRates,
@@ -1518,6 +1519,7 @@ export const updateClaimableXCookies = async (): Promise<void> => {
             // get the island's current earning rate
             const currentEarningRate = calcIslandCurrentRate(
                 RateType.EARNING,
+                <IslandType>island.type,
                 bits.map(bit => bit.farmingStats?.baseEarningRate),
                 bits.map(bit => bit.currentFarmingLevel),
                 bits.map(bit => bit.farmingStats.earningRateGrowth),
@@ -1895,6 +1897,7 @@ export const updateClaimableCrumbs = async (): Promise<void> => {
             // get the island's current earning rate
             const currentEarningRate = calcIslandCurrentRate(
                 RateType.EARNING,
+                <IslandType>island.type,
                 bits.map(bit => bit.farmingStats?.baseEarningRate),
                 bits.map(bit => bit.currentFarmingLevel),
                 bits.map(bit => bit.farmingStats.earningRateGrowth),
