@@ -450,6 +450,26 @@ export const RARITY_DEVIATION_REDUCTIONS = (type: IslandType, rarity: BitRarity)
 }
 
 /**
+ * Increases the gathering/earning rate by a multiplier of an island based on its type (for calculation balancing).
+ */
+export const ISLAND_RARITY_DEVIATION_MODIFIERS = (type: IslandType): number => {
+    switch (type) {
+        case IslandType.BARREN:
+            return 1;
+        case IslandType.PRIMAL_ISLES:
+            return 5;
+        case IslandType.VERDANT_ISLES:
+            return 2;
+        case IslandType.EXOTIC_ISLES:
+            return 1;
+        case IslandType.CRYSTAL_ISLES:
+            return 1;
+        case IslandType.CELESTIAL_ISLES:
+            return 1;
+    }
+}
+
+/**
  * Shows the tax the user has to pay to claim xCookies from a specific island type given the amount of active islands the user has.
  */
 export const X_COOKIE_TAX = (type: IslandType, activeIslands: number): number => {

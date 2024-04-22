@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
 import { IslandSchema } from '../schemas/Island';
 import { Island, IslandStatsModifiers, IslandTrait, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
-import { BARREN_ISLE_COMMON_DROP_CHANCE, BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DAILY_BONUS_RESOURCES_GATHERABLE, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLUTION_COST, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN, X_COOKIE_TAX, randomizeIslandTraits } from '../utils/constants/island';
+import { BARREN_ISLE_COMMON_DROP_CHANCE, BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DAILY_BONUS_RESOURCES_GATHERABLE, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLUTION_COST, ISLAND_RARITY_DEVIATION_MODIFIERS, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN, X_COOKIE_TAX, randomizeIslandTraits } from '../utils/constants/island';
 import { calcBitCurrentRate, getBits } from './bit';
 import { BarrenResource, ExtendedResource, ExtendedResourceOrigin, Resource, ResourceLine, ResourceRarity, ResourceRarityNumeric, ResourceType, SimplifiedResource } from '../models/resource';
 import { UserSchema } from '../schemas/User';
@@ -2986,7 +2986,7 @@ export const randomizeBaseResourceCap = (type: IslandType): number => {
 }
 
 /**
- * Calculates the current gathering/earning rate of the island, based on the amount of bits placed on the island.
+ * Calculates the current gathering/earning rate of the island, based on various factors like number of bits, the bits' stats and island type among others.
  * 
  * NOTE: to prevent miscalculations, ensure that:
  * 
@@ -2997,6 +2997,7 @@ export const randomizeBaseResourceCap = (type: IslandType): number => {
  */
 export const calcIslandCurrentRate = (
     type: RateType,
+    islandType: IslandType,
     baseRates: number[],
     bitLevels: number[],
     initialGrowthRates: number[],
@@ -3007,6 +3008,9 @@ export const calcIslandCurrentRate = (
 ): number => {
     // check if all arrays have the same length, else throw an error.
     if (baseRates.length === bitLevels.length && bitLevels.length === initialGrowthRates.length) {
+        // get the island rarity deviation multiplier
+        const islandRarityDeviationMultiplier = ISLAND_RARITY_DEVIATION_MODIFIERS(islandType);
+
         let sum = 0;
         // `n` refers to the total number of bits; since all arrays at this point are assumed the same length, we can just pick any of the lengths.
         let n = baseRates.length;
@@ -3025,7 +3029,7 @@ export const calcIslandCurrentRate = (
         // finally, check for IslandStatsModifiers for the island; if not empty, multiply each modifier's amount to the modifierMultiplier
         const modifierMultiplier = modifiers.reduce((acc, modifier) => acc * modifier.value, 1);
 
-        return (sum * (1 - (reductionModifier * (n - 1)))) * modifierMultiplier;
+        return (sum * (1 - (reductionModifier * (n - 1)))) * modifierMultiplier * islandRarityDeviationMultiplier;
     } else {
         throw new Error(`(calcEffectiveRate) Arrays are not of the same length.`);
     }
