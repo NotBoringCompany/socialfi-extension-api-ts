@@ -17,65 +17,21 @@ export const GET_DAILY_LOGIN_REWARDS = (
     currentConsecutiveDays: number
 ): DailyLoginReward[] => {
     // logic is as follows:
-    // 1. every day apart from the 7th day (7, 14, 21, 28...) will give 50 leaderboard points.
-    // 2. users that claim the reward on the 2nd day gets + 2 points, 3rd day + 4, 4th day + 6.5 and 5th day + 10.
-    // 3. every 7th day, users get 60 leaderboard points (50 + 10 max bonus points from consecutive claims) + 5 xCookies.
-
-    // every 7th day, users get 60 leaderboard points + 5 xCookies
-    if (currentConsecutiveDays + 1 % 7 === 0) {
-        return [
-            {
-                type: DailyLoginRewardType.X_COOKIES,
-                amount: 5
-            },
-            {
-                type: DailyLoginRewardType.LEADERBOARD_POINTS,
-                amount: 60
-            }
-        ];
-    } else {
-        // give 50 + 2 bonus points
-        if (currentConsecutiveDays + 1 === 2) {
-            return [
-                {
-                    type: DailyLoginRewardType.LEADERBOARD_POINTS,
-                    amount: 52
-                }
-            ];
-        // give 50 + 4 bonus points
-        } else if (currentConsecutiveDays + 1 === 3) {
-            return [
-                {
-                    type: DailyLoginRewardType.LEADERBOARD_POINTS,
-                    amount: 54
-                }
-            ];
-        // give 50 + 6.5 bonus points
-        } else if (currentConsecutiveDays + 1 === 4) {
-            return [
-                {
-                    type: DailyLoginRewardType.LEADERBOARD_POINTS,
-                    amount: 56.5
-                }
-            ];
-        // for 5 or more consecutive days, give 50 + 10 bonus points
-        } else if (currentConsecutiveDays + 1 >= 5) {
-            return [
-                {
-                    type: DailyLoginRewardType.LEADERBOARD_POINTS,
-                    amount: 60
-                }
-            ];
-        } else {
-            // give 50 points for the first day
-            return [
-                {
-                    type: DailyLoginRewardType.LEADERBOARD_POINTS,
-                    amount: 50
-                }
-            ];
+    // 1. the first day will give 50 leaderboard points.
+    // 2. every day after that will give 50 + (12.5 * (currentConsecutiveDays - 1)) leaderboard points. e.g. day 2 will give 62.5, day 3 will give 75, etc.
+    // 3. max is 125 leaderboard points, obtained after the 7th day. every day after the 7th day means the user will get 125 leaderboard points.
+    // 4. for now, xCookies will be 0.
+    const points = 50 + (12.5 * (currentConsecutiveDays - 1));
+    return [
+        {
+            type: DailyLoginRewardType.X_COOKIES,
+            amount: 0
+        },
+        {
+            type: DailyLoginRewardType.LEADERBOARD_POINTS,
+            amount: points > 125 ? 125 : points
         }
-    }
+    ];
 }
 
 /**

@@ -660,7 +660,7 @@ export const DEFAULT_EARNING_RATE_GROWTH = (rarity: BitRarity): number => {
     }
 }
 
-/** base energy depletion rate of bits in % of energy bar/hour (regardless of rarity). actual depletion rate will include +-25% */
+/** base energy depletion rate of bits in % of energy bar/hour (regardless of rarity) */
 export const BASE_ENERGY_DEPLETION_RATE: number = 5;
 
 /** returns the reductions in earning and gathering rate (by a fixed %) if the bit's energy goes below a certain threshold */

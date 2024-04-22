@@ -8,7 +8,7 @@ import { RANDOMIZE_RARITY_FROM_ORB } from '../utils/constants/bitOrb';
 import { RANDOMIZE_GENDER, getBitStatsModifiersFromTraits, randomizeBitTraits } from '../utils/constants/bit';
 import { ObtainMethod } from '../models/obtainMethod';
 import { LeaderboardModel, StarterCodeModel, UserModel } from '../utils/constants/db';
-import { generateBarrenIsland } from './island';
+import { addIslandToDatabase, generateBarrenIsland, getLatestIslandId, randomizeBaseResourceCap } from './island';
 import { POIName } from '../models/poi';
 import { solidityKeccak256 } from 'ethers/lib/utils';
 import { ethers } from 'ethers';
@@ -21,11 +21,12 @@ import { BitOrbType } from '../models/bitOrb';
 import { TerraCapsulatorType } from '../models/terraCapsulator';
 import { Item } from '../models/item';
 import { BitRarity, BitTrait } from '../models/bit';
-import { IslandStatsModifiers } from '../models/island';
+import { IslandStatsModifiers, IslandType } from '../models/island';
 import { Modifier } from '../models/modifier';
 import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
 import { FoodType } from '../models/food';
 import { BoosterItem } from '../models/booster';
+import { randomizeIslandTraits } from '../utils/constants/island';
 
 /**
  * Returns the user's data.
@@ -211,8 +212,53 @@ export const handleTwitterLogin = async (
                 islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
             }
 
-            // creates a new barren island for the user for free as well
-            const { status: islandStatus, message: islandMessage, data: islandData } = await generateBarrenIsland(userObjectId, ObtainMethod.SIGN_UP, islandStatsModifiers);
+            // creates a free primal island for the user
+            const { status: islandIdStatus, message: islandIdMessage, data: islandIdData } = await getLatestIslandId();
+
+            if (islandIdStatus !== Status.SUCCESS) {
+                return {
+                    status: islandIdStatus,
+                    message: `(handleTwitterLogin) Error from getLatestIslandId: ${islandIdMessage}`
+                }
+            }
+
+            const { status: islandStatus, message: islandMessage, data: islandData } = await addIslandToDatabase({
+                islandId: islandIdData?.latestIslandId + 1,
+                type: IslandType.PRIMAL_ISLES,
+                owner: userObjectId,
+                purchaseDate: Math.floor(Date.now() / 1000),
+                obtainMethod: ObtainMethod.SIGN_UP,
+                currentLevel: 1,
+                currentTax: 0,
+                placedBitIds: [],
+                traits: randomizeIslandTraits(),
+                islandResourceStats: {
+                    baseResourceCap: randomizeBaseResourceCap(IslandType.PRIMAL_ISLES),
+                    resourcesGathered: [],
+                    dailyBonusResourcesGathered: 0,
+                    claimableResources: [],
+                    gatheringStart: 0,
+                    gatheringEnd: 0,
+                    lastClaimed: 0,
+                    gatheringProgress: 0
+                },
+                islandEarningStats: {
+                    totalXCookiesSpent: 0,
+                    totalXCookiesEarnable: 0,
+                    totalXCookiesEarned: 0,
+                    claimableXCookies: 0,
+                    totalCookieCrumbsSpent: 0,
+                    totalCookieCrumbsEarnable: 0,
+                    totalCookieCrumbsEarned: 0,
+                    claimableCookieCrumbs: 0,
+                    earningStart: 0,
+                    crumbsEarningStart: 0,
+                    earningEnd: 0,
+                    crumbsEarningEnd: 0,
+                    lastClaimed: 0,
+                },
+                islandStatsModifiers
+            });
 
             if (islandStatus !== Status.SUCCESS) {
                 return {

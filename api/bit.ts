@@ -932,17 +932,12 @@ export const randomizeFarmingStats = (rarity: BitRarity): BitFarmingStats => {
     // rand from 0.9 to 1.1 to determine earning rate growth
     const earningRateGrowth = defaultEarningRateGrowth * rand1;
 
-    // rand from 0.75 to 1.25 to determine current energy depletion rate
-    const randEnergyDepletionRate = Math.random() * 0.5 + 0.75;
-    const currentEnergyDepletionRate =
-        baseEnergyDepletionRate * randEnergyDepletionRate;
-
     return {
         baseGatheringRate,
         gatheringRateGrowth,
         baseEarningRate,
         earningRateGrowth,
-        currentEnergyDepletionRate,
+        currentEnergyDepletionRate: baseEnergyDepletionRate,
         currentEnergy: 100,
     };
 };
