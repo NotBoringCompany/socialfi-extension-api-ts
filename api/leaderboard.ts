@@ -77,19 +77,10 @@ export const getLeaderboardRanking = async (leaderboardName: string): Promise<Re
         // Extract user IDs from sorted data
         const userIds = descendingPoints.map(userData => userData.userId);
 
-        // Retrieve all user data in a single query
-        const users = await UserModel.find({_id: { $in: userIds }}).lean();
-
-        // Create a map for quick user ID to Twitter ID lookup
-        const userIdToTwitterIdMap = users.reduce((acc, user) => {
-            acc[user._id.toString()] = user.twitterId;
-            return acc;
-        }, {});
-
         // Add a rank to each user data
         const rankedUserData = descendingPoints.map((userData, index) => ({
             rank: index + 1,
-            userId: userIdToTwitterIdMap[userData.userId] || 'N/A',
+            userId: userData.userId,
             twitterProfilePicture: userData.twitterProfilePicture,
             points: userData.pointsData?.reduce((acc, data) => acc + data.points, 0) ?? 0,
         }));
@@ -167,7 +158,8 @@ export const getOwnLeaderboardRanking = async (
             data: {
                 ranking: {
                     rank: userRank,
-                    userId: twitterId,
+                    userId: user._id,
+                    twitterId: user.twitterId,
                     twitterProfilePicture: userData.twitterProfilePicture,
                     points: userData.pointsData?.reduce((acc, data) => acc + data.points, 0) ?? 0
                 }

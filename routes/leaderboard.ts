@@ -44,10 +44,19 @@ router.get('/get_leaderboard_ranking/:leaderboardName', async (req, res) => {
 })
 
 router.get('/get_own_leaderboard_ranking', async (req, res) => {
-    const { twitterId, leaderboardName } = req.body;
+    const { leaderboardName } = req.body;
 
     try {
-        const { status, message, data } = await getOwnLeaderboardRanking(twitterId, leaderboardName);
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'get_own_leaderboard_ranking');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
+        const { status, message, data } = await getOwnLeaderboardRanking(validateData?.twitterId, leaderboardName);
 
         return res.status(status).json({
             status,
