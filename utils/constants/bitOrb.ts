@@ -1,7 +1,6 @@
 import { BitRarity } from '../../models/bit';
 import { BitOrbType } from '../../models/bitOrb';
 
-
 /**
  * Gets the Bit's rarity based on the probability of obtaining it, depending on `rand`, which is a number from 1 to 100
  */
