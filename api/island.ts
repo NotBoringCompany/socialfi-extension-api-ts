@@ -13,7 +13,7 @@ import { generateObjectId } from '../utils/crypto';
 import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
 import { ObtainMethod } from '../models/obtainMethod';
 import { RELOCATION_COOLDOWN } from '../utils/constants/bit';
-import { User } from '../models/user';
+import { ExtendedXCookieData, User, XCookieSource } from '../models/user';
 import { getResource, resources } from '../utils/constants/resource';
 import { Item } from '../models/item';
 import { BoosterItem } from '../models/booster';
@@ -284,7 +284,7 @@ export const evolveIsland = async (twitterId: string, islandId: number, choice: 
         // if choice to evolve is using xCookies
         if (choice === 'xCookies') {
             // check if the user has enough xCookies
-            const userXCookies: number = user.inventory?.xCookies;
+            const userXCookies: number = user.inventory?.xCookieData.currentXCookies;
 
             // calculate the cost to evolve the island based on its current level
             const { xCookies: requiredXCookies } = ISLAND_EVOLUTION_COST(<IslandType>island.type, island.currentLevel);
@@ -298,7 +298,7 @@ export const evolveIsland = async (twitterId: string, islandId: number, choice: 
             }
 
             // deduct the xCookies from the user
-            userUpdateOperations.$inc['inventory.xCookies'] = -requiredXCookies;
+            userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = -requiredXCookies;
 
             // firstly, check if at this moment, the totalXCookiesSpent is 0.
             // because if it is, it means that earning hasn't started yet, meaning that after evolving the island, `earningStart` will be set to current timestamp, and earning will start.
@@ -2501,7 +2501,19 @@ export const claimXCookiesAndCrumbs = async (twitterId: string, islandId: number
             console.log(`claiming tax for island ID ${islandId}: ${tax}%`);
 
             // add the xCookies to the user's inventory
-            userUpdateOperations.$inc['inventory.xCookies'] = xCookiesAfterTax;
+            userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = xCookiesAfterTax;
+
+            // check if the user's `xCookieData.extendedXCookieData` contains a source called ISLAND_CLAIMING. if not, push a new source.
+            const islandClaimingIndex = (user.inventory.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(data => data.source === XCookieSource.ISLAND_CLAIMING);
+
+            if (islandClaimingIndex === -1) {
+                userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'].push({
+                    amount: xCookiesAfterTax,
+                    source: XCookieSource.ISLAND_CLAIMING,
+                });
+            } else {
+                userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${islandClaimingIndex}.amount`] = xCookiesAfterTax;
+            }
 
             // do a few things:
             // 1. set the island's `claimableXCookies` to 0

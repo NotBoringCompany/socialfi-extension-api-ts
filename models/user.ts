@@ -123,6 +123,7 @@ export enum XCookieSource {
     COLLAB_REWARDS = 'Collab Rewards',
     LEVELLING_UP = 'Levelling Up',
     QUEST_REWARDS = 'Quest Rewards',
+    ISLAND_CLAIMING = 'Island Claiming',
 }
 
 /**
