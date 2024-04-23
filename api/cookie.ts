@@ -102,7 +102,7 @@ export const withdrawCookies = async (twitterId: string, amount: number): Promis
             }
         }
 
-        const xCookies = user.inventory?.xCookies;
+        const xCookies = user.inventory?.xCookieData.currentXCookies;
 
         if (xCookies < amount) {
             return {
@@ -146,7 +146,7 @@ export const withdrawCookies = async (twitterId: string, amount: number): Promis
         // we just withdraw the same amount of cookies from the user's xCookies balance
         await UserModel.updateOne({ twitterId }, {
             $inc: {
-                'inventory.xCookies': -amount
+                'inventory.xCookieData.currentXCookies': -amount
             }
         });
 
