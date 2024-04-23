@@ -252,6 +252,7 @@ router.get('/get_current_rates/:islandId', async (req, res) => {
 
         const currentGatheringRate = calcIslandCurrentRate(
             RateType.GATHERING,
+            <IslandType>island.type,
             bits.map(bit => bit.farmingStats?.baseGatheringRate),
             bits.map(bit => bit.currentFarmingLevel),
             bits.map(bit => bit.farmingStats?.gatheringRateGrowth),
@@ -261,6 +262,7 @@ router.get('/get_current_rates/:islandId', async (req, res) => {
 
         const currentEarningRate = calcIslandCurrentRate(
             RateType.EARNING,
+            <IslandType>island.type,
             bits.map(bit => bit.farmingStats?.baseEarningRate),
             bits.map(bit => bit.currentFarmingLevel),
             bits.map(bit => bit.farmingStats?.earningRateGrowth),
