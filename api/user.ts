@@ -1256,8 +1256,18 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
         userUpdateOperations.$set['inGameData.beginnerRewardData.lastClaimedTimestamp'] = Math.floor(Date.now() / 1000);
         userUpdateOperations.$push['inGameData.beginnerRewardData.daysClaimed'] = nextDayToClaim;
 
-        // execute the update operations
-        await UserModel.updateOne({ twitterId }, userUpdateOperations);
+        console.log(`claim beginner rewards update operations: `, userUpdateOperations);
+
+        // execute the update operations ($set and $inc on one, $push and $pull on the other to prevent conflict)
+        await UserModel.updateOne({ twitterId }, {
+            $set: userUpdateOperations.$set,
+            $inc: userUpdateOperations.$inc
+        });
+
+        await UserModel.updateOne({ twitterId }, {
+            $push: userUpdateOperations.$push,
+            $pull: userUpdateOperations.$pull
+        })
 
         return {
             status: Status.SUCCESS,
