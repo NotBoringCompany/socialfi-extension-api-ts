@@ -50,7 +50,7 @@ export const getOwnedKeyIDs = async (twitterId: string): Promise<ReturnValue> =>
  */
 export const fetchKOSMetadata = async (keyId: number): Promise<ReturnValue> => {
     try {
-        const response = await axios.get(`https://silver-odd-bee-580.mypinata.cloud/ipfs/bafybeift56mrglsgnouga7ufhniomqr6ibecu6nryzxiwmexiyiercnyp4/${keyId.toString()}.json`);
+        const response = await axios.get(`https://silver-odd-bee-580.mypinata.cloud/ipfs/bafybeift56mrglsgnouga7ufhniomqr6ibecu6nryzxiwmexiyiercnyp4/${keyId}.json`);
 
         // if response is not ok, return error
         if (response.status !== 200) {

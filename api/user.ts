@@ -1217,7 +1217,9 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
         for (const reward of rewards) {
             if (reward.type === BeginnerRewardType.X_COOKIES) {
                 userUpdateOperations.$inc['inventory.xCookies'] = reward.amount;
-            } else if (reward.type === BeginnerRewardType.BIT_ORB_I) {
+            } 
+            
+            if (reward.type === BeginnerRewardType.BIT_ORB_I) {
                 // check if the user already has Bit Orb (I) in their inventory
                 const bitOrbIIndex = (user.inventory.items as Item[]).findIndex(i => i.type === BitOrbType.BIT_ORB_I);
 
@@ -1231,7 +1233,9 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
                         amount: reward.amount
                     }
                 }
-            } else if (reward.type === BeginnerRewardType.TERRA_CAPSULATOR_I) {
+            } 
+            
+            if (reward.type === BeginnerRewardType.TERRA_CAPSULATOR_I) {
                 // check if the user already has Terra Capsulator (I) in their inventory
                 const terraCapsulatorIIndex = (user.inventory.items as Item[]).findIndex(i => i.type === TerraCapsulatorType.TERRA_CAPSULATOR_I);
 
