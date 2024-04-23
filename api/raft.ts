@@ -225,7 +225,7 @@ export const evolveRaft = async (twitterId: string): Promise<ReturnValue> => {
         const upgradeCost = RAFT_EVOLUTION_COST(raftLevel);
 
         // check if the user has enough xCookies to upgrade the raft
-        if (user.inventory?.xCookies < upgradeCost) {
+        if (user.inventory?.xCookieData.currentXCookies < upgradeCost) {
             return {
                 status: Status.BAD_REQUEST,
                 message: `(upgradeRaft) User doesn't have enough xCookies to upgrade the raft.`
@@ -233,7 +233,7 @@ export const evolveRaft = async (twitterId: string): Promise<ReturnValue> => {
         }
 
         // deduct the xCookies from the user
-        userUpdateOperations.$inc['inventory.xCookies'] = -upgradeCost;
+        userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = -upgradeCost;
 
         // upgrade the raft
         raftUpdateOperations.$inc['currentLevel'] = 1;

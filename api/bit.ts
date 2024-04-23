@@ -790,7 +790,7 @@ export const evolveBit = async (
         // if bit is premium, check if the user has enough xCookies to evolve the bit
         if (bit.premium) {
             // check if the user has enough xCookies to evolve the bit
-            const userXCookies = user.inventory?.xCookies;
+            const userXCookies = user.inventory?.xCookieData.currentXCookies;
 
             // calculate the cost to evolve the bit to the next level
             const requiredXCookies = BIT_EVOLUTION_COST(bit.currentFarmingLevel);
@@ -804,7 +804,7 @@ export const evolveBit = async (
             }
 
             // deduct the required xCookies from the user's inventory
-            userUpdateOperations.$inc['inventory.xCookies'] = -requiredXCookies;
+            userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = -requiredXCookies;
 
             // increase the bit's current farming level by 1
             bitUpdateOperations.$inc['currentFarmingLevel'] = 1;

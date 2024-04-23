@@ -7,6 +7,7 @@ import { resources } from '../utils/constants/resource';
 import { BitOrbType } from '../models/bitOrb';
 import { TerraCapsulatorType } from '../models/terraCapsulator';
 import { Item } from '../models/item';
+import { ExtendedXCookieData, XCookieSource } from '../models/user';
 
 /**
  * Opens a chest found across Twitter's timeline, randomizing a chest item and adding it to the user's inventory.
@@ -94,12 +95,33 @@ export const openChest = async (twitterId: string, tweetId: string): Promise<Ret
             }
         // increment the user's xCookies
         } else if (isXCookies) {
-            await UserModel.updateOne({ twitterId }, {
-                $inc: {
-                    'inventory.xCookies': amount
-                }
-            
-            })
+            // do 2 things:
+            // 1. increment the user's xCookies
+            // 2. check if the user's `xCookieData.extendedXCookieData` contains the source CHEST_REWARDS.
+            // if it does, increment the amount, if not, add it to the user's `xCookieData.extendedXCookieData`
+            // check if the user has `CHEST_REWARDS` in their `extendedXCookieData`
+            const chestRewardsIndex = (user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(data => data.source === XCookieSource.CHEST_REWARDS);
+
+            if (chestRewardsIndex !== -1) {
+                await UserModel.updateOne({ twitterId }, {
+                    $inc: {
+                        'inventory.xCookieData.currentXCookies': amount,
+                        [`inventory.xCookieData.extendedXCookieData.${chestRewardsIndex}.xCookies`]: amount
+                    }
+                })
+            } else {
+                await UserModel.updateOne({ twitterId }, {
+                    $inc: {
+                        'inventory.xCookieData.currentXCookies': amount
+                    },
+                    $push: {
+                        'inventory.xCookieData.extendedXCookieData': {
+                            xCookies: amount,
+                            source: XCookieSource.CHEST_REWARDS
+                        }
+                    }
+                })
+            }
         // increment the user's bit orb count
         } else if (isBitOrbI) {
             // check if the user already has the bit orb, if yes, increment the amount, if not, add it to the user's inventory

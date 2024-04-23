@@ -14,7 +14,7 @@ import { solidityKeccak256 } from 'ethers/lib/utils';
 import { ethers } from 'ethers';
 import { ExtendedResource, ResourceType, SimplifiedResource } from '../models/resource';
 import { resources } from '../utils/constants/resource';
-import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType } from '../models/user';
+import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, XCookieSource } from '../models/user';
 import { GET_BEGINNER_REWARDS, GET_DAILY_LOGIN_REWARDS, GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS, GET_SEASON_0_REFERRAL_REWARDS, MAX_BEGINNER_REWARD_DAY } from '../utils/constants/user';
 import { InviteCodeData, ReferredUserData } from '../models/invite';
 import { BitOrbType } from '../models/bitOrb';
@@ -298,7 +298,10 @@ export const handleTwitterLogin = async (
                 inventory: {
                     weight: 0,
                     maxWeight: 200,
-                    xCookies: 0,
+                    xCookieData: {
+                        currentXCookies: 0,
+                        extendedXCookieData: []
+                    },
                     cookieCrumbs: 0,
                     resources: [],
                     items: [
@@ -756,7 +759,20 @@ export const claimDailyRewards = async (
         // 4. set `lastClaimedTimestamp` to the current timestamp
         for (const reward of dailyLoginRewards) {
             if (reward.type === DailyLoginRewardType.X_COOKIES) {
-                userUpdateOperations.$inc['inventory.xCookies'] = reward.amount;
+                userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = reward.amount;
+
+                // check if the user's `xCookieData.extendedXCookieData` contains a source called DAILY_LOGIN_REWARDS.
+                // if yes, we increment the amount, if not, we create a new entry for the source
+                const dailyLoginRewardsIndex = (user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(data => data.source === XCookieSource.DAILY_LOGIN_REWARDS);
+
+                if (dailyLoginRewardsIndex !== -1) {
+                    userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${dailyLoginRewardsIndex}.xCookies`] = reward.amount;
+                } else {
+                    userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = {
+                        xCookies: reward.amount,
+                        source: XCookieSource.DAILY_LOGIN_REWARDS
+                    }
+                }
             } else if (reward.type === DailyLoginRewardType.LEADERBOARD_POINTS) {
                 // add the points to the leaderboard
                 // get the index of the user in the leaderboard's `userData` array
@@ -1223,7 +1239,20 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
         // 4. add the day to `daysClaimed`
         for (const reward of rewards) {
             if (reward.type === BeginnerRewardType.X_COOKIES) {
-                userUpdateOperations.$inc['inventory.xCookies'] = reward.amount;
+                userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = reward.amount;
+
+                // check if the user's `xCookieData.extendedXCookieData` contains a source called BEGINNER_REWARDS.
+                // if yes, we increment the amount, if not, we create a new entry for the source
+                const beginnerRewardsIndex = (user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(data => data.source === XCookieSource.BEGINNER_REWARDS);
+
+                if (beginnerRewardsIndex !== -1) {
+                    userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${beginnerRewardsIndex}.xCookies`] = reward.amount;
+                } else {
+                    userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = {
+                        xCookies: reward.amount,
+                        source: XCookieSource.BEGINNER_REWARDS
+                    }
+                }
             } 
             
             if (reward.type === BeginnerRewardType.BIT_ORB_I) {

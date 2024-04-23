@@ -3,6 +3,7 @@ import { BLAST_TESTNET_PROVIDER, COOKIE_CONTRACT_DECIMALS, COOKIE_CONTRACT_USER,
 import { generateHashSalt, generateObjectId } from '../utils/crypto';
 import { ethers } from 'ethers';
 import { CookieDepositModel, CookieWithdrawalModel, UserModel } from '../utils/constants/db';
+import { ExtendedXCookieData, XCookieSource } from '../models/user';
 
 /**
  * (User) Deposits `amount` of cookies and earn the equivalent amount of xCookies.
@@ -32,12 +33,30 @@ export const depositCookies = async (twitterId: string, amount: number): Promise
         await result.wait(3);
 
         // we dont check for errors here since it will directly go to the catch block if there's an error
-        // we just deposit the same amount of cookies to the user's xCookies balance
-        await UserModel.updateOne({ twitterId }, {
-            $inc: {
-                'inventory.xCookies': amount
-            }
-        });
+        // 1. we increment the user's xCookies balance by the amount of cookies deposited
+        // 2. we check if the user's `extendedXCookieData.source` has COOKIE_DEPOSIT. If not, we add a new COOKIE_DEPOSIT instance
+        const cookieDepositIndex = (user.inventory?.extendedXCookieData as ExtendedXCookieData[]).findIndex(data => data.source === XCookieSource.COOKIE_DEPOSIT);
+
+        if (cookieDepositIndex !== -1) {
+            await UserModel.updateOne({ twitterId }, {
+                $inc: {
+                    [`inventory.xCookieData.extendedXCookieData.${cookieDepositIndex}.xCookies`]: amount,
+                    'inventory.xCookieData.currentXCookies': amount
+                }
+            })
+        } else {
+            await UserModel.updateOne({ twitterId }, {
+                $inc: {
+                    'inventory.xCookieData.currentXCookies': amount
+                },
+                $push: {
+                    'inventory.xCookieData.extendedXCookieData': {
+                        xCookies: amount,
+                        source: XCookieSource.COOKIE_DEPOSIT,
+                    }
+                }
+            })
+        }
 
         // we add an instance of the deposit to the CookieDeposits collection
         const latestDepositId = await getLatestDepositId();
@@ -83,7 +102,7 @@ export const withdrawCookies = async (twitterId: string, amount: number): Promis
             }
         }
 
-        const xCookies = user.inventory?.xCookies;
+        const xCookies = user.inventory?.xCookieData.currentXCookies;
 
         if (xCookies < amount) {
             return {
@@ -127,7 +146,7 @@ export const withdrawCookies = async (twitterId: string, amount: number): Promis
         // we just withdraw the same amount of cookies from the user's xCookies balance
         await UserModel.updateOne({ twitterId }, {
             $inc: {
-                'inventory.xCookies': -amount
+                'inventory.xCookieData.currentXCookies': -amount
             }
         });
 
@@ -225,7 +244,7 @@ export const getOwnedXCookies = async (twitterId: string): Promise<ReturnValue> 
             status: Status.SUCCESS,
             message: `(getOwnedXCookies) xCookies found.`,
             data: {
-                xCookies: user.inventory.xCookies
+                xCookies: user.inventory.xCookieData.currentXCookies
             }
         }
     } catch (err: any) {
