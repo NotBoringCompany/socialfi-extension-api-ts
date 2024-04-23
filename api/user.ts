@@ -298,7 +298,10 @@ export const handleTwitterLogin = async (
                 inventory: {
                     weight: 0,
                     maxWeight: 200,
-                    xCookies: 0,
+                    xCookieData: {
+                        currentXCookies: 0,
+                        extendedXCookieData: []
+                    },
                     cookieCrumbs: 0,
                     resources: [],
                     items: [
