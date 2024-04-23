@@ -1216,10 +1216,14 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
         // 4. add the day to `daysClaimed`
         for (const reward of rewards) {
             if (reward.type === BeginnerRewardType.X_COOKIES) {
+                console.log(`reward is xCookies`);
+
                 userUpdateOperations.$inc['inventory.xCookies'] = reward.amount;
             } 
             
             if (reward.type === BeginnerRewardType.BIT_ORB_I) {
+                console.log(`reward is Bit Orb (I)`);
+
                 // check if the user already has Bit Orb (I) in their inventory
                 const bitOrbIIndex = (user.inventory.items as Item[]).findIndex(i => i.type === BitOrbType.BIT_ORB_I);
 
@@ -1236,6 +1240,8 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
             } 
             
             if (reward.type === BeginnerRewardType.TERRA_CAPSULATOR_I) {
+                console.log(`reward is Terra Capsulator (I)`);
+                
                 // check if the user already has Terra Capsulator (I) in their inventory
                 const terraCapsulatorIIndex = (user.inventory.items as Item[]).findIndex(i => i.type === TerraCapsulatorType.TERRA_CAPSULATOR_I);
 
