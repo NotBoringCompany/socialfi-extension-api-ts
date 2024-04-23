@@ -747,8 +747,8 @@ export const claimDailyRewards = async (
         // get the user's consecutive days claimed
         const consecutiveDaysClaimed = dailyLoginRewardData.consecutiveDaysClaimed;
 
-        // get the daily login rewards based on the consecutive days claimed + 1 (since it would essentially claim for the next day)
-        const dailyLoginRewards = GET_DAILY_LOGIN_REWARDS(consecutiveDaysClaimed + 1);
+        // get the daily login rewards based on the consecutive days claimed
+        const dailyLoginRewards = GET_DAILY_LOGIN_REWARDS(consecutiveDaysClaimed);
 
         // 1. add the rewards to the user's inventory
         // 2. increment the user's `consecutiveDaysClaimed` by 1
