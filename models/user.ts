@@ -114,6 +114,7 @@ export interface ExtendedXCookieData {
  * A list of the sources of obtaining xCookies.
  */
 export enum XCookieSource {
+    COOKIE_DEPOSIT = 'Cookie Deposit',
     RESOURCE_SELLING = 'Resource Selling',
     DAILY_LOGIN_REWARDS = 'Daily Login Rewards',
     REFERRAL_REWARDS = 'Referral Rewards',
