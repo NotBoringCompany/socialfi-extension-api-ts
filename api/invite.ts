@@ -4,6 +4,7 @@ import { LeaderboardModel, StarterCodeModel, UserModel } from '../utils/constant
 import { generateObjectId, generateStarterCode } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
 import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
+import { ExtendedXCookieData, XCookieSource } from '../models/user';
 
 /**
  * Generates starter codes and stores them in the database.
@@ -96,8 +97,21 @@ export const claimReferralRewards = async (twitterId: string): Promise<ReturnVal
 
         // if the user has claimable xCookies, add to the user's inventory and reset the claimable xCookies
         if (claimableReferralRewards.xCookies > 0) {
-            userUpdateOperations.$inc['inventory.xCookies'] = claimableReferralRewards.xCookies;
+            userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = claimableReferralRewards.xCookies;
             userUpdateOperations.$set['referralData.claimableReferralRewards.xCookies'] = 0;
+
+            // check if the user's `xCookieData.extendedXCookieData` contains a source called REFERRAL_REWARDS.
+            // if yes, we increment the amount, if not, we create a new entry for the source
+            const referralRewardsIndex = (user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(data => data.source === XCookieSource.REFERRAL_REWARDS);
+
+            if (referralRewardsIndex !== -1) {
+                userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${referralRewardsIndex}.amount`] = claimableReferralRewards.xCookies;
+            } else {
+                userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = {
+                    source: XCookieSource.REFERRAL_REWARDS,
+                    amount: claimableReferralRewards.xCookies
+                }
+            }
         }
 
         // if the user has claimable leaderboard points, add to the Season 0 leaderboard and reset the claimable leaderboard points
