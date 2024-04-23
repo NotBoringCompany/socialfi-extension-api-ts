@@ -40,7 +40,7 @@ export const depositCookies = async (twitterId: string, amount: number): Promise
         if (cookieDepositIndex !== -1) {
             await UserModel.updateOne({ twitterId }, {
                 $inc: {
-                    [`inventory.xCookieData.extendedXCookieData.${cookieDepositIndex}.amount`]: amount,
+                    [`inventory.xCookieData.extendedXCookieData.${cookieDepositIndex}.xCookies`]: amount,
                     'inventory.xCookieData.currentXCookies': amount
                 }
             })
@@ -51,8 +51,8 @@ export const depositCookies = async (twitterId: string, amount: number): Promise
                 },
                 $push: {
                     'inventory.xCookieData.extendedXCookieData': {
+                        xCookies: amount,
                         source: XCookieSource.COOKIE_DEPOSIT,
-                        amount: amount
                     }
                 }
             })

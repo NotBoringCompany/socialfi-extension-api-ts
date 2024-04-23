@@ -1114,7 +1114,7 @@ export const buyItemsInPOIShop = async (
         }
 
         // check if the user has enough xCookies/cookie crumbs to buy the items.
-        if (paymentChoice === 'xCookies' && user.inventory.xCookies < totalPayment) {
+        if (paymentChoice === 'xCookies' && user.inventory.xCookieData.currentXCookies < totalPayment) {
             return {
                 status: Status.BAD_REQUEST,
                 message: `(buyItemsInPOIShop) User does not have enough xCookies.`

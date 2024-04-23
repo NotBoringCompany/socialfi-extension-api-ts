@@ -105,11 +105,11 @@ export const claimReferralRewards = async (twitterId: string): Promise<ReturnVal
             const referralRewardsIndex = (user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(data => data.source === XCookieSource.REFERRAL_REWARDS);
 
             if (referralRewardsIndex !== -1) {
-                userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${referralRewardsIndex}.amount`] = claimableReferralRewards.xCookies;
+                userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${referralRewardsIndex}.xCookies`] = claimableReferralRewards.xCookies;
             } else {
                 userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = {
+                    xCookies: claimableReferralRewards.xCookies,
                     source: XCookieSource.REFERRAL_REWARDS,
-                    amount: claimableReferralRewards.xCookies
                 }
             }
         }

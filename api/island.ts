@@ -2508,11 +2508,11 @@ export const claimXCookiesAndCrumbs = async (twitterId: string, islandId: number
 
             if (islandClaimingIndex === -1) {
                 userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'].push({
-                    amount: xCookiesAfterTax,
+                    xCookies: xCookiesAfterTax,
                     source: XCookieSource.ISLAND_CLAIMING,
                 });
             } else {
-                userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${islandClaimingIndex}.amount`] = xCookiesAfterTax;
+                userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${islandClaimingIndex}.xCookies`] = xCookiesAfterTax;
             }
 
             // do a few things:

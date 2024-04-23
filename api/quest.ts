@@ -3,7 +3,7 @@ import { QuestRequirement, QuestReward, QuestRewardType, QuestType } from '../mo
 import { ReturnValue, Status } from '../utils/retVal';
 import { QuestSchema } from '../schemas/Quest';
 import { generateObjectId } from '../utils/crypto';
-import { User, UserInventory } from '../models/user';
+import { ExtendedXCookieData, User, UserInventory, XCookieSource } from '../models/user';
 import { UserSchema } from '../schemas/User';
 import { Food } from '../models/food';
 import { RANDOMIZE_FOOD_FROM_QUEST } from '../utils/constants/quest';
@@ -137,7 +137,21 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
             switch (rewardType) {
                 // add the cookie count into the user's inventory
                 case QuestRewardType.X_COOKIES:
-                    userUpdateOperations.$inc['inventory.xCookies'] = amount;
+                    userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = amount;
+
+                    // check if the user's `xCookieData.extendedXCookieData` contains a source called QUEST_REWARDS.
+                    // if yes, we increment the amount, if not, we create a new entry for the source
+                    const questRewardsIndex = (user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(data => data.source === XCookieSource.QUEST_REWARDS);
+
+                    if (questRewardsIndex !== -1) {
+                        userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${questRewardsIndex}.xCookies`] = amount;
+                    } else {
+                        userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = {
+                            xCookies: amount,
+                            source: XCookieSource.QUEST_REWARDS
+                        }
+                    }
+                    
                     obtainedRewards.push({ type: rewardType, amount });
                     break;
                 // add the food into the user's inventory
