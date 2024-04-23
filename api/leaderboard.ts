@@ -74,9 +74,6 @@ export const getLeaderboardRanking = async (leaderboardName: string): Promise<Re
             return bTotalPoints - aTotalPoints;
         });
 
-        // Extract user IDs from sorted data
-        const userIds = descendingPoints.map(userData => userData.userId);
-
         // Add a rank to each user data
         const rankedUserData = descendingPoints.map((userData, index) => ({
             rank: index + 1,
@@ -161,7 +158,8 @@ export const getOwnLeaderboardRanking = async (
                     userId: user._id,
                     twitterId: user.twitterId,
                     twitterProfilePicture: userData.twitterProfilePicture,
-                    points: userData.pointsData?.reduce((acc, data) => acc + data.points, 0) ?? 0
+                    points: userData.pointsData?.reduce((acc, data) => acc + data.points, 0) ?? 0,
+                    pointsData: userData.pointsData
                 }
             }
         };
