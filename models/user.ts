@@ -72,8 +72,10 @@ export interface UserInventory {
     weight: number;
     /** the maximum inventory weight the user can have */
     maxWeight: number;
-    /** the amount of in-game cookies owned (users are required to convert from blockchain cookies first) */
-    xCookies: number;
+    // /** the amount of in-game cookies owned (users are required to convert from blockchain cookies first) */
+    // xCookies: number;
+    /** the user's xCookies data (i.e. the current xCookies owned, the total xCookies earned from different sources etc.) */
+    xCookieData: XCookieData;
     /** the amount of cookie crumbs owned */
     cookieCrumbs: number;
     /** a list of resources owned */
@@ -88,6 +90,38 @@ export interface UserInventory {
     islandIds: number[];
     /** a list of owned bit IDs */
     bitIds: number[];    
+}
+
+/**
+ * Represents the user's xCookies data.
+ */
+export interface XCookieData {
+    /** the user's current xCookies left */
+    currentXCookies: number;
+    /** the extended xCookie data (shows how many cookies have been obtained from what source) */
+    extendedXCookieData: ExtendedXCookieData[];
+}
+
+/**
+ * Represents the extended xCookies data.
+ */
+export interface ExtendedXCookieData {
+    xCookies: number;
+    source: XCookieSource;
+}
+
+/**
+ * A list of the sources of obtaining xCookies.
+ */
+export enum XCookieSource {
+    RESOURCE_SELLING = 'Resource Selling',
+    DAILY_LOGIN_REWARDS = 'Daily Login Rewards',
+    REFERRAL_REWARDS = 'Referral Rewards',
+    BEGINNER_REWARDS = 'Beginner Rewards',
+    CHEST_REWARDS = 'Chest Rewards',
+    COLLAB_REWARDS = 'Collab Rewards',
+    LEVELLING_UP = 'Levelling Up',
+    QUEST_REWARDS = 'Quest Rewards',
 }
 
 /**
