@@ -43,8 +43,8 @@ router.get('/get_leaderboard_ranking/:leaderboardName', async (req, res) => {
     }
 })
 
-router.get('/get_own_leaderboard_ranking', async (req, res) => {
-    const { leaderboardName } = req.query;
+router.get('/get_own_leaderboard_ranking/:leaderboardName', async (req, res) => {
+    const { leaderboardName } = req.params;
 
     try {
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'get_own_leaderboard_ranking');
