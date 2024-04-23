@@ -244,7 +244,7 @@ export const getOwnedXCookies = async (twitterId: string): Promise<ReturnValue> 
             status: Status.SUCCESS,
             message: `(getOwnedXCookies) xCookies found.`,
             data: {
-                xCookies: user.inventory.xCookies
+                xCookies: user.inventory.xCookieData.currentXCookies
             }
         }
     } catch (err: any) {
