@@ -1210,20 +1210,23 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
         // get the beginner rewards for the day
         const rewards = GET_BEGINNER_REWARDS(nextDayToClaim);
 
+        // initialize $each on the user's inventory items
+        if (!userUpdateOperations.$push['inventory.items']) {
+            userUpdateOperations.$push['inventory.items'] = {
+                $each: []
+            }
+        }
+
         // 1. add the rewards to the user's inventory
         // 2. set `isClaimable` to false
         // 3. set `lastClaimedTimestamp` to now
         // 4. add the day to `daysClaimed`
         for (const reward of rewards) {
             if (reward.type === BeginnerRewardType.X_COOKIES) {
-                console.log(`reward is xCookies`);
-
                 userUpdateOperations.$inc['inventory.xCookies'] = reward.amount;
             } 
             
             if (reward.type === BeginnerRewardType.BIT_ORB_I) {
-                console.log(`reward is Bit Orb (I)`);
-
                 // check if the user already has Bit Orb (I) in their inventory
                 const bitOrbIIndex = (user.inventory.items as Item[]).findIndex(i => i.type === BitOrbType.BIT_ORB_I);
 
@@ -1232,16 +1235,15 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
                 if (bitOrbIIndex !== -1) {
                     userUpdateOperations.$inc[`inventory.items.${bitOrbIIndex}.amount`] = reward.amount;
                 } else {
-                    userUpdateOperations.$push['inventory.items'] = {
+
+                    userUpdateOperations.$push['inventory.items'].$each.push({
                         type: BitOrbType.BIT_ORB_I,
                         amount: reward.amount
-                    }
+                    })
                 }
             } 
             
             if (reward.type === BeginnerRewardType.TERRA_CAPSULATOR_I) {
-                console.log(`reward is Terra Capsulator (I)`);
-                
                 // check if the user already has Terra Capsulator (I) in their inventory
                 const terraCapsulatorIIndex = (user.inventory.items as Item[]).findIndex(i => i.type === TerraCapsulatorType.TERRA_CAPSULATOR_I);
 
@@ -1250,10 +1252,10 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
                 if (terraCapsulatorIIndex !== -1) {
                     userUpdateOperations.$inc[`inventory.items.${terraCapsulatorIIndex}.amount`] = reward.amount;
                 } else {
-                    userUpdateOperations.$push['inventory.items'] = {
+                    userUpdateOperations.$push['inventory.items'].$each.push({
                         type: TerraCapsulatorType.TERRA_CAPSULATOR_I,
                         amount: reward.amount
-                    }
+                    })
                 }
             }
         }
@@ -1261,8 +1263,6 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
         userUpdateOperations.$set['inGameData.beginnerRewardData.isClaimable'] = false;
         userUpdateOperations.$set['inGameData.beginnerRewardData.lastClaimedTimestamp'] = Math.floor(Date.now() / 1000);
         userUpdateOperations.$push['inGameData.beginnerRewardData.daysClaimed'] = nextDayToClaim;
-
-        console.log(`claim beginner rewards update operations: `, userUpdateOperations);
 
         // execute the update operations ($set and $inc on one, $push and $pull on the other to prevent conflict)
         await UserModel.updateOne({ twitterId }, {
