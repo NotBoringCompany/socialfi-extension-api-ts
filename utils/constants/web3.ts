@@ -2,6 +2,10 @@ import { ethers } from 'ethers';
 import fs from 'fs';
 import path from 'path';
 
+import * as dotenv from 'dotenv';
+
+dotenv.config();
+
 export const BLAST_TESTNET_PROVIDER = new ethers.providers.JsonRpcProvider(`https://sepolia.blast.io`);
 export const ETH_MAINNET_PROVIDER = new ethers.providers.JsonRpcBatchProvider(`	https://api.securerpc.com/v1`);
 
