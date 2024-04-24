@@ -12,13 +12,31 @@ export const shop: Shop = {
         {
             type: BitOrbType.BIT_ORB_I,
             price: {
-                xCookies: 200
+                xCookies: 30
+            }
+        },
+        {
+            type: BitOrbType.BIT_ORB_II,
+            price: {
+                xCookies: 150
+            }
+        },
+        {
+            type: BitOrbType.BIT_ORB_III,
+            price: {
+                xCookies: 1000
             }
         },
         {
             type: TerraCapsulatorType.TERRA_CAPSULATOR_I,
             price: {
-                xCookies: 600
+                xCookies: 20
+            }
+        },
+        {
+            type: TerraCapsulatorType.TERRA_CAPSULATOR_II,
+            price: {
+                xCookies: 200
             }
         },
         {
