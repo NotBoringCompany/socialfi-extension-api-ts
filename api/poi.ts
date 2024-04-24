@@ -682,8 +682,6 @@ export const sellItemsInPOIShop = async (
             return acc + (item.amount * (itemData.sellingPrice.leaderboardPoints as number));
         }, 0);
 
-        console.log('leaderboard points: ', leaderboardPoints);
-
         // check if leaderboard is specified
         // if not, we find the most recent one.
         const leaderboard = leaderboardName === null ?
@@ -717,13 +715,14 @@ export const sellItemsInPOIShop = async (
                 additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
             }
 
-            console.log('user not found. making him a new user in the leaderboard.');
-
             leaderboardUpdateOperations.$push = {
                 'userData': {
                     userId: user._id,
                     twitterProfilePicture: user.twitterProfilePicture,
-                    points: leaderboardPoints,
+                    pointsData: [{
+                        points: leaderboardPoints,
+                        source: LeaderboardPointsSource.RESOURCE_SELLING
+                    }],
                     additionalPoints
                 }
             }
