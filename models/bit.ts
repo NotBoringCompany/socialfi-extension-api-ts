@@ -13,6 +13,8 @@ export interface Bit {
     bitId: number;
     /** the bit's name data */
     bitNameData: BitNameData;
+    /** bit type */
+    bitType: BitType;
     /** bit rarity */
     rarity: BitRarity;
     /** bit gender */
@@ -204,4 +206,15 @@ export interface EnergyThresholdReduction {
     gatheringRateReduction: number;
     /** the reduction in earning rate (by a fixed %) */
     earningRateReduction: number;
+}
+
+/**
+ * Represents the gender of a Bit.
+ */
+export enum BitType {
+    TYPE_1 = 1,
+    TYPE_2 = 2,
+    TYPE_3 = 3,
+    TYPE_4 = 4,
+    TYPE_5 = 5,
 }

@@ -3,7 +3,7 @@ import { ReturnValue, Status } from '../utils/retVal';
 import { createUserWallet } from '../utils/wallet';
 import { createRaft } from './raft';
 import { generateHashSalt, generateObjectId, generateReferralCode } from '../utils/crypto';
-import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
+import { addBitToDatabase, getLatestBitId, randomizeBitType, randomizeFarmingStats } from './bit';
 import { RANDOMIZE_RARITY_FROM_ORB } from '../utils/constants/bitOrb';
 import { RANDOMIZE_GENDER, getBitStatsModifiersFromTraits, randomizeBitTraits } from '../utils/constants/bit';
 import { ObtainMethod } from '../models/obtainMethod';
@@ -105,6 +105,7 @@ export const handleTwitterLogin = async (
             // add a premium common bit to the user's inventory (users get 1 for free when they sign up)
             const { status: bitStatus, message: bitMessage, data: bitData } = await addBitToDatabase({
                 bitId: bitIdData?.latestBitId + 1,
+                bitType: randomizeBitType(),
                 bitNameData: {
                     name: `Bit #${bitIdData?.latestBitId + 1}`,
                     lastChanged: 0,
