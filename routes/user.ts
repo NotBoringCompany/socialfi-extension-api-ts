@@ -234,19 +234,11 @@ router.post('/claim_beginner_rewards', async (req, res) => {
 
 router.post('/generate_signature_message', async (req, res) => {
     const { walletAddress } = req.body;
+    
     try {
-        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'generate_signature_message');
-
-        if (validateStatus !== Status.SUCCESS) {
-            return res.status(validateStatus).json({
-                status: validateStatus,
-                message: validateMessage
-            })
-        }
-
         const message = generateSignatureMessage(walletAddress);
 
-        return res.status(validateStatus).json({
+        return res.status(200).json({
             status: 200,
             message: 'Signature message generated successfully.',
             data: {
