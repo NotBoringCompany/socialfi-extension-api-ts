@@ -1,4 +1,4 @@
-import { Bit, BitGender, BitRarity, BitStatsModifiers, BitTrait, BitTraitCategory, BitTraitData, BitTraitRarity, BitTraitSubCategory, BitType, EnergyThresholdReduction } from '../../models/bit';
+import { Bit, BitGender, BitRarity, BitStatsModifiers, BitTrait, BitTraitCategory, BitTraitData, BitTraitRarity, BitTraitSubCategory, BitType, BitTypeData, EnergyThresholdReduction } from '../../models/bit';
 import { Island, IslandStatsModifiers } from '../../models/island';
 import { BitTraitModifier, Modifier } from '../../models/modifier';
 
@@ -146,9 +146,11 @@ export const randomizeBitTraits = (rarity: BitRarity): BitTraitData[] => {
  * Randomizes a type when summoning a Bit.
  */
 export const randomizeBitType = (): BitType => {
-    const enumValues = Object.keys(BitType).filter(key => isNaN(Number(key)));
-    return BitType[enumValues[Math.floor(Math.random() * enumValues.length)] as keyof typeof BitType];
-};
+    const types = Object.values(BitType);
+    const rand = Math.floor(Math.random() * types.length);
+
+    return types[rand];
+}
 
 /**
  * A list of all bit traits and their respective stats/details.
@@ -664,3 +666,29 @@ export const ENERGY_THRESHOLD_REDUCTIONS = (energy: number): EnergyThresholdRedu
         }
     }
 }
+
+/**
+ * A list of all bit types and their respective data.
+ */
+export const bitTypes: BitTypeData[] = [
+    {
+        type: BitType.MIBIT,
+        idleAnimationUrl: `https://socialfi-extension.fra1.cdn.digitaloceanspaces.com/bitTypes/bibit_idle.gif`
+    },
+    {
+        type: BitType.HOWLBIT,
+        idleAnimationUrl: `https://socialfi-extension.fra1.cdn.digitaloceanspaces.com/bitTypes/howlbit_idle.gif`
+    },
+    {
+        type: BitType.CUBIT,
+        idleAnimationUrl: `https://socialfi-extension.fra1.cdn.digitaloceanspaces.com/bitTypes/cubit_idle.gif`
+    },
+    {
+        type: BitType.BIBIT,
+        idleAnimationUrl: `https://socialfi-extension.fra1.cdn.digitaloceanspaces.com/bitTypes/bibit_idle.gif`
+    },
+    {
+        type: BitType.ZEBIT,
+        idleAnimationUrl: `https://socialfi-extension.fra1.cdn.digitaloceanspaces.com/bitTypes/zebit_idle.gif`
+    }
+]

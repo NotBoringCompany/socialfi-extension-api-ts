@@ -13,8 +13,8 @@ export interface Bit {
     bitId: number;
     /** the bit's name data */
     bitNameData: BitNameData;
-    /** bit type */
-    bitType: BitType;
+    /** bit type data */
+    bitTypeData: BitTypeData;
     /** bit rarity */
     rarity: BitRarity;
     /** bit gender */
@@ -209,12 +209,22 @@ export interface EnergyThresholdReduction {
 }
 
 /**
- * Represents the gender of a Bit.
+ * Represents the type data of a bit.
+ */
+export interface BitTypeData {
+    /** the bit type */
+    type: BitType;
+    /** the bit type's idle animation URL */
+    idleAnimationUrl: string;
+}
+
+/**
+ * Represents the type of a Bit.
  */
 export enum BitType {
-    TYPE_1 = 1,
-    TYPE_2 = 2,
-    TYPE_3 = 3,
-    TYPE_4 = 4,
-    TYPE_5 = 5,
+    MIBIT = 'Mibit',
+    HOWLBIT = 'Howlbit',
+    CUBIT = 'Cubit',
+    BIBIT = 'Bibit',
+    ZEBIT = 'Zebit',
 }
