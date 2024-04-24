@@ -353,7 +353,15 @@ export const handleTwitterLogin = async (
                 }
             }
         } else {
-            console.log('user found. user id: ', user._id);
+            // check if the user's twitter profile picture matches the one in the database
+            // if not, update the user's twitter profile picture
+            if (user.twitterProfilePicture !== twitterProfilePicture) {
+                await UserModel.updateOne({ twitterId }, {
+                    $set: {
+                        twitterProfilePicture
+                    }
+                });
+            }
 
             // user exists, return
             return {
