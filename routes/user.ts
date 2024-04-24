@@ -1,5 +1,5 @@
 import express from 'express';
-import { checkInviteCodeLinked, claimBeginnerRewards, claimDailyRewards, getBeginnerRewardsData, getInGameData, getInventory, getUserData, getWalletDetails, linkInviteCode, removeResources } from '../api/user';
+import { checkInviteCodeLinked, claimBeginnerRewards, claimDailyRewards, generateSignatureMessage, getBeginnerRewardsData, getInGameData, getInventory, getUserData, getWalletDetails, linkInviteCode, removeResources } from '../api/user';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { ExtendedProfile } from '../utils/types';
@@ -231,5 +231,32 @@ router.post('/claim_beginner_rewards', async (req, res) => {
         })
     }
 });
+
+router.post('/generate_signature_message', async (req, res) => {
+    const { walletAddress } = req.body;
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'generate_signature_message');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
+        const { status, message, data } = await generateSignatureMessage(walletAddress);
+
+        return res.status(validateStatus).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        });
+    }
+})
 
 export default router;
