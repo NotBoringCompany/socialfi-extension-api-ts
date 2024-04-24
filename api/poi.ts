@@ -682,6 +682,8 @@ export const sellItemsInPOIShop = async (
             return acc + (item.amount * (itemData.sellingPrice.leaderboardPoints as number));
         }, 0);
 
+        console.log('leaderboard points: ', leaderboardPoints);
+
         // check if leaderboard is specified
         // if not, we find the most recent one.
         const leaderboard = leaderboardName === null ?
