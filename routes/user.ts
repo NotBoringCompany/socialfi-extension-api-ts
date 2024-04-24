@@ -244,12 +244,14 @@ router.post('/generate_signature_message', async (req, res) => {
             })
         }
 
-        const { status, message, data } = await generateSignatureMessage(walletAddress);
+        const message = generateSignatureMessage(walletAddress);
 
         return res.status(validateStatus).json({
-            status,
-            message,
-            data
+            status: 200,
+            message: 'Signature message generated successfully.',
+            data: {
+                signatureMessage: message
+            }
         });
     } catch (err: any) {
         return res.status(500).json({
