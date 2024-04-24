@@ -717,6 +717,8 @@ export const sellItemsInPOIShop = async (
                 additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
             }
 
+            console.log('user not found. making him a new user in the leaderboard.');
+
             leaderboardUpdateOperations.$push = {
                 'userData': {
                     userId: user._id,
