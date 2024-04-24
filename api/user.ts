@@ -5,7 +5,7 @@ import { createRaft } from './raft';
 import { generateHashSalt, generateObjectId, generateReferralCode } from '../utils/crypto';
 import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
 import { RANDOMIZE_RARITY_FROM_ORB } from '../utils/constants/bitOrb';
-import { RANDOMIZE_GENDER, bitTypes, getBitStatsModifiersFromTraits, randomizeBitTraits, randomizeBitType } from '../utils/constants/bit';
+import { RANDOMIZE_GENDER, getBitStatsModifiersFromTraits, randomizeBitTraits, randomizeBitType } from '../utils/constants/bit';
 import { ObtainMethod } from '../models/obtainMethod';
 import { LeaderboardModel, StarterCodeModel, UserModel } from '../utils/constants/db';
 import { addIslandToDatabase, generateBarrenIsland, getLatestIslandId, randomizeBaseResourceCap } from './island';
@@ -102,13 +102,10 @@ export const handleTwitterLogin = async (
 
             const bitStatsModifiers = getBitStatsModifiersFromTraits(traits.map(trait => trait.trait));
 
-            // randomize a bit type
-            const bitType: BitType = randomizeBitType();
-
             // add a premium common bit to the user's inventory (users get 1 for free when they sign up)
             const { status: bitStatus, message: bitMessage, data: bitData } = await addBitToDatabase({
                 bitId: bitIdData?.latestBitId + 1,
-                bitTypeData: bitTypes.find(type => type.type === bitType),
+                bitType: randomizeBitType(),
                 bitNameData: {
                     name: `Bit #${bitIdData?.latestBitId + 1}`,
                     lastChanged: 0,

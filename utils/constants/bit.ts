@@ -1,4 +1,4 @@
-import { Bit, BitGender, BitRarity, BitStatsModifiers, BitTrait, BitTraitCategory, BitTraitData, BitTraitRarity, BitTraitSubCategory, BitType, BitTypeData, EnergyThresholdReduction } from '../../models/bit';
+import { Bit, BitGender, BitRarity, BitStatsModifiers, BitTrait, BitTraitCategory, BitTraitData, BitTraitRarity, BitTraitSubCategory, BitType, EnergyThresholdReduction } from '../../models/bit';
 import { Island, IslandStatsModifiers } from '../../models/island';
 import { BitTraitModifier, Modifier } from '../../models/modifier';
 
@@ -666,29 +666,3 @@ export const ENERGY_THRESHOLD_REDUCTIONS = (energy: number): EnergyThresholdRedu
         }
     }
 }
-
-/**
- * A list of all bit types and their respective data.
- */
-export const bitTypes: BitTypeData[] = [
-    {
-        type: BitType.MIBIT,
-        idleAnimationUrl: `https://socialfi-extension.fra1.cdn.digitaloceanspaces.com/bitTypes/bibit_idle.gif`
-    },
-    {
-        type: BitType.HOWLBIT,
-        idleAnimationUrl: `https://socialfi-extension.fra1.cdn.digitaloceanspaces.com/bitTypes/howlbit_idle.gif`
-    },
-    {
-        type: BitType.CUBIT,
-        idleAnimationUrl: `https://socialfi-extension.fra1.cdn.digitaloceanspaces.com/bitTypes/cubit_idle.gif`
-    },
-    {
-        type: BitType.BIBIT,
-        idleAnimationUrl: `https://socialfi-extension.fra1.cdn.digitaloceanspaces.com/bitTypes/bibit_idle.gif`
-    },
-    {
-        type: BitType.ZEBIT,
-        idleAnimationUrl: `https://socialfi-extension.fra1.cdn.digitaloceanspaces.com/bitTypes/zebit_idle.gif`
-    }
-]

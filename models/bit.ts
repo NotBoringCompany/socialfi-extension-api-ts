@@ -13,8 +13,8 @@ export interface Bit {
     bitId: number;
     /** the bit's name data */
     bitNameData: BitNameData;
-    /** bit type data */
-    bitTypeData: BitTypeData;
+    /** bit type */
+    bitType: BitType;
     /** bit rarity */
     rarity: BitRarity;
     /** bit gender */
