@@ -209,16 +209,6 @@ export interface EnergyThresholdReduction {
 }
 
 /**
- * Represents the type data of a bit.
- */
-export interface BitTypeData {
-    /** the bit type */
-    type: BitType;
-    /** the bit type's idle animation URL */
-    idleAnimationUrl: string;
-}
-
-/**
  * Represents the type of a Bit.
  */
 export enum BitType {
