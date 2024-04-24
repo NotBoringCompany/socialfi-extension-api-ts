@@ -1067,6 +1067,14 @@ export const linkInviteCode = async (
                 }
             }
 
+            // check if the referral code belongs to the user. if it does, return an error.
+            if (referralCode.twitterId === user.twitterId) {
+                return {
+                    status: Status.BAD_REQUEST,
+                    message: `(linkInviteCode) Referral code belongs to the user.`
+                }
+            }
+
             // update the user's referral code data
             await UserModel.updateOne({ twitterId }, {
                 $set: {
