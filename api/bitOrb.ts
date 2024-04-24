@@ -1,9 +1,9 @@
 import { Bit } from '../models/bit';
 import { ObtainMethod } from '../models/obtainMethod';
-import { RANDOMIZE_GENDER, getBitStatsModifiersFromTraits, randomizeBitTraits } from '../utils/constants/bit';
+import { RANDOMIZE_GENDER, getBitStatsModifiersFromTraits, randomizeBitTraits, randomizeBitType } from '../utils/constants/bit';
 import { RANDOMIZE_RARITY_FROM_ORB } from '../utils/constants/bitOrb';
 import { ReturnValue, Status } from '../utils/retVal';
-import { addBitToDatabase, getLatestBitId, randomizeBitType, randomizeFarmingStats } from './bit';
+import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
 import { IslandModel, UserModel } from '../utils/constants/db';
 import { Modifier } from '../models/modifier';
 import { BitOrbType } from '../models/bitOrb';

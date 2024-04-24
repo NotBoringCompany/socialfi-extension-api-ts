@@ -1,4 +1,4 @@
-import { Bit, BitGender, BitRarity, BitStatsModifiers, BitTrait, BitTraitCategory, BitTraitData, BitTraitRarity, BitTraitSubCategory, EnergyThresholdReduction } from '../../models/bit';
+import { Bit, BitGender, BitRarity, BitStatsModifiers, BitTrait, BitTraitCategory, BitTraitData, BitTraitRarity, BitTraitSubCategory, BitType, EnergyThresholdReduction } from '../../models/bit';
 import { Island, IslandStatsModifiers } from '../../models/island';
 import { BitTraitModifier, Modifier } from '../../models/modifier';
 
@@ -141,6 +141,14 @@ export const randomizeBitTraits = (rarity: BitRarity): BitTraitData[] => {
 
     return traits;
 }
+
+/**
+ * Randomizes a type when summoning a Bit.
+ */
+export const randomizeBitType = (): BitType => {
+    const enumValues = Object.keys(BitType).filter(key => isNaN(Number(key)));
+    return BitType[enumValues[Math.floor(Math.random() * enumValues.length)] as keyof typeof BitType];
+};
 
 /**
  * A list of all bit traits and their respective stats/details.

@@ -1,5 +1,5 @@
 import { ReturnValue, Status } from '../utils/retVal';
-import { Bit, BitFarmingStats, BitNameData, BitRarity, BitType } from '../models/bit';
+import { Bit, BitFarmingStats, BitNameData, BitRarity } from '../models/bit';
 import {
     BASE_ENERGY_DEPLETION_RATE,
     BIT_EVOLUTION_COST,
@@ -997,12 +997,4 @@ export const getBits = async (bitIds: number[]): Promise<ReturnValue> => {
             message: `(getBits) Error: ${err.message}`,
         };
     }
-};
-
-/**
- * Get random bit type
- */
-export const randomizeBitType = (): BitType => {
-    const enumValues = Object.keys(BitType).filter(key => isNaN(Number(key)));
-    return BitType[enumValues[Math.floor(Math.random() * enumValues.length)] as keyof typeof BitType];
 };
