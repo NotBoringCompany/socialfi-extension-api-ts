@@ -107,6 +107,10 @@ export const travelToPOI = async (
         // get the current timestamp
         const currentTime = Math.floor(Date.now() / 1000);
 
+        console.log('currentTime:', currentTime);
+        console.log('timeToTravel:', timeToTravel);
+        console.log('destinationArrival:', Math.ceil(currentTime + timeToTravel));
+
         // update the user's data
         // 1. set `travellingTo` in the user's inGameData to the destination
         // 2. set `destinationArrival` in the user's inGameData to the current time + timeToTravel
