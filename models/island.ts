@@ -98,6 +98,13 @@ export interface IslandResourceStats {
      * (UPDATED PER 10 MINS)
      */
     gatheringProgress: number;
+    /**
+     *  when the gathering progress was last updated 
+     * 
+     *  since the frontend can call `gatheringProgress` to drop a resource once it reaches 100%, we add this
+     *  to prevent users from faking the gathering progress increase by updating the value in the frontend.
+     */
+    lastUpdatedGatheringProgress: number;
 }
 
 /**

@@ -241,7 +241,8 @@ export const handleTwitterLogin = async (
                     gatheringStart: 0,
                     gatheringEnd: 0,
                     lastClaimed: 0,
-                    gatheringProgress: 0
+                    gatheringProgress: 0,
+                    lastUpdatedGatheringProgress: 0
                 },
                 islandEarningStats: {
                     totalXCookiesSpent: 0,
@@ -512,6 +513,9 @@ export const linkSecondaryWallet = async (
 
         // recover the address
         const recoveredAddress = ethers.utils.recoverAddress(ethSignedMessageHash, signature);
+
+        console.log('wallet address: ', walletAddress);
+        console.log('recovered address: ', recoveredAddress);
 
         if (recoveredAddress.toLowerCase() !== walletAddress.toLowerCase()) {
             return {

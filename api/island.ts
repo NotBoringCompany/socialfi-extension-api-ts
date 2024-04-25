@@ -57,7 +57,8 @@ export const generateBarrenIsland = async (
                 gatheringStart: 0,
                 gatheringEnd: 0,
                 lastClaimed: 0,
-                gatheringProgress: 0
+                gatheringProgress: 0,
+                lastUpdatedGatheringProgress: 0
             },
             islandEarningStats: {
                 totalXCookiesSpent: 0,
@@ -1352,7 +1353,7 @@ export const checkCurrentTax = async (twitterId: string, islandId: number): Prom
 }
 
 /**
- * (Called by scheduler, EVERY 10 MINUTES) Loops through all islands and updates the gathering progress for each island.
+ * (Called by scheduler, EVERY 3 MINUTES) Loops through all islands and updates the gathering progress for each island.
  * 
  * For islands that have reached >= 100% gathering progress, it should drop a resource and reset the gathering progress back to 0% + the remaining overflow of %.
  */
@@ -1408,18 +1409,18 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
                 island.islandStatsModifiers?.gatheringRateModifiers as Modifier[]
             );
 
-            // to calculate the gathering progress increment every 10 minutes, we need to firstly calculate the time it takes (in hours) to drop 1 resource.
+            // to calculate the gathering progress increment every 3 minutes, we need to firstly calculate the time it takes (in hours) to drop 1 resource.
             // the gathering progress increment/hour (in %) will just be 1 / time to drop 1 resource * 100 (or 100/time to drop resource)
             // which means that the gathering progress increment/10 minutes will be the gathering progress increment per hour / 6.
             // example:
             // say an island has a 250 resource cap. if the gathering rate is 0.02% of total resources/hour, this equates to gathering 0.02/100*250 = 0.05 resources per hour.
             // to get 1 resource to drop, it would take 1/0.05 = 20 hours, meaning that each hour, the gathering progress (to drop 1 resource) increments by 1/20*100 = 5%.
-            // to get the gathering progress in 10 minutes, divide 5% by 6 to get 0.8333% per 10 minutes.
+            // to get the gathering progress in 3 minutes, divide 5% by 20 to get 0.25% per 3 minutes.
             const resourcesPerHour = gatheringRate / 100 * island.islandResourceStats?.baseResourceCap;
             const hoursToDropResource = 1 / resourcesPerHour;
             const gatheringProgressIncrementPerHour = 1 / hoursToDropResource * 100;
-            // divide by 6 to get the gathering progress increment per 10 minutes
-            const gatheringProgressIncrement = gatheringProgressIncrementPerHour / 6;
+            // divide by 20 to get the gathering progress increment per 3 minutes
+            const gatheringProgressIncrement = gatheringProgressIncrementPerHour / 20;
 
             console.log(`(updateGatheringProgressAndDropResource) Island ID ${island.islandId} has a current gathering rate of ${gatheringRate} %/hour and a gathering progress increment of ${gatheringProgressIncrement}%/10 minutes.`)
 
@@ -1452,7 +1453,9 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
                         filter: { islandId: island.islandId },
                         update: {
                             $set: {
-                                'islandResourceStats.gatheringProgress': finalGatheringProgress
+                                'islandResourceStats.gatheringProgress': finalGatheringProgress,
+                                // set the `lastUpdatedGatheringProgress` to the current time
+                                'islandResourceStats.lastUpdatedGatheringProgress': Math.floor(Date.now() / 1000)
                             }
                         }
                     }
@@ -1480,6 +1483,147 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
     } catch (err: any) {
         // only console logging; this shouldn't stop the entire process
         console.error(`(updateGatheringProgressAndDropResource) Error: ${err.message}`);
+    }
+}
+
+/**
+ * An alternative to `updateGatheringProgressAndDropResource` that gets called from the frontend when the progress bar reaches 100% when users are active.
+ * 
+ * Also only updates one island at a time.
+ * 
+ * This will drop a resource the moment the gathering progress reaches 100% instead of every 10th minute.
+ * 
+ * However, there will be checks to ensure that the gathering progress increment was in fact not manually modified by the user, else the function reverts.
+ */
+export const updateGatheringProgressAndDropResourceAlt = async (
+    twitterId: string,
+    islandId: number
+): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(updateGatheringProgressAndDropResourceAlt) User not found.`
+            }
+        }
+
+        // check if user owns the island
+        if (!(user.inventory?.islandIds as number[]).includes(islandId)) {
+            return {
+                status: Status.UNAUTHORIZED,
+                message: `(updateGatheringProgressAndDropResourceAlt) User does not own the island.`
+            }
+        }
+
+        // get the island info
+        const island = await IslandModel.findOne({ islandId }).lean();
+
+        if (!island) {
+            return {
+                status: Status.ERROR,
+                message: `(updateGatheringProgressAndDropResourceAlt) Island not found.`
+            }
+        }
+
+        // check if the island has bits placed
+        if (!island.placedBitIds || island.placedBitIds.length === 0) {
+            return {
+                status: Status.ERROR,
+                message: `(updateGatheringProgressAndDropResourceAlt) Island has no bits placed.`
+            }
+        }
+
+        const gatheringProgress = island.islandResourceStats?.gatheringProgress as number;
+
+        // get the bits placed on the island to calculate the current gathering rate
+        const { status, message, data } = await getBits(island.placedBitIds);
+
+        // if error, just console log and return
+        if (status !== Status.SUCCESS) {
+            return {
+                status: Status.ERROR,
+                message: `(updateGatheringProgressAndDropResourceAlt) Error: ${message}`
+            }
+        }
+
+        const bits = data?.bits as Bit[];
+        // get the base gathering rates, bit levels, initial gathering growth rates and bit modifiers
+        const baseRates = bits.map(bit => bit.farmingStats.baseGatheringRate);
+        const bitLevels = bits.map(bit => bit.currentFarmingLevel);
+        const initialGrowthRates = bits.map(bit => bit.farmingStats.gatheringRateGrowth);
+        const bitModifiers = bits.map(bit => bit.bitStatsModifiers.gatheringRateModifiers);
+
+        // calculate current island gathering rate
+        const gatheringRate = calcIslandCurrentRate(
+            RateType.GATHERING,
+            <IslandType>island.type,
+            baseRates,
+            bitLevels,
+            initialGrowthRates,
+            bitModifiers,
+            island.islandStatsModifiers?.gatheringRateModifiers as Modifier[]
+        );
+
+        // get the last updated gathering progress
+        const lastUpdatedGatheringProgress = island.islandResourceStats?.lastUpdatedGatheringProgress as number;
+
+        // get the gathering progress increment every hour. this is to check if the user has manually modified the gathering progress.
+        const resourcesPerHour = gatheringRate / 100 * island.islandResourceStats?.baseResourceCap;
+        const hoursToDropResource = 1 / resourcesPerHour;
+        const gatheringProgressIncrementPerHour = 1 / hoursToDropResource * 100;
+
+        // check the time that has passed since the last gathering progress update
+        const currentTime = Math.floor(Date.now() / 1000);
+        const timePassed = currentTime - lastUpdatedGatheringProgress;
+
+        // calculate the gathering progress increment based on the time passed
+        // for example, if the gathering progress increment per hour is 5%, and the time passed since the last update is 1800 seconds (30 minutes)
+        // the gathering progress increment will be 2.5%.
+        const gatheringProgressIncrement = gatheringProgressIncrementPerHour / 3600 * timePassed;
+
+        // check if the gathering progress + the increment is >= 100. if yes, calculate the new gathering progress and drop a resource.
+        if (gatheringProgress + gatheringProgressIncrement >= 100) {
+            // calculate the remaining overflow of %
+            const finalGatheringProgress = (gatheringProgress + gatheringProgressIncrement) - 100;
+
+            // drop the resource
+            const { status, message } = await dropResource(islandId);
+
+            if (status !== Status.SUCCESS) {
+                return {
+                    status: Status.ERROR,
+                    message: `(updateGatheringProgressAndDropResourceAlt) Error: ${message}`
+                }
+            }
+
+            // reset the gathering progress back to 0 + the remaining overflow of %
+            await IslandModel.updateOne(
+                { islandId },
+                {
+                    $set: {
+                        'islandResourceStats.gatheringProgress': finalGatheringProgress,
+                        // set the `lastUpdatedGatheringProgress` to the current time
+                        'islandResourceStats.lastUpdatedGatheringProgress': Math.floor(Date.now() / 1000)
+                    }
+                }
+            );
+
+            return {
+                status: Status.SUCCESS,
+                message: `(updateGatheringProgressAndDropResourceAlt) Resource dropped and gathering progress reset.`,
+                data: {
+                    islandId,
+                    finalGatheringProgress
+                }
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(updateGatheringProgressAndDropResourceAlt) Error: ${err.message}`
+        }
     }
 }
 

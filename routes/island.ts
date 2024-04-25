@@ -1,5 +1,5 @@
 import express from 'express';
-import { applyGatheringProgressBooster, calcEffectiveResourceDropChances, calcIslandCurrentRate, checkCurrentTax, claimResources, claimXCookiesAndCrumbs, evolveIsland, getIslands, placeBit, removeIsland, unplaceBit } from '../api/island';
+import { applyGatheringProgressBooster, calcEffectiveResourceDropChances, calcIslandCurrentRate, checkCurrentTax, claimResources, claimXCookiesAndCrumbs, evolveIsland, getIslands, placeBit, removeIsland, unplaceBit, updateGatheringProgressAndDropResourceAlt } from '../api/island';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { IslandType, RateType, ResourceDropChanceDiff } from '../models/island';
@@ -406,6 +406,34 @@ router.post('/apply_gathering_progress_booster', async (req, res) => {
         }
 
         const { status, message, data } = await applyGatheringProgressBooster(validateData?.twitterId, islandId, booster);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        })
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        });
+    }
+})
+
+router.post('/update_gathering_progress_and_drop_resource_alt', async (req, res) => {
+    const { islandId } = req.body;
+    
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'update_gathering_progress_and_drop_resource_alt');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
+        const { status, message, data } = await updateGatheringProgressAndDropResourceAlt(validateData?.twitterId, islandId);
 
         return res.status(status).json({
             status,
