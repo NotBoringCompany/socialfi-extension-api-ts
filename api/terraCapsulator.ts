@@ -218,7 +218,8 @@ export const summonIsland = async (
                 gatheringStart: 0,
                 gatheringEnd: 0,
                 lastClaimed: 0,
-                gatheringProgress: 0
+                gatheringProgress: 0,
+                lastUpdatedGatheringProgress: 0
             },
             islandEarningStats: {
                 totalXCookiesSpent: 0,

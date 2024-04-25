@@ -1964,6 +1964,9 @@ export const applyGatheringProgressBooster = async (
                 userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = -1;
             }
 
+            // update the island's `lastUpdatedGatheringProgress` to the current time
+            islandUpdateOperations.$set['islandResourceStats.lastUpdatedGatheringProgress'] = Math.floor(Date.now() / 1000);
+
             // execute the update operations
             await Promise.all([
                 UserModel.updateOne({ twitterId }, userUpdateOperations),
