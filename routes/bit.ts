@@ -8,6 +8,7 @@ import mongoose from 'mongoose';
 import { BitSchema } from '../schemas/Bit';
 import { BIT_EVOLUTION_COST, FREE_BIT_EVOLUTION_COST } from '../utils/constants/bit';
 import { BitModel } from '../utils/constants/db';
+import { Modifier } from '../models/modifier';
 
 const router = express.Router();
 
@@ -205,12 +206,16 @@ router.get('/get_max_current_rates/:bitId', async (req, res) => {
             })
         }
 
+        // for the modifiers, only get the modifiers impacted by the traits (since it's permanent)
+        const gatheringRateTraitsModifiers = (bit.bitStatsModifiers?.gatheringRateModifiers as Modifier[]).filter(modifier => modifier.origin.includes('Trait'));
+        const earningRateTraitsModifiers = (bit.bitStatsModifiers?.earningRateModifiers as Modifier[]).filter(modifier => modifier.origin.includes('Trait'));
+
         const maxGatheringRate = calcBitCurrentRate(
             RateType.GATHERING,
             bit.farmingStats?.baseGatheringRate,
             bit.currentFarmingLevel,
             bit.farmingStats?.gatheringRateGrowth,
-            []
+            gatheringRateTraitsModifiers
         );
 
         const maxEarningRate = calcBitCurrentRate(
@@ -218,7 +223,7 @@ router.get('/get_max_current_rates/:bitId', async (req, res) => {
             bit.farmingStats?.baseEarningRate,
             bit.currentFarmingLevel,
             bit.farmingStats?.earningRateGrowth,
-            []
+            earningRateTraitsModifiers
         );
 
         return res.status(200).json({
