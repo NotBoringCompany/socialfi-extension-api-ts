@@ -47,9 +47,9 @@ export const consumeTerraCapsulator = async (type: TerraCapsulatorType, twitterI
         // else, decrement the amount of the Terra Capsulator by 1
         if (terraCapsulatorAmount === 1) {
             // pull the Terra Capsulator from the user inventory's items
-            userUpdateOperations.$pull['inventory.items'] = { type: TerraCapsulatorType.TERRA_CAPSULATOR_I };
+            userUpdateOperations.$pull['inventory.items'] = { type };
         } else {
-            const terraCapsulatorIndex = (user.inventory?.items as Item[]).findIndex(i => i.type === TerraCapsulatorType.TERRA_CAPSULATOR_I);
+            const terraCapsulatorIndex = (user.inventory?.items as Item[]).findIndex(i => i.type === type);
             userUpdateOperations.$inc[`inventory.items.${terraCapsulatorIndex}.amount`] = -1;
         }
 
