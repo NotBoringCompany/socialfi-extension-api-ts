@@ -5,6 +5,7 @@ import { LeaderboardPointsSource } from '../models/leaderboard';
 import { POIName, POIShop, POIShopActionItemData, POIShopItemName } from '../models/poi';
 import { ExtendedResource } from '../models/resource';
 import { LeaderboardModel, POIModel, RaftModel, UserModel } from '../utils/constants/db';
+import { POI_TRAVEL_LEVEL_REQUIREMENT } from '../utils/constants/poi';
 import { ACTUAL_RAFT_SPEED } from '../utils/constants/raft';
 import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
 import { ReturnValue, Status } from '../utils/retVal';
@@ -87,6 +88,16 @@ export const travelToPOI = async (
             return {
                 status: Status.BAD_REQUEST,
                 message: `(travelToPOI) User is already travelling to ${user.inGameData.travellingTo}.`
+            }
+        }
+
+        // check if the user's level is high enough to travel to the destination
+        const requiredLevel = POI_TRAVEL_LEVEL_REQUIREMENT(destination);
+
+        if (user.inGameData.level < requiredLevel) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(travelToPOI) User must be at least level ${requiredLevel} to travel to ${destination}.`
             }
         }
 
