@@ -97,6 +97,7 @@ export const handleTwitterLogin = async (
             }
 
             const rarity = BitRarity.COMMON;
+            const bitType = randomizeBitType();
 
             const traits = randomizeBitTraits(rarity);
 
@@ -107,7 +108,7 @@ export const handleTwitterLogin = async (
                 bitId: bitIdData?.latestBitId + 1,
                 bitType: randomizeBitType(),
                 bitNameData: {
-                    name: `Bit #${bitIdData?.latestBitId + 1}`,
+                    name: bitType,
                     lastChanged: 0,
                 },
                 rarity,
