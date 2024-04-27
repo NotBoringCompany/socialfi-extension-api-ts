@@ -43,8 +43,6 @@ export const consumeBitOrb = async (twitterId: string, bitOrbType: BitOrbType): 
         // check if the user has at least 1 of the bit orb type to consume
         const bitOrbAmount = (user.inventory?.items as Item[]).find(item => item.type === bitOrbType)?.amount;
 
-        console.log(`user ${user.twitterId} has ${bitOrbAmount} ${bitOrbType} bit orbs.`);
-
         if (!bitOrbAmount || bitOrbAmount < 1) {
             return {
                 status: Status.ERROR,
