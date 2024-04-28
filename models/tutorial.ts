@@ -1,16 +1,8 @@
 /**
- * Represents tutorial reward type.
- */
-export enum TutorialRewardType {
-    X_COOKIES = 'xCookies',
-    BIT = 'Bit',
-}
-
-/**
- * Represents tutorial reward structure in a tutorial.
+ * Represents a tutorial reward instance for a tutorial.
  */
 export interface TutorialReward {
-    /** type of the reward */
+    /** the type of reward */
     type: TutorialRewardType;
     /** human-readable label for the reward */
     label: string;
@@ -21,6 +13,15 @@ export interface TutorialReward {
 }
 
 /**
+ * Represents the tutorial reward type.
+ */
+export enum TutorialRewardType {
+    X_COOKIES = 'xCookies',
+    BIT = 'Bit',
+}
+
+
+/**
  * Represents a tutorial instance where users can learn about the game.
  */
 export interface Tutorial {
@@ -28,4 +29,6 @@ export interface Tutorial {
     id: number;
     /** the tutorial name */
     name: string;
+    /** the rewards for this tutorial */
+    rewards: TutorialReward[];
 }
