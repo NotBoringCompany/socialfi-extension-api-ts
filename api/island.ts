@@ -2654,10 +2654,10 @@ export const claimXCookiesAndCrumbs = async (twitterId: string, islandId: number
             const islandClaimingIndex = (user.inventory.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(data => data.source === XCookieSource.ISLAND_CLAIMING);
 
             if (islandClaimingIndex === -1) {
-                userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'].push({
+                userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = {
                     xCookies: xCookiesAfterTax,
                     source: XCookieSource.ISLAND_CLAIMING,
-                });
+                };
             } else {
                 userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${islandClaimingIndex}.xCookies`] = xCookiesAfterTax;
             }
