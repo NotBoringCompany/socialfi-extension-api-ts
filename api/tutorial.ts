@@ -1,9 +1,10 @@
-import { BitRarity } from '../models/bit';
+import { Bit, BitRarity } from '../models/bit';
+import { Modifier } from '../models/modifier';
 import { ObtainMethod } from '../models/obtainMethod';
 import { Tutorial, TutorialReward, TutorialRewardType } from '../models/tutorial';
 import { ExtendedXCookieData, XCookieSource } from '../models/user';
 import { RANDOMIZE_GENDER, getBitStatsModifiersFromTraits, randomizeBitTraits, randomizeBitType } from '../utils/constants/bit';
-import { TutorialModel, UserModel } from '../utils/constants/db';
+import { IslandModel, TutorialModel, UserModel } from '../utils/constants/db';
 import { generateObjectId } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
 import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
@@ -127,6 +128,16 @@ export const completeTutorial = async (twitterId: string, tutorialId: number): P
             $push: {},
         };
 
+        const islandUpdateOperations: Array<{
+            islandId: number,
+            updateOperations: {
+                $pull: {},
+                $inc: {},
+                $set: {},
+                $push: {}
+            }
+        }> = [];
+
         // get the user's list of tutorials
         const user = await UserModel.findOne({ twitterId }).lean();
 
@@ -160,7 +171,7 @@ export const completeTutorial = async (twitterId: string, tutorialId: number): P
                     // check if the user's `xCookieData.extendedXCookieData` contains a source called TUTORIAL_REWARDS.
                     // if yes, we increment the amount, if not, we create a new entry for the source
                     const questRewardsIndex = (user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(
-                        (data) => data.source === XCookieSource.TUTORIAL_REWARDS
+                        data => data.source === XCookieSource.TUTORIAL_REWARDS
                     );
 
                     if (questRewardsIndex !== -1) {
@@ -182,14 +193,15 @@ export const completeTutorial = async (twitterId: string, tutorialId: number): P
 
                     // get the latest bit ID from the database
                     const { status: bitIdStatus, message: bitIdMessage, data: bitIdData } = await getLatestBitId();
-                    if (bitIdStatus !== Status.SUCCESS) throw new Error(bitIdMessage);
+                    if (bitIdStatus !== Status.SUCCESS) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(completeTutorial) Error from getLatestBitId: ${bitIdMessage}`,
+                        }
+                    }
 
-                    // add a premium common bit to the user's inventory (users get 1 for free when they sign up)
-                    const {
-                        status: bitStatus,
-                        message: bitMessage,
-                        data: bitData,
-                    } = await addBitToDatabase({
+                    // create a new Bit instance
+                    const newBit: Bit = {
                         bitId: bitIdData?.latestBitId + 1,
                         bitType: randomizeBitType(),
                         bitNameData: {
@@ -207,12 +219,63 @@ export const completeTutorial = async (twitterId: string, tutorialId: number): P
                         currentFarmingLevel: 1, // starts at level 1
                         traits,
                         farmingStats: randomizeFarmingStats(rarity),
-                        bitStatsModifiers,
-                    });
+                        bitStatsModifiers
+                    }
 
-                    if (bitStatus !== Status.SUCCESS) throw new Error(bitMessage);
+                    // add a premium common bit to the user's inventory (users get 1 for free when they sign up)
+                    const {
+                        status: bitStatus,
+                        message: bitMessage,
+                        data: bitData,
+                    } = await addBitToDatabase(newBit);
 
-                    userUpdateOperations.$push['inventory.bitIds'] = bitIdData?.latestBitId + 1;
+                    if (bitStatus !== Status.SUCCESS) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(completeTutorial) Error from addBitToDatabase: ${bitMessage}`,
+                        }
+                    }
+
+                    // get the user's list of owned islands
+                    const islands = user.inventory?.islandIds as number[];
+
+                    // check if the bit has the infuential, antagonistic, famous or mannerless traits
+                    const hasInfluentialTrait = newBit.traits.some(trait => trait.trait === 'Influential');
+                    const hasAntagonisticTrait = newBit.traits.some(trait => trait.trait === 'Antagonistic');
+                    const hasFamousTrait = newBit.traits.some(trait => trait.trait === 'Famous');
+                    const hasMannerlessTrait = newBit.traits.some(trait => trait.trait === 'Mannerless');
+
+                    // if bit has influential trait, add 1% working rate to all islands owned by the user
+                    // if bit has antagonistic trait, reduce 1% working rate to all islands owned by the user
+                    // if bit has famous trait, add 0.5% working rate to all islands owned by the user
+                    // if bit has mannerless trait, reduce 0.5% working rate to all islands owned by the user
+                    if (hasInfluentialTrait || hasAntagonisticTrait || hasFamousTrait || hasMannerlessTrait) {
+                        const gatheringRateModifier: Modifier = {
+                            origin: `Bit ID #${newBit.bitId}'s Trait: ${hasInfluentialTrait ? 'Influential' : hasAntagonisticTrait ? 'Antagonistic' : hasFamousTrait ? 'Famous' : 'Mannerless'}`,
+                            value: hasInfluentialTrait ? 1.01 : hasAntagonisticTrait ? 0.99 : hasFamousTrait ? 1.005 : 0.995
+                        }
+                        const earningRateModifier: Modifier = {
+                            origin: `Bit ID #${newBit.bitId}'s Trait: ${hasInfluentialTrait ? 'Influential' : hasAntagonisticTrait ? 'Antagonistic' : hasFamousTrait ? 'Famous' : 'Mannerless'}`,
+                            value: hasInfluentialTrait ? 1.01 : hasAntagonisticTrait ? 0.99 : hasFamousTrait ? 1.005 : 0.995
+                        }
+
+                        for (const islandId of islands) {
+                            islandUpdateOperations.push({
+                                islandId,
+                                updateOperations: {
+                                    $push: {
+                                        'islandStatsModifiers.gatheringRateModifiers': gatheringRateModifier,
+                                        'islandStatsModifiers.earningRateModifiers': earningRateModifier
+                                    },
+                                    $set: {},
+                                    $pull: {},
+                                    $inc: {}
+                                }
+                            });
+                        }
+                    }
+
+                    userUpdateOperations.$push['inventory.bitIds'] = newBit.bitId;
 
                     tutorial.rewards[i] = {
                         ...tutorial.rewards[i],
@@ -223,13 +286,25 @@ export const completeTutorial = async (twitterId: string, tutorialId: number): P
             }
         }
 
-        await UserModel.updateOne({ twitterId }, userUpdateOperations);
+
+        // create an array of promises for updating the islands
+        const islandUpdatePromises = islandUpdateOperations.map(async op => {
+            return IslandModel.updateOne({ islandId: op.islandId }, op.updateOperations);
+        });
+
+        // execute the update operations
+        await Promise.all([
+            await UserModel.updateOne({ twitterId }, userUpdateOperations),
+            ...islandUpdatePromises,
+        ]);
 
         return {
             status: Status.SUCCESS,
             message: `(completeTutorial) User has completed tutorial ID ${tutorialId}.`,
-            data: { tutorial },
-        };
+            data: { 
+                tutorial 
+            }
+        }
     } catch (err: any) {
         return {
             status: Status.ERROR,
