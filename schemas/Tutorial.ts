@@ -7,8 +7,9 @@ import { generateObjectId } from '../utils/crypto';
 export const TutorialSchema = new mongoose.Schema({
     _id: {
         type: String,
-        default: generateObjectId()
+        default: generateObjectId(),
     },
     id: Number,
-    name: String
-})
+    name: String,
+    rewards: Array,
+});
