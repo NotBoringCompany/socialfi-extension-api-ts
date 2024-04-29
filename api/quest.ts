@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { QuestCategory, QuestRequirement, QuestReward, QuestRewardType, QuestType } from '../models/quest';
+import { Quest, QuestCategory, QuestRequirement, QuestRequirementType, QuestReward, QuestRewardType, QuestType } from '../models/quest';
 import { ReturnValue, Status } from '../utils/retVal';
 import { QuestSchema } from '../schemas/Quest';
 import { generateObjectId } from '../utils/crypto';
@@ -121,6 +121,16 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
 
         // add the user to the `completedBy` array
         questUpdateOperations.$push['completedBy'] = twitterId;
+
+        // Check quest requirement
+        const { status: requirementStatus } = await checkQuestRequirement(twitterId, questId);
+
+        if (requirementStatus === Status.ERROR) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(completeQuest) User not fulfilled the quest requirements. Quest ID: ${questId}`
+            }
+        }
 
         // loop through the rewards and add them to the user's inventory
         const rewards: QuestReward[] = quest.rewards;
@@ -295,6 +305,52 @@ export const getUserCompletedQuests = async (twitterId: string): Promise<ReturnV
         return {
             status: Status.ERROR,
             message: `(getUserCompletedQuests) ${err.message}`
+        }
+    }
+}
+
+export const checkQuestRequirement = async (twitterId: string, questId: number): Promise<ReturnValue> => {
+    try {
+        // NOTICE: duplicate query, might need refactor
+        const [quest, user] = await Promise.all([
+            QuestModel.findOne({ questId }).lean(),
+            UserModel.findOne({ twitterId }).lean()
+        ]);
+
+        if (!quest) {
+            return {
+                status: Status.ERROR,
+                message: `(checkQuestRequirement) Quest not found. Quest ID: ${questId}`
+            }
+        }
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(checkQuestRequirement) User not found. Twitter ID: ${twitterId}`
+            }
+        }
+
+        for (const requirement of quest.requirements) {
+            switch (requirement.type) {
+                case QuestRequirementType.COMPLETE_TUTORIAL:
+                    if (!user.inGameData.completedTutorialIds.includes(requirement.parameters.tutorialId)) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(checkQuestRequirement) User not fulfilled the quest requirements.`
+                        }
+                    }
+            }
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(checkQuestRequirement) User fulfilled the quest requirements.`,
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(checkQuestRequirement) ${err.message}`
         }
     }
 }

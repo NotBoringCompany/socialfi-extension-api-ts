@@ -93,6 +93,8 @@ export enum QuestRequirementType {
     LIKE_AND_RETWEET = 'Like and Retweet',
     // requires the tweet ID
     REPLY_WITH_TEXT = 'Reply with Text',
+    // requires the tweet ID
+    COMPLETE_TUTORIAL = 'Complete Tutorial',
 }
 
 /**
@@ -105,4 +107,6 @@ export interface QuestRequirementParameters {
     tweetId?: string;
     /** requires to text 'wonderbits' and 16 characters at least (exact requirements may vary later) */
     requiredText?: string;
+    /** completed tutorial id */
+    tutorialId?: number;
 }
