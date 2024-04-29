@@ -224,18 +224,17 @@ export const DEFAULT_RESOURCE_CAP = (type: IslandType) => {
             // 1000 resources but only seaweed with a small chance of dropping common resources each time.
             return 1000;
         case IslandType.PRIMAL_ISLES:
-            return 100;
+            return 500;
         case IslandType.VERDANT_ISLES:
-            return 100;
+            return 1250;
         case IslandType.EXOTIC_ISLES:
-            return 100;
+            return 2500;
         case IslandType.CRYSTAL_ISLES:
-            return 100;
+            return 2500;
         case IslandType.CELESTIAL_ISLES:
-            return 75;
+            return 2500;
     }
 }
-
 /**
  * Gets the base resource drop chances for an Island based on its type.
  */
