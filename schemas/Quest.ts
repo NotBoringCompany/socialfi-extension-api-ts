@@ -13,6 +13,7 @@ export const QuestSchema = new mongoose.Schema({
     name: String,
     description: String,
     type: String,
+    category: String,
     imageUrl: String,
     start: Number,
     end: Number,

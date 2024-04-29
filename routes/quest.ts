@@ -2,6 +2,7 @@ import express from 'express';
 import { addQuest, completeQuest, deleteQuest, getQuests, getUserCompletedQuests } from '../api/quest';
 import { Status } from '../utils/retVal';
 import { validateRequestAuth } from '../utils/auth';
+import { QuestCategory } from '../models/quest';
 
 const router = express.Router();
 
@@ -10,6 +11,7 @@ router.post('/add_quest', async (req, res) => {
         name,
         description,
         type,
+        category,
         imageUrl,
         start,
         end,
@@ -23,6 +25,7 @@ router.post('/add_quest', async (req, res) => {
             name,
             description,
             type,
+            category,
             imageUrl,
             start,
             end,
@@ -73,9 +76,11 @@ router.post('/complete_quest', async (req, res) => {
     }
 });
 
-router.get('/get_quests', async (_, res) => {
+router.get('/get_quests', async (req, res) => {
+    const { category } = req.query;
+
     try {
-        const { status, message, data } = await getQuests();
+        const { status, message, data } = await getQuests(category?.toString() || QuestCategory.SOCIAL);
 
         return res.status(status).json({
             status,

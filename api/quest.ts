@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { QuestRequirement, QuestReward, QuestRewardType, QuestType } from '../models/quest';
+import { Quest, QuestCategory, QuestRequirement, QuestRequirementType, QuestReward, QuestRewardType, QuestType } from '../models/quest';
 import { ReturnValue, Status } from '../utils/retVal';
 import { QuestSchema } from '../schemas/Quest';
 import { generateObjectId } from '../utils/crypto';
@@ -7,7 +7,12 @@ import { ExtendedXCookieData, User, UserInventory, XCookieSource } from '../mode
 import { UserSchema } from '../schemas/User';
 import { Food } from '../models/food';
 import { RANDOMIZE_FOOD_FROM_QUEST } from '../utils/constants/quest';
-import { QuestModel, UserModel } from '../utils/constants/db';
+import { IslandModel, QuestModel, UserModel } from '../utils/constants/db';
+import { Bit, BitRarity } from '../models/bit';
+import { RANDOMIZE_GENDER, getBitStatsModifiersFromTraits, randomizeBitTraits, randomizeBitType } from '../utils/constants/bit';
+import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
+import { ObtainMethod } from '../models/obtainMethod';
+import { Modifier } from '../models/modifier';
 
 /**
  * Adds a quest to the database. Requires admin key.
@@ -16,6 +21,7 @@ export const addQuest = async (
     name: string,
     description: string,
     type: QuestType,
+    category: QuestCategory,
     imageUrl: string,
     start: number,
     end: number,
@@ -40,6 +46,7 @@ export const addQuest = async (
             name,
             description,
             type,
+            category,
             imageUrl,
             start,
             end,
@@ -84,6 +91,16 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
             $push: {}
         }
 
+        const islandUpdateOperations: Array<{
+            islandId: number,
+            updateOperations: {
+                $pull: {},
+                $inc: {},
+                $set: {},
+                $push: {}
+            }
+        }> = [];
+
         const questUpdateOperations = {
             $pull: {},
             $inc: {},
@@ -119,6 +136,16 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
 
         // add the user to the `completedBy` array
         questUpdateOperations.$push['completedBy'] = twitterId;
+
+        // Check quest requirement
+        const { status: requirementStatus } = await checkQuestRequirement(twitterId, questId);
+
+        if (requirementStatus === Status.ERROR) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(completeQuest) User not fulfilled the quest requirements. Quest ID: ${questId}`
+            }
+        }
 
         // loop through the rewards and add them to the user's inventory
         const rewards: QuestReward[] = quest.rewards;
@@ -169,6 +196,104 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
 
                     obtainedRewards.push({ type: food, amount });
                     break;
+                // give user bit, TODO: might need to add looping for the amount bit rewarded
+                case QuestRewardType.BIT:
+                    const rarity = BitRarity.COMMON;
+                    const bitType = randomizeBitType();
+
+                    const traits = randomizeBitTraits(rarity);
+
+                    const bitStatsModifiers = getBitStatsModifiersFromTraits(traits.map((trait) => trait.trait));
+
+                    // get the latest bit ID from the database
+                    const { status: bitIdStatus, message: bitIdMessage, data: bitIdData } = await getLatestBitId();
+                    if (bitIdStatus !== Status.SUCCESS) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(completeQuest) Error from getLatestBitId: ${bitIdMessage}`,
+                        }
+                    }
+
+                    // create a new Bit instance
+                    const newBit: Bit = {
+                        bitId: bitIdData?.latestBitId + 1,
+                        bitType: randomizeBitType(),
+                        bitNameData: {
+                            name: bitType,
+                            lastChanged: 0,
+                        },
+                        rarity,
+                        gender: RANDOMIZE_GENDER(),
+                        premium: true,
+                        owner: user._id,
+                        purchaseDate: Math.floor(Date.now() / 1000),
+                        obtainMethod: ObtainMethod.QUEST,
+                        placedIslandId: 0,
+                        lastRelocationTimestamp: 0,
+                        currentFarmingLevel: 1, // starts at level 1
+                        traits,
+                        farmingStats: randomizeFarmingStats(rarity),
+                        bitStatsModifiers
+                    }
+
+                    // add a premium common bit to the user's inventory (users get 1 for free when they sign up)
+                    const {
+                        status: bitStatus,
+                        message: bitMessage,
+                        data: bitData,
+                    } = await addBitToDatabase(newBit);
+
+                    if (bitStatus !== Status.SUCCESS) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(completeTutorial) Error from addBitToDatabase: ${bitMessage}`,
+                        }
+                    }
+
+                    // get the user's list of owned islands
+                    const islands = user.inventory?.islandIds as number[];
+
+                    // check if the bit has the infuential, antagonistic, famous or mannerless traits
+                    const hasInfluentialTrait = newBit.traits.some(trait => trait.trait === 'Influential');
+                    const hasAntagonisticTrait = newBit.traits.some(trait => trait.trait === 'Antagonistic');
+                    const hasFamousTrait = newBit.traits.some(trait => trait.trait === 'Famous');
+                    const hasMannerlessTrait = newBit.traits.some(trait => trait.trait === 'Mannerless');
+
+                    // if bit has influential trait, add 1% working rate to all islands owned by the user
+                    // if bit has antagonistic trait, reduce 1% working rate to all islands owned by the user
+                    // if bit has famous trait, add 0.5% working rate to all islands owned by the user
+                    // if bit has mannerless trait, reduce 0.5% working rate to all islands owned by the user
+                    if (hasInfluentialTrait || hasAntagonisticTrait || hasFamousTrait || hasMannerlessTrait) {
+                        const gatheringRateModifier: Modifier = {
+                            origin: `Bit ID #${newBit.bitId}'s Trait: ${hasInfluentialTrait ? 'Influential' : hasAntagonisticTrait ? 'Antagonistic' : hasFamousTrait ? 'Famous' : 'Mannerless'}`,
+                            value: hasInfluentialTrait ? 1.01 : hasAntagonisticTrait ? 0.99 : hasFamousTrait ? 1.005 : 0.995
+                        }
+                        const earningRateModifier: Modifier = {
+                            origin: `Bit ID #${newBit.bitId}'s Trait: ${hasInfluentialTrait ? 'Influential' : hasAntagonisticTrait ? 'Antagonistic' : hasFamousTrait ? 'Famous' : 'Mannerless'}`,
+                            value: hasInfluentialTrait ? 1.01 : hasAntagonisticTrait ? 0.99 : hasFamousTrait ? 1.005 : 0.995
+                        }
+
+                        for (const islandId of islands) {
+                            islandUpdateOperations.push({
+                                islandId,
+                                updateOperations: {
+                                    $push: {
+                                        'islandStatsModifiers.gatheringRateModifiers': gatheringRateModifier,
+                                        'islandStatsModifiers.earningRateModifiers': earningRateModifier
+                                    },
+                                    $set: {},
+                                    $pull: {},
+                                    $inc: {}
+                                }
+                            });
+                        }
+                    }
+
+                    userUpdateOperations.$push['inventory.bitIds'] = newBit.bitId;
+
+                    obtainedRewards.push({ type: rewardType, amount, data: bitData });
+
+                    break;
                 // if default, return an error (shouldn't happen)
                 default:
                     return {
@@ -181,10 +306,16 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
         // add the twitter id to the quest's `completedBy` array
         questUpdateOperations.$push['completedBy'] = twitterId;
 
+        // create an array of promises for updating the islands
+        const islandUpdatePromises = islandUpdateOperations.map(async op => {
+            return IslandModel.updateOne({ islandId: op.islandId }, op.updateOperations);
+        });
+
         // execute the update operations
         await Promise.all([
             UserModel.updateOne({ twitterId }, userUpdateOperations),
-            QuestModel.updateOne({ questId }, questUpdateOperations)
+            QuestModel.updateOne({ questId }, questUpdateOperations),
+            ...islandUpdatePromises
         ]);
 
         return {
@@ -206,9 +337,13 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
 /**
  * Fetches all quests from the database.
  */
-export const getQuests = async (): Promise<ReturnValue> => {
+export const getQuests = async (category?: string): Promise<ReturnValue> => {
     try {
-        const quests = await QuestModel.find().lean();
+        const query = {};
+
+        if (category) query['category'] = category;
+
+        const quests = await QuestModel.find(query).lean();
 
         if (quests.length === 0 || !quests) {
             return {
@@ -289,6 +424,52 @@ export const getUserCompletedQuests = async (twitterId: string): Promise<ReturnV
         return {
             status: Status.ERROR,
             message: `(getUserCompletedQuests) ${err.message}`
+        }
+    }
+}
+
+export const checkQuestRequirement = async (twitterId: string, questId: number): Promise<ReturnValue> => {
+    try {
+        // NOTICE: duplicate query, might need refactor
+        const [quest, user] = await Promise.all([
+            QuestModel.findOne({ questId }).lean(),
+            UserModel.findOne({ twitterId }).lean()
+        ]);
+
+        if (!quest) {
+            return {
+                status: Status.ERROR,
+                message: `(checkQuestRequirement) Quest not found. Quest ID: ${questId}`
+            }
+        }
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(checkQuestRequirement) User not found. Twitter ID: ${twitterId}`
+            }
+        }
+
+        for (const requirement of quest.requirements) {
+            switch (requirement.type) {
+                case QuestRequirementType.COMPLETE_TUTORIAL:
+                    if (!user.inGameData.completedTutorialIds.includes(requirement.parameters.tutorialId)) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(checkQuestRequirement) User not fulfilled the quest requirements.`
+                        }
+                    }
+            }
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(checkQuestRequirement) User fulfilled the quest requirements.`,
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(checkQuestRequirement) ${err.message}`
         }
     }
 }
