@@ -484,7 +484,7 @@ router.get('/calc_island_current_rate/:islandId', async (req, res) => {
             bits.map(bit => bit.farmingStats?.baseGatheringRate),
             bits.map(bit => bit.currentFarmingLevel),
             bits.map(bit => bit.farmingStats?.gatheringRateGrowth),
-            bits.map(bit => bit.bitStatsModifiers?.gatheringRateModifiers),,
+            bits.map(bit => bit.bitStatsModifiers?.gatheringRateModifiers),
             island.islandStatsModifiers?.gatheringRateModifiers as Modifier[]
         );
 
