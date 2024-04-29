@@ -143,7 +143,7 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
         if (requirementStatus === Status.ERROR) {
             return {
                 status: Status.BAD_REQUEST,
-                message: `(completeQuest) User not fulfilled the quest requirements. Quest ID: ${questId}`
+                message: `(completeQuest) User has not fulfilled the quest requirements. Quest ID: ${questId}`
             }
         }
 
@@ -456,7 +456,7 @@ export const checkQuestRequirement = async (twitterId: string, questId: number):
                     if (!user.inGameData.completedTutorialIds.includes(requirement.parameters.tutorialId)) {
                         return {
                             status: Status.ERROR,
-                            message: `(checkQuestRequirement) User not fulfilled the quest requirements.`
+                            message: `(checkQuestRequirement) User has not fulfilled the quest requirements.`
                         }
                     }
             }
