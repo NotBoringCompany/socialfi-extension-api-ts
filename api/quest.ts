@@ -138,7 +138,7 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
         questUpdateOperations.$push['completedBy'] = twitterId;
 
         // Check quest requirement
-        const { status: requirementStatus } = await checkQuestRequirement(twitterId, questId);
+        const { status: requirementStatus } = await checkQuestRequirements(twitterId, questId);
 
         if (requirementStatus === Status.ERROR) {
             return {
@@ -428,9 +428,12 @@ export const getUserCompletedQuests = async (twitterId: string): Promise<ReturnV
     }
 }
 
-export const checkQuestRequirement = async (twitterId: string, questId: number): Promise<ReturnValue> => {
+/**
+ * Checks a quest's requirements to see if the user has fulfilled them.
+ */
+export const checkQuestRequirements = async (twitterId: string, questId: number): Promise<ReturnValue> => {
     try {
-        // NOTICE: duplicate query, might need refactor
+        // NOTICE: duplicate query, might need refactoring
         const [quest, user] = await Promise.all([
             QuestModel.findOne({ questId }).lean(),
             UserModel.findOne({ twitterId }).lean()
