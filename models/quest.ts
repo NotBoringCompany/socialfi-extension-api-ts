@@ -14,6 +14,8 @@ export interface Quest {
     description: string;
     /** quest type */
     type: QuestType;
+    /** quest category */
+    category: QuestCategory;
     /** quest image URL */
     imageUrl: string;
     /** start timestamp of the quest */
@@ -38,6 +40,16 @@ export enum QuestType {
     SINGLE = 'Single',
     /** refreshable means that the quest will be reset manually by admin and thus can be completed multiple times */
     REFRESHABLE = 'Refreshable',
+}
+
+/**
+ * Represents the category of a Quest.
+ */
+export enum QuestCategory {
+    /** social quest */
+    SOCIAL = 'Social',
+    /** game quest */
+    GAME = 'Game',
 }
 
 /**

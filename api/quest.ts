@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { QuestRequirement, QuestReward, QuestRewardType, QuestType } from '../models/quest';
+import { QuestCategory, QuestRequirement, QuestReward, QuestRewardType, QuestType } from '../models/quest';
 import { ReturnValue, Status } from '../utils/retVal';
 import { QuestSchema } from '../schemas/Quest';
 import { generateObjectId } from '../utils/crypto';
@@ -16,6 +16,7 @@ export const addQuest = async (
     name: string,
     description: string,
     type: QuestType,
+    category: QuestCategory,
     imageUrl: string,
     start: number,
     end: number,
@@ -40,6 +41,7 @@ export const addQuest = async (
             name,
             description,
             type,
+            category,
             imageUrl,
             start,
             end,
@@ -206,9 +208,13 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
 /**
  * Fetches all quests from the database.
  */
-export const getQuests = async (): Promise<ReturnValue> => {
+export const getQuests = async (category?: string): Promise<ReturnValue> => {
     try {
-        const quests = await QuestModel.find().lean();
+        const query = {};
+
+        if (category) query['category'] = category;
+
+        const quests = await QuestModel.find(query).lean();
 
         if (quests.length === 0 || !quests) {
             return {

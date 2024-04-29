@@ -10,6 +10,7 @@ router.post('/add_quest', async (req, res) => {
         name,
         description,
         type,
+        category,
         imageUrl,
         start,
         end,
@@ -23,6 +24,7 @@ router.post('/add_quest', async (req, res) => {
             name,
             description,
             type,
+            category,
             imageUrl,
             start,
             end,
@@ -73,9 +75,11 @@ router.post('/complete_quest', async (req, res) => {
     }
 });
 
-router.get('/get_quests', async (_, res) => {
+router.get('/get_quests', async (req, res) => {
+    const { category } = req.query;
+
     try {
-        const { status, message, data } = await getQuests();
+        const { status, message, data } = await getQuests(category.toString());
 
         return res.status(status).json({
             status,
