@@ -19,4 +19,6 @@ export enum ObtainMethod {
     BOTTLED_MESSAGE = 'Bottled Message',
     /* reward obtained from completing tutorial */
     TUTORIAL = 'Tutorial',
+    /* reward obtained from completing quest */
+    QUEST = 'Quest',
 }

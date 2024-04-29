@@ -72,6 +72,7 @@ export interface QuestReward {
 export enum QuestRewardType {
     X_COOKIES = 'xCookies',
     FOOD = 'Food',
+    BIT = 'Bit',
 }
 
 /**
