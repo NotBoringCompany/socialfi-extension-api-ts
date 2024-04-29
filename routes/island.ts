@@ -6,6 +6,8 @@ import { IslandType, RateType, ResourceDropChanceDiff } from '../models/island';
 import { Modifier } from '../models/modifier';
 import { ISLAND_EVOLUTION_COST, MAX_ISLAND_LEVEL } from '../utils/constants/island';;
 import { BitModel, IslandModel } from '../utils/constants/db';
+import { getBits } from '../api/bit';
+import { Bit } from '../models/bit';
 
 const router = express.Router();
 
@@ -440,6 +442,59 @@ router.post('/update_gathering_progress_and_drop_resource_alt', async (req, res)
             message,
             data
         })
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        });
+    }
+});
+
+router.get('/calc_island_current_rate/:islandId', async (req, res) => {
+    const { islandId, rateType } = req.body;
+
+    try {
+        const island = await IslandModel.findOne({ islandId: parseInt(islandId) }).lean();
+
+        if (!island) {
+            return res.status(404).json({
+                status: 404,
+                message: `(calc_island_current_rate) Island with ID ${islandId} not found.`
+            });
+        }
+
+        // get bits placed on island
+        const { status: bitStatus, message: bitMessage, data: bitData } = await getBits(island.placedBitIds as number[]);
+
+        if (bitStatus !== 200) {
+            return res.status(bitStatus).json({
+                status: bitStatus,
+                message: bitMessage
+            });
+        }
+
+        const bits = bitData?.bits as Bit[];
+
+        // get the island data
+        const islandType = <IslandType>island.type;
+
+        const currentRate = calcIslandCurrentRate(
+            <RateType>rateType,
+            islandType,
+            bits.map(bit => bit.farmingStats?.baseGatheringRate),
+            bits.map(bit => bit.currentFarmingLevel),
+            bits.map(bit => bit.farmingStats?.gatheringRateGrowth),
+            bits.map(bit => bit.bitStatsModifiers?.gatheringRateModifiers),,
+            island.islandStatsModifiers?.gatheringRateModifiers as Modifier[]
+        );
+
+        return res.status(200).json({
+            status: 200,
+            message: `(calc_island_current_rate) Successfully calculated current rate for island with ID ${islandId}.`,
+            data: {
+                currentRate
+            }
+        });
     } catch (err: any) {
         return res.status(500).json({
             status: 500,
