@@ -40,93 +40,111 @@ export const shop: Shop = {
             }
         },
         {
+            type: BoosterItem.GATHERING_PROGRESS_BOOSTER_10,
+            price: {
+                xCookies: 0.1
+            }
+        },
+        {
             type: BoosterItem.GATHERING_PROGRESS_BOOSTER_25,
             price: {
-                xCookies: 20
+                xCookies: 0.2
             }
         },
         {
             type: BoosterItem.GATHERING_PROGRESS_BOOSTER_50,
             price: {
-                xCookies: 40
+                xCookies: 0.5
             }
         },
         {
             type: BoosterItem.GATHERING_PROGRESS_BOOSTER_100,
             price: {
-                xCookies: 80
+                xCookies: 1
             }
         },
         {
             type: BoosterItem.GATHERING_PROGRESS_BOOSTER_200,
             price: {
-                xCookies: 160
+                xCookies: 2
             }
         },
         {
             type: BoosterItem.GATHERING_PROGRESS_BOOSTER_300,
             price: {
-                xCookies: 320
+                xCookies: 3
             }
         },
         {
             type: BoosterItem.GATHERING_PROGRESS_BOOSTER_500,
             price: {
-                xCookies: 500
+                xCookies: 5
             }
         },
         {
             type: BoosterItem.GATHERING_PROGRESS_BOOSTER_1000,
             price: {
-                xCookies: 900
-            }
-        },
-        {
-            type: BoosterItem.RAFT_SPEED_BOOSTER_1_MIN,
-            price: {
-                xCookies: 5
-            }
-        },
-        {
-            type: BoosterItem.RAFT_SPEED_BOOSTER_2_MIN,
-            price: {
-                xCookies: 7
-            }
-        },
-        {
-            type: BoosterItem.RAFT_SPEED_BOOSTER_3_MIN,
-            price: {
                 xCookies: 10
             }
         },
         {
-            type: BoosterItem.RAFT_SPEED_BOOSTER_5_MIN,
-            price: {
-                xCookies: 15
-            }
-        },
-        {
-            type: BoosterItem.RAFT_SPEED_BOOSTER_10_MIN,
+            type: BoosterItem.GATHERING_PROGRESS_BOOSTER_2000,
             price: {
                 xCookies: 20
             }
         },
         {
-            type: BoosterItem.RAFT_SPEED_BOOSTER_15_MIN,
+            type: BoosterItem.GATHERING_PROGRESS_BOOSTER_3000,
             price: {
                 xCookies: 30
             }
         },
         {
+            type: BoosterItem.RAFT_SPEED_BOOSTER_1_MIN,
+            price: {
+                xCookies: 1
+            }
+        },
+        {
+            type: BoosterItem.RAFT_SPEED_BOOSTER_2_MIN,
+            price: {
+                xCookies: 2
+            }
+        },
+        {
+            type: BoosterItem.RAFT_SPEED_BOOSTER_3_MIN,
+            price: {
+                xCookies: 3
+            }
+        },
+        {
+            type: BoosterItem.RAFT_SPEED_BOOSTER_5_MIN,
+            price: {
+                xCookies: 5
+            }
+        },
+        {
+            type: BoosterItem.RAFT_SPEED_BOOSTER_10_MIN,
+            price: {
+                xCookies: 10
+            }
+        },
+        {
+            type: BoosterItem.RAFT_SPEED_BOOSTER_15_MIN,
+            price: {
+                xCookies: 15
+            }
+        },
+        {
             type: BoosterItem.RAFT_SPEED_BOOSTER_30_MIN,
             price: {
-                xCookies: 60
+                xCookies: 35
             }
         },
         {
             type: BoosterItem.RAFT_SPEED_BOOSTER_60_MIN,
             price: {
-                xCookies: 120
+                xCookies: 60
             }
         }
     ],

@@ -2,6 +2,7 @@
  * Lists all possible boosters in the game.
  */
 export enum BoosterItem {
+    GATHERING_PROGRESS_BOOSTER_10 = 'Gathering Progress Booster 10%',
     GATHERING_PROGRESS_BOOSTER_25 = 'Gathering Progress Booster 25%',
     GATHERING_PROGRESS_BOOSTER_50 = 'Gathering Progress Booster 50%',
     GATHERING_PROGRESS_BOOSTER_100 = 'Gathering Progress Booster 100%',
@@ -9,6 +10,8 @@ export enum BoosterItem {
     GATHERING_PROGRESS_BOOSTER_300 = 'Gathering Progress Booster 300%',
     GATHERING_PROGRESS_BOOSTER_500 = 'Gathering Progress Booster 500%',
     GATHERING_PROGRESS_BOOSTER_1000 = 'Gathering Progress Booster 1000%',
+    GATHERING_PROGRESS_BOOSTER_2000 = 'Gathering Progress Booster 2000%',
+    GATHERING_PROGRESS_BOOSTER_3000 = 'Gathering Progress Booster 3000%',
     RAFT_SPEED_BOOSTER_1_MIN = 'Raft Speed Booster 1 Min',
     RAFT_SPEED_BOOSTER_2_MIN = 'Raft Speed Booster 2 Min',
     RAFT_SPEED_BOOSTER_3_MIN = 'Raft Speed Booster 3 Min',
