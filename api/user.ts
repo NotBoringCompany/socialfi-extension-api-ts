@@ -106,7 +106,7 @@ export const handleTwitterLogin = async (
             // add a premium common bit to the user's inventory (users get 1 for free when they sign up)
             const { status: bitStatus, message: bitMessage, data: bitData } = await addBitToDatabase({
                 bitId: bitIdData?.latestBitId + 1,
-                bitType: randomizeBitType(),
+                bitType,
                 bitNameData: {
                     name: bitType,
                     lastChanged: 0,
