@@ -1409,6 +1409,9 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
                 island.islandStatsModifiers?.gatheringRateModifiers as Modifier[]
             );
 
+            // get the last updated gathering progress timestamp
+            const lastUpdatedGatheringProgress = island.islandResourceStats?.lastUpdatedGatheringProgress as number;
+
             // to calculate the gathering progress increment every 3 minutes, we need to firstly calculate the time it takes (in hours) to drop 1 resource.
             // the gathering progress increment/hour (in %) will just be 1 / time to drop 1 resource * 100 (or 100/time to drop resource)
             // which means that the gathering progress increment/10 minutes will be the gathering progress increment per hour / 6.
@@ -1416,13 +1419,21 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
             // say an island has a 250 resource cap. if the gathering rate is 0.02% of total resources/hour, this equates to gathering 0.02/100*250 = 0.05 resources per hour.
             // to get 1 resource to drop, it would take 1/0.05 = 20 hours, meaning that each hour, the gathering progress (to drop 1 resource) increments by 1/20*100 = 5%.
             // to get the gathering progress in 3 minutes, divide 5% by 20 to get 0.25% per 3 minutes.
+
+            // however, note that this is assuming `updateGatheringProgressAndDropResourceAlt` is not called. if it is, then the updated value will not add
+            // 3 minutes worth of `gatheringProgressIncrement` but rather x minutes based on the current timestamp - `lastUpdatedGatheringProgress`.
             const resourcesPerHour = gatheringRate / 100 * island.islandResourceStats?.baseResourceCap;
             const hoursToDropResource = 1 / resourcesPerHour;
             const gatheringProgressIncrementPerHour = 1 / hoursToDropResource * 100;
-            // divide by 20 to get the gathering progress increment per 3 minutes
-            const gatheringProgressIncrement = gatheringProgressIncrementPerHour / 20;
 
-            console.log(`(updateGatheringProgressAndDropResource) Island ID ${island.islandId} has a current gathering rate of ${gatheringRate} %/hour and a gathering progress increment of ${gatheringProgressIncrement}%/10 minutes.`)
+            // check time passed since last update
+            const currentTime = Math.floor(Date.now() / 1000);
+            const timePassed = currentTime - lastUpdatedGatheringProgress;
+
+            // calculate the gathering progress increment
+            const gatheringProgressIncrement = gatheringProgressIncrementPerHour / 3600 * timePassed;
+
+            console.log(`(updateGatheringProgressAndDropResource) Island ID ${island.islandId} has a current gathering rate of ${gatheringRate} %/hour and a gathering progress increment of ${gatheringProgressIncrement}%/${timePassed} seconds.`)
 
             if (gatheringProgress + gatheringProgressIncrement < 100) {
                 // add to the update operations
@@ -1432,6 +1443,10 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
                         update: {
                             $inc: {
                                 'islandResourceStats.gatheringProgress': gatheringProgressIncrement
+                            },
+                            $set: {
+                                // set the `lastUpdatedGatheringProgress` to the current time
+                                'islandResourceStats.lastUpdatedGatheringProgress': Math.floor(Date.now() / 1000)
                             }
                         }
                     }
