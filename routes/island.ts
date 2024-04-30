@@ -450,11 +450,11 @@ router.post('/update_gathering_progress_and_drop_resource_alt', async (req, res)
     }
 });
 
-router.get('/calc_island_current_rate/:islandId', async (req, res) => {
-    const { islandId, rateType } = req.body;
+router.get('/calc_island_current_rate/:islandId/:rateType', async (req, res) => {
+    const { islandId, rateType } = req.params;
 
     try {
-        const island = await IslandModel.findOne({ islandId: parseInt(islandId) }).lean();
+        const island = await IslandModel.findOne({ islandId }).lean();
 
         if (!island) {
             return res.status(404).json({
