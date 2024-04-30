@@ -1609,7 +1609,7 @@ export const updateGatheringProgressAndDropResourceAlt = async (
             if (status !== Status.SUCCESS) {
                 return {
                     status: Status.ERROR,
-                    message: `(updateGatheringProgressAndDropResourceAlt) Error: ${message}`
+                    message: `(updateGatheringProgressAndDropResourceAlt) Error from dropResource: ${message}`
                 }
             }
 
