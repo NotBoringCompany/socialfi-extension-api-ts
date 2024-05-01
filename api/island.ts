@@ -58,7 +58,7 @@ export const generateBarrenIsland = async (
                 gatheringEnd: 0,
                 lastClaimed: 0,
                 gatheringProgress: 0,
-                lastUpdatedGatheringProgress: 0
+                lastUpdatedGatheringProgress: Math.floor(Date.now() / 1000)
             },
             islandEarningStats: {
                 totalXCookiesSpent: 0,
