@@ -1460,7 +1460,7 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
                 }
 
                 // calculate the remaining overflow of %
-                finalGatheringProgress = (gatheringProgress + gatheringProgressIncrement) - 100;
+                finalGatheringProgress = (gatheringProgress + gatheringProgressIncrement) % 100;
 
                 // reset the gathering progress back to 0 + the remaining overflow of %
                 updateOperations.push({
