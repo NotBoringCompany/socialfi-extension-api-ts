@@ -1633,6 +1633,11 @@ export const updateGatheringProgressAndDropResourceAlt = async (
                     finalGatheringProgress
                 }
             }
+        } else {
+            return {
+                status: Status.ERROR,
+                message: `(updateGatheringProgressAndDropResourceAlt) Gathering progress not yet at 100%.`
+            }
         }
     } catch (err: any) {
         return {
