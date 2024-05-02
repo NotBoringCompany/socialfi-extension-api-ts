@@ -510,7 +510,8 @@ export const linkSecondaryWallet = async (
 ): Promise<ReturnValue> => {
     try {
         // get the eth signed message hash
-        const ethSignedMessageHash = ethers.utils.arrayify(signatureMessage);
+        // const ethSignedMessageHash = ethers.utils.arrayify(signatureMessage);
+        const ethSignedMessageHash = ethers.utils.arrayify(solidityKeccak256(['string'], [signatureMessage]));
 
         // recover the address
         const recoveredAddress = ethers.utils.recoverAddress(ethSignedMessageHash, signature);
