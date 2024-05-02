@@ -25,6 +25,8 @@ router.get('/get_shop', async (_, res) => {
 router.post('/purchase_shop_asset', async (req, res) => {
     const { amount, asset } = req.body;
 
+    console.log('jwt token: ', req.headers.authorization);
+
     try {
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'purchase_shop_asset');
 
