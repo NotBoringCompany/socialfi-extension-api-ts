@@ -27,6 +27,7 @@ import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderbo
 import { FoodType } from '../models/food';
 import { BoosterItem } from '../models/booster';
 import { randomizeIslandTraits } from '../utils/constants/island';
+import { Signature, recoverMessageAddress } from 'viem';
 
 /**
  * Returns the user's data.
@@ -506,21 +507,13 @@ export const linkSecondaryWallet = async (
     twitterId: string,
     walletAddress: string,
     signatureMessage: string,
-    signature: string
+    signature: Uint8Array | `0x${string}` | Signature
 ): Promise<ReturnValue> => {
     try {
-        const prefixedMessage = ethers.utils.solidityKeccak256(
-            ["string", "bytes"],
-            [ "\x19Ethereum Signed Message:\n" + signatureMessage.length.toString(), signatureMessage ]
-        );
-
-        console.log('prefixed message: ', prefixedMessage);
-
-        // get the eth signed message hash
-        const ethSignedMessageHash = ethers.utils.arrayify(prefixedMessage);
-
-        // recover the address
-        const recoveredAddress = ethers.utils.recoverAddress(ethSignedMessageHash, signature);
+        const recoveredAddress = await recoverMessageAddress({
+            message: signatureMessage,
+            signature
+        });
 
         console.log('wallet address: ', walletAddress);
         console.log('recovered address: ', recoveredAddress);
