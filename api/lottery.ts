@@ -211,7 +211,7 @@ export const claimWinnings = async (twitterId: string, drawId?: number): Promise
         }
 
         // check if the user has a wallet address (they should; but this should return an error if they somehow don't)
-        if (!user.wallet?.publicKey) {
+        if (!user.wallet?.address) {
             return {
                 status: Status.ERROR,
                 message: '(claimWinnings) User does not have a wallet address.'
@@ -368,7 +368,7 @@ export const finalizeDraw = async (): Promise<ReturnValue> => {
                 }
 
                 // get the wallet address of the user
-                const walletAddress = user.wallet?.publicKey;
+                const walletAddress = user.wallet?.address;
 
                 winners.push({
                     winner: ticket.owner,

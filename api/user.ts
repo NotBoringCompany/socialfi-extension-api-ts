@@ -272,7 +272,7 @@ export const handleTwitterLogin = async (
             }
 
             // creates the wallet for the user
-            const { privateKey, publicKey } = createUserWallet();
+            const { privateKey, address } = createUserWallet();
 
             const newUser = new UserModel({
                 _id: userObjectId,
@@ -295,7 +295,7 @@ export const handleTwitterLogin = async (
                 },
                 wallet: {
                     privateKey,
-                    publicKey
+                    address
                 },
                 secondaryWallets: [],
                 openedTweetIdsToday: [],
@@ -431,8 +431,8 @@ export const getWalletDetails = async (twitterId: string): Promise<ReturnValue> 
             status: Status.SUCCESS,
             message: `(getWalletDetails) Wallet details fetched.`,
             data: {
+                address: user.wallet.address,
                 privateKey: user.wallet.privateKey,
-                publicKey: user.wallet.publicKey
             }
         }
     } catch (err: any) {
@@ -535,9 +535,9 @@ export const linkSecondaryWallet = async (
         }
 
         // check if the wallet is already linked in the user's `secondaryWallets`
-        // each secondaryWallet instance in `secondaryWallets` contain the `publicKey`.
-        // check if the `publicKey` is the same as the `walletAddress`
-        const isWalletAlreadyLinked = user.secondaryWallets?.some(wallet => wallet.publicKey.toLowerCase() === walletAddress.toLowerCase());
+        // each secondaryWallet instance in `secondaryWallets` contain the `address`.
+        // check if the `address` is the same as the `walletAddress`
+        const isWalletAlreadyLinked = user.secondaryWallets?.some(wallet => wallet.address.toLowerCase() === walletAddress.toLowerCase());
 
         if (isWalletAlreadyLinked) {
             return {
@@ -552,7 +552,7 @@ export const linkSecondaryWallet = async (
                 secondaryWallets: {
                     signatureMessage,
                     signature,
-                    publicKey: walletAddress
+                    address: walletAddress
                 }
             }
         });
@@ -586,12 +586,12 @@ export const getWallets = async (twitterId: string): Promise<ReturnValue> => {
         const walletAddresses: string[] = [];
 
         // add the main wallet's public key
-        walletAddresses.push(user.wallet.publicKey);
+        walletAddresses.push(user.wallet.address);
 
         // loop through `secondaryWallets` assuming length is not 0 and add each public key
         if (user.secondaryWallets.length > 0) {
             for (const secondaryWallet of user.secondaryWallets) {
-                walletAddresses.push(secondaryWallet.publicKey);
+                walletAddresses.push(secondaryWallet.address);
             }
         }
 

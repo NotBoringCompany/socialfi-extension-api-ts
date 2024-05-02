@@ -3,14 +3,14 @@ import { ethers } from 'ethers';
 /**
  * Creates a wallet for a user, returning both private and public keys.
  */
-export const createUserWallet = (): {privateKey: string, publicKey: string} => {
+export const createUserWallet = (): {address: string, privateKey: string} => {
     const wallet = ethers.Wallet.createRandom();
 
     const privateKey = wallet.privateKey;
-    const publicKey = wallet.address;
+    const address = wallet.address;
 
     return {
-        privateKey,
-        publicKey
+        address,
+        privateKey
     }
 }

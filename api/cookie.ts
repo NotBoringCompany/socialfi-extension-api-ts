@@ -119,7 +119,7 @@ export const withdrawCookies = async (twitterId: string, amount: number): Promis
 
         // call the `getWithdrawHash` function from the contract
         const withdrawHash = await COOKIE_CONTRACT_USER(privateKey).getWithdrawHash(
-            user.wallet.publicKey,
+            user.wallet.address,
             amount * 10 ** COOKIE_CONTRACT_DECIMALS,
             timestamp,
             hashSalt

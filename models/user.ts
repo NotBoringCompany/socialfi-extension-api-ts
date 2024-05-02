@@ -46,8 +46,8 @@ export interface User {
  * Represents a user's Web3 wallet.
  */
 export interface UserWallet {
-    /** the wallet's public key, i.e. address */
-    publicKey: string;
+    /** the wallet's address */
+    address: string;
     /** the wallet's private key used to export the wallet */
     privateKey: string;
 }
@@ -60,8 +60,8 @@ export interface UserSecondaryWallet {
     signatureMessage: string;
     /** the signature of the user from the secondary wallet, showing ownership of the wallet */
     signature: string;
-    /** the secondary wallet's public key, i.e. address */
-    publicKey: string;
+    /** the secondary wallet's address */
+    address: string;
 }
 
 /**
