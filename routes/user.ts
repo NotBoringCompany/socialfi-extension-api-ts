@@ -1,5 +1,5 @@
 import express from 'express';
-import { checkInviteCodeLinked, claimBeginnerRewards, claimDailyRewards, generateSignatureMessage, getBeginnerRewardsData, getInGameData, getInventory, getUserData, getWalletDetails, linkInviteCode, removeResources } from '../api/user';
+import { checkInviteCodeLinked, claimBeginnerRewards, claimDailyRewards, generateSignatureMessage, getBeginnerRewardsData, getInGameData, getInventory, getUserData, getWalletDetails, linkInviteCode, linkSecondaryWallet, removeResources } from '../api/user';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { ExtendedProfile } from '../utils/types';
@@ -234,8 +234,6 @@ router.post('/claim_beginner_rewards', async (req, res) => {
 
 router.post('/generate_signature_message', async (req, res) => {
     const { walletAddress } = req.body;
-
-    console.log('wallet address: ', walletAddress);
     
     try {
         const message = generateSignatureMessage(walletAddress);
@@ -246,6 +244,38 @@ router.post('/generate_signature_message', async (req, res) => {
             data: {
                 signatureMessage: message
             }
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        });
+    }
+})
+
+router.post('/link_secondary_wallet', async (req, res) => {
+    const { walletAddress, signatureMessage, signature } = req.body;
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'link_secondary_wallet');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
+        const { status, message, data } = await linkSecondaryWallet(
+            validateData?.twitterId,
+            walletAddress,
+            signatureMessage,
+            signature
+        );
+
+        return res.status(status).json({
+            status,
+            message,
+            data
         });
     } catch (err: any) {
         return res.status(500).json({
