@@ -514,6 +514,8 @@ export const linkSecondaryWallet = async (
             [ "\x19Ethereum Signed Message:\n" + signatureMessage.length.toString(), signatureMessage ]
         );
 
+        console.log('prefixed message: ', prefixedMessage);
+
         // get the eth signed message hash
         const ethSignedMessageHash = ethers.utils.arrayify(prefixedMessage);
 
