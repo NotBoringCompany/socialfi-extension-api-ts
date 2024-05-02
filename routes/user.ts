@@ -234,6 +234,8 @@ router.post('/claim_beginner_rewards', async (req, res) => {
 
 router.post('/generate_signature_message', async (req, res) => {
     const { walletAddress } = req.body;
+
+    console.log('wallet address: ', walletAddress);
     
     try {
         const message = generateSignatureMessage(walletAddress);
