@@ -19,5 +19,24 @@ export const NEXT_MAX_MEMBERS = (currentMaxMembers: number) => {
     }
 }
 
+/**
+ * Gets the total number of leaders allowed for a squad given the current max members count.
+ */
+export const SQUAD_MAX_LEADERS = (currentMaxMembers: number) => {
+    switch (currentMaxMembers) {
+        case 10:
+            return 1;
+        case 25:
+            return 2;
+        case 50:
+            return 3;
+        case 100:
+            return 5;
+        default:
+            throw new Error('(SQUAD_MAX_LEADERS) Invalid max members count');
+    }
+
+}
+
 /** cost in xCookies for creating a squad */
 export const CREATE_SQUAD_COST = 5;

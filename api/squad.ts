@@ -271,3 +271,116 @@ export const createSquad = async (twitterId: string, squadName: string): Promise
         }
     }
 }
+
+/**
+ * Leaves the current squad.
+ */
+export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(leaveSquad) User not found.`
+            }
+        }
+
+        // check if the user is in a squad.
+        if (user.inGameData.squadId === null) {
+            return {
+                status: Status.ERROR,
+                message: `(leaveSquad) User is not in a squad.`
+            }
+        }
+
+        // check if the user is a squad leader.
+        const squad = await SquadModel.findOne({ _id: user.inGameData.squadId });
+
+        if (!squad) {
+            return {
+                status: Status.ERROR,
+                message: `(leaveSquad) Squad not found.`
+            }
+        }
+
+        // if the user is a squad leader, do the following:
+        // 1. check if the user is the only member in the squad. if so, delete the squad.
+        // 2. if there are other members, check if there is at least 1 other leader in the squad. if not, promote the member with the longest tenure to leader.
+        if (squad.members.find(member => member.userId === user._id)?.role === SquadRole.LEADER) {
+            if (squad.members.length === 1) {
+                await SquadModel.deleteOne({ _id: squad._id });
+
+                // update the user's squad ID.
+                await UserModel.updateOne({ _id: user._id }, {
+                    'inGameData.squadId': null
+                });
+
+                return {
+                    status: Status.SUCCESS,
+                    message: `(leaveSquad) Deleted squad successfully.`
+                }
+            } else {
+                const otherLeaders = squad.members.filter(member => member.role === SquadRole.LEADER);
+
+                if (otherLeaders.length === 0) {
+                    const memberWithLongestTenure = squad.members.reduce((prev, current) => {
+                        return (prev.joinedTimestamp < current.joinedTimestamp) ? prev : current;
+                    });
+
+                    // promote the member with the longest tenure to leader.
+                    // delete the user-to-leave from the squad.
+                    const memberWithLongestTenureIndex = squad.members.findIndex(member => member.userId === memberWithLongestTenure.userId);
+
+                    await SquadModel.updateOne({ _id: squad._id }, {
+                        $set: {
+                            [`members.${memberWithLongestTenureIndex}.role`]: SquadRole.LEADER,
+                            [`members.${memberWithLongestTenureIndex}.roleUpdatedTimestamp`]: Math.floor(Date.now() / 1000)
+                        },
+                        $pull: {
+                            members: {
+                                userId: user._id
+                            }
+                        }
+                    });
+
+                    // update the user's squad ID.
+                    await UserModel.updateOne({ _id: user._id }, {
+                        'inGameData.squadId': null
+                    });
+
+                    return {
+                        status: Status.SUCCESS,
+                        message: `(leaveSquad) Left squad. Promoted member ${memberWithLongestTenure._id} to leader successfully.`
+                    }
+                }
+            }
+        } else {
+            // if the user is not a squad leader, just remove them from the squad.
+            // we don't need to check if they're the last member in the squad, as they would've been a leader at that point
+            // and the `if` block above would've handled that.
+            await SquadModel.updateOne({ _id: squad._id }, {
+                $pull: {
+                    members: {
+                        userId: user._id
+                    }
+                }
+            });
+
+            // update the user's squad ID.
+            await UserModel.updateOne({ _id: user._id }, {
+                'inGameData.squadId': null
+            });
+
+            return {
+                status: Status.SUCCESS,
+                message: `(leaveSquad) Left squad successfully.`
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(leaveSquad) ${err.message}`
+        }
+    }
+}
