@@ -11,8 +11,8 @@ export const joinReferrerSquad = async (
 ): Promise<ReturnValue> => {
     try {
         const [user, referrer] = await Promise.all([
-            UserModel.findOne({ twitterId: userTwitterId }),
-            UserModel.findOne({ twitterId: referrerTwitterId })
+            UserModel.findOne({ twitterId: userTwitterId }).lean(),
+            UserModel.findOne({ twitterId: referrerTwitterId }).lean()
         ]);
 
         if (!user || !referrer) {
@@ -61,7 +61,7 @@ export const joinReferrerSquad = async (
         await SquadModel.updateOne({ _id: squad._id }, {
             $push: {
                 members: {
-                    userId: user.id,
+                    userId: user._id,
                     role: SquadRole.MEMBER,
                     joinedTimestamp: Math.floor(Date.now() / 1000),
                     roleUpdatedTimestamp: Math.floor(Date.now() / 1000)
@@ -85,6 +85,91 @@ export const joinReferrerSquad = async (
         return {
             status: Status.ERROR,
             message: `(joinReferrerSquad) ${err.message}`
+        }
+    }
+}
+
+/**
+ * Renames a squad with the new name. Only callable by a squad leader.
+ */
+export const renameSquad = async (twitterId: string, newSquadName: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(renameSquad) User not found.`
+            }
+        }
+
+        // check if the user is a squad leader.
+        const squad = await SquadModel.findOne({ _id: user.inGameData.squadId });
+
+        if (!squad) {
+            return {
+                status: Status.ERROR,
+                message: `(renameSquad) Squad not found.`
+            }
+        }
+
+        if (squad.members.find(member => member.userId === user._id)?.role !== SquadRole.LEADER) {
+            return {
+                status: Status.ERROR,
+                message: `(renameSquad) User is not a squad leader for the given squad.`
+            }
+        }
+
+        // update the squad name.
+        // rules:
+        // 1. squad name can only be up to 20 characters long.
+        // 2. squad name cannot be empty.
+        // 3. squad name cannot be the same as the current name.
+        // 4. squad name cannot contain any special characters except `_` and `.`.
+        if (newSquadName.length > 20) {
+            return {
+                status: Status.ERROR,
+                message: `(renameSquad) Squad name is too long.`
+            }
+        }
+
+        if (newSquadName.trim().length === 0) {
+            return {
+                status: Status.ERROR,
+                message: `(renameSquad) Squad name cannot be empty.`
+            }
+        }
+
+        if (newSquadName === squad.name) {
+            return {
+                status: Status.ERROR,
+                message: `(renameSquad) Squad name is the same as the current name.`
+            }
+        }
+
+        if (!newSquadName.match(/^[a-zA-Z0-9_.]+$/)) {
+            return {
+                status: Status.ERROR,
+                message: `(renameSquad) Squad name contains invalid characters.`
+            }
+        }
+
+        await SquadModel.updateOne({ _id: squad._id }, {
+            name: newSquadName
+        });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(renameSquad) Renamed squad successfully.`,
+            data: {
+                squadId: squad._id,
+                squadName: newSquadName
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(renameSquad) ${err.message}`
         }
     }
 }
