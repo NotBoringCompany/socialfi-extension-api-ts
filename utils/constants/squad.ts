@@ -1,5 +1,7 @@
 /** the initial max members allowed for new squads */
 export const INITIAL_MAX_MEMBERS = 10;
+/** the max amount of max members a squad can have */
+export const MAX_MEMBERS_LIMIT = 100;
 
 /**
  * Gets the next max members count for a squad given the current max members count.
@@ -35,7 +37,22 @@ export const SQUAD_MAX_LEADERS = (currentMaxMembers: number) => {
         default:
             throw new Error('(SQUAD_MAX_LEADERS) Invalid max members count');
     }
+}
 
+/**
+ * Gets the cost (in xCookies) for upgrading the max members count of a squad.
+ */
+export const SQUAD_MAX_MEMBERS_UPGRADE_COST = (newMaxMembers: number) => {
+    switch (newMaxMembers) {
+        case 25:
+            return 10;
+        case 50:
+            return 25;
+        case 100:
+            return 50;
+        default:
+            throw new Error('(SQUAD_MAX_MEMBERS_UPGRADE_COST) Invalid max members count');
+    }
 }
 
 /** cost in xCookies for creating a squad */

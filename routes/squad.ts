@@ -1,7 +1,7 @@
 import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
-import { createSquad, leaveSquad, renameSquad } from '../api/squad';
+import { createSquad, leaveSquad, renameSquad, upgradeSquadLimit } from '../api/squad';
 
 const router = express.Router();
 
@@ -73,6 +73,32 @@ router.post('/leave_squad', async (req, res) => {
         }
 
         const { status, message, data } = await leaveSquad(validateData?.twitterId);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+});
+
+router.post('/upgrade_squad_limit', async (req, res) => {
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'upgrade_squad_limit');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
+        const { status, message, data } = await upgradeSquadLimit(validateData?.twitterId);
 
         return res.status(status).json({
             status,
