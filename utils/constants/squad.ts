@@ -18,3 +18,6 @@ export const NEXT_MAX_MEMBERS = (currentMaxMembers: number) => {
             throw new Error('(NEXT_MAX_MEMBERS) Invalid max members count');
     }
 }
+
+/** cost in xCookies for creating a squad */
+export const CREATE_SQUAD_COST = 5;

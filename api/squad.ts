@@ -1,6 +1,6 @@
 import { SquadRole } from '../models/squad';
 import { SquadModel, UserModel } from '../utils/constants/db';
-import { INITIAL_MAX_MEMBERS } from '../utils/constants/squad';
+import { CREATE_SQUAD_COST, INITIAL_MAX_MEMBERS } from '../utils/constants/squad';
 import { ReturnValue, Status } from '../utils/retVal';
 
 /**
@@ -222,6 +222,17 @@ export const createSquad = async (twitterId: string, squadName: string): Promise
             }
         }
 
+        // check the cost in xCookies to create a squad.
+        const cost = CREATE_SQUAD_COST;
+
+        // check if the user has enough xCookies to create a squad.
+        if (user.inGameData.xCookieData.currentXCookies < cost) {
+            return {
+                status: Status.ERROR,
+                message: `(createSquad) User does not have enough xCookies to create a squad.`
+            }
+        }
+
         // create the squad.
         const squad = new SquadModel({
             name: squadName,
@@ -238,9 +249,12 @@ export const createSquad = async (twitterId: string, squadName: string): Promise
 
         await squad.save();
 
-        // update the user's squad ID.
+        // update the user's squad ID and deduct the cost from their xCookies.
         await UserModel.updateOne({ _id: user._id }, {
-            'inGameData.squadId': squad._id
+            'inGameData.squadId': squad._id,
+            $inc: {
+                'inGameData.xCookieData.currentXCookies': -cost
+            }
         });
 
         return {
