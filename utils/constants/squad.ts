@@ -1,3 +1,6 @@
+/** the initial max members allowed for new squads */
+export const INITIAL_MAX_MEMBERS = 10;
+
 /**
  * Gets the next max members count for a squad given the current max members count.
  */

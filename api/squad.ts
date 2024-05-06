@@ -1,5 +1,6 @@
 import { SquadRole } from '../models/squad';
 import { SquadModel, UserModel } from '../utils/constants/db';
+import { INITIAL_MAX_MEMBERS } from '../utils/constants/squad';
 import { ReturnValue, Status } from '../utils/retVal';
 
 /**
@@ -170,6 +171,89 @@ export const renameSquad = async (twitterId: string, newSquadName: string): Prom
         return {
             status: Status.ERROR,
             message: `(renameSquad) ${err.message}`
+        }
+    }
+}
+
+/**
+ * Creates a squad.
+ */
+export const createSquad = async (twitterId: string, squadName: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(createSquad) User not found.`
+            }
+        }
+
+        // check if the user is already in a squad.
+        if (user.inGameData.squadId !== null) {
+            return {
+                status: Status.ERROR,
+                message: `(createSquad) User is already in a squad.`
+            }
+        }
+
+        // check if the squadName meets the following:
+        // 1. squad name can only be up to 20 characters long.
+        // 2. squad name cannot be empty.
+        // 3. squad name cannot contain any special characters except `_` and `.`.
+        if (squadName.length > 20) {
+            return {
+                status: Status.ERROR,
+                message: `(createSquad) Squad name is too long.`
+            }
+        }
+
+        if (squadName.trim().length === 0) {
+            return {
+                status: Status.ERROR,
+                message: `(createSquad) Squad name cannot be empty.`
+            }
+        }
+
+        if (!squadName.match(/^[a-zA-Z0-9_.]+$/)) {
+            return {
+                status: Status.ERROR,
+                message: `(createSquad) Squad name contains invalid characters.`
+            }
+        }
+
+        // create the squad.
+        const squad = new SquadModel({
+            name: squadName,
+            members: [{
+                userId: user._id,
+                role: SquadRole.LEADER,
+                joinedTimestamp: Math.floor(Date.now() / 1000),
+                roleUpdatedTimestamp: Math.floor(Date.now() / 1000)
+            }],
+            // all new squads have a max of 10 members.
+            maxMembers: INITIAL_MAX_MEMBERS,
+            formedTimestamp: Math.floor(Date.now() / 1000)
+        });
+
+        await squad.save();
+
+        // update the user's squad ID.
+        await UserModel.updateOne({ _id: user._id }, {
+            'inGameData.squadId': squad._id
+        });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(createSquad) Created squad successfully.`,
+            data: {
+                squadId: squad._id
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(createSquad) ${err.message}`
         }
     }
 }
