@@ -6,7 +6,7 @@ import { generateHashSalt, generateObjectId, generateReferralCode } from '../uti
 import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
 import { RANDOMIZE_GENDER, getBitStatsModifiersFromTraits, randomizeBitTraits, randomizeBitType } from '../utils/constants/bit';
 import { ObtainMethod } from '../models/obtainMethod';
-import { LeaderboardModel, StarterCodeModel, UserModel } from '../utils/constants/db';
+import { LeaderboardModel, SquadModel, StarterCodeModel, UserModel } from '../utils/constants/db';
 import { addIslandToDatabase, getLatestIslandId, randomizeBaseResourceCap } from './island';
 import { POIName } from '../models/poi';
 import { ExtendedResource, SimplifiedResource } from '../models/resource';
@@ -729,12 +729,22 @@ export const claimDailyRewards = async (
             $pull: {}
         }
 
+        const squadUpdateOperations = {
+            $set: {},
+            $inc: {},
+            $push: {},
+            $pull: {}
+        }
+
         if (!user) {
             return {
                 status: Status.ERROR,
                 message: `(claimDailyRewards) User not found.`
             }
         }
+
+        // get the user's squad ID
+        const squadId: string | null = user.inGameData.squadId;
 
         const leaderboard = leaderboardName === null ?
             await LeaderboardModel.findOne().sort({ startTimestamp: -1 }) :
@@ -812,7 +822,13 @@ export const claimDailyRewards = async (
                         pointsData: [{
                             points: reward.amount,
                             source: LeaderboardPointsSource.DAILY_LOGIN_REWARDS
-                        }]
+                        }],
+                        additionalPoints
+                    }
+
+                    // if user is in a squad, add to squad's `totalSquadPoints`
+                    if (squadId) {
+                        squadUpdateOperations.$inc['totalSquadPoints'] = reward.amount;
                     }
                 } else {
                     let additionalPoints = 0;
@@ -866,6 +882,11 @@ export const claimDailyRewards = async (
                             leaderboardUpdateOperations.$inc[`userData.${userIndex}.pointsData.${levellingUpSourceIndex}.points`] = additionalPoints;
                         }
                     }
+
+                    // if user is in a squad, add to squad's `totalSquadPoints`
+                    if (squadId) {
+                        squadUpdateOperations.$inc['totalSquadPoints'] = reward.amount;
+                    }
                 }
                 // if the reward is not xCookies or leaderboard points, return an error (for now)
             } else {
@@ -888,8 +909,13 @@ export const claimDailyRewards = async (
         // execute the update operations
         await Promise.all([
             UserModel.updateOne({ twitterId }, userUpdateOperations),
-            LeaderboardModel.updateOne({ _id: leaderboard._id }, leaderboardUpdateOperations)
+            LeaderboardModel.updateOne({ _id: leaderboard._id }, leaderboardUpdateOperations),
         ]);
+
+        // if user is in a squad, update the squad's total points
+        if (squadId) {
+            await SquadModel.updateOne({ _id: squadId }, squadUpdateOperations);
+        }
 
         // check if the user update operations included a level up
         const setUserLevel = userUpdateOperations.$set['inGameData.level'];
