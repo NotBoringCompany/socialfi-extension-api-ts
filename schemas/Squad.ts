@@ -17,5 +17,7 @@ export const SquadSchema = new mongoose.Schema({
         roleUpdatedTimestamp: Number
     }],
     maxMembers: Number,
-    formedTimestamp: Number
+    formedTimestamp: Number,
+    formedBy: String,
+    creationMethod: String
 })

@@ -1,4 +1,4 @@
-import { SquadRole } from '../models/squad';
+import { SquadCreationMethod, SquadRole } from '../models/squad';
 import { SquadModel, UserModel } from '../utils/constants/db';
 import { CREATE_SQUAD_COST, INITIAL_MAX_MEMBERS } from '../utils/constants/squad';
 import { ReturnValue, Status } from '../utils/retVal';
@@ -222,11 +222,32 @@ export const createSquad = async (twitterId: string, squadName: string): Promise
             }
         }
 
-        // check the cost in xCookies to create a squad.
-        const cost = CREATE_SQUAD_COST;
+        // check if the user linked a starter code.
+        // starter codes allow users to create a squad for free ONCE.
+        const hasStarterCodeLinked = user.inviteCodeData.usedStarterCode !== null;
+        let hasCreatedFreeSquad: boolean = false;
+        let creationMethod: SquadCreationMethod;
 
-        // check if the user has enough xCookies to create a squad.
-        if (user.inGameData.xCookieData.currentXCookies < cost) {
+        // if `hasStarterCodeLinked` is true, check if the user has already created a squad with the starter code.
+        if (hasStarterCodeLinked) {
+            // find at least one squad where `formedBy` is the user's ID and `creationMethod` is `FREE_STARTER_CODE`.
+            const freeSquad = await SquadModel.findOne({
+                formedBy: user._id,
+                creationMethod: SquadCreationMethod.FREE_STARTER_CODE
+            });
+
+            if (freeSquad) {
+                hasCreatedFreeSquad = true;
+            }
+        }
+
+        creationMethod = hasStarterCodeLinked && !hasCreatedFreeSquad ? SquadCreationMethod.FREE_STARTER_CODE : SquadCreationMethod.X_COOKIES;
+
+        // check the cost in xCookies to create a squad.
+        const cost = creationMethod === SquadCreationMethod.FREE_STARTER_CODE ? 0 : CREATE_SQUAD_COST;
+
+        // check if the user has enough xCookies to create a squad. ONLY if the creation method is `xCookies`.
+        if (cost > 0 && user.inGameData.xCookieData.currentXCookies < cost) {
             return {
                 status: Status.ERROR,
                 message: `(createSquad) User does not have enough xCookies to create a squad.`
@@ -244,15 +265,18 @@ export const createSquad = async (twitterId: string, squadName: string): Promise
             }],
             // all new squads have a max of 10 members.
             maxMembers: INITIAL_MAX_MEMBERS,
-            formedTimestamp: Math.floor(Date.now() / 1000)
+            formedTimestamp: Math.floor(Date.now() / 1000),
+            formedBy: user._id,
+            creationMethod
         });
 
         await squad.save();
 
-        // update the user's squad ID and deduct the cost from their xCookies.
+        // update the user's squad ID. if the cost is above 0, deduct the cost from the user's xCookies, else no need to do anything else.
         await UserModel.updateOne({ _id: user._id }, {
             'inGameData.squadId': squad._id,
             $inc: {
+                // if cost is 0, then this essentially does nothing.
                 'inGameData.xCookieData.currentXCookies': -cost
             }
         });
@@ -305,11 +329,18 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
         }
 
         // if the user is a squad leader, do the following:
-        // 1. check if the user is the only member in the squad. if so, delete the squad.
+        // 1. check if the user is the only member in the squad. if so, disband the squad.
         // 2. if there are other members, check if there is at least 1 other leader in the squad. if not, promote the member with the longest tenure to leader.
         if (squad.members.find(member => member.userId === user._id)?.role === SquadRole.LEADER) {
             if (squad.members.length === 1) {
-                await SquadModel.deleteOne({ _id: squad._id });
+                // disband the squad by removing the member from the squad (leaving the squad memberless)
+                await SquadModel.updateOne({ _id: squad._id }, {
+                    $pull: {
+                        members: {
+                            userId: user._id
+                        }
+                    }
+                })
 
                 // update the user's squad ID.
                 await UserModel.updateOne({ _id: user._id }, {
@@ -318,7 +349,7 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
 
                 return {
                     status: Status.SUCCESS,
-                    message: `(leaveSquad) Deleted squad successfully.`
+                    message: `(leaveSquad) Disbanded squad successfully.`
                 }
             } else {
                 const otherLeaders = squad.members.filter(member => member.role === SquadRole.LEADER);
@@ -329,7 +360,7 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
                     });
 
                     // promote the member with the longest tenure to leader.
-                    // delete the user-to-leave from the squad.
+                    // remove the user-to-leave from the squad.
                     const memberWithLongestTenureIndex = squad.members.findIndex(member => member.userId === memberWithLongestTenure.userId);
 
                     await SquadModel.updateOne({ _id: squad._id }, {

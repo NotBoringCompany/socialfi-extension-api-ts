@@ -10,6 +10,10 @@ export interface Squad {
     maxMembers: number;
     /** when this squad was formed */
     formedTimestamp: number;
+    /** the user's database id who formed this squad */
+    formedBy: string;
+    /** the method used to create this squad */
+    creationMethod: SquadCreationMethod;
 }
 
 /**
@@ -27,9 +31,19 @@ export interface SquadMember {
 }
 
 /**
+ * Represents the method used to create a squad.
+ */
+export enum SquadCreationMethod {
+    // paid xCookies
+    X_COOKIES = 'xCookies',
+    // used their starter code to create the squad for free
+    FREE_STARTER_CODE = 'Free Starter Code',
+}
+
+/**
  * Represents a squad role.
  */
 export enum SquadRole {
-    LEADER = 'LEADER',
-    MEMBER = 'MEMBER'
+    LEADER = 'Leader',
+    MEMBER = 'Member'
 }
