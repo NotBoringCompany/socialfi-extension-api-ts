@@ -143,6 +143,8 @@ export interface InGameData {
     beginnerRewardData: BeginnerRewardData;
     /** the user's daily login reward data */
     dailyLoginRewardData: DailyLoginRewardData;
+    /** the id of the user's current squad. if the user is not in any squad, this will be null. */
+    squadId: string | null;
     /** the current location of the user (either home or in a POI) */
     location: POIName;
     /** 
