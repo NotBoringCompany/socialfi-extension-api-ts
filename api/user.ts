@@ -25,6 +25,7 @@ import { FoodType } from '../models/food';
 import { BoosterItem } from '../models/booster';
 import { randomizeIslandTraits } from '../utils/constants/island';
 import { Signature, recoverMessageAddress } from 'viem';
+import { joinReferrerSquad } from './squad';
 
 /**
  * Returns the user's data.
@@ -1021,10 +1022,10 @@ export const linkInviteCode = async (
         // check if the code is a starter code or a referral code
         const starterCode = await StarterCodeModel.findOne({ code: code.toUpperCase() }).lean();
 
-        // find the referralCode inside a user's `referralData` instance
-        const referralCode = await UserModel.findOne({ 'referralData.referralCode': code.toUpperCase() }).lean();
+        // find the referrer from which the referrerCode stems from inside a user's `referralData` instance
+        const referrer = await UserModel.findOne({ 'referralData.referralCode': code.toUpperCase() }).lean();
 
-        if (!starterCode && !referralCode) {
+        if (!starterCode && !referrer) {
             return {
                 status: Status.BAD_REQUEST,
                 message: `(linkInviteCode) Invalid code.`
@@ -1068,7 +1069,7 @@ export const linkInviteCode = async (
                 status: Status.SUCCESS,
                 message: `(linkInviteCode) Starter code linked.`,
             }
-        } else if (referralCode) {
+        } else if (referrer) {
             // check if the user already has a referral code.
             // if they do, return an error.
             if (user.inviteCodeData.usedReferralCode) {
@@ -1079,7 +1080,7 @@ export const linkInviteCode = async (
             }
 
             // check if the referral code belongs to the user. if it does, return an error.
-            if (referralCode.twitterId === user.twitterId) {
+            if (referrer.twitterId === user.twitterId) {
                 return {
                     status: Status.BAD_REQUEST,
                     message: `(linkInviteCode) Referral code belongs to the user.`
@@ -1090,12 +1091,12 @@ export const linkInviteCode = async (
             await UserModel.updateOne({ twitterId }, {
                 $set: {
                     'inviteCodeData.usedReferralCode': code.toUpperCase(),
-                    'inviteCodeData.referrerId': referralCode._id
+                    'inviteCodeData.referrerId': referrer._id
                 }
             });
 
             // also update the referrer's data to include the referred user's data in the `referredUsersData` array
-            await UserModel.updateOne({ _id: referralCode._id }, {
+            await UserModel.updateOne({ _id: referrer._id }, {
                 $push: {
                     'referralData.referredUsersData': {
                         userId: user._id,
@@ -1104,9 +1105,33 @@ export const linkInviteCode = async (
                 }
             });
 
+            // attempt to join the referrer's squad if they have one.
+            const { status, message, data } = await joinReferrerSquad(user._id, referrer._id);
+
+            if (status === Status.ERROR) {
+                // if the error is that:
+                // 1. the user is already in a squad
+                // 2. the referrer is not in a squad
+                // 3. the referrer's squad is already full
+                // we 'ignore' the error and just return a success but show this message.
+                if (
+                    message.includes(`User is already in a squad`) ||
+                    message.includes(`Referrer's squad is already full`) ||
+                    message.includes(`Referrer does not have a squad`)
+                ) {
+                    return {
+                        status: Status.SUCCESS,
+                        message: `(linkInviteCode) Referral code linked. Extra error message from joinReferrerSquad: ${message}`
+                    }
+                }
+            }
+
             return {
                 status: Status.SUCCESS,
-                message: `(linkInviteCode) Referral code linked.`,
+                message: `(linkInviteCode) Referral code linked. Extra success message from joinReferrerSquad: ${message}`,
+                data: {
+                    squadId: data.squadId
+                }
             }
         } else {
             return {

@@ -6,6 +6,8 @@ export interface Squad {
     name: string;
     /** the squad members */
     members: SquadMember[];
+    /** the max amount of members allowed for this squad */
+    maxMembers: number;
     /** when this squad was formed */
     formedTimestamp: number;
 }

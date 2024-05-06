@@ -9,6 +9,7 @@ import { POISchema } from '../../schemas/POI';
 import { LeaderboardSchema } from '../../schemas/Leaderboard';
 import { StarterCodeSchema } from '../../schemas/Invite';
 import { TutorialSchema } from '../../schemas/Tutorial';
+import { SquadSchema } from '../../schemas/Squad';
 
 export const UserModel = mongoose.model('Users', UserSchema, 'Users');
 export const BitModel = mongoose.model('Bits', BitSchema, 'Bits');
@@ -21,3 +22,4 @@ export const POIModel = mongoose.model('POI', POISchema, 'POI');
 export const LeaderboardModel = mongoose.model('Leaderboards', LeaderboardSchema, 'Leaderboards');
 export const StarterCodeModel = mongoose.model('StarterCodes', StarterCodeSchema, 'StarterCodes');
 export const TutorialModel = mongoose.model('Tutorials', TutorialSchema, 'Tutorials');
+export const SquadModel = mongoose.model('Squads', SquadSchema, 'Squads');
