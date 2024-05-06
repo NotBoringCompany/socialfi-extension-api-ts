@@ -4,7 +4,7 @@ import { Item } from '../models/item';
 import { LeaderboardPointsSource } from '../models/leaderboard';
 import { POIName, POIShop, POIShopActionItemData, POIShopItemName } from '../models/poi';
 import { ExtendedResource } from '../models/resource';
-import { LeaderboardModel, POIModel, RaftModel, UserModel } from '../utils/constants/db';
+import { LeaderboardModel, POIModel, RaftModel, SquadModel, UserModel } from '../utils/constants/db';
 import { POI_TRAVEL_LEVEL_REQUIREMENT } from '../utils/constants/poi';
 import { ACTUAL_RAFT_SPEED } from '../utils/constants/raft';
 import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
@@ -540,12 +540,22 @@ export const sellItemsInPOIShop = async (
             $push: {}
         }
 
+        const squadUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
         if (!user) {
             return {
                 status: Status.ERROR,
                 message: `(sellItemsInPOIShop) User not found.`
             }
         }
+
+        // check if the user is in a squad.
+        const squadId: string | null = user.inGameData.squadId;
 
         // check if at least 1 item is present and that the amount of that item is at least 1.
         if (items.length === 0 || items.some(item => item.amount < 1)) {
@@ -741,6 +751,11 @@ export const sellItemsInPOIShop = async (
                     additionalPoints
                 }
             }
+
+            // if user has a squad, add the points to the squad's `totalSquadPoints` as well.
+            if (squadId) {
+                squadUpdateOperations.$inc[`totalSquadPoints`] = leaderboardPoints;
+            }
         } else {
             let additionalPoints = 0;
 
@@ -793,6 +808,11 @@ export const sellItemsInPOIShop = async (
                 } else {
                     leaderboardUpdateOperations.$inc[`userData.${userIndex}.pointsData.${levellingUpIndex}.points`] = additionalPoints;
                 }
+            }
+
+            // add the points to the squad's `totalSquadPoints` as well (excluding the additional points)
+            if (squadId) {
+                squadUpdateOperations.$inc[`totalSquadPoints`] = leaderboardPoints;
             }
         }
 
@@ -968,6 +988,16 @@ export const sellItemsInPOIShop = async (
                 }
             })
         ]);
+
+        // if the user is in a squad, update the squad's total points.
+        if (squadId) {
+            await SquadModel.updateOne({ _id: squadId }, squadUpdateOperations).catch((err) => {
+                return {
+                    status: Status.ERROR,
+                    message: `(sellItemsInPOIShop) Error updating squad model: ${err.message}`
+                }
+            });
+        }
 
         // check if the user update operations included a level up
         const setUserLevel = userUpdateOperations.$set['inGameData.level'];

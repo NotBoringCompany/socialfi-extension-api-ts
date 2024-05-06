@@ -14,10 +14,12 @@ export interface Squad {
     formedBy: string;
     /** the method used to create this squad */
     creationMethod: SquadCreationMethod;
+    /** the total squad points obtained by all members since they join the squad */
+    totalSquadPoints: number;
 }
 
 /**
- * 
+ * Represents a squad member.
  */
 export interface SquadMember {
     /** the database user ID of this member */
