@@ -16,6 +16,8 @@ export interface Squad {
     creationMethod: SquadCreationMethod;
     /** the squad points data (data regarding points obtained by members across each week) */
     squadPointsData: SquadPointsData;
+    /** the current ranking of the squad based on the previous week's performance (points) */
+    currentRanking: SquadRank;
 }
 
 /**
@@ -49,6 +51,18 @@ export interface SquadMemberWeeklyPoints {
     /** the squad points earned by this member */
     points: number;
 }
+
+/**
+ * Represents the squad ranking.
+ */
+export enum SquadRank {
+    BRONZE = 'Bronze',
+    SILVER = 'Silver',
+    GOLD = 'Gold',
+    PLATINUM = 'Platinum',
+    DIAMOND = 'Diamond',
+    MASTER = 'Master',
+} 
 
 /**
  * Represents a squad member.

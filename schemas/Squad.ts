@@ -36,5 +36,6 @@ export const SquadSchema = new mongoose.Schema({
                 points: Number
             }]
         }
-    }
+    },
+    currentRanking: String
 })
