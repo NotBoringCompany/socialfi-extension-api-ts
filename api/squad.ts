@@ -1,4 +1,4 @@
-import { SquadCreationMethod, SquadRole } from '../models/squad';
+import { SquadCreationMethod, SquadRank, SquadRole } from '../models/squad';
 import { SquadModel, UserModel } from '../utils/constants/db';
 import { CREATE_SQUAD_COST, INITIAL_MAX_MEMBERS, MAX_MEMBERS_LIMIT, NEXT_MAX_MEMBERS, SQUAD_MAX_MEMBERS_UPGRADE_COST } from '../utils/constants/squad';
 import { ReturnValue, Status } from '../utils/retVal';
@@ -268,9 +268,8 @@ export const createSquad = async (twitterId: string, squadName: string): Promise
             formedTimestamp: Math.floor(Date.now() / 1000),
             formedBy: user._id,
             creationMethod,
-            squadPointsData: {
-                /// TO DO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            }
+            totalSquadPoints: 0,
+            currentRanking: SquadRank.UNRANKED
         });
 
         await squad.save();

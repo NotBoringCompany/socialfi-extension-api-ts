@@ -24,6 +24,7 @@ export interface Squad {
  * Represents the squad ranking.
  */
 export enum SquadRank {
+    UNRANKED = 'Unranked',
     BRONZE = 'Bronze',
     SILVER = 'Silver',
     GOLD = 'Gold',

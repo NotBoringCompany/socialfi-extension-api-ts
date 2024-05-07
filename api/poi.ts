@@ -4,7 +4,7 @@ import { Item } from '../models/item';
 import { LeaderboardPointsSource } from '../models/leaderboard';
 import { POIName, POIShop, POIShopActionItemData, POIShopItemName } from '../models/poi';
 import { ExtendedResource } from '../models/resource';
-import { LeaderboardModel, POIModel, RaftModel, SquadModel, UserModel } from '../utils/constants/db';
+import { LeaderboardModel, POIModel, RaftModel, SquadLeaderboardModel, SquadModel, UserModel } from '../utils/constants/db';
 import { POI_TRAVEL_LEVEL_REQUIREMENT } from '../utils/constants/poi';
 import { ACTUAL_RAFT_SPEED } from '../utils/constants/raft';
 import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
@@ -252,7 +252,7 @@ export const applyTravelBooster = async (
                     booster
                 }
             }
-        // otherwise
+            // otherwise
         } else {
             // we will reduce `destinationArrival` by the booster's effect
             userUpdateOperations.$set = {
@@ -547,6 +547,13 @@ export const sellItemsInPOIShop = async (
             $push: {}
         }
 
+        const squadLeaderboardUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
         if (!user) {
             return {
                 status: Status.ERROR,
@@ -755,6 +762,44 @@ export const sellItemsInPOIShop = async (
             // if user has a squad, add the points to the squad's `totalSquadPoints` as well.
             if (squadId) {
                 squadUpdateOperations.$inc[`totalSquadPoints`] = leaderboardPoints;
+
+                // get the latest week of the squad leaderboard
+                const latestSquadLeaderboard = await SquadLeaderboardModel.findOne().sort({ week: -1 });
+
+                // if no leaderboard exists somehow, return an error
+                if (!latestSquadLeaderboard) {
+                    return {
+                        status: Status.BAD_REQUEST,
+                        message: `(sellItemsInPOIShop) Squad leaderboard not found.`
+                    }
+                }
+
+                // check if the squad exists in the leaderboard's `pointsData`. if not, we create a new instance.
+                const squadIndex = latestSquadLeaderboard.pointsData.findIndex(pointsData => pointsData.squadId === squadId);
+
+                // if not found, we create a new instance.
+                if (squadIndex === -1) {
+                    squadLeaderboardUpdateOperations.$push[`pointsData`] = {
+                        squadId,
+                        memberPoints: [{
+                            userId: user._id,
+                            points: leaderboardPoints
+                        }]
+                    }
+                } else {
+                    // otherwise, we increment the user's points in the squad leaderboard.
+                    const userIndex = latestSquadLeaderboard.pointsData[squadIndex].memberPoints.findIndex(memberPoints => memberPoints.userId === user._id);
+
+                    // if user is not found, we create a new instance.
+                    if (userIndex === -1) {
+                        squadLeaderboardUpdateOperations.$push[`pointsData.${squadIndex}.memberPoints`] = {
+                            userId: user._id,
+                            points: leaderboardPoints
+                        }
+                    } else {
+                        squadLeaderboardUpdateOperations.$inc[`pointsData.${squadIndex}.memberPoints.${userIndex}.points`] = leaderboardPoints;
+                    }
+                }
             }
         } else {
             let additionalPoints = 0;
@@ -771,7 +816,7 @@ export const sellItemsInPOIShop = async (
 
                 return acc;
             }, 0);
-            
+
             const newLevel = GET_SEASON_0_PLAYER_LEVEL(leaderboardPoints + totalLeaderboardPoints);
 
             // if new level is greater than the current level, we update the user's data
@@ -813,6 +858,44 @@ export const sellItemsInPOIShop = async (
             // add the points to the squad's `totalSquadPoints` as well (excluding the additional points)
             if (squadId) {
                 squadUpdateOperations.$inc[`totalSquadPoints`] = leaderboardPoints;
+
+                // get the latest week of the squad leaderboard
+                const latestSquadLeaderboard = await SquadLeaderboardModel.findOne().sort({ week: -1 });
+
+                // if no leaderboard exists somehow, return an error
+                if (!latestSquadLeaderboard) {
+                    return {
+                        status: Status.BAD_REQUEST,
+                        message: `(sellItemsInPOIShop) Squad leaderboard not found.`
+                    }
+                }
+
+                // check if the squad exists in the leaderboard's `pointsData`. if not, we create a new instance.
+                const squadIndex = latestSquadLeaderboard.pointsData.findIndex(pointsData => pointsData.squadId === squadId);
+
+                // if not found, we create a new instance.
+                if (squadIndex === -1) {
+                    squadLeaderboardUpdateOperations.$push[`pointsData`] = {
+                        squadId,
+                        memberPoints: [{
+                            userId: user._id,
+                            points: leaderboardPoints
+                        }]
+                    }
+                } else {
+                    // otherwise, we increment the user's points in the squad leaderboard.
+                    const userIndex = latestSquadLeaderboard.pointsData[squadIndex].memberPoints.findIndex(memberPoints => memberPoints.userId === user._id);
+
+                    // if user is not found, we create a new instance.
+                    if (userIndex === -1) {
+                        squadLeaderboardUpdateOperations.$push[`pointsData.${squadIndex}.memberPoints`] = {
+                            userId: user._id,
+                            points: leaderboardPoints
+                        }
+                    } else {
+                        squadLeaderboardUpdateOperations.$inc[`pointsData.${squadIndex}.memberPoints.${userIndex}.points`] = leaderboardPoints;
+                    }
+                }
             }
         }
 
@@ -973,7 +1056,7 @@ export const sellItemsInPOIShop = async (
                     status: Status.ERROR,
                     message: `(sellItemsInPOIShop) Error updating user model: ${err.message}`
                 }
-            
+
             }),
             LeaderboardModel.updateOne({ _id: leaderboard._id }, leaderboardUpdateOperations).catch((err) => {
                 return {
@@ -995,6 +1078,23 @@ export const sellItemsInPOIShop = async (
                 return {
                     status: Status.ERROR,
                     message: `(sellItemsInPOIShop) Error updating squad model: ${err.message}`
+                }
+            });
+
+            // also, get the latest squad leaderboard (sort by -1) and update the squad's memberPoints.
+            const latestSquadLeaderboard = await SquadLeaderboardModel.findOne().sort({ week: -1 });
+
+            if (!latestSquadLeaderboard) {
+                return {
+                    status: Status.BAD_REQUEST,
+                    message: `(sellItemsInPOIShop) Squad leaderboard not found.`
+                }
+            }
+
+            await SquadLeaderboardModel.updateOne({ _id: latestSquadLeaderboard._id }, squadLeaderboardUpdateOperations).catch((err) => {
+                return {
+                    status: Status.ERROR,
+                    message: `(sellItemsInPOIShop) Error updating squad leaderboard model: ${err.message}`
                 }
             });
         }
