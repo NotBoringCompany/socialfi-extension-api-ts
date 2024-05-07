@@ -267,7 +267,10 @@ export const createSquad = async (twitterId: string, squadName: string): Promise
             maxMembers: INITIAL_MAX_MEMBERS,
             formedTimestamp: Math.floor(Date.now() / 1000),
             formedBy: user._id,
-            creationMethod
+            creationMethod,
+            squadPointsData: {
+                /// TO DO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            }
         });
 
         await squad.save();
