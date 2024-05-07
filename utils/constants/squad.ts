@@ -34,7 +34,7 @@ export const UPGRADE_SQUAD_MAX_MEMBERS_COST = (currentMaxMembers: number) => {
     } else if (currentMaxMembers < 100) {
         return 10;
     } else {
-        return 20;
+        throw new Error('Cannot upgrade max members count beyond 100.');
     }
 }
 
