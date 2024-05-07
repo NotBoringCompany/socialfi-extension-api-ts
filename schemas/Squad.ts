@@ -19,5 +19,10 @@ export const SquadSchema = new mongoose.Schema({
     maxMembers: Number,
     formedTimestamp: Number,
     formedBy: String,
-    creationMethod: String
+    creationMethod: String,
+    totalSquadPoints: Number,
+    squadRankingData: [{
+        week: Number,
+        rank: String
+    }]
 })

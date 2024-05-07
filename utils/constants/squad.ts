@@ -3,55 +3,38 @@ export const INITIAL_MAX_MEMBERS = 10;
 /** the max amount of max members a squad can have */
 export const MAX_MEMBERS_LIMIT = 100;
 
-/**
- * Gets the next max members count for a squad given the current max members count.
- */
-export const NEXT_MAX_MEMBERS = (currentMaxMembers: number) => {
-    switch (currentMaxMembers) {
-        case 10:
-            return 25;
-        case 25:
-            return 50;
-        case 50:
-            return 100;
-        case 100:
-            return 100;
-        default:
-            throw new Error('(NEXT_MAX_MEMBERS) Invalid max members count');
-    }
-}
+/** the increase in max members count upon upgrading once */
+export const MAX_MEMBERS_INCREASE_UPON_UPGRADE = 5;
 
 /**
  * Gets the total number of leaders allowed for a squad given the current max members count.
  */
 export const SQUAD_MAX_LEADERS = (currentMaxMembers: number) => {
-    switch (currentMaxMembers) {
-        case 10:
-            return 1;
-        case 25:
-            return 2;
-        case 50:
-            return 3;
-        case 100:
-            return 5;
-        default:
-            throw new Error('(SQUAD_MAX_LEADERS) Invalid max members count');
+    if (currentMaxMembers < 25) {
+        return 1;
+    } else if (currentMaxMembers < 50) {
+        return 2;
+    } else if (currentMaxMembers < 100) {
+        return 3;
+    } else {
+        return 5;
     }
 }
 
 /**
  * Gets the cost (in xCookies) for upgrading the max members count of a squad.
+ * 
+ * Each upgrade increases the max members count by `MAX_MEMBERS_INCREASE_UPON_UPGRADE`.
  */
-export const SQUAD_MAX_MEMBERS_UPGRADE_COST = (newMaxMembers: number) => {
-    switch (newMaxMembers) {
-        case 25:
-            return 10;
-        case 50:
-            return 25;
-        case 100:
-            return 50;
-        default:
-            throw new Error('(SQUAD_MAX_MEMBERS_UPGRADE_COST) Invalid max members count');
+export const UPGRADE_SQUAD_MAX_MEMBERS_COST = (currentMaxMembers: number) => {
+    if (currentMaxMembers < 25) {
+        return 2;
+    } else if (currentMaxMembers < 50) {
+        return 5;
+    } else if (currentMaxMembers < 100) {
+        return 10;
+    } else {
+        throw new Error('Cannot upgrade max members count beyond 100.');
     }
 }
 

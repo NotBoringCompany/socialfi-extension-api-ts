@@ -10,6 +10,7 @@ import { LeaderboardSchema } from '../../schemas/Leaderboard';
 import { StarterCodeSchema } from '../../schemas/Invite';
 import { TutorialSchema } from '../../schemas/Tutorial';
 import { SquadSchema } from '../../schemas/Squad';
+import { SquadLeaderboardSchema } from '../../schemas/SquadLeaderboard';
 
 export const UserModel = mongoose.model('Users', UserSchema, 'Users');
 export const BitModel = mongoose.model('Bits', BitSchema, 'Bits');
@@ -23,3 +24,4 @@ export const LeaderboardModel = mongoose.model('Leaderboards', LeaderboardSchema
 export const StarterCodeModel = mongoose.model('StarterCodes', StarterCodeSchema, 'StarterCodes');
 export const TutorialModel = mongoose.model('Tutorials', TutorialSchema, 'Tutorials');
 export const SquadModel = mongoose.model('Squads', SquadSchema, 'Squads');
+export const SquadLeaderboardModel = mongoose.model('SquadLeaderboards', SquadLeaderboardSchema, 'SquadLeaderboards');
