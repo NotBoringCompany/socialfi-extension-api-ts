@@ -269,7 +269,7 @@ export const createSquad = async (twitterId: string, squadName: string): Promise
             formedBy: user._id,
             creationMethod,
             totalSquadPoints: 0,
-            currentRanking: SquadRank.UNRANKED
+            squadRankingData: []
         });
 
         await squad.save();

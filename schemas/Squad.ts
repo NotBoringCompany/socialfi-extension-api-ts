@@ -21,5 +21,8 @@ export const SquadSchema = new mongoose.Schema({
     formedBy: String,
     creationMethod: String,
     totalSquadPoints: Number,
-    currentRanking: String
+    squadRankingData: [{
+        week: Number,
+        rank: String
+    }]
 })

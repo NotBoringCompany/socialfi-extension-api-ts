@@ -16,8 +16,18 @@ export interface Squad {
     creationMethod: SquadCreationMethod;
     /** the total number of points accumulated by this squad since creation */
     totalSquadPoints: number;
-    /** the current ranking of the squad based on the previous week's performance (points) */
-    currentRanking: SquadRank;
+    /** the squad's existing and current ranking data */
+    squadRankingData: SquadRankingData[];
+}
+
+/**
+ * Represents the squad ranking data.
+ */
+export interface SquadRankingData {
+    /** the week number */
+    week: number;
+    /** the squad's rank for this week */
+    rank: SquadRank;
 }
 
 /**
