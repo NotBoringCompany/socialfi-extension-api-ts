@@ -14,8 +14,40 @@ export interface Squad {
     formedBy: string;
     /** the method used to create this squad */
     creationMethod: SquadCreationMethod;
-    /** the total squad points obtained by all members since they join the squad */
+    /** the squad points data (data regarding points obtained by members across each week) */
+    squadPointsData: SquadPointsData;
+}
+
+/**
+ * Represents the squad points data.
+ */
+export interface SquadPointsData {
+    /** the total squad points accumulated for this squad */
     totalSquadPoints: number;
+    /** the total squad points earned on previous weeks */
+    previousWeeks: SquadPointsWeekly[];
+    /** the total squad points earned on this week */
+    currentWeek: SquadPointsWeekly;
+}
+
+/**
+ * Represents the squad points earned by a member on a week.
+ */
+export interface SquadPointsWeekly {
+    /** the week number */
+    week: number;
+    /** the squad points earned by each member */
+    memberPoints: SquadMemberWeeklyPoints[];
+}
+
+/**
+ * Represents the squad points earned by a member on a week.
+ */
+export interface SquadMemberWeeklyPoints {
+    /** the database user ID of this member */
+    userId: string;
+    /** the squad points earned by this member */
+    points: number;
 }
 
 /**
