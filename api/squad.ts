@@ -1,6 +1,6 @@
 import { SquadCreationMethod, SquadRank, SquadRole } from '../models/squad';
 import { SquadModel, UserModel } from '../utils/constants/db';
-import { CREATE_SQUAD_COST, INITIAL_MAX_MEMBERS, MAX_MEMBERS_LIMIT, NEXT_MAX_MEMBERS, SQUAD_MAX_MEMBERS_UPGRADE_COST } from '../utils/constants/squad';
+import { CREATE_SQUAD_COST, INITIAL_MAX_MEMBERS, MAX_MEMBERS_INCREASE_UPON_UPGRADE, MAX_MEMBERS_LIMIT, UPGRADE_SQUAD_MAX_MEMBERS_COST } from '../utils/constants/squad';
 import { ReturnValue, Status } from '../utils/retVal';
 
 /**
@@ -465,11 +465,8 @@ export const upgradeSquadLimit = async (twitterId: string): Promise<ReturnValue>
             }
         }
 
-        // get the next max members limit.
-        const nextMaxMembers = NEXT_MAX_MEMBERS(squad.maxMembers);
-
         // check the cost in xCookies to upgrade the squad limit.
-        const cost = SQUAD_MAX_MEMBERS_UPGRADE_COST(nextMaxMembers);
+        const cost = UPGRADE_SQUAD_MAX_MEMBERS_COST(squad.maxMembers);
 
         // check if the user has enough xCookies to upgrade the squad limit.
         if (user.inGameData.xCookieData.currentXCookies < cost) {
@@ -481,7 +478,7 @@ export const upgradeSquadLimit = async (twitterId: string): Promise<ReturnValue>
 
         // upgrade the squad limit.
         await SquadModel.updateOne({ _id: squad._id }, {
-            maxMembers: nextMaxMembers
+            maxMembers: squad.maxMembers + MAX_MEMBERS_INCREASE_UPON_UPGRADE
         });
 
         // deduct the cost from the user's xCookies.
@@ -496,7 +493,7 @@ export const upgradeSquadLimit = async (twitterId: string): Promise<ReturnValue>
             message: `(upgradeSquadLimit) Upgraded squad limit successfully.`,
             data: {
                 squadId: squad._id,
-                maxMembers: nextMaxMembers
+                newMaxMembers: squad.maxMembers + MAX_MEMBERS_INCREASE_UPON_UPGRADE
             }
         }
     } catch (err: any) {
