@@ -29,7 +29,7 @@ router.post('/rename_bit', async (req, res) => {
         const { status, message, data } = await renameBit(validateData?.twitterId, bitId, newName);
 
         mixpanel.track('Rename Bit', {
-            '_twId': validateData?.twitterId,
+            distinct_id: validateData?.twitterId,
             '_bitId': bitId,
             '_newName': newName,
         });
@@ -63,7 +63,7 @@ router.post('/release_bit', async (req, res) => {
         const { status, message, data } = await releaseBit(validateData?.twitterId, bitId);
 
         mixpanel.track('Release Bit', {
-            '_twId': validateData?.twitterId,
+            distinct_id: validateData?.twitterId,
             '_bitId': bitId,
         });
 
@@ -96,7 +96,7 @@ router.post('/evolve_bit', async (req, res) => {
         const { status, message, data } = await evolveBit(validateData?.twitterId, bitId);
         
         mixpanel.track('Evolve Bit', {
-            '_twId': validateData?.twitterId,
+            distinct_id: validateData?.twitterId,
             '_bitId': bitId,
         });
 
@@ -129,7 +129,7 @@ router.post('/feed_bit', async (req, res) => {
         const { status, message, data } = await feedBit(validateData?.twitterId, bitId, <FoodType>foodType);
 
         mixpanel.track('Feed Bit', {
-            '_twId': validateData?.twitterId,
+            distinct_id: validateData?.twitterId,
             '_bitId': bitId,
             '_foodType': foodType,
         });
