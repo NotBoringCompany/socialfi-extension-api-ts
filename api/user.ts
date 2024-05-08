@@ -12,7 +12,7 @@ import { POIName } from '../models/poi';
 import { ExtendedResource, SimplifiedResource } from '../models/resource';
 import { resources } from '../utils/constants/resource';
 import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, XCookieSource } from '../models/user';
-import { GET_BEGINNER_REWARDS, GET_DAILY_LOGIN_REWARDS, GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS, GET_SEASON_0_REFERRAL_REWARDS, MAX_BEGINNER_REWARD_DAY } from '../utils/constants/user';
+import { GET_BEGINNER_REWARDS, GET_DAILY_LOGIN_REWARDS, GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS, GET_SEASON_0_REFERRAL_REWARDS, MAX_BEGINNER_REWARD_DAY, MAX_INVENTORY_WEIGHT } from '../utils/constants/user';
 import { ReferredUserData } from '../models/invite';
 import { BitOrbType } from '../models/bitOrb';
 import { TerraCapsulatorType } from '../models/terraCapsulator';
@@ -299,7 +299,7 @@ export const handleTwitterLogin = async (
                 openedTweetIdsToday: [],
                 inventory: {
                     weight: 0,
-                    maxWeight: 200,
+                    maxWeight: MAX_INVENTORY_WEIGHT,
                     xCookieData: {
                         currentXCookies: 0,
                         extendedXCookieData: []
