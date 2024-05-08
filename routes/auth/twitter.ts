@@ -4,6 +4,7 @@ import { generateJWT, validateJWT } from '../../utils/jwt';
 import { Status } from '../../utils/retVal';
 import passport from '../../configs/passport';
 import { handleTwitterLogin } from '../../api/user';
+import base64url from 'base64url';
 
 const router = express.Router();
 
@@ -23,7 +24,7 @@ router.get('/login', async (req, res, next) => {
             // token is invalid, redirect to Twitter for authentication
             passport.authenticate('twitter', {
                 scope: ['tweet.read', 'users.read', 'offline.access'],
-                state: Buffer.from(JSON.stringify({ host })).toString('base64'),
+                state: JSON.stringify({ host }),
             })(req, res, next);
         }
     } else {
@@ -57,7 +58,7 @@ router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/' 
             const token = generateJWT(twitterId, twitterAccessToken, twitterRefreshToken, twitterExpiryDate - Math.floor(Date.now() / 1000));
 
             const { state } = req.query;
-            const { host } = JSON.parse(Buffer.from(state.toString(), 'base64').toString())
+            const { host } = JSON.parse(state.toString())
             if (typeof host === 'string' && host.startsWith('/')) {
                 return res.redirect(`https://${host}?jwt=${token}`)
             }
