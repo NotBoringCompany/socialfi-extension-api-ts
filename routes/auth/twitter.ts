@@ -1,6 +1,6 @@
 import express from 'express';
 import { ExtendedProfile } from '../../utils/types';
-import { generateJWT, validateJWT } from '../../utils/jwt';
+import { createStateParameter, generateJWT, validateJWT, verifyStateParameter } from '../../utils/jwt';
 import { Status } from '../../utils/retVal';
 import passport from '../../configs/passport';
 import { handleTwitterLogin } from '../../api/user';
@@ -13,6 +13,7 @@ router.get('/login', async (req, res, next) => {
     const token = req.headers.authorization?.split(' ')[1];
 
     const host = req.query.host || 'twitter.com';
+    const state = createStateParameter(host.toString());
 
     if (token) {
         // check for validation
@@ -24,13 +25,14 @@ router.get('/login', async (req, res, next) => {
             // token is invalid, redirect to Twitter for authentication
             passport.authenticate('twitter', {
                 scope: ['tweet.read', 'users.read', 'offline.access'],
-                state: JSON.stringify({ host }),
+                state,
             })(req, res, next);
         }
     } else {
         // token doesn't exist, redirect to Twitter for authentication
         passport.authenticate('twitter', {
-            scope: ['tweet.read', 'users.read', 'offline.access']
+            scope: ['tweet.read', 'users.read', 'offline.access'],
+            state,
         })(req, res, next);
     }
 });
@@ -57,13 +59,10 @@ router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/' 
         } else {
             const token = generateJWT(twitterId, twitterAccessToken, twitterRefreshToken, twitterExpiryDate - Math.floor(Date.now() / 1000));
 
-            const { state } = req.query;
-            const { host } = JSON.parse(state.toString())
-            if (typeof host === 'string' && host.startsWith('/')) {
-                return res.redirect(`https://${host}?jwt=${token}`)
-            }
+            const state = req.query.state;
+            const decodedState = verifyStateParameter(state.toString());
 
-            return res.redirect(`https://twitter.com?jwt=${token}`);
+            return res.redirect(`https://${decodedState?.host || 'twitter.com'}?jwt=${token}`);
         }
     } catch (err: any) {
         return res.status(500).json({

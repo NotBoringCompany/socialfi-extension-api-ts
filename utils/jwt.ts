@@ -69,3 +69,22 @@ export const validateJWT = (token: string): ReturnValue => {
         }
     }
 }
+
+/**
+ * Creates a JWT signed state parameter containing the host information.
+ */
+export function createStateParameter(host: string): string {
+    return sign({ host }, process.env.JWT_SECRET, { expiresIn: '1h' });
+}
+
+/**
+ * Verifies the signed state parameter received from the OAuth provider.
+ */
+export function verifyStateParameter(state: string): { host: string } | null {
+    try {
+        return verify(state, process.env.JWT_SECRET) as { host: string };
+    } catch (e) {
+        console.error("Failed to verify state parameter:", e);
+        return null;
+    }
+}
