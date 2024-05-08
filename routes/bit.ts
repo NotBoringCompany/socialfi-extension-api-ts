@@ -9,6 +9,7 @@ import { BitSchema } from '../schemas/Bit';
 import { BIT_EVOLUTION_COST, FREE_BIT_EVOLUTION_COST } from '../utils/constants/bit';
 import { BitModel } from '../utils/constants/db';
 import { Modifier } from '../models/modifier';
+import { mixpanel } from '../utils/mixpanel';
 
 const router = express.Router();
 
@@ -26,6 +27,12 @@ router.post('/rename_bit', async (req, res) => {
         }
 
         const { status, message, data } = await renameBit(validateData?.twitterId, bitId, newName);
+
+        mixpanel.track('Rename Bit', {
+            '_twId': validateData?.twitterId,
+            '_bitId': bitId,
+            '_newName': newName,
+        });
 
         return res.status(status).json({
             status,
@@ -55,6 +62,11 @@ router.post('/release_bit', async (req, res) => {
 
         const { status, message, data } = await releaseBit(validateData?.twitterId, bitId);
 
+        mixpanel.track('Release Bit', {
+            '_twId': validateData?.twitterId,
+            '_bitId': bitId,
+        });
+
         return res.status(status).json({
             status,
             message,
@@ -82,6 +94,11 @@ router.post('/evolve_bit', async (req, res) => {
         }
 
         const { status, message, data } = await evolveBit(validateData?.twitterId, bitId);
+        
+        mixpanel.track('Evolve Bit', {
+            '_twId': validateData?.twitterId,
+            '_bitId': bitId,
+        });
 
         return res.status(status).json({
             status,
@@ -110,6 +127,12 @@ router.post('/feed_bit', async (req, res) => {
         }
 
         const { status, message, data } = await feedBit(validateData?.twitterId, bitId, <FoodType>foodType);
+
+        mixpanel.track('Feed Bit', {
+            '_twId': validateData?.twitterId,
+            '_bitId': bitId,
+            '_foodType': foodType,
+        });
 
         return res.status(status).json({
             status,
