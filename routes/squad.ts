@@ -1,9 +1,38 @@
 import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
-import { createSquad, leaveSquad, renameSquad, upgradeSquadLimit } from '../api/squad';
+import { createSquad, leaveSquad, renameSquad, requestToJoinSquad, upgradeSquadLimit } from '../api/squad';
 
 const router = express.Router();
+
+router.post('/request_to_join_squad', async (req, res) => {
+    const { squadId, squadName } = req.body;
+
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'request_to_join_squad');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
+        const { status, message, data } = await requestToJoinSquad(validateData?.twitterId, squadId, squadName);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+
+})
 
 router.post('/rename_squad', async (req, res) => {
     const { newSquadName } = req.body;

@@ -1,6 +1,6 @@
 import { SquadCreationMethod, SquadRank, SquadRole } from '../models/squad';
 import { SquadModel, UserModel } from '../utils/constants/db';
-import { CREATE_SQUAD_COST, INITIAL_MAX_MEMBERS, MAX_MEMBERS_INCREASE_UPON_UPGRADE, MAX_MEMBERS_LIMIT, UPGRADE_SQUAD_MAX_MEMBERS_COST } from '../utils/constants/squad';
+import { CREATE_SQUAD_COST, INITIAL_MAX_MEMBERS, MAX_MEMBERS_INCREASE_UPON_UPGRADE, MAX_MEMBERS_LIMIT, SQUAD_LEAVE_COOLDOWN, UPGRADE_SQUAD_MAX_MEMBERS_COST } from '../utils/constants/squad';
 import { ReturnValue, Status } from '../utils/retVal';
 
 /**
@@ -86,6 +86,96 @@ export const joinReferrerSquad = async (
         return {
             status: Status.ERROR,
             message: `(joinReferrerSquad) ${err.message}`
+        }
+    }
+}
+
+/**
+ * Requests to join a squad given its ID or name.
+ */
+export const requestToJoinSquad = async (twitterId: string, squadId?: number, squadName?: string): Promise<ReturnValue> => {
+    try {
+        if (!squadId && !squadName) {
+            return {
+                status: Status.ERROR,
+                message: `(requestToJoinSquad) Invalid squad ID or name.`
+            }
+        }
+
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(requestToJoinSquad) User not found.`
+            }
+        }
+
+        // check if the user is already in a squad.
+        if (user.inGameData.squadId !== null) {
+            return {
+                status: Status.ERROR,
+                message: `(requestToJoinSquad) User is already in a squad.`
+            }
+        }
+
+        // check if the user is still under the squad leave cooldown.
+        const currentTimestamp = Math.floor(Date.now() / 1000);
+
+        if (user.inGameData.lastLeftSquad + SQUAD_LEAVE_COOLDOWN > currentTimestamp) {
+            return {
+                status: Status.ERROR,
+                message: `(requestToJoinSquad) User is still under the squad leave cooldown.`
+            }
+        }
+
+        // check if the squad exists.
+        const squad = await SquadModel.findOne({ $or: [{ _id: squadId }, { name: squadName }] });
+
+        if (!squad) {
+            return {
+                status: Status.ERROR,
+                message: `(requestToJoinSquad) Squad not found.`
+            }
+        }
+
+        // check if the squad is full.
+        if (squad.members.length >= squad.maxMembers) {
+            return {
+                status: Status.ERROR,
+                message: `(requestToJoinSquad) Squad is already full.`
+            }
+        }
+
+        // check if the user has already requested to join the squad.
+        if (squad.pendingMembers.find(member => member.userId === user._id)) {
+            return {
+                status: Status.ERROR,
+                message: `(requestToJoinSquad) User has already requested to join the squad.`
+            }
+        }
+
+        // add the user to the pending members list.
+        await SquadModel.updateOne({ _id: squad._id }, {
+            $push: {
+                pendingMembers: {
+                    userId: user._id,
+                    requestedTimestamp: Math.floor(Date.now() / 1000)
+                }
+            }
+        });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(requestToJoinSquad) Requested to join squad successfully.`,
+            data: {
+                squadId: squad._id
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(requestToJoinSquad) ${err.message}`
         }
     }
 }

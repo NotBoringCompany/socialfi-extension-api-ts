@@ -6,6 +6,8 @@ export interface Squad {
     name: string;
     /** the squad members */
     members: SquadMember[];
+    /** pending squad members who want to join the squad but not confirmed yet by the leader */
+    pendingMembers: PendingSquadMember[];
     /** the max amount of members allowed for this squad */
     maxMembers: number;
     /** when this squad was formed */
@@ -55,6 +57,16 @@ export interface SquadMember {
     joinedTimestamp: number;
     /** when this member's role was last updated */
     roleUpdatedTimestamp: number;
+}
+
+/**
+ * Represents a pending squad member.
+ */
+export interface PendingSquadMember {
+    /** the database user ID of this member */
+    userId: string;
+    /** when this member requested to join */
+    requestedTimestamp: number;
 }
 
 /**
