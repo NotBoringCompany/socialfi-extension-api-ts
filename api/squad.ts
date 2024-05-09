@@ -448,12 +448,15 @@ export const createSquad = async (twitterId: string, squadName: string): Promise
         // create the squad.
         const squad = new SquadModel({
             name: squadName,
+            nameChangeCount: 0,
+            lastNameChangeTimestamp: Math.floor(Date.now() / 1000),
             members: [{
                 userId: user._id,
                 role: SquadRole.LEADER,
                 joinedTimestamp: Math.floor(Date.now() / 1000),
                 roleUpdatedTimestamp: Math.floor(Date.now() / 1000)
             }],
+            pendingMembers: [],
             // all new squads have a max of 10 members.
             maxMembers: INITIAL_MAX_MEMBERS,
             formedTimestamp: Math.floor(Date.now() / 1000),

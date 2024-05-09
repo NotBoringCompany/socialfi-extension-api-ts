@@ -10,6 +10,8 @@ export const SquadSchema = new mongoose.Schema({
         default: generateObjectId()
     },
     name: String,
+    nameChangeCount: Number,
+    lastNameChangeTimestamp: Number,
     members: [{
         userId: String,
         role: String,

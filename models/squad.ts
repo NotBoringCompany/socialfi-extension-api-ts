@@ -4,6 +4,14 @@
 export interface Squad {
     /** the squad name */
     name: string;
+    /** 
+     * the number of times the squad name was changed 
+     * 
+     * this is used to determine if the squad is eligible for a free name change (only first time is free for now)
+     */
+    nameChangeCount: number;
+    /** the timestamp when the squad name was last changed */
+    lastNameChangeTimestamp: number;
     /** the squad members */
     members: SquadMember[];
     /** pending squad members who want to join the squad but not confirmed yet by the leader */
