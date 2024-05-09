@@ -814,3 +814,91 @@ export const delegateLeadership = async (currentLeaderTwitterId: string, newLead
         }
     }
 }
+
+export const kickMember = async (leaderTwitterId: string, memberTwitterId: string): Promise<ReturnValue> => {
+    try {
+        const [leader, member] = await Promise.all([
+            UserModel.findOne({ twitterId: leaderTwitterId }).lean(),
+            UserModel.findOne({ twitterId: memberTwitterId }).lean()
+        ]);
+
+        if (!leader) {
+            return {
+                status: Status.ERROR,
+                message: `(kickMember) Leader not found.`
+            }
+        }
+
+        if (!member) {
+            return {
+                status: Status.ERROR,
+                message: `(kickMember) Member not found.`
+            }
+        }
+
+        // check if the leader is in a squad.
+        if (leader.inGameData.squadId === null) {
+            return {
+                status: Status.ERROR,
+                message: `(kickMember) Leader is not in a squad.`
+            }
+        }
+
+        // check if the leader is a squad leader.
+        const squad = await SquadModel.findOne({ _id: leader.inGameData.squadId });
+
+        if (!squad) {
+            return {
+                status: Status.ERROR,
+                message: `(kickMember) Squad not found.`
+            }
+        }
+
+        if (squad.members.find(member => member.userId === leader._id)?.role !== SquadRole.LEADER) {
+            return {
+                status: Status.ERROR,
+                message: `(kickMember) User is not a squad leader for the given squad.`
+            }
+        }
+
+        // check if the member is in the squad.
+        if (!squad.members.find(squadMember => squadMember.userId === member._id)) {
+            return {
+                status: Status.ERROR,
+                message: `(kickMember) Member is not in the squad.`
+            }
+        }
+
+        // check if the leader is trying to kick themselves.
+        if (leader._id === member._id) {
+            return {
+                status: Status.ERROR,
+                message: `(kickMember) Leader cannot kick themselves.`
+            }
+        }
+
+        // remove the member from the squad.
+        await SquadModel.updateOne({ _id: squad._id }, {
+            $pull: {
+                members: {
+                    userId: member._id
+                }
+            }
+        });
+
+        // update the member's squad ID.
+        await UserModel.updateOne({ _id: member._id }, {
+            'inGameData.squadId': null
+        });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(kickMember) Kicked member successfully.`
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(kickMember) ${err.message}`
+        }
+    }
+}

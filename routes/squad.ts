@@ -1,7 +1,7 @@
 import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
-import { acceptPendingSquadMember, createSquad, delegateLeadership, leaveSquad, renameSquad, requestToJoinSquad, upgradeSquadLimit } from '../api/squad';
+import { acceptPendingSquadMember, createSquad, delegateLeadership, kickMember, leaveSquad, renameSquad, requestToJoinSquad, upgradeSquadLimit } from '../api/squad';
 
 const router = express.Router();
 
@@ -183,6 +183,34 @@ router.post('/delegate_leadership', async (req, res) => {
         }
 
         const { status, message, data } = await delegateLeadership(validateData?.twitterId, newLeaderTwitterId);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
+
+router.post('/kick_member', async (req, res) => {
+    const { memberTwitterId } = req.body;
+
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'kick_member');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
+        const { status, message, data } = await kickMember(validateData?.twitterId, memberTwitterId);
 
         return res.status(status).json({
             status,
