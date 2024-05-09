@@ -11,6 +11,9 @@ router.get('/login', async (req, res, next) => {
     // get the jwt token (if it exists) from the request headers
     const token = req.headers.authorization?.split(' ')[1];
 
+    const host = req.query.host || 'twitter.com';
+    (req.session as any).redirectHost = host;
+
     if (token) {
         // check for validation
         const { status } = validateJWT(token);
@@ -20,18 +23,22 @@ router.get('/login', async (req, res, next) => {
         } else {
             // token is invalid, redirect to Twitter for authentication
             passport.authenticate('twitter', {
-                scope: ['tweet.read', 'users.read', 'offline.access']
+                scope: ['tweet.read', 'users.read', 'offline.access'],
+                session: true,
+                keepSessionInfo: true,
             })(req, res, next);
         }
     } else {
         // token doesn't exist, redirect to Twitter for authentication
         passport.authenticate('twitter', {
-            scope: ['tweet.read', 'users.read', 'offline.access']
+            scope: ['tweet.read', 'users.read', 'offline.access'],
+            session: true,
+            keepSessionInfo: true,
         })(req, res, next);
     }
 });
 
-router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/' }), async (req, res) => {
+router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/', session: true, keepSessionInfo: true }), async (req, res) => {
     if (!req.user) {
         return res.status(401).json({
             status: Status.UNAUTHORIZED,
@@ -52,8 +59,9 @@ router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/' 
             })
         } else {
             const token = generateJWT(twitterId, twitterAccessToken, twitterRefreshToken, twitterExpiryDate - Math.floor(Date.now() / 1000));
+            const host = (req.session as any).redirectHost || 'twitter.com';
 
-            return res.redirect(`https://twitter.com?jwt=${token}`);
+            return res.redirect(`https://${host}?jwt=${token}`);
         }
     } catch (err: any) {
         return res.status(500).json({
