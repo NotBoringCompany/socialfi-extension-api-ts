@@ -10,6 +10,8 @@ export const MAX_MEMBERS_INCREASE_UPON_UPGRADE = 5;
 
 /** the cooldown after leaving a squad before being able to join another squad (in seconds) */
 export const SQUAD_LEAVE_COOLDOWN = 86400;
+/** the cooldown to rename the squad again (in seconds) */
+export const RENAME_SQUAD_COOLDOWN = 604800;
 
 /**
  * Gets the cost (in xCookies) for upgrading the max members count of a squad.
@@ -29,4 +31,6 @@ export const UPGRADE_SQUAD_MAX_MEMBERS_COST = (currentMaxMembers: number) => {
 }
 
 /** cost in xCookies for creating a squad */
-export const CREATE_SQUAD_COST = 5;
+export const CREATE_SQUAD_COST = 30;
+/** cost in xCookies for renaming a squad */
+export const RENAME_SQUAD_COST = 5;

@@ -1,6 +1,6 @@
 import { SquadCreationMethod, SquadRank, SquadRole } from '../models/squad';
 import { SquadModel, UserModel } from '../utils/constants/db';
-import { CREATE_SQUAD_COST, INITIAL_MAX_MEMBERS, MAX_MEMBERS_INCREASE_UPON_UPGRADE, MAX_MEMBERS_LIMIT, SQUAD_LEAVE_COOLDOWN, UPGRADE_SQUAD_MAX_MEMBERS_COST } from '../utils/constants/squad';
+import { CREATE_SQUAD_COST, INITIAL_MAX_MEMBERS, MAX_MEMBERS_INCREASE_UPON_UPGRADE, MAX_MEMBERS_LIMIT, RENAME_SQUAD_COOLDOWN, RENAME_SQUAD_COST, SQUAD_LEAVE_COOLDOWN, UPGRADE_SQUAD_MAX_MEMBERS_COST } from '../utils/constants/squad';
 import { ReturnValue, Status } from '../utils/retVal';
 
 /**
@@ -310,6 +310,19 @@ export const renameSquad = async (twitterId: string, newSquadName: string): Prom
             }
         }
 
+        // check the last name change timestamp.
+        const currentTimestamp = Math.floor(Date.now() / 1000);
+
+        if (squad.lastNameChangeTimestamp + RENAME_SQUAD_COOLDOWN > currentTimestamp) {
+            return {
+                status: Status.ERROR,
+                message: `(renameSquad) Cannot rename squad name for another ${currentTimestamp - (squad.lastNameChangeTimestamp + RENAME_SQUAD_COOLDOWN)} seconds.`
+            }
+        }
+
+        // calculate the cost in xCookies to rename the squad. if it's the first time, it's free.
+        const cost = squad.nameChangeCount === 0 ? 0 : RENAME_SQUAD_COST;
+
         // update the squad name.
         // rules:
         // 1. squad name can only be up to 20 characters long.
@@ -344,8 +357,20 @@ export const renameSquad = async (twitterId: string, newSquadName: string): Prom
             }
         }
 
+        // update the squad name and increment the name change count and last name change timestamp.
         await SquadModel.updateOne({ _id: squad._id }, {
-            name: newSquadName
+            name: newSquadName,
+            $inc: {
+                nameChangeCount: 1
+            },
+            lastNameChangeTimestamp: currentTimestamp
+        });
+
+        // deduct the cost from the user's xCookies.
+        await UserModel.updateOne({ _id: user._id }, {
+            $inc: {
+                'inGameData.xCookieData.currentXCookies': -cost
+            }
         });
 
         return {
