@@ -719,3 +719,98 @@ export const upgradeSquadLimit = async (twitterId: string): Promise<ReturnValue>
         }
     }
 }
+
+/**
+ * Delegates the leader role to another member in the squad. Only callable by a squad leader.
+ */
+export const delegateLeadership = async (currentLeaderTwitterId: string, newLeaderTwitterId: string): Promise<ReturnValue> => {
+    try {
+        const [currentLeader, newLeader] = await Promise.all([
+            UserModel.findOne({ twitterId: currentLeaderTwitterId }).lean(),
+            UserModel.findOne({ twitterId: newLeaderTwitterId }).lean()
+        ]);
+
+        if (!currentLeader) {
+            return {
+                status: Status.ERROR,
+                message: `(delegateLeadership) Current leader not found.`
+            }
+        }
+
+        if (!newLeader) {
+            return {
+                status: Status.ERROR,
+                message: `(delegateLeadership) New leader not found.`
+            }
+        }
+
+        // check if the current leader is in a squad.
+        if (currentLeader.inGameData.squadId === null) {
+            return {
+                status: Status.ERROR,
+                message: `(delegateLeadership) Current leader is not in a squad.`
+            }
+        }
+
+        // check if the new leader is in the same squad as the current leader.
+        if (newLeader.inGameData.squadId !== currentLeader.inGameData.squadId) {
+            return {
+                status: Status.ERROR,
+                message: `(delegateLeadership) New leader is not in the same squad as the current leader.`
+            }
+        }
+
+        // check if the current leader is a squad leader.
+        const squad = await SquadModel.findOne({ _id: currentLeader.inGameData.squadId });
+
+        if (!squad) {
+            return {
+                status: Status.ERROR,
+                message: `(delegateLeadership) Squad not found.`
+            }
+        }
+
+        if (squad.members.find(member => member.userId === currentLeader._id)?.role !== SquadRole.LEADER) {
+            return {
+                status: Status.ERROR,
+                message: `(delegateLeadership) Current leader is not a squad leader for the given squad.`
+            }
+        }
+
+        // check if the new leader is a member of the squad.
+        if (!squad.members.find(member => member.userId === newLeader._id)) {
+            return {
+                status: Status.ERROR,
+                message: `(delegateLeadership) New leader is not a member of the squad.`
+            }
+        }
+
+        // update the roles of the current and new leaders.
+        const currentLeaderIndex = squad.members.findIndex(member => member.userId === currentLeader._id);
+        const newLeaderIndex = squad.members.findIndex(member => member.userId === newLeader._id);
+
+        await SquadModel.updateOne({ _id: squad._id }, {
+            $set: {
+                [`members.${currentLeaderIndex}.role`]: SquadRole.MEMBER,
+                [`members.${currentLeaderIndex}.roleUpdatedTimestamp`]: Math.floor(Date.now() / 1000),
+                [`members.${newLeaderIndex}.role`]: SquadRole.LEADER,
+                [`members.${newLeaderIndex}.roleUpdatedTimestamp`]: Math.floor(Date.now() / 1000)
+            }
+        });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(delegateLeadership) Delegated leadership successfully.`,
+            data: {
+                squadId: squad._id,
+                currentLeaderId: currentLeader._id,
+                newLeaderId: newLeader._id
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(delegateLeadership) ${err.message}`
+        }
+    }
+}
