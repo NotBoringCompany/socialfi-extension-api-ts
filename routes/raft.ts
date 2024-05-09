@@ -4,6 +4,7 @@ import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { UserModel } from '../utils/constants/db';
 import { RAFT_EVOLUTION_COST } from '../utils/constants/raft';
+import { mixpanel } from '../utils/mixpanel';
 
 const router = express.Router();
 
@@ -79,6 +80,11 @@ router.post('/evolve_raft', async (req, res) => {
         }
 
         const { status, message, data } = await evolveRaft(validateData?.twitterId);
+
+        mixpanel.track('Evolve Raft', {
+            distinct_id: validateData?.twitterId,
+            '_data': data,
+        });
 
         return res.status(status).json({
             status,

@@ -352,7 +352,9 @@ export const evolveIsland = async (twitterId: string, islandId: number, choice: 
             status: Status.SUCCESS,
             message: `(evolveIsland) Island with ID ${islandId} successfully evolved.`,
             data: {
-                islandId
+                islandId: islandId,
+                currentLevel: island.currentLevel,
+                nextLevel: island.currentLevel + 1,
             }
         }
     } catch (err: any) {
@@ -2703,7 +2705,12 @@ export const claimXCookiesAndCrumbs = async (twitterId: string, islandId: number
 
         return {
             status: Status.SUCCESS,
-            message: `(claimXCookies) Claimed ${xCookies} xCookies from island ID ${islandId}.`
+            message: `(claimXCookies) Claimed ${xCookies} xCookies from island ID ${islandId}.`,
+            data: {
+                islandId: islandId,
+                xCookies: xCookies,
+                crumbs: cookieCrumbs,
+            }
         }
     } catch (err: any) {
         return {
