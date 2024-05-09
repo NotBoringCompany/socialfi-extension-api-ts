@@ -3,6 +3,7 @@ import { checkInviteCodeLinked, claimBeginnerRewards, claimDailyRewards, generat
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { ExtendedProfile } from '../utils/types';
+import { mixpanel } from '../utils/mixpanel';
 
 const router = express.Router();
 
@@ -65,6 +66,11 @@ router.post('/remove_resources', async (req, res) => {
         }
 
         const { status, message, data } = await removeResources(validateData?.twitterId, resourcesToRemove);
+
+        mixpanel.track('Remove Resources', {
+            distinct_id: validateData?.twitterId,
+            '_removedResource': resourcesToRemove,
+        });
 
         return res.status(status).json({
             status,
@@ -146,6 +152,11 @@ router.post('/claim_daily_rewards', async (req, res) => {
 
         const { status, message, data } = await claimDailyRewards(validateData?.twitterId, leaderboardName);
 
+        mixpanel.track('Claim Daily Rewards', {
+            distinct_id: validateData?.twitterId,
+            '_rewards': data?.dailyLoginRewards,
+        });
+
         return res.status(status).json({
             status,
             message,
@@ -218,6 +229,11 @@ router.post('/claim_beginner_rewards', async (req, res) => {
         }
 
         const { status, message, data } = await claimBeginnerRewards(validateData?.twitterId);
+
+        mixpanel.track('Claim Beginner Rewards', {
+            distinct_id: validateData?.twitterId,
+            '_rewards': data?.rewards,
+        });
 
         return res.status(status).json({
             status,

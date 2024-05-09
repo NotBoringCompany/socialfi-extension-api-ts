@@ -3,6 +3,7 @@ import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { addOrReplacePOIShop, addPOI, applyTravelBooster, buyItemsInPOIShop, getAvailablePOIDestinations, getCurrentLocation, getCurrentPOI, getUserTransactionData, sellItemsInPOIShop, travelToPOI, updateArrival } from '../api/poi';
 import { ExtendedProfile } from '../utils/types';
+import { mixpanel } from '../utils/mixpanel';
 
 const router = express.Router();
 
@@ -43,6 +44,11 @@ router.post('/travel_to_poi', async (req, res) => {
 
         const { status, message } = await travelToPOI(validateData?.twitterId, destination);
 
+        mixpanel.track('Travel to Poi', {
+            distinct_id: validateData?.twitterId,
+            '_destination': destination,
+        });
+
         return res.status(status).json({
             status,
             message
@@ -73,6 +79,11 @@ router.post('/apply_travel_booster', async (req, res) => {
         }
 
         const { status, message } = await applyTravelBooster(validateData?.twitterId, booster);
+
+        mixpanel.track('Apply Travelling Booster', {
+            distinct_id: validateData?.twitterId,
+            '_booster': booster,
+        });
 
         return res.status(status).json({
             status,
@@ -209,6 +220,12 @@ router.post('/sell_items_in_poi_shop', async (req, res) => {
 
         const { status, message, data } = await sellItemsInPOIShop(validateData?.twitterId, items, leaderboardName);
 
+        mixpanel.track('POI Shop: Sell Item', {
+            distinct_id: validateData?.twitterId,
+            '_items': items,
+            '_leaderboardName': leaderboardName,
+        });
+
         return res.status(status).json({
             status,
             message,
@@ -236,6 +253,12 @@ router.post('/buy_items_in_poi_shop', async (req, res) => {
         }
 
         const { status, message, data } = await buyItemsInPOIShop(validateData?.twitterId, items, paymentChoice);
+
+        mixpanel.track('POI Shop: Sell Item', {
+            distinct_id: validateData?.twitterId,
+            '_items': items,
+            '_paymentChoice': paymentChoice,
+        });
 
         return res.status(status).json({
             status,
