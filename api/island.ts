@@ -1360,8 +1360,9 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
         // 2. `gatheringEnd` is 0
         // 3. `placedBitIds` has at least a length of 1 (i.e. at least 1 placed bit inside)
         const islands = await IslandModel.find({
-            'islandResourceStats.gatheringStart': { $ne: 0 },
             'islandResourceStats.gatheringEnd': 0,
+            // remove this because we still need to update `lastUpdatedGatheringProgress` even if gathering has not started.
+            // 'islandResourceStats.gatheringStart': { $ne: 0 },
             // remove this because we still need to update `lastUpdatedGatheringProgress` even if there are no bits placed on the island
             // 'placedBitIds.0': { $exists: true }
         }).lean();
