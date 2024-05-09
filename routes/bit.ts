@@ -97,7 +97,7 @@ router.post('/evolve_bit', async (req, res) => {
         
         mixpanel.track('Evolve Bit', {
             distinct_id: validateData?.twitterId,
-            '_bitId': bitId,
+            '_data': data,
         });
 
         return res.status(status).json({

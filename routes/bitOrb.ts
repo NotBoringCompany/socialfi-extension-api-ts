@@ -29,6 +29,7 @@ router.post('/consume', async (req, res) => {
         mixpanel.track('Consume Bit Orb', {
             distinct_id: validateData?.twitterId,
             '_type': type,
+            '_bit': data?.bit,
         });
 
         return res.status(status).json({

@@ -24,6 +24,7 @@ router.post('/open_chest', async (req, res) => {
         mixpanel.track('Open Chest', {
             distinct_id: validateData?.twitterId,
             '_tweetId': tweetId,
+            '_data': data,
         });
 
         return res.status(status).json({

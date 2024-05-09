@@ -23,6 +23,7 @@ router.post('/consume', async (req, res) => {
         mixpanel.track('Consume Terra Capsulator', {
             distinct_id: validateData?.twitterId,
             '_type': type,
+            '_island': data?.island,
         });
 
         return res.status(status).json({
