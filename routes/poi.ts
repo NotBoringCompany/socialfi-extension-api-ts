@@ -254,7 +254,7 @@ router.post('/buy_items_in_poi_shop', async (req, res) => {
 
         const { status, message, data } = await buyItemsInPOIShop(validateData?.twitterId, items, paymentChoice);
 
-        mixpanel.track('POI Shop: Sell Item', {
+        mixpanel.track('POI Shop: Buy Item', {
             distinct_id: validateData?.twitterId,
             '_items': items,
             '_paymentChoice': paymentChoice,
