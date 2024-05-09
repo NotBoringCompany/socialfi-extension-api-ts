@@ -13,7 +13,7 @@ router.get('/login', async (req, res, next) => {
     const token = req.headers.authorization?.split(' ')[1];
     
     const host = req.query.host || 'twitter.com';
-    res.cookie('redirectHost', host, { signed: true, httpOnly: true });
+    (req.session as any).redirectHost = host;
 
     if (token) {
         // check for validation
@@ -24,18 +24,22 @@ router.get('/login', async (req, res, next) => {
         } else {
             // token is invalid, redirect to Twitter for authentication
             passport.authenticate('twitter', {
-                scope: ['tweet.read', 'users.read', 'offline.access']
+                scope: ['tweet.read', 'users.read', 'offline.access'],
+                session: true,
+                keepSessionInfo: true,
             })(req, res, next);
         }
     } else {
         // token doesn't exist, redirect to Twitter for authentication
         passport.authenticate('twitter', {
-            scope: ['tweet.read', 'users.read', 'offline.access']
+            scope: ['tweet.read', 'users.read', 'offline.access'],
+            session: true,
+            keepSessionInfo: true,
         })(req, res, next);
     }
 });
 
-router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/' }), async (req, res) => {
+router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/', session: true, keepSessionInfo: true }), async (req, res) => {
     if (!req.user) {
         return res.status(401).json({
             status: Status.UNAUTHORIZED,
@@ -56,7 +60,7 @@ router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/' 
             })
         } else {
             const token = generateJWT(twitterId, twitterAccessToken, twitterRefreshToken, twitterExpiryDate - Math.floor(Date.now() / 1000));
-            const host = req.signedCookies['redirectHost'] || 'twitter.com';
+            const host = (req.session as any).redirectHost || 'twitter.com';
 
             return res.redirect(`https://${host}?jwt=${token}`);
         }
