@@ -330,7 +330,7 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
 
         // if the user is a squad leader, do the following:
         // 1. check if the user is the only member in the squad. if so, disband the squad.
-        // 2. if there are other members, check if there is at least 1 other leader in the squad. if not, promote the member with the longest tenure to leader.
+        // 2. if there are other members in the squad, promote the member with the longest tenure to leader.
         if (squad.members.find(member => member.userId === user._id)?.role === SquadRole.LEADER) {
             if (squad.members.length === 1) {
                 // disband the squad by removing the member from the squad (leaving the squad memberless)
@@ -352,38 +352,34 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
                     message: `(leaveSquad) Disbanded squad successfully.`
                 }
             } else {
-                const otherLeaders = squad.members.filter(member => member.role === SquadRole.LEADER);
+                const memberWithLongestTenure = squad.members.reduce((prev, current) => {
+                    return (prev.joinedTimestamp < current.joinedTimestamp) ? prev : current;
+                });
 
-                if (otherLeaders.length === 0) {
-                    const memberWithLongestTenure = squad.members.reduce((prev, current) => {
-                        return (prev.joinedTimestamp < current.joinedTimestamp) ? prev : current;
-                    });
+                // promote the member with the longest tenure to leader.
+                // remove the user-to-leave from the squad.
+                const memberWithLongestTenureIndex = squad.members.findIndex(member => member.userId === memberWithLongestTenure.userId);
 
-                    // promote the member with the longest tenure to leader.
-                    // remove the user-to-leave from the squad.
-                    const memberWithLongestTenureIndex = squad.members.findIndex(member => member.userId === memberWithLongestTenure.userId);
-
-                    await SquadModel.updateOne({ _id: squad._id }, {
-                        $set: {
-                            [`members.${memberWithLongestTenureIndex}.role`]: SquadRole.LEADER,
-                            [`members.${memberWithLongestTenureIndex}.roleUpdatedTimestamp`]: Math.floor(Date.now() / 1000)
-                        },
-                        $pull: {
-                            members: {
-                                userId: user._id
-                            }
+                await SquadModel.updateOne({ _id: squad._id }, {
+                    $set: {
+                        [`members.${memberWithLongestTenureIndex}.role`]: SquadRole.LEADER,
+                        [`members.${memberWithLongestTenureIndex}.roleUpdatedTimestamp`]: Math.floor(Date.now() / 1000)
+                    },
+                    $pull: {
+                        members: {
+                            userId: user._id
                         }
-                    });
-
-                    // update the user's squad ID.
-                    await UserModel.updateOne({ _id: user._id }, {
-                        'inGameData.squadId': null
-                    });
-
-                    return {
-                        status: Status.SUCCESS,
-                        message: `(leaveSquad) Left squad. Promoted member ${memberWithLongestTenure._id} to leader successfully.`
                     }
+                });
+
+                // update the user's squad ID.
+                await UserModel.updateOne({ _id: user._id }, {
+                    'inGameData.squadId': null
+                });
+
+                return {
+                    status: Status.SUCCESS,
+                    message: `(leaveSquad) Left squad. Promoted member ${memberWithLongestTenure._id} to leader successfully.`
                 }
             }
         } else {

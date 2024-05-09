@@ -2,6 +2,8 @@
 export const INITIAL_MAX_MEMBERS = 10;
 /** the max amount of max members a squad can have */
 export const MAX_MEMBERS_LIMIT = 100;
+/** the max number of leaders a squad can have */
+export const MAX_LEADERS_LIMIT = 1;
 
 /**
  * Gets the next max members count for a squad given the current max members count.
@@ -18,24 +20,6 @@ export const NEXT_MAX_MEMBERS = (currentMaxMembers: number) => {
             return 100;
         default:
             throw new Error('(NEXT_MAX_MEMBERS) Invalid max members count');
-    }
-}
-
-/**
- * Gets the total number of leaders allowed for a squad given the current max members count.
- */
-export const SQUAD_MAX_LEADERS = (currentMaxMembers: number) => {
-    switch (currentMaxMembers) {
-        case 10:
-            return 1;
-        case 25:
-            return 2;
-        case 50:
-            return 3;
-        case 100:
-            return 5;
-        default:
-            throw new Error('(SQUAD_MAX_LEADERS) Invalid max members count');
     }
 }
 
