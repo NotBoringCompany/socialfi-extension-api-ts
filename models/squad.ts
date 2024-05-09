@@ -14,9 +14,34 @@ export interface Squad {
     formedBy: string;
     /** the method used to create this squad */
     creationMethod: SquadCreationMethod;
-    /** the total squad points obtained by all members since they join the squad */
+    /** the total number of points accumulated by this squad since creation */
     totalSquadPoints: number;
+    /** the squad's existing and current ranking data */
+    squadRankingData: SquadRankingData[];
 }
+
+/**
+ * Represents the squad ranking data.
+ */
+export interface SquadRankingData {
+    /** the week number */
+    week: number;
+    /** the squad's rank for this week */
+    rank: SquadRank;
+}
+
+/**
+ * Represents the squad ranking.
+ */
+export enum SquadRank {
+    UNRANKED = 'Unranked',
+    BRONZE = 'Bronze',
+    SILVER = 'Silver',
+    GOLD = 'Gold',
+    PLATINUM = 'Platinum',
+    DIAMOND = 'Diamond',
+    MASTER = 'Master',
+} 
 
 /**
  * Represents a squad member.

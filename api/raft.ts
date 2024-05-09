@@ -246,7 +246,12 @@ export const evolveRaft = async (twitterId: string): Promise<ReturnValue> => {
 
         return {
             status: Status.SUCCESS,
-            message: `(upgradeRaft) Successfully upgraded the user's raft.`
+            message: `(upgradeRaft) Successfully upgraded the user's raft.`,
+            data: {
+                raftId: raftId,
+                currentLevel: raft.currentLevel,
+                nextLevel: raft.currentLevel + 1,
+            }
         }
     } catch (err: any) {
         return {

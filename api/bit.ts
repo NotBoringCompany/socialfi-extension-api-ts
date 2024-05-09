@@ -841,6 +841,8 @@ export const evolveBit = async (
             message: `(evolveBit) Bit evolved to the next level.`,
             data: {
                 bitId: bitId,
+                currentLevel: bit.currentFarmingLevel,
+                nextLevel: bit.currentFarmingLevel + 1,
             },
         };
     } catch (err: any) {

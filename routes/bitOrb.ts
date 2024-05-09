@@ -2,6 +2,7 @@ import express from 'express';
 import { consumeBitOrb } from '../api/bitOrb';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
+import { mixpanel } from '../utils/mixpanel';
 
 const router = express.Router();
 
@@ -24,6 +25,12 @@ router.post('/consume', async (req, res) => {
             validateData?.twitterId,
             type
         );
+
+        mixpanel.track('Consume Bit Orb', {
+            distinct_id: validateData?.twitterId,
+            '_type': type,
+            '_bit': data?.bit,
+        });
 
         return res.status(status).json({
             status,

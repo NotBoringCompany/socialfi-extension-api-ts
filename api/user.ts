@@ -6,7 +6,7 @@ import { generateHashSalt, generateObjectId, generateReferralCode } from '../uti
 import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
 import { RANDOMIZE_GENDER, getBitStatsModifiersFromTraits, randomizeBitTraits, randomizeBitType } from '../utils/constants/bit';
 import { ObtainMethod } from '../models/obtainMethod';
-import { LeaderboardModel, SquadModel, StarterCodeModel, UserModel } from '../utils/constants/db';
+import { LeaderboardModel, SquadLeaderboardModel, SquadModel, StarterCodeModel, UserModel } from '../utils/constants/db';
 import { addIslandToDatabase, getLatestIslandId, randomizeBaseResourceCap } from './island';
 import { POIName } from '../models/poi';
 import { ExtendedResource, SimplifiedResource } from '../models/resource';
@@ -736,6 +736,13 @@ export const claimDailyRewards = async (
             $pull: {}
         }
 
+        const squadLeaderboardUpdateOperations = {
+            $set: {},
+            $inc: {},
+            $push: {},
+            $pull: {}
+        }
+
         if (!user) {
             return {
                 status: Status.ERROR,
@@ -829,6 +836,43 @@ export const claimDailyRewards = async (
                     // if user is in a squad, add to squad's `totalSquadPoints`
                     if (squadId) {
                         squadUpdateOperations.$inc['totalSquadPoints'] = reward.amount;
+
+                        // get the latest week of the squad leaderboard
+                        const latestSquadLeaderboard = await SquadLeaderboardModel.findOne().sort({ week: -1 });
+
+                        if (!latestSquadLeaderboard) {
+                            return {
+                                status: Status.ERROR,
+                                message: `(claimDailyRewards) Latest squad leaderboard not found.`
+                            }
+                        }
+
+                        // check if the squad exists in the leaderboard's `pointsData`. if not, we create a new instance.
+                        const squadIndex = latestSquadLeaderboard.pointsData.findIndex(data => data.squadId === squadId);
+
+                        if (squadIndex === -1) {
+                            squadLeaderboardUpdateOperations.$push[`pointsData`] = {
+                                squadId,
+                                memberPoints: [{
+                                    userId: user._id,
+                                    points: reward.amount
+                                }]
+                            }
+                        } else {
+                            // otherwise, we increment the users points in the squad leaderboard.
+                            const userIndex = latestSquadLeaderboard.pointsData[squadIndex].memberPoints.findIndex(data => data.userId === user._id);
+
+                            // if user is not found, we create a new instance.
+                            if (userIndex === -1) {
+                                squadLeaderboardUpdateOperations.$push[`pointsData.${squadIndex}.memberPoints`] = {
+                                    userId: user._id,
+                                    points: reward.amount
+                                }
+                            } else {
+                                // otherwise, we increment the points
+                                squadLeaderboardUpdateOperations.$inc[`pointsData.${squadIndex}.memberPoints.${userIndex}.points`] = reward.amount;
+                            }
+                        }
                     }
                 } else {
                     let additionalPoints = 0;
@@ -886,6 +930,43 @@ export const claimDailyRewards = async (
                     // if user is in a squad, add to squad's `totalSquadPoints`
                     if (squadId) {
                         squadUpdateOperations.$inc['totalSquadPoints'] = reward.amount;
+
+                        // get the latest week of the squad leaderboard
+                        const latestSquadLeaderboard = await SquadLeaderboardModel.findOne().sort({ week: -1 });
+
+                        if (!latestSquadLeaderboard) {
+                            return {
+                                status: Status.ERROR,
+                                message: `(claimDailyRewards) Latest squad leaderboard not found.`
+                            }
+                        }
+
+                        // check if the squad exists in the leaderboard's `pointsData`. if not, we create a new instance.
+                        const squadIndex = latestSquadLeaderboard.pointsData.findIndex(data => data.squadId === squadId);
+
+                        if (squadIndex === -1) {
+                            squadLeaderboardUpdateOperations.$push[`pointsData`] = {
+                                squadId,
+                                memberPoints: [{
+                                    userId: user._id,
+                                    points: reward.amount
+                                }]
+                            }
+                        } else {
+                            // otherwise, we increment the users points in the squad leaderboard.
+                            const userIndex = latestSquadLeaderboard.pointsData[squadIndex].memberPoints.findIndex(data => data.userId === user._id);
+
+                            // if user is not found, we create a new instance.
+                            if (userIndex === -1) {
+                                squadLeaderboardUpdateOperations.$push[`pointsData.${squadIndex}.memberPoints`] = {
+                                    userId: user._id,
+                                    points: reward.amount
+                                }
+                            } else {
+                                // otherwise, we increment the points
+                                squadLeaderboardUpdateOperations.$inc[`pointsData.${squadIndex}.memberPoints.${userIndex}.points`] = reward.amount;
+                            }
+                        }
                     }
                 }
                 // if the reward is not xCookies or leaderboard points, return an error (for now)
@@ -915,6 +996,20 @@ export const claimDailyRewards = async (
         // if user is in a squad, update the squad's total points
         if (squadId) {
             await SquadModel.updateOne({ _id: squadId }, squadUpdateOperations);
+
+            // get the latest week of the squad leaderboard and update it with the points
+            const latestSquadLeaderboard = await SquadLeaderboardModel.findOne().sort({ week: -1 });
+
+            if (!latestSquadLeaderboard) {
+                return {
+                    status: Status.ERROR,
+                    message: `(claimDailyRewards) Latest squad leaderboard not found.`
+                }
+            }
+
+            await SquadLeaderboardModel.updateOne({ _id: latestSquadLeaderboard._id }, squadLeaderboardUpdateOperations).catch((err) => {
+                console.error(`Error from squad leaderboard model: ${err.message}`);
+            })
         }
 
         // check if the user update operations included a level up
@@ -1324,8 +1419,8 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
                         source: XCookieSource.BEGINNER_REWARDS
                     }
                 }
-            } 
-            
+            }
+
             if (reward.type === BeginnerRewardType.BIT_ORB_I) {
                 // check if the user already has Bit Orb (I) in their inventory
                 const bitOrbIIndex = (user.inventory.items as Item[]).findIndex(i => i.type === BitOrbType.BIT_ORB_I);
@@ -1341,8 +1436,8 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
                         amount: reward.amount
                     })
                 }
-            } 
-            
+            }
+
             if (reward.type === BeginnerRewardType.TERRA_CAPSULATOR_I) {
                 // check if the user already has Terra Capsulator (I) in their inventory
                 const terraCapsulatorIIndex = (user.inventory.items as Item[]).findIndex(i => i.type === TerraCapsulatorType.TERRA_CAPSULATOR_I);

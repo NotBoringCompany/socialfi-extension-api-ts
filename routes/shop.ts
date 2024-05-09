@@ -2,6 +2,7 @@ import express from 'express';
 import { getShop, purchaseShopAsset } from '../api/shop';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
+import { mixpanel } from '../utils/mixpanel';
 
 const router = express.Router();
 
@@ -38,6 +39,12 @@ router.post('/purchase_shop_asset', async (req, res) => {
         }
 
         const { status, message, data } = await purchaseShopAsset(validateData?.twitterId, amount, asset);
+
+        mixpanel.track('Purchase Shop Asset', {
+            distinct_id: validateData?.twitterId,
+            '_asset': asset,
+            '_amount': amount,
+        });
 
         return res.status(status).json({
             status,
