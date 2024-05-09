@@ -185,6 +185,12 @@ router.post('/link_invite_code', async (req, res) => {
 
         const { status, message, data } = await linkInviteCode(validateData?.twitterId, code);
 
+        mixpanel.track('Link Invite Code', {
+            distinct_id: validateData?.twitterId,
+            '_code': code,
+            '_data': data
+        });
+
         return res.status(status).json({
             status,
             message,
