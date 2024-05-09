@@ -11,13 +11,16 @@ const router = express.Router();
 router.get('/login', async (req, res, next) => {
     // get the jwt token (if it exists) from the request headers
     const token = req.headers.authorization?.split(' ')[1];
+    
+    const host = req.query.host || 'twitter.com';
+    res.cookie('redirectHost', host, { signed: true, httpOnly: true });
 
     if (token) {
         // check for validation
         const { status } = validateJWT(token);
         if (status === Status.SUCCESS) {
             // token is valid, redirect to Twitter with the token
-            return res.redirect(`https://twitter.com?jwt=${token}`);
+            return res.redirect(`https://${host}?jwt=${token}`);
         } else {
             // token is invalid, redirect to Twitter for authentication
             passport.authenticate('twitter', {
@@ -53,8 +56,9 @@ router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/' 
             })
         } else {
             const token = generateJWT(twitterId, twitterAccessToken, twitterRefreshToken, twitterExpiryDate - Math.floor(Date.now() / 1000));
+            const host = req.signedCookies['redirectHost'] || 'twitter.com';
 
-            return res.redirect(`https://twitter.com?jwt=${token}`);
+            return res.redirect(`https://${host}?jwt=${token}`);
         }
     } catch (err: any) {
         return res.status(500).json({
