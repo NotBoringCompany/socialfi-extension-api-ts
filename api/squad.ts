@@ -181,6 +181,105 @@ export const requestToJoinSquad = async (twitterId: string, squadId?: number, sq
 }
 
 /**
+ * Accepts a pending squad member into the squad. Only callable by a squad leader.
+ */
+export const acceptPendingSquadMember = async (leaderTwitterId: string, memberTwitterId: string): Promise<ReturnValue> => {
+    try {
+        const [leader, member] = await Promise.all([
+            UserModel.findOne({ twitterId: leaderTwitterId }).lean(),
+            UserModel.findOne({ twitterId: memberTwitterId }).lean()
+        ]);
+
+        if (!leader) {
+            return {
+                status: Status.ERROR,
+                message: `(acceptPendingSquadMember) Leader not found.`
+            }
+        }
+
+        if (!member) {
+            return {
+                status: Status.ERROR,
+                message: `(acceptPendingSquadMember) Member not found.`
+            }
+        }
+
+        // check if the leader is in a squad.
+        if (leader.inGameData.squadId === null) {
+            return {
+                status: Status.ERROR,
+                message: `(acceptPendingSquadMember) Leader is not in a squad.`
+            }
+        }
+
+        // check if the leader is a squad leader.
+        const squad = await SquadModel.findOne({ _id: leader.inGameData.squadId });
+
+        if (!squad) {
+            return {
+                status: Status.ERROR,
+                message: `(acceptPendingSquadMember) Squad not found.`
+            }
+        }
+
+        if (squad.members.find(member => member.userId === leader._id)?.role !== SquadRole.LEADER) {
+            return {
+                status: Status.ERROR,
+                message: `(acceptPendingSquadMember) User is not a squad leader for the given squad.`
+            }
+        }
+
+        // check if the member is in the pending members list.
+        if (!squad.pendingMembers.find(pendingMember => pendingMember.userId === member._id)) {
+            return {
+                status: Status.ERROR,
+                message: `(acceptPendingSquadMember) Member is not in the pending members list.`
+            }
+        }
+
+        // check if the squad is full.
+        if (squad.members.length >= squad.maxMembers) {
+            return {
+                status: Status.ERROR,
+                message: `(acceptPendingSquadMember) Squad is already full.`
+            }
+        }
+
+        // add the member to the squad.
+        await SquadModel.updateOne({ _id: squad._id }, {
+            $push: {
+                members: {
+                    userId: member._id,
+                    role: SquadRole.MEMBER,
+                    joinedTimestamp: Math.floor(Date.now() / 1000),
+                    roleUpdatedTimestamp: Math.floor(Date.now() / 1000)
+                }
+            },
+            $pull: {
+                pendingMembers: {
+                    userId: member._id
+                }
+            }
+        });
+
+        // update the member's squad ID.
+        await UserModel.updateOne({ _id: member._id }, {
+            'inGameData.squadId': squad._id
+        });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(acceptPendingSquadMember) Accepted pending squad member successfully.`
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(acceptPendingSquadMember) ${err.message}`
+        }
+    }
+}
+
+/**
  * Renames a squad with the new name. Only callable by a squad leader.
  */
 export const renameSquad = async (twitterId: string, newSquadName: string): Promise<ReturnValue> => {
