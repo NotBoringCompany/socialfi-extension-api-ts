@@ -12,27 +12,22 @@ router.get('/login', async (req, res, next) => {
     // get the jwt token (if it exists) from the request headers
     const token = req.headers.authorization?.split(' ')[1];
 
-    const host = req.query.host || 'twitter.com';
-    const state = createStateParameter(host.toString());
-
     if (token) {
         // check for validation
         const { status } = validateJWT(token);
         if (status === Status.SUCCESS) {
             // token is valid, redirect to Twitter with the token
-            return res.redirect(`https://${host}?jwt=${token}`);
+            return res.redirect(`https://twitter.com?jwt=${token}`);
         } else {
             // token is invalid, redirect to Twitter for authentication
             passport.authenticate('twitter', {
-                scope: ['tweet.read', 'users.read', 'offline.access'],
-                state,
+                scope: ['tweet.read', 'users.read', 'offline.access']
             })(req, res, next);
         }
     } else {
         // token doesn't exist, redirect to Twitter for authentication
         passport.authenticate('twitter', {
-            scope: ['tweet.read', 'users.read', 'offline.access'],
-            state,
+            scope: ['tweet.read', 'users.read', 'offline.access']
         })(req, res, next);
     }
 });
@@ -59,10 +54,7 @@ router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/' 
         } else {
             const token = generateJWT(twitterId, twitterAccessToken, twitterRefreshToken, twitterExpiryDate - Math.floor(Date.now() / 1000));
 
-            const state = req.query.state;
-            const decodedState = verifyStateParameter(state.toString());
-
-            return res.redirect(`https://${decodedState?.host || 'twitter.com'}?jwt=${token}`);
+            return res.redirect(`https://twitter.com?jwt=${token}`);
         }
     } catch (err: any) {
         return res.status(500).json({
