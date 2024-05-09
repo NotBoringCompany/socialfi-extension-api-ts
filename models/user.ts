@@ -145,6 +145,8 @@ export interface InGameData {
     dailyLoginRewardData: DailyLoginRewardData;
     /** the id of the user's current squad. if the user is not in any squad, this will be null. */
     squadId: string | null;
+    /** the timestamp of when the user last left a squad (for cooldown purposes) */
+    lastLeftSquad: number;
     /** the current location of the user (either home or in a POI) */
     location: POIName;
     /** 

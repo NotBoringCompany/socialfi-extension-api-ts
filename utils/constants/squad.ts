@@ -8,6 +8,9 @@ export const MAX_LEADERS_LIMIT = 1;
 /** the increase in max members count upon upgrading once */
 export const MAX_MEMBERS_INCREASE_UPON_UPGRADE = 5;
 
+/** the cooldown after leaving a squad before being able to join another squad (in seconds) */
+export const SQUAD_LEAVE_COOLDOWN = 86400;
+
 /**
  * Gets the cost (in xCookies) for upgrading the max members count of a squad.
  * 

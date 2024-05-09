@@ -177,6 +177,8 @@ export const renameSquad = async (twitterId: string, newSquadName: string): Prom
 
 /**
  * Creates a squad.
+ * 
+ * Note that the leaving cooldown doesn't apply when creating a squad.
  */
 export const createSquad = async (twitterId: string, squadName: string): Promise<ReturnValue> => {
     try {
@@ -396,10 +398,11 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
                 }
             });
 
-            // update the user's squad ID.
+            // update the user's squad ID and `lastLeftSquad` timestamp.
             await UserModel.updateOne({ _id: user._id }, {
-                'inGameData.squadId': null
-            });
+                'inGameData.squadId': null,
+                'inGameData.lastLeftSquad': Math.floor(Date.now() / 1000)
+            })
 
             return {
                 status: Status.SUCCESS,

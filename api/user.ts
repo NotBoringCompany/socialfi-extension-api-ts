@@ -338,6 +338,7 @@ export const handleTwitterLogin = async (
                         consecutiveDaysClaimed: 0
                     },
                     squadId: null,
+                    lastLeftSquad: 0,
                     location: POIName.HOME,
                     travellingTo: null,
                     destinationArrival: 0
