@@ -54,7 +54,8 @@ export const BIT_EVOLUTION_COST = (currentLevel: number): number => {
  */
 export const FREE_BIT_EVOLUTION_COST = (currentLevel: number): number => {
     // level 1 starts with 10 seaweed, and every level after is 1.125x the previous level
-    return 10 * (1.125 ** (currentLevel - 1));
+    const cost = 10 * (1.125 ** (currentLevel - 1));
+    return Math.ceil(cost);
 }
 
 /**
