@@ -1,7 +1,7 @@
 import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
-import { acceptPendingSquadMember, createSquad, delegateLeadership, getSquadData, kickMember, leaveSquad, renameSquad, requestToJoinSquad, upgradeSquadLimit } from '../api/squad';
+import { acceptPendingSquadMember, createSquad, declinePendingSquadMember, delegateLeadership, getSquadData, kickMember, leaveSquad, renameSquad, requestToJoinSquad, upgradeSquadLimit } from '../api/squad';
 
 const router = express.Router();
 
@@ -229,6 +229,34 @@ router.get('/get_squad_data/:squadId', async (req, res) => {
     const { squadId } = req.params;
     try {
         const { status, message, data } = await getSquadData(squadId);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+});
+
+router.post('/decline_pending_squad_member', async (req, res) => {
+    const { memberTwitterId } = req.body;
+
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'decline_pending_squad_member');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
+        const { status, message, data } = await declinePendingSquadMember(validateData?.twitterId, memberTwitterId);
 
         return res.status(status).json({
             status,

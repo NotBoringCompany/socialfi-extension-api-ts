@@ -237,6 +237,31 @@ export const acceptPendingSquadMember = async (leaderTwitterId: string, memberTw
             }
         }
 
+        // check if the member is already in a different squad.
+        if (member.inGameData.squadId !== null) {
+            // if they are already in a different squad, remove them from this squad's pending members list.
+            await SquadModel.updateOne({ _id: squad._id }, {
+                $pull: {
+                    pendingMembers: {
+                        userId: member._id
+                    }
+                }
+            });
+            
+            return {
+                status: Status.ERROR,
+                message: `(acceptPendingSquadMember) Member is already in a different squad.`
+            }
+        }
+
+        // check if the member is already in the squad.
+        if (squad.members.find(squadMember => squadMember.userId === member._id)) {
+            return {
+                status: Status.ERROR,
+                message: `(acceptPendingSquadMember) Member is already in the squad.`
+            }
+        }
+
         // check if the squad is full.
         if (squad.members.length >= squad.maxMembers) {
             return {
@@ -275,6 +300,84 @@ export const acceptPendingSquadMember = async (leaderTwitterId: string, memberTw
         return {
             status: Status.ERROR,
             message: `(acceptPendingSquadMember) ${err.message}`
+        }
+    }
+}
+
+/**
+ * Declines a pending squad member from joining the squad. Only callable by a squad leader.
+ */
+export const declinePendingSquadMember = async (leaderTwitterId: string, memberTwitterId: string): Promise<ReturnValue> => {
+    try {
+        const [leader, member] = await Promise.all([
+            UserModel.findOne({ twitterId: leaderTwitterId }).lean(),
+            UserModel.findOne({ twitterId: memberTwitterId }).lean()
+        ]);
+
+        if (!leader) {
+            return {
+                status: Status.ERROR,
+                message: `(declinePendingSquadMember) Leader not found.`
+            }
+        }
+
+        if (!member) {
+            return {
+                status: Status.ERROR,
+                message: `(declinePendingSquadMember) Member not found.`
+            }
+        }
+
+        // check if the leader is in a squad.
+        if (leader.inGameData.squadId === null) {
+            return {
+                status: Status.ERROR,
+                message: `(declinePendingSquadMember) Leader is not in a squad.`
+            }
+        }
+
+        // check if the leader is a squad leader.
+        const squad = await SquadModel.findOne({ _id: leader.inGameData.squadId });
+
+        if (!squad) {
+            return {
+                status: Status.ERROR,
+                message: `(declinePendingSquadMember) Squad not found.`
+            }
+        }
+
+        if (squad.members.find(member => member.userId === leader._id)?.role !== SquadRole.LEADER) {
+            return {
+                status: Status.ERROR,
+                message: `(declinePendingSquadMember) User is not a squad leader for the given squad.`
+            }
+        }
+
+        // check if the member is in the pending members list.
+        if (!squad.pendingMembers.find(pendingMember => pendingMember.userId === member._id)) {
+            return {
+                status: Status.ERROR,
+                message: `(declinePendingSquadMember) Member is not in the pending members list.`
+            }
+        }
+
+        // remove the member from the pending members list.
+        await SquadModel.updateOne({ _id: squad._id }, {
+            $pull: {
+                pendingMembers: {
+                    userId: member._id
+                }
+            }
+        });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(declinePendingSquadMember) Declined pending squad member successfully.`
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(declinePendingSquadMember) ${err.message}`
         }
     }
 }
