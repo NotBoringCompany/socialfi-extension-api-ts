@@ -902,3 +902,32 @@ export const kickMember = async (leaderTwitterId: string, memberTwitterId: strin
         }
     }
 }
+
+/**
+ * Gets the data of a squad given its ID.
+ */
+export const getSquadData = async (squadId?: string): Promise<ReturnValue> => {
+    try {
+        const squad = await SquadModel.findOne({ _id: squadId }).lean();
+
+        if (!squad) {
+            return {
+                status: Status.ERROR,
+                message: `(getSquadData) Squad not found.`
+            }
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getSquadData) Got squad data successfully.`,
+            data: {
+                squad
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getSquadData) ${err.message}`
+        }
+    }
+}
