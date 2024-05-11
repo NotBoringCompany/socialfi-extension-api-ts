@@ -1,7 +1,7 @@
 import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
-import { acceptPendingSquadMember, createSquad, declinePendingSquadMember, delegateLeadership, getSquadData, kickMember, leaveSquad, renameSquad, requestToJoinSquad, upgradeSquadLimit } from '../api/squad';
+import { acceptPendingSquadMember, checkSquadCreationMethodAndCost, createSquad, declinePendingSquadMember, delegateLeadership, getSquadData, kickMember, leaveSquad, renameSquad, requestToJoinSquad, upgradeSquadLimit } from '../api/squad';
 
 const router = express.Router();
 
@@ -257,6 +257,32 @@ router.post('/decline_pending_squad_member', async (req, res) => {
         }
 
         const { status, message, data } = await declinePendingSquadMember(validateData?.twitterId, memberTwitterId);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
+
+router.get('/get_create_squad_method_and_cost', async (req, res) => {
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'get_create_squad_cost');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+        
+        const { status, message, data } = await checkSquadCreationMethodAndCost(validateData?.twitterId);
 
         return res.status(status).json({
             status,
