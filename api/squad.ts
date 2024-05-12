@@ -644,7 +644,7 @@ export const createSquad = async (twitterId: string, squadName: string): Promise
             'inGameData.squadId': squad._id,
             $inc: {
                 // if cost is 0, then this essentially does nothing.
-                'inGameData.xCookieData.currentXCookies': -cost
+                'inventory.xCookieData.currentXCookies': -cost
             }
         });
 
