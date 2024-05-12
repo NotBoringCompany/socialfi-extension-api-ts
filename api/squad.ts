@@ -472,7 +472,7 @@ export const renameSquad = async (twitterId: string, newSquadName: string): Prom
         // deduct the cost from the user's xCookies.
         await UserModel.updateOne({ _id: user._id }, {
             $inc: {
-                'inGameData.xCookieData.currentXCookies': -cost
+                'inventory.xCookieData.currentXCookies': -cost
             }
         });
 
@@ -831,7 +831,7 @@ export const upgradeSquadLimit = async (twitterId: string): Promise<ReturnValue>
         const cost = UPGRADE_SQUAD_MAX_MEMBERS_COST(squad.maxMembers);
 
         // check if the user has enough xCookies to upgrade the squad limit.
-        if (user.inGameData.xCookieData.currentXCookies < cost) {
+        if (user.inventory.xCookieData.currentXCookies < cost) {
             return {
                 status: Status.ERROR,
                 message: `(upgradeSquadLimit) User does not have enough xCookies to upgrade the squad limit.`
@@ -846,7 +846,7 @@ export const upgradeSquadLimit = async (twitterId: string): Promise<ReturnValue>
         // deduct the cost from the user's xCookies.
         await UserModel.updateOne({ _id: user._id }, {
             $inc: {
-                'inGameData.xCookieData.currentXCookies': -cost
+                'inventory.xCookieData.currentXCookies': -cost
             }
         });
 
