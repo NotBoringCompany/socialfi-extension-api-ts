@@ -598,8 +598,17 @@ export const createSquad = async (twitterId: string, squadName: string): Promise
         // get the cost for creating a squad.
         const { status, message, data } = await checkSquadCreationMethodAndCost(twitterId);
 
+        if (status !== Status.SUCCESS) {
+            return {
+                status,
+                message: `(createSquad) Error from checkSquadCreationMethodAndCost: ${message}`
+            }
+        }
+
         const creationMethod: SquadCreationMethod = data?.creationMethod;
         const cost: number = data?.cost;
+
+        console.log('cost to create squad: ', cost);
 
         // check if the user has enough xCookies to create a squad. ONLY if the creation method is `xCookies`.
         if (cost > 0 && user.inGameData.xCookieData.currentXCookies < cost) {
