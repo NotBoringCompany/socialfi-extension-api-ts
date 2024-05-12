@@ -93,7 +93,7 @@ export const joinReferrerSquad = async (
 /**
  * Requests to join a squad given its ID or name.
  */
-export const requestToJoinSquad = async (twitterId: string, squadId?: number, squadName?: string): Promise<ReturnValue> => {
+export const requestToJoinSquad = async (twitterId: string, squadId?: string, squadName?: string): Promise<ReturnValue> => {
     try {
         if (!squadId && !squadName) {
             return {
