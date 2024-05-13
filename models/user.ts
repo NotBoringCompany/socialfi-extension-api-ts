@@ -20,6 +20,10 @@ export interface User {
     twitterId: string;
     /** the user's twitter profile picture URL */
     twitterProfilePicture: string;
+    /** the user's twitter username */
+    twitterUsername: string;
+    /** the user's twitter display name */
+    twitterDisplayName: string;
     /** the user's discord profile */
     discordProfile?: UserDiscordProfile;
     /** when the account was created */

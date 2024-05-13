@@ -33,7 +33,7 @@ import { BoosterItem } from '../models/booster';
 import { randomizeIslandTraits } from '../utils/constants/island';
 import { Signature, recoverMessageAddress } from 'viem';
 import { joinReferrerSquad } from './squad';
-import { DiscordProfile } from '../utils/types';
+import { DiscordProfile, ExtendedProfile } from '../utils/types';
 
 /**
  * Returns the user's data.
@@ -72,8 +72,7 @@ export const getUserData = async (twitterId: string): Promise<ReturnValue> => {
  */
 export const handleTwitterLogin = async (
     twitterId: string,
-    // the user's twitter profile picture
-    twitterProfilePicture: string
+    profile?: ExtendedProfile
 ): Promise<ReturnValue> => {
     try {
         const user = await UserModel.findOne({ twitterId }).lean();
@@ -291,7 +290,9 @@ export const handleTwitterLogin = async (
             const newUser = new UserModel({
                 _id: userObjectId,
                 twitterId,
-                twitterProfilePicture,
+                twitterProfilePicture: profile.photos[0].value ?? '',
+                twitterUsername: profile.username,
+                twitterDisplayName: profile.displayName,
                 createdTimestamp: Math.floor(Date.now() / 1000),
                 // invite code data will be null until users input their invite code.
                 inviteCodeData: {
@@ -372,14 +373,15 @@ export const handleTwitterLogin = async (
                 },
             };
         } else {
-            // check if the user's twitter profile picture matches the one in the database
-            // if not, update the user's twitter profile picture
-            if (user.twitterProfilePicture !== twitterProfilePicture) {
+            // Update user's Twitter profile information if available
+            if (!!profile) {
                 await UserModel.updateOne(
                     { twitterId },
                     {
                         $set: {
-                            twitterProfilePicture,
+                            twitterProfilePicture: profile.photos[0].value ?? '',
+                            twitterDisplayName: profile.displayName,
+                            twitterUsername: profile.username,
                         },
                     }
                 );
