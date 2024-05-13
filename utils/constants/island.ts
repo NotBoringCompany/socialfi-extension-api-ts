@@ -62,6 +62,8 @@ export const DAILY_BONUS_RESOURCES_GATHERABLE = (type: IslandType) => {
  * Gets the total xCookies earnable back for an island based on its type (i.e. rarity) when opening from a Terra Capsulator.
  */
 export const GET_TOTAL_X_COOKIES_EARNABLE = (terraCapType: TerraCapsulatorType, islandType: IslandType) => {
+    return 0;
+
     // check if the given terra cap type exists in the shop and get the price
     const terraCapsulatorPrice = shop.items.find(i => i.type === terraCapType)?.price.xCookies;
 
@@ -106,6 +108,8 @@ export const GET_TOTAL_X_COOKIES_EARNABLE = (terraCapType: TerraCapsulatorType, 
  * Gets the total cookie crumbs earnable for an island based on its type.
  */
 export const GET_TOTAL_COOKIE_CRUMBS_EARNABLE = (type: IslandType) => {
+    return 0;
+
     switch (type) {
         case IslandType.BARREN:
             return 0;
