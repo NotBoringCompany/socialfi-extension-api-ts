@@ -20,6 +20,12 @@ export interface User {
     twitterId: string;
     /** the user's twitter profile picture URL */
     twitterProfilePicture: string;
+    /** the user's twitter username */
+    twitterUsername: string;
+    /** the user's twitter display name */
+    twitterDisplayName: string;
+    /** the user's discord profile */
+    discordProfile?: UserDiscordProfile;
     /** when the account was created */
     createdTimestamp: number;
     /** 
@@ -244,4 +250,16 @@ export enum BeginnerRewardType {
     X_COOKIES = 'xCookies',
     BIT_ORB_I = BitOrbType.BIT_ORB_I,
     TERRA_CAPSULATOR_I = TerraCapsulatorType.TERRA_CAPSULATOR_I
+}
+
+/**
+ * Represents user's discord profile.
+ */
+export interface UserDiscordProfile {
+    discordId: string;
+    /** discord global name */
+    name: string | null;
+    username: string;
+    /** discord oauth refresh token, last for 365 days */
+    token: string;
 }

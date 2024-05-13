@@ -1,4 +1,5 @@
 import { Strategy as TwitterStrategy } from '@superfaceai/passport-twitter-oauth2';
+import { Strategy as DiscordStrategy } from 'passport-discord';
 import passport from 'passport';
 import { ExtendedProfile } from '../utils/types';
 
@@ -25,6 +26,27 @@ passport.use(new TwitterStrategy({
         }
     }
 ));
+
+passport.use(new DiscordStrategy({
+    clientID: process.env.DISCORD_CLIENT_ID!,
+    clientSecret: process.env.DISCORD_CLIENT_SECRET!,
+    callbackURL: process.env.DISCORD_CALLBACK_URL!,
+    scope: ['identify', 'role_connections.write']
+}, (accessToken, refreshToken, profile, done) => {
+    try {
+        const user: Express.User = {
+            ...profile,
+            discordAccessToken: accessToken,
+            discordRefreshToken: refreshToken,
+            // get the current unix timestamp, add 7200
+            discordExpiryDate: Math.floor(Date.now() / 1000) + 7200,
+        }
+
+        return done(null, user);
+    } catch (err: any) {
+        done(err, undefined);
+    }
+}));
 
 passport.serializeUser((user: ExtendedProfile, done) => {
     console.log('serializing user, user profile: ', user);

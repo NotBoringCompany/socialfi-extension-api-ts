@@ -29,6 +29,7 @@ app.use(passport.session());
 
 /** ROUTE IMPORTS */
 import twitterAuth from './routes/auth/twitter';
+import discordAuth from './routes/auth/discord';
 import jwt from './routes/jwt';
 import shop from './routes/shop';
 import quest from './routes/quest';
@@ -47,9 +48,11 @@ import asset from './routes/asset';
 import tutorial from './routes/tutorial';
 import invite from './routes/invite';
 import squad from './routes/squad';
+import setting from './routes/setting';
 import { schedulers } from './schedulers/schedulers';
 
 app.use('/auth/twitter', twitterAuth);
+app.use('/auth/discord', discordAuth);
 app.use('/jwt', jwt);
 app.use('/shop', shop);
 app.use('/quest', quest);
@@ -68,6 +71,7 @@ app.use('/asset', asset);
 app.use('/tutorial', tutorial);
 app.use('/invite', invite);
 app.use('/squad', squad);
+app.use('/setting', setting);
 
 app.listen(port, async () => {
     console.log(`Server running on port ${port}`);

@@ -1,4 +1,3 @@
-
 import { ReturnValue, Status } from '../utils/retVal';
 import { createUserWallet } from '../utils/wallet';
 import { createRaft } from './raft';
@@ -12,7 +11,15 @@ import { POIName } from '../models/poi';
 import { ExtendedResource, SimplifiedResource } from '../models/resource';
 import { resources } from '../utils/constants/resource';
 import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, XCookieSource } from '../models/user';
-import { GET_BEGINNER_REWARDS, GET_DAILY_LOGIN_REWARDS, GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS, GET_SEASON_0_REFERRAL_REWARDS, MAX_BEGINNER_REWARD_DAY, MAX_INVENTORY_WEIGHT } from '../utils/constants/user';
+import {
+    GET_BEGINNER_REWARDS,
+    GET_DAILY_LOGIN_REWARDS,
+    GET_SEASON_0_PLAYER_LEVEL,
+    GET_SEASON_0_PLAYER_LEVEL_REWARDS,
+    GET_SEASON_0_REFERRAL_REWARDS,
+    MAX_BEGINNER_REWARD_DAY,
+    MAX_INVENTORY_WEIGHT,
+} from '../utils/constants/user';
 import { ReferredUserData } from '../models/invite';
 import { BitOrbType } from '../models/bitOrb';
 import { TerraCapsulatorType } from '../models/terraCapsulator';
@@ -26,6 +33,7 @@ import { BoosterItem } from '../models/booster';
 import { randomizeIslandTraits } from '../utils/constants/island';
 import { Signature, recoverMessageAddress } from 'viem';
 import { joinReferrerSquad } from './squad';
+import { DiscordProfile, ExtendedProfile } from '../utils/types';
 
 /**
  * Returns the user's data.
@@ -37,35 +45,34 @@ export const getUserData = async (twitterId: string): Promise<ReturnValue> => {
         if (!user) {
             return {
                 status: Status.ERROR,
-                message: `(getUserData) User not found.`
-            }
+                message: `(getUserData) User not found.`,
+            };
         }
 
         return {
             status: Status.SUCCESS,
             message: `(getUserData) User data fetched.`,
             data: {
-                user
-            }
-        }
+                user,
+            },
+        };
     } catch (err: any) {
         return {
             status: Status.ERROR,
-            message: `(getUserData) ${err.message}`
-        }
+            message: `(getUserData) ${err.message}`,
+        };
     }
-}
+};
 
 /**
  * Twitter login logic. Creates a new user or simply log them in if they already exist.
- * 
+ *
  * If users sign up, they are required to input an invite code (either from a starter code or a referral code).
  * Otherwise, they can't sign up.
  */
 export const handleTwitterLogin = async (
     twitterId: string,
-    // the user's twitter profile picture
-    twitterProfilePicture: string,
+    profile?: ExtendedProfile
 ): Promise<ReturnValue> => {
     try {
         const user = await UserModel.findOne({ twitterId }).lean();
@@ -81,8 +88,8 @@ export const handleTwitterLogin = async (
             if (status !== Status.SUCCESS) {
                 return {
                     status,
-                    message: `(handleTwitterLogin) Error from createRaft: ${message}`
-                }
+                    message: `(handleTwitterLogin) Error from createRaft: ${message}`,
+                };
             }
 
             // get the latest bit ID from the database
@@ -91,8 +98,8 @@ export const handleTwitterLogin = async (
             if (bitIdStatus !== Status.SUCCESS) {
                 return {
                     status: bitIdStatus,
-                    message: `(handleTwitterLogin) Error from getLatestBitId: ${bitIdMessage}`
-                }
+                    message: `(handleTwitterLogin) Error from getLatestBitId: ${bitIdMessage}`,
+                };
             }
 
             const rarity = BitRarity.COMMON;
@@ -100,10 +107,14 @@ export const handleTwitterLogin = async (
 
             const traits = randomizeBitTraits(rarity);
 
-            const bitStatsModifiers = getBitStatsModifiersFromTraits(traits.map(trait => trait.trait));
+            const bitStatsModifiers = getBitStatsModifiersFromTraits(traits.map((trait) => trait.trait));
 
             // add a premium common bit to the user's inventory (users get 1 for free when they sign up)
-            const { status: bitStatus, message: bitMessage, data: bitData } = await addBitToDatabase({
+            const {
+                status: bitStatus,
+                message: bitMessage,
+                data: bitData,
+            } = await addBitToDatabase({
                 bitId: bitIdData?.latestBitId + 1,
                 bitType,
                 bitNameData: {
@@ -122,23 +133,23 @@ export const handleTwitterLogin = async (
                 traits,
                 farmingStats: {
                     ...randomizeFarmingStats(rarity),
-                    currentEnergy: 50 // set energy to half for tutorial purpose
+                    currentEnergy: 50, // set energy to half for tutorial purpose
                 },
-                bitStatsModifiers
+                bitStatsModifiers,
             });
 
             if (bitStatus !== Status.SUCCESS) {
                 return {
                     status: bitStatus,
-                    message: `(handleTwitterLogin) Error from addBitToDatabase: ${bitMessage}`
-                }
+                    message: `(handleTwitterLogin) Error from addBitToDatabase: ${bitMessage}`,
+                };
             }
 
             const islandStatsModifiers: IslandStatsModifiers = {
                 resourceCapModifiers: [],
                 gatheringRateModifiers: [],
-                earningRateModifiers: []
-            }
+                earningRateModifiers: [],
+            };
 
             // check the bit's traits
             // if it has influential, antagonistic, famous or mannerless, then:
@@ -146,68 +157,68 @@ export const handleTwitterLogin = async (
             // if antagonistic, reduce 1% to earning and gathering rate modifiers of the island
             // if famous, add 0.5% to earning and gathering rate modifiers of the island
             // if mannerless, reduce 0.5% to earning and gathering rate modifiers of the island
-            if (traits.some(trait => trait.trait === BitTrait.INFLUENTIAL)) {
+            if (traits.some((trait) => trait.trait === BitTrait.INFLUENTIAL)) {
                 // add 1% to earning and gathering rate modifiers of the island
                 const gatheringRateModifier: Modifier = {
                     origin: `Bit ID ${bitData.bit.bitId}'s Trait: Influential`,
-                    value: 1.01
-                }
+                    value: 1.01,
+                };
 
                 const earningRateModifier: Modifier = {
                     origin: `Bit ID ${bitData.bit.bitId}'s Trait: Influential`,
-                    value: 1.01
-                }
+                    value: 1.01,
+                };
 
                 islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
                 islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
             }
 
             // if the bit has antagonistic trait
-            if (traits.some(trait => trait.trait === BitTrait.ANTAGONISTIC)) {
+            if (traits.some((trait) => trait.trait === BitTrait.ANTAGONISTIC)) {
                 // reduce 1% to earning and gathering rate modifiers of the island
                 const gatheringRateModifier: Modifier = {
                     origin: `Bit ID ${bitData.bit.bitId}'s Trait: Antagonistic`,
-                    value: 0.99
-                }
+                    value: 0.99,
+                };
 
                 const earningRateModifier: Modifier = {
                     origin: `Bit ID ${bitData.bit.bitId}'s Trait: Antagonistic`,
-                    value: 0.99
-                }
+                    value: 0.99,
+                };
 
                 islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
                 islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
             }
 
             // if the bit has famous trait
-            if (traits.some(trait => trait.trait === BitTrait.FAMOUS)) {
+            if (traits.some((trait) => trait.trait === BitTrait.FAMOUS)) {
                 // add 0.5% to earning and gathering rate modifiers of the island
                 const gatheringRateModifier: Modifier = {
                     origin: `Bit ID ${bitData.bit.bitId}'s Trait: Famous`,
-                    value: 1.005
-                }
+                    value: 1.005,
+                };
 
                 const earningRateModifier: Modifier = {
                     origin: `Bit ID ${bitData.bit.bitId}'s Trait: Famous`,
-                    value: 1.005
-                }
+                    value: 1.005,
+                };
 
                 islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
                 islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
             }
 
             // if the bit has mannerless trait
-            if (traits.some(trait => trait.trait === BitTrait.MANNERLESS)) {
+            if (traits.some((trait) => trait.trait === BitTrait.MANNERLESS)) {
                 // reduce 0.5% to earning and gathering rate modifiers of the island
                 const gatheringRateModifier: Modifier = {
                     origin: `Bit ID ${bitData.bit.bitId}'s Trait: Mannerless`,
-                    value: 0.995
-                }
+                    value: 0.995,
+                };
 
                 const earningRateModifier: Modifier = {
                     origin: `Bit ID ${bitData.bit.bitId}'s Trait: Mannerless`,
-                    value: 0.995
-                }
+                    value: 0.995,
+                };
 
                 islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
                 islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
@@ -219,11 +230,15 @@ export const handleTwitterLogin = async (
             if (islandIdStatus !== Status.SUCCESS) {
                 return {
                     status: islandIdStatus,
-                    message: `(handleTwitterLogin) Error from getLatestIslandId: ${islandIdMessage}`
-                }
+                    message: `(handleTwitterLogin) Error from getLatestIslandId: ${islandIdMessage}`,
+                };
             }
 
-            const { status: islandStatus, message: islandMessage, data: islandData } = await addIslandToDatabase({
+            const {
+                status: islandStatus,
+                message: islandMessage,
+                data: islandData,
+            } = await addIslandToDatabase({
                 islandId: islandIdData?.latestIslandId + 1,
                 type: IslandType.PRIMAL_ISLES,
                 owner: userObjectId,
@@ -242,7 +257,7 @@ export const handleTwitterLogin = async (
                     gatheringEnd: 0,
                     lastClaimed: 0,
                     gatheringProgress: 0,
-                    lastUpdatedGatheringProgress: Math.floor(Date.now() / 1000)
+                    lastUpdatedGatheringProgress: Math.floor(Date.now() / 1000),
                 },
                 islandEarningStats: {
                     totalXCookiesSpent: 0,
@@ -259,14 +274,14 @@ export const handleTwitterLogin = async (
                     crumbsEarningEnd: 0,
                     lastClaimed: 0,
                 },
-                islandStatsModifiers
+                islandStatsModifiers,
             });
 
             if (islandStatus !== Status.SUCCESS) {
                 return {
                     status: islandStatus,
-                    message: `(handleTwitterLogin) Error from createBarrenIsland: ${islandMessage}`
-                }
+                    message: `(handleTwitterLogin) Error from createBarrenIsland: ${islandMessage}`,
+                };
             }
 
             // creates the wallet for the user
@@ -275,25 +290,27 @@ export const handleTwitterLogin = async (
             const newUser = new UserModel({
                 _id: userObjectId,
                 twitterId,
-                twitterProfilePicture,
+                twitterProfilePicture: profile.photos[0].value ?? '',
+                twitterUsername: profile.username,
+                twitterDisplayName: profile.displayName,
                 createdTimestamp: Math.floor(Date.now() / 1000),
                 // invite code data will be null until users input their invite code.
                 inviteCodeData: {
                     usedStarterCode: null,
                     usedReferralCode: null,
-                    referrerId: null
+                    referrerId: null,
                 },
                 referralData: {
                     referralCode: generateReferralCode(),
                     referredUsersData: [],
                     claimableReferralRewards: {
                         xCookies: 0,
-                        leaderboardPoints: 0
-                    }
+                        leaderboardPoints: 0,
+                    },
                 },
                 wallet: {
                     privateKey,
-                    address
+                    address,
                 },
                 secondaryWallets: [],
                 openedTweetIdsToday: [],
@@ -302,21 +319,21 @@ export const handleTwitterLogin = async (
                     maxWeight: MAX_INVENTORY_WEIGHT,
                     xCookieData: {
                         currentXCookies: 0,
-                        extendedXCookieData: []
+                        extendedXCookieData: [],
                     },
                     cookieCrumbs: 0,
                     resources: [],
                     items: [
                         {
                             type: BoosterItem['GATHERING_PROGRESS_BOOSTER_1000'],
-                            amount: 1
-                        }
+                            amount: 1,
+                        },
                     ],
                     foods: [
                         {
                             type: FoodType['BURGER'],
-                            amount: 1
-                        }
+                            amount: 1,
+                        },
                     ],
                     raftId: data.raft.raftId,
                     // add the free barren island to the `islandIds` array
@@ -330,19 +347,19 @@ export const handleTwitterLogin = async (
                         lastClaimedTimestamp: 0,
                         isClaimable: true,
                         daysClaimed: [],
-                        daysMissed: []
+                        daysMissed: [],
                     },
                     dailyLoginRewardData: {
                         lastClaimedTimestamp: 0,
                         isDailyClaimable: true,
-                        consecutiveDaysClaimed: 0
+                        consecutiveDaysClaimed: 0,
                     },
                     squadId: null,
                     lastLeftSquad: 0,
                     location: POIName.HOME,
                     travellingTo: null,
-                    destinationArrival: 0
-                }
+                    destinationArrival: 0,
+                },
             });
 
             await newUser.save();
@@ -353,17 +370,21 @@ export const handleTwitterLogin = async (
                 data: {
                     userId: newUser._id,
                     twitterId,
-                }
-            }
+                },
+            };
         } else {
-            // check if the user's twitter profile picture matches the one in the database
-            // if not, update the user's twitter profile picture
-            if (user.twitterProfilePicture !== twitterProfilePicture) {
-                await UserModel.updateOne({ twitterId }, {
-                    $set: {
-                        twitterProfilePicture
+            // Update user's Twitter profile information if available
+            if (!!profile) {
+                await UserModel.updateOne(
+                    { twitterId },
+                    {
+                        $set: {
+                            twitterProfilePicture: profile.photos[0].value ?? '',
+                            twitterDisplayName: profile.displayName,
+                            twitterUsername: profile.username,
+                        },
                     }
-                });
+                );
             }
 
             // user exists, return
@@ -372,17 +393,17 @@ export const handleTwitterLogin = async (
                 message: `(handleTwitterLogin) User found. Logging in.`,
                 data: {
                     userId: user._id,
-                    twitterId
-                }
-            }
+                    twitterId,
+                },
+            };
         }
     } catch (err: any) {
         return {
             status: Status.ERROR,
-            message: `(handleTwitterLogin) ${err.message}`
-        }
+            message: `(handleTwitterLogin) ${err.message}`,
+        };
     }
-}
+};
 
 /**
  * Fetches the user's inventory.
@@ -394,24 +415,24 @@ export const getInventory = async (twitterId: string): Promise<ReturnValue> => {
         if (!user) {
             return {
                 status: Status.ERROR,
-                message: `(getInventory) User not found.`
-            }
+                message: `(getInventory) User not found.`,
+            };
         }
 
         return {
             status: Status.SUCCESS,
             message: `(getInventory) Inventory fetched.`,
             data: {
-                inventory: user.inventory
-            }
-        }
+                inventory: user.inventory,
+            },
+        };
     } catch (err: any) {
         return {
             status: Status.ERROR,
-            message: `(getInventory) ${err.message}`
-        }
+            message: `(getInventory) ${err.message}`,
+        };
     }
-}
+};
 
 /**
  * Fetches the user's wallet private and public keys.
@@ -423,8 +444,8 @@ export const getWalletDetails = async (twitterId: string): Promise<ReturnValue> 
         if (!user) {
             return {
                 status: Status.ERROR,
-                message: `(getWalletDetails) User not found.`
-            }
+                message: `(getWalletDetails) User not found.`,
+            };
         }
 
         return {
@@ -433,15 +454,15 @@ export const getWalletDetails = async (twitterId: string): Promise<ReturnValue> 
             data: {
                 address: user.wallet.address,
                 privateKey: user.wallet.privateKey,
-            }
-        }
+            },
+        };
     } catch (err: any) {
         return {
             status: Status.ERROR,
-            message: `(getWalletDetails) ${err.message}`
-        }
+            message: `(getWalletDetails) ${err.message}`,
+        };
     }
-}
+};
 
 /**
  * Gets the user's in-game data.
@@ -453,37 +474,37 @@ export const getInGameData = async (twitterId: string): Promise<ReturnValue> => 
         if (!user) {
             return {
                 status: Status.ERROR,
-                message: `(getInGameData) User not found.`
-            }
+                message: `(getInGameData) User not found.`,
+            };
         }
 
         return {
             status: Status.SUCCESS,
             message: `(getInGameData) In-game data fetched.`,
             data: {
-                inGameData: user.inGameData
-            }
-        }
+                inGameData: user.inGameData,
+            },
+        };
     } catch (err: any) {
         return {
             status: Status.ERROR,
-            message: `(getInGameData) ${err.message}`
-        }
+            message: `(getInGameData) ${err.message}`,
+        };
     }
-}
+};
 
 /**
  * Generates a message when users want to link a secondary wallet to their account.
- * 
+ *
  * The message will follow this format:
  * `Please sign the following message to link this wallet as a secondary wallet to your account.
- * 
+ *
  * Wallet address: <walletAddress>
- * 
+ *
  * Timestamp: <timestamp>
- * 
+ *
  * Hash salt: <hashSalt>`
- * 
+ *
  * The message will then be sent to the frontend for the user to sign with their secondary wallet.
  */
 export const generateSignatureMessage = (walletAddress: string): string => {
@@ -498,7 +519,7 @@ export const generateSignatureMessage = (walletAddress: string): string => {
     `;
 
     return message;
-}
+};
 
 /**
  * Links a secondary wallet to the user's account if signature check is valid.
@@ -512,7 +533,7 @@ export const linkSecondaryWallet = async (
     try {
         const recoveredAddress = await recoverMessageAddress({
             message: signatureMessage,
-            signature
+            signature,
         });
 
         console.log('wallet address: ', walletAddress);
@@ -521,8 +542,8 @@ export const linkSecondaryWallet = async (
         if (recoveredAddress.toLowerCase() !== walletAddress.toLowerCase()) {
             return {
                 status: Status.BAD_REQUEST,
-                message: `(linkSecondaryWallet) Invalid signature.`
-            }
+                message: `(linkSecondaryWallet) Invalid signature.`,
+            };
         }
 
         const user = await UserModel.findOne({ twitterId }).lean();
@@ -530,44 +551,47 @@ export const linkSecondaryWallet = async (
         if (!user) {
             return {
                 status: Status.ERROR,
-                message: `(linkSecondaryWallet) User not found.`
-            }
+                message: `(linkSecondaryWallet) User not found.`,
+            };
         }
 
         // check if the wallet is already linked in the user's `secondaryWallets`
         // each secondaryWallet instance in `secondaryWallets` contain the `address`.
         // check if the `address` is the same as the `walletAddress`
-        const isWalletAlreadyLinked = user.secondaryWallets?.some(wallet => wallet.address.toLowerCase() === walletAddress.toLowerCase());
+        const isWalletAlreadyLinked = user.secondaryWallets?.some((wallet) => wallet.address.toLowerCase() === walletAddress.toLowerCase());
 
         if (isWalletAlreadyLinked) {
             return {
                 status: Status.BAD_REQUEST,
-                message: `(linkSecondaryWallet) Wallet is already linked.`
-            }
+                message: `(linkSecondaryWallet) Wallet is already linked.`,
+            };
         }
 
         // add the secondary wallet to the user's account
-        await UserModel.updateOne({ twitterId }, {
-            $push: {
-                secondaryWallets: {
-                    signatureMessage,
-                    signature,
-                    address: walletAddress
-                }
+        await UserModel.updateOne(
+            { twitterId },
+            {
+                $push: {
+                    secondaryWallets: {
+                        signatureMessage,
+                        signature,
+                        address: walletAddress,
+                    },
+                },
             }
-        });
+        );
 
         return {
             status: Status.SUCCESS,
-            message: `(linkSecondaryWallet) Secondary wallet linked.`
-        }
+            message: `(linkSecondaryWallet) Secondary wallet linked.`,
+        };
     } catch (err: any) {
         return {
             status: Status.ERROR,
-            message: `(linkSecondaryWallet) ${err.message}`
-        }
+            message: `(linkSecondaryWallet) ${err.message}`,
+        };
     }
-}
+};
 
 /**
  * Gets a user's main and secondary wallets linked to their account.
@@ -579,8 +603,8 @@ export const getWallets = async (twitterId: string): Promise<ReturnValue> => {
         if (!user) {
             return {
                 status: Status.ERROR,
-                message: `(getWallets) User not found.`
-            }
+                message: `(getWallets) User not found.`,
+            };
         }
 
         const walletAddresses: string[] = [];
@@ -599,16 +623,16 @@ export const getWallets = async (twitterId: string): Promise<ReturnValue> => {
             status: Status.SUCCESS,
             message: `(getWallets) Wallets fetched.`,
             data: {
-                walletAddresses
-            }
-        }
+                walletAddresses,
+            },
+        };
     } catch (err: any) {
         return {
             status: Status.ERROR,
-            message: `(getWallets) ${err.message}`
-        }
+            message: `(getWallets) ${err.message}`,
+        };
     }
-}
+};
 
 /**
  * (User) Manually removes a specific amount of resources that the user owns.
@@ -621,14 +645,14 @@ export const removeResources = async (twitterId: string, resourcesToRemove: Simp
             $pull: {},
             $inc: {},
             $set: {},
-            $push: {}
-        }
+            $push: {},
+        };
 
         if (!user) {
             return {
                 status: Status.ERROR,
-                message: `(removeResources) User not found.`
-            }
+                message: `(removeResources) User not found.`,
+            };
         }
 
         const userResources = user.inventory.resources as ExtendedResource[];
@@ -636,8 +660,8 @@ export const removeResources = async (twitterId: string, resourcesToRemove: Simp
         if (userResources.length === 0) {
             return {
                 status: Status.BAD_REQUEST,
-                message: `(removeResources) User has no resources.`
-            }
+                message: `(removeResources) User has no resources.`,
+            };
         }
 
         // cumulative inventory weight to reduce after removing resources
@@ -646,37 +670,37 @@ export const removeResources = async (twitterId: string, resourcesToRemove: Simp
         // for each resource specified in `resources` (which is the resources the user wants to remove)
         // check if the user has enough of that resource
         for (const resource of resourcesToRemove) {
-            const userResource = userResources.find(r => r.type === resource.type);
+            const userResource = userResources.find((r) => r.type === resource.type);
 
             if (!userResource) {
                 return {
                     status: Status.BAD_REQUEST,
-                    message: `(removeResources) User does not have enough of this resource to remove: ${resource.type}.`
-                }
+                    message: `(removeResources) User does not have enough of this resource to remove: ${resource.type}.`,
+                };
             }
 
             if (userResource.amount < resource.amount) {
                 return {
                     status: Status.BAD_REQUEST,
-                    message: `(removeResources) User does not have enough of this resource to remove: ${resource.type}.`
-                }
+                    message: `(removeResources) User does not have enough of this resource to remove: ${resource.type}.`,
+                };
             }
 
             // get the index of the resource in the user's inventory
-            const resourceIndex = userResources.findIndex(r => r.type === resource.type);
+            const resourceIndex = userResources.findIndex((r) => r.type === resource.type);
 
             // if the amount to remove is the same as the amount the user has, remove the resource entirely
             // otherwise, reduce the amount of the resource
             if (userResource.amount === resource.amount) {
                 userUpdateOperations.$pull['inventory.resources'] = {
-                    type: resource.type
-                }
+                    type: resource.type,
+                };
             } else {
                 userUpdateOperations.$inc[`inventory.resources.${resourceIndex}.amount`] = -resource.amount;
             }
 
             // calculate the total weight to reduce by looping through `resources` and getting the weight of each resource
-            const { weight } = resources.find(r => r.type === resource.type);
+            const { weight } = resources.find((r) => r.type === resource.type);
 
             const totalWeight = weight * resource.amount;
 
@@ -692,27 +716,24 @@ export const removeResources = async (twitterId: string, resourcesToRemove: Simp
             status: Status.SUCCESS,
             message: `(removeResources) Resources removed.`,
             data: {
-                resourcesToRemove
-            }
-        }
+                resourcesToRemove,
+            },
+        };
     } catch (err: any) {
         return {
             status: Status.ERROR,
-            message: `(removeResources) ${err.message}`
-        }
+            message: `(removeResources) ${err.message}`,
+        };
     }
-}
+};
 
 /**
  * (User) Claims the daily rewards.
- * 
+ *
  * As daily rewards can contain leaderboard points, optionally specify the leaderboard name to add the points to.
  * If no leaderboard name is specified, the points will be added to the newest leaderboard.
  */
-export const claimDailyRewards = async (
-    twitterId: string,
-    leaderboardName: string | null
-): Promise<ReturnValue> => {
+export const claimDailyRewards = async (twitterId: string, leaderboardName: string | null): Promise<ReturnValue> => {
     try {
         const user = await UserModel.findOne({ twitterId }).lean();
 
@@ -720,51 +741,51 @@ export const claimDailyRewards = async (
             $set: {},
             $inc: {},
             $push: {},
-            $pull: {}
-        }
+            $pull: {},
+        };
 
         const leaderboardUpdateOperations = {
             $set: {},
             $inc: {},
             $push: {},
-            $pull: {}
-        }
+            $pull: {},
+        };
 
         const squadUpdateOperations = {
             $set: {},
             $inc: {},
             $push: {},
-            $pull: {}
-        }
+            $pull: {},
+        };
 
         const squadLeaderboardUpdateOperations = {
             $set: {},
             $inc: {},
             $push: {},
-            $pull: {}
-        }
+            $pull: {},
+        };
 
         if (!user) {
             return {
                 status: Status.ERROR,
-                message: `(claimDailyRewards) User not found.`
-            }
+                message: `(claimDailyRewards) User not found.`,
+            };
         }
 
         // get the user's squad ID
         const squadId: string | null = user.inGameData.squadId;
 
-        const leaderboard = leaderboardName === null ?
-            await LeaderboardModel.findOne().sort({ startTimestamp: -1 }) :
-            await LeaderboardModel.findOne({ name: leaderboardName });
+        const leaderboard =
+            leaderboardName === null
+                ? await LeaderboardModel.findOne().sort({ startTimestamp: -1 })
+                : await LeaderboardModel.findOne({ name: leaderboardName });
 
         if (!leaderboard) {
             return {
                 status: Status.ERROR,
-                message: `(claimDailyRewards) Leaderboard not found.`
-            }
+                message: `(claimDailyRewards) Leaderboard not found.`,
+            };
         }
-
 
         // get the user's daily login reward data
         const dailyLoginRewardData = user.inGameData.dailyLoginRewardData as DailyLoginRewardData;
@@ -774,8 +795,8 @@ export const claimDailyRewards = async (
         if (!dailyLoginRewardData.isDailyClaimable) {
             return {
                 status: Status.BAD_REQUEST,
-                message: `(claimDailyRewards) Daily rewards already claimed today.`
-            }
+                message: `(claimDailyRewards) Daily rewards already claimed today.`,
+            };
         }
 
         // get the user's consecutive days claimed
@@ -794,20 +815,22 @@ export const claimDailyRewards = async (
 
                 // check if the user's `xCookieData.extendedXCookieData` contains a source called DAILY_LOGIN_REWARDS.
                 // if yes, we increment the amount, if not, we create a new entry for the source
-                const dailyLoginRewardsIndex = (user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(data => data.source === XCookieSource.DAILY_LOGIN_REWARDS);
+                const dailyLoginRewardsIndex = (user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(
+                    (data) => data.source === XCookieSource.DAILY_LOGIN_REWARDS
+                );
 
                 if (dailyLoginRewardsIndex !== -1) {
                     userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${dailyLoginRewardsIndex}.xCookies`] = reward.amount;
                 } else {
                     userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = {
                         xCookies: reward.amount,
-                        source: XCookieSource.DAILY_LOGIN_REWARDS
-                    }
+                        source: XCookieSource.DAILY_LOGIN_REWARDS,
+                    };
                 }
             } else if (reward.type === DailyLoginRewardType.LEADERBOARD_POINTS) {
                 // add the points to the leaderboard
                 // get the index of the user in the leaderboard's `userData` array
-                const userIndex = leaderboard.userData.findIndex(userData => userData.userId === user._id);
+                const userIndex = leaderboard.userData.findIndex((userData) => userData.userId === user._id);
 
                 // if the user is not found in the leaderboard, add them
                 if (userIndex === -1) {
@@ -827,12 +850,14 @@ export const claimDailyRewards = async (
                     leaderboardUpdateOperations.$push['userData'] = {
                         userId: user._id,
                         twitterProfilePicture: user.twitterProfilePicture,
-                        pointsData: [{
-                            points: reward.amount,
-                            source: LeaderboardPointsSource.DAILY_LOGIN_REWARDS
-                        }],
-                        additionalPoints
-                    }
+                        pointsData: [
+                            {
+                                points: reward.amount,
+                                source: LeaderboardPointsSource.DAILY_LOGIN_REWARDS,
+                            },
+                        ],
+                        additionalPoints,
+                    };
 
                     // if user is in a squad, add to squad's `totalSquadPoints`
                     if (squadId) {
@@ -844,31 +869,33 @@ export const claimDailyRewards = async (
                         if (!latestSquadLeaderboard) {
                             return {
                                 status: Status.ERROR,
-                                message: `(claimDailyRewards) Latest squad leaderboard not found.`
-                            }
+                                message: `(claimDailyRewards) Latest squad leaderboard not found.`,
+                            };
                         }
 
                         // check if the squad exists in the leaderboard's `pointsData`. if not, we create a new instance.
-                        const squadIndex = latestSquadLeaderboard.pointsData.findIndex(data => data.squadId === squadId);
+                        const squadIndex = latestSquadLeaderboard.pointsData.findIndex((data) => data.squadId === squadId);
 
                         if (squadIndex === -1) {
                             squadLeaderboardUpdateOperations.$push[`pointsData`] = {
                                 squadId,
-                                memberPoints: [{
-                                    userId: user._id,
-                                    points: reward.amount
-                                }]
-                            }
+                                memberPoints: [
+                                    {
+                                        userId: user._id,
+                                        points: reward.amount,
+                                    },
+                                ],
+                            };
                         } else {
                             // otherwise, we increment the users points in the squad leaderboard.
-                            const userIndex = latestSquadLeaderboard.pointsData[squadIndex].memberPoints.findIndex(data => data.userId === user._id);
+                            const userIndex = latestSquadLeaderboard.pointsData[squadIndex].memberPoints.findIndex((data) => data.userId === user._id);
 
                             // if user is not found, we create a new instance.
                             if (userIndex === -1) {
                                 squadLeaderboardUpdateOperations.$push[`pointsData.${squadIndex}.memberPoints`] = {
                                     userId: user._id,
-                                    points: reward.amount
-                                }
+                                    points: reward.amount,
+                                };
                             } else {
                                 // otherwise, we increment the points
                                 squadLeaderboardUpdateOperations.$inc[`pointsData.${squadIndex}.memberPoints.${userIndex}.points`] = reward.amount;
@@ -903,26 +930,26 @@ export const claimDailyRewards = async (
                     // if the source doesn't exist, push a new entry
                     const pointsData = leaderboard.userData[userIndex].pointsData;
 
-                    const sourceIndex = pointsData.findIndex(pointsData => pointsData.source === LeaderboardPointsSource.DAILY_LOGIN_REWARDS);
+                    const sourceIndex = pointsData.findIndex((pointsData) => pointsData.source === LeaderboardPointsSource.DAILY_LOGIN_REWARDS);
 
                     if (sourceIndex === -1) {
                         leaderboardUpdateOperations.$push[`userData.${userIndex}.pointsData`] = {
                             points: reward.amount,
-                            source: LeaderboardPointsSource.DAILY_LOGIN_REWARDS
-                        }
+                            source: LeaderboardPointsSource.DAILY_LOGIN_REWARDS,
+                        };
                     } else {
                         leaderboardUpdateOperations.$inc[`userData.${userIndex}.pointsData.${sourceIndex}.points`] = reward.amount;
                     }
 
                     // if the additionalPoints is > 0, increment the source for `LeaderboardPointsSource.LEVELLING_UP`
                     if (additionalPoints > 0) {
-                        const levellingUpSourceIndex = pointsData.findIndex(pointsData => pointsData.source === LeaderboardPointsSource.LEVELLING_UP);
+                        const levellingUpSourceIndex = pointsData.findIndex((pointsData) => pointsData.source === LeaderboardPointsSource.LEVELLING_UP);
 
                         if (levellingUpSourceIndex === -1) {
                             leaderboardUpdateOperations.$push[`userData.${userIndex}.pointsData`] = {
                                 points: additionalPoints,
-                                source: LeaderboardPointsSource.LEVELLING_UP
-                            }
+                                source: LeaderboardPointsSource.LEVELLING_UP,
+                            };
                         } else {
                             leaderboardUpdateOperations.$inc[`userData.${userIndex}.pointsData.${levellingUpSourceIndex}.points`] = additionalPoints;
                         }
@@ -938,31 +965,33 @@ export const claimDailyRewards = async (
                         if (!latestSquadLeaderboard) {
                             return {
                                 status: Status.ERROR,
-                                message: `(claimDailyRewards) Latest squad leaderboard not found.`
-                            }
+                                message: `(claimDailyRewards) Latest squad leaderboard not found.`,
+                            };
                         }
 
                         // check if the squad exists in the leaderboard's `pointsData`. if not, we create a new instance.
-                        const squadIndex = latestSquadLeaderboard.pointsData.findIndex(data => data.squadId === squadId);
+                        const squadIndex = latestSquadLeaderboard.pointsData.findIndex((data) => data.squadId === squadId);
 
                         if (squadIndex === -1) {
                             squadLeaderboardUpdateOperations.$push[`pointsData`] = {
                                 squadId,
-                                memberPoints: [{
-                                    userId: user._id,
-                                    points: reward.amount
-                                }]
-                            }
+                                memberPoints: [
+                                    {
+                                        userId: user._id,
+                                        points: reward.amount,
+                                    },
+                                ],
+                            };
                         } else {
                             // otherwise, we increment the users points in the squad leaderboard.
-                            const userIndex = latestSquadLeaderboard.pointsData[squadIndex].memberPoints.findIndex(data => data.userId === user._id);
+                            const userIndex = latestSquadLeaderboard.pointsData[squadIndex].memberPoints.findIndex((data) => data.userId === user._id);
 
                             // if user is not found, we create a new instance.
                             if (userIndex === -1) {
                                 squadLeaderboardUpdateOperations.$push[`pointsData.${squadIndex}.memberPoints`] = {
                                     userId: user._id,
-                                    points: reward.amount
-                                }
+                                    points: reward.amount,
+                                };
                             } else {
                                 // otherwise, we increment the points
                                 squadLeaderboardUpdateOperations.$inc[`pointsData.${squadIndex}.memberPoints.${userIndex}.points`] = reward.amount;
@@ -974,8 +1003,8 @@ export const claimDailyRewards = async (
             } else {
                 return {
                     status: Status.ERROR,
-                    message: `(claimDailyRewards) Invalid reward type.`
-                }
+                    message: `(claimDailyRewards) Invalid reward type.`,
+                };
             }
         }
 
@@ -1004,13 +1033,13 @@ export const claimDailyRewards = async (
             if (!latestSquadLeaderboard) {
                 return {
                     status: Status.ERROR,
-                    message: `(claimDailyRewards) Latest squad leaderboard not found.`
-                }
+                    message: `(claimDailyRewards) Latest squad leaderboard not found.`,
+                };
             }
 
             await SquadLeaderboardModel.updateOne({ _id: latestSquadLeaderboard._id }, squadLeaderboardUpdateOperations).catch((err) => {
                 console.error(`Error from squad leaderboard model: ${err.message}`);
-            })
+            });
         }
 
         // check if the user update operations included a level up
@@ -1025,16 +1054,13 @@ export const claimDailyRewards = async (
 
             if (referrerId) {
                 // update the referrer's referred users data where applicable
-                const { status, message } = await updateReferredUsersData(
-                    referrerId,
-                    user._id
-                );
+                const { status, message } = await updateReferredUsersData(referrerId, user._id);
 
                 if (status === Status.ERROR) {
                     return {
                         status,
-                        message: `(claimDailyRewards) Err from updateReferredUsersData: ${message}`
-                    }
+                        message: `(claimDailyRewards) Err from updateReferredUsersData: ${message}`,
+                    };
                 }
             }
         }
@@ -1042,21 +1068,21 @@ export const claimDailyRewards = async (
             status: Status.SUCCESS,
             message: `(claimDailyRewards) Daily rewards claimed.`,
             data: {
-                dailyLoginRewards
-            }
-        }
+                dailyLoginRewards,
+            },
+        };
     } catch (err: any) {
         return {
             status: Status.ERROR,
-            message: `(claimDailyRewards) ${err.message}`
-        }
+            message: `(claimDailyRewards) ${err.message}`,
+        };
     }
-}
+};
 
 /**
  * Updates all users' daily login reward data.
  * This includes:
- * 
+ *
  * 1. resetting `isDailyClaimable` to true every day at 00:00 UTC.
  * 2. resetting `consecutiveDaysClaimed` to 0 if the user doesn't claim the reward for the day.
  */
@@ -1070,13 +1096,13 @@ export const updateDailyLoginRewardsData = async (): Promise<void> => {
         // users who have `isDailyClaimable` = true means they haven't claimed their daily rewards.
         // in this case, reset `consecutiveDaysClaimed` to 0.
         const userUpdateOperations: Array<{
-            userId: string,
+            userId: string;
             updateOperations: {
-                $pull: {},
-                $inc: {},
-                $set: {},
-                $push: {}
-            }
+                $pull: {};
+                $inc: {};
+                $set: {};
+                $push: {};
+            };
         }> = [];
 
         for (const user of users) {
@@ -1087,30 +1113,30 @@ export const updateDailyLoginRewardsData = async (): Promise<void> => {
                     userId: user._id,
                     updateOperations: {
                         $set: {
-                            'inGameData.dailyLoginRewardData.isDailyClaimable': true
+                            'inGameData.dailyLoginRewardData.isDailyClaimable': true,
                         },
                         $inc: {},
                         $pull: {},
-                        $push: {}
-                    }
+                        $push: {},
+                    },
                 });
             } else {
                 userUpdateOperations.push({
                     userId: user._id,
                     updateOperations: {
                         $set: {
-                            'inGameData.dailyLoginRewardData.consecutiveDaysClaimed': 0
+                            'inGameData.dailyLoginRewardData.consecutiveDaysClaimed': 0,
                         },
                         $inc: {},
                         $pull: {},
-                        $push: {}
-                    }
+                        $push: {},
+                    },
                 });
             }
         }
 
         // execute the update operations
-        const userUpdatePromises = userUpdateOperations.map(async op => {
+        const userUpdatePromises = userUpdateOperations.map(async (op) => {
             return UserModel.updateOne({ _id: op.userId }, op.updateOperations);
         });
 
@@ -1120,25 +1146,22 @@ export const updateDailyLoginRewardsData = async (): Promise<void> => {
     } catch (err: any) {
         console.error('Error in updateDailyLoginRewardsData:', err.message);
     }
-}
+};
 
 /**
  * Links either a starter or a referral code to play the game (i.e. invite code).
- * 
+ *
  * The current version only allows users to input EITHER, not both.
  */
-export const linkInviteCode = async (
-    twitterId: string,
-    code: string
-): Promise<ReturnValue> => {
+export const linkInviteCode = async (twitterId: string, code: string): Promise<ReturnValue> => {
     try {
         const user = await UserModel.findOne({ twitterId }).lean();
 
         if (!user) {
             return {
                 status: Status.ERROR,
-                message: `(linkInviteCode) User not found.`
-            }
+                message: `(linkInviteCode) User not found.`,
+            };
         }
 
         // check if the code is a starter code or a referral code
@@ -1150,8 +1173,8 @@ export const linkInviteCode = async (
         if (!starterCode && !referrer) {
             return {
                 status: Status.BAD_REQUEST,
-                message: `(linkInviteCode) Invalid code.`
-            }
+                message: `(linkInviteCode) Invalid code.`,
+            };
         }
 
         // if the code is a starter code
@@ -1161,8 +1184,8 @@ export const linkInviteCode = async (
             if (user.inviteCodeData.usedStarterCode) {
                 return {
                     status: Status.BAD_REQUEST,
-                    message: `(linkInviteCode) User already used a starter code.`
-                }
+                    message: `(linkInviteCode) User already used a starter code.`,
+                };
             }
 
             // check if the starter code is already used by more than its allowed uses.
@@ -1170,62 +1193,74 @@ export const linkInviteCode = async (
             if (starterCode.usedBy.length >= starterCode.maxUses) {
                 return {
                     status: Status.BAD_REQUEST,
-                    message: `(linkInviteCode) Starter code has already reached its limit.`
-                }
+                    message: `(linkInviteCode) Starter code has already reached its limit.`,
+                };
             }
 
             // update the user's starter code data and the starter code's `usedBy` array
             await Promise.all([
-                await UserModel.updateOne({ twitterId }, {
-                    $set: {
-                        'inviteCodeData.usedStarterCode': code.toUpperCase()
+                await UserModel.updateOne(
+                    { twitterId },
+                    {
+                        $set: {
+                            'inviteCodeData.usedStarterCode': code.toUpperCase(),
+                        },
                     }
-                }),
-                await StarterCodeModel.updateOne({ code: code.toUpperCase() }, {
-                    $push: {
-                        usedBy: user._id
+                ),
+                await StarterCodeModel.updateOne(
+                    { code: code.toUpperCase() },
+                    {
+                        $push: {
+                            usedBy: user._id,
+                        },
                     }
-                })
+                ),
             ]);
             return {
                 status: Status.SUCCESS,
                 message: `(linkInviteCode) Starter code linked.`,
-            }
+            };
         } else if (referrer) {
             // check if the user already has a referral code.
             // if they do, return an error.
             if (user.inviteCodeData.usedReferralCode) {
                 return {
                     status: Status.BAD_REQUEST,
-                    message: `(linkInviteCode) User already used a referral code.`
-                }
+                    message: `(linkInviteCode) User already used a referral code.`,
+                };
             }
 
             // check if the referral code belongs to the user. if it does, return an error.
             if (referrer.twitterId === user.twitterId) {
                 return {
                     status: Status.BAD_REQUEST,
-                    message: `(linkInviteCode) Referral code belongs to the user.`
-                }
+                    message: `(linkInviteCode) Referral code belongs to the user.`,
+                };
             }
 
             // update the user's referral code data
-            await UserModel.updateOne({ twitterId }, {
-                $set: {
-                    'inviteCodeData.usedReferralCode': code.toUpperCase(),
-                    'inviteCodeData.referrerId': referrer._id
+            await UserModel.updateOne(
+                { twitterId },
+                {
+                    $set: {
+                        'inviteCodeData.usedReferralCode': code.toUpperCase(),
+                        'inviteCodeData.referrerId': referrer._id,
+                    },
                 }
-            });
+            );
 
             // also update the referrer's data to include the referred user's data in the `referredUsersData` array
-            await UserModel.updateOne({ _id: referrer._id }, {
-                $push: {
-                    'referralData.referredUsersData': {
-                        userId: user._id,
-                        hasReachedLevel3: false
-                    }
+            await UserModel.updateOne(
+                { _id: referrer._id },
+                {
+                    $push: {
+                        'referralData.referredUsersData': {
+                            userId: user._id,
+                            hasReachedLevel3: false,
+                        },
+                    },
                 }
-            });
+            );
 
             // attempt to join the referrer's squad if they have one.
             const { status, message, data } = await joinReferrerSquad(user._id, referrer._id);
@@ -1243,8 +1278,8 @@ export const linkInviteCode = async (
                 ) {
                     return {
                         status: Status.SUCCESS,
-                        message: `(linkInviteCode) Referral code linked. Extra error message from joinReferrerSquad: ${message}`
-                    }
+                        message: `(linkInviteCode) Referral code linked. Extra error message from joinReferrerSquad: ${message}`,
+                    };
                 }
             }
 
@@ -1252,26 +1287,26 @@ export const linkInviteCode = async (
                 status: Status.SUCCESS,
                 message: `(linkInviteCode) Referral code linked. Extra success message from joinReferrerSquad: ${message}`,
                 data: {
-                    squadId: data.squadId
-                }
-            }
+                    squadId: data.squadId,
+                },
+            };
         } else {
             return {
                 status: Status.ERROR,
-                message: `(linkInviteCode) Code not found.`
-            }
+                message: `(linkInviteCode) Code not found.`,
+            };
         }
     } catch (err: any) {
         return {
             status: Status.ERROR,
-            message: `(linkInviteCode) ${err.message}`
-        }
+            message: `(linkInviteCode) ${err.message}`,
+        };
     }
-}
+};
 
 /**
  * Checks if the user has a starter or referral code (i.e. invite code) linked.
- * 
+ *
  * One must exist to be allowed to play the game.
  */
 export const checkInviteCodeLinked = async (twitterId: string): Promise<ReturnValue> => {
@@ -1281,8 +1316,8 @@ export const checkInviteCodeLinked = async (twitterId: string): Promise<ReturnVa
         if (!user) {
             return {
                 status: Status.ERROR,
-                message: `(checkInviteCodeLinked) User not found.`
-            }
+                message: `(checkInviteCodeLinked) User not found.`,
+            };
         }
 
         if (!user.inviteCodeData.usedStarterCode && !user.inviteCodeData.usedReferralCode) {
@@ -1290,25 +1325,25 @@ export const checkInviteCodeLinked = async (twitterId: string): Promise<ReturnVa
                 status: Status.SUCCESS,
                 message: `(checkInviteCodeLinked) No starter or referral code linked.`,
                 data: {
-                    hasInviteCodeLinked: false
-                }
-            }
+                    hasInviteCodeLinked: false,
+                },
+            };
         }
 
         return {
             status: Status.SUCCESS,
             message: `(checkInviteCodeLinked) User has an invite code.`,
             data: {
-                hasInviteCodeLinked: true
-            }
-        }
+                hasInviteCodeLinked: true,
+            },
+        };
     } catch (err: any) {
         return {
             status: Status.ERROR,
-            message: `(checkInviteCodeLinked) ${err.message}`
-        }
+            message: `(checkInviteCodeLinked) ${err.message}`,
+        };
     }
-}
+};
 
 /**
  * Fetches the user's beginner rewards data.
@@ -1320,8 +1355,8 @@ export const getBeginnerRewardsData = async (twitterId: string): Promise<ReturnV
         if (!user) {
             return {
                 status: Status.ERROR,
-                message: `(getBeginnerRewardsData) User not found.`
-            }
+                message: `(getBeginnerRewardsData) User not found.`,
+            };
         }
 
         const beginnerRewardData = user.inGameData.beginnerRewardData as BeginnerRewardData;
@@ -1330,16 +1365,16 @@ export const getBeginnerRewardsData = async (twitterId: string): Promise<ReturnV
             status: Status.SUCCESS,
             message: `(getBeginnerRewardsData) Beginner rewards data fetched.`,
             data: {
-                beginnerRewardData
-            }
-        }
+                beginnerRewardData,
+            },
+        };
     } catch (err: any) {
         return {
             status: Status.ERROR,
-            message: `(getBeginnerRewardsData) ${err.message}`
-        }
+            message: `(getBeginnerRewardsData) ${err.message}`,
+        };
     }
-}
+};
 /**
  * Claims the beginner rewards for the user for a particular day.
  */
@@ -1351,14 +1386,14 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
             $set: {},
             $inc: {},
             $push: {},
-            $pull: {}
-        }
+            $pull: {},
+        };
 
         if (!user) {
             return {
                 status: Status.ERROR,
-                message: `(claimBeginnerRewards) User not found.`
-            }
+                message: `(claimBeginnerRewards) User not found.`,
+            };
         }
 
         // get the user's beginner reward data
@@ -1370,8 +1405,8 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
         if (!isEligible) {
             return {
                 status: Status.BAD_REQUEST,
-                message: `(claimBeginnerRewards) User is not eligible for beginner rewards.`
-            }
+                message: `(claimBeginnerRewards) User is not eligible for beginner rewards.`,
+            };
         }
 
         // get the latest day from both arrays
@@ -1386,8 +1421,8 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
         if (!beginnerRewardData.isClaimable) {
             return {
                 status: Status.BAD_REQUEST,
-                message: `(claimBeginnerRewards) Rewards already claimed for the day.`
-            }
+                message: `(claimBeginnerRewards) Rewards already claimed for the day.`,
+            };
         }
 
         // get the beginner rewards for the day
@@ -1396,8 +1431,8 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
         // initialize $each on the user's inventory items
         if (!userUpdateOperations.$push['inventory.items']) {
             userUpdateOperations.$push['inventory.items'] = {
-                $each: []
-            }
+                $each: [],
+            };
         }
 
         // 1. add the rewards to the user's inventory
@@ -1410,38 +1445,39 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
 
                 // check if the user's `xCookieData.extendedXCookieData` contains a source called BEGINNER_REWARDS.
                 // if yes, we increment the amount, if not, we create a new entry for the source
-                const beginnerRewardsIndex = (user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(data => data.source === XCookieSource.BEGINNER_REWARDS);
+                const beginnerRewardsIndex = (user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(
+                    (data) => data.source === XCookieSource.BEGINNER_REWARDS
+                );
 
                 if (beginnerRewardsIndex !== -1) {
                     userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${beginnerRewardsIndex}.xCookies`] = reward.amount;
                 } else {
                     userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = {
                         xCookies: reward.amount,
-                        source: XCookieSource.BEGINNER_REWARDS
-                    }
+                        source: XCookieSource.BEGINNER_REWARDS,
+                    };
                 }
             }
 
             if (reward.type === BeginnerRewardType.BIT_ORB_I) {
                 // check if the user already has Bit Orb (I) in their inventory
-                const bitOrbIIndex = (user.inventory.items as Item[]).findIndex(i => i.type === BitOrbType.BIT_ORB_I);
+                const bitOrbIIndex = (user.inventory.items as Item[]).findIndex((i) => i.type === BitOrbType.BIT_ORB_I);
 
                 // if the user already has Bit Orb (I), increment the amount
                 // otherwise, add Bit Orb (I) to the user's inventory
                 if (bitOrbIIndex !== -1) {
                     userUpdateOperations.$inc[`inventory.items.${bitOrbIIndex}.amount`] = reward.amount;
                 } else {
-
                     userUpdateOperations.$push['inventory.items'].$each.push({
                         type: BitOrbType.BIT_ORB_I,
-                        amount: reward.amount
-                    })
+                        amount: reward.amount,
+                    });
                 }
             }
 
             if (reward.type === BeginnerRewardType.TERRA_CAPSULATOR_I) {
                 // check if the user already has Terra Capsulator (I) in their inventory
-                const terraCapsulatorIIndex = (user.inventory.items as Item[]).findIndex(i => i.type === TerraCapsulatorType.TERRA_CAPSULATOR_I);
+                const terraCapsulatorIIndex = (user.inventory.items as Item[]).findIndex((i) => i.type === TerraCapsulatorType.TERRA_CAPSULATOR_I);
 
                 // if the user already has Terra Capsulator (I), increment the amount
                 // otherwise, add Terra Capsulator (I) to the user's inventory
@@ -1450,8 +1486,8 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
                 } else {
                     userUpdateOperations.$push['inventory.items'].$each.push({
                         type: TerraCapsulatorType.TERRA_CAPSULATOR_I,
-                        amount: reward.amount
-                    })
+                        amount: reward.amount,
+                    });
                 }
             }
         }
@@ -1461,34 +1497,40 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
         userUpdateOperations.$push['inGameData.beginnerRewardData.daysClaimed'] = nextDayToClaim;
 
         // execute the update operations ($set and $inc on one, $push and $pull on the other to prevent conflict)
-        await UserModel.updateOne({ twitterId }, {
-            $set: userUpdateOperations.$set,
-            $inc: userUpdateOperations.$inc
-        });
+        await UserModel.updateOne(
+            { twitterId },
+            {
+                $set: userUpdateOperations.$set,
+                $inc: userUpdateOperations.$inc,
+            }
+        );
 
-        await UserModel.updateOne({ twitterId }, {
-            $push: userUpdateOperations.$push,
-            $pull: userUpdateOperations.$pull
-        })
+        await UserModel.updateOne(
+            { twitterId },
+            {
+                $push: userUpdateOperations.$push,
+                $pull: userUpdateOperations.$pull,
+            }
+        );
 
         return {
             status: Status.SUCCESS,
             message: `(claimBeginnerRewards) Beginner rewards claimed for day ${nextDayToClaim}.`,
             data: {
-                rewards
-            }
-        }
+                rewards,
+            },
+        };
     } catch (err: any) {
         return {
             status: Status.ERROR,
-            message: `(claimBeginnerRewards) ${err.message}`
-        }
+            message: `(claimBeginnerRewards) ${err.message}`,
+        };
     }
-}
+};
 
 /**
  * Updates all users' beginner reward data daily. Called by a scheduler every 00:00 UTC.
- * 
+ *
  * This includes:
  * 1. only updating users whose `daysMissed` + `daysClaimed` < MAX_BEGINNER_REWARD_DAY.
  * 2. resetting `isClaimable` to true every day at 00:00 UTC.
@@ -1499,19 +1541,19 @@ export const updateBeginnerRewardsData = async (): Promise<void> => {
         const users = await UserModel.find().lean();
 
         // filter out users who are not eligible for beginner rewards
-        const eligibleUsers = users.filter(user => {
+        const eligibleUsers = users.filter((user) => {
             const beginnerRewardData = user.inGameData.beginnerRewardData as BeginnerRewardData;
             return beginnerRewardData.daysClaimed.length + beginnerRewardData.daysMissed.length < MAX_BEGINNER_REWARD_DAY;
         });
 
         const userUpdateOperations: Array<{
-            userId: string,
+            userId: string;
             updateOperations: {
-                $pull: {},
-                $inc: {},
-                $set: {},
-                $push: {}
-            }
+                $pull: {};
+                $inc: {};
+                $set: {};
+                $push: {};
+            };
         }> = [];
 
         for (const user of eligibleUsers) {
@@ -1524,12 +1566,12 @@ export const updateBeginnerRewardsData = async (): Promise<void> => {
                     userId: user._id,
                     updateOperations: {
                         $set: {
-                            'inGameData.beginnerRewardData.isClaimable': true
+                            'inGameData.beginnerRewardData.isClaimable': true,
                         },
                         $inc: {},
                         $pull: {},
-                        $push: {}
-                    }
+                        $push: {},
+                    },
                 });
             } else {
                 // if `isClaimable` is true, it means the user missed claiming the rewards for the day.
@@ -1542,18 +1584,18 @@ export const updateBeginnerRewardsData = async (): Promise<void> => {
                     userId: user._id,
                     updateOperations: {
                         $push: {
-                            'inGameData.beginnerRewardData.daysMissed': latestDay + 1
+                            'inGameData.beginnerRewardData.daysMissed': latestDay + 1,
                         },
                         $inc: {},
                         $set: {},
-                        $pull: {}
-                    }
+                        $pull: {},
+                    },
                 });
             }
         }
 
         // execute the update operations
-        const userUpdatePromises = userUpdateOperations.map(async op => {
+        const userUpdatePromises = userUpdateOperations.map(async (op) => {
             return UserModel.updateOne({ _id: op.userId }, op.updateOperations);
         });
 
@@ -1561,45 +1603,42 @@ export const updateBeginnerRewardsData = async (): Promise<void> => {
     } catch (err: any) {
         console.error('Error in updateBeginnerRewardsData:', err.message);
     }
-}
+};
 
 /**
  * (Season 0) Updates and sets the referred user's `hasReachedLevel3` of the referrer's `referredUsersData` to true.
- * 
+ *
  * Additionally, give the referrer their referral rewards to claim if applicable.
  */
-export const updateReferredUsersData = async (
-    referrerUserId: string,
-    referredUserUserId: string
-): Promise<ReturnValue> => {
+export const updateReferredUsersData = async (referrerUserId: string, referredUserUserId: string): Promise<ReturnValue> => {
     try {
         const [referrer, referredUser] = await Promise.all([
             UserModel.findOne({ _id: referrerUserId }).lean(),
-            UserModel.findOne({ _id: referredUserUserId }).lean()
+            UserModel.findOne({ _id: referredUserUserId }).lean(),
         ]);
 
         if (!referrer || !referredUser) {
             return {
                 status: Status.ERROR,
-                message: `(updateReferredUsersData) User not found.`
-            }
+                message: `(updateReferredUsersData) User not found.`,
+            };
         }
 
         const referrerUpdateOperations = {
             $set: {},
             $inc: {},
             $push: {},
-            $pull: {}
-        }
+            $pull: {},
+        };
 
         // check if the referrer's `referredUsersData` contains the referred user
-        const referredUserIndex = (referrer.referralData.referredUsersData as ReferredUserData[]).findIndex(data => data.userId === referredUser._id);
+        const referredUserIndex = (referrer.referralData.referredUsersData as ReferredUserData[]).findIndex((data) => data.userId === referredUser._id);
 
         if (referredUserIndex === -1) {
             return {
                 status: Status.BAD_REQUEST,
-                message: `(updateReferredUsersData) Referred user data not found.`
-            }
+                message: `(updateReferredUsersData) Referred user data not found.`,
+            };
         }
 
         // at this point, the level of the referred user should already be set to level 3 from the parent function.
@@ -1607,8 +1646,8 @@ export const updateReferredUsersData = async (
         if (referredUser.inGameData.level !== 3) {
             return {
                 status: Status.BAD_REQUEST,
-                message: `(updateReferredUsersData) Referred user is not level 3.`
-            }
+                message: `(updateReferredUsersData) Referred user is not level 3.`,
+            };
         }
 
         // set `hasReachedLevel3` to true
@@ -1616,7 +1655,8 @@ export const updateReferredUsersData = async (
 
         // now check the amount of referred users the referrer has that reached level 3.
         // we add 1 because the set operation for the newest referred user hasn't been executed yet.
-        const totalReferredUsersReachedLevel3 = (referrer.referralData.referredUsersData as ReferredUserData[]).filter(data => data.hasReachedLevel3).length + 1;
+        const totalReferredUsersReachedLevel3 =
+            (referrer.referralData.referredUsersData as ReferredUserData[]).filter((data) => data.hasReachedLevel3).length + 1;
 
         // get the referral rewards based on the total referred users that reached level 3
         const referralRewards = GET_SEASON_0_REFERRAL_REWARDS(totalReferredUsersReachedLevel3);
@@ -1637,13 +1677,95 @@ export const updateReferredUsersData = async (
             status: Status.SUCCESS,
             message: `(updateReferredUsersData) Referred user data updated.`,
             data: {
-                newReferralRewards: referralRewards
-            }
-        }
+                newReferralRewards: referralRewards,
+            },
+        };
     } catch (err: any) {
         return {
             status: Status.ERROR,
-            message: `(updateReferredUsersData) ${err.message}`
-        }
+            message: `(updateReferredUsersData) ${err.message}`,
+        };
     }
-}
+};
+
+/**
+ * Connects a user's to their Discord profile.
+ */
+export const connectToDiscord = async (twitterId: string, profile: DiscordProfile): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId });
+        if (!user) {
+            return {
+                status: Status.UNAUTHORIZED,
+                message: `(connectToDiscord) You're not registered.`,
+            };
+        }
+
+        // prevent user to connect to another discord account
+        if (!!user.discordProfile?.discordId && user.discordProfile?.discordId !== profile.id) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(connectToDiscord) You're already connected.`,
+            };
+        }
+
+        await user.updateOne({
+            $set: {
+                discordProfile: {
+                    discordId: profile.id,
+                    name: profile.global_name,
+                    username: profile.username,
+                    token: profile.discordRefreshToken,
+                },
+            },
+        });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(connectToDiscord) User connected to discord successfully.`,
+            data: { profile },
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(connectToDiscord) ${err.message}`,
+        };
+    }
+};
+
+/**
+ * Disconnect user's discord profile
+ */
+export const disconnectFromDiscord = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId });
+        if (!user) {
+            return {
+                status: Status.UNAUTHORIZED,
+                message: `(disconnectFromDiscord) You're not registered.`,
+            };
+        }
+
+        // check if user's already connected
+        if (!user.discordProfile?.discordId) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(disconnectFromDiscord) You're not connected.`,
+            };
+        }
+
+        // Remove the Discord profile from the user document
+        user.discordProfile = undefined;
+        await user.save();
+
+        return {
+            status: Status.SUCCESS,
+            message: `(disconnectFromDiscord) User disconnected to discord successfully.`,
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(disconnectFromDiscord) ${err.message}`,
+        };
+    }
+};
