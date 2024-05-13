@@ -2,8 +2,9 @@ import express from 'express';
 import { DiscordProfile } from '../../utils/types';
 import { Status } from '../../utils/retVal';
 import passport from '../../configs/passport';
-import { connectToDiscord } from '../../api/user';
+import { connectToDiscord, disconnectFromDiscord } from '../../api/user';
 import { validateJWT } from '../../utils/jwt';
+import { validateRequestAuth } from '../../utils/auth';
 
 const router = express.Router();
 
@@ -83,6 +84,32 @@ router.get('/callback', passport.authenticate('discord', { failureRedirect: '/',
     } catch (err: any) {
         return res.status(500).json({
             status: Status.ERROR,
+            message: err.message,
+        });
+    }
+});
+
+router.post('/disconnect', async (req, res) => {
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'disconnect');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage,
+            });
+        }
+
+        const { status, message, data } = await disconnectFromDiscord(validateData?.twitterId);
+
+        return res.status(status).json({
+            status,
+            message,
+            data,
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
             message: err.message,
         });
     }
