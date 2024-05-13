@@ -1689,7 +1689,7 @@ export const updateReferredUsersData = async (referrerUserId: string, referredUs
 };
 
 /**
- * Connects a user's to their Discord profile.
+ * Connects a user to their Discord account.
  */
 export const connectToDiscord = async (twitterId: string, profile: DiscordProfile): Promise<ReturnValue> => {
     try {
@@ -1734,7 +1734,7 @@ export const connectToDiscord = async (twitterId: string, profile: DiscordProfil
 };
 
 /**
- * Disconnect user's discord profile
+ * Disconnects a user's discord account.
  */
 export const disconnectFromDiscord = async (twitterId: string): Promise<ReturnValue> => {
     try {
