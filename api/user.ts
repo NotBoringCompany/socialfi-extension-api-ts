@@ -26,6 +26,7 @@ import { BoosterItem } from '../models/booster';
 import { randomizeIslandTraits } from '../utils/constants/island';
 import { Signature, recoverMessageAddress } from 'viem';
 import { joinReferrerSquad } from './squad';
+import { DiscordProfile } from '../utils/types';
 
 /**
  * Returns the user's data.
@@ -1647,3 +1648,48 @@ export const updateReferredUsersData = async (
         }
     }
 }
+
+/**
+ * Connects a user's to their Discord profile.
+ */
+export const connectToDiscord = async (twitterId: string, profile: DiscordProfile): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId });
+        if (!user) {
+            return {
+                status: Status.UNAUTHORIZED,
+                message: `(connectToDiscord) You're not registered.`,
+            };
+        }
+
+        // prevent user to connect to another discord account
+        if (!!user.discordProfile?.discordId && user.discordProfile?.discordId !== profile.id) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(connectToDiscord) You're already connected.`,
+            };
+        }
+
+        await user.updateOne({
+            $set: {
+                discordProfile: {
+                    discordId: profile.id,
+                    name: profile.global_name,
+                    username: profile.username,
+                    token: profile.discordRefreshToken,
+                },
+            },
+        });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(connectToDiscord) User connected to discord successfully.`,
+            data: { profile },
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(connectToDiscord) ${err.message}`,
+        };
+    }
+};

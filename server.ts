@@ -29,6 +29,7 @@ app.use(passport.session());
 
 /** ROUTE IMPORTS */
 import twitterAuth from './routes/auth/twitter';
+import discordAuth from './routes/auth/discord';
 import jwt from './routes/jwt';
 import shop from './routes/shop';
 import quest from './routes/quest';
@@ -50,6 +51,7 @@ import squad from './routes/squad';
 import { schedulers } from './schedulers/schedulers';
 
 app.use('/auth/twitter', twitterAuth);
+app.use('/auth/discord', discordAuth);
 app.use('/jwt', jwt);
 app.use('/shop', shop);
 app.use('/quest', quest);

@@ -11,6 +11,7 @@ export const UserSchema = new mongoose.Schema({
     },
     twitterId: String,
     twitterProfilePicture: String,
+    discordProfile: Object,
     createdTimestamp: Number,
     inviteCodeData: Object,
     referralData: Object,
