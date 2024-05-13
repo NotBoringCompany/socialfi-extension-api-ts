@@ -309,8 +309,8 @@ export const evolveIsland = async (twitterId: string, islandId: number, choice: 
             if (totalXCookiesEarnableIsZero) {
                 islandUpdateOperations.$inc['currentLevel'] = 1;
                 islandUpdateOperations.$inc['islandEarningStats.totalXCookiesSpent'] = requiredXCookies;
-                islandUpdateOperations.$inc['islandEarningStats.totalXCookiesEarnable'] = requiredXCookies;
-                islandUpdateOperations.$set['islandEarningStats.earningStart'] = Math.floor(Date.now() / 1000);
+                // islandUpdateOperations.$inc['islandEarningStats.totalXCookiesEarnable'] = requiredXCookies;
+                // islandUpdateOperations.$set['islandEarningStats.earningStart'] = Math.floor(Date.now() / 1000);
 
                 // otherwise, only evolve the island and increment the totalXCookiesSpent and totalXCookiesEarnable by `requiredXCookies`.
             } else {
