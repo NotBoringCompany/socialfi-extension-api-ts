@@ -138,7 +138,7 @@ export const shop: Shop = {
         {
             type: BoosterItem.RAFT_SPEED_BOOSTER_30_MIN,
             price: {
-                xCookies: 35
+                xCookies: 30
             }
         },
         {
