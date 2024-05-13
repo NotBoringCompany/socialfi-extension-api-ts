@@ -25,7 +25,7 @@ export interface User {
     /** the user's twitter display name */
     twitterDisplayName: string;
     /** the user's discord profile */
-    discordProfile?: UserDiscordProfile;
+    discordProfile?: DiscordProfile;
     /** when the account was created */
     createdTimestamp: number;
     /** 
@@ -253,13 +253,13 @@ export enum BeginnerRewardType {
 }
 
 /**
- * Represents user's discord profile.
+ * Represents a user's discord profile.
  */
-export interface UserDiscordProfile {
+export interface DiscordProfile {
     discordId: string;
-    /** discord global name */
+    /** discord username */
     name: string | null;
     username: string;
-    /** discord oauth refresh token, last for 365 days */
+    /** discord oauth refresh token, lasts for 365 days */
     token: string;
 }
