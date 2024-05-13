@@ -309,6 +309,8 @@ export const evolveIsland = async (twitterId: string, islandId: number, choice: 
             if (totalXCookiesEarnableIsZero) {
                 islandUpdateOperations.$inc['currentLevel'] = 1;
                 islandUpdateOperations.$inc['islandEarningStats.totalXCookiesSpent'] = requiredXCookies;
+
+                ////// !!!! temporarily disable earning xCookies from evolving and the earning start for season 0 !!!! //////
                 // islandUpdateOperations.$inc['islandEarningStats.totalXCookiesEarnable'] = requiredXCookies;
                 // islandUpdateOperations.$set['islandEarningStats.earningStart'] = Math.floor(Date.now() / 1000);
 
