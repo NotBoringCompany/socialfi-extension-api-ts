@@ -48,6 +48,7 @@ import asset from './routes/asset';
 import tutorial from './routes/tutorial';
 import invite from './routes/invite';
 import squad from './routes/squad';
+import setting from './routes/setting';
 import { schedulers } from './schedulers/schedulers';
 
 app.use('/auth/twitter', twitterAuth);
@@ -70,6 +71,7 @@ app.use('/asset', asset);
 app.use('/tutorial', tutorial);
 app.use('/invite', invite);
 app.use('/squad', squad);
+app.use('/setting', setting);
 
 app.listen(port, async () => {
     console.log(`Server running on port ${port}`);
