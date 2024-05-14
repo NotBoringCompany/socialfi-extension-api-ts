@@ -170,7 +170,7 @@ router.post('/upgrade_squad_limit', async (req, res) => {
 })
 
 router.post('/delegate_leadership', async (req, res) => {
-    const { newLeaderTwitterId } = req.body;
+    const { newLeaderTwitterId, newLeaderUserId } = req.body;
 
     try {
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'delegate_leadership');
@@ -182,7 +182,7 @@ router.post('/delegate_leadership', async (req, res) => {
             })
         }
 
-        const { status, message, data } = await delegateLeadership(validateData?.twitterId, newLeaderTwitterId);
+        const { status, message, data } = await delegateLeadership(validateData?.twitterId, newLeaderTwitterId, newLeaderUserId);
 
         return res.status(status).json({
             status,
@@ -198,7 +198,7 @@ router.post('/delegate_leadership', async (req, res) => {
 })
 
 router.post('/kick_member', async (req, res) => {
-    const { memberTwitterId } = req.body;
+    const { memberTwitterId, memberUserId } = req.body;
 
     try {
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'kick_member');
@@ -210,7 +210,7 @@ router.post('/kick_member', async (req, res) => {
             })
         }
 
-        const { status, message, data } = await kickMember(validateData?.twitterId, memberTwitterId);
+        const { status, message, data } = await kickMember(validateData?.twitterId, memberTwitterId, memberUserId);
 
         return res.status(status).json({
             status,

@@ -871,11 +871,11 @@ export const upgradeSquadLimit = async (twitterId: string): Promise<ReturnValue>
 /**
  * Delegates the leader role to another member in the squad. Only callable by a squad leader.
  */
-export const delegateLeadership = async (currentLeaderTwitterId: string, newLeaderTwitterId: string): Promise<ReturnValue> => {
+export const delegateLeadership = async (currentLeaderTwitterId: string, newLeaderTwitterId?: string, newLeaderUserId?: string): Promise<ReturnValue> => {
     try {
         const [currentLeader, newLeader] = await Promise.all([
             UserModel.findOne({ twitterId: currentLeaderTwitterId }).lean(),
-            UserModel.findOne({ twitterId: newLeaderTwitterId }).lean()
+            UserModel.findOne({ $or: [{ twitterId: newLeaderTwitterId }, { _id: newLeaderUserId }] }).lean()
         ]);
 
         if (!currentLeader) {
@@ -963,11 +963,11 @@ export const delegateLeadership = async (currentLeaderTwitterId: string, newLead
     }
 }
 
-export const kickMember = async (leaderTwitterId: string, memberTwitterId: string): Promise<ReturnValue> => {
+export const kickMember = async (leaderTwitterId: string, memberTwitterId?: string, memberUserId?: string): Promise<ReturnValue> => {
     try {
         const [leader, member] = await Promise.all([
             UserModel.findOne({ twitterId: leaderTwitterId }).lean(),
-            UserModel.findOne({ twitterId: memberTwitterId }).lean()
+            UserModel.findOne({ $or: [{ twitterId: memberTwitterId }, { _id: memberUserId }] }).lean()
         ]);
 
         if (!leader) {
