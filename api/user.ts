@@ -33,7 +33,7 @@ import { BoosterItem } from '../models/booster';
 import { randomizeIslandTraits } from '../utils/constants/island';
 import { Signature, recoverMessageAddress } from 'viem';
 import { joinReferrerSquad } from './squad';
-import { DiscordProfile, ExtendedProfile } from '../utils/types';
+import { ExtendedDiscordProfile, ExtendedProfile } from '../utils/types';
 
 /**
  * Returns the user's data.
@@ -1691,7 +1691,7 @@ export const updateReferredUsersData = async (referrerUserId: string, referredUs
 /**
  * Connects a user to their Discord account.
  */
-export const connectToDiscord = async (twitterId: string, profile: DiscordProfile): Promise<ReturnValue> => {
+export const connectToDiscord = async (twitterId: string, profile: ExtendedDiscordProfile): Promise<ReturnValue> => {
     try {
         const user = await UserModel.findOne({ twitterId });
         if (!user) {
@@ -1713,7 +1713,7 @@ export const connectToDiscord = async (twitterId: string, profile: DiscordProfil
             $set: {
                 discordProfile: {
                     discordId: profile.id,
-                    name: profile.global_name,
+                    name: profile?.global_name ?? profile.username,
                     username: profile.username,
                     token: profile.discordRefreshToken,
                 },

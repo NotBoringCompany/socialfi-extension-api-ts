@@ -1,5 +1,5 @@
 import express from 'express';
-import { DiscordProfile } from '../../utils/types';
+import { ExtendedDiscordProfile } from '../../utils/types';
 import { Status } from '../../utils/retVal';
 import passport from '../../configs/passport';
 import { connectToDiscord, disconnectFromDiscord } from '../../api/user';
@@ -66,7 +66,7 @@ router.get('/callback', passport.authenticate('discord', { failureRedirect: '/',
             });
         }
 
-        const profile = req.user as DiscordProfile;
+        const profile = req.user as ExtendedDiscordProfile;
 
         const { status, message, data } = await connectToDiscord(validateData?.twitterId, profile);
         if (status !== Status.SUCCESS) {

@@ -16,7 +16,7 @@ export interface ExtendedProfile extends TwitterProfile {
     twitterExpiryDate?: number;
 }
 
-export interface DiscordProfile extends DiscordStrategy.Profile {
+export interface ExtendedDiscordProfile extends DiscordStrategy.Profile {
     discordAccessToken?: string;
     discordRefreshToken?: string;
     discordExpiryDate?: number;
