@@ -244,7 +244,7 @@ router.get('/get_squad_data/:squadId', async (req, res) => {
 });
 
 router.post('/decline_pending_squad_member', async (req, res) => {
-    const { memberTwitterId } = req.body;
+    const { memberTwitterId, memberUserId } = req.body;
 
     try {
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'decline_pending_squad_member');
@@ -256,7 +256,7 @@ router.post('/decline_pending_squad_member', async (req, res) => {
             })
         }
 
-        const { status, message, data } = await declinePendingSquadMember(validateData?.twitterId, memberTwitterId);
+        const { status, message, data } = await declinePendingSquadMember(validateData?.twitterId, memberTwitterId, memberUserId);
 
         return res.status(status).json({
             status,
