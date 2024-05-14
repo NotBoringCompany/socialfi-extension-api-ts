@@ -28,9 +28,9 @@ passport.use(new TwitterStrategy({
 ));
 
 passport.use(new DiscordStrategy({
-    clientID: process.env.DISCORD_CLIENT_ID ?? '1239521901630459934',
-    clientSecret: process.env.DISCORD_CLIENT_SECRET ?? 'XZAS0E-LHP9FDkeQMR5C3rnQl3RRQo0Z',
-    callbackURL: process.env.DISCORD_CALLBACK_URL ?? '/auth/discord/callback',
+    clientID: process.env.DISCORD_CLIENT_ID,
+    clientSecret: process.env.DISCORD_CLIENT_SECRET ,
+    callbackURL: process.env.DISCORD_CALLBACK_URL
     scope: ['identify', 'role_connections.write']
 }, (accessToken, refreshToken, profile, done) => {
     try {
@@ -38,7 +38,7 @@ passport.use(new DiscordStrategy({
             ...profile,
             discordAccessToken: accessToken,
             discordRefreshToken: refreshToken,
-            // get the current unix timestamp, add 7200
+            // get the current unix timestamp, add 7200 (2 hours)
             discordExpiryDate: Math.floor(Date.now() / 1000) + 7200,
         }
 

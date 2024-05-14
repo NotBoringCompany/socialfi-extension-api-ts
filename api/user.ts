@@ -1697,7 +1697,7 @@ export const connectToDiscord = async (twitterId: string, profile: ExtendedDisco
         if (!user) {
             return {
                 status: Status.UNAUTHORIZED,
-                message: `(connectToDiscord) You're not registered.`,
+                message: `(connectToDiscord) User is not registered.`,
             };
         }
 
@@ -1705,7 +1705,7 @@ export const connectToDiscord = async (twitterId: string, profile: ExtendedDisco
         if (!!user.discordProfile?.discordId && user.discordProfile?.discordId !== profile.id) {
             return {
                 status: Status.BAD_REQUEST,
-                message: `(connectToDiscord) You're already connected.`,
+                message: `(connectToDiscord) User is already connected.`,
             };
         }
 
@@ -1722,7 +1722,7 @@ export const connectToDiscord = async (twitterId: string, profile: ExtendedDisco
 
         return {
             status: Status.SUCCESS,
-            message: `(connectToDiscord) User connected to discord successfully.`,
+            message: `(connectToDiscord) User connected to Discord successfully.`,
             data: { profile },
         };
     } catch (err: any) {
@@ -1742,7 +1742,7 @@ export const disconnectFromDiscord = async (twitterId: string): Promise<ReturnVa
         if (!user) {
             return {
                 status: Status.UNAUTHORIZED,
-                message: `(disconnectFromDiscord) You're not registered.`,
+                message: `(disconnectFromDiscord) User is not registered.`,
             };
         }
 
@@ -1750,17 +1750,17 @@ export const disconnectFromDiscord = async (twitterId: string): Promise<ReturnVa
         if (!user.discordProfile?.discordId) {
             return {
                 status: Status.BAD_REQUEST,
-                message: `(disconnectFromDiscord) You're not connected.`,
+                message: `(disconnectFromDiscord) User is not connected to Discord.`,
             };
         }
 
-        // Remove the Discord profile from the user document
+        // remove the Discord profile from the user
         user.discordProfile = undefined;
         await user.save();
 
         return {
             status: Status.SUCCESS,
-            message: `(disconnectFromDiscord) User disconnected to discord successfully.`,
+            message: `(disconnectFromDiscord) User has disconnected from Discord successfully.`,
         };
     } catch (err: any) {
         return {
