@@ -183,11 +183,11 @@ export const requestToJoinSquad = async (twitterId: string, squadId?: string, sq
 /**
  * Accepts a pending squad member into the squad. Only callable by a squad leader.
  */
-export const acceptPendingSquadMember = async (leaderTwitterId: string, memberTwitterId: string): Promise<ReturnValue> => {
+export const acceptPendingSquadMember = async (leaderTwitterId: string, memberTwitterId?: string, memberUserId?: string): Promise<ReturnValue> => {
     try {
         const [leader, member] = await Promise.all([
             UserModel.findOne({ twitterId: leaderTwitterId }).lean(),
-            UserModel.findOne({ twitterId: memberTwitterId }).lean()
+            UserModel.findOne({ $or: [{ twitterId: memberTwitterId }, { _id: memberUserId }] }).lean()
         ]);
 
         if (!leader) {
