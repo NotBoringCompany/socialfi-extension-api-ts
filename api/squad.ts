@@ -752,6 +752,7 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
                 }
             }
         } else {
+            console.log('member is not leader, meaning they are not the last person');
             // if the user is not a squad leader, just remove them from the squad.
             // we don't need to check if they're the last member in the squad, as they would've been a leader at that point
             // and the `if` block above would've handled that.
@@ -761,7 +762,7 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
                         userId: user._id
                     }
                 }
-            });
+            }).catch((err) => console.log('error from updating here: ', err));
 
             // update the user's squad ID and `lastLeftSquad` timestamp.
             await UserModel.updateOne({ _id: user._id }, {
