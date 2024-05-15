@@ -123,7 +123,7 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
         }
 
         // check if the user has already completed this quest
-        const userHasCompletedQuest = quest.completedBy.find((user: User) => user.twitterId === twitterId);
+        const userHasCompletedQuest = quest.completedBy.find((id) => user.twitterId === id);
 
         console.log(`(completeQuest) User ${twitterId} has completed quest ${questId}: ${userHasCompletedQuest}`);
 
