@@ -728,11 +728,15 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
                 // remove the user-to-leave from the squad.
                 const memberWithLongestTenureIndex = squad.members.findIndex(member => member.userId === memberWithLongestTenure.userId);
 
+                // separate `$set` and `$pull` operators to prevent conflicts.
                 await SquadModel.updateOne({ _id: squad._id }, {
                     $set: {
                         [`members.${memberWithLongestTenureIndex}.role`]: SquadRole.LEADER,
                         [`members.${memberWithLongestTenureIndex}.roleUpdatedTimestamp`]: Math.floor(Date.now() / 1000)
                     },
+                });
+
+                await SquadModel.updateOne({ _id: squad._id }, {
                     $pull: {
                         members: {
                             userId: user._id
