@@ -720,6 +720,8 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
                     message: `(leaveSquad) Disbanded squad successfully.`
                 }
             } else {
+                console.log('member is leader, but not the last person in the squad.');
+                
                 const memberWithLongestTenure = squad.members.reduce((prev, current) => {
                     return (prev.joinedTimestamp < current.joinedTimestamp) ? prev : current;
                 });
@@ -727,6 +729,8 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
                 // promote the member with the longest tenure to leader.
                 // remove the user-to-leave from the squad.
                 const memberWithLongestTenureIndex = squad.members.findIndex(member => member.userId === memberWithLongestTenure.userId);
+
+                console.log('member with longest tenure index: ', memberWithLongestTenureIndex);
 
                 // separate `$set` and `$pull` operators to prevent conflicts.
                 await SquadModel.updateOne({ _id: squad._id }, {
