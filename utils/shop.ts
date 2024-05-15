@@ -158,7 +158,7 @@ export const shop: Shop = {
         {
             type: FoodType.CHOCOLATE,
             price: {
-                xCookies: 0.2
+                xCookies: 0.22  
             }
         },
         {
@@ -170,7 +170,7 @@ export const shop: Shop = {
         {
             type: FoodType.BURGER,
             price: {
-                xCookies: 0.6
+                xCookies: 0.7
             }
         }
     ]
