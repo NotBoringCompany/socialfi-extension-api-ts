@@ -124,6 +124,14 @@ router.get('/get_user_completed_quests/:twitterId', async (req, res) => {
     const { twitterId } = req.params;
 
     try {
+        const { status: validateStatus, message: validateMessage } = await validateRequestAuth(req, res, 'get_user_completed_quests');
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
         const { status, message, data } = await getUserCompletedQuests(twitterId);
 
         return res.status(status).json({
