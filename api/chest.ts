@@ -1,5 +1,5 @@
 import { ReturnValue, Status } from '../utils/retVal';
-import { RANDOMIZE_CHEST_ITEM } from '../utils/constants/chest';
+import { MAXIMUM_DAILY_CHEST_LIMIT, RANDOMIZE_CHEST_ITEM } from '../utils/constants/chest';
 import { Food, FoodType } from '../models/food';
 import { BarrenResource, CombinedResources, ExtendedResource, Resource, ResourceType } from '../models/resource';
 import { UserModel } from '../utils/constants/db';
@@ -27,6 +27,15 @@ export const openChest = async (twitterId: string, tweetId: string): Promise<Ret
             return {
                 status: Status.ERROR,
                 message: `(openChest) User not found.`
+            }
+        }
+
+        // check if the user has already reached maximum chest limit for today
+        const openedTweet = user.openedTweetIdsToday.length;
+        if (openedTweet >= MAXIMUM_DAILY_CHEST_LIMIT) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(openChest) User has already reached maximum chest limit for today.`
             }
         }
 

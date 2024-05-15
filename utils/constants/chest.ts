@@ -4,6 +4,9 @@ import { BarrenResource, ResourceRarity, ResourceType } from '../../models/resou
 import { TerraCapsulatorType } from '../../models/terraCapsulator';
 import { resources } from './resource';
 
+/** the max amount of chest an user can open each day */
+export const MAXIMUM_DAILY_CHEST_LIMIT = 6;
+
 /** 
  * Returns an item from a chest to be given when the chest is opened.
  */
