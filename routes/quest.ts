@@ -1,5 +1,5 @@
 import express from 'express';
-import { addQuest, completeQuest, deleteQuest, getQuests, getUserCompletedQuests } from '../api/quest';
+import { addQuest, completeQuest, deleteQuest, getQuests, getUserClaimableQuest, getUserCompletedQuests } from '../api/quest';
 import { Status } from '../utils/retVal';
 import { validateRequestAuth } from '../utils/auth';
 import { QuestCategory } from '../models/quest';
@@ -125,6 +125,25 @@ router.get('/get_user_completed_quests/:twitterId', async (req, res) => {
 
     try {
         const { status, message, data } = await getUserCompletedQuests(twitterId);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
+
+router.get('/get_user_claimable_quests/:twitterId', async (req, res) => {
+    const { twitterId } = req.params;
+
+    try {
+        const { status, message, data } = await getUserClaimableQuest(twitterId);
 
         return res.status(status).json({
             status,

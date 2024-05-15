@@ -476,3 +476,37 @@ export const checkQuestRequirements = async (twitterId: string, questId: number)
         }
     }
 }
+
+/**
+ * Retrieve all quests that a user can claim.
+ */
+export const getUserClaimableQuest = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const uncompletedQuest = await QuestModel.find({ completedBy: { $ne: twitterId } }).lean();
+
+        // check each quest requirements
+        const claimableQuestPromises = uncompletedQuest.map(async (quest) => {
+            const { status } = await checkQuestRequirements(twitterId, quest.questId);
+            return { quest, status };
+        });
+
+        // await all promises
+        const claimableQuestResults = await Promise.all(claimableQuestPromises);
+
+        // filter claimable quests
+        const claimableQuest = claimableQuestResults.filter(({ status }) => status === Status.ERROR).map(({ quest }) => quest);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getUserCompletedQuests) Quests fetched.`,
+            data: {
+                claimableQuest,
+            },
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getUserCompletedQuests) ${err.message}`,
+        };
+    }
+};
