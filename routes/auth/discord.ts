@@ -26,6 +26,8 @@ router.get('/connect', async (req, res, next) => {
             });
         }
 
+        // store the target URL and token in the session for later use
+        (req.session as any).target = req.query.target || 'https://twitter.com'; // target is the redirect URL that will be used later in the callback
         (req.session as any).token = token;
 
         passport.authenticate('discord', {
@@ -67,20 +69,37 @@ router.get('/callback', passport.authenticate('discord', { failureRedirect: '/',
         }
 
         const profile = req.user as ExtendedDiscordProfile;
+        const target = new URL((req.session as any).target || 'https://twitter.com');
 
         const { status, message, data } = await connectToDiscord(validateData?.twitterId, profile);
         if (status !== Status.SUCCESS) {
-            return res.status(status).json({
-                status,
-                message,
-            });
+            // send a failed message to be read later on the frontend
+            target.searchParams.append(
+                'state',
+                JSON.stringify({
+                    message: {
+                        type: 'authorization_failed',
+                        value: message,
+                    },
+                    target,
+                })
+            );
+            return res.redirect(target.href);
         }
 
-        return res.status(Status.SUCCESS).json({
-            status,
-            message,
-            data,
-        });
+        // send a successful message
+        target.searchParams.append(
+            'state',
+            JSON.stringify({
+                message: {
+                    type: 'authorization_successful',
+                    value: data,
+                },
+                target,
+            })
+        );
+
+        return res.redirect(target.href);
     } catch (err: any) {
         return res.status(500).json({
             status: Status.ERROR,

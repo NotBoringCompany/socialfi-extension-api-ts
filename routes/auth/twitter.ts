@@ -11,7 +11,7 @@ router.get('/login', async (req, res, next) => {
     // get the jwt token (if it exists) from the request headers
     const token = req.headers.authorization?.split(' ')[1];
 
-    const host = req.query.host || 'twitter.com';
+    const host = req.query.host || 'https://twitter.com';
     (req.session as any).redirectHost = host;
 
     if (token) {
@@ -19,7 +19,7 @@ router.get('/login', async (req, res, next) => {
         const { status } = validateJWT(token);
         if (status === Status.SUCCESS) {
             // token is valid, redirect to Twitter with the token
-            return res.redirect(`https://twitter.com?jwt=${token}`);
+            return res.redirect(`${host}?jwt=${token}`);
         } else {
             // token is invalid, redirect to Twitter for authentication
             passport.authenticate('twitter', {
@@ -60,9 +60,9 @@ router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/',
             })
         } else {
             const token = generateJWT(twitterId, twitterAccessToken, twitterRefreshToken, twitterExpiryDate - Math.floor(Date.now() / 1000));
-            const host = (req.session as any).redirectHost || 'twitter.com';
+            const host = (req.session as any).redirectHost || 'https://twitter.com';
 
-            return res.redirect(`https://${host}?jwt=${token}`);
+            return res.redirect(`${host}?jwt=${token}`);
         }
     } catch (err: any) {
         return res.status(500).json({
