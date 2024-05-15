@@ -30,7 +30,7 @@ passport.use(new TwitterStrategy({
 passport.use(new DiscordStrategy({
     clientID: process.env.DISCORD_CLIENT_ID,
     clientSecret: process.env.DISCORD_CLIENT_SECRET,
-    callbackURL: process.env.DISCORD_CALLBACK_URL,
+    callbackURL: '/auth/discord/callback',
     scope: ['identify', 'role_connections.write']
 }, (accessToken, refreshToken, profile, done) => {
     try {
