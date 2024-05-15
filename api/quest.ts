@@ -492,9 +492,8 @@ export const getUserClaimableQuest = async (twitterId: string): Promise<ReturnVa
 
         // await all promises
         const claimableQuestResults = await Promise.all(claimableQuestPromises);
-
         // filter claimable quests
-        const claimableQuest = claimableQuestResults.filter(({ status }) => status === Status.ERROR).map(({ quest }) => quest);
+        const claimableQuest = claimableQuestResults.filter(({ status }) => status === Status.SUCCESS).map(({ quest }) => quest);
 
         return {
             status: Status.SUCCESS,
