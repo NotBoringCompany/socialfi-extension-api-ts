@@ -81,6 +81,8 @@ export enum QuestRewardType {
 export interface QuestRequirement {
     /** type of the quest requirement */
     type: QuestRequirementType;
+    /** quest requirement description */
+    description?: string;
     /** parameters of the quest requirement (such as having to follow this user, retweet this post and so on) */
     parameters: QuestRequirementParameters;
 }
