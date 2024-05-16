@@ -28,6 +28,8 @@ interface POAPCode {
     keyword: string;
     /** the POAP code expiration timestamp */
     expirationTimestamp: number;
+    /** redeemable limit, (-1) on infinite */
+    limit: number;
 }
 
 /**

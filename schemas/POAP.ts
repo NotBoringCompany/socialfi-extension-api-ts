@@ -15,6 +15,7 @@ export const POAPSchema = new mongoose.Schema({
         {
             keyword: String,
             expirationTimestamp: Number,
+            limit: Number,
         },
     ],
     attendances: [
