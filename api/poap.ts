@@ -60,7 +60,7 @@ export const getAllPOAP = async (): Promise<ReturnValue> => {
  */
 export const getUserPOAP = async (twitterId: string): Promise<ReturnValue> => {
     try {
-        const poap = await POAPModel.find({ attendances: { twitterId } }, { codes: 0, attendances: 0 });
+        const poap = await POAPModel.find({ 'attendances.twitterId': twitterId }, { codes: 0, attendances: 0 });
 
         return {
             status: Status.SUCCESS,
