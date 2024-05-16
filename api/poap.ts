@@ -81,10 +81,10 @@ export const getUserPOAP = async (twitterId: string): Promise<ReturnValue> => {
 /**
  * Redeem a POAP code for a user.
  */
-export const redeemCode = async (id: string, twitterId: string, code: string): Promise<ReturnValue> => {
+export const redeemCode = async (twitterId: string, code: string): Promise<ReturnValue> => {
     try {
         // find the POAP event
-        const poap = await POAPModel.findById(id);
+        const poap = await POAPModel.findOne({ 'codes.keyword': code });
         if (!poap) {
             return {
                 status: Status.ERROR,
