@@ -49,6 +49,7 @@ import tutorial from './routes/tutorial';
 import invite from './routes/invite';
 import squad from './routes/squad';
 import setting from './routes/setting';
+import poap from './routes/poap';
 import { schedulers } from './schedulers/schedulers';
 
 app.use('/auth/twitter', twitterAuth);
@@ -72,6 +73,7 @@ app.use('/tutorial', tutorial);
 app.use('/invite', invite);
 app.use('/squad', squad);
 app.use('/setting', setting);
+app.use('/poap', poap);
 
 app.listen(port, async () => {
     console.log(`Server running on port ${port}`);
