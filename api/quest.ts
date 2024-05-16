@@ -123,7 +123,7 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
         }
 
         // check if the user has already completed this quest
-        const userHasCompletedQuest = quest.completedBy.find((user: User) => user.twitterId === twitterId);
+        const userHasCompletedQuest = quest.completedBy.find((id) => user.twitterId === id);
 
         console.log(`(completeQuest) User ${twitterId} has completed quest ${questId}: ${userHasCompletedQuest}`);
 
@@ -492,9 +492,8 @@ export const getUserClaimableQuest = async (twitterId: string): Promise<ReturnVa
 
         // await all promises
         const claimableQuestResults = await Promise.all(claimableQuestPromises);
-
         // filter claimable quests
-        const claimableQuest = claimableQuestResults.filter(({ status }) => status === Status.ERROR).map(({ quest }) => quest);
+        const claimableQuest = claimableQuestResults.filter(({ status }) => status === Status.SUCCESS).map(({ quest }) => quest);
 
         return {
             status: Status.SUCCESS,
