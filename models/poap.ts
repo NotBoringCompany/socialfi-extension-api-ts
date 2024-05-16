@@ -36,6 +36,8 @@ interface POAPCode {
 interface POAPAttendance {
     /** the user that redeem the code (database user IDs) */
     userId: string;
+    /** redeemed code */
+    keyword: string;
     /** attendance timestamp */
     attendanceTimestamp: number;
 }

@@ -20,6 +20,7 @@ export const POAPSchema = new mongoose.Schema({
     attendances: [
         {
             userId: String,
+            keyword: String,
             attendanceTimestamp: Number,
         },
     ],
