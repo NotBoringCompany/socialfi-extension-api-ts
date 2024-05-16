@@ -123,7 +123,7 @@ export const redeemCode = async (id: string, twitterId: string, code: string): P
         }
 
         // check if the code still avaliable
-        if (poapCode.limit != -1 && poap.attendances.length < poapCode.limit) {
+        if (poapCode.limit != -1 && poap.attendances.length >= poapCode.limit) {
             return {
                 status: Status.ERROR,
                 message: `(redeemCode) Code limit reached.`,
@@ -152,9 +152,6 @@ export const redeemCode = async (id: string, twitterId: string, code: string): P
         return {
             status: Status.SUCCESS,
             message: `(redeemCode) Code accepted.`,
-            data: {
-                poap,
-            },
         };
     } catch (err: any) {
         return {

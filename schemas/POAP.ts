@@ -13,6 +13,7 @@ export const POAPSchema = new mongoose.Schema({
     description: String,
     codes: [
         {
+            _id: false,
             keyword: String,
             expirationTimestamp: Number,
             limit: Number,
@@ -20,11 +21,13 @@ export const POAPSchema = new mongoose.Schema({
     ],
     attendances: [
         {
-            userId: String,
+            _id: false,
+            twitterId: String,
             keyword: String,
             attendanceTimestamp: Number,
         },
     ],
     startTimestamp: Number,
     endTimestamp: Number,
+    createTimestamp: Number,
 });
