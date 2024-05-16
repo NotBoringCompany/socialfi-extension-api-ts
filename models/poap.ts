@@ -18,6 +18,8 @@ interface POAP {
     startTimestamp: number;
     /** the event end timestamp */
     endTimestamp: number;
+    /** the event create timestamp */
+    createTimestamp: number;
 }
 
 /**
@@ -36,8 +38,8 @@ interface POAPCode {
  * Represents POAP Attendance (the user who redeem the code).
  */
 interface POAPAttendance {
-    /** the user that redeem the code (database user IDs) */
-    userId: string;
+    /** the user that redeem the code (twitter ID) */
+    twitterId: string;
     /** redeemed code */
     keyword: string;
     /** attendance timestamp */
