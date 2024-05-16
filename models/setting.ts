@@ -8,11 +8,10 @@
 export interface Setting {
     /** unique key of the setting */
     key: string;
-    /** setting's readable name */
+    /** the setting's readable name */
     name: string;
-    /** setting's description */
+    /** the setting's description */
     description: string;
-
-    /** setting's value, could be string, number, boolean or object */
-    value: any;
+    /** the setting's value; could be a string, number, boolean or object */
+    value: string | number | boolean | object;
 }

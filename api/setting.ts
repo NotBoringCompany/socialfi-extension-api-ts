@@ -54,7 +54,7 @@ export const updateSetting = async (_id: string, setting: Setting): Promise<Retu
 
         return {
             status: Status.SUCCESS,
-            message: `(updateSetting) Successfully updated setting with id: ${updatedSetting._id}`,
+            message: `(updateSetting) Successfully updated setting with ID: ${updatedSetting._id}`,
             data: setting,
         };
     } catch (err: any) {
@@ -82,7 +82,7 @@ export const getSettings = async (): Promise<ReturnValue> => {
 
         return {
             status: Status.SUCCESS,
-            message: '(getSettings) Successfully retrieved settings',
+            message: '(getSettings) Successfully retrieved settings.',
             data: {
                 settings: settings as Setting[],
             },
