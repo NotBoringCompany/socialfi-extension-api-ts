@@ -57,7 +57,7 @@ router.get('/get_user_poap', async (req, res) => {
             });
         }
 
-        const { status, message, data } = await getUserPOAP('1271112690983813121');
+        const { status, message, data } = await getUserPOAP(validateData.twitterId);
 
         return res.status(status).json({
             status,
@@ -76,15 +76,15 @@ router.post('/redeem_poap', async (req, res) => {
     const { poapId, code } = req.body;
 
     try {
-        // const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'redeem_poap');
-        // if (validateStatus !== Status.SUCCESS) {
-        //     return res.status(validateStatus).json({
-        //         status: validateStatus,
-        //         message: validateMessage,
-        //     });
-        // }
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'redeem_poap');
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage,
+            });
+        }
 
-        const { status, message, data } = await redeemCode(poapId, '1790712177789460481', code);
+        const { status, message, data } = await redeemCode(poapId, validateData.twitterId, code);
 
         return res.status(status).json({
             status,
