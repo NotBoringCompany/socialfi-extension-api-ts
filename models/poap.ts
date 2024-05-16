@@ -23,22 +23,22 @@ interface POAP {
 }
 
 /**
- * Represents POAP Code information.
+ * Represents the POAP's code information.
  */
 interface POAPCode {
     /** redeemable keyword code */
     keyword: string;
-    /** the POAP code expiration timestamp */
+    /** the POAP code's expiration timestamp */
     expirationTimestamp: number;
     /** redeemable limit, (-1) on infinite */
     limit: number;
 }
 
 /**
- * Represents POAP Attendance (the user who redeem the code).
+ * Represents the POAP's attendance (the user who redeemed the code).
  */
 interface POAPAttendance {
-    /** the user that redeem the code (twitter ID) */
+    /** the user that redeemed the code (twitter ID) */
     twitterId: string;
     /** redeemed code */
     keyword: string;
