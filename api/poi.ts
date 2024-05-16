@@ -1356,6 +1356,23 @@ export const buyItemsInPOIShop = async (
                 } else {
                     userUpdateOperations.$inc[`inventory.items.${bitOrbIndex}.amount`] = item.amount;
                 }
+            } else if (
+                item.item.includes('Gathering Progress Booster') || 
+                item.item.includes('Raft Speed Booster')
+            ) {
+                // check if the booster exists in the user's inventory.
+                // if it does, increment the amount of the booster.
+                // if it doesn't, add a new booster.
+                const boosterIndex = (user.inventory.items as Item[]).findIndex(i => i.type === item.item as string);
+
+                if (boosterIndex === -1) {
+                    userUpdateOperations.$push[`inventory.items`] = {
+                        type: item.item,
+                        amount: item.amount
+                    }
+                } else {
+                    userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = item.amount;
+                }
             }
 
             // now, we update the shop's data.
