@@ -39,16 +39,13 @@ export const RANDOMIZE_CHEST_ITEM = (): {
         // 14% chance for resource
         case rand < 9985:
             // randomize the resource with probabilities
-            // 45% chance of seaweed
-            // 35% chance of a common resource of any type
+            // 80% chance of a common resource of any type
             // 15% chance of an uncommon resource of any type
             // 5% chance of a rare resource of any type
             // 0% chance of epic or rare resource
             const resourceRand = Math.floor(Math.random() * 100) + 1;
 
             switch (true) {
-                case resourceRand < 46:
-                    return { item: BarrenResource.SEAWEED, amount: 3 }
                 case resourceRand < 81:
                     // randomize a common resource from `resources` (there are 3)
                     const commonResources = resources.filter(resource => resource.rarity === ResourceRarity.COMMON);
