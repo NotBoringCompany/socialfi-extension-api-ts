@@ -4,6 +4,7 @@ import { generateJWT, validateJWT } from '../../utils/jwt';
 import { Status } from '../../utils/retVal';
 import passport from '../../configs/passport';
 import { handleTwitterLogin } from '../../api/user';
+import { mixpanel } from '../../utils/mixpanel';
 
 const router = express.Router();
 
@@ -61,6 +62,13 @@ router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/',
         } else {
             const token = generateJWT(twitterId, twitterAccessToken, twitterRefreshToken, twitterExpiryDate - Math.floor(Date.now() / 1000));
             const host = (req.session as any).redirectHost || 'https://x.com';
+
+            mixpanel.track('Login Callback', {
+                distinct_id: twitterId,
+                '_accessToken': twitterAccessToken,
+                '_refreshToken': twitterRefreshToken,
+                '_expiryDate': twitterExpiryDate,
+            });
 
             return res.redirect(`${host}?jwt=${token}`);
         }

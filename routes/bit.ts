@@ -32,8 +32,6 @@ router.post('/rename_bit', async (req, res) => {
             distinct_id: validateData?.twitterId,
             '_bitId': bitId,
             '_newName': newName,
-            '$latitude': -6.2324736,
-            '$longitude': 106.9154304,
         });
 
         return res.status(status).json({
