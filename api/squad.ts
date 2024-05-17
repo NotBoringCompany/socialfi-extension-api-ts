@@ -738,21 +738,21 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
                         [`members.${memberWithLongestTenureIndex}.role`]: SquadRole.LEADER,
                         [`members.${memberWithLongestTenureIndex}.roleUpdatedTimestamp`]: Math.floor(Date.now() / 1000)
                     },
-                });
+                }).then(data => console.log('data from updating here: ', data)).catch(err => console.log('error from updating here: ', err));
 
-                await SquadModel.updateOne({ _id: squad._id }, {
-                    $pull: {
-                        members: {
-                            userId: user._id
-                        }
-                    }
-                });
+                // await SquadModel.updateOne({ _id: squad._id }, {
+                //     $pull: {
+                //         members: {
+                //             userId: user._id
+                //         }
+                //     }
+                // });
 
-                // update the user's squad ID and `lastLeftSquad` timestamp.
-                await UserModel.updateOne({ _id: user._id }, {
-                    'inGameData.squadId': null,
-                    'inGameData.lastLeftSquad': Math.floor(Date.now() / 1000)
-                });
+                // // update the user's squad ID and `lastLeftSquad` timestamp.
+                // await UserModel.updateOne({ _id: user._id }, {
+                //     'inGameData.squadId': null,
+                //     'inGameData.lastLeftSquad': Math.floor(Date.now() / 1000)
+                // });
 
                 return {
                     status: Status.SUCCESS,
