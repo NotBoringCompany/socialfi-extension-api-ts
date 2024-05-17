@@ -1,4 +1,4 @@
-import { SquadCreationMethod, SquadRank, SquadRole } from '../models/squad';
+import { SquadCreationMethod, SquadMember, SquadRank, SquadRole } from '../models/squad';
 import { SquadModel, UserModel } from '../utils/constants/db';
 import { CREATE_SQUAD_COST, INITIAL_MAX_MEMBERS, MAX_MEMBERS_INCREASE_UPON_UPGRADE, MAX_MEMBERS_LIMIT, RENAME_SQUAD_COOLDOWN, RENAME_SQUAD_COST, SQUAD_LEAVE_COOLDOWN, UPGRADE_SQUAD_MAX_MEMBERS_COST } from '../utils/constants/squad';
 import { ReturnValue, Status } from '../utils/retVal';
@@ -721,10 +721,11 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
                 }
             } else {
                 console.log('member is leader, but not the last person in the squad.');
-                
-                const memberWithLongestTenure = squad.members.reduce((prev, current) => {
-                    return (prev.joinedTimestamp < current.joinedTimestamp) ? prev : current;
-                });
+
+                // find the member with the longest tenure in the squad.
+                // we will promote this member to leader.
+                // if the member with the longest tenure is the leader (i.e. the user), then promote the next member with the longest tenure.
+                let memberWithLongestTenure = squad.members.filter(member => member.userId !== user._id).reduce((prev, current) => (prev.joinedTimestamp > current.joinedTimestamp) ? prev : current);
 
                 // promote the member with the longest tenure to leader.
                 // remove the user-to-leave from the squad.
@@ -738,7 +739,7 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
                         [`members.${memberWithLongestTenureIndex}.role`]: SquadRole.LEADER,
                         [`members.${memberWithLongestTenureIndex}.roleUpdatedTimestamp`]: Math.floor(Date.now() / 1000)
                     },
-                });
+                }).then(data => console.log('data from updating here: ', data)).catch(err => console.log('error from updating here: ', err));
 
                 await SquadModel.updateOne({ _id: squad._id }, {
                     $pull: {
