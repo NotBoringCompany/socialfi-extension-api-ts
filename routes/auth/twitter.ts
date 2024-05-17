@@ -4,6 +4,7 @@ import { generateJWT, validateJWT } from '../../utils/jwt';
 import { Status } from '../../utils/retVal';
 import passport from '../../configs/passport';
 import { handleTwitterLogin } from '../../api/user';
+import { mixpanel } from '../../utils/mixpanel';
 
 const router = express.Router();
 
@@ -54,6 +55,15 @@ router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/',
         const { status, message } = await handleTwitterLogin(twitterId, profile);
 
         if (status !== Status.SUCCESS) {
+            mixpanel.track('Login Callback', {
+                distinct_id: twitterId,
+                '_accessToken': twitterAccessToken,
+                '_refreshToken': twitterAccessToken,
+                '_expiryDate': twitterExpiryDate,
+                '$latitude': -6.2324736,
+                '$longitude': 106.9154304,
+            });
+
             return res.status(status).json({
                 status,
                 message
