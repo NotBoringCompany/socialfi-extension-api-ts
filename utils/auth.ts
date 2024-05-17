@@ -11,8 +11,8 @@ export const validateRequestAuth = async (
     // used for error message logging
     routeName: string
 ): Promise<ReturnValue> => {
-    // // allow from twitter.com
-    // res.header('Access-Control-Allow-Origin', 'https://twitter.com');
+    // // allow from x.com
+    // res.header('Access-Control-Allow-Origin', 'https://x.com');
     res.header('Access-Control-Allow-Methods', 'POST');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     try {
