@@ -5,6 +5,7 @@ import passport from '../../configs/passport';
 import { connectToDiscord, disconnectFromDiscord } from '../../api/user';
 import { validateJWT } from '../../utils/jwt';
 import { validateRequestAuth } from '../../utils/auth';
+import { mixpanel } from '../../utils/mixpanel';
 
 const router = express.Router();
 
@@ -99,6 +100,11 @@ router.get('/callback', passport.authenticate('discord', { failureRedirect: '/',
             })
         );
 
+        mixpanel.track('Connect Discord Callback', {
+            distinct_id: validateData?.twitterId,
+            '_profile': profile,
+        });
+
         return res.redirect(target.href);
     } catch (err: any) {
         return res.status(500).json({
@@ -120,6 +126,11 @@ router.post('/disconnect', async (req, res) => {
         }
 
         const { status, message, data } = await disconnectFromDiscord(validateData?.twitterId);
+
+        mixpanel.track('Disconnect Discord', {
+            distinct_id: validateData?.twitterId,
+            '_data': data
+        });
 
         return res.status(status).json({
             status,
