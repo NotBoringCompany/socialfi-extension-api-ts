@@ -486,7 +486,8 @@ export const feedBit = async (twitterId: string, bitId: number, foodType: FoodTy
  */
 export const depleteEnergy = async (): Promise<void> => {
     try {
-        const bits = await BitModel.find();
+        // only deplete energy for bits that are placed in an island
+        const bits = await BitModel.find({ placedIslandId: { $ne: 0 } }).lean();
 
         if (bits.length === 0 || !bits) {
             console.log(`(depleteEnergy) No bits found.`);
@@ -496,14 +497,6 @@ export const depleteEnergy = async (): Promise<void> => {
         // prepare bulk write operations to update energy and modifiers
         const bulkWriteOperations = bits
             .map((bit) => {
-                // if bit isn't placed on an island, don't deplete energy for this bit
-                if (bit.placedIslandId === 0) {
-                    console.log(
-                        `(depleteEnergy) Bit ${bit.bitId} - not placed in a raft or an island. Skipping.`
-                    );
-                    return [];
-                }
-
                 // get bit's current energy
                 const currentEnergy = bit.farmingStats?.currentEnergy;
 
