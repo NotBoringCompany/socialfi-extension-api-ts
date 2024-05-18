@@ -2766,6 +2766,20 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
             if (baseResourceCap - seaweedGathered.length <= 0) {
                 console.log(`(dropResource) No resources left to drop for Island ${islandId}.`);
 
+                // if the island's `gatheringEnd` is still equal to 0 at this point, update it to the current time.
+                if (island.islandResourceStats?.gatheringEnd === 0) {
+                    await IslandModel.updateOne({ islandId }, {
+                        $set: {
+                            'islandResourceStats.gatheringEnd': Math.floor(Date.now() / 1000)
+                        }
+                    });
+
+                    return {
+                        status: Status.ERROR,
+                        message: `(dropResource) No resources left to drop. Updated gatheringEnd to current time.`
+                    }
+                }
+
                 return {
                     status: Status.ERROR,
                     message: `(dropResource) No resources left to drop.`
@@ -2776,6 +2790,20 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
         // for any other isles, check the entire length of resources gathered.
         if (baseResourceCap - resourcesGatheredAmount <= 0) {
             console.log(`(dropResource) No resources left to drop for Island ${islandId}.`);
+
+            // if the island's `gatheringEnd` is still equal to 0 at this point, update it to the current time.
+            if (island.islandResourceStats?.gatheringEnd === 0) {
+                await IslandModel.updateOne({ islandId }, {
+                    $set: {
+                        'islandResourceStats.gatheringEnd': Math.floor(Date.now() / 1000)
+                    }
+                });
+
+                return {
+                    status: Status.ERROR,
+                    message: `(dropResource) No resources left to drop. Updated gatheringEnd to current time.`
+                }
+            }
 
             return {
                 status: Status.ERROR,
