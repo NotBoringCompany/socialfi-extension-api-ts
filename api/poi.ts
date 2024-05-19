@@ -809,8 +809,6 @@ export const sellItemsInPOIShop = async (
             // check if this is enough to level the user up to the next player level.
             const currentLevel = user.inGameData.level;
 
-            console.log('user current level :', currentLevel);
-
             // get the user's total leaderboard points
             // this is done by summing up all the points from the `pointsData` array, BUT EXCLUDING SOURCES FROM:
             // 1. LeaderboardPointsSource.LEVELLING_UP
@@ -836,6 +834,8 @@ export const sellItemsInPOIShop = async (
                 userUpdateOperations.$set[`inGameData.level`] = newLevel;
                 additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
             }
+
+            console.log('additional points earned: ', additionalPoints);
 
             // get the index of the user in the leaderboard
             const userIndex = leaderboard.userData.findIndex(userData => userData.userId === user._id);
@@ -1061,6 +1061,8 @@ export const sellItemsInPOIShop = async (
 
         console.log('sell items in poi shop leaderboard update operations: ', leaderboardUpdateOperations);
 
+        console.log('leaderboard to be updated: ', leaderboard._id);
+
         // execute the update operations
         await Promise.all([
             UserModel.updateOne({ twitterId }, userUpdateOperations).catch((err) => {
@@ -1068,7 +1070,6 @@ export const sellItemsInPOIShop = async (
                     status: Status.ERROR,
                     message: `(sellItemsInPOIShop) Error updating user model: ${err.message}`
                 }
-
             }),
             LeaderboardModel.updateOne({ _id: leaderboard._id }, leaderboardUpdateOperations).catch((err) => {
                 return {
