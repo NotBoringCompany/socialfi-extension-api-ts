@@ -1018,10 +1018,26 @@ export const claimDailyRewards = async (twitterId: string, leaderboardName: stri
         userUpdateOperations.$set['inGameData.dailyLoginRewardData.lastClaimedTimestamp'] = Math.floor(Date.now() / 1000);
 
         // execute the update operations
-        await Promise.all([
-            UserModel.updateOne({ twitterId }, userUpdateOperations),
-            LeaderboardModel.updateOne({ _id: leaderboard._id }, leaderboardUpdateOperations),
-        ]);
+        // divide the operations into $set and $inc on one and $push and $pull on the other
+        await UserModel.updateOne({ twitterId }, {
+            $set: userUpdateOperations.$set,
+            $inc: userUpdateOperations.$inc,
+        });
+
+        await UserModel.updateOne({ twitterId }, {
+            $push: userUpdateOperations.$push,
+            $pull: userUpdateOperations.$pull,
+        });
+
+        await LeaderboardModel.updateOne({ _id: leaderboard._id }, {
+            $set: leaderboardUpdateOperations.$set,
+            $inc: leaderboardUpdateOperations.$inc,
+        });
+
+        await LeaderboardModel.updateOne({ _id: leaderboard._id }, {
+            $push: leaderboardUpdateOperations.$push,
+            $pull: leaderboardUpdateOperations.$pull,
+        });
 
         // if user is in a squad, update the squad's total points
         if (squadId) {
