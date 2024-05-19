@@ -802,10 +802,15 @@ export const sellItemsInPOIShop = async (
                 }
             }
         } else {
+            console.log('user exists in leaderboard. logic running here.');
+
             let additionalPoints = 0;
 
             // check if this is enough to level the user up to the next player level.
             const currentLevel = user.inGameData.level;
+
+            console.log('user current level :', currentLevel);
+
             // get the user's total leaderboard points
             // this is done by summing up all the points from the `pointsData` array, BUT EXCLUDING SOURCES FROM:
             // 1. LeaderboardPointsSource.LEVELLING_UP
@@ -817,7 +822,12 @@ export const sellItemsInPOIShop = async (
                 return acc;
             }, 0);
 
+            console.log('total leaderboard points: ', totalLeaderboardPoints + leaderboardPoints);
+
             const newLevel = GET_SEASON_0_PLAYER_LEVEL(leaderboardPoints + totalLeaderboardPoints);
+
+            console.log('new level :', newLevel);
+            console.log('old level: ', currentLevel);
 
             // if new level is greater than the current level, we update the user's data
             // 1. set the new level
