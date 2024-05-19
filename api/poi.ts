@@ -1049,6 +1049,8 @@ export const sellItemsInPOIShop = async (
         // lastly, reduce the user inventory's weight by `totalWeightToReduce`
         userUpdateOperations.$inc[`inventory.weight`] = -totalWeightToReduce;
 
+        console.log('sell items in poi shop leaderboard update operations: ', leaderboardUpdateOperations);
+
         // execute the update operations
         await Promise.all([
             UserModel.updateOne({ twitterId }, userUpdateOperations).catch((err) => {
