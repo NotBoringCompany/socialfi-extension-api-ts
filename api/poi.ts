@@ -1060,30 +1060,20 @@ export const sellItemsInPOIShop = async (
         userUpdateOperations.$inc[`inventory.weight`] = -totalWeightToReduce;
 
         console.log('sell items in poi shop leaderboard update operations: ', leaderboardUpdateOperations);
+        console.log('poi update operations: ', poiUpdateOperations);
 
         console.log('leaderboard to be updated: ', leaderboard._id);
 
         // execute the update operations
-        await Promise.all([
-            UserModel.updateOne({ twitterId }, userUpdateOperations).catch((err) => {
-                return {
-                    status: Status.ERROR,
-                    message: `(sellItemsInPOIShop) Error updating user model: ${err.message}`
-                }
-            }),
-            LeaderboardModel.updateOne({ _id: leaderboard._id }, leaderboardUpdateOperations).catch((err) => {
-                return {
-                    status: Status.ERROR,
-                    message: `(sellItemsInPOIShop) Error updating leaderboard model: ${err.message}`
-                }
-            }),
-            POIModel.updateOne({ name: user.inGameData.location }, poiUpdateOperations).catch((err) => {
-                return {
-                    status: Status.ERROR,
-                    message: `(sellItemsInPOIShop) Error updating POI model: ${err.message}`
-                }
-            })
-        ]);
+        // await Promise.all([
+        //     UserModel.updateOne({ twitterId }, userUpdateOperations),
+        //     LeaderboardModel.updateOne({ _id: leaderboard._id }, leaderboardUpdateOperations),
+        //     POIModel.updateOne({ name: user.inGameData.location }, poiUpdateOperations)
+        // ]);
+
+        await UserModel.updateOne({ twitterId }, userUpdateOperations);
+        await LeaderboardModel.updateOne({ _id: leaderboard._id }, leaderboardUpdateOperations);
+        await POIModel.updateOne({ name: user.inGameData.location }, poiUpdateOperations);
 
         // if the user is in a squad, update the squad's total points.
         if (squadId) {
