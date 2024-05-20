@@ -14,6 +14,8 @@ export interface SquadWeeklyLeaderboard {
 export interface SquadWeeklyPointsData {
     /** the squad id */
     squadId: string;
+    /** the squad name */
+    squadName: string;
     /** points data for each member */
     memberPoints: SquadMemberWeeklyPoints[];
 }
