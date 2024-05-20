@@ -1,6 +1,7 @@
 import { SquadRank } from '../models/squad';
 import { SquadLeaderboardModel, SquadModel } from '../utils/constants/db';
 import { GET_SQUAD_WEEKLY_RANKING } from '../utils/constants/squadLeaderboard';
+import { ReturnValue, Status } from '../utils/retVal';
 
 /**
  * Creates a new squad leaderboard each week at Sunday 23:59 UTC. Called by a scheduler.
@@ -31,6 +32,34 @@ export const addSquadLeaderboard = async (): Promise<void> => {
         }
     } catch (err: any) {
         console.error('Error in addSquadLeaderboard:', err.message);
+    }
+}
+
+/**
+ * Gets the latest weekly squad leaderboard.
+ */
+export const getLatestWeeklyLeaderboard = async (): Promise<ReturnValue> => {
+    try {
+        const latestSquadLeaderboard = await SquadLeaderboardModel.findOne().sort({ week: -1 });
+
+        // if no leaderboard exists, return
+        if (!latestSquadLeaderboard) {
+            return {
+                status: Status.ERROR,
+                message: 'No squad leaderboard found.'
+            }
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: 'Successfully retrieved the latest weekly squad leaderboard.',
+            data: latestSquadLeaderboard
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getLatestWeeklyLeaderboard) ${err.message}`
+        }
     }
 }
 
