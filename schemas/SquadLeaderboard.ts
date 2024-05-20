@@ -12,6 +12,7 @@ export const SquadLeaderboardSchema = new mongoose.Schema({
     week: Number,
     pointsData: [{
         squadId: String,
+        squadName: String,
         memberPoints: [{
             userId: String,
             points: Number

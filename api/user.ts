@@ -861,6 +861,16 @@ export const claimDailyRewards = async (twitterId: string, leaderboardName: stri
 
                     // if user is in a squad, add to squad's `totalSquadPoints`
                     if (squadId) {
+                        // get the squad
+                        const squad = await SquadModel.findOne({ _id: squadId }).lean();
+
+                        if (!squad) {
+                            return {
+                                status: Status.ERROR,
+                                message: `(claimDailyRewards) Squad not found.`,
+                            };
+                        }
+
                         squadUpdateOperations.$inc['totalSquadPoints'] = reward.amount;
 
                         // get the latest week of the squad leaderboard
@@ -879,6 +889,7 @@ export const claimDailyRewards = async (twitterId: string, leaderboardName: stri
                         if (squadIndex === -1) {
                             squadLeaderboardUpdateOperations.$push[`pointsData`] = {
                                 squadId,
+                                squadName: squad.name,
                                 memberPoints: [
                                     {
                                         userId: user._id,
@@ -957,6 +968,16 @@ export const claimDailyRewards = async (twitterId: string, leaderboardName: stri
 
                     // if user is in a squad, add to squad's `totalSquadPoints`
                     if (squadId) {
+                        // get the squad
+                        const squad = await SquadModel.findOne({ _id: squadId }).lean();
+
+                        if (!squad) {
+                            return {
+                                status: Status.ERROR,
+                                message: `(claimDailyRewards) Squad not found.`,
+                            };
+                        }
+
                         squadUpdateOperations.$inc['totalSquadPoints'] = reward.amount;
 
                         // get the latest week of the squad leaderboard
@@ -975,6 +996,7 @@ export const claimDailyRewards = async (twitterId: string, leaderboardName: stri
                         if (squadIndex === -1) {
                             squadLeaderboardUpdateOperations.$push[`pointsData`] = {
                                 squadId,
+                                squadName: squad.name,
                                 memberPoints: [
                                     {
                                         userId: user._id,

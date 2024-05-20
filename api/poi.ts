@@ -4,6 +4,7 @@ import { Item } from '../models/item';
 import { LeaderboardPointsSource } from '../models/leaderboard';
 import { POIName, POIShop, POIShopActionItemData, POIShopItemName } from '../models/poi';
 import { ExtendedResource } from '../models/resource';
+import { Squad } from '../models/squad';
 import { LeaderboardModel, POIModel, RaftModel, SquadLeaderboardModel, SquadModel, UserModel } from '../utils/constants/db';
 import { POI_TRAVEL_LEVEL_REQUIREMENT } from '../utils/constants/poi';
 import { ACTUAL_RAFT_SPEED } from '../utils/constants/raft';
@@ -761,6 +762,16 @@ export const sellItemsInPOIShop = async (
 
             // if user has a squad, add the points to the squad's `totalSquadPoints` as well.
             if (squadId) {
+                // get the squad
+                const squad = await SquadModel.findOne({ squadId }).lean();
+
+                if (!squad) {
+                    return {
+                        status: Status.BAD_REQUEST,
+                        message: `(sellItemsInPOIShop) Squad not found.`
+                    }
+                }
+
                 squadUpdateOperations.$inc[`totalSquadPoints`] = leaderboardPoints;
 
                 // get the latest week of the squad leaderboard
@@ -781,6 +792,7 @@ export const sellItemsInPOIShop = async (
                 if (squadIndex === -1) {
                     squadLeaderboardUpdateOperations.$push[`pointsData`] = {
                         squadId,
+                        squadName: squad.name,
                         memberPoints: [{
                             userId: user._id,
                             points: leaderboardPoints
@@ -867,6 +879,16 @@ export const sellItemsInPOIShop = async (
 
             // add the points to the squad's `totalSquadPoints` as well (excluding the additional points)
             if (squadId) {
+                // get the squad
+                const squad = await SquadModel.findOne({ squadId }).lean();
+
+                if (!squad) {
+                    return {
+                        status: Status.BAD_REQUEST,
+                        message: `(sellItemsInPOIShop) Squad not found.`
+                    }
+                }
+
                 squadUpdateOperations.$inc[`totalSquadPoints`] = leaderboardPoints;
 
                 // get the latest week of the squad leaderboard
@@ -887,6 +909,7 @@ export const sellItemsInPOIShop = async (
                 if (squadIndex === -1) {
                     squadLeaderboardUpdateOperations.$push[`pointsData`] = {
                         squadId,
+                        squadName: squad.name,
                         memberPoints: [{
                             userId: user._id,
                             points: leaderboardPoints
