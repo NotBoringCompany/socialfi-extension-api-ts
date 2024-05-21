@@ -34,17 +34,19 @@ export const joinReferrerSquad = async (
         }
 
         // check if the referrer has a squad. if not, return an error.
-        if (referrer.inGameData.squadId === null) {
+        if (referrer.inGameData.squadId === null || referrer.inGameData.squadId === undefined) {
+            console.log('referrer does not have a squad.');
+            
             return {
                 status: Status.ERROR,
                 message: `(joinReferrerSquad) Referrer does not have a squad.`
             }
+        } else {
+            console.log('referrer has a squad. squad id: ', referrer.inGameData.squadId);
         }
 
         // check if the referrer's squad is full. if so, return an error.
-        const squad = await SquadModel.findOne({ _id: referrer.inGameData.squadId });
-
-        console.log('joinReferrerSquad squad id: ', squad.id);
+        const squad = await SquadModel.findOne({ _id: referrer.inGameData.squadId ?? '' });
 
         if (!squad) {
             return {
