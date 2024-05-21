@@ -1,6 +1,7 @@
 import { SquadCreationMethod, SquadMember, SquadRank, SquadRole } from '../models/squad';
 import { SquadModel, UserModel } from '../utils/constants/db';
 import { CREATE_SQUAD_COST, INITIAL_MAX_MEMBERS, MAX_MEMBERS_INCREASE_UPON_UPGRADE, MAX_MEMBERS_LIMIT, RENAME_SQUAD_COOLDOWN, RENAME_SQUAD_COST, SQUAD_LEAVE_COOLDOWN, UPGRADE_SQUAD_MAX_MEMBERS_COST } from '../utils/constants/squad';
+import { generateObjectId } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
 
 /**
@@ -618,6 +619,7 @@ export const createSquad = async (twitterId: string, squadName: string): Promise
 
         // create the squad.
         const squad = new SquadModel({
+            _id: generateObjectId(),
             name: squadName,
             nameChangeCount: 0,
             lastNameChangeTimestamp: Math.floor(Date.now() / 1000),
