@@ -878,9 +878,9 @@ export const sellItemsInPOIShop = async (
             }
 
             // add the points to the squad's `totalSquadPoints` as well (excluding the additional points)
-            if (squadId) {
+            if (squadId !== '' && squadId !== null) {
                 // get the squad
-                const squad = await SquadModel.findOne({ squadId }).lean();
+                const squad = await SquadModel.findOne({ _id: squadId }).lean();
 
                 if (!squad) {
                     return {
