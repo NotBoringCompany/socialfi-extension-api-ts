@@ -28,17 +28,15 @@ export const joinReferrerSquad = async (
         // since this is called directly under `linkInviteCode` when a user signs up with a referral code,
         // we don't need to extra check whether the user used a referral code or not.
         // we will just firstly check if the user already has a squad (which they shouldn't at this point, but just in case).
-        if (user.inGameData.squadId !== null) {
+        if (!user.inGameData.squadId) {
             return {
                 status: Status.ERROR,
                 message: `(joinReferrerSquad) User is already in a squad.`
             }
         }
 
-        console.log('running here 2!!!');
-
         // check if the referrer has a squad. if not, return an error.
-        if (referrer.inGameData.squadId === null || referrer.inGameData.squadId === undefined) {
+        if (!referrer.inGameData.squadId) {
             console.log('referrer does not have a squad.');
 
             return {
