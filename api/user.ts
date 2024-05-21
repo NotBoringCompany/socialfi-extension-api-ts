@@ -1302,8 +1302,6 @@ export const linkInviteCode = async (twitterId: string, code: string): Promise<R
                 }
             );
 
-            console.log('running joinReferrerSquad from linkInviteCode');
-
             // attempt to join the referrer's squad if they have one.
             const { status, message, data } = await joinReferrerSquad(user.twitterId, referrer.twitterId);
 

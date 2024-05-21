@@ -11,8 +11,6 @@ export const joinReferrerSquad = async (
     referrerTwitterId: string
 ): Promise<ReturnValue> => {
     try {
-        console.log('running here joinReferrerSquad 1');
-
         const [user, referrer] = await Promise.all([
             UserModel.findOne({ twitterId: userTwitterId }).lean(),
             UserModel.findOne({ twitterId: referrerTwitterId }).lean()
@@ -37,14 +35,10 @@ export const joinReferrerSquad = async (
 
         // check if the referrer has a squad. if not, return an error.
         if (!referrer.inGameData.squadId) {
-            console.log('referrer does not have a squad.');
-
             return {
                 status: Status.ERROR,
                 message: `(joinReferrerSquad) Referrer does not have a squad.`
             }
-        } else {
-            console.log('referrer has a squad. squad id: ', referrer.inGameData.squadId);
         }
 
         // check if the referrer's squad is full. if so, return an error.
