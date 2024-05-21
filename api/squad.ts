@@ -44,6 +44,8 @@ export const joinReferrerSquad = async (
         // check if the referrer's squad is full. if so, return an error.
         const squad = await SquadModel.findOne({ _id: referrer.inGameData.squadId });
 
+        console.log('joinReferrerSquad squad id: ', squad.id);
+
         if (!squad) {
             return {
                 status: Status.ERROR,

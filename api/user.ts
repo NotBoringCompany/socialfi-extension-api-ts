@@ -1208,6 +1208,8 @@ export const linkInviteCode = async (twitterId: string, code: string): Promise<R
         // find the referrer from which the referrerCode stems from inside a user's `referralData` instance
         const referrer = await UserModel.findOne({ 'referralData.referralCode': code.toUpperCase() }).lean();
 
+        console.log('referrer database ID: ', referrer);
+
         if (!starterCode && !referrer) {
             return {
                 status: Status.BAD_REQUEST,
