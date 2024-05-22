@@ -129,7 +129,7 @@ export const summonIsland = async (
         // check if the owner already completed 2nd tutorial
         // if already completed, get the island type based on the probability of obtaining it
         // otherwise, give the owner default island type
-        const islandType = user.inGameData.completedTutorialIds.includes(2)
+        const islandType = !user.inGameData.completedTutorialIds.includes(2)
             ? DEFAULT_ISLAND_TYPE
             : randomizeTypeFromCapsulator(terraCapsulatorType);
 
