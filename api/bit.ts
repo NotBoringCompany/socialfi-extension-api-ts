@@ -758,6 +758,10 @@ export const evolveBit = async (
             $push: {}
         }
 
+        // Track consumed Currency
+        let totalPaid: number
+        let paymentChoice: 'xCookies' | 'seaweed';
+
         if (!user) {
             return {
                 status: Status.ERROR,
@@ -802,6 +806,8 @@ export const evolveBit = async (
 
             // calculate the cost to evolve the bit to the next level
             const requiredXCookies = BIT_EVOLUTION_COST(bit.currentFarmingLevel);
+            totalPaid = requiredXCookies;
+            paymentChoice = 'xCookies';
 
             // if not enough xCookies, return an error
             if (userXCookies < requiredXCookies) {
@@ -821,6 +827,8 @@ export const evolveBit = async (
             const userSeaweed = (user.inventory?.resources as ExtendedResource[]).find(resource => resource.type === BarrenResource.SEAWEED);
 
             const requiredSeaweed = FREE_BIT_EVOLUTION_COST(bit.currentFarmingLevel);
+            totalPaid = requiredSeaweed;
+            paymentChoice = 'seaweed';
 
             // if not enough seaweed, return an error
             if (!userSeaweed || userSeaweed.amount < requiredSeaweed) {
@@ -851,6 +859,8 @@ export const evolveBit = async (
                 bitId: bitId,
                 currentLevel: bit.currentFarmingLevel,
                 nextLevel: bit.currentFarmingLevel + 1,
+                totalPaid,
+                paymentChoice,
             },
         };
     } catch (err: any) {

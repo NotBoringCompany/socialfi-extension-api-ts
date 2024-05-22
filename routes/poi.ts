@@ -220,10 +220,11 @@ router.post('/sell_items_in_poi_shop', async (req, res) => {
 
         const { status, message, data } = await sellItemsInPOIShop(validateData?.twitterId, items, leaderboardName);
 
-        mixpanel.track('POI Shop: Sell Item', {
+        mixpanel.track('Points Earned (POI Shop)', {
             distinct_id: validateData?.twitterId,
             '_items': items,
             '_leaderboardName': leaderboardName,
+            '_earnedPoints': data.leaderboardPoints,
         });
 
         return res.status(status).json({
@@ -254,10 +255,10 @@ router.post('/buy_items_in_poi_shop', async (req, res) => {
 
         const { status, message, data } = await buyItemsInPOIShop(validateData?.twitterId, items, paymentChoice);
 
-        mixpanel.track('POI Shop: Buy Item', {
+        mixpanel.track('Currency Tracker', {
             distinct_id: validateData?.twitterId,
-            '_items': items,
-            '_paymentChoice': paymentChoice,
+            '_type': 'Buy Item In POI Shop',
+            '_data': data,
         });
 
         return res.status(status).json({
