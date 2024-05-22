@@ -145,11 +145,11 @@ export const handleTwitterLogin = async (
                 };
             }
 
-            const islandStatsModifiers: IslandStatsModifiers = {
-                resourceCapModifiers: [],
-                gatheringRateModifiers: [],
-                earningRateModifiers: [],
-            };
+            // const islandStatsModifiers: IslandStatsModifiers = {
+            //     resourceCapModifiers: [],
+            //     gatheringRateModifiers: [],
+            //     earningRateModifiers: [],
+            // };
 
             // check the bit's traits
             // if it has influential, antagonistic, famous or mannerless, then:
@@ -169,8 +169,8 @@ export const handleTwitterLogin = async (
                     value: 1.01,
                 };
 
-                islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
-                islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
+                // islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
+                // islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
             }
 
             // if the bit has antagonistic trait
@@ -186,8 +186,8 @@ export const handleTwitterLogin = async (
                     value: 0.99,
                 };
 
-                islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
-                islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
+                // islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
+                // islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
             }
 
             // if the bit has famous trait
@@ -203,8 +203,8 @@ export const handleTwitterLogin = async (
                     value: 1.005,
                 };
 
-                islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
-                islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
+                // islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
+                // islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
             }
 
             // if the bit has mannerless trait
@@ -220,8 +220,8 @@ export const handleTwitterLogin = async (
                     value: 0.995,
                 };
 
-                islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
-                islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
+                // islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
+                // islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
             }
 
             // creates a free primal island for the user
@@ -234,55 +234,55 @@ export const handleTwitterLogin = async (
                 };
             }
 
-            const {
-                status: islandStatus,
-                message: islandMessage,
-                data: islandData,
-            } = await addIslandToDatabase({
-                islandId: islandIdData?.latestIslandId + 1,
-                type: IslandType.PRIMAL_ISLES,
-                owner: userObjectId,
-                purchaseDate: Math.floor(Date.now() / 1000),
-                obtainMethod: ObtainMethod.SIGN_UP,
-                currentLevel: 1,
-                currentTax: 0,
-                placedBitIds: [],
-                traits: randomizeIslandTraits(),
-                islandResourceStats: {
-                    baseResourceCap: randomizeBaseResourceCap(IslandType.PRIMAL_ISLES),
-                    resourcesGathered: [],
-                    dailyBonusResourcesGathered: 0,
-                    claimableResources: [],
-                    gatheringStart: 0,
-                    gatheringEnd: 0,
-                    lastClaimed: 0,
-                    gatheringProgress: 0,
-                    lastUpdatedGatheringProgress: Math.floor(Date.now() / 1000),
-                },
-                islandEarningStats: {
-                    totalXCookiesSpent: 0,
-                    totalXCookiesEarnable: 0,
-                    totalXCookiesEarned: 0,
-                    claimableXCookies: 0,
-                    totalCookieCrumbsSpent: 0,
-                    totalCookieCrumbsEarnable: 0,
-                    totalCookieCrumbsEarned: 0,
-                    claimableCookieCrumbs: 0,
-                    earningStart: 0,
-                    crumbsEarningStart: 0,
-                    earningEnd: 0,
-                    crumbsEarningEnd: 0,
-                    lastClaimed: 0,
-                },
-                islandStatsModifiers,
-            });
+            // const {
+            //     status: islandStatus,
+            //     message: islandMessage,
+            //     data: islandData,
+            // } = await addIslandToDatabase({
+            //     islandId: islandIdData?.latestIslandId + 1,
+            //     type: IslandType.PRIMAL_ISLES,
+            //     owner: userObjectId,
+            //     purchaseDate: Math.floor(Date.now() / 1000),
+            //     obtainMethod: ObtainMethod.SIGN_UP,
+            //     currentLevel: 1,
+            //     currentTax: 0,
+            //     placedBitIds: [],
+            //     traits: randomizeIslandTraits(),
+            //     islandResourceStats: {
+            //         baseResourceCap: randomizeBaseResourceCap(IslandType.PRIMAL_ISLES),
+            //         resourcesGathered: [],
+            //         dailyBonusResourcesGathered: 0,
+            //         claimableResources: [],
+            //         gatheringStart: 0,
+            //         gatheringEnd: 0,
+            //         lastClaimed: 0,
+            //         gatheringProgress: 0,
+            //         lastUpdatedGatheringProgress: Math.floor(Date.now() / 1000),
+            //     },
+            //     islandEarningStats: {
+            //         totalXCookiesSpent: 0,
+            //         totalXCookiesEarnable: 0,
+            //         totalXCookiesEarned: 0,
+            //         claimableXCookies: 0,
+            //         totalCookieCrumbsSpent: 0,
+            //         totalCookieCrumbsEarnable: 0,
+            //         totalCookieCrumbsEarned: 0,
+            //         claimableCookieCrumbs: 0,
+            //         earningStart: 0,
+            //         crumbsEarningStart: 0,
+            //         earningEnd: 0,
+            //         crumbsEarningEnd: 0,
+            //         lastClaimed: 0,
+            //     },
+            //     islandStatsModifiers,
+            // });
 
-            if (islandStatus !== Status.SUCCESS) {
-                return {
-                    status: islandStatus,
-                    message: `(handleTwitterLogin) Error from createBarrenIsland: ${islandMessage}`,
-                };
-            }
+            // if (islandStatus !== Status.SUCCESS) {
+            //     return {
+            //         status: islandStatus,
+            //         message: `(handleTwitterLogin) Error from createBarrenIsland: ${islandMessage}`,
+            //     };
+            // }
 
             // creates the wallet for the user
             const { privateKey, address } = createUserWallet();
@@ -337,7 +337,8 @@ export const handleTwitterLogin = async (
                     ],
                     raftId: data.raft.raftId,
                     // add the free barren island to the `islandIds` array
-                    islandIds: [islandData.island.islandId],
+                    // islandIds: [islandData.island.islandId],
+                    islandIds: [],
                     bitIds: [bitIdData?.latestBitId + 1],
                 },
                 inGameData: {

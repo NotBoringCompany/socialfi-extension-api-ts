@@ -1,14 +1,15 @@
 import { ReturnValue, Status } from '../utils/retVal';
 import { addIslandToDatabase, getLatestIslandId, randomizeBaseResourceCap } from './island';
 import { randomizeTypeFromCapsulator } from '../utils/constants/terraCapsulator';
-import { Island, IslandStatsModifiers } from '../models/island';
+import { Island, IslandStatsModifiers, IslandType } from '../models/island';
 import { ObtainMethod } from '../models/obtainMethod';
 import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
-import { GET_TOTAL_COOKIE_CRUMBS_EARNABLE, GET_TOTAL_X_COOKIES_EARNABLE, randomizeIslandTraits } from '../utils/constants/island';
+import { DEFAULT_ISLAND_TYPE, GET_TOTAL_COOKIE_CRUMBS_EARNABLE, GET_TOTAL_X_COOKIES_EARNABLE, randomizeIslandTraits } from '../utils/constants/island';
 import { BitTrait, BitTraitData } from '../models/bit';
 import { Modifier } from '../models/modifier';
 import { TerraCapsulatorType } from '../models/terraCapsulator';
 import { Item } from '../models/item';
+import { User } from '../models/user';
 
 /**
  * (User) Consumes a Terra Capsulator to obtain an island.
@@ -113,10 +114,24 @@ export const summonIsland = async (
             }
         }
 
+        // get the user's owned bit ids
+        const user = await UserModel.findOne({ _id: owner }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(summonIsland) User not found.`
+            }
+        }
+
         const latestIslandId = data?.latestIslandId as number;
 
-        // get the island type based on the probability of obtaining it
-        const islandType = randomizeTypeFromCapsulator(terraCapsulatorType);
+        // check if the owner already completed 2nd tutorial
+        // if already completed, get the island type based on the probability of obtaining it
+        // otherwise, give the owner default island type
+        const islandType = user.inGameData.completedTutorialIds.includes(2)
+            ? DEFAULT_ISLAND_TYPE
+            : randomizeTypeFromCapsulator(terraCapsulatorType);
 
         // randomize the base resource cap
         const baseResourceCap = randomizeBaseResourceCap(islandType);
@@ -129,16 +144,6 @@ export const summonIsland = async (
 
         // get total cookie crumbs earnable based on rarity
         const totalCookieCrumbsEarnable = GET_TOTAL_COOKIE_CRUMBS_EARNABLE(islandType);
-
-        // get the user's owned bit ids
-        const user = await UserModel.findOne({ _id: owner }).lean();
-
-        if (!user) {
-            return {
-                status: Status.ERROR,
-                message: `(summonIsland) User not found.`
-            }
-        }
 
         const userBitIds = user.inventory?.bitIds as number[];
 
