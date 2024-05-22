@@ -2,6 +2,8 @@
  * Represents the full metadata of a Key Of Salvation.
  */
 export interface KOSMetadata {
+    /** the token id of the key */
+    keyId: number;
     /** the key name */
     name: string;
     /** the key's image URL */
@@ -19,4 +21,39 @@ export interface KOSMetadataAttribute {
     traitType: string;
     /** the value of this trait */
     value: number | string;
+}
+
+/**
+ * Represents all available pillar types for KOS.
+ */
+export enum KOSPillarTypes {
+    PILLAR_OF_ETERNITY = 'Pillar of Eternity',
+    PILLAR_OF_DESTINY = 'Pillar of Destiny',
+}
+
+/**
+ * Represents all available podium types for KOS.
+ */
+export enum KOSPodiumTypes {
+    TIMELESS_TRIUNE = 'Timeless Triune',
+    PRIMORDIAL_PRISM = 'Primordial Prism',
+    STELLAR_SELENITE = 'Stellar Selenite',
+}
+
+/**
+ * Represents all available house types for KOS.
+ */
+export enum KOSHouseTypes {
+    TRADITION = 'Tradition',
+    CHAOS = 'Chaos',
+    GLORY = 'Glory',
+}
+
+/**
+ * Represents all available aura types for KOS.
+ */
+export enum KOSAuraTypes {
+    SNOW = 'Snow',
+    LIGHTNING = 'Lightning',
+    SMOKE = 'Smoke',
 }

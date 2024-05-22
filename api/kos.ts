@@ -65,6 +65,7 @@ export const fetchKOSMetadata = async (keyId: number): Promise<ReturnValue> => {
         // convert `metadata` into a KOSMetadata instance.
         // this is an interface that contains the metadata of a Key of Salvation, such as the name, description, etc.
         const kosMetadata: KOSMetadata = {
+            keyId: keyId,
             name: metadata.name,
             image: metadata.image,
             animationUrl: metadata.animation_url,
@@ -92,3 +93,5 @@ export const fetchKOSMetadata = async (keyId: number): Promise<ReturnValue> => {
         }
     }
 }
+
+fetchKOSMetadata(1);
