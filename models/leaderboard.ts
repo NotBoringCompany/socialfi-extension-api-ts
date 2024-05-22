@@ -45,4 +45,5 @@ export enum LeaderboardPointsSource {
     CHEST_REWARDS = 'Chest Rewards',
     COLLAB_REWARDS = 'Collab Rewards',
     LEVELLING_UP = 'Levelling Up',
+    KOS_BENEFITS = 'KOS Benefits',
 }
