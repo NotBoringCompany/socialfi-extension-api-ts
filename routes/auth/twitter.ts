@@ -68,6 +68,7 @@ router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/',
                 '_accessToken': twitterAccessToken,
                 '_refreshToken': twitterRefreshToken,
                 '_expiryDate': twitterExpiryDate,
+                '_origin': req.headers.host,
             });
 
             return res.redirect(`${host}?jwt=${token}`);
