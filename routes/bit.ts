@@ -95,8 +95,9 @@ router.post('/evolve_bit', async (req, res) => {
 
         const { status, message, data } = await evolveBit(validateData?.twitterId, bitId);
         
-        mixpanel.track('Evolve Bit', {
+        mixpanel.track('Currency Tracker', {
             distinct_id: validateData?.twitterId,
+            '_type': 'Evolve Bit',
             '_data': data,
         });
 

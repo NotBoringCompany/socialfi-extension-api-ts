@@ -482,7 +482,9 @@ export const renameSquad = async (twitterId: string, newSquadName: string): Prom
             message: `(renameSquad) Renamed squad successfully.`,
             data: {
                 squadId: squad._id,
-                squadName: newSquadName
+                squadName: newSquadName,
+                totalPaid: cost,
+                paymentChoice: 'xCookies',
             }
         }
     } catch (err: any) {
@@ -654,7 +656,10 @@ export const createSquad = async (twitterId: string, squadName: string): Promise
             status: Status.SUCCESS,
             message: `(createSquad) Created squad successfully.`,
             data: {
-                squadId: squad._id
+                squadId: squad._id,
+                squadName,
+                totalPaid: cost,
+                paymentChoice: 'xCookies',
             }
         }
     } catch (err: any) {

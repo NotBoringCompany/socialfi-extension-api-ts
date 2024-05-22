@@ -144,8 +144,9 @@ router.post('/evolve_island', async (req, res) => {
 
         const { status, message, data } = await evolveIsland(validateData?.twitterId, islandId, choice);
 
-        mixpanel.track('Evolve Island', {
+        mixpanel.track('Currency Tracker', {
             distinct_id: validateData?.twitterId,
+            '_type': 'Evolve Island',
             '_data': data,
         });
 

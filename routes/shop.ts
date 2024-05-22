@@ -40,10 +40,10 @@ router.post('/purchase_shop_asset', async (req, res) => {
 
         const { status, message, data } = await purchaseShopAsset(validateData?.twitterId, amount, asset);
 
-        mixpanel.track('Purchase Shop Asset', {
+        mixpanel.track('Currency Tracker', {
             distinct_id: validateData?.twitterId,
-            '_asset': asset,
-            '_amount': amount,
+            '_type': 'Purchase Shop Asset',
+            '_data': data,
         });
 
         return res.status(status).json({

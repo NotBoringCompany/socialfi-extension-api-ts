@@ -245,6 +245,10 @@ export const evolveIsland = async (twitterId: string, islandId: number, choice: 
             $push: {}
         }
 
+        // Track consumed Currency
+        let totalPaid: number;
+        let paymentChoice: 'xCookies' | 'cookieCrumbs';
+
         if (!user) {
             return {
                 status: Status.ERROR,
@@ -289,6 +293,8 @@ export const evolveIsland = async (twitterId: string, islandId: number, choice: 
 
             // calculate the cost to evolve the island based on its current level
             const { xCookies: requiredXCookies } = ISLAND_EVOLUTION_COST(<IslandType>island.type, island.currentLevel);
+            totalPaid = requiredXCookies;
+            paymentChoice = 'xCookies';
 
             // if not enough, return an error.
             if (userXCookies < requiredXCookies) {
@@ -326,6 +332,8 @@ export const evolveIsland = async (twitterId: string, islandId: number, choice: 
 
             // calculate the cost to evolve the island based on its current level
             const { cookieCrumbs: requiredCookieCrumbs } = ISLAND_EVOLUTION_COST(<IslandType>island.type, island.currentLevel);
+            totalPaid = requiredCookieCrumbs;
+            paymentChoice = 'cookieCrumbs';
 
             // if not enough, return an error.
             if (userCookieCrumbs < requiredCookieCrumbs) {
@@ -357,6 +365,8 @@ export const evolveIsland = async (twitterId: string, islandId: number, choice: 
                 islandId: islandId,
                 currentLevel: island.currentLevel,
                 nextLevel: island.currentLevel + 1,
+                totalPaid,
+                paymentChoice,
             }
         }
     } catch (err: any) {

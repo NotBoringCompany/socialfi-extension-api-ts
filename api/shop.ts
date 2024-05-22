@@ -123,7 +123,9 @@ export const purchaseShopAsset = async (
             message: `(purchaseShopAsset) Asset purchased.`,
             data: {
                 asset,
-                amount
+                amount,
+                totalPaid: assetPrice,
+                paymentChoice: 'xCookies',
             }
         }
     } catch (err: any) {

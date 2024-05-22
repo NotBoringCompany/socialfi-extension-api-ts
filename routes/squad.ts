@@ -2,6 +2,7 @@ import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { acceptPendingSquadMember, checkSquadCreationMethodAndCost, createSquad, declinePendingSquadMember, delegateLeadership, getSquadData, kickMember, leaveSquad, renameSquad, requestToJoinSquad, upgradeSquadLimit } from '../api/squad';
+import { mixpanel } from '../utils/mixpanel';
 
 const router = express.Router();
 
@@ -76,6 +77,12 @@ router.post('/rename_squad', async (req, res) => {
 
         const { status, message, data } = await renameSquad(validateData?.twitterId, newSquadName);
 
+        mixpanel.track('Currency Tracker', {
+            distinct_id: validateData?.twitterId,
+            '_type': 'Rename Squad',
+            '_data': data,
+        });
+
         return res.status(status).json({
             status,
             message,
@@ -103,6 +110,12 @@ router.post('/create_squad', async (req, res) => {
         }
 
         const { status, message, data } = await createSquad(validateData?.twitterId, squadName);
+
+        mixpanel.track('Currency Tracker', {
+            distinct_id: validateData?.twitterId,
+            '_type': 'Create Squad',
+            '_data': data,
+        });
 
         return res.status(status).json({
             status,
