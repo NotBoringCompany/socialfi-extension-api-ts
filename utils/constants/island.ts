@@ -33,7 +33,7 @@ export const BARREN_ISLE_COMMON_DROP_CHANCE = 2;
 /**
  * user's first received island during the tutorial
  */
-export const DEFAULT_ISLAND_TYPE = IslandType['BARREN'];
+export const DEFAULT_ISLAND_TYPE = IslandType['PRIMAL_ISLES'];
 
 /** 
  * the amount of islands the user can have at a time to farm resources/earn back cookies. 
