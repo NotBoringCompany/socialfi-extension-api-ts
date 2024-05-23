@@ -50,6 +50,10 @@ export interface ReferralData {
 export interface ReferredUserData {
     /** the referred user's database id */
     userId: string;
+    /** the referred user's username */
+    username: string;
+    /** when the user was referred */
+    referredTimestamp: number;
     /** if the user has reached level 3 (requirement to receive referral rewards from this user) */
     hasReachedLevel3: boolean;
 }

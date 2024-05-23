@@ -1161,6 +1161,8 @@ export const linkInviteCode = async (twitterId: string, code: string): Promise<R
                     $push: {
                         'referralData.referredUsersData': {
                             userId: user._id,
+                            username: user.twitterUsername,
+                            referredTimestamp: Math.floor(Date.now() / 1000),
                             hasReachedLevel3: false,
                         },
                     },
