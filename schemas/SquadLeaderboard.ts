@@ -15,6 +15,7 @@ export const SquadLeaderboardSchema = new mongoose.Schema({
         squadName: String,
         memberPoints: [{
             userId: String,
+            username: String,
             points: Number
         }]
     }]

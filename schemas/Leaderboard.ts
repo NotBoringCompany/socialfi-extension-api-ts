@@ -14,6 +14,7 @@ export const LeaderboardSchema = new mongoose.Schema({
     userData: [{
         _id: false,
         userId: String,
+        username: String,
         twitterProfilePicture: String,
         pointsData: [{
             _id: false,

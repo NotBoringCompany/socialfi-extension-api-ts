@@ -278,6 +278,7 @@ export const acceptPendingSquadMember = async (leaderTwitterId: string, memberTw
             $push: {
                 members: {
                     userId: member._id,
+                    username: member.twitterUsername,
                     role: SquadRole.MEMBER,
                     joinedTimestamp: Math.floor(Date.now() / 1000),
                     roleUpdatedTimestamp: Math.floor(Date.now() / 1000)

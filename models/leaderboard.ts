@@ -18,6 +18,8 @@ export interface Leaderboard {
 export interface LeaderboardUserData {
     /** the user's database ID */
     userId: string;
+    /** the user's username */
+    username: string;
     /** the user's twitter profile picture URL */
     twitterProfilePicture: string;
     /** the user's points data */

@@ -26,6 +26,8 @@ export interface SquadWeeklyPointsData {
 export interface SquadMemberWeeklyPoints {
     /** the members's database ID */
     userId: string;
+    /** the member's username */
+    username: string;
     /** the member's points */
     points: number;
 }

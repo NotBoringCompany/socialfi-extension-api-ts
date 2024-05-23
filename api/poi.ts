@@ -751,6 +751,7 @@ export const sellItemsInPOIShop = async (
             leaderboardUpdateOperations.$push = {
                 'userData': {
                     userId: user._id,
+                    username: user.twitterUsername,
                     twitterProfilePicture: user.twitterProfilePicture,
                     pointsData: [{
                         points: leaderboardPoints,
@@ -795,6 +796,7 @@ export const sellItemsInPOIShop = async (
                         squadName: squad.name,
                         memberPoints: [{
                             userId: user._id,
+                            username: user.twitterUsername,
                             points: leaderboardPoints
                         }]
                     }
@@ -806,6 +808,7 @@ export const sellItemsInPOIShop = async (
                     if (userIndex === -1) {
                         squadLeaderboardUpdateOperations.$push[`pointsData.${squadIndex}.memberPoints`] = {
                             userId: user._id,
+                            username: user.twitterUsername,
                             points: leaderboardPoints
                         }
                     } else {
@@ -912,6 +915,7 @@ export const sellItemsInPOIShop = async (
                         squadName: squad.name,
                         memberPoints: [{
                             userId: user._id,
+                            username: user.twitterUsername,
                             points: leaderboardPoints
                         }]
                     }
@@ -923,6 +927,7 @@ export const sellItemsInPOIShop = async (
                     if (userIndex === -1) {
                         squadLeaderboardUpdateOperations.$push[`pointsData.${squadIndex}.memberPoints`] = {
                             userId: user._id,
+                            username: user.twitterUsername,
                             points: leaderboardPoints
                         }
                     } else {

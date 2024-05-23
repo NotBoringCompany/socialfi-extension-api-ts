@@ -14,12 +14,14 @@ export const SquadSchema = new mongoose.Schema({
     lastNameChangeTimestamp: Number,
     members: [{
         userId: String,
+        username: String,
         role: String,
         joinedTimestamp: Number,
         roleUpdatedTimestamp: Number
     }],
     pendingMembers: [{
         userId: String,
+        username: String,
         requestedTimestamp: Number
     }],
     maxMembers: Number,

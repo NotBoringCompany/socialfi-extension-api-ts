@@ -709,6 +709,7 @@ export const claimDailyRewards = async (twitterId: string, leaderboardName: stri
 
                     leaderboardUpdateOperations.$push['userData'] = {
                         userId: user._id,
+                        username: user.twitterUsername,
                         twitterProfilePicture: user.twitterProfilePicture,
                         pointsData: [
                             {
@@ -753,6 +754,7 @@ export const claimDailyRewards = async (twitterId: string, leaderboardName: stri
                                 memberPoints: [
                                     {
                                         userId: user._id,
+                                        username: user.twitterUsername,
                                         points: reward.amount,
                                     },
                                 ],
@@ -765,6 +767,7 @@ export const claimDailyRewards = async (twitterId: string, leaderboardName: stri
                             if (userIndex === -1) {
                                 squadLeaderboardUpdateOperations.$push[`pointsData.${squadIndex}.memberPoints`] = {
                                     userId: user._id,
+                                    username: user.twitterUsername,
                                     points: reward.amount,
                                 };
                             } else {
@@ -860,6 +863,7 @@ export const claimDailyRewards = async (twitterId: string, leaderboardName: stri
                                 memberPoints: [
                                     {
                                         userId: user._id,
+                                        username: user.twitterUsername,
                                         points: reward.amount,
                                     },
                                 ],
@@ -872,6 +876,7 @@ export const claimDailyRewards = async (twitterId: string, leaderboardName: stri
                             if (userIndex === -1) {
                                 squadLeaderboardUpdateOperations.$push[`pointsData.${squadIndex}.memberPoints`] = {
                                     userId: user._id,
+                                    username: user.twitterUsername,
                                     points: reward.amount,
                                 };
                             } else {
