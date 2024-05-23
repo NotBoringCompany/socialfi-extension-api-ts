@@ -59,6 +59,8 @@ export enum SquadRank {
 export interface SquadMember {
     /** the database user ID of this member */
     userId: string;
+    /** the member's username */
+    username: string;
     /** the role of the member within this squad */
     role: SquadRole;
     /** when this member joined */
@@ -73,6 +75,8 @@ export interface SquadMember {
 export interface PendingSquadMember {
     /** the database user ID of this member */
     userId: string;
+    /** the member's username */
+    username: string;
     /** when this member requested to join */
     requestedTimestamp: number;
 }

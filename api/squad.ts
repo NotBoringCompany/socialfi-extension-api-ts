@@ -64,6 +64,7 @@ export const joinReferrerSquad = async (
             $push: {
                 members: {
                     userId: user._id,
+                    username: user.twitterUsername,
                     role: SquadRole.MEMBER,
                     joinedTimestamp: Math.floor(Date.now() / 1000),
                     roleUpdatedTimestamp: Math.floor(Date.now() / 1000)
@@ -161,6 +162,7 @@ export const requestToJoinSquad = async (twitterId: string, squadId?: string, sq
             $push: {
                 pendingMembers: {
                     userId: user._id,
+                    username: user.twitterUsername,
                     requestedTimestamp: Math.floor(Date.now() / 1000)
                 }
             }
@@ -627,6 +629,7 @@ export const createSquad = async (twitterId: string, squadName: string): Promise
             lastNameChangeTimestamp: Math.floor(Date.now() / 1000),
             members: [{
                 userId: user._id,
+                username: user.twitterUsername,
                 role: SquadRole.LEADER,
                 joinedTimestamp: Math.floor(Date.now() / 1000),
                 roleUpdatedTimestamp: Math.floor(Date.now() / 1000)
@@ -711,7 +714,7 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
                 await SquadModel.updateOne({ _id: squad._id }, {
                     $pull: {
                         members: {
-                            userId: user._id
+                            userId: user._id,
                         }
                     }
                 })
