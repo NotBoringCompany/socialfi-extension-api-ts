@@ -52,6 +52,7 @@ import setting from './routes/setting';
 import poap from './routes/poap';
 import squadLeaderboard from './routes/squadLeaderboard';
 import { schedulers } from './schedulers/schedulers';
+import { fetchAndStoreKOSMetadata } from './api/kos';
 
 app.use('/auth/twitter', twitterAuth);
 app.use('/auth/discord', discordAuth);
@@ -82,6 +83,8 @@ app.listen(port, async () => {
 
     await mongoose.connect(mongoUri);
 
-
     await schedulers();
+
+    // fetch and store KOS metadata of all 5000 keys
+    await fetchAndStoreKOSMetadata(Array.from({ length: 5000 }, (_, i) => i + 1));
 });
