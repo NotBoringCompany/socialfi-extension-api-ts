@@ -10,10 +10,6 @@ import { ExtendedXCookieData, XCookieSource } from '../models/user';
 import { Item } from '../models/item';
 import { BoosterItem } from '../models/booster';
 import mongoose from 'mongoose';
-import * as dotenv from 'dotenv';
-import { BigNumber } from 'ethers';
-
-dotenv.config();
 
 /**
  * Checks, for each user who owns at least 1 Key of Salvation, if they have owned each key for at least 1 day (from 23:59 UTC the previous day to 23:59 UTC now).
@@ -23,8 +19,6 @@ dotenv.config();
  */
 export const checkDailyKOSOwnershipAndGiveRewards = async (): Promise<ReturnValue> => {
     try {
-        await mongoose.connect(process.env.MONGODB_URI as string);
-
         const errors: string[] = [];
         const users = await UserModel.find();
 
@@ -251,6 +245,10 @@ export const checkDailyKOSOwnershipAndGiveRewards = async (): Promise<ReturnValu
 
         // execute the bulk write operations
         await UserModel.bulkWrite(bulkWriteOps);
+
+        if (errors.length > 0) {
+            console.error(`(checkDailyKOSOwnership) Errors: ${errors.join('\n')}`);
+        }
 
         console.log(`(checkDailyKOSOwnership) Successfully gave daily KOS rewards.`);
     } catch (err: any) {
