@@ -1120,5 +1120,3 @@ export const explicitOwnershipsOfSuperiorKeychain = async (superiorKeychainIds: 
         }
     }
 }
-
-checkWeeklyKOSRewards();
