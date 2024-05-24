@@ -24,6 +24,20 @@ export interface KOSMetadataAttribute {
 }
 
 /**
+ * Represents the explicit ownership struct of a Key Of Salvation.
+ */
+export interface KOSExplicitOwnership {
+    /** the owner of the key */
+    owner: string;
+    /** the start timestamp of the ownership */
+    startTimestamp: number;
+    /** if the key is burned */
+    burned: boolean;
+    /** extra data */
+    extraData: number;
+}
+
+/**
  * Represents all available pillar types for KOS.
  */
 export enum KOSPillarTypes {

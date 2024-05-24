@@ -3,7 +3,7 @@ import { UserModel } from '../utils/constants/db';
 import { KOS_CONTRACT } from '../utils/constants/web3';
 import { ReturnValue, Status } from '../utils/retVal';
 import { getWallets } from './user';
-import { KOSMetadata } from '../models/kos';
+import { KOSExplicitOwnership, KOSMetadata } from '../models/kos';
 
 /**
  * Gets all Key of Salvation IDs owned by the user (main + secondary wallets).
@@ -94,4 +94,35 @@ export const fetchKOSMetadata = async (keyId: number): Promise<ReturnValue> => {
     }
 }
 
-fetchKOSMetadata(1);
+/**
+ * Checks the start of ownership of one or multiple keys.
+ */
+export const checkKeyOwnerships = async (keyIds: number[]): Promise<ReturnValue> => {
+    try {
+        // call `explicitOwnershipsOf` in the contract for all key IDs and convert it to use `KOSExplicitOwnership`
+        const keyOwnerships = await KOS_CONTRACT.explicitOwnershipsOf(keyIds);
+
+        const formattedOwnerships: KOSExplicitOwnership[] = keyOwnerships.map((ownership: any) => {
+            return {
+                owner: ownership.addr,
+                // convert startTimestamp to unix
+                startTimestamp: ownership.startTimestamp.toNumber(),
+                burned: ownership.burned,
+                extraData: ownership.extraData
+            }
+        })
+
+        return {
+            status: Status.SUCCESS,
+            message: `(checkKeyOwnerships) Successfully checked key ownerships.`,
+            data: {
+                keyOwnerships: formattedOwnerships
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(checkKeyOwnerships) Error: ${err.message}`
+        }
+    }
+}
