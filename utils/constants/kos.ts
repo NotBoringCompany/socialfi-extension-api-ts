@@ -1,8 +1,5 @@
 import { KOSAuraTypes, KOSHouseTypes, KOSMetadata, KOSPillarTypes, KOSPodiumTypes } from '../../models/kos';
 
-/** contains the metadata of all 5,000 keys after server launches */
-export const KOS_METADATA: KOSMetadata[] = [];
-
 /** represents the current pillar rotation where, if a user obtains X amount of keys with this pillar, they get benefits. */
 const CURRENT_PILLAR_ROTATION: KOSPillarTypes = KOSPillarTypes.PILLAR_OF_ETERNITY;
 /** represents the current podium rotation where, if a user obtains X amount of keys with this podium, they get benefits. */

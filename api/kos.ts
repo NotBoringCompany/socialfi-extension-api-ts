@@ -1,10 +1,7 @@
-import axios from 'axios';
-import { UserModel } from '../utils/constants/db';
 import { KOS_CONTRACT } from '../utils/constants/web3';
 import { ReturnValue, Status } from '../utils/retVal';
 import { getWallets } from './user';
 import { KOSExplicitOwnership, KOSMetadata } from '../models/kos';
-import { KOS_METADATA } from '../utils/constants/kos';
 import fs from 'fs';
 import path from 'path';
 
