@@ -1,6 +1,7 @@
 import { depleteEnergyScheduler } from './bit';
 import { removeOpenedTweetIdsTodayScheduler } from './chest';
 import { updateClaimableCrumbsScheduler, updateClaimableXCookiesScheduler, updateDailyBonusResourcesGatheredScheduler, updateGatheringProgressAndDropResourceScheduler } from './island';
+import { checkDailyKOSRewardsScheduler, checkWeeklyKOSRewardsScheduler } from './kos';
 import { calculateWeeklySquadRankingAndAddSquadLeaderboardScheduler } from './squadLeaderboard';
 import { updateBeginnerRewardsDataScheduler, updateDailyLoginRewardsDataScheduler } from './user';
 
@@ -18,6 +19,9 @@ export const schedulers = async (): Promise<void> => {
         await updateBeginnerRewardsDataScheduler();
 
         await calculateWeeklySquadRankingAndAddSquadLeaderboardScheduler();
+
+        await checkDailyKOSRewardsScheduler();
+        await checkWeeklyKOSRewardsScheduler();
     } catch (err: any) {
         console.error('Error in schedulers:', err.message);
     }
