@@ -27,6 +27,8 @@ export interface KOSMetadataAttribute {
  * Represents the explicit ownership struct of a Key Of Salvation.
  */
 export interface KOSExplicitOwnership {
+    /** the token id of the key */
+    tokenId: number;
     /** the owner of the key */
     owner: string;
     /** the start timestamp of the ownership */

@@ -487,6 +487,7 @@ export const getWallets = async (twitterId: string): Promise<ReturnValue> => {
             },
         };
     } catch (err: any) {
+        console.log('error here', err);
         return {
             status: Status.ERROR,
             message: `(getWallets) ${err.message}`,
