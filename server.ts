@@ -84,7 +84,4 @@ app.listen(port, async () => {
     await mongoose.connect(mongoUri);
 
     await schedulers();
-
-    // fetch and store KOS metadata of all 5000 keys
-    await fetchAndStoreKOSMetadata(Array.from({ length: 5000 }, (_, i) => i + 1));
 });
