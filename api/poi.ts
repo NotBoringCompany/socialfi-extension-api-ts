@@ -742,7 +742,7 @@ export const sellItemsInPOIShop = async (
 
             // if new level is greater than the current level, we update the user's data
             // 1. set the new level
-            // 2. increment the `additionalPoints` to give the user in the leaderboard
+            // 2. add the `additionalPoints` to give the user in the leaderboard with the source `LeaderboardPointsSource.LEVELLING_UP`
             if (newLevel > currentLevel) {
                 userUpdateOperations.$set[`inGameData.level`] = newLevel;
                 additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
@@ -753,11 +753,16 @@ export const sellItemsInPOIShop = async (
                     userId: user._id,
                     username: user.twitterUsername,
                     twitterProfilePicture: user.twitterProfilePicture,
-                    pointsData: [{
-                        points: leaderboardPoints,
-                        source: LeaderboardPointsSource.RESOURCE_SELLING
-                    }],
-                    additionalPoints
+                    pointsData: [
+                        {
+                            points: leaderboardPoints,
+                            source: LeaderboardPointsSource.RESOURCE_SELLING
+                        },
+                        {
+                            points: additionalPoints,
+                            source: LeaderboardPointsSource.LEVELLING_UP
+                        }
+                    ],
                 }
             }
 

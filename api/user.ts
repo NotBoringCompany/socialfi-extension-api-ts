@@ -717,8 +717,11 @@ export const claimDailyRewards = async (twitterId: string, leaderboardName: stri
                                 points: reward.amount,
                                 source: LeaderboardPointsSource.DAILY_LOGIN_REWARDS,
                             },
+                            {
+                                points: additionalPoints,
+                                source: LeaderboardPointsSource.LEVELLING_UP,
+                            }
                         ],
-                        additionalPoints,
                     };
 
                     // if user is in a squad, add to squad's `totalSquadPoints`

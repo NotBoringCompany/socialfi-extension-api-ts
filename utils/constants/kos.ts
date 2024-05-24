@@ -77,7 +77,6 @@ export const KOS_WEEKLY_BENEFITS = (
     terraCapII: number,
     raftBooster60: number,
 } => {
-    const keysOwned = keys.length;
     // there are 3 auras, snow, lightning and smoke. check if the user has all 3 auras from all the keys (not for each key since they can only have 1 aura each)
     const hasAllAuras = keys.filter(key => key.attributes.find(attr => attr.traitType === 'Aura' && (attr.value === 'Snow' || attr.value === 'Lightning' || attr.value === 'Smoke'))).length === 3;
     // there are 3 houses, tradition, chaos and glory. check if the user has all 3 houses from all the keys (not for each key since they can only have 1 house each)
@@ -240,8 +239,8 @@ export const KOS_BENEFITS_POINTS_FORMULA = (
     const totalKeychainMultiplier = 1 + (keychainsOwned * 0.0006) + (superiorKeychainsOwned * 0.004);
 
     const keysOwned = keys.length;
-    const averageLuck = keys.reduce((acc, key) => acc + parseInt(key.attributes.find(attr => attr.traitType === 'Luck')?.value as string), 0) / keysOwned;
-    const averageLuckBoost = keys.reduce((acc, key) => acc + parseInt(key.attributes.find(attr => attr.traitType === 'Luck Boost')?.value as string), 0) / keysOwned;
+    const averageLuck = keys.length > 0 ? keys.reduce((acc, key) => acc + parseInt(key.attributes.find(attr => attr.traitType === 'Luck')?.value as string), 0) / keysOwned : 0;
+    const averageLuckBoost = keys.length > 0 ? keys.reduce((acc, key) => acc + parseInt(key.attributes.find(attr => attr.traitType === 'Luck Boost')?.value as string), 0) / keysOwned : 0;
 
     console.log('total keychain multiplier:', totalKeychainMultiplier);
 
