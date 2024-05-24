@@ -52,7 +52,6 @@ import setting from './routes/setting';
 import poap from './routes/poap';
 import squadLeaderboard from './routes/squadLeaderboard';
 import { schedulers } from './schedulers/schedulers';
-import { fetchAndStoreKOSMetadata } from './api/kos';
 
 app.use('/auth/twitter', twitterAuth);
 app.use('/auth/discord', discordAuth);
