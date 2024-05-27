@@ -305,6 +305,8 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                     } else {
                         userUpdateOperations.$push['inventory.items'] = { type: BoosterItem.GATHERING_PROGRESS_BOOSTER_25, amount };
                     }
+
+                    break;
                 // if default, return an error (shouldn't happen)
                 default:
                     return {
