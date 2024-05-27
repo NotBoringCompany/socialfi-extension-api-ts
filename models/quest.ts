@@ -2,6 +2,8 @@
  * QUEST-RELATED MODELS
  ****************/
 
+import { BoosterItem } from './booster';
+
 /**
  * Represents a Quest.
  */
@@ -73,6 +75,7 @@ export enum QuestRewardType {
     X_COOKIES = 'xCookies',
     FOOD = 'Food',
     BIT = 'Bit',
+    GATHERING_PROGRESS_BOOSTER_25 = BoosterItem.GATHERING_PROGRESS_BOOSTER_25
 }
 
 /**

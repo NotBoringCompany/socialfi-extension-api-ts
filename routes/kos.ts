@@ -19,6 +19,6 @@ router.get('/get_owned_key_ids/:twitterId', async (req, res) => {
             message: err.message
         })
     }
-})
+});
 
 export default router;

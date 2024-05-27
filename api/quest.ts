@@ -13,6 +13,7 @@ import { RANDOMIZE_GENDER, getBitStatsModifiersFromTraits, randomizeBitTraits, r
 import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
 import { ObtainMethod } from '../models/obtainMethod';
 import { Modifier } from '../models/modifier';
+import { BoosterItem } from '../models/booster';
 
 /**
  * Adds a quest to the database. Requires admin key.
@@ -294,6 +295,16 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                     obtainedRewards.push({ type: rewardType, amount, data: bitData });
 
                     break;
+                case QuestRewardType.GATHERING_PROGRESS_BOOSTER_25:
+                    // check if the user's `inventory.items` contain a gathering progress booster 25%
+                    const boosterIndex = userInventory.items.findIndex(item => item.type === BoosterItem.GATHERING_PROGRESS_BOOSTER_25);
+
+                    // if the user has the booster, increment the amount; otherwise, push the booster into the inventory
+                    if (boosterIndex !== -1) {
+                        userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = amount;
+                    } else {
+                        userUpdateOperations.$push['inventory.items'] = { type: BoosterItem.GATHERING_PROGRESS_BOOSTER_25, amount };
+                    }
                 // if default, return an error (shouldn't happen)
                 default:
                     return {
