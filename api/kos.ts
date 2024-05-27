@@ -9,14 +9,10 @@ import { KOS_DAILY_BENEFITS, KOS_WEEKLY_BENEFITS } from '../utils/constants/kos'
 import { ExtendedXCookieData, XCookieSource } from '../models/user';
 import { Item } from '../models/item';
 import { BoosterItem } from '../models/booster';
-import mongoose from 'mongoose';
-import * as dotenv from 'dotenv';
 import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
 import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
 import { BitOrbType } from '../models/bitOrb';
 import { TerraCapsulatorType } from '../models/terraCapsulator';
-
-dotenv.config();
 
 /**
  * Checks, for each user who owns at least 1 Key of Salvation, if they have owned each key for at least 1 day (from 23:59 UTC the previous day to 23:59 UTC now).
@@ -273,8 +269,6 @@ export const checkDailyKOSRewards = async (): Promise<ReturnValue> => {
  */
 export const checkWeeklyKOSRewards = async (): Promise<ReturnValue> => {
     try {
-        await mongoose.connect(process.env.MONGODB_URI as string);
-
         const leaderboard = await LeaderboardModel.findOne({ name: 'Season 0' }).lean();
         const latestSquadLeaderboard = await SquadLeaderboardModel.findOne().sort({ week: -1 }).lean();
 
