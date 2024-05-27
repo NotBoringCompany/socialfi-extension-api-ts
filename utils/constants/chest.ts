@@ -17,27 +17,27 @@ export const RANDOMIZE_CHEST_ITEM = (): {
     const rand = Math.floor(Math.random() * 10000) + 1;
 
     switch (true) {
-        // 85% chance for food
-        case rand < 8501:
+        // 100% chance for resource (Season 0)
+        case rand < 10000:
             // randomize the food with probabilities
-            // 65% chance for apple
-            // 25% chance for chocolate
-            // 9% chance for juice
-            // 1% chance for burger
+            // 50% chance for apple
+            // 30% chance for chocolate
+            // 15% chance for juice
+            // 5% chance for burger
             const foodRand = Math.floor(Math.random() * 100) + 1;
 
             switch (true) {
-                case foodRand < 66:
+                case foodRand < 51:
                     return { item: FoodType.CANDY, amount: 1}
-                case foodRand < 91:
+                case foodRand < 81:
                     return { item: FoodType.CHOCOLATE, amount: 1}
-                case foodRand < 100:
+                case foodRand < 96:
                     return { item: FoodType.JUICE, amount: 1}
                 default:
                     return { item: FoodType.BURGER, amount: 1}
             }
-        // 14% chance for resource
-        case rand < 9985:
+        // 0% chance for resource (Season 0)
+        case rand < 0:
             // randomize the resource with probabilities
             // 80% chance of a common resource of any type
             // 15% chance of an uncommon resource of any type
@@ -65,13 +65,13 @@ export const RANDOMIZE_CHEST_ITEM = (): {
 
                     return { item: rareResource.type, amount: 1 }
             }
-        // 0.98% chance for xCookies
-        case rand < 9999:
+        // 0% chance for xCookies (Season 0)
+        case rand < 0:
             return { item: 'xCookies', amount: 10 }
-        // 0.01% chance for Terra Capsulator
-        case rand < 10000:
+        // 0% chance for Terra Capsulator (Season 0)
+        case rand < 0:
             return { item: TerraCapsulatorType.TERRA_CAPSULATOR_I, amount: 1 }
-        // 0.01% chance for Bit Orb
+        // 0% chance for Bit Orb (Season 0)
         default:
             return { item: BitOrbType.BIT_ORB_I, amount: 1 }
     }
