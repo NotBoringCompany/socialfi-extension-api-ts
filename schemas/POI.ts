@@ -19,7 +19,9 @@ export const POISchema = new mongoose.Schema({
             _id: false,
             name: String,
             buyableAmount: { type: mongoose.SchemaTypes.Mixed },
+            currentBuyableAmount: { type: mongoose.SchemaTypes.Mixed },
             sellableAmount: { type: mongoose.SchemaTypes.Mixed },
+            currentSellableAmount: { type: mongoose.SchemaTypes.Mixed },
             buyingPrice: {
                 _id: false,
                 xCookies: { type: mongoose.SchemaTypes.Mixed },

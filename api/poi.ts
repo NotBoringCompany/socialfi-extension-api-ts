@@ -13,6 +13,44 @@ import { ReturnValue, Status } from '../utils/retVal';
 import { updateReferredUsersData } from './user';
 
 /**
+ * Resets the `currentBuyableAmount` and `currentSellableAmount` of all global items in all POI shops every day at 23:59 UTC.
+ * 
+ * Called by a scheduler.
+ */
+export const resetGlobalItemsDailyBuyableAndSellableAmount = async (): Promise<void> => {
+    try {
+        const allPOIs = await POIModel.find({}).lean();
+
+        const bulkWriteOperations = allPOIs.map(poi => {
+            const globalItems = poi.shop.globalItems;
+
+            const updatedGlobalItems = globalItems.map(item => {
+                item.currentBuyableAmount = item.buyableAmount;
+                item.currentSellableAmount = item.sellableAmount;
+
+                return item;
+            });
+
+            return {
+                updateOne: {
+                    filter: { name: poi.name },
+                    update: {
+                        'shop.globalItems': updatedGlobalItems
+                    }
+                }
+            }
+        });
+
+        // execute the bulk write operations
+        await POIModel.bulkWrite(bulkWriteOperations);
+
+        console.log('resetGlobalItemsDailyBuyableAndSellableAmount: Successfully reset all global items in all POI shops.');
+    } catch (err: any) {
+        console.error('Error in resetGlobalItemsDailyBuyableAndSellableAmount:', err.message);
+    }
+}
+
+/**
  * Adds a new POI to the database. Only callable by admin.
  */
 export const addPOI = async (
@@ -587,9 +625,9 @@ export const sellItemsInPOIShop = async (
 
         // check if:
         // 1. 1 or more items are not available in the POI shop (cannot be found)
-        // 2. 1 or more items have a sellableAmount of 0
-        // 3. 1 or more items have a sellableAmount less than the amount the user wants to sell
-        // 4. check if despite having a sellableAmount > 0 if the `leaderboardPoints` is unavailable.
+        // 2. 1 or more items have a currentSellableAmount of 0
+        // 3. 1 or more items have a currentSellableAmount less than the amount the user wants to sell
+        // 4. check if despite having a currentSellableAmount > 0 if the `leaderboardPoints` is unavailable.
         // 5. the user doesn't have the amount of items they want to sell (for any of the specified items)
         // if one of these conditions are met, return an error.
 
@@ -610,7 +648,7 @@ export const sellItemsInPOIShop = async (
 
             // if the item is a global item, check if `sellableAmount` is 0.
             // if it is, return true.
-            if (globalItem && globalItem.sellableAmount === 0) {
+            if (globalItem && globalItem.currentSellableAmount === 0) {
                 return true;
             }
 
@@ -1059,7 +1097,7 @@ export const sellItemsInPOIShop = async (
 
             // now, we update the shop's data.
             // we check if it's a global item.
-            // if it's a global item, we find the index of the item in the `globalItems` array and reduce the `sellableAmount` of that item by the amount the user wants to sell.
+            // if it's a global item, we find the index of the item in the `globalItems` array and reduce the `currentSellableAmount` of that item by the amount the user wants to sell.
             // if it's a player item, we:
             // 1. find the index of the item in the `playerItems` array.
             // 2. check if the user exists in the `userTransactionData`. if not, we add a new one.
@@ -1073,7 +1111,7 @@ export const sellItemsInPOIShop = async (
             if (globalItem) {
                 const globalItemIndex = globalItems.findIndex(globalItem => globalItem.name === item.item);
 
-                poiUpdateOperations.$inc[`shop.globalItems.${globalItemIndex}.sellableAmount`] = -item.amount;
+                poiUpdateOperations.$inc[`shop.globalItems.${globalItemIndex}.currentSellableAmount`] = -item.amount;
             } else if (playerItem) {
                 const playerItemIndex = playerItems.findIndex(playerItem => playerItem.name === item.item);
                 const userTransactionDataIndex = playerItem.userTransactionData.findIndex(transactionData => transactionData.userId === user._id);
@@ -1260,9 +1298,9 @@ export const buyItemsInPOIShop = async (
 
         // check if:
         // 1. 1 or more items are not available in the POI shop (cannot be found)
-        // 2. 1 or more items have a buyableAmount of 0
-        // 3. 1 or more items have a buyableAmount less than the amount the user wants to buy
-        // 4. depending on the payment method, check if despite having a buyableAmount > 0 if the xCookies/cookie crumbs value of the item is unavailable.
+        // 2. 1 or more items have a currentBuyableAmount of 0
+        // 3. 1 or more items have a currentBuyableAmount less than the amount the user wants to buy
+        // 4. depending on the payment method, check if despite having a currentBuyableAmount > 0 if the xCookies/cookie crumbs value of the item is unavailable.
         // 5. the user doesn't have the amount of xCookies/cookie crumbs they need to buy the item (for any of the specified items)
         // if one of these conditions are met, return an error.
         const invalidItems = items.filter(item => {
@@ -1279,9 +1317,9 @@ export const buyItemsInPOIShop = async (
 
             const itemData = globalItem ? globalItem : playerItem;
 
-            // if the item is a global item, check if `buyableAmount` is 0.
+            // if the item is a global item, check if `currentBuyableAmount` is 0.
             // if it is, return true.
-            if (globalItem && globalItem.buyableAmount === 0) {
+            if (globalItem && globalItem.currentBuyableAmount === 0) {
                 return true;
             }
 
@@ -1440,7 +1478,7 @@ export const buyItemsInPOIShop = async (
 
             // now, we update the shop's data.
             // we check if it's a global item.
-            // if it's a global item, we find the index of the item in the `globalItems` array and reduce the `buyableAmount` of that item by the amount the user wants to buy.
+            // if it's a global item, we find the index of the item in the `globalItems` array and reduce the `currentBuyableAmount` of that item by the amount the user wants to buy.
             // if it's a player item, we:
             // 1. find the index of the item in the `playerItems` array.
             // 2. check if the user exists in the `userTransactionData`. if not, we add a new one.
@@ -1454,7 +1492,7 @@ export const buyItemsInPOIShop = async (
             if (globalItem) {
                 const globalItemIndex = globalItems.findIndex(globalItem => globalItem.name === item.item);
 
-                poiUpdateOperations.$inc[`shop.globalItems.${globalItemIndex}.buyableAmount`] = -item.amount;
+                poiUpdateOperations.$inc[`shop.globalItems.${globalItemIndex}.currentBuyableAmount`] = -item.amount;
             } else if (playerItem) {
                 const playerItemIndex = playerItems.findIndex(playerItem => playerItem.name === item.item);
                 const userTransactionDataIndex = playerItem.userTransactionData.findIndex(transactionData => transactionData.userId === user._id);

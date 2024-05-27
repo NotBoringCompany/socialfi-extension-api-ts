@@ -54,6 +54,11 @@ export interface POIShopGlobalItem {
      * if 'infinite', then there is no limit to the amount that can be bought until otherwise specified.
      */
     buyableAmount: number | 'infinite';
+    /**
+     * the current buyable amount. this value decreases when users buy this item and gets reset to `buyableAmount` 
+     * when the shop resets each day at 00:00 UTC.
+     */
+    currentBuyableAmount: number | 'infinite';
     /** 
      * the amount of this item that can be sold (by everyone) 
      * e.g. only 50 can be sold; user 1 sells 40, user 2 sells 10. no other user can sell anymore.
@@ -61,6 +66,11 @@ export interface POIShopGlobalItem {
      * if 'infinite', then there is no limit to the amount that can be bought until otherwise specified.
      */
     sellableAmount: number | 'infinite';
+    /**
+     * the current sellable amount. this value decreases when users sell this item and gets reset to `sellableAmount` 
+     * when the shop resets each day at 00:00 UTC.
+     */
+    currentSellableAmount: number | 'infinite';
     /** the item's buying price (if the user wants to buy 1 of this item) */
     buyingPrice: POIShopItemBuyingPrice;
     /** the item's selling price (what the user can get if they sell 1 of this item) */
