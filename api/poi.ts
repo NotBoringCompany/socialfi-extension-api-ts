@@ -1507,8 +1507,12 @@ export const buyItemsInPOIShop = async (
                 }
             }
 
-            // deduct the xCookies/cookie crumbs from the user's inventory.
-            userUpdateOperations.$inc[`inventory.${paymentChoice}`] = -totalPayment;
+            // if payment choice is xCookies, deduct from `user.inventory.xCookieData.currentXCookies`
+            if (paymentChoice === 'xCookies') {
+                userUpdateOperations.$inc[`inventory.xCookieData.currentXCookies`] = -totalPayment;
+            } else if (paymentChoice === 'cookieCrumbs') {
+                userUpdateOperations.$inc[`inventory.cookieCrumbs`] = -totalPayment;
+            }
         });
 
         // execute the transactions
