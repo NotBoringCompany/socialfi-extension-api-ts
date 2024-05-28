@@ -1323,6 +1323,11 @@ export const buyItemsInPOIShop = async (
                 return true;
             }
 
+            // also check if the amount to buy exceeds the current buyable amount.
+            if (globalItem && globalItem.currentBuyableAmount !== 'infinite' && globalItem.currentBuyableAmount as number < item.amount) {
+                return true;
+            }
+
             // if the item is a player item, check if:
             // 1. the buyableAmount is less than or equal to 0.
             // 2. if not, check if the user exists in `userTransactionData`.
