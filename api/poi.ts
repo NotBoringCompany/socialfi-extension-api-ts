@@ -878,7 +878,8 @@ export const sellItemsInPOIShop = async (
                 return acc;
             }, 0);
 
-            console.log('total leaderboard points: ', totalLeaderboardPoints + leaderboardPoints);
+            console.log('leaderboard points: ', leaderboardPoints);
+            console.log('total leaderboard points: ', totalLeaderboardPoints);
 
             const newLevel = GET_SEASON_0_PLAYER_LEVEL(leaderboardPoints + totalLeaderboardPoints);
 
