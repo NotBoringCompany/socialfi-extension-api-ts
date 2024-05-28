@@ -1112,7 +1112,10 @@ export const sellItemsInPOIShop = async (
             if (globalItem) {
                 const globalItemIndex = globalItems.findIndex(globalItem => globalItem.name === item.item);
 
-                poiUpdateOperations.$inc[`shop.globalItems.${globalItemIndex}.currentSellableAmount`] = -item.amount;
+                // if the item has a `currentSellableAmount` of 'infinite', we don't decrement it.
+                if (globalItem.currentSellableAmount !== 'infinite') {
+                    poiUpdateOperations.$inc[`shop.globalItems.${globalItemIndex}.currentSellableAmount`] = -item.amount;
+                }
             } else if (playerItem) {
                 const playerItemIndex = playerItems.findIndex(playerItem => playerItem.name === item.item);
                 const userTransactionDataIndex = playerItem.userTransactionData.findIndex(transactionData => transactionData.userId === user._id);
