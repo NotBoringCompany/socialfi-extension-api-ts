@@ -1235,6 +1235,7 @@ export const sellItemsInPOIShop = async (
             }
         }
     } catch (err: any) {
+        console.log('error from sellItemsInPOIShop: ', err.message);
         return {
             status: Status.ERROR,
             message: `(sellItemsInPOIShop) ${err.message}`
