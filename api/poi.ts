@@ -1298,7 +1298,7 @@ export const buyItemsInPOIShop = async (
 
         // check if:
         // 1. 1 or more items are not available in the POI shop (cannot be found)
-        // 2. 1 or more items have a currentBuyableAmount of 0
+        // 2. 1 or more items have a currentBuyableAmount of less than or equal to 0
         // 3. 1 or more items have a currentBuyableAmount less than the amount the user wants to buy
         // 4. depending on the payment method, check if despite having a currentBuyableAmount > 0 if the xCookies/cookie crumbs value of the item is unavailable.
         // 5. the user doesn't have the amount of xCookies/cookie crumbs they need to buy the item (for any of the specified items)
@@ -1319,17 +1319,17 @@ export const buyItemsInPOIShop = async (
 
             // if the item is a global item, check if `currentBuyableAmount` is 0.
             // if it is, return true.
-            if (globalItem && globalItem.currentBuyableAmount === 0) {
+            if (globalItem && globalItem.currentBuyableAmount !== 'infinite' && globalItem.currentBuyableAmount <= 0) {
                 return true;
             }
 
             // if the item is a player item, check if:
-            // 1. the buyableAmount is 0.
+            // 1. the buyableAmount is less than or equal to 0.
             // 2. if not, check if the user exists in `userTransactionData`.
             // 3. if the user exists, check how many of this item the user has bought so far via `boughtAmount`.
             // 4. if `buyableAmount` - `boughtAmount` is less than the amount the user wants to buy, return true.
             if (playerItem) {
-                if (playerItem.buyableAmount === 0) {
+                if (playerItem.buyableAmount !== 'infinite' && playerItem.buyableAmount <= 0) {
                     return true;
                 }
 
