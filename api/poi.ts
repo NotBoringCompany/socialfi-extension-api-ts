@@ -737,6 +737,8 @@ export const sellItemsInPOIShop = async (
             }
         }
 
+        console.log('items are valid.');
+
         // calculate the total leaderboard points to give to the user per item.
         // if a leaderboard is not specified, we give the points to the most recent leaderboard.
         // if a leaderboard is specified, we give the points to that leaderboard.
@@ -752,6 +754,8 @@ export const sellItemsInPOIShop = async (
             // at this point, no need to worry if `leaderboardPoints` is 'unavailable' because it was already checked beforehand.
             return acc + (item.amount * (itemData.sellingPrice.leaderboardPoints as number));
         }, 0);
+
+        console.log('leaderboard points:', leaderboardPoints);
 
         // check if leaderboard is specified
         // if not, we find the most recent one.
