@@ -320,14 +320,14 @@ export const bitTraits: BitTraitData[] = [
     },
     {
         trait: BitTrait.FRUGAL,
-        effect: '+10% more energy when consuming food',
+        effect: '+10% energy when consuming food',
         rarity: BitTraitRarity.COMMON,
         category: BitTraitCategory.FOOD_CONSUMPTION,
         subcategory: BitTraitSubCategory.POSITIVE
     },
     {
         trait: BitTrait.HUNGRY,
-        effect: '-10% less energy when consuming food',
+        effect: '-10% energy when consuming food',
         rarity: BitTraitRarity.COMMON,
         category: BitTraitCategory.FOOD_CONSUMPTION,
         subcategory: BitTraitSubCategory.NEGATIVE
