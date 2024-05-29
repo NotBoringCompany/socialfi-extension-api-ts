@@ -952,10 +952,10 @@ export const claimDailyRewards = async (twitterId: string, leaderboardName: stri
         // check if the user update operations included a level up
         const setUserLevel = userUpdateOperations.$set['inGameData.level'];
 
-        // if it included a level, check if it's set to 3.
+        // if it included a level, check if it's set to 4.
         // if it is, check if the user has a referrer.
-        // the referrer will then have this user's `hasReachedLevel3` set to true.
-        if (setUserLevel && setUserLevel === 3) {
+        // the referrer will then have this user's `hasReachedLevel4` set to true.
+        if (setUserLevel && setUserLevel === 4) {
             // check if the user has a referrer
             const referrerId: string | null = user.inviteCodeData.referrerId;
 
@@ -1167,7 +1167,7 @@ export const linkInviteCode = async (twitterId: string, code: string): Promise<R
                             userId: user._id,
                             username: user.twitterUsername,
                             referredTimestamp: Math.floor(Date.now() / 1000),
-                            hasReachedLevel3: false,
+                            hasReachedLevel4: false,
                         },
                     },
                 }
@@ -1517,7 +1517,7 @@ export const updateBeginnerRewardsData = async (): Promise<void> => {
 };
 
 /**
- * (Season 0) Updates and sets the referred user's `hasReachedLevel3` of the referrer's `referredUsersData` to true.
+ * (Season 0) Updates and sets the referred user's `hasReachedLevel4` of the referrer's `referredUsersData` to true.
  *
  * Additionally, give the referrer their referral rewards to claim if applicable.
  */
@@ -1552,22 +1552,22 @@ export const updateReferredUsersData = async (referrerUserId: string, referredUs
             };
         }
 
-        // at this point, the level of the referred user should already be set to level 3 from the parent function.
+        // at this point, the level of the referred user should already be set to level 4 from the parent function.
         // we double check it here just in case.
-        if (referredUser.inGameData.level !== 3) {
+        if (referredUser.inGameData.level !== 4) {
             return {
                 status: Status.BAD_REQUEST,
-                message: `(updateReferredUsersData) Referred user is not level 3.`,
+                message: `(updateReferredUsersData) Referred user is not level 4.`,
             };
         }
 
-        // set `hasReachedLevel3` to true
-        referrerUpdateOperations.$set[`referralData.referredUsersData.${referredUserIndex}.hasReachedLevel3`] = true;
+        // set `hasReachedLevel4` to true
+        referrerUpdateOperations.$set[`referralData.referredUsersData.${referredUserIndex}.hasReachedLevel4`] = true;
 
         // now check the amount of referred users the referrer has that reached level 3.
         // we add 1 because the set operation for the newest referred user hasn't been executed yet.
         const totalReferredUsersReachedLevel3 =
-            (referrer.referralData.referredUsersData as ReferredUserData[]).filter((data) => data.hasReachedLevel3).length + 1;
+            (referrer.referralData.referredUsersData as ReferredUserData[]).filter((data) => data.hasReachedLevel4).length + 1;
 
         // get the referral rewards based on the total referred users that reached level 3
         const referralRewards = GET_SEASON_0_REFERRAL_REWARDS(totalReferredUsersReachedLevel3);

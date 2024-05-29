@@ -54,8 +54,8 @@ export interface ReferredUserData {
     username: string;
     /** when the user was referred */
     referredTimestamp: number;
-    /** if the user has reached level 3 (requirement to receive referral rewards from this user) */
-    hasReachedLevel3: boolean;
+    /** if the user has reached level 4 (requirement to receive referral rewards from this user) */
+    hasReachedLevel4: boolean;
 }
 
 /**

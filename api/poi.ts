@@ -1211,10 +1211,10 @@ export const sellItemsInPOIShop = async (
         // check if the user update operations included a level up
         const setUserLevel = userUpdateOperations.$set['inGameData.level'];
 
-        // if it included a level, check if it's set to 3.
+        // if it included a level, check if it's set to 4.
         // if it is, check if the user has a referrer.
-        // the referrer will then have this user's `hasReachedLevel3` set to true.
-        if (setUserLevel && setUserLevel === 3) {
+        // the referrer will then have this user's `hasReachedLevel4` set to true.
+        if (setUserLevel && setUserLevel === 4) {
             // check if the user has a referrer
             const referrerId: string | null = user.inviteCodeData.referrerId;
 
