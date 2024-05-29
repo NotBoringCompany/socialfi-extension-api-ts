@@ -137,27 +137,27 @@ export const GET_SEASON_0_REFERRAL_REWARDS = (userCount: number): ReferralReward
  * Gets a user's player level based on the amount of points they have on the Season 0 leaderboard.
  */
 export const GET_SEASON_0_PLAYER_LEVEL = (points: number): number => {
-    if (points >= 0 && points <= 999) {
+    if (points >= 0 && points <= 499) {
         return 1;
-    } else if (points >= 1000 && points <= 2499) {
+    } else if (points >= 500 && points <= 999) {
         return 2;
-    } else if (points >= 2500 && points <= 4499) {
+    } else if (points >= 1000 && points <= 2499) {
         return 3;
-    } else if (points >= 4500 && points <= 6999) {
+    } else if (points >= 2500 && points <= 4499) {
         return 4;
-    } else if (points >= 7000 && points <= 9999) {
+    } else if (points >= 4500 && points <= 6999) {
         return 5;
-    } else if (points >= 10000 && points <= 13499) {
+    } else if (points >= 7000 && points <= 9999) {
         return 6;
-    } else if (points >= 13500 && points <= 17499) {
+    } else if (points >= 10000 && points <= 13499) {
         return 7;
-    } else if (points >= 17500 && points <= 21999) {
+    } else if (points >= 13500 && points <= 17499) {
         return 8;
-    } else if (points >= 22000 && points <= 26999) {
+    } else if (points >= 17500 && points <= 21999) {
         return 9;
     } else {
-        // for every 5000 points obtained after 27000, the player level increases by 1
-        return Math.floor((points - 27000) / 5000) + 10;
+        // for every 5000 points obtained after 22000, the player level increases by 1
+        return Math.floor((points - 22000) / 5000) + 10;
     }
 }
 
