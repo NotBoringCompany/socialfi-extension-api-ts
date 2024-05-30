@@ -648,7 +648,7 @@ export const sellItemsInPOIShop = async (
 
             // if the item is a global item, check if `sellableAmount` is 0.
             // if it is, return true.
-            if (globalItem && globalItem.currentSellableAmount === 0) {
+            if (globalItem && globalItem.currentSellableAmount !== 'infinite' && globalItem.currentSellableAmount <= 0) {
                 return true;
             }
 
@@ -658,7 +658,7 @@ export const sellItemsInPOIShop = async (
             // 3. if the user exists, check how many of this item the user has sold so far via `soldAmount`.
             // 4. if `sellableAmount` - `soldAmount` is less than the amount the user wants to sell, return true.
             if (playerItem) {
-                if (playerItem.sellableAmount === 0) {
+                if (playerItem.sellableAmount !== 'infinite' && playerItem.sellableAmount <= 0) {
                     return true;
                 }
 
