@@ -2027,7 +2027,7 @@ export const applyGatheringProgressBooster = async (
             }
 
             // update the island's final gathering progress after moduloing it by 100
-            islandUpdateOperations.$set['islandResourceStats.gatheringProgress'] = gatheringProgress % 100;
+            islandUpdateOperations.$set['islandResourceStats.gatheringProgress'] = finalNonModuloGatheringProgress % 100;
 
             // check if there is only `boosters.length` of this booster left. if yes, remove the booster from the user's inventory.
             // if not, decrement the booster by `boosters.length`.
