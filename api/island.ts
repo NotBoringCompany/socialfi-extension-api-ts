@@ -2065,7 +2065,7 @@ export const applyGatheringProgressBooster = async (
                 data: {
                     gatheringProgressData: {
                         prevGatheringProgress: gatheringProgress,
-                        finalGatheringProgress: gatheringProgress % 100,
+                        finalGatheringProgress: finalNonModuloGatheringProgress % 100,
                         resourcesDropped: resourcesToDrop
                     },
                     firstBooster
