@@ -516,10 +516,8 @@ export const depleteEnergy = async (): Promise<void> => {
 
             const depletionRate = baseDepletionRate * energyRateMultiplier;
 
-            // calculate the new energy (can go negative)
-            // if current energy is already 0 or lower, `newEnergy` will be the same.
-            const newEnergy =
-                currentEnergy <= 0 ? currentEnergy : currentEnergy - depletionRate;
+            // calculate the new energy (if currentEnergy - depletionRate is less than 0, set it to 0)
+            const newEnergy = Math.max(currentEnergy - depletionRate, 0);
 
             console.log(
                 `(depleteEnergy) Bit ${bit.bitId} - current energy is less than 0? ${currentEnergy <= 0
