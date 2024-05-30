@@ -1785,7 +1785,7 @@ export const updateClaimableXCookies = async (): Promise<void> => {
 export const applyGatheringProgressBooster = async (
     twitterId: string,
     islandId: number,
-    booster: BoosterItem
+    boosters: BoosterItem[]
 ): Promise<ReturnValue> => {
     try {
         const user = await UserModel.findOne({ twitterId }).lean();
@@ -1845,13 +1845,53 @@ export const applyGatheringProgressBooster = async (
             }
         }
 
-        // check if the user owns the booster
-        const boosterIndex = (user.inventory.items as Item[]).findIndex(item => item.type === booster);
+        // check if each booster is the same (e.g. if the user wants to Gathering Progress Booster 25%, all boosters must be the same)
+        const firstBooster = boosters[0];
+        const allSameBooster = boosters.every(booster => booster === firstBooster);
+
+        if (!allSameBooster) {
+            return {
+                status: Status.ERROR,
+                message: `(applyGatheringProgressBooster) All boosters must be the same.`
+            }
+        }
+
+        // require boosters to only be Gathering Progress Boosters
+        const allGatheringProgressBoosters = boosters.every(booster => booster.includes('Gathering Progress Booster'));
+
+        if (!allGatheringProgressBoosters) {
+            return {
+                status: Status.ERROR,
+                message: `(applyGatheringProgressBooster) All boosters must be Gathering Progress Boosters.`
+            }
+        }
+
+        // if booster is 10%, 25%, 50%, 100%, 200% or 300%, allow up to 10 of the same booster to be applied.
+        // if booster is 500%, 1000%, 2000% or 3000%, only allow 1 of the same booster to be applied.
+        const allowedAmount = [10, 25, 50, 100, 200, 300].includes(parseFloat(firstBooster.split(' ')[3])) ? 10 : 1;
+
+        if (boosters.length > allowedAmount) {
+            return {
+                status: Status.ERROR,
+                message: `(applyGatheringProgressBooster) Only ${allowedAmount} of the same booster can be applied.`
+            }
+        }
+
+        // check if the user owns the booster (by checking the first booster, because at this point, all boosters are already assumbed to be the same)
+        const boosterIndex = (user.inventory.items as Item[]).findIndex(item => item.type === firstBooster);
 
         if (boosterIndex === -1) {
             return {
                 status: Status.ERROR,
                 message: `(applyGatheringProgressBooster) User does not own the booster.`
+            }
+        }
+
+        // check if the user has enough boosters
+        if ((user.inventory.items as Item[])[boosterIndex].amount < boosters.length) {
+            return {
+                status: Status.ERROR,
+                message: `(applyGatheringProgressBooster) User does not have enough boosters.`
             }
         }
 
@@ -1866,8 +1906,11 @@ export const applyGatheringProgressBooster = async (
 
         console.log(`resources left for island ${island.islandId}: `, resourcesLeft);
 
-        // boosters will be something like 'Gathering Progress Booster 200%', so we need to get the percentage
-        const boosterPercentage = parseFloat(booster.split(' ')[3]);
+        // boosters will be something like 'Gathering Progress Booster 200%', so we need to get the base percentage (of the first booster, because all boosters are the same)
+        const baseBoosterPercentage = parseFloat(firstBooster.split(' ')[3]);
+
+        // get the total booster percentage (e.g. if there are 3 200% boosters, the total booster percentage will be 600%)
+        const boosterPercentage = baseBoosterPercentage * boosters.length;
 
         // if the booster is less than 100, get the current `gatheringProgress` of the island.
         if (boosterPercentage < 100) {
@@ -1893,12 +1936,12 @@ export const applyGatheringProgressBooster = async (
                 // reset the gathering progress back to 0 + the remaining overflow of %
                 islandUpdateOperations.$set['islandResourceStats.gatheringProgress'] = finalGatheringProgress;
 
-                // check if there is only 1 of this booster left. if yes, remove the booster from the user's inventory.
-                // if not, decrement the booster by 1.
-                if ((user.inventory.items as Item[])[boosterIndex].amount === 1) {
-                    userUpdateOperations.$pull[`inventory.items`] = { type: booster };
+                // check if there is only `boosters.length` of this booster left. if yes, remove the booster from the user's inventory.
+                // if not, decrement the booster by `boosters.length`.
+                if ((user.inventory.items as Item[])[boosterIndex].amount === boosters.length) {
+                    userUpdateOperations.$pull[`inventory.items`] = { type: firstBooster };
                 } else {
-                    userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = -1;
+                    userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = -boosters.length;
                 }
 
                 // execute the update operations
@@ -1928,19 +1971,19 @@ export const applyGatheringProgressBooster = async (
                             finalGatheringProgress,
                             resourcesDropped: 1
                         },
-                        booster
+                        firstBooster
                     }
                 }
             // if not, just increment the gathering progress by the booster percentage and deduct the booster from the user's inventory.
             } else {
                 islandUpdateOperations.$inc['islandResourceStats.gatheringProgress'] = boosterPercentage;
 
-                // check if there is only 1 of this booster left. if yes, remove the booster from the user's inventory.
-                // if not, decrement the booster by 1.
-                if ((user.inventory.items as Item[])[boosterIndex].amount === 1) {
-                    userUpdateOperations.$pull[`inventory.items`] = { type: booster };
+                // check if there is only `boosters.length` of this booster left. if yes, remove the booster from the user's inventory.
+                // if not, decrement the booster by `boosters.length`.
+                if ((user.inventory.items as Item[])[boosterIndex].amount === boosters.length) {
+                    userUpdateOperations.$pull[`inventory.items`] = { type: firstBooster };
                 } else {
-                    userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = -1;
+                    userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = -boosters.length;
                 }
 
                 // execute the update operations
@@ -1957,7 +2000,7 @@ export const applyGatheringProgressBooster = async (
                             prevGatheringProgress: gatheringProgress,
                             finalGatheringProgress: gatheringProgress + boosterPercentage
                         },
-                        booster
+                        firstBooster
                     }
                 }
             }
@@ -1986,12 +2029,12 @@ export const applyGatheringProgressBooster = async (
             // update the island's final gathering progress after moduloing it by 100
             islandUpdateOperations.$set['islandResourceStats.gatheringProgress'] = gatheringProgress % 100;
 
-            // check if there is only 1 of this booster left. if yes, remove the booster from the user's inventory.
-            // if not, decrement the booster by 1.
-            if ((user.inventory.items as Item[])[boosterIndex].amount === 1) {
-                userUpdateOperations.$pull[`inventory.items`] = { type: booster };
+            // check if there is only `boosters.length` of this booster left. if yes, remove the booster from the user's inventory.
+            // if not, decrement the booster by `boosters.length`.
+            if ((user.inventory.items as Item[])[boosterIndex].amount === boosters.length) {
+                userUpdateOperations.$pull[`inventory.items`] = { type: firstBooster };
             } else {
-                userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = -1;
+                userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = -boosters.length;
             }
 
             // update the island's `lastUpdatedGatheringProgress` to the current time
@@ -2025,7 +2068,7 @@ export const applyGatheringProgressBooster = async (
                         finalGatheringProgress: gatheringProgress % 100,
                         resourcesDropped: resourcesToDrop
                     },
-                    booster
+                    firstBooster
                 }
             }
         }
