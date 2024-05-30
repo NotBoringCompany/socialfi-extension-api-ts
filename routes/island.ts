@@ -428,7 +428,7 @@ router.get('/get_evolution_resource_drop_chances_diff/:islandId', async (req, re
 });
 
 router.post('/apply_gathering_progress_booster', async (req, res) => {
-    const { islandId, booster } = req.body;
+    const { islandId, boosters } = req.body;
 
     try {
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'apply_gathering_progress_booster');
@@ -440,7 +440,7 @@ router.post('/apply_gathering_progress_booster', async (req, res) => {
             })
         }
 
-        const { status, message, data } = await applyGatheringProgressBooster(validateData?.twitterId, islandId, booster);
+        const { status, message, data } = await applyGatheringProgressBooster(validateData?.twitterId, islandId, boosters);
 
         mixpanel.track('Apply Gathering Booster', {
             distinct_id: validateData?.twitterId,
