@@ -1,13 +1,20 @@
 import { KOSAuraTypes, KOSHouseTypes, KOSMetadata, KOSPillarTypes, KOSPodiumTypes } from '../../models/kos';
 
 /** represents the current pillar rotation where, if a user obtains X amount of keys with this pillar, they get benefits. */
-const CURRENT_PILLAR_ROTATION: KOSPillarTypes = KOSPillarTypes.PILLAR_OF_ETERNITY;
+export const CURRENT_PILLAR_ROTATION: KOSPillarTypes = KOSPillarTypes.PILLAR_OF_ETERNITY;
 /** represents the current podium rotation where, if a user obtains X amount of keys with this podium, they get benefits. */
-const CURRENT_PODIUM_ROTATION: KOSPodiumTypes = KOSPodiumTypes.TIMELESS_TRIUNE;
+export const CURRENT_PODIUM_ROTATION: KOSPodiumTypes = KOSPodiumTypes.TIMELESS_TRIUNE;
 /** represents the current aura rotation where, if a user obtains X amount of keys with this aura, they get benefits. */
-const CURRENT_AURA_ROTATION: KOSAuraTypes = KOSAuraTypes.SNOW;
+export const CURRENT_AURA_ROTATION: KOSAuraTypes = KOSAuraTypes.SNOW;
 /** represents the current house rotation where, if a user obtains X amount of keys with this house, they get benefits. */
-const CURRENT_HOUSE_ROTATION: KOSHouseTypes = KOSHouseTypes.TRADITION;
+export const CURRENT_HOUSE_ROTATION: KOSHouseTypes = KOSHouseTypes.TRADITION;
+
+/** a constant used to calculate the weekly points earnable for KOS benefits */
+export const BASE_POINTS_EARNING_RATE = 1000;
+/** a constant used to calculate the weekly points earnable for KOS benefits */
+export const BASE_POINTS_EARNING_GROWTH_RATE = 650;
+/** the exponential decay constant used to calculate weekly points earnable for KOS benefits */
+export const BASE_POINTS_EXPONENTIAL_DECAY_RATE = 0.005;
 
 /**
  * Gets the benefits (xCookies and gathering boosters) for holding a certain amount of keys and other requirements daily.
@@ -242,7 +249,5 @@ export const KOS_BENEFITS_POINTS_FORMULA = (
     const averageLuck = keys.length > 0 ? keys.reduce((acc, key) => acc + parseInt(key.attributes.find(attr => attr.traitType === 'Luck')?.value as string), 0) / keysOwned : 0;
     const averageLuckBoost = keys.length > 0 ? keys.reduce((acc, key) => acc + parseInt(key.attributes.find(attr => attr.traitType === 'Luck Boost')?.value as string), 0) / keysOwned : 0;
 
-    console.log('total keychain multiplier:', totalKeychainMultiplier);
-
-    return (keysOwned * (1000 + (averageLuck * (10 + (averageLuckBoost / 10))))) * totalKeychainMultiplier;
+    return (BASE_POINTS_EARNING_RATE + ((BASE_POINTS_EARNING_GROWTH_RATE + averageLuck) * (1 + (averageLuckBoost / 100) *totalKeychainMultiplier) * (keysOwned - 1) * Math.exp(-BASE_POINTS_EXPONENTIAL_DECAY_RATE * (keysOwned - 1))));
 }
