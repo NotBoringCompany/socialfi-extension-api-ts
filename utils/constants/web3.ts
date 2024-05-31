@@ -7,7 +7,7 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 export const BLAST_TESTNET_PROVIDER = new ethers.providers.JsonRpcProvider(`https://sepolia.blast.io`);
-export const ETH_MAINNET_PROVIDER = new ethers.providers.JsonRpcBatchProvider(`	https://api.securerpc.com/v1`);
+export const ETH_MAINNET_PROVIDER = new ethers.providers.JsonRpcProvider(`https://ethereum.blockpi.network/v1/rpc/public`);
 
 /** Gets a deployer wallet instance based on the provider the deployer wallet will operate in */
 export const DEPLOYER_WALLET = (provider: ethers.providers.JsonRpcProvider) => {
