@@ -19,10 +19,10 @@ export const GATHERING_RATE_REDUCTION_MODIFIER = 0.1;
 export const EARNING_RATE_REDUCTION_MODIFIER = 0.1;
 
 /** exponential decay for gathering rate calculation (both bit and island) */
-export const GATHERING_RATE_EXPONENTIAL_DECAY = 0.03;
+export const GATHERING_RATE_EXPONENTIAL_DECAY = 0.015;
 
 /** exponential decay for earning rate calculation (both bit and island) */
-export const EARNING_RATE_EXPONENTIAL_DECAY = 0.03;
+export const EARNING_RATE_EXPONENTIAL_DECAY = 0.015;
 
 /** the amount of bits that can be placed in an island */
 export const BIT_PLACEMENT_CAP = 5;
