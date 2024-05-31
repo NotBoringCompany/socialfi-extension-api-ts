@@ -13,6 +13,7 @@ import { SquadSchema } from '../../schemas/Squad';
 import { SquadLeaderboardSchema } from '../../schemas/SquadLeaderboard';
 import { SettingSchema } from '../../schemas/Setting';
 import { POAPSchema } from '../../schemas/POAP';
+import { KOSClaimableDailyRewardsSchema, KOSClaimableWeeklyRewardsSchema } from '../../schemas/KOSRewards';
 
 export const UserModel = mongoose.model('Users', UserSchema, 'Users');
 export const BitModel = mongoose.model('Bits', BitSchema, 'Bits');
@@ -29,3 +30,5 @@ export const SquadModel = mongoose.model('Squads', SquadSchema, 'Squads');
 export const SquadLeaderboardModel = mongoose.model('SquadLeaderboards', SquadLeaderboardSchema, 'SquadLeaderboards');
 export const SettingModel = mongoose.model('Settings', SettingSchema, 'Settings');
 export const POAPModel = mongoose.model('POAP', POAPSchema, 'POAP');
+export const KOSClaimableDailyRewardsModel = mongoose.model('KOSClaimableDailyRewards', KOSClaimableDailyRewardsSchema, 'KOSClaimableDailyRewards');
+export const KOSClaimableWeeklyRewardsModel = mongoose.model('KOSClaimableWeeklyRewards', KOSClaimableWeeklyRewardsSchema, 'KOSClaimableWeeklyRewards');
