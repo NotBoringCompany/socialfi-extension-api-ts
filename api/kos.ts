@@ -21,6 +21,410 @@ import { BigNumber } from 'ethers';
 dotenv.config();
 
 /**
+ * Claims the claimable daily KOS rewards for the user.
+ */
+export const claimDailyKOSRewards = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId });
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(claimDailyKOSRewards) User not found.`
+            }
+        }
+
+        const userUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const kosRewardUser = await KOSClaimableDailyRewardsModel.findOne({ userId: user._id });
+
+        if (!kosRewardUser) {
+            return {
+                status: Status.ERROR,
+                message: `(claimDailyKOSRewards) User does not have any claimable daily rewards for KOS benefits.`
+            }
+        }
+
+        // check if the user doesnt have any rewards to claim (i.e. all rewards are 0)
+        const rewards = kosRewardUser.claimableRewards as KOSReward[];
+
+        const totalRewards = rewards.reduce((acc, reward) => acc + reward.amount, 0);
+
+        if (totalRewards === 0) {
+            return {
+                status: Status.ERROR,
+                message: `(claimDailyKOSRewards) User does not have any claimable daily rewards for KOS benefits.`
+            }
+        }
+
+        // filter out rewards with the amount of 0 and map the remaining to add the rewards to the user's account
+        rewards.filter(reward => reward.amount > 0).map(reward => {
+            // if xCookies, do 2 things:
+            // 1. add the xCookies to `inventory.xCookieData.currentXCookies`
+            // 2. add the xCookies to `inventory.xCookieData.extendedXCookieData` with the source as KOS_BENEFITS
+            // but firstly check if the user's `extendedXCookieData` already has a source called KOS_BENEFITS.
+            // if not, create a new entry, else increment the amount.
+            if (reward.type === KOSRewardType.X_COOKIES) {
+                const kosBenefitsIndex = (user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(data => data.source === XCookieSource.KOS_BENEFITS);
+
+                // increment xCookies
+                userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = reward.amount;
+
+                if (kosBenefitsIndex !== -1) {
+                    userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${kosBenefitsIndex}.xCookies`] = reward.amount;
+                } else {
+                    userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = {
+                        xCookies: reward.amount,
+                        source: XCookieSource.KOS_BENEFITS
+                    }
+                }
+            } else if (reward.type === KOSRewardType.GATHERING_PROGRESS_BOOSTER_25 || reward.type === KOSRewardType.GATHERING_PROGRESS_BOOSTER_50 || reward.type === KOSRewardType.GATHERING_PROGRESS_BOOSTER_100) {
+                // if gathering progress booster, add the booster to the user's inventory.
+                // firstly, check if the user's `inventory.items` already has the booster.
+                // if not, create a new entry, else increment the amount.
+                const boosterIndex = (user.inventory?.items as Item[]).findIndex(item => item.type === reward.type as string);
+
+                if (boosterIndex !== -1) {
+                    userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = reward.amount;
+                } else {
+                    userUpdateOperations.$push['inventory.items'] = {
+                        type: reward.type,
+                        amount: reward.amount
+                    }
+                }
+            }
+        });
+
+        // add the rewards to the user's account
+        await UserModel.updateOne({ twitterId }, userUpdateOperations);
+
+        // reset all claimable rewards to 0
+        await KOSClaimableDailyRewardsModel.updateOne({ userId: user._id }, {
+            claimableRewards: []
+        });
+
+        console.log(`(claimDailyKOSRewards) Successfully claimed daily KOS rewards for user ${user.twitterUsername}.`);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(claimDailyKOSRewards) Successfully claimed daily KOS rewards for user ${user.twitterUsername}.`,
+            data: {
+                rewards: {
+                    xCookies: rewards.find(reward => reward.type === KOSRewardType.X_COOKIES)?.amount || 0,
+                    gatheringBooster25: rewards.find(reward => reward.type === KOSRewardType.GATHERING_PROGRESS_BOOSTER_25)?.amount || 0,
+                    gatheringBooster50: rewards.find(reward => reward.type === KOSRewardType.GATHERING_PROGRESS_BOOSTER_50)?.amount || 0,
+                    gatheringBooster100: rewards.find(reward => reward.type === KOSRewardType.GATHERING_PROGRESS_BOOSTER_100)?.amount || 0
+                }
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(claimDailyKOSRewards) Error: ${err.message}`
+        }
+    }
+}
+
+export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(claimWeeklyKOSRewards) User not found.`
+            }
+        }
+
+        const leaderboard = await LeaderboardModel.findOne({ name: 'Season 0' }).lean();
+
+        if (!leaderboard) {
+            return {
+                status: Status.ERROR,
+                message: `(claimWeeklyKOSRewards) Leaderboard not found.`
+            }
+        }
+
+        const latestSquadLeaderboard = await SquadLeaderboardModel.findOne().sort({ week: -1 }).lean();
+
+        if (!latestSquadLeaderboard) {
+            return {
+                status: Status.ERROR,
+                message: `(claimWeeklyKOSRewards) Squad leaderboard not found.`
+            }
+        }
+
+        const userUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const squadUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const squadLeaderboardUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const leaderboardUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const kosRewardUser = await KOSClaimableWeeklyRewardsModel.findOne({ userId: user._id });
+
+        if (!kosRewardUser) {
+            return {
+                status: Status.ERROR,
+                message: `(claimWeeklyKOSRewards) User does not have any claimable weekly rewards for KOS benefits.`
+            }
+        }
+
+        // check if the user doesnt have any rewards to claim (i.e. all rewards are 0)
+        const rewards = kosRewardUser.claimableRewards as KOSReward[];
+
+        const totalRewards = rewards.reduce((acc, reward) => acc + reward.amount, 0);
+
+        if (totalRewards === 0) {
+            return {
+                status: Status.ERROR,
+                message: `(claimWeeklyKOSRewards) User does not have any claimable weekly rewards for KOS benefits.`
+            }
+        }
+
+        // filter out rewards with the amount of 0 and map the remaining to add the rewards to the user's account
+        rewards.filter(reward => reward.amount > 0).map(async reward => {
+            if (reward.type === KOSRewardType.LEADERBOARD_POINTS) {
+                // if points, do a few things.
+                // check if the user exists in the season 0 leaderboard's `userData` array.
+                // if it doesn't, create a new entry, else:
+                // check if the source `KOS_BENEFITS` exists in the user's points data.
+                // if it does, increment the points, else create a new entry.
+                // also, if the user is eligible for additional points, add the additional points to the `points`.
+                const userIndex = (leaderboard.userData as LeaderboardUserData[]).findIndex(userData => userData.userId === user._id);
+
+                let additionalPoints = 0;
+
+                const currentLevel = user.inGameData.level;
+
+                // if not found, create a new entry
+                if (userIndex === -1) {
+                    // check if the user is eligible to level up to the next level
+                    const newLevel = GET_SEASON_0_PLAYER_LEVEL(reward.amount);
+
+                    if (newLevel > currentLevel) {
+                        // set the user's `inGameData.level` to the new level
+                        userUpdateOperations.$set['inGameData.level'] = newLevel;
+
+                        // add the additional points based on the rewards obtainable
+                        additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
+                    }
+
+                    leaderboardUpdateOperations.$push['userData'] = {
+                        userId: user._id,
+                        username: user.twitterUsername,
+                        twitterProfilePicture: user.twitterProfilePicture,
+                        pointsData: [
+                            {
+                                points: reward.amount,
+                                source: LeaderboardPointsSource.KOS_BENEFITS
+                            },
+                            {
+                                points: additionalPoints,
+                                source: LeaderboardPointsSource.LEVELLING_UP
+                            }
+                        ]
+                    }
+                // if the user is found, increment the points
+                } else {
+                    // get the user's total leaderboard points
+                    // this is done by summing up all the points from the `pointsData` array, BUT EXCLUDING SOURCES FROM:
+                    // 1. LeaderboardPointsSource.LEVELLING_UP
+                    const totalLeaderboardPoints = leaderboard.userData[userIndex].pointsData.reduce((acc, pointsData) => {
+                        if (pointsData.source !== LeaderboardPointsSource.LEVELLING_UP) {
+                            return acc + pointsData.points;
+                        }
+
+                        return acc;
+                    }, 0);
+
+                    const newLevel = GET_SEASON_0_PLAYER_LEVEL(totalLeaderboardPoints + reward.amount);
+
+                    if (newLevel > currentLevel) {
+                        userUpdateOperations.$set['inGameData.level'] = newLevel;
+                        additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
+                    }
+
+                    // get the source index for KOS_BENEFITS
+                    const sourceIndex = leaderboard.userData[userIndex].pointsData.findIndex(pointsData => pointsData.source === LeaderboardPointsSource.KOS_BENEFITS);
+
+                    if (sourceIndex !== -1) {
+                        leaderboardUpdateOperations.$inc[`userData.${userIndex}.pointsData.${sourceIndex}.points`] = reward.amount;
+                    } else {
+                        leaderboardUpdateOperations.$push[`userData.${userIndex}.pointsData`] = {
+                            points: reward.amount,
+                            source: LeaderboardPointsSource.KOS_BENEFITS
+                        }
+                    }
+
+                    if (additionalPoints > 0) {
+                        const levellingUpIndex = leaderboard.userData[userIndex].pointsData.findIndex(pointsData => pointsData.source === LeaderboardPointsSource.LEVELLING_UP);
+
+                        if (levellingUpIndex !== -1) {
+                            leaderboardUpdateOperations.$inc[`userData.${userIndex}.pointsData.${levellingUpIndex}.points`] = additionalPoints;
+                        } else {
+                            leaderboardUpdateOperations.$push[`userData.${userIndex}.pointsData`] = {
+                                points: additionalPoints,
+                                source: LeaderboardPointsSource.LEVELLING_UP
+                            }
+                        }
+                    }
+                }
+
+                // if the user also has a squad, add the points to the squad's total points
+                if (user.inGameData.squad !== null) {
+                    // get the squad
+                    const squad = await SquadModel.findOne({ _id: user.inGameData.squadId }).lean();
+
+                    if (!squad) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(claimWeeklyKOSRewards) Squad not found.`
+                        }
+                    }
+
+                    // add only the reward.amount (i.e. points) to the squad's total points
+                    squadUpdateOperations.$inc['totalSquadPoints'] = reward.amount;
+
+                    // check if the squad exists in the squad leaderboard's `pointsData`. if not, we create a new instance.
+                    const squadIndex = latestSquadLeaderboard.pointsData.findIndex(data => data.squadId === squad._id);
+
+                    if (squadIndex === -1) {
+                        squadLeaderboardUpdateOperations.$push['pointsData'] = {
+                            squadId: squad._id,
+                            squadName: squad.name,
+                            memberPoints: [
+                                {
+                                    userId: user._id,
+                                    username: user.twitterUsername,
+                                    points: reward.amount
+                                }
+                            ]
+                        }
+                    } else {
+                        // otherwise, we increment the points for the user in the squad
+                        const userIndex = latestSquadLeaderboard.pointsData[squadIndex].memberPoints.findIndex(member => member.userId === user._id);
+
+                        if (userIndex !== -1) {
+                            squadLeaderboardUpdateOperations.$inc[`pointsData.${squadIndex}.memberPoints.${userIndex}.points`] = reward.amount;
+                        } else {
+                            squadLeaderboardUpdateOperations.$push[`pointsData.${squadIndex}.memberPoints`] = {
+                                userId: user._id,
+                                username: user.twitterUsername,
+                                points: reward.amount
+                            }
+                        }
+                    }
+                }
+            // if reward is bit orb I or II
+            } else if (reward.type === KOSRewardType.BIT_ORB_I || reward.type === KOSRewardType.BIT_ORB_II) {
+                // check if the user's `inventory.items` contain the bit orb type
+                // if not, create a new entry, else increment the amount.
+                const bitOrbIndex = (user.inventory?.items as Item[]).findIndex(item => item.type === reward.type as string);
+
+                if (bitOrbIndex !== -1) {
+                    userUpdateOperations.$inc[`inventory.items.${bitOrbIndex}.amount`] = reward.amount;
+                } else {
+                    userUpdateOperations.$push['inventory.items'] = {
+                        type: reward.type,
+                        amount: reward.amount
+                    }
+                }
+            // if reward is terra capsulator I or II
+            } else if (reward.type === KOSRewardType.TERRA_CAPSULATOR_I || reward.type === KOSRewardType.TERRA_CAPSULATOR_II) {
+                // check if the user's `inventory.items` contain the terra capsulator type
+                // if not, create a new entry, else increment the amount.
+                const terraCapsulatorIndex = (user.inventory?.items as Item[]).findIndex(item => item.type === reward.type as string);
+
+                if (terraCapsulatorIndex !== -1) {
+                    userUpdateOperations.$inc[`inventory.items.${terraCapsulatorIndex}.amount`] = reward.amount;
+                } else {
+                    userUpdateOperations.$push['inventory.items'] = {
+                        type: reward.type,
+                        amount: reward.amount
+                    }
+                }
+            // if reward type is raft speed booster 60 min
+            } else if (reward.type === KOSRewardType.RAFT_SPEED_BOOSTER_60_MIN) {
+                // check if the user's `inventory.items` contain the raft speed booster type
+                // if not, create a new entry, else increment the amount.
+                const raftSpeedBoosterIndex = (user.inventory?.items as Item[]).findIndex(item => item.type === reward.type as string);
+
+                if (raftSpeedBoosterIndex !== -1) {
+                    userUpdateOperations.$inc[`inventory.items.${raftSpeedBoosterIndex}.amount`] = reward.amount;
+                } else {
+                    userUpdateOperations.$push['inventory.items'] = {
+                        type: reward.type,
+                        amount: reward.amount
+                    }
+                }
+            }
+        });
+
+        // execute the update operations
+        await Promise.all([
+            UserModel.updateOne({ twitterId }, userUpdateOperations),
+            SquadModel.updateOne({ _id: user.inGameData.squadId }, squadUpdateOperations),
+            SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, squadLeaderboardUpdateOperations),
+            LeaderboardModel.updateOne({ name: 'Season 0' }, leaderboardUpdateOperations)
+        ]);
+
+        // reset all claimable rewards to 0
+        await KOSClaimableWeeklyRewardsModel.updateOne({ userId: user._id }, {
+            claimableRewards: []
+        });
+
+        console.log(`(claimWeeklyKOSRewards) Successfully claimed weekly KOS rewards for user ${user.twitterUsername}.`);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(claimWeeklyKOSRewards) Successfully claimed weekly KOS rewards for user ${user.twitterUsername}.`,
+            data: {
+                rewards: {
+                    leaderboardPoints: rewards.find(reward => reward.type === KOSRewardType.LEADERBOARD_POINTS)?.amount || 0,
+                    bitOrbI: rewards.find(reward => reward.type === KOSRewardType.BIT_ORB_I)?.amount || 0,
+                    bitOrbII: rewards.find(reward => reward.type === KOSRewardType.BIT_ORB_II)?.amount || 0,
+                    terraCapsulatorI: rewards.find(reward => reward.type === KOSRewardType.TERRA_CAPSULATOR_I)?.amount || 0,
+                    terraCapsulatorII: rewards.find(reward => reward.type === KOSRewardType.TERRA_CAPSULATOR_II)?.amount || 0,
+                    raftSpeedBooster60Min: rewards.find(reward => reward.type === KOSRewardType.RAFT_SPEED_BOOSTER_60_MIN)?.amount || 0
+                }
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(claimWeeklyKOSRewards) Error: ${err.message}`
+        }
+    }
+}
+
+/**
  * Checks, for each user who owns at least 1 Key of Salvation, if they have owned each key for at least 1 day (from 23:59 UTC the previous day to 23:59 UTC now).
  * If they have, they will be eligible to earn the daily KOS rewards based on the amount of keys that match that 1-day criteria.
  * 
@@ -625,595 +1029,6 @@ export const checkWeeklyKOSRewards = async (): Promise<ReturnValue> => {
         }
     }
 }
-
-// /**
-//  * Checks, for each user who owns at least 1 Key of Salvation, Keychain and/or Superior Keychain, if they have owned each key/keychain/superior keychain for at least 7 days (from 23:59 UTC 7 days ago to 23:59 UTC now).
-//  * 
-//  * If they have, and if the NFTs match certain required attributes/traits, they will be eligible to earn the weekly KOS rewards based on the amount of keys that match that 7-day criteria.
-//  */
-// export const checkWeeklyKOSRewards = async (): Promise<ReturnValue> => {
-//     try {
-//         const leaderboard = await LeaderboardModel.findOne({ name: 'Season 0' }).lean();
-//         const latestSquadLeaderboard = await SquadLeaderboardModel.findOne().sort({ week: -1 }).lean();
-
-//         if (!leaderboard) {
-//             return {
-//                 status: Status.ERROR,
-//                 message: `(checkWeeklyKOSOwnership) Leaderboard not found.`
-//             };
-//         }
-
-//         if (!latestSquadLeaderboard) {
-//             return {
-//                 status: Status.ERROR,
-//                 message: `(checkWeeklyKOSOwnership) Squad leaderboard not found.`
-//             };
-//         }
-
-//         const users = await UserModel.find();
-
-//         if (!users || users.length === 0) {
-//             return {
-//                 status: Status.ERROR,
-//                 message: `(checkWeeklyKOSOwnership) No users found.`
-//             }
-//         }
-
-//         const errors: string[] = [];
-
-//         // fetch the metadata file
-//         const metadataFile = fetchKOSMetadataFile();
-
-//         const bulkWriteOpsPromises = users.map(async (user) => {
-//             const updateOperations = [];
-//             const leaderboardUpdateOperations = [];
-//             const squadUpdateOperations = [];
-//             const squadLeaderboardUpdateOperations = [];
-
-// // get all owned key IDs of the user
-// const { status, message, data } = await getOwnedKeyIDs(user.twitterId);
-
-// if (status !== Status.SUCCESS) {
-//     errors.push(message + ` User: ${user.twitterId}`);
-//     // continue to the next user if there was an error
-//     return [];
-// }
-
-// const ownedKeyIds = data.ownedKeyIDs;
-
-// // get the explicit ownerships of the owned key IDs
-// const { status: ownershipStatus, message: ownershipMessage, data: ownershipData } = await explicitOwnershipsOfKOS(ownedKeyIds);
-
-// if (ownershipStatus !== Status.SUCCESS) {
-//     errors.push(ownershipMessage + ` User: ${user.twitterId}`);
-//     // continue to the next user if there was an error
-//     return [];
-// }
-
-// const keyOwnerships = ownershipData.keyOwnerships as KOSExplicitOwnership[];
-
-// // get the total keys owned by the user for at least 7 days
-// const validKeys = keyOwnerships.filter((ownership) => ownership.startTimestamp <= Math.floor(Date.now() / 1000) - 604800);
-
-// // get the metadata for each of the valid keys
-// const validKeysMetadata: KOSMetadata[] = validKeys.map((key) => {
-//     return metadataFile.find((metadata) => metadata.keyId === key.tokenId) as KOSMetadata;
-// });
-
-// // get all owned keychain IDs of the user
-// const { status: keychainStatus, message: keychainMessage, data: keychainData } = await getOwnedKeychainIDs(user.twitterId);
-
-// if (keychainStatus !== Status.SUCCESS) {
-//     errors.push(keychainMessage + ` User: ${user.twitterId}`);
-//     // continue to the next user if there was an error
-//     return [];
-// }
-
-// const ownedKeychainIds = keychainData.ownedKeychainIDs;
-
-// // get the explicit ownerships of the owned keychain IDs
-// const { status: keychainOwnershipStatus, message: keychainOwnershipMessage, data: keychainOwnershipData } = await explicitOwnershipsOfKeychain(ownedKeychainIds);
-
-// if (keychainOwnershipStatus !== Status.SUCCESS) {
-//     errors.push(keychainOwnershipMessage + ` User: ${user.twitterId}`);
-//     // continue to the next user if there was an error
-//     return [];
-// }
-
-// const keychainOwnerships = keychainOwnershipData.keychainOwnerships as KOSExplicitOwnership[];
-
-// // get the total keychains owned by the user for at least 7 days
-// const validKeychains = keychainOwnerships.filter((ownership) => ownership.startTimestamp <= Math.floor(Date.now() / 1000) - 604800);
-
-// // get all owned superior keychain IDs of the user
-// const { status: superiorKeychainStatus, message: superiorKeychainMessage, data: superiorKeychainData } = await getOwnedSuperiorKeychainIDs(user.twitterId);
-
-// if (superiorKeychainStatus !== Status.SUCCESS) {
-//     errors.push(superiorKeychainMessage + ` User: ${user.twitterId}`);
-//     // continue to the next user if there was an error
-//     return [];
-// }
-
-// const ownedSuperiorKeychainIds = superiorKeychainData.ownedSuperiorKeychainIDs;
-
-// // get the explicit ownerships of the owned keychain IDs
-// const { status: superiorKeychainOwnershipStatus, message: superiorKeychainOwnershipMessage, data: superiorKeychainOwnershipData } = await explicitOwnershipsOfSuperiorKeychain(ownedSuperiorKeychainIds);
-
-// if (superiorKeychainOwnershipStatus !== Status.SUCCESS) {
-//     errors.push(superiorKeychainOwnershipMessage + ` User: ${user.twitterId}`);
-//     // continue to the next user if there was an error
-//     return [];
-// }
-
-// const superiorKeychainOwnerships = superiorKeychainOwnershipData.superiorKeychainOwnerships as KOSExplicitOwnership[];
-
-// // get the total superior keychains owned by the user for at least 7 days
-// const validSuperiorKeychains = superiorKeychainOwnerships.filter((ownership) => ownership.startTimestamp <= Math.floor(Date.now() / 1000) - 604800);
-
-// // get the eligible weekly rewards
-// const { points, bitOrbI, bitOrbII, terraCapI, terraCapII, raftBooster60 } = KOS_WEEKLY_BENEFITS(
-//     validKeysMetadata, 
-//     validKeychains.length, 
-//     validSuperiorKeychains.length
-// );
-
-//             if (points > 0) {
-//                 // do a few things:
-//                 // check if the user exists in the season 0 leaderboard's `userData` array.
-//                 // 1. if it doesn't, add a new entry.
-//                 // 2. if it does, check if the source `KOS_BENEFITS` exists in the user's `pointsData` array.
-//                 // if it doesn't, add a new entry. else, increment the points by `points`.
-//                 // also, if the user is eligible for additional points, add the additional points to the `points`.
-//                 const userIndex = (leaderboard.userData as LeaderboardUserData[]).findIndex(userData => userData.userId === user._id);
-
-//                 let additionalPoints = 0;
-
-//                 const currentLevel = user.inGameData.level;
-
-//                 // if not found, create a new entry for the user
-//                 if (userIndex === -1) {
-//                     // check if the user is eligible to level up to the next level
-//                     const newLevel = GET_SEASON_0_PLAYER_LEVEL(points);
-
-//                     if (newLevel > currentLevel) {
-//                         // set the user's `inGameData.level` to the new level
-//                         updateOperations.push({
-//                             updateOne: {
-//                                 filter: { twitterId: user.twitterId },
-//                                 update: {
-//                                     $set: {
-//                                         'inGameData.level': newLevel
-//                                     }
-//                                 }
-//                             }
-//                         });
-
-//                         // add the additional points based on the rewards obtainable
-//                         additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
-//                     }
-
-//                     leaderboardUpdateOperations.push({
-//                         updateOne: {
-//                             filter: { name: 'Season 0' },
-//                             update: {
-//                                 $push: {
-//                                     'userData': {
-//                                         userId: user._id,
-//                                         username: user.twitterUsername,
-//                                         twitterProfilePicture: user.twitterProfilePicture,
-//                                         pointsData: [
-//                                             {
-//                                                 points,
-//                                                 source: LeaderboardPointsSource.KOS_BENEFITS
-//                                             },
-//                                             {
-//                                                 points: additionalPoints,
-//                                                 source: LeaderboardPointsSource.LEVELLING_UP
-//                                             }
-//                                         ]
-//                                     }
-//                                 }
-//                             }
-//                         }
-//                     });
-//                 // if the user is found, we will increment the points
-//                 } else {
-//                     // get the user's total leaderboard points
-//                     // this is done by summing up all the points from the `pointsData` array, BUT EXCLUDING SOURCES FROM:
-//                     // 1. LeaderboardPointsSource.LEVELLING_UP
-//                     const totalLeaderboardPoints = leaderboard.userData[userIndex].pointsData.reduce((acc, pointsData) => {
-//                         if (pointsData.source !== LeaderboardPointsSource.LEVELLING_UP) {
-//                             return acc + pointsData.points;
-//                         }
-
-//                         return acc;
-//                     }, 0);
-
-//                     const newLevel = GET_SEASON_0_PLAYER_LEVEL(totalLeaderboardPoints + points);
-
-//                     if (newLevel > currentLevel) {
-//                         // set the user's `inGameData.level` to the new level
-//                         updateOperations.push({
-//                             updateOne: {
-//                                 filter: { twitterId: user.twitterId },
-//                                 update: {
-//                                     $set: {
-//                                         'inGameData.level': newLevel
-//                                     }
-//                                 }
-//                             }
-//                         });
-
-//                         // add the additional points based on the rewards obtainable
-//                         additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
-//                     }
-
-//                     // get the source index for `LeaderboardPointsSource.KOS_BENEFITS` and increment that
-//                     // if the source is not found, we create a new entry
-//                     const pointsData = leaderboard.userData[userIndex].pointsData;
-
-//                     const sourceIndex = pointsData.findIndex(pointsData => pointsData.source === LeaderboardPointsSource.KOS_BENEFITS);
-
-//                     if (sourceIndex === -1) {
-//                         leaderboardUpdateOperations.push({
-//                             updateOne: {
-//                                 filter: { name: 'Season 0' },
-//                                 update: {
-//                                     $push: {
-//                                         [`userData.${userIndex}.pointsData`]: {
-//                                             points,
-//                                             source: LeaderboardPointsSource.KOS_BENEFITS
-//                                         }
-//                                     }
-//                                 }
-//                             }
-//                         });
-//                     } else {
-//                         leaderboardUpdateOperations.push({
-//                             updateOne: {
-//                                 filter: { name: 'Season 0' },
-//                                 update: {
-//                                     $inc: {
-//                                         [`userData.${userIndex}.pointsData.${sourceIndex}.points`]: points
-//                                     }
-//                                 }
-//                             }
-//                         });
-//                     }
-
-//                     if (additionalPoints > 0) {
-//                         const levellingUpSourceIndex = pointsData.findIndex(pointsData => pointsData.source === LeaderboardPointsSource.LEVELLING_UP);
-
-//                         if (levellingUpSourceIndex === -1) {
-//                             leaderboardUpdateOperations.push({
-//                                 updateOne: {
-//                                     filter: { name: 'Season 0' },
-//                                     update: {
-//                                         $push: {
-//                                             [`userData.${userIndex}.pointsData`]: {
-//                                                 points: additionalPoints,
-//                                                 source: LeaderboardPointsSource.LEVELLING_UP
-//                                             }
-//                                         }
-//                                     }
-//                                 }
-//                             });
-//                         } else {
-//                             leaderboardUpdateOperations.push({
-//                                 updateOne: {
-//                                     filter: { name: 'Season 0' },
-//                                     update: {
-//                                         $inc: {
-//                                             [`userData.${userIndex}.pointsData.${levellingUpSourceIndex}.points`]: additionalPoints
-//                                         }
-//                                     }
-//                                 }
-//                             });
-//                         }
-//                     }
-//                 }
-
-//                 // if the user has a squad as well, add the points to the squad's total points
-//                 if (user.inGameData.squadId !== null) {
-//                     // get the squad
-//                     const squad = await SquadModel.findOne({ _id: user.inGameData.squadId }).lean();
-
-//                     if (!squad) {
-//                         console.error(`(checkWeeklyKOSOwnership) Squad not found. User: ${user.twitterId}`);
-//                         return;
-//                     }
-
-//                     squadUpdateOperations.push({
-//                         updateOne: {
-//                             filter: { _id: user.inGameData.squadId },
-//                             update: {
-//                                 $inc: {
-//                                     // don't include the additional points.
-//                                     'totalSquadPoints': points
-//                                 }
-//                             }
-//                         }
-//                     });
-
-//                     // check if the squad exists in the squad leaderboard's `pointsData`. if not, we create a new instance.
-//                     const squadIndex = latestSquadLeaderboard.pointsData.findIndex((squadData) => squadData.squadId === squad._id);
-
-//                     if (squadIndex === -1) {
-//                         squadLeaderboardUpdateOperations.push({
-//                             updateOne: {
-//                                 filter: { week: latestSquadLeaderboard.week },
-//                                 update: {
-//                                     $push: {
-//                                         'pointsData': {
-//                                             squadId: squad._id,
-//                                             squadName: squad.name,
-//                                             memberPoints: [
-//                                                 {
-//                                                     userId: user._id,
-//                                                     username: user.twitterUsername,
-//                                                     points
-//                                                 }
-//                                             ]
-//                                         }
-//                                     }
-//                                 }
-//                             }
-//                         });
-//                     } else {
-//                         // otherwise, we increment the points of the squad in the squad leaderboard
-//                         const userIndex = latestSquadLeaderboard.pointsData[squadIndex].memberPoints.findIndex((member) => member.userId === user._id);
-
-//                         // if the user is not found, we create a new instance
-//                         if (userIndex === -1) {
-//                             squadLeaderboardUpdateOperations.push({
-//                                 updateOne: {
-//                                     filter: { week: latestSquadLeaderboard.week },
-//                                     update: {
-//                                         $push: {
-//                                             [`pointsData.${squadIndex}.memberPoints`]: {
-//                                                 userId: user._id,
-//                                                 username: user.twitterUsername,
-//                                                 points
-//                                             }
-//                                         }
-//                                     }
-//                                 }
-//                             });
-//                         } else {
-//                             // if the user is found, we increment the points
-//                             squadLeaderboardUpdateOperations.push({
-//                                 updateOne: {
-//                                     filter: { week: latestSquadLeaderboard.week },
-//                                     update: {
-//                                         $inc: {
-//                                             [`pointsData.${squadIndex}.memberPoints.${userIndex}.points`]: points
-//                                         }
-//                                     }
-//                                 }
-//                             });
-//                         }
-//                     }
-//                 }
-//             }
-
-//             // if bit orb I is > 0, we:
-//             // 1. check if the user's `inventory.items` contains BitOrbType.BIT_ORB_I.
-//             // if not, add a new entry with `type: BitOrbType.BIT_ORB_I` and `amount: bitOrbI`. else, increment the `amount` by `bitOrbI`.
-//             if (bitOrbI > 0) {
-//                 const bitOrbIIndex = (user.inventory.items as Item[]).findIndex((item) => item.type === BitOrbType.BIT_ORB_I);
-
-//                 if (bitOrbIIndex === -1) {
-//                     updateOperations.push({
-//                         updateOne: {
-//                             filter: { twitterId: user.twitterId },
-//                             update: {
-//                                 $push: {
-//                                     'inventory.items': {
-//                                         type: BitOrbType.BIT_ORB_I,
-//                                         amount: bitOrbI
-//                                     }
-//                                 }
-//                             }
-//                         }
-//                     });
-//                 } else {
-//                     updateOperations.push({
-//                         updateOne: {
-//                             filter: { twitterId: user.twitterId },
-//                             update: {
-//                                 $inc: {
-//                                     [`inventory.items.${bitOrbIIndex}.amount`]: bitOrbI
-//                                 }
-//                             }
-//                         }
-//                     });
-//                 }
-//             }
-
-//             // if bit orb II is > 0, we:
-//             // 1. check if the user's `inventory.items` contains BitOrbType.BIT_ORB_II.
-//             // if not, add a new entry with `type: BitOrbType.BIT_ORB_II` and `amount: bitOrbII`. else, increment the `amount` by `bitOrbII`.
-//             if (bitOrbII > 0) {
-//                 const bitOrbIIIndex = (user.inventory.items as Item[]).findIndex((item) => item.type === BitOrbType.BIT_ORB_II);
-
-//                 if (bitOrbIIIndex === -1) {
-//                     updateOperations.push({
-//                         updateOne: {
-//                             filter: { twitterId: user.twitterId },
-//                             update: {
-//                                 $push: {
-//                                     'inventory.items': {
-//                                         type: BitOrbType.BIT_ORB_II,
-//                                         amount: bitOrbII
-//                                     }
-//                                 }
-//                             }
-//                         }
-//                     });
-//                 } else {
-//                     updateOperations.push({
-//                         updateOne: {
-//                             filter: { twitterId: user.twitterId },
-//                             update: {
-//                                 $inc: {
-//                                     [`inventory.items.${bitOrbIIIndex}.amount`]: bitOrbII
-//                                 }
-//                             }
-//                         }
-//                     });
-//                 }
-//             }
-
-//             // if terra cap I is > 0, we:
-//             // 1. check if the user's `inventory.items` contains TerraCapsulatorType.TERRA_CAPSULATOR_I.
-//             // if not, add a new entry with `type: TerraCapsulatorType.TERRA_CAPSULATOR_I` and `amount: terraCapI`. else, increment the `amount` by `terraCapI`.
-//             if (terraCapI > 0) {
-//                 const terraCapIIndex = (user.inventory.items as Item[]).findIndex((item) => item.type === TerraCapsulatorType.TERRA_CAPSULATOR_I);
-
-//                 if (terraCapIIndex === -1) {
-//                     updateOperations.push({
-//                         updateOne: {
-//                             filter: { twitterId: user.twitterId },
-//                             update: {
-//                                 $push: {
-//                                     'inventory.items': {
-//                                         type: TerraCapsulatorType.TERRA_CAPSULATOR_I,
-//                                         amount: terraCapI
-//                                     }
-//                                 }
-//                             }
-//                         }
-//                     });
-//                 } else {
-//                     updateOperations.push({
-//                         updateOne: {
-//                             filter: { twitterId: user.twitterId },
-//                             update: {
-//                                 $inc: {
-//                                     [`inventory.items.${terraCapIIndex}.amount`]: terraCapI
-//                                 }
-//                             }
-//                         }
-//                     });
-//                 }
-//             }
-
-//             // if terra cap II is > 0, we:
-//             // 1. check if the user's `inventory.items` contains TerraCapsulatorType.TERRA_CAPSULATOR_II.
-//             // if not, add a new entry with `type: TerraCapsulatorType.TERRA_CAPSULATOR_II` and `amount: terraCapII`. else, increment the `amount` by `terraCapII`.
-//             if (terraCapII > 0) {
-//                 const terraCapIIIndex = (user.inventory.items as Item[]).findIndex((item) => item.type === TerraCapsulatorType.TERRA_CAPSULATOR_II);
-
-//                 if (terraCapIIIndex === -1) {
-//                     updateOperations.push({
-//                         updateOne: {
-//                             filter: { twitterId: user.twitterId },
-//                             update: {
-//                                 $push: {
-//                                     'inventory.items': {
-//                                         type: TerraCapsulatorType.TERRA_CAPSULATOR_II,
-//                                         amount: terraCapII
-//                                     }
-//                                 }
-//                             }
-//                         }
-//                     });
-//                 } else {
-//                     updateOperations.push({
-//                         updateOne: {
-//                             filter: { twitterId: user.twitterId },
-//                             update: {
-//                                 $inc: {
-//                                     [`inventory.items.${terraCapIIIndex}.amount`]: terraCapII
-//                                 }
-//                             }
-//                         }
-//                     });
-//                 }
-//             }
-
-//             // if raft booster 60 is > 0, we:
-//             // 1. check if the user's `inventory.items` contains BoosterItem.RAFT_SPEED_BOOSTER_60_MIN.
-//             // if not, add a new entry with `type: BoosterItem.RAFT_SPEED_BOOSTER_60_MIN` and `amount: raftBooster60`. else, increment the `amount` by `raftBooster60`.
-//             if (raftBooster60 > 0) {
-//                 const raftBooster60Index = (user.inventory.items as Item[]).findIndex((item) => item.type === BoosterItem.RAFT_SPEED_BOOSTER_60_MIN);
-
-//                 if (raftBooster60Index === -1) {
-//                     updateOperations.push({
-//                         updateOne: {
-//                             filter: { twitterId: user.twitterId },
-//                             update: {
-//                                 $push: {
-//                                     'inventory.items': {
-//                                         type: BoosterItem.RAFT_SPEED_BOOSTER_60_MIN,
-//                                         amount: raftBooster60
-//                                     }
-//                                 }
-//                             }
-//                         }
-//                     });
-//                 } else {
-//                     updateOperations.push({
-//                         updateOne: {
-//                             filter: { twitterId: user.twitterId },
-//                             update: {
-//                                 $inc: {
-//                                     [`inventory.items.${raftBooster60Index}.amount`]: raftBooster60
-//                                 }
-//                             }
-//                         }
-//                     });
-//                 }
-//             }
-
-//             return {
-//                 userUpdateOperations: updateOperations,
-//                 leaderboardUpdateOperations,
-//                 squadUpdateOperations,
-//                 squadLeaderboardUpdateOperations,
-//             }
-//         });
-
-//         const bulkWriteOpsArrays = await Promise.all(bulkWriteOpsPromises);
-
-//         const bulkWriteOps = bulkWriteOpsArrays.flat().filter(op => op !== undefined);
-
-//         // at this point, bulkWriteOps consists of an array of objects with the user update operations, leaderboard update operations, squad update operations, and squad leaderboard update operations.
-//         // we need to separate them into their respective arrays.
-//         const userBulkWriteOps = bulkWriteOps.map((ops: any) => ops.userUpdateOperations).flat();
-//         const leaderboardBulkWriteOps = bulkWriteOps.map((ops: any) => ops.leaderboardUpdateOperations).flat();
-//         const squadBulkWriteOps = bulkWriteOps.map((ops: any) => ops.squadUpdateOperations).flat();
-//         const squadLeaderboardBulkWriteOps = bulkWriteOps.map((ops: any) => ops.squadLeaderboardUpdateOperations).flat();
-
-//         // for any of the arrays, if the length is 0, we don't execute the bulk write operation.
-//         if (userBulkWriteOps.length > 0) {
-//             await UserModel.bulkWrite(userBulkWriteOps);
-//         }
-
-//         if (leaderboardBulkWriteOps.length > 0) {
-//             await LeaderboardModel.bulkWrite(leaderboardBulkWriteOps);
-//         }
-
-//         if (squadBulkWriteOps.length > 0) {
-//             await SquadModel.bulkWrite(squadBulkWriteOps);
-//         }
-
-//         if (squadLeaderboardBulkWriteOps.length > 0) {
-//             await SquadLeaderboardModel.bulkWrite(squadLeaderboardBulkWriteOps);
-//         }
-
-//         if (errors.length > 0) {
-//             console.error(`(checkWeeklyKOSOwnership) Errors: ${errors.join('\n')}`);
-//         }
-
-//         console.log(`(checkWeeklyKOSOwnership) Successfully gave weekly KOS rewards.`);
-//     } catch (err: any) {
-//         return {
-//             status: Status.ERROR,
-//             message: `(checkWeeklyKOSOwnership) Error: ${err.message}`
-//         }
-//     }
-// }
 
 /**
  * Gets all Key of Salvation IDs owned by the user (main + secondary wallets).
