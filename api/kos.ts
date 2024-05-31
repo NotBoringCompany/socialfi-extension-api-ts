@@ -1,10 +1,10 @@
 import { KEYCHAIN_CONTRACT, KOS_CONTRACT, SUPERIOR_KEYCHAIN_CONTRACT } from '../utils/constants/web3';
 import { ReturnValue, Status } from '../utils/retVal';
 import { getWallets } from './user';
-import { KOSExplicitOwnership, KOSMetadata } from '../models/kos';
+import { KOSExplicitOwnership, KOSMetadata, KOSReward, KOSRewardType } from '../models/kos';
 import fs from 'fs';
 import path from 'path';
-import { LeaderboardModel, SquadLeaderboardModel, SquadModel, UserModel } from '../utils/constants/db';
+import { KOSClaimableDailyRewardsModel, LeaderboardModel, SquadLeaderboardModel, SquadModel, UserModel } from '../utils/constants/db';
 import { KOS_DAILY_BENEFITS, KOS_WEEKLY_BENEFITS } from '../utils/constants/kos';
 import { ExtendedXCookieData, XCookieSource } from '../models/user';
 import { Item } from '../models/item';
@@ -13,15 +13,23 @@ import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderbo
 import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
 import { BitOrbType } from '../models/bitOrb';
 import { TerraCapsulatorType } from '../models/terraCapsulator';
+import { generateObjectId } from '../utils/crypto';
+import mongoose from 'mongoose';
+import * as dotenv from 'dotenv';
+
+dotenv.config();
 
 /**
  * Checks, for each user who owns at least 1 Key of Salvation, if they have owned each key for at least 1 day (from 23:59 UTC the previous day to 23:59 UTC now).
  * If they have, they will be eligible to earn the daily KOS rewards based on the amount of keys that match that 1-day criteria.
  * 
+ * The rewards will be sent to the `KOSClaimableDailyRewards` collection.
  * Called by a scheduler every day at 23:59 UTC.
  */
 export const checkDailyKOSRewards = async (): Promise<ReturnValue> => {
     try {
+        await mongoose.connect(process.env.MONGODB_URI as string);
+
         const errors: string[] = [];
         const users = await UserModel.find();
 
@@ -71,189 +79,182 @@ export const checkDailyKOSRewards = async (): Promise<ReturnValue> => {
             // get the eligible daily rewards
             const { xCookies, gatheringBooster25, gatheringBooster50, gatheringBooster100 } = KOS_DAILY_BENEFITS(validKeysMetadata);
 
-            // // give the user the rewards
-            // if (xCookies > 0) {
-            //     // if xCookies > 0, do 2 things:
-            //     // 1. increment the user's `inventory.xCookieData.currentXCookies` by `xCookies`
-            //     // 2. check if the user's `inventory.xCookieData.extendedXCookieData.source` contains `KOS_BENEFITS`.
-            //     // if not, add a new entry with `source: KOS_BENEFITS` and `xCookies: xCookies`. else, increment the `xCookies` by `xCookies`.
+            // check if the user exists in the `KOSClaimableDailyRewards` collection.
+            // if it doesn't, add a new entry. else, update the entry.
+            const kosRewardUser = await KOSClaimableDailyRewardsModel.findOne({ userId: user._id });
 
-            //     // increment the user's `inventory.xCookieData.currentXCookies` by `xCookies`
-            //     updateOperations.push({
-            //         updateOne: {
-            //             filter: { twitterId: user.twitterId },
-            //             update: {
-            //                 $inc: {
-            //                     'inventory.xCookieData.currentXCookies': xCookies
-            //                 }
-            //             }
-            //         }
-            //     })
+            // if the user isn't found, we will create a new entry and directly add the rewards and update the database.
+            // if found, we will add it to `updateOperations` and update the database later.
+            if (!kosRewardUser) {
+                const newKOSRewardUser = new KOSClaimableDailyRewardsModel({
+                    _id: generateObjectId(),
+                    userId: user._id,
+                    username: user.twitterUsername,
+                    twitterProfilePicture: user.twitterProfilePicture,
+                    // add each reward
+                    claimableRewards: [
+                        {
+                            type: KOSRewardType.X_COOKIES,
+                            amount: xCookies
+                        },
+                        {
+                            type: KOSRewardType.GATHERING_PROGRESS_BOOSTER_25,
+                            amount: gatheringBooster25
+                        },
+                        {
+                            type: KOSRewardType.GATHERING_PROGRESS_BOOSTER_50,
+                            amount: gatheringBooster50
+                        },
+                        {
+                            type: KOSRewardType.GATHERING_PROGRESS_BOOSTER_100,
+                            amount: gatheringBooster100
+                        }
+                    ]
+                });
 
-            //     // check if the user's `inventory.xCookieData.extendedXCookieData.source` contains `KOS_BENEFITS`.
-            //     const kosBenefitsIndex = (user.inventory.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex((data) => data.source === XCookieSource.KOS_BENEFITS);
+                await newKOSRewardUser.save();
 
-            //     if (kosBenefitsIndex === -1) {
-            //         // if not, add a new entry with `source: KOS_BENEFITS` and `xCookies: xCookies`
-            //         updateOperations.push({
-            //             updateOne: {
-            //                 filter: { twitterId: user.twitterId },
-            //                 update: {
-            //                     $push: {
-            //                         'inventory.xCookieData.extendedXCookieData': {
-            //                             source: XCookieSource.KOS_BENEFITS,
-            //                             xCookies
-            //                         }
-            //                     }
-            //                 }
-            //             }
-            //         })
-            //     } else {
-            //         // else, increment the `xCookies` by `xCookies`
-            //         updateOperations.push({
-            //             updateOne: {
-            //                 filter: { twitterId: user.twitterId },
-            //                 update: {
-            //                     $inc: {
-            //                         [`inventory.xCookieData.extendedXCookieData.${kosBenefitsIndex}.xCookies`]: xCookies
-            //                     }
-            //                 }
-            //             }
-            //         })
-            //     }
-            // }
+                console.log(`new user found. adding user ${user.twitterUsername} to KOSClaimableDailyRewards.`);
 
-            // if (gatheringBooster25 > 0) {
-            //     // if gatheringBooster25 > 0, check if the user's `inventory.items` contain a `BoosterItem` with `type: GATHERING_PROGRESS_BOOSTER_25`.
-            //     // if not, add a new entry with `type: GATHERING_PROGRESS_BOOSTER_25` and `amount: gatheringBooster25`. else, increment the `amount` by `gatheringBooster25`.
+                return [];
+            } else {
+                // if user is found, we will increment the amounts for xCookies, gatheringBooster25, gatheringBooster50, gatheringBooster100.
+                // and add it to `updateOperations` to update the database later.
+                const xCookiesIndex = (kosRewardUser.claimableRewards as KOSReward[]).findIndex(reward => reward.type === KOSRewardType.X_COOKIES);
+                const gatheringBooster25Index = (kosRewardUser.claimableRewards as KOSReward[]).findIndex(reward => reward.type === KOSRewardType.GATHERING_PROGRESS_BOOSTER_25);
+                const gatheringBooster50Index = (kosRewardUser.claimableRewards as KOSReward[]).findIndex(reward => reward.type === KOSRewardType.GATHERING_PROGRESS_BOOSTER_50);
+                const gatheringBooster100Index = (kosRewardUser.claimableRewards as KOSReward[]).findIndex(reward => reward.type === KOSRewardType.GATHERING_PROGRESS_BOOSTER_100);
 
-            //     // check if the user's `inventory.items` contain a `BoosterItem` with `type: GATHERING_PROGRESS_BOOSTER_25`.
-            //     const boosterIndex = (user.inventory.items as Item[]).findIndex((item) => item.type === BoosterItem.GATHERING_PROGRESS_BOOSTER_25);
+                if (xCookiesIndex !== -1) {
+                    updateOperations.push({
+                        updateOne: {
+                            filter: { userId: user._id },
+                            update: {
+                                $inc: {
+                                    [`claimableRewards.${xCookiesIndex}.amount`]: xCookies
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    updateOperations.push({
+                        updateOne: {
+                            filter: { userId: user._id },
+                            update: {
+                                $push: {
+                                    'claimableRewards': {
+                                        type: KOSRewardType.X_COOKIES,
+                                        amount: xCookies
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
 
-            //     if (boosterIndex === -1) {
-            //         // if not, add a new entry with `type: GATHERING_PROGRESS_BOOSTER_25` and `amount: gatheringBooster25`
-            //         updateOperations.push({
-            //             updateOne: {
-            //                 filter: { twitterId: user.twitterId },
-            //                 update: {
-            //                     $push: {
-            //                         'inventory.items': {
-            //                             type: BoosterItem.GATHERING_PROGRESS_BOOSTER_25,
-            //                             amount: gatheringBooster25
-            //                         }
-            //                     }
-            //                 }
-            //             }
-            //         })
-            //     } else {
-            //         // else, increment the `amount` by `gatheringBooster25`
-            //         updateOperations.push({
-            //             updateOne: {
-            //                 filter: { twitterId: user.twitterId },
-            //                 update: {
-            //                     $inc: {
-            //                         [`inventory.items.${boosterIndex}.amount`]: gatheringBooster25
-            //                     }
-            //                 }
-            //             }
-            //         })
-            //     }
-            // }
+                if (gatheringBooster25Index !== -1) {
+                    updateOperations.push({
+                        updateOne: {
+                            filter: { userId: user._id },
+                            update: {
+                                $inc: {
+                                    [`claimableRewards.${gatheringBooster25Index}.amount`]: gatheringBooster25
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    updateOperations.push({
+                        updateOne: {
+                            filter: { userId: user._id },
+                            update: {
+                                $push: {
+                                    'claimableRewards': {
+                                        type: KOSRewardType.GATHERING_PROGRESS_BOOSTER_25,
+                                        amount: gatheringBooster25
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
 
-            // if (gatheringBooster50 > 0) {
-            //     // if gatheringBooster50 > 0, check if the user's `inventory.items` contain a `BoosterItem` with `type: GATHERING_PROGRESS_BOOSTER_50`.
-            //     // if not, add a new entry with `type: GATHERING_PROGRESS_BOOSTER_50` and `amount: gatheringBooster50`. else, increment the `amount` by `gatheringBooster50`.
+                if (gatheringBooster50Index !== -1) {
+                    updateOperations.push({
+                        updateOne: {
+                            filter: { userId: user._id },
+                            update: {
+                                $inc: {
+                                    [`claimableRewards.${gatheringBooster50Index}.amount`]: gatheringBooster50
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    updateOperations.push({
+                        updateOne: {
+                            filter: { userId: user._id },
+                            update: {
+                                $push: {
+                                    'claimableRewards': {
+                                        type: KOSRewardType.GATHERING_PROGRESS_BOOSTER_50,
+                                        amount: gatheringBooster50
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
 
-            //     // check if the user's `inventory.items` contain a `BoosterItem` with `type: GATHERING_PROGRESS_BOOSTER_50`.
-            //     const boosterIndex = (user.inventory.items as Item[]).findIndex((item) => item.type === BoosterItem.GATHERING_PROGRESS_BOOSTER_50);
-
-            //     if (boosterIndex === -1) {
-            //         // if not, add a new entry with `type: GATHERING_PROGRESS_BOOSTER_50` and `amount: gatheringBooster50`
-            //         updateOperations.push({
-            //             updateOne: {
-            //                 filter: { twitterId: user.twitterId },
-            //                 update: {
-            //                     $push: {
-            //                         'inventory.items': {
-            //                             type: BoosterItem.GATHERING_PROGRESS_BOOSTER_50,
-            //                             amount: gatheringBooster50
-            //                         }
-            //                     }
-            //                 }
-            //             }
-            //         })
-            //     } else {
-            //         // else, increment the `amount` by `gatheringBooster50`
-            //         updateOperations.push({
-            //             updateOne: {
-            //                 filter: { twitterId: user.twitterId },
-            //                 update: {
-            //                     $inc: {
-            //                         [`inventory.items.${boosterIndex}.amount`]: gatheringBooster50
-            //                     }
-            //                 }
-            //             }
-            //         })
-            //     }
-            // }
-
-            // if (gatheringBooster100 > 0) {
-            //     // if gatheringBooster100 > 0, check if the user's `inventory.items` contain a `BoosterItem` with `type: GATHERING_PROGRESS_BOOSTER_100`.
-            //     // if not, add a new entry with `type: GATHERING_PROGRESS_BOOSTER_100` and `amount: gatheringBooster100`. else, increment the `amount` by `gatheringBooster100`.
-
-            //     // check if the user's `inventory.items` contain a `BoosterItem` with `type: GATHERING_PROGRESS_BOOSTER_100`.
-            //     const boosterIndex = (user.inventory.items as Item[]).findIndex((item) => item.type === BoosterItem.GATHERING_PROGRESS_BOOSTER_100);
-
-            //     if (boosterIndex === -1) {
-            //         // if not, add a new entry with `type: GATHERING_PROGRESS_BOOSTER_100` and `amount: gatheringBooster100`
-            //         updateOperations.push({
-            //             updateOne: {
-            //                 filter: { twitterId: user.twitterId },
-            //                 update: {
-            //                     $push: {
-            //                         'inventory.items': {
-            //                             type: BoosterItem.GATHERING_PROGRESS_BOOSTER_100,
-            //                             amount: gatheringBooster100
-            //                         }
-            //                     }
-            //                 }
-            //             }
-            //         })
-            //     } else {
-            //         // else, increment the `amount` by `gatheringBooster100`
-            //         updateOperations.push({
-            //             updateOne: {
-            //                 filter: { twitterId: user.twitterId },
-            //                 update: {
-            //                     $inc: {
-            //                         [`inventory.items.${boosterIndex}.amount`]: gatheringBooster100
-            //                     }
-            //                 }
-            //             }
-            //         })
-            //     }
-            // }
+                if (gatheringBooster100Index !== -1) {
+                    updateOperations.push({
+                        updateOne: {
+                            filter: { userId: user._id },
+                            update: {
+                                $inc: {
+                                    [`claimableRewards.${gatheringBooster100Index}.amount`]: gatheringBooster100
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    updateOperations.push({
+                        updateOne: {
+                            filter: { userId: user._id },
+                            update: {
+                                $push: {
+                                    'claimableRewards': {
+                                        type: KOSRewardType.GATHERING_PROGRESS_BOOSTER_100,
+                                        amount: gatheringBooster100
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
 
             return updateOperations;
         });
 
-        // const bulkWriteOpsArrays = await Promise.all(bulkWriteOpsPromises);
+        const bulkWriteOpsArrays = await Promise.all(bulkWriteOpsPromises);
 
-        // const bulkWriteOps = bulkWriteOpsArrays.flat().filter(op => op !== undefined);
+        const bulkWriteOps = bulkWriteOpsArrays.flat().filter(op => op !== undefined);
 
-        // if (bulkWriteOps.length === 0) {
-        //     console.log(`(checkDailyKOSOwnership) No users were eligible for daily KOS rewards.`);
-        //     return;
-        // }
+        if (bulkWriteOps.length === 0) {
+            console.log(`(checkDailyKOSOwnership) No existing users were eligible to update their daily KOS rewards.`);
+            return;
+        }
 
-        // // execute the bulk write operations
-        // await UserModel.bulkWrite(bulkWriteOps);
+        // execute the bulk write operations
+        await KOSClaimableDailyRewardsModel.bulkWrite(bulkWriteOps);
 
-        // if (errors.length > 0) {
-        //     console.error(`(checkDailyKOSOwnership) Errors: ${errors.join('\n')}`);
-        // }
 
-        // console.log(`(checkDailyKOSOwnership) Successfully gave daily KOS rewards.`);
+        if (errors.length > 0) {
+            console.error(`(checkDailyKOSOwnership) Errors: ${errors.join('\n')}`);
+        }
+
+        console.log(`(checkDailyKOSOwnership) Successfully updated claimable daily KOS rewards.`);
     } catch (err: any) {
         return {
             status: Status.ERROR,
