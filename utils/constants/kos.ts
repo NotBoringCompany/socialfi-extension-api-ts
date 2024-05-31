@@ -249,5 +249,9 @@ export const KOS_BENEFITS_POINTS_FORMULA = (
     const averageLuck = keys.length > 0 ? keys.reduce((acc, key) => acc + parseInt(key.attributes.find(attr => attr.traitType === 'Luck')?.value as string), 0) / keysOwned : 0;
     const averageLuckBoost = keys.length > 0 ? keys.reduce((acc, key) => acc + parseInt(key.attributes.find(attr => attr.traitType === 'Luck Boost')?.value as string), 0) / keysOwned : 0;
 
-    return (BASE_POINTS_EARNING_RATE + ((BASE_POINTS_EARNING_GROWTH_RATE + averageLuck) * (1 + (averageLuckBoost / 100) *totalKeychainMultiplier) * (keysOwned - 1) * Math.exp(-BASE_POINTS_EXPONENTIAL_DECAY_RATE * (keysOwned - 1))));
+    // get bonus weekly points based on amount of keys owned milestone
+    // if >= 5 keys, get 2000 extra points. if >= 25 keys, get 5000 extra points. if >= 100 keys, get 10000 extra points.
+    const bonusWeeklyPoints = keysOwned >= 5 ? 2000 : keysOwned >= 25 ? 5000 : keysOwned >= 100 ? 10000 : 0;
+
+    return (BASE_POINTS_EARNING_RATE + ((BASE_POINTS_EARNING_GROWTH_RATE + averageLuck) * (1 + (averageLuckBoost / 100) *totalKeychainMultiplier) * (keysOwned - 1) * Math.exp(-BASE_POINTS_EXPONENTIAL_DECAY_RATE * (keysOwned - 1)))) + bonusWeeklyPoints;
 }
