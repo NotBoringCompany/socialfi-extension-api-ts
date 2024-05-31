@@ -71,189 +71,189 @@ export const checkDailyKOSRewards = async (): Promise<ReturnValue> => {
             // get the eligible daily rewards
             const { xCookies, gatheringBooster25, gatheringBooster50, gatheringBooster100 } = KOS_DAILY_BENEFITS(validKeysMetadata);
 
-            // give the user the rewards
-            if (xCookies > 0) {
-                // if xCookies > 0, do 2 things:
-                // 1. increment the user's `inventory.xCookieData.currentXCookies` by `xCookies`
-                // 2. check if the user's `inventory.xCookieData.extendedXCookieData.source` contains `KOS_BENEFITS`.
-                // if not, add a new entry with `source: KOS_BENEFITS` and `xCookies: xCookies`. else, increment the `xCookies` by `xCookies`.
+            // // give the user the rewards
+            // if (xCookies > 0) {
+            //     // if xCookies > 0, do 2 things:
+            //     // 1. increment the user's `inventory.xCookieData.currentXCookies` by `xCookies`
+            //     // 2. check if the user's `inventory.xCookieData.extendedXCookieData.source` contains `KOS_BENEFITS`.
+            //     // if not, add a new entry with `source: KOS_BENEFITS` and `xCookies: xCookies`. else, increment the `xCookies` by `xCookies`.
 
-                // increment the user's `inventory.xCookieData.currentXCookies` by `xCookies`
-                updateOperations.push({
-                    updateOne: {
-                        filter: { twitterId: user.twitterId },
-                        update: {
-                            $inc: {
-                                'inventory.xCookieData.currentXCookies': xCookies
-                            }
-                        }
-                    }
-                })
+            //     // increment the user's `inventory.xCookieData.currentXCookies` by `xCookies`
+            //     updateOperations.push({
+            //         updateOne: {
+            //             filter: { twitterId: user.twitterId },
+            //             update: {
+            //                 $inc: {
+            //                     'inventory.xCookieData.currentXCookies': xCookies
+            //                 }
+            //             }
+            //         }
+            //     })
 
-                // check if the user's `inventory.xCookieData.extendedXCookieData.source` contains `KOS_BENEFITS`.
-                const kosBenefitsIndex = (user.inventory.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex((data) => data.source === XCookieSource.KOS_BENEFITS);
+            //     // check if the user's `inventory.xCookieData.extendedXCookieData.source` contains `KOS_BENEFITS`.
+            //     const kosBenefitsIndex = (user.inventory.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex((data) => data.source === XCookieSource.KOS_BENEFITS);
 
-                if (kosBenefitsIndex === -1) {
-                    // if not, add a new entry with `source: KOS_BENEFITS` and `xCookies: xCookies`
-                    updateOperations.push({
-                        updateOne: {
-                            filter: { twitterId: user.twitterId },
-                            update: {
-                                $push: {
-                                    'inventory.xCookieData.extendedXCookieData': {
-                                        source: XCookieSource.KOS_BENEFITS,
-                                        xCookies
-                                    }
-                                }
-                            }
-                        }
-                    })
-                } else {
-                    // else, increment the `xCookies` by `xCookies`
-                    updateOperations.push({
-                        updateOne: {
-                            filter: { twitterId: user.twitterId },
-                            update: {
-                                $inc: {
-                                    [`inventory.xCookieData.extendedXCookieData.${kosBenefitsIndex}.xCookies`]: xCookies
-                                }
-                            }
-                        }
-                    })
-                }
-            }
+            //     if (kosBenefitsIndex === -1) {
+            //         // if not, add a new entry with `source: KOS_BENEFITS` and `xCookies: xCookies`
+            //         updateOperations.push({
+            //             updateOne: {
+            //                 filter: { twitterId: user.twitterId },
+            //                 update: {
+            //                     $push: {
+            //                         'inventory.xCookieData.extendedXCookieData': {
+            //                             source: XCookieSource.KOS_BENEFITS,
+            //                             xCookies
+            //                         }
+            //                     }
+            //                 }
+            //             }
+            //         })
+            //     } else {
+            //         // else, increment the `xCookies` by `xCookies`
+            //         updateOperations.push({
+            //             updateOne: {
+            //                 filter: { twitterId: user.twitterId },
+            //                 update: {
+            //                     $inc: {
+            //                         [`inventory.xCookieData.extendedXCookieData.${kosBenefitsIndex}.xCookies`]: xCookies
+            //                     }
+            //                 }
+            //             }
+            //         })
+            //     }
+            // }
 
-            if (gatheringBooster25 > 0) {
-                // if gatheringBooster25 > 0, check if the user's `inventory.items` contain a `BoosterItem` with `type: GATHERING_PROGRESS_BOOSTER_25`.
-                // if not, add a new entry with `type: GATHERING_PROGRESS_BOOSTER_25` and `amount: gatheringBooster25`. else, increment the `amount` by `gatheringBooster25`.
+            // if (gatheringBooster25 > 0) {
+            //     // if gatheringBooster25 > 0, check if the user's `inventory.items` contain a `BoosterItem` with `type: GATHERING_PROGRESS_BOOSTER_25`.
+            //     // if not, add a new entry with `type: GATHERING_PROGRESS_BOOSTER_25` and `amount: gatheringBooster25`. else, increment the `amount` by `gatheringBooster25`.
 
-                // check if the user's `inventory.items` contain a `BoosterItem` with `type: GATHERING_PROGRESS_BOOSTER_25`.
-                const boosterIndex = (user.inventory.items as Item[]).findIndex((item) => item.type === BoosterItem.GATHERING_PROGRESS_BOOSTER_25);
+            //     // check if the user's `inventory.items` contain a `BoosterItem` with `type: GATHERING_PROGRESS_BOOSTER_25`.
+            //     const boosterIndex = (user.inventory.items as Item[]).findIndex((item) => item.type === BoosterItem.GATHERING_PROGRESS_BOOSTER_25);
 
-                if (boosterIndex === -1) {
-                    // if not, add a new entry with `type: GATHERING_PROGRESS_BOOSTER_25` and `amount: gatheringBooster25`
-                    updateOperations.push({
-                        updateOne: {
-                            filter: { twitterId: user.twitterId },
-                            update: {
-                                $push: {
-                                    'inventory.items': {
-                                        type: BoosterItem.GATHERING_PROGRESS_BOOSTER_25,
-                                        amount: gatheringBooster25
-                                    }
-                                }
-                            }
-                        }
-                    })
-                } else {
-                    // else, increment the `amount` by `gatheringBooster25`
-                    updateOperations.push({
-                        updateOne: {
-                            filter: { twitterId: user.twitterId },
-                            update: {
-                                $inc: {
-                                    [`inventory.items.${boosterIndex}.amount`]: gatheringBooster25
-                                }
-                            }
-                        }
-                    })
-                }
-            }
+            //     if (boosterIndex === -1) {
+            //         // if not, add a new entry with `type: GATHERING_PROGRESS_BOOSTER_25` and `amount: gatheringBooster25`
+            //         updateOperations.push({
+            //             updateOne: {
+            //                 filter: { twitterId: user.twitterId },
+            //                 update: {
+            //                     $push: {
+            //                         'inventory.items': {
+            //                             type: BoosterItem.GATHERING_PROGRESS_BOOSTER_25,
+            //                             amount: gatheringBooster25
+            //                         }
+            //                     }
+            //                 }
+            //             }
+            //         })
+            //     } else {
+            //         // else, increment the `amount` by `gatheringBooster25`
+            //         updateOperations.push({
+            //             updateOne: {
+            //                 filter: { twitterId: user.twitterId },
+            //                 update: {
+            //                     $inc: {
+            //                         [`inventory.items.${boosterIndex}.amount`]: gatheringBooster25
+            //                     }
+            //                 }
+            //             }
+            //         })
+            //     }
+            // }
 
-            if (gatheringBooster50 > 0) {
-                // if gatheringBooster50 > 0, check if the user's `inventory.items` contain a `BoosterItem` with `type: GATHERING_PROGRESS_BOOSTER_50`.
-                // if not, add a new entry with `type: GATHERING_PROGRESS_BOOSTER_50` and `amount: gatheringBooster50`. else, increment the `amount` by `gatheringBooster50`.
+            // if (gatheringBooster50 > 0) {
+            //     // if gatheringBooster50 > 0, check if the user's `inventory.items` contain a `BoosterItem` with `type: GATHERING_PROGRESS_BOOSTER_50`.
+            //     // if not, add a new entry with `type: GATHERING_PROGRESS_BOOSTER_50` and `amount: gatheringBooster50`. else, increment the `amount` by `gatheringBooster50`.
 
-                // check if the user's `inventory.items` contain a `BoosterItem` with `type: GATHERING_PROGRESS_BOOSTER_50`.
-                const boosterIndex = (user.inventory.items as Item[]).findIndex((item) => item.type === BoosterItem.GATHERING_PROGRESS_BOOSTER_50);
+            //     // check if the user's `inventory.items` contain a `BoosterItem` with `type: GATHERING_PROGRESS_BOOSTER_50`.
+            //     const boosterIndex = (user.inventory.items as Item[]).findIndex((item) => item.type === BoosterItem.GATHERING_PROGRESS_BOOSTER_50);
 
-                if (boosterIndex === -1) {
-                    // if not, add a new entry with `type: GATHERING_PROGRESS_BOOSTER_50` and `amount: gatheringBooster50`
-                    updateOperations.push({
-                        updateOne: {
-                            filter: { twitterId: user.twitterId },
-                            update: {
-                                $push: {
-                                    'inventory.items': {
-                                        type: BoosterItem.GATHERING_PROGRESS_BOOSTER_50,
-                                        amount: gatheringBooster50
-                                    }
-                                }
-                            }
-                        }
-                    })
-                } else {
-                    // else, increment the `amount` by `gatheringBooster50`
-                    updateOperations.push({
-                        updateOne: {
-                            filter: { twitterId: user.twitterId },
-                            update: {
-                                $inc: {
-                                    [`inventory.items.${boosterIndex}.amount`]: gatheringBooster50
-                                }
-                            }
-                        }
-                    })
-                }
-            }
+            //     if (boosterIndex === -1) {
+            //         // if not, add a new entry with `type: GATHERING_PROGRESS_BOOSTER_50` and `amount: gatheringBooster50`
+            //         updateOperations.push({
+            //             updateOne: {
+            //                 filter: { twitterId: user.twitterId },
+            //                 update: {
+            //                     $push: {
+            //                         'inventory.items': {
+            //                             type: BoosterItem.GATHERING_PROGRESS_BOOSTER_50,
+            //                             amount: gatheringBooster50
+            //                         }
+            //                     }
+            //                 }
+            //             }
+            //         })
+            //     } else {
+            //         // else, increment the `amount` by `gatheringBooster50`
+            //         updateOperations.push({
+            //             updateOne: {
+            //                 filter: { twitterId: user.twitterId },
+            //                 update: {
+            //                     $inc: {
+            //                         [`inventory.items.${boosterIndex}.amount`]: gatheringBooster50
+            //                     }
+            //                 }
+            //             }
+            //         })
+            //     }
+            // }
 
-            if (gatheringBooster100 > 0) {
-                // if gatheringBooster100 > 0, check if the user's `inventory.items` contain a `BoosterItem` with `type: GATHERING_PROGRESS_BOOSTER_100`.
-                // if not, add a new entry with `type: GATHERING_PROGRESS_BOOSTER_100` and `amount: gatheringBooster100`. else, increment the `amount` by `gatheringBooster100`.
+            // if (gatheringBooster100 > 0) {
+            //     // if gatheringBooster100 > 0, check if the user's `inventory.items` contain a `BoosterItem` with `type: GATHERING_PROGRESS_BOOSTER_100`.
+            //     // if not, add a new entry with `type: GATHERING_PROGRESS_BOOSTER_100` and `amount: gatheringBooster100`. else, increment the `amount` by `gatheringBooster100`.
 
-                // check if the user's `inventory.items` contain a `BoosterItem` with `type: GATHERING_PROGRESS_BOOSTER_100`.
-                const boosterIndex = (user.inventory.items as Item[]).findIndex((item) => item.type === BoosterItem.GATHERING_PROGRESS_BOOSTER_100);
+            //     // check if the user's `inventory.items` contain a `BoosterItem` with `type: GATHERING_PROGRESS_BOOSTER_100`.
+            //     const boosterIndex = (user.inventory.items as Item[]).findIndex((item) => item.type === BoosterItem.GATHERING_PROGRESS_BOOSTER_100);
 
-                if (boosterIndex === -1) {
-                    // if not, add a new entry with `type: GATHERING_PROGRESS_BOOSTER_100` and `amount: gatheringBooster100`
-                    updateOperations.push({
-                        updateOne: {
-                            filter: { twitterId: user.twitterId },
-                            update: {
-                                $push: {
-                                    'inventory.items': {
-                                        type: BoosterItem.GATHERING_PROGRESS_BOOSTER_100,
-                                        amount: gatheringBooster100
-                                    }
-                                }
-                            }
-                        }
-                    })
-                } else {
-                    // else, increment the `amount` by `gatheringBooster100`
-                    updateOperations.push({
-                        updateOne: {
-                            filter: { twitterId: user.twitterId },
-                            update: {
-                                $inc: {
-                                    [`inventory.items.${boosterIndex}.amount`]: gatheringBooster100
-                                }
-                            }
-                        }
-                    })
-                }
-            }
+            //     if (boosterIndex === -1) {
+            //         // if not, add a new entry with `type: GATHERING_PROGRESS_BOOSTER_100` and `amount: gatheringBooster100`
+            //         updateOperations.push({
+            //             updateOne: {
+            //                 filter: { twitterId: user.twitterId },
+            //                 update: {
+            //                     $push: {
+            //                         'inventory.items': {
+            //                             type: BoosterItem.GATHERING_PROGRESS_BOOSTER_100,
+            //                             amount: gatheringBooster100
+            //                         }
+            //                     }
+            //                 }
+            //             }
+            //         })
+            //     } else {
+            //         // else, increment the `amount` by `gatheringBooster100`
+            //         updateOperations.push({
+            //             updateOne: {
+            //                 filter: { twitterId: user.twitterId },
+            //                 update: {
+            //                     $inc: {
+            //                         [`inventory.items.${boosterIndex}.amount`]: gatheringBooster100
+            //                     }
+            //                 }
+            //             }
+            //         })
+            //     }
+            // }
 
             return updateOperations;
         });
 
-        const bulkWriteOpsArrays = await Promise.all(bulkWriteOpsPromises);
+        // const bulkWriteOpsArrays = await Promise.all(bulkWriteOpsPromises);
 
-        const bulkWriteOps = bulkWriteOpsArrays.flat().filter(op => op !== undefined);
+        // const bulkWriteOps = bulkWriteOpsArrays.flat().filter(op => op !== undefined);
 
-        if (bulkWriteOps.length === 0) {
-            console.log(`(checkDailyKOSOwnership) No users were eligible for daily KOS rewards.`);
-            return;
-        }
+        // if (bulkWriteOps.length === 0) {
+        //     console.log(`(checkDailyKOSOwnership) No users were eligible for daily KOS rewards.`);
+        //     return;
+        // }
 
-        // execute the bulk write operations
-        await UserModel.bulkWrite(bulkWriteOps);
+        // // execute the bulk write operations
+        // await UserModel.bulkWrite(bulkWriteOps);
 
-        if (errors.length > 0) {
-            console.error(`(checkDailyKOSOwnership) Errors: ${errors.join('\n')}`);
-        }
+        // if (errors.length > 0) {
+        //     console.error(`(checkDailyKOSOwnership) Errors: ${errors.join('\n')}`);
+        // }
 
-        console.log(`(checkDailyKOSOwnership) Successfully gave daily KOS rewards.`);
+        // console.log(`(checkDailyKOSOwnership) Successfully gave daily KOS rewards.`);
     } catch (err: any) {
         return {
             status: Status.ERROR,
