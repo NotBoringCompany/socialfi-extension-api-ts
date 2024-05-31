@@ -21,6 +21,86 @@ import { BigNumber } from 'ethers';
 dotenv.config();
 
 /**
+ * Fetches the claimable daily KOS rewards for the user.
+ */
+export const getClaimableDailyKOSRewards = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(getClaimableDailyKOSRewards) User not found.`
+            }
+        }
+
+        const kosRewardUser = await KOSClaimableDailyRewardsModel.findOne({ userId: user._id });
+
+        if (!kosRewardUser) {
+            return {
+                status: Status.ERROR,
+                message: `(getClaimableDailyKOSRewards) User does not have any claimable daily rewards for KOS benefits.`
+            }
+        }
+
+        const rewards = kosRewardUser.claimableRewards as KOSReward[];
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getClaimableDailyKOSRewards) Successfully fetched claimable daily KOS rewards for user ${user.twitterUsername}.`,
+            data: {
+                rewards
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getClaimableDailyKOSRewards) Error: ${err.message}`
+        }
+    }
+}
+
+/**
+ * Fetches the claimable weekly KOS rewards for the user.
+ */
+export const getClaimableWeeklyKOSRewards = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(getClaimableWeeklyKOSRewards) User not found.`
+            }
+        }
+
+        const kosRewardUser = await KOSClaimableWeeklyRewardsModel.findOne({ userId: user._id });
+
+        if (!kosRewardUser) {
+            return {
+                status: Status.ERROR,
+                message: `(getClaimableWeeklyKOSRewards) User does not have any claimable weekly rewards for KOS benefits.`
+            }
+        }
+
+        const rewards = kosRewardUser.claimableRewards as KOSReward[];
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getClaimableWeeklyKOSRewards) Successfully fetched claimable weekly KOS rewards for user ${user.twitterUsername}.`,
+            data: {
+                rewards
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getClaimableWeeklyKOSRewards) Error: ${err.message}`
+        }
+    }
+}
+
+/**
  * Claims the claimable daily KOS rewards for the user.
  */
 export const claimDailyKOSRewards = async (twitterId: string): Promise<ReturnValue> => {

@@ -1,5 +1,5 @@
 import express from 'express';
-import { claimDailyKOSRewards, claimWeeklyKOSRewards, getOwnedKeyIDs } from '../api/kos';
+import { claimDailyKOSRewards, claimWeeklyKOSRewards, getClaimableDailyKOSRewards, getOwnedKeyIDs } from '../api/kos';
 import { Status } from '../utils/retVal';
 import { validateRequestAuth } from '../utils/auth';
 
@@ -61,6 +61,42 @@ router.post('/claim_weekly_kos_rewards', async (req, res) => {
         }
 
         const { status, message, data } = await claimWeeklyKOSRewards(validateData?.twitterId);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+});
+
+router.get('/get_claimable_daily_kos_rewards', async (req, res) => {
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'get_daily_kos_rewards');
+        const { status, message, data } = await getClaimableDailyKOSRewards(validateData?.twitterId);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+});
+
+router.get('/get_claimable_weekly_kos_rewards', async (req, res) => {
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'get_weekly_kos_rewards');
+        const { status, message, data } = await getClaimableDailyKOSRewards(validateData?.twitterId);
 
         return res.status(status).json({
             status,
