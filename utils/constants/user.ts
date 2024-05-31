@@ -97,34 +97,43 @@ export const GET_SEASON_0_REFERRAL_REWARDS = (userCount: number): ReferralReward
     if (userCount === 1) {
         return {
             xCookies: 10,
-            leaderboardPoints: 100
+            leaderboardPoints: 0
         }
     } else if (userCount === 3) {
         return {
-            xCookies: 60,
-            leaderboardPoints: 600
+            xCookies: 45,
+            leaderboardPoints: 0
         }
     } else if (userCount === 5) {
         return {
-            xCookies: 100,
-            leaderboardPoints: 1000
+            xCookies: 75,
+            leaderboardPoints: 0
         }
     } else if (userCount === 10) {
         return {
-            xCookies: 200,
-            leaderboardPoints: 2000
+            xCookies: 150,
+            leaderboardPoints: 0
         }
     } else if (userCount === 20) {
         return {
-            xCookies: 400,
-            leaderboardPoints: 4000
+            xCookies: 300,
+            leaderboardPoints: 0
         }
-    } else if (userCount === 30) {
+    } else if (userCount === 50) {
         return {
-            xCookies: 600,
-            leaderboardPoints: 6000
+            xCookies: 750,
+            leaderboardPoints: 0
         }
-    // if any number between the user counts, NaN or is invalid, this will be returned.
+    } else if (userCount === 100) {
+        return {
+            xCookies: 1500,
+            leaderboardPoints: 0
+        }
+    } else if (userCount === 200) {
+        return {
+            xCookies: 3000,
+            leaderboardPoints: 0
+        }
     } else {
         return {
             xCookies: 0,
