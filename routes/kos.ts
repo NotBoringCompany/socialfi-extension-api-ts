@@ -1,5 +1,5 @@
 import express from 'express';
-import { claimDailyKOSRewards, claimWeeklyKOSRewards, getClaimableDailyKOSRewards, getOwnedKeyIDs } from '../api/kos';
+import { claimDailyKOSRewards, claimWeeklyKOSRewards, getClaimableDailyKOSRewards, getClaimableWeeklyKOSRewards, getOwnedKeyIDs } from '../api/kos';
 import { Status } from '../utils/retVal';
 import { validateRequestAuth } from '../utils/auth';
 
@@ -96,7 +96,7 @@ router.get('/get_claimable_daily_kos_rewards', async (req, res) => {
 router.get('/get_claimable_weekly_kos_rewards', async (req, res) => {
     try {
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'get_weekly_kos_rewards');
-        const { status, message, data } = await getClaimableDailyKOSRewards(validateData?.twitterId);
+        const { status, message, data } = await getClaimableWeeklyKOSRewards(validateData?.twitterId);
 
         return res.status(status).json({
             status,
