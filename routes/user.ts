@@ -1,5 +1,5 @@
 import express from 'express';
-import { checkInviteCodeLinked, claimBeginnerRewards, claimDailyRewards, generateSignatureMessage, getBeginnerRewardsData, getInGameData, getInventory, getUserData, getWalletDetails, linkInviteCode, linkSecondaryWallet, removeResources } from '../api/user';
+import { checkInviteCodeLinked, claimBeginnerRewards, claimDailyRewards, generateSignatureMessage, generateUnlinkSignatureMessage, getBeginnerRewardsData, getInGameData, getInventory, getUserData, getWalletDetails, linkInviteCode, linkSecondaryWallet, removeResources, unlinkSecondaryWallet } from '../api/user';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { ExtendedProfile } from '../utils/types';
@@ -273,6 +273,27 @@ router.post('/generate_signature_message', async (req, res) => {
             message: err.message
         });
     }
+});
+
+router.post('/generate_unlink_signature_message', async (req, res) => {
+    const { walletAddress } = req.body;
+    try {
+
+        const message = generateUnlinkSignatureMessage(walletAddress);
+
+        return res.status(200).json({
+            status: 200,
+            message: 'Signature message for unlinking wallet generated successfully.',
+            data: {
+                signatureMessage: message
+            }
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        });
+    }
 })
 
 router.post('/link_secondary_wallet', async (req, res) => {
@@ -288,6 +309,38 @@ router.post('/link_secondary_wallet', async (req, res) => {
         }
 
         const { status, message, data } = await linkSecondaryWallet(
+            validateData?.twitterId,
+            walletAddress,
+            signatureMessage,
+            signature
+        );
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        });
+    }
+})
+
+router.post('/unlink_secondary_wallet', async (req, res) => {
+    const { walletAddress, signatureMessage, signature } = req.body;
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'unlink_secondary_wallet');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
+        const { status, message, data } = await unlinkSecondaryWallet(
             validateData?.twitterId,
             walletAddress,
             signatureMessage,

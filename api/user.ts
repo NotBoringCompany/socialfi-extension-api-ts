@@ -382,6 +382,36 @@ export const generateSignatureMessage = (walletAddress: string): string => {
 };
 
 /**
+ * Generates a message when users want to unlink a secondary wallet from their account.
+ *
+ * The message will follow this format:
+ *
+ * `Please sign the following message to unlink this wallet from your account.
+ * 
+ * Wallet address: <walletAddress>
+ * 
+ * Timestamp: <timestamp>
+ * 
+ * Hash salt: <hashSalt>`
+ * 
+ * The message will then be sent to the frontend for the user to sign with their secondary wallet.
+ */
+export const generateUnlinkSignatureMessage = (walletAddress: string): string => {
+    const timestamp = Math.floor(Date.now() / 1000);
+    const hashSalt = generateHashSalt();
+
+    const message = `
+    Please sign the following message to unlink this wallet from your account.
+    Wallet address: ${walletAddress}
+    Timestamp: ${timestamp}
+    Hash salt: ${hashSalt}
+    `;
+
+    return message;
+
+}
+
+/**
  * Links a secondary wallet to the user's account if signature check is valid.
  */
 export const linkSecondaryWallet = async (
@@ -452,6 +482,74 @@ export const linkSecondaryWallet = async (
         };
     }
 };
+
+/**
+ * Unlinks a secondary wallet from a user's account. Requires a signature to ensure that the user is the one unlinking the wallet.
+ */
+export const unlinkSecondaryWallet = async (
+    twitterId: string, 
+    walletAddress: string,
+    signatureMessage: string,
+    signature: Uint8Array | `0x${string}` | Signature
+): Promise<ReturnValue> => {
+    try {
+        const recoveredAddress = await recoverMessageAddress({
+            message: signatureMessage,
+            signature,
+        });
+
+        if (recoveredAddress.toLowerCase() !== walletAddress.toLowerCase()) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(unlinkSecondaryWallet) Invalid signature.`,
+            };
+        }
+
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(unlinkSecondaryWallet) User not found.`,
+            };
+        }
+
+        // check if the wallet is already linked in the user's `secondaryWallets`
+        // each secondaryWallet instance in `secondaryWallets` contain the `address`.
+        // check if the `address` is the same as the `walletAddress`
+        const isWalletAlreadyLinked = user.secondaryWallets?.some((wallet) => wallet.address.toLowerCase() === walletAddress.toLowerCase());
+
+        if (!isWalletAlreadyLinked) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(unlinkSecondaryWallet) Wallet is not linked.`,
+            };
+        }
+
+        // remove the secondary wallet from the user's account
+        await UserModel.updateOne(
+            { twitterId },
+            {
+                $pull: {
+                    secondaryWallets: {
+                        address: walletAddress,
+                    },
+                },
+            }
+        );
+
+        return {
+            status: Status.SUCCESS,
+            message: `(unlinkSecondaryWallet) Secondary wallet unlinked.`,
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(unlinkSecondaryWallet) ${err.message}`,
+        };
+    }
+}
+
 
 /**
  * Gets a user's main and secondary wallets linked to their account.
