@@ -1,5 +1,5 @@
 import express from 'express';
-import { claimDailyKOSRewards, claimWeeklyKOSRewards, getClaimableDailyKOSRewards, getClaimableWeeklyKOSRewards, getOwnedKeyIDs } from '../api/kos';
+import { claimDailyKOSRewards, claimWeeklyKOSRewards, getClaimableDailyKOSRewards, getClaimableWeeklyKOSRewards, getOwnedKeyIDs, getOwnedKeychainIDs, getOwnedSuperiorKeychainIDs } from '../api/kos';
 import { Status } from '../utils/retVal';
 import { validateRequestAuth } from '../utils/auth';
 
@@ -22,6 +22,42 @@ router.get('/get_owned_key_ids/:twitterId', async (req, res) => {
         })
     }
 });
+
+router.get('/get_owned_keychain_ids/:twitterId', async (req, res) => {
+    const { twitterId } = req.params;
+    try {
+        const { status, message, data } = await getOwnedKeychainIDs(twitterId);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+});
+
+router.get('/get_owned_superior_keychain_ids/:twitterId', async (req, res) => {
+    const { twitterId } = req.params;
+    try {
+        const { status, message, data } = await getOwnedSuperiorKeychainIDs(twitterId);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
 
 router.post('/claim_daily_kos_rewards', async (req, res) => {
     try {
