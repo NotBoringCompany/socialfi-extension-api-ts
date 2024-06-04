@@ -43,16 +43,12 @@ export const consumeTerraCapsulator = async (type: TerraCapsulatorType, twitterI
         }
 
         // consume the Terra Capsulator
-        // check if the user only has 1 of this Terra Capsulator type left.
-        // if so, remove the Terra Capsulator from the user's inventory
-        // else, decrement the amount of the Terra Capsulator by 1
-        if (terraCapsulatorAmount === 1) {
-            // pull the Terra Capsulator from the user inventory's items
-            userUpdateOperations.$pull['inventory.items'] = { type };
-        } else {
-            const terraCapsulatorIndex = (user.inventory?.items as Item[]).findIndex(i => i.type === type);
-            userUpdateOperations.$inc[`inventory.items.${terraCapsulatorIndex}.amount`] = -1;
-        }
+        // decrement the Terra Capsulator count by 1 and increase the `totalAmountConsumed` and `totalWeeklyAmountConsumed` by 1
+        const terraCapsulatorIndex = (user.inventory?.items as Item[]).findIndex(i => i.type === type);
+
+        userUpdateOperations.$inc[`inventory.items.${terraCapsulatorIndex}.totalAmountConsumed`] = 1;
+        userUpdateOperations.$inc[`inventory.items.${terraCapsulatorIndex}.totalWeeklyAmountConsumed`] = 1;
+        userUpdateOperations.$inc[`inventory.items.${terraCapsulatorIndex}.amount`] = -1;
 
         // call `summonIsland` to summon an Island
         const { status: summonIslandStatus, message: summonIslandMessage, data: summonIslandData } = await summonIsland(type, user._id);

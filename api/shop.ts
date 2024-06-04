@@ -98,7 +98,12 @@ export const purchaseShopAsset = async (
             if (existingItemIndex !== -1) {
                 userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = amount;
             } else {
-                userUpdateOperations.$push['inventory.items'] = { type: asset, amount };
+                userUpdateOperations.$push['inventory.items'] = { 
+                    type: asset, 
+                    amount,
+                    totalAmountConsumed: 0,
+                    weeklyAmountConsumed: 0
+                };
             }
         // if item is food
         } else {

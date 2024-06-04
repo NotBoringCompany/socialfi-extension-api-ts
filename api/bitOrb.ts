@@ -51,16 +51,12 @@ export const consumeBitOrb = async (twitterId: string, bitOrbType: BitOrbType): 
         }
 
         // consume the Bit Orb
-        // check if the user has only 1 of this bit orb type left.
-        // if so, remove the bit orb from the user's inventory
-        // else, decrement the amount of the bit orb by 1
-        if (bitOrbAmount === 1) {
-            // pull the bit orb from the user inventory's items
-            userUpdateOperations.$pull['inventory.items'] = { type: bitOrbType };
-        } else {
-            const bitOrbIndex = (user.inventory?.items as Item[]).findIndex(item => item.type === bitOrbType);
-            userUpdateOperations.$inc[`inventory.items.${bitOrbIndex}.amount`] = -1;
-        }
+        // decrement the bit orb count by 1 and increase the `totalAmountConsumed` and `weeklyAmountConsumed` by 1
+        const bitOrbIndex = (user.inventory?.items as Item[]).findIndex(item => item.type === bitOrbType);
+
+        userUpdateOperations.$inc[`inventory.items.${bitOrbIndex}.totalAmountConsumed`] = 1;
+        userUpdateOperations.$inc[`inventory.items.${bitOrbIndex}.weeklyAmountConsumed`] = 1;
+        userUpdateOperations.$inc[`inventory.items.${bitOrbIndex}.amount`] = -1;
 
         // call `summonBit` to summon a Bit
         const { status: summonBitStatus, message: summonBitMessage, data: summonBitData } = await summonBit(user._id, bitOrbType);

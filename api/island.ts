@@ -1936,13 +1936,10 @@ export const applyGatheringProgressBooster = async (
                 // reset the gathering progress back to 0 + the remaining overflow of %
                 islandUpdateOperations.$set['islandResourceStats.gatheringProgress'] = finalGatheringProgress;
 
-                // check if there is only `boosters.length` of this booster left. if yes, remove the booster from the user's inventory.
-                // if not, decrement the booster by `boosters.length`.
-                if ((user.inventory.items as Item[])[boosterIndex].amount === boosters.length) {
-                    userUpdateOperations.$pull[`inventory.items`] = { type: firstBooster };
-                } else {
-                    userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = -boosters.length;
-                }
+                // deduct the boosters from the user's inventory, update `totalAmountConsumed` and `weeklyAmountConsumed`.
+                userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = -boosters.length;
+                userUpdateOperations.$inc[`inventory.items.${boosterIndex}.totalAmountConsumed`] = boosters.length;
+                userUpdateOperations.$inc[`inventory.items.${boosterIndex}.weeklyAmountConsumed`] = boosters.length;
 
                 // execute the update operations
                 await Promise.all([
@@ -1978,13 +1975,10 @@ export const applyGatheringProgressBooster = async (
             } else {
                 islandUpdateOperations.$inc['islandResourceStats.gatheringProgress'] = boosterPercentage;
 
-                // check if there is only `boosters.length` of this booster left. if yes, remove the booster from the user's inventory.
-                // if not, decrement the booster by `boosters.length`.
-                if ((user.inventory.items as Item[])[boosterIndex].amount === boosters.length) {
-                    userUpdateOperations.$pull[`inventory.items`] = { type: firstBooster };
-                } else {
-                    userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = -boosters.length;
-                }
+                // deduct the boosters from the user's inventory, update `totalAmountConsumed` and `weeklyAmountConsumed`.
+                userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = -boosters.length;
+                userUpdateOperations.$inc[`inventory.items.${boosterIndex}.totalAmountConsumed`] = boosters.length;
+                userUpdateOperations.$inc[`inventory.items.${boosterIndex}.weeklyAmountConsumed`] = boosters.length;
 
                 // execute the update operations
                 await Promise.all([
@@ -2029,13 +2023,10 @@ export const applyGatheringProgressBooster = async (
             // update the island's final gathering progress after moduloing it by 100
             islandUpdateOperations.$set['islandResourceStats.gatheringProgress'] = finalNonModuloGatheringProgress % 100;
 
-            // check if there is only `boosters.length` of this booster left. if yes, remove the booster from the user's inventory.
-            // if not, decrement the booster by `boosters.length`.
-            if ((user.inventory.items as Item[])[boosterIndex].amount === boosters.length) {
-                userUpdateOperations.$pull[`inventory.items`] = { type: firstBooster };
-            } else {
-                userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = -boosters.length;
-            }
+            // deduct the boosters from the user's inventory, update `totalAmountConsumed` and `weeklyAmountConsumed`.
+            userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = -boosters.length;
+            userUpdateOperations.$inc[`inventory.items.${boosterIndex}.totalAmountConsumed`] = boosters.length;
+            userUpdateOperations.$inc[`inventory.items.${boosterIndex}.weeklyAmountConsumed`] = boosters.length;
 
             // update the island's `lastUpdatedGatheringProgress` to the current time
             islandUpdateOperations.$set['islandResourceStats.lastUpdatedGatheringProgress'] = Math.floor(Date.now() / 1000);

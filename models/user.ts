@@ -78,8 +78,6 @@ export interface UserInventory {
     weight: number;
     /** the maximum inventory weight the user can have */
     maxWeight: number;
-    // /** the amount of in-game cookies owned (users are required to convert from blockchain cookies first) */
-    // xCookies: number;
     /** the user's xCookies data (i.e. the current xCookies owned, the total xCookies earned from different sources etc.) */
     xCookieData: XCookieData;
     /** the amount of cookie crumbs owned */

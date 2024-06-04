@@ -255,16 +255,6 @@ export const applyTravelBooster = async (
         // check if the remaining time is less than the booster's effect
         // if it is, then the user will instantly arrive at their destination.
         if (remainingTime < boosterSeconds) {
-            // // set the user's in game location to the destination and reduce the booster item by 1.
-            // userUpdateOperations.$pull[`inventory.items`] = { type: booster };
-
-            // // update the user's location to the destination
-            // userUpdateOperations.$set = {
-            //     'inGameData.location': user.inGameData.travellingTo,
-            //     'inGameData.travellingTo': null,
-            //     'inGameData.destinationArrival': 0
-            // }
-
             // update the user's location to the destination
             userUpdateOperations.$set = {
                 'inGameData.location': user.inGameData.travellingTo,
@@ -272,13 +262,10 @@ export const applyTravelBooster = async (
                 'inGameData.destinationArrival': 0
             }
 
-            // check if the user has 1 of this booster left. if yes, we remove the booster from the user's inventory.
-            // if not, we decrement the booster by 1.
-            if ((user.inventory.items as Item[])[boosterIndex].amount === 1) {
-                userUpdateOperations.$pull[`inventory.items`] = { type: booster };
-            } else {
-                userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = -1;
-            }
+            // decrement the booster by 1, update `totalAmountConsumed` and `weeklyAmountConsumed` by 1
+            userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = -1;
+            userUpdateOperations.$inc[`inventory.items.${boosterIndex}.totalAmountConsumed`] = 1;
+            userUpdateOperations.$inc[`inventory.items.${boosterIndex}.weeklyAmountConsumed`] = 1;
 
             // update the user's data
             await UserModel.updateOne({ twitterId }, userUpdateOperations);
@@ -298,13 +285,10 @@ export const applyTravelBooster = async (
                 'inGameData.destinationArrival': destinationArrival - boosterSeconds
             }
 
-            // check if the user has 1 of this booster left. if yes, we remove the booster from the user's inventory.
-            // if not, we decrement the booster by 1.
-            if ((user.inventory.items as Item[])[boosterIndex].amount === 1) {
-                userUpdateOperations.$pull[`inventory.items`] = { type: booster };
-            } else {
-                userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = -1;
-            }
+            // decrement the booster by 1, update `totalAmountConsumed` and `weeklyAmountConsumed` by 1
+            userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = -1;
+            userUpdateOperations.$inc[`inventory.items.${boosterIndex}.totalAmountConsumed`] = 1;
+            userUpdateOperations.$inc[`inventory.items.${boosterIndex}.weeklyAmountConsumed`] = 1;
 
             // update the user's data
             await UserModel.updateOne({ twitterId }, userUpdateOperations);
@@ -1072,13 +1056,8 @@ export const sellItemsInPOIShop = async (
                     }
                 }
 
-                // if the amount to sell is equal to the amount in the user's inventory, we remove the entire terra capsulator.
-                // otherwise, we decrement the amount of the terra capsulator.
-                if (item.amount === (user.inventory.items as Item[])[terraCapsulatorIndex].amount) {
-                    userUpdateOperations.$pull[`inventory.items`] = { type: item.item };
-                } else {
-                    userUpdateOperations.$inc[`inventory.items.${terraCapsulatorIndex}.amount`] = -item.amount;
-                }
+                // deduct the amount of the terra capsulator
+                userUpdateOperations.$inc[`inventory.items.${terraCapsulatorIndex}.amount`] = -item.amount;
             } else if (item.item === POIShopItemName.BIT_ORB_I) {
                 // get the index of the bit orb in the user's inventory
                 const bitOrbIndex = (user.inventory.items as Item[]).findIndex(i => i.type === item.item as string);
@@ -1091,13 +1070,8 @@ export const sellItemsInPOIShop = async (
                     }
                 }
 
-                // if the amount to sell is equal to the amount in the user's inventory, we remove the entire bit orb.
-                // otherwise, we decrement the amount of the bit orb.
-                if (item.amount === (user.inventory.items as Item[])[bitOrbIndex].amount) {
-                    userUpdateOperations.$pull[`inventory.items`] = { type: item.item };
-                } else {
-                    userUpdateOperations.$inc[`inventory.items.${bitOrbIndex}.amount`] = -item.amount;
-                }
+                // deduct the amount of the bit orb
+                userUpdateOperations.$inc[`inventory.items.${bitOrbIndex}.amount`] = -item.amount;
             }
 
             // now, we update the shop's data.
@@ -1452,7 +1426,9 @@ export const buyItemsInPOIShop = async (
                 if (terraCapsulatorIndex === -1) {
                     userUpdateOperations.$push[`inventory.items`] = {
                         type: item.item,
-                        amount: item.amount
+                        amount: item.amount,
+                        totalAmountConsumed: 0,
+                        weeklyAmountConsumed: 0
                     }
                 } else {
                     userUpdateOperations.$inc[`inventory.items.${terraCapsulatorIndex}.amount`] = item.amount;
@@ -1466,7 +1442,9 @@ export const buyItemsInPOIShop = async (
                 if (bitOrbIndex === -1) {
                     userUpdateOperations.$push[`inventory.items`] = {
                         type: item.item,
-                        amount: item.amount
+                        amount: item.amount,
+                        totalAmountConsumed: 0,
+                        weeklyAmountConsumed: 0
                     }
                 } else {
                     userUpdateOperations.$inc[`inventory.items.${bitOrbIndex}.amount`] = item.amount;
@@ -1483,7 +1461,9 @@ export const buyItemsInPOIShop = async (
                 if (boosterIndex === -1) {
                     userUpdateOperations.$push[`inventory.items`] = {
                         type: item.item,
-                        amount: item.amount
+                        amount: item.amount,
+                        totalAmountConsumed: 0,
+                        weeklyAmountConsumed: 0
                     }
                 } else {
                     userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = item.amount;

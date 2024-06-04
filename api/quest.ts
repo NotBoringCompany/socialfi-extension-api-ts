@@ -303,7 +303,12 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                     if (boosterIndex !== -1) {
                         userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = amount;
                     } else {
-                        userUpdateOperations.$push['inventory.items'] = { type: BoosterItem.GATHERING_PROGRESS_BOOSTER_25, amount };
+                        userUpdateOperations.$push['inventory.items'] = { 
+                            type: BoosterItem.GATHERING_PROGRESS_BOOSTER_25,
+                            amount,
+                            totalAmountConsumed: 0,
+                            weeklyAmountConsumed: 0
+                        };
                     }
 
                     break;

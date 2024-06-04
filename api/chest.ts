@@ -147,7 +147,9 @@ export const openChest = async (twitterId: string, tweetId: string): Promise<Ret
                     $push: {
                         'inventory.items': {
                             type: item,
-                            amount
+                            amount,
+                            totalAmountConsumed: 0,
+                            weeklyAmountConsumed: 0
                         }
                     }
                 })
@@ -168,7 +170,9 @@ export const openChest = async (twitterId: string, tweetId: string): Promise<Ret
                     $push: {
                         'inventory.items': {
                             type: item,
-                            amount
+                            amount,
+                            totalAmountConsumed: 0,
+                            weeklyAmountConsumed: 0
                         }
                     }
                 })

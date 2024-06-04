@@ -174,7 +174,9 @@ export const claimDailyKOSRewards = async (twitterId: string): Promise<ReturnVal
                 } else {
                     userUpdateOperations.$push['inventory.items'] = {
                         type: reward.type,
-                        amount: reward.amount
+                        amount: reward.amount,
+                        totalAmountConsumed: 0,
+                        weeklyAmountConsumed: 0
                     }
                 }
             }
@@ -433,7 +435,9 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
                 } else {
                     userUpdateOperations.$push['inventory.items'] = {
                         type: reward.type,
-                        amount: reward.amount
+                        amount: reward.amount,
+                        totalAmountConsumed: 0,
+                        weeklyAmountConsumed: 0
                     }
                 }
             // if reward is terra capsulator I or II
@@ -447,7 +451,9 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
                 } else {
                     userUpdateOperations.$push['inventory.items'] = {
                         type: reward.type,
-                        amount: reward.amount
+                        amount: reward.amount,
+                        totalAmountConsumed: 0,
+                        weeklyAmountConsumed: 0
                     }
                 }
             // if reward type is raft speed booster 60 min
@@ -461,7 +467,9 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
                 } else {
                     userUpdateOperations.$push['inventory.items'] = {
                         type: reward.type,
-                        amount: reward.amount
+                        amount: reward.amount,
+                        totalAmountConsumed: 0,
+                        weeklyAmountConsumed: 0
                     }
                 }
             }

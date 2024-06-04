@@ -1480,6 +1480,8 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
                     userUpdateOperations.$push['inventory.items'].$each.push({
                         type: BitOrbType.BIT_ORB_I,
                         amount: reward.amount,
+                        totalAmountConsumed: 0,
+                        weeklyAmountConsumed: 0
                     });
                 }
             }
@@ -1496,6 +1498,8 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
                     userUpdateOperations.$push['inventory.items'].$each.push({
                         type: TerraCapsulatorType.TERRA_CAPSULATOR_I,
                         amount: reward.amount,
+                        totalAmountConsumed: 0,
+                        weeklyAmountConsumed: 0
                     });
                 }
             }
