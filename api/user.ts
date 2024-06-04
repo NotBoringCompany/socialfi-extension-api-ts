@@ -1782,3 +1782,92 @@ export const disconnectFromDiscord = async (twitterId: string): Promise<ReturnVa
         };
     }
 };
+
+/**
+ * Resets all users' `inventory.xCookieData.weeklyXCookiesSpent` to 0 every week at Sunday 23:59 UTC (called by a scheduler).
+ */
+export const resetWeeklyXCookiesSpent = async (): Promise<void> => {
+    try {
+        const users = await UserModel.find().lean();
+
+        const userUpdateOperations: Array<{
+            userId: string;
+            updateOperations: {
+                $pull: {};
+                $inc: {};
+                $set: {};
+                $push: {};
+            };
+        }> = [];
+
+        for (const user of users) {
+            userUpdateOperations.push({
+                userId: user._id,
+                updateOperations: {
+                    $set: {
+                        'inventory.xCookieData.weeklyXCookiesSpent': 0,
+                    },
+                    $inc: {},
+                    $pull: {},
+                    $push: {},
+                },
+            });
+        }
+
+        // execute the update operations
+        const userUpdatePromises = userUpdateOperations.map(async (op) => {
+            return UserModel.updateOne({ _id: op.userId }, op.updateOperations);
+        });
+
+        await Promise.all(userUpdatePromises);
+
+        console.log('Weekly xCookies spent reset.');
+    } catch (err: any) {
+        console.error('Error in resetWeeklyXCookiesSpent:', err.message);
+    }
+}
+
+/**
+ * Resets all users' `weeklyAmountConsumed` for each item in `inventory.items` to 0 every week at Sunday 23:59 UTC (called by a scheduler).
+ */
+export const resetWeeklyItemsConsumed = async (): Promise<void> => {
+    try {
+        const users = await UserModel.find().lean();
+
+        if (users.length === 0 || !users) {
+            return;
+        }
+
+        const bulkWriteOps = users.map(user => {
+            const updateOperations = [];
+
+            const userItems = user.inventory.items as Item[];
+
+            if (userItems.length === 0) {
+                return;
+            }
+
+            for (const item of userItems) {
+                if (item.weeklyAmountConsumed === 0) {
+                    continue;
+                }
+
+                updateOperations.push({
+                    updateOne: {
+                        filter: { _id: user._id, 'inventory.items.type': item.type },
+                        update: {
+                            $set: { 'inventory.items.$.weeklyAmountConsumed': 0 },
+                        },
+                    },
+                });
+            }
+
+            return updateOperations;
+        }).flat();
+
+        // execute the bulk write operations
+        await UserModel.bulkWrite(bulkWriteOps);
+    } catch (err: any) {
+        console.error('Error in resetWeeklyItemsConsumed:', err.message);
+    }
+}

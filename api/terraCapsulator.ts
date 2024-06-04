@@ -43,11 +43,11 @@ export const consumeTerraCapsulator = async (type: TerraCapsulatorType, twitterI
         }
 
         // consume the Terra Capsulator
-        // decrement the Terra Capsulator count by 1 and increase the `totalAmountConsumed` and `totalWeeklyAmountConsumed` by 1
+        // decrement the Terra Capsulator count by 1 and increase the `totalAmountConsumed` and `weeklyAmountConsumed` by 1
         const terraCapsulatorIndex = (user.inventory?.items as Item[]).findIndex(i => i.type === type);
 
         userUpdateOperations.$inc[`inventory.items.${terraCapsulatorIndex}.totalAmountConsumed`] = 1;
-        userUpdateOperations.$inc[`inventory.items.${terraCapsulatorIndex}.totalWeeklyAmountConsumed`] = 1;
+        userUpdateOperations.$inc[`inventory.items.${terraCapsulatorIndex}.weeklyAmountConsumed`] = 1;
         userUpdateOperations.$inc[`inventory.items.${terraCapsulatorIndex}.amount`] = -1;
 
         // call `summonIsland` to summon an Island
