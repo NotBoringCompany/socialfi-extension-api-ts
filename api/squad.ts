@@ -473,10 +473,12 @@ export const renameSquad = async (twitterId: string, newSquadName: string): Prom
             lastNameChangeTimestamp: currentTimestamp
         });
 
-        // deduct the cost from the user's xCookies.
+        // deduct the cost from the user's xCookies and update `totalXCookiesSpent` and `weeklyXCookiesSpent`
         await UserModel.updateOne({ _id: user._id }, {
             $inc: {
-                'inventory.xCookieData.currentXCookies': -cost
+                'inventory.xCookieData.currentXCookies': -cost,
+                'inventory.xCookieData.totalXCookiesSpent': cost,
+                'inventory.xCookieData.weeklyXCookiesSpent': cost
             }
         });
 
@@ -652,7 +654,10 @@ export const createSquad = async (twitterId: string, squadName: string): Promise
             'inGameData.squadId': squad._id,
             $inc: {
                 // if cost is 0, then this essentially does nothing.
-                'inventory.xCookieData.currentXCookies': -cost
+                // also increment `totalXCookiesSpent` and `weeklyXCookiesSpent`.
+                'inventory.xCookieData.currentXCookies': -cost,
+                'inventory.xCookieData.totalXCookiesSpent': cost,
+                'inventory.xCookieData.weeklyXCookiesSpent': cost
             }
         });
 
@@ -866,10 +871,12 @@ export const upgradeSquadLimit = async (twitterId: string): Promise<ReturnValue>
             maxMembers: squad.maxMembers + MAX_MEMBERS_INCREASE_UPON_UPGRADE
         });
 
-        // deduct the cost from the user's xCookies.
+        // deduct the cost from the user's xCookies. also increment `totalXCookiesSpent` and `weeklyXCookiesSpent`.
         await UserModel.updateOne({ _id: user._id }, {
             $inc: {
-                'inventory.xCookieData.currentXCookies': -cost
+                'inventory.xCookieData.currentXCookies': -cost,
+                'inventory.xCookieData.totalXCookiesSpent': cost,
+                'inventory.xCookieData.weeklyXCookiesSpent': cost
             }
         });
 

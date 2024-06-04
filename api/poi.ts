@@ -1505,10 +1505,14 @@ export const buyItemsInPOIShop = async (
             }
 
             // if payment choice is xCookies, deduct from `user.inventory.xCookieData.currentXCookies`
+            // also increment `totalXCookiesSpent` and `weeklyXCookiesSpent` by the total payment.
             if (paymentChoice === 'xCookies') {
                 userUpdateOperations.$inc[`inventory.xCookieData.currentXCookies`] = -totalPayment;
+                userUpdateOperations.$inc[`inventory.xCookieData.totalXCookiesSpent`] = totalPayment;
+                userUpdateOperations.$inc[`inventory.xCookieData.weeklyXCookiesSpent`] = totalPayment;
             } else if (paymentChoice === 'cookieCrumbs') {
                 userUpdateOperations.$inc[`inventory.cookieCrumbs`] = -totalPayment;
+                // to do later: increment `totalCookieCrumbsSpent` and `weeklyCookieCrumbsSpent` by the total payment (not implemented yet).
             }
         });
 

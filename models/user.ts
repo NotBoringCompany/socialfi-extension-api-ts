@@ -102,6 +102,10 @@ export interface UserInventory {
 export interface XCookieData {
     /** the user's current xCookies left */
     currentXCookies: number;
+    /** the total amount of xCookies the user has spent */
+    totalXCookiesSpent: number;
+    /** the weekly amount of xCookies the user has spent. resets every sunday 23:59 utc */
+    weeklyXCookiesSpent: number;
     /** the extended xCookie data (shows how many cookies have been obtained from what source) */
     extendedXCookieData: ExtendedXCookieData[];
 }

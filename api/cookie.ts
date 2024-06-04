@@ -34,7 +34,7 @@ export const depositCookies = async (twitterId: string, amount: number): Promise
 
         // we dont check for errors here since it will directly go to the catch block if there's an error
         // 1. we increment the user's xCookies balance by the amount of cookies deposited
-        // 2. we check if the user's `extendedXCookieData.source` has COOKIE_DEPOSIT. If not, we add a new COOKIE_DEPOSIT instance
+        // 2. we check if the user's `extendedXCookieData.source` has COOKIE_DEPOSIT. If not, we add a new COOKIE_DEPOSIT instance.
         const cookieDepositIndex = (user.inventory?.extendedXCookieData as ExtendedXCookieData[]).findIndex(data => data.source === XCookieSource.COOKIE_DEPOSIT);
 
         if (cookieDepositIndex !== -1) {

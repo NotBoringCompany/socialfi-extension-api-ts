@@ -117,8 +117,10 @@ export const purchaseShopAsset = async (
             }
         }
 
-        // deduct the asset price from the user's xCookies
+        // deduct the asset price from the user's xCookies and increment `totalXCookiesSpent` and `weeklyXCookiesSpent`
         userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = -(assetPrice * amount);
+        userUpdateOperations.$inc['inventory.xCookieData.totalXCookiesSpent'] = assetPrice * amount;
+        userUpdateOperations.$inc['inventory.xCookieData.weeklyXCookiesSpent'] = assetPrice * amount;
 
         // update the user's inventory
         await UserModel.updateOne({ twitterId }, userUpdateOperations);

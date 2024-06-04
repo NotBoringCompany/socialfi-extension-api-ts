@@ -232,8 +232,10 @@ export const evolveRaft = async (twitterId: string): Promise<ReturnValue> => {
             }
         }
 
-        // deduct the xCookies from the user
+        // deduct the xCookies from the user and increment `totalXCookiesSpent` and `weeklyXCookiesSpent`
         userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = -upgradeCost;
+        userUpdateOperations.$inc['inventory.xCookieData.totalXCookiesSpent'] = upgradeCost;
+        userUpdateOperations.$inc['inventory.xCookieData.weeklyXCookiesSpent'] = upgradeCost;
 
         // upgrade the raft
         raftUpdateOperations.$inc['currentLevel'] = 1;

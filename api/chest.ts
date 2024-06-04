@@ -104,7 +104,7 @@ export const openChest = async (twitterId: string, tweetId: string): Promise<Ret
             }
         // increment the user's xCookies
         } else if (isXCookies) {
-            // do 2 things:
+            // do a few things:
             // 1. increment the user's xCookies
             // 2. check if the user's `xCookieData.extendedXCookieData` contains the source CHEST_REWARDS.
             // if it does, increment the amount, if not, add it to the user's `xCookieData.extendedXCookieData`
@@ -121,7 +121,7 @@ export const openChest = async (twitterId: string, tweetId: string): Promise<Ret
             } else {
                 await UserModel.updateOne({ twitterId }, {
                     $inc: {
-                        'inventory.xCookieData.currentXCookies': amount
+                        'inventory.xCookieData.currentXCookies': amount,
                     },
                     $push: {
                         'inventory.xCookieData.extendedXCookieData': {
@@ -131,6 +131,7 @@ export const openChest = async (twitterId: string, tweetId: string): Promise<Ret
                     }
                 })
             }
+            
         // increment the user's bit orb count
         } else if (isBitOrbI) {
             // check if the user already has the bit orb, if yes, increment the amount, if not, add it to the user's inventory

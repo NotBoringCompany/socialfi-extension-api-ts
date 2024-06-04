@@ -815,8 +815,10 @@ export const evolveBit = async (
                 };
             }
 
-            // deduct the required xCookies from the user's inventory
+            // deduct the required xCookies from the user's inventory. increase the `totalXCookiesSpent` and `weeklyXCookiesSpent` by the required xCookies
             userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = -requiredXCookies;
+            userUpdateOperations.$inc['inventory.xCookieData.totalXCookiesSpent'] = requiredXCookies;
+            userUpdateOperations.$inc['inventory.xCookieData.weeklyXCookiesSpent'] = requiredXCookies;
 
             // increase the bit's current farming level by 1
             bitUpdateOperations.$inc['currentFarmingLevel'] = 1;
