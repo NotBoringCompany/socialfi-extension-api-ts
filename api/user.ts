@@ -28,7 +28,7 @@ import { Item } from '../models/item';
 import { BitRarity, BitTrait } from '../models/bit';
 import { IslandStatsModifiers, IslandType } from '../models/island';
 import { Modifier } from '../models/modifier';
-import { LeaderboardPointsSource } from '../models/leaderboard';
+import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
 import { FoodType } from '../models/food';
 import { BoosterItem } from '../models/booster';
 import { randomizeIslandTraits } from '../utils/constants/island';
@@ -2067,5 +2067,239 @@ export const distributeWeeklyMVPRewards = async (): Promise<void> => {
         console.log('Weekly MVP rewards distributed.');
     } catch (err: any) {
         console.error('Error in distributeWeeklyMVPRewards:', err.message);
+    }
+}
+
+/**
+ * Claims the weekly MVP rewards for the user.
+ */
+export const claimWeeklyMVPRewards = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(claimWeeklyMVPRewards) User not found.`,
+            };
+        }
+
+        const weeklyMVPRewards = await WeeklyMVPClaimableRewardsModel.findOne({ userId: user._id });
+
+        if (!weeklyMVPRewards) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(claimWeeklyMVPRewards) Weekly MVP rewards not found for user.`,
+            };
+        }
+
+        // check if the user has any claimable rewards
+        if (weeklyMVPRewards.claimableRewards.length === 0) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(claimWeeklyMVPRewards) No claimable rewards.`,
+            };
+        }
+
+        // for now, because `WeeklyMVPRewardType` only has `LEADERBOARD_POINTS`, we only check for that.
+        const leaderboardUpdateOperations = {
+            $inc: {},
+            $push: {},
+            $pull: {},
+            $set: {}
+        }
+
+        const squadUpdateOperations = {
+            $inc: {},
+            $push: {},
+            $pull: {},
+            $set: {}
+        }
+
+        const squadLeaderboardUpdateOperations = {
+            $inc: {},
+            $push: {},
+            $pull: {},
+            $set: {}
+        }
+
+        const userUpdateOperations = {
+            $inc: {},
+            $push: {},
+            $pull: {},
+            $set: {}
+        }
+
+        const claimableLeaderboardPoints = weeklyMVPRewards.claimableRewards.findIndex(reward => reward.type === WeeklyMVPRewardType.LEADERBOARD_POINTS);
+
+        const latestSquadLeaderboard = await SquadLeaderboardModel.findOne().sort({ week: -1 }).lean();
+
+        if (!latestSquadLeaderboard) {
+            return {
+                status: Status.ERROR,
+                message: `(claimWeeklyMVPRewards) Squad leaderboard not found.`,
+            };
+        }
+
+
+        // check if the user exists in the season 0 leaderboard's `userData` array.
+        // if not, create a new entry. else:
+        // check if the source `WEEKLY_MVP_REWARDS` exists in the user's points data.
+        // if it does, increment the points. if not, create a new entry.
+        // also, if the user is eligible for additional points, add the additional points to `points`.
+        const leaderboard = await LeaderboardModel.findOne({ name: 'Season 0' }).lean();
+
+        if (!leaderboard) {
+            return {
+                status: Status.ERROR,
+                message: `(claimWeeklyMVPRewards) Leaderboard not found.`,
+            };
+        }
+
+        const userIndex = (leaderboard.userData as LeaderboardUserData[]).findIndex(data => data.userId === user._id);
+
+        let additionalPoints = 0;
+
+        const currentLevel = user.inGameData.level;
+
+        if (userIndex === -1) {
+            // check if the user is eligible to level up to the next level
+            const newLevel = GET_SEASON_0_PLAYER_LEVEL(claimableLeaderboardPoints);
+
+            if (newLevel > currentLevel) {
+                userUpdateOperations.$set['inGameData.level'] = newLevel;
+
+                // add the additional points based on the rewards obtainable
+                additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
+            }
+
+            leaderboardUpdateOperations.$push['userData'] = {
+                userId: user._id,
+                username: user.twitterUsername,
+                twitterProfilePicture: user.twitterProfilePicture,
+                pointsData: [
+                    {
+                        points: claimableLeaderboardPoints,
+                        source: LeaderboardPointsSource.WEEKLY_MVP_REWARDS
+                    },
+                    {
+                        points: additionalPoints,
+                        source: LeaderboardPointsSource.LEVELLING_UP
+                    }
+                ]
+            }
+        } else {
+            // if user is found, get the user's total leaderboard points
+            // this is done by summing up all the points from the `pointsData` array, BUT EXCLUDING SOURCES FROM:
+            // 1. LeaderboardPointsSource.LEVELLING_UP
+            const totalLeaderboardPoints = leaderboard.userData[userIndex].pointsData.reduce((acc, pointsData) => {
+                if (pointsData.source !== LeaderboardPointsSource.LEVELLING_UP) {
+                    return acc + pointsData.points;
+                }
+
+                return acc;
+            }, 0);
+
+            const newLevel = GET_SEASON_0_PLAYER_LEVEL(totalLeaderboardPoints + claimableLeaderboardPoints);
+
+            if (newLevel > currentLevel) {
+                userUpdateOperations.$set['inGameData.level'] = newLevel;
+                additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
+            }
+
+            // get the source index for `WEEKLY_MVP_REWARDS`
+            const sourceIndex = leaderboard.userData[userIndex].pointsData.findIndex(data => data.source === LeaderboardPointsSource.WEEKLY_MVP_REWARDS);
+
+            if (sourceIndex !== -1) {
+                leaderboardUpdateOperations.$inc[`userData.${userIndex}.pointsData.${sourceIndex}.points`] = claimableLeaderboardPoints;
+            } else {
+                leaderboardUpdateOperations.$push[`userData.${userIndex}.pointsData`] = {
+                    points: claimableLeaderboardPoints,
+                    source: LeaderboardPointsSource.KOS_BENEFITS
+                }
+            }
+
+            if (additionalPoints > 0) {
+                const levellingUpIndex = leaderboard.userData[userIndex].pointsData.findIndex(data => data.source === LeaderboardPointsSource.LEVELLING_UP);
+
+                if (levellingUpIndex !== -1) {
+                    leaderboardUpdateOperations.$inc[`userData.${userIndex}.pointsData.${levellingUpIndex}.points`] = additionalPoints;
+                } else {
+                    leaderboardUpdateOperations.$push[`userData.${userIndex}.pointsData`] = {
+                        points: additionalPoints,
+                        source: LeaderboardPointsSource.LEVELLING_UP
+                    }
+                }
+            }
+        }
+
+        // if the user is also in a squad, add the points to the squad's total points
+        if (user.inGameData.squadId !== null) {
+            const squad = await SquadModel.findOne({ _id: user.inGameData.squadId }).lean();
+
+            if (!squad) {
+                return {
+                    status: Status.ERROR,
+                    message: `(claimWeeklyMVPRewards) Squad not found.`,
+                };
+            }
+
+            // add only the reward amount (i.e. claimableLeaderboardPoints) to the squad's total points
+            squadUpdateOperations.$inc['totalSquadPoints'] = claimableLeaderboardPoints;
+
+            // check if the squad exists in the squad leaderboard's `pointsData`. if not, we create a new instance.
+            const squadIndex = latestSquadLeaderboard.pointsData.findIndex(data => data.squadId === squad._id);
+
+            if (squadIndex === -1) {
+                squadLeaderboardUpdateOperations.$push['pointsData'] = {
+                    squadId: squad._id,
+                    squadName: squad.name,
+                    memberPoints: [
+                        {
+                            userId: user._id,
+                            username: user.twitterUsername,
+                            points: claimableLeaderboardPoints
+                        }
+                    ]
+                }
+            } else {
+                // otherwise, we increment the points for the user in the squad
+                const userIndex = latestSquadLeaderboard.pointsData[squadIndex].memberPoints.findIndex(data => data.userId === user._id);
+
+                if (userIndex !== -1) {
+                    squadLeaderboardUpdateOperations.$inc[`pointsData.${squadIndex}.memberPoints.${userIndex}.points`] = claimableLeaderboardPoints;
+                } else {
+                    squadLeaderboardUpdateOperations.$push[`pointsData.${squadIndex}.memberPoints`] = {
+                        userId: user._id,
+                        username: user.twitterUsername,
+                        points: claimableLeaderboardPoints
+                    }
+                }
+            }
+        }
+
+        // execute the update operations
+        await Promise.all([
+            LeaderboardModel.updateOne({ name: 'Season 0' }, leaderboardUpdateOperations),
+            SquadModel.updateOne({ _id: user.inGameData.squadId }, squadUpdateOperations),
+            SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, squadLeaderboardUpdateOperations),
+            // set the claimableRewards back to an empty array.
+            WeeklyMVPClaimableRewardsModel.updateOne({ userId: user._id }, { $set: { claimableRewards: [] } }),
+            UserModel.updateOne({ twitterId }, userUpdateOperations)
+        ]);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(claimWeeklyMVPRewards) Weekly MVP rewards claimed.`,
+            data: {
+                leaderboardPoints: claimableLeaderboardPoints,
+                additionalPoints
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(claimWeeklyMVPRewards) ${err.message}`
+        }
     }
 }
