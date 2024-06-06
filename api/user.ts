@@ -1871,3 +1871,10 @@ export const resetWeeklyItemsConsumed = async (): Promise<void> => {
         console.error('Error in resetWeeklyItemsConsumed:', err.message);
     }
 }
+
+/**
+ * 
+ */
+export const distributeWeeklyMVPRewards = async (): Promise<void> => {
+
+}
