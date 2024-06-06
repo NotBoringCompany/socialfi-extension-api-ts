@@ -11,6 +11,7 @@ import { TerraCapsulatorType } from '../models/terraCapsulator';
 import { Item } from '../models/item';
 import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
 import { WeeklyMVPRewardType } from '../models/weeklyMVPReward';
+import { XCookieData } from '../models/user';
 /**
  * Fetches the current contenders to be the weekly MVP for most xCookies spent or most terra caps/bit orbs consumed.
  */
@@ -38,7 +39,7 @@ export const getWeeklyMVPContenders = async (): Promise<ReturnValue> => {
         }[] = [];
 
         for (const user of users) {
-            const xCookiesSpent = user.inventory.xCookieData.weeklyXCookiesSpent;
+            const xCookiesSpent = (user.inventory.xCookieData as XCookieData).weeklyXCookiesSpent ?? 0;
 
             const bitOrbsConsumed = (user.inventory.items as Item[]).reduce((acc, item) => {
                 if (item.type === BitOrbType.BIT_ORB_I || item.type === BitOrbType.BIT_ORB_II || item.type === BitOrbType.BIT_ORB_III) {
@@ -127,7 +128,7 @@ export const distributeWeeklyMVPRewards = async (): Promise<void> => {
         }[] = [];
 
         for (const user of users) {
-            const xCookiesSpent = user.inventory.xCookieData.weeklyXCookiesSpent;
+            const xCookiesSpent = (user.inventory.xCookieData as XCookieData).weeklyXCookiesSpent ?? 0;
 
             const bitOrbsConsumed = (user.inventory.items as Item[]).reduce((acc, item) => {
                 if (item.type === BitOrbType.BIT_ORB_I || item.type === BitOrbType.BIT_ORB_II || item.type === BitOrbType.BIT_ORB_III) {
