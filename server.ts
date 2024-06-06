@@ -51,6 +51,7 @@ import squad from './routes/squad';
 import setting from './routes/setting';
 import poap from './routes/poap';
 import squadLeaderboard from './routes/squadLeaderboard';
+import weeklyMVPReward from './routes/weeklyMVPReward';
 import { schedulers } from './schedulers/schedulers';
 
 app.use('/auth/twitter', twitterAuth);
@@ -76,6 +77,7 @@ app.use('/squad', squad);
 app.use('/setting', setting);
 app.use('/poap', poap);
 app.use('/squad_leaderboard', squadLeaderboard);
+app.use('/weekly_mvp_reward', weeklyMVPReward);
 
 app.listen(port, async () => {
     console.log(`Server running on port ${port}`);

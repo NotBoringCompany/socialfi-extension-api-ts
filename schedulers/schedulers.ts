@@ -3,7 +3,8 @@ import { removeOpenedTweetIdsTodayScheduler } from './chest';
 import { updateClaimableCrumbsScheduler, updateClaimableXCookiesScheduler, updateDailyBonusResourcesGatheredScheduler, updateGatheringProgressAndDropResourceScheduler } from './island';
 import { checkDailyKOSRewardsScheduler, checkWeeklyKOSRewardsScheduler } from './kos';
 import { calculateWeeklySquadRankingAndAddSquadLeaderboardScheduler } from './squadLeaderboard';
-import { distributeWeeklyMVPRewardsScheduler, updateBeginnerRewardsDataScheduler, updateDailyLoginRewardsDataScheduler } from './user';
+import { updateBeginnerRewardsDataScheduler, updateDailyLoginRewardsDataScheduler } from './user';
+import { distributeWeeklyMVPRewardsScheduler } from './weeklyMVPReward';
 
 export const schedulers = async (): Promise<void> => {
     try {
