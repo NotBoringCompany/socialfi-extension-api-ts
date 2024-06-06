@@ -1,5 +1,5 @@
 import cron from 'node-cron';
-import { resetWeeklyItemsConsumed, resetWeeklyXCookiesSpent, updateBeginnerRewardsData, updateDailyLoginRewardsData } from '../api/user';
+import { distributeWeeklyMVPRewards, resetWeeklyItemsConsumed, resetWeeklyXCookiesSpent, updateBeginnerRewardsData, updateDailyLoginRewardsData } from '../api/user';
 
 /**
  * Updates all users' daily login rewards data every day at 00:00 UTC
@@ -32,31 +32,24 @@ export const updateBeginnerRewardsDataScheduler = async (): Promise<void> => {
 }
 
 /**
- * Updates all users' `weeklyXCookiesSpent` to 0 every Sunday 23:59 UTC
+ * Does a few things:
+ * 
+ * 1. Calls `distributeWeeklyMVPRewards` to distribute the weekly MVP rewards to the users who spends the most xCookies or consumes the most bit orbs/terra caps
+ * 2. Calls `resetWeeklyXCookiesSpent` and `resetWeeklyItemsConsumed` to reset the weekly xCookies spent and weekly items consumed for each user after #1 is called.
+ * 
+ * Called every 23:59 UTC Sunday 
  */
-export const resetWeeklyXCookiesSpentScheduler = async (): Promise<void> => {
+export const distributeWeeklyMVPRewardsScheduler = async (): Promise<void> => {
     try {
         cron.schedule('59 23 * * 0', async () => {
-            console.log('Running resetWeeklyXCookiesSpent...');
+            console.log('Running distributeWeeklyMVPRewards...');
+
+            await distributeWeeklyMVPRewards();
 
             await resetWeeklyXCookiesSpent();
-        });
-    } catch (err: any) {
-        console.error('Error in resetWeeklyXCookiesSpent:', err.message);
-    }
-}
-
-/**
- * Updates all users' `weeklyAmountConsumed` for each item in their inventory to 0 every Sunday 23:59 UTC
- */
-export const resetWeeklyItemsConsumedScheduler = async (): Promise<void> => {
-    try {
-        cron.schedule('59 23 * * 0', async () => {
-            console.log('Running resetWeeklyAmountConsumed...');
-
             await resetWeeklyItemsConsumed();
         });
     } catch (err: any) {
-        console.error('Error in resetWeeklyAmountConsumed:', err.message);
+        console.error('Error in distributeWeeklyMVPRewards:', err.message);
     }
 }

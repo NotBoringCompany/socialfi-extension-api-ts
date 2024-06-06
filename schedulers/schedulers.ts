@@ -3,7 +3,7 @@ import { removeOpenedTweetIdsTodayScheduler } from './chest';
 import { updateClaimableCrumbsScheduler, updateClaimableXCookiesScheduler, updateDailyBonusResourcesGatheredScheduler, updateGatheringProgressAndDropResourceScheduler } from './island';
 import { checkDailyKOSRewardsScheduler, checkWeeklyKOSRewardsScheduler } from './kos';
 import { calculateWeeklySquadRankingAndAddSquadLeaderboardScheduler } from './squadLeaderboard';
-import { resetWeeklyItemsConsumedScheduler, resetWeeklyXCookiesSpentScheduler, updateBeginnerRewardsDataScheduler, updateDailyLoginRewardsDataScheduler } from './user';
+import { distributeWeeklyMVPRewardsScheduler, updateBeginnerRewardsDataScheduler, updateDailyLoginRewardsDataScheduler } from './user';
 
 export const schedulers = async (): Promise<void> => {
     try {
@@ -20,8 +20,7 @@ export const schedulers = async (): Promise<void> => {
 
         await calculateWeeklySquadRankingAndAddSquadLeaderboardScheduler();
 
-        await resetWeeklyXCookiesSpentScheduler();
-        await resetWeeklyItemsConsumedScheduler();
+        await distributeWeeklyMVPRewardsScheduler();
 
         await checkDailyKOSRewardsScheduler();
         await checkWeeklyKOSRewardsScheduler();

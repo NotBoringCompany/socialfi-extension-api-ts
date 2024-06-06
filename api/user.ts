@@ -1875,7 +1875,9 @@ export const resetWeeklyItemsConsumed = async (): Promise<void> => {
 }
 
 /**
+ * Distributes the weekly MVP rewards based on which users spends the most xCookies, or consumes the most bit orbs/terra capsulators.
  * 
+ * Called by a scheduler every Sunday 23:59 UTC BEFORE calling `resetWeeklyXCookiesSpent` and `resetWeeklyItemsConsumed`.
  */
 export const distributeWeeklyMVPRewards = async (): Promise<void> => {
     try {
