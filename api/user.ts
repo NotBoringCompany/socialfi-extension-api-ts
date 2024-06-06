@@ -5,7 +5,7 @@ import { generateHashSalt, generateObjectId, generateReferralCode } from '../uti
 import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
 import { RANDOMIZE_GENDER, getBitStatsModifiersFromTraits, randomizeBitTraits, randomizeBitType } from '../utils/constants/bit';
 import { ObtainMethod } from '../models/obtainMethod';
-import { LeaderboardModel, SquadLeaderboardModel, SquadModel, StarterCodeModel, UserModel } from '../utils/constants/db';
+import { LeaderboardModel, SquadLeaderboardModel, SquadModel, StarterCodeModel, UserModel, WeeklyMVPClaimableRewardsModel } from '../utils/constants/db';
 import { addIslandToDatabase, getLatestIslandId, randomizeBaseResourceCap } from './island';
 import { POIName } from '../models/poi';
 import { ExtendedResource, SimplifiedResource } from '../models/resource';
@@ -19,6 +19,7 @@ import {
     GET_SEASON_0_REFERRAL_REWARDS,
     MAX_BEGINNER_REWARD_DAY,
     MAX_INVENTORY_WEIGHT,
+    WEEKLY_MVP_REWARDS,
 } from '../utils/constants/user';
 import { ReferredUserData } from '../models/invite';
 import { BitOrbType } from '../models/bitOrb';
@@ -34,6 +35,7 @@ import { randomizeIslandTraits } from '../utils/constants/island';
 import { Signature, recoverMessageAddress } from 'viem';
 import { joinReferrerSquad } from './squad';
 import { ExtendedDiscordProfile, ExtendedProfile } from '../utils/types';
+import { WeeklyMVPRewardType } from '../models/weeklyMVPReward';
 
 /**
  * Returns the user's data.
@@ -1876,5 +1878,192 @@ export const resetWeeklyItemsConsumed = async (): Promise<void> => {
  * 
  */
 export const distributeWeeklyMVPRewards = async (): Promise<void> => {
+    try {
+        const users = await UserModel.find().lean();
 
+        if (users.length === 0 || !users) {
+            return;
+        }
+
+        // loop through each user and find the users with:
+        // 1. the most xCookies spent (i.e. `inventory.xCookieData.weeklyXCookiesSpent`)
+        // 2. the most bit orbs consumed (i.e. `inventory.items.weeklyAmountConsumed` for Bit Orb (I), (II), and (III))
+        // 3. the most terra capsulators consumed (i.e. `inventory.items.weeklyAmountConsumed` for Terra Capsulator (I), (II))
+        const mvpData: {
+            userId: string;
+            username: string;
+            xCookiesSpent: number;
+            bitOrbsConsumed: number;
+            terraCapsulatorsConsumed: number;
+        }[] = [];
+
+        for (const user of users) {
+            const xCookiesSpent = user.inventory.xCookieData.weeklyXCookiesSpent;
+
+            const bitOrbsConsumed = (user.inventory.items as Item[]).reduce((acc, item) => {
+                if (item.type === BitOrbType.BIT_ORB_I || item.type === BitOrbType.BIT_ORB_II || item.type === BitOrbType.BIT_ORB_III) {
+                    return acc + item.weeklyAmountConsumed;
+                }
+                return acc;
+            }, 0);
+            const terraCapsulatorsConsumed = (user.inventory.items as Item[]).reduce((acc, item) => {
+                if (item.type === TerraCapsulatorType.TERRA_CAPSULATOR_I || item.type === TerraCapsulatorType.TERRA_CAPSULATOR_II) {
+                    return acc + item.weeklyAmountConsumed;
+                }
+                return acc;
+            }, 0);
+
+            mvpData.push({
+                userId: user._id,
+                username: user.twitterUsername,
+                xCookiesSpent,
+                bitOrbsConsumed,
+                terraCapsulatorsConsumed,
+            });
+        }
+
+        // sort the MVP data by the most xCookies spent and get the highest spender
+        const xCookiesMVPData = mvpData.sort((a, b) => b.xCookiesSpent - a.xCookiesSpent)[0];
+
+        // sort the MVP data by the most bit orbs consumed and get the highest consumer
+        const bitOrbsMVPData = mvpData.sort((a, b) => b.bitOrbsConsumed - a.bitOrbsConsumed)[0];
+
+        // sort the MVP data by the most terra capsulators consumed and get the highest consumer
+        const terraCapsulatorsMVPData = mvpData.sort((a, b) => b.terraCapsulatorsConsumed - a.terraCapsulatorsConsumed)[0];
+
+        const xCookiesMVPRewardsUpdateOperations = {
+            $set: {},
+            $inc: {},
+            $push: {},
+            $pull: {},
+        }
+
+        const bitOrbsMVPRewardsUpdateOperations = {
+            $set: {},
+            $inc: {},
+            $push: {},
+            $pull: {},
+        }
+
+        const terraCapsulatorsMVPRewardsUpdateOperations = {
+            $set: {},
+            $inc: {},
+            $push: {},
+            $pull: {},
+        }
+
+        // fetch the `WeeklyMVPClaimableRewards` model
+        const xCookiesMVP = await WeeklyMVPClaimableRewardsModel.findOne({ userId: xCookiesMVPData.userId });
+        const bitOrbsMVP = await WeeklyMVPClaimableRewardsModel.findOne({ userId: bitOrbsMVPData.userId });
+        const terraCapsulatorsMVP = await WeeklyMVPClaimableRewardsModel.findOne({ userId: terraCapsulatorsMVPData.userId });
+
+        // check, for each mvp, if each of them exists. if not, create a new entry.
+        if (!xCookiesMVP) {
+            const newXCookiesMVP = new WeeklyMVPClaimableRewardsModel({
+                _id: generateObjectId(),
+                userId: xCookiesMVPData.userId,
+                username: xCookiesMVPData.username,
+                claimableRewards: [
+                    {
+                        type: WeeklyMVPRewardType.LEADERBOARD_POINTS,
+                        amount: WEEKLY_MVP_REWARDS('xCookies')
+                    }
+                ]
+            });
+
+            await newXCookiesMVP.save();
+
+            console.log(`Created new xCookies MVP entry for user ${xCookiesMVPData.username}.`);
+        } else {
+            // find the leaderboard points index
+            const leaderboardPointsIndex = xCookiesMVP.claimableRewards.findIndex(reward => reward.type === WeeklyMVPRewardType.LEADERBOARD_POINTS);
+
+            // if it doesn't exist, create a new entry
+            if (leaderboardPointsIndex === -1) {
+                xCookiesMVPRewardsUpdateOperations.$push['claimableRewards'] = {
+                    type: WeeklyMVPRewardType.LEADERBOARD_POINTS,
+                    amount: WEEKLY_MVP_REWARDS('xCookies')
+                };
+            } else {
+                xCookiesMVPRewardsUpdateOperations.$inc[`claimableRewards.${leaderboardPointsIndex}.amount`] = WEEKLY_MVP_REWARDS('xCookies');
+            }
+
+            console.log(`Updated xCookies MVP entry for user ${xCookiesMVPData.username}.`);
+        }
+
+        if (!bitOrbsMVP) {
+            const newBitOrbsMVP = new WeeklyMVPClaimableRewardsModel({
+                _id: generateObjectId(),
+                userId: bitOrbsMVPData.userId,
+                username: bitOrbsMVPData.username,
+                claimableRewards: [
+                    {
+                        type: WeeklyMVPRewardType.LEADERBOARD_POINTS,
+                        amount: WEEKLY_MVP_REWARDS('Bit Orb')
+                    }
+                ]
+            });
+
+            await newBitOrbsMVP.save();
+
+            console.log(`Created new Bit Orbs MVP entry for user ${bitOrbsMVPData.username}.`);
+        } else {
+            // find the leaderboard points index
+            const leaderboardPointsIndex = bitOrbsMVP.claimableRewards.findIndex(reward => reward.type === WeeklyMVPRewardType.LEADERBOARD_POINTS);
+
+            // if it doesn't exist, create a new entry
+            if (leaderboardPointsIndex === -1) {
+                bitOrbsMVPRewardsUpdateOperations.$push['claimableRewards'] = {
+                    type: WeeklyMVPRewardType.LEADERBOARD_POINTS,
+                    amount: WEEKLY_MVP_REWARDS('Bit Orb')
+                };
+            } else {
+                bitOrbsMVPRewardsUpdateOperations.$inc[`claimableRewards.${leaderboardPointsIndex}.amount`] = WEEKLY_MVP_REWARDS('Bit Orb');
+            }
+
+            console.log(`Updated Bit Orbs MVP entry for user ${bitOrbsMVPData.username}.`);
+        }
+
+        if (!terraCapsulatorsMVP) {
+            const newTerraCapsulatorsMVP = new WeeklyMVPClaimableRewardsModel({
+                _id: generateObjectId(),
+                userId: terraCapsulatorsMVPData.userId,
+                username: terraCapsulatorsMVPData.username,
+                claimableRewards: [
+                    {
+                        type: WeeklyMVPRewardType.LEADERBOARD_POINTS,
+                        amount: WEEKLY_MVP_REWARDS('Terra Capsulator')
+                    }
+                ]
+            });
+
+            await newTerraCapsulatorsMVP.save();
+
+            console.log(`Created new Terra Capsulators MVP entry for user ${terraCapsulatorsMVPData.username}.`);
+        } else {
+            // find the leaderboard points index
+            const leaderboardPointsIndex = terraCapsulatorsMVP.claimableRewards.findIndex(reward => reward.type === WeeklyMVPRewardType.LEADERBOARD_POINTS);
+
+            // if it doesn't exist, create a new entry
+            if (leaderboardPointsIndex === -1) {
+                terraCapsulatorsMVPRewardsUpdateOperations.$push['claimableRewards'] = {
+                    type: WeeklyMVPRewardType.LEADERBOARD_POINTS,
+                    amount: WEEKLY_MVP_REWARDS('Terra Capsulator')
+                };
+            } else {
+                terraCapsulatorsMVPRewardsUpdateOperations.$inc[`claimableRewards.${leaderboardPointsIndex}.amount`] = WEEKLY_MVP_REWARDS('Terra Capsulator');
+            }
+
+            console.log(`Updated Terra Capsulators MVP entry for user ${terraCapsulatorsMVPData.username}.`);
+        }
+
+        // execute the update operations (synchronously, just in case they're the same user)
+        await WeeklyMVPClaimableRewardsModel.updateOne({ userId: xCookiesMVPData.userId }, xCookiesMVPRewardsUpdateOperations);
+        await WeeklyMVPClaimableRewardsModel.updateOne({ userId: bitOrbsMVPData.userId }, bitOrbsMVPRewardsUpdateOperations);
+        await WeeklyMVPClaimableRewardsModel.updateOne({ userId: terraCapsulatorsMVPData.userId }, terraCapsulatorsMVPRewardsUpdateOperations);
+
+        console.log('Weekly MVP rewards distributed.');
+    } catch (err: any) {
+        console.error('Error in distributeWeeklyMVPRewards:', err.message);
+    }
 }

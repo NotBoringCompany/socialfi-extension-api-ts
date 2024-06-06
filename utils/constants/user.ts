@@ -206,3 +206,29 @@ export const GET_SEASON_0_PLAYER_LEVEL_REWARDS = (level: number): number => {
                 return 0;
     }
 }
+
+/**
+ * Returns the rewards for a weekly MVP that consumed/spent the most of a specific item.
+ */
+export const WEEKLY_MVP_REWARDS = (mvpType: 'xCookies' | 'Bit Orb' | 'Terra Capsulator'): {
+    leaderboardPoints: number;
+} => {
+    switch (mvpType) {
+        case 'xCookies':
+            return {
+                leaderboardPoints: 3000
+            }
+        case 'Bit Orb':
+            return {
+                leaderboardPoints: 1500
+            }
+        case 'Terra Capsulator':
+            return {
+                leaderboardPoints: 1500
+            }
+        default:
+            return {
+                leaderboardPoints: 0
+            }
+    }
+}
