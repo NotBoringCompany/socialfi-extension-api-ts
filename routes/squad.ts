@@ -49,6 +49,12 @@ router.post('/accept_pending_squad_member', async (req, res) => {
 
         const { status, message, data } = await acceptPendingSquadMember(validateData?.twitterId, memberTwitterId, memberUserId);
 
+        mixpanel.track('Squad Member', {
+            distinct_id: validateData?.twitterId,
+            '_type': 'Join',
+            '_data': data,
+        });
+
         return res.status(status).json({
             status,
             message,
@@ -143,6 +149,12 @@ router.post('/leave_squad', async (req, res) => {
 
         const { status, message, data } = await leaveSquad(validateData?.twitterId);
 
+        mixpanel.track('Squad Member', {
+            distinct_id: validateData?.twitterId,
+            '_type': 'Leave',
+            '_currentMember': data.currentMember,
+        });
+
         return res.status(status).json({
             status,
             message,
@@ -224,6 +236,12 @@ router.post('/kick_member', async (req, res) => {
         }
 
         const { status, message, data } = await kickMember(validateData?.twitterId, memberTwitterId, memberUserId);
+
+        mixpanel.track('Squad Member', {
+            distinct_id: validateData?.twitterId,
+            '_type': 'Kick',
+            '_data': data
+        });
 
         return res.status(status).json({
             status,
