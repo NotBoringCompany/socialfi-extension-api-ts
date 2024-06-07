@@ -122,6 +122,7 @@ export const distributeWeeklyMVPRewards = async (): Promise<void> => {
         const mvpData: {
             userId: string;
             username: string;
+            twitterProfilePicture: string;
             xCookiesSpent: number;
             bitOrbsConsumed: number;
             terraCapsulatorsConsumed: number;
@@ -146,6 +147,7 @@ export const distributeWeeklyMVPRewards = async (): Promise<void> => {
             mvpData.push({
                 userId: user._id,
                 username: user.twitterUsername,
+                twitterProfilePicture: user.twitterProfilePicture,
                 xCookiesSpent,
                 bitOrbsConsumed,
                 terraCapsulatorsConsumed,
@@ -193,6 +195,7 @@ export const distributeWeeklyMVPRewards = async (): Promise<void> => {
                 _id: generateObjectId(),
                 userId: xCookiesMVPData.userId,
                 username: xCookiesMVPData.username,
+                twitterProfilePicture: xCookiesMVPData.twitterProfilePicture,
                 claimableRewards: [
                     {
                         type: WeeklyMVPRewardType.LEADERBOARD_POINTS,
@@ -226,6 +229,7 @@ export const distributeWeeklyMVPRewards = async (): Promise<void> => {
                 _id: generateObjectId(),
                 userId: bitOrbsMVPData.userId,
                 username: bitOrbsMVPData.username,
+                twitterProfilePicture: bitOrbsMVPData.twitterProfilePicture,
                 claimableRewards: [
                     {
                         type: WeeklyMVPRewardType.LEADERBOARD_POINTS,
@@ -259,6 +263,7 @@ export const distributeWeeklyMVPRewards = async (): Promise<void> => {
                 _id: generateObjectId(),
                 userId: terraCapsulatorsMVPData.userId,
                 username: terraCapsulatorsMVPData.username,
+                twitterProfilePicture: terraCapsulatorsMVPData.twitterProfilePicture,
                 claimableRewards: [
                     {
                         type: WeeklyMVPRewardType.LEADERBOARD_POINTS,
