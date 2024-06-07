@@ -536,3 +536,44 @@ export const claimWeeklyMVPRewards = async (twitterId: string): Promise<ReturnVa
         }
     }
 }
+
+/**
+ * Checks if a user has any claimable weekly MVP rewards.
+ */
+export const getClaimableWeeklyMVPRewards = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(getClaimableWeeklyMVPRewards) User not found.`,
+            };
+        }
+
+        const weeklyMVPRewards = await WeeklyMVPClaimableRewardsModel.findOne({ userId: user._id });
+
+        if (!weeklyMVPRewards) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(getClaimableWeeklyMVPRewards) Weekly MVP rewards not found for user.`,
+            };
+        }
+
+        // check if the user has any claimable rewards
+        const claimableRewards = weeklyMVPRewards.claimableRewards;
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getClaimableWeeklyMVPRewards) Claimable weekly MVP rewards fetched.`,
+            data: {
+                claimableRewards
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getClaimableWeeklyMVPRewards) ${err.message}`
+        }
+    }
+}
