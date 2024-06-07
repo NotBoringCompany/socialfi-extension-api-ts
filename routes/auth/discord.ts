@@ -100,10 +100,12 @@ router.get('/callback', passport.authenticate('discord', { failureRedirect: '/',
             })
         );
 
-        mixpanel.track('Connect Discord Callback', {
-            distinct_id: validateData?.twitterId,
-            '_profile': profile,
-        });
+        if (status === Status.SUCCESS) {
+            mixpanel.track('Connect Discord Callback', {
+                distinct_id: validateData?.twitterId,
+                '_profile': profile,
+            });
+        }
 
         return res.redirect(target.href);
     } catch (err: any) {
@@ -127,10 +129,12 @@ router.post('/disconnect', async (req, res) => {
 
         const { status, message, data } = await disconnectFromDiscord(validateData?.twitterId);
 
-        mixpanel.track('Disconnect Discord', {
-            distinct_id: validateData?.twitterId,
-            '_data': data
-        });
+        if (status === Status.SUCCESS) {
+            mixpanel.track('Disconnect Discord', {
+                distinct_id: validateData?.twitterId,
+                '_data': data
+            });
+        }
 
         return res.status(status).json({
             status,

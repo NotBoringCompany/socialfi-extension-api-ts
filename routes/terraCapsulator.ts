@@ -20,11 +20,13 @@ router.post('/consume', async (req, res) => {
 
         const { status, message, data } = await consumeTerraCapsulator(type, validateData?.twitterId);
 
-        mixpanel.track('Consume Terra Capsulator', {
-            distinct_id: validateData?.twitterId,
-            '_type': type,
-            '_island': data?.island,
-        });
+        if (status === Status.SUCCESS) {
+            mixpanel.track('Consume Terra Capsulator', {
+                distinct_id: validateData?.twitterId,
+                '_type': type,
+                '_island': data?.island,
+            });
+        }
 
         return res.status(status).json({
             status,

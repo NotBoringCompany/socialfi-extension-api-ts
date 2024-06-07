@@ -81,11 +81,13 @@ router.post('/evolve_raft', async (req, res) => {
 
         const { status, message, data } = await evolveRaft(validateData?.twitterId);
 
-        mixpanel.track('Currency Tracker', {
-            distinct_id: validateData?.twitterId,
-            '_type': 'Evolve Raft',
-            '_data': data,
-        });
+        if (status === Status.SUCCESS) {
+            mixpanel.track('Currency Tracker', {
+                distinct_id: validateData?.twitterId,
+                '_type': 'Evolve Raft',
+                '_data': data,
+            });
+        }
 
         return res.status(status).json({
             status,

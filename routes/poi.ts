@@ -44,10 +44,12 @@ router.post('/travel_to_poi', async (req, res) => {
 
         const { status, message } = await travelToPOI(validateData?.twitterId, destination);
 
-        mixpanel.track('Travel to Poi', {
-            distinct_id: validateData?.twitterId,
-            '_destination': destination,
-        });
+        if (status === Status.SUCCESS) {
+            mixpanel.track('Travel to Poi', {
+                distinct_id: validateData?.twitterId,
+                '_destination': destination,
+            });
+        }
 
         return res.status(status).json({
             status,
@@ -80,10 +82,12 @@ router.post('/apply_travel_booster', async (req, res) => {
 
         const { status, message } = await applyTravelBooster(validateData?.twitterId, booster);
 
-        mixpanel.track('Apply Travelling Booster', {
-            distinct_id: validateData?.twitterId,
-            '_booster': booster,
-        });
+        if (status === Status.SUCCESS) {
+            mixpanel.track('Apply Travelling Booster', {
+                distinct_id: validateData?.twitterId,
+                '_booster': booster,
+            });
+        }
 
         return res.status(status).json({
             status,
@@ -220,12 +224,14 @@ router.post('/sell_items_in_poi_shop', async (req, res) => {
 
         const { status, message, data } = await sellItemsInPOIShop(validateData?.twitterId, items, leaderboardName);
 
-        mixpanel.track('Points Earned (POI Shop)', {
-            distinct_id: validateData?.twitterId,
-            '_items': items,
-            '_leaderboardName': leaderboardName,
-            '_earnedPoints': data.leaderboardPoints,
-        });
+        if (status === Status.SUCCESS) {
+            mixpanel.track('Points Earned (POI Shop)', {
+                distinct_id: validateData?.twitterId,
+                '_items': items,
+                '_leaderboardName': leaderboardName,
+                '_earnedPoints': data.leaderboardPoints,
+            });
+        }
 
         return res.status(status).json({
             status,
@@ -255,11 +261,13 @@ router.post('/buy_items_in_poi_shop', async (req, res) => {
 
         const { status, message, data } = await buyItemsInPOIShop(validateData?.twitterId, items, paymentChoice);
 
-        mixpanel.track('Currency Tracker', {
-            distinct_id: validateData?.twitterId,
-            '_type': 'Buy Item In POI Shop',
-            '_data': data,
-        });
+        if (status === Status.SUCCESS) {
+            mixpanel.track('Currency Tracker', {
+                distinct_id: validateData?.twitterId,
+                '_type': 'Buy Item In POI Shop',
+                '_data': data,
+            });
+        }
 
         return res.status(status).json({
             status,

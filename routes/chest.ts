@@ -21,11 +21,13 @@ router.post('/open_chest', async (req, res) => {
 
         const { status, message, data } = await openChest(validateData?.twitterId, tweetId);
 
-        mixpanel.track('Open Chest', {
-            distinct_id: validateData?.twitterId,
-            '_tweetId': tweetId,
-            '_data': data,
-        });
+        if (status === Status.SUCCESS) {
+            mixpanel.track('Open Chest', {
+                distinct_id: validateData?.twitterId,
+                '_tweetId': tweetId,
+                '_data': data,
+            });
+        }
 
         return res.status(status).json({
             status,

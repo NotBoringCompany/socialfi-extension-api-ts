@@ -26,11 +26,13 @@ router.post('/consume', async (req, res) => {
             type
         );
 
-        mixpanel.track('Consume Bit Orb', {
-            distinct_id: validateData?.twitterId,
-            '_type': type,
-            '_bit': data?.bit,
-        });
+        if (status === Status.SUCCESS) {
+            mixpanel.track('Consume Bit Orb', {
+                distinct_id: validateData?.twitterId,
+                '_type': type,
+                '_bit': data?.bit,
+            });
+        }
 
         return res.status(status).json({
             status,

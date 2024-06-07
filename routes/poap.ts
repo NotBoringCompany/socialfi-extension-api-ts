@@ -87,10 +87,12 @@ router.post('/redeem_poap', async (req, res) => {
 
         const { status, message, data } = await redeemCode(validateData.twitterId, code);
 
-        mixpanel.track('Redeem POAP', {
-            distinct_id: validateData?.twitterId,
-            '_code': code,
-        });
+        if (status === Status.SUCCESS) {
+            mixpanel.track('Redeem POAP', {
+                distinct_id: validateData?.twitterId,
+                '_code': code,
+            });
+        }
 
         return res.status(status).json({
             status,

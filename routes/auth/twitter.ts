@@ -65,14 +65,16 @@ router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/',
             const host = (req.session as any).redirectHost || 'https://x.com';
             const version = (req.session as any).version || '-';
 
-            mixpanel.track('Login Callback', {
-                distinct_id: twitterId,
-                '_accessToken': twitterAccessToken,
-                '_refreshToken': twitterRefreshToken,
-                '_expiryDate': twitterExpiryDate,
-                '_origin': host,
-                '_version': version,
-            });
+            if (status === Status.SUCCESS) {
+                mixpanel.track('Login Callback', {
+                    distinct_id: twitterId,
+                    '_accessToken': twitterAccessToken,
+                    '_refreshToken': twitterRefreshToken,
+                    '_expiryDate': twitterExpiryDate,
+                    '_origin': host,
+                    '_version': version,
+                });
+            }
 
             return res.redirect(`${host}?jwt=${token}`);
         }
