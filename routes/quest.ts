@@ -64,10 +64,12 @@ router.post('/complete_quest', async (req, res) => {
         
         const { status, message, data } = await completeQuest(validateData?.twitterId, questId);
 
-        mixpanel.track('Complete Quest', {
-            distinct_id: validateData?.twitterId,
-            '_data': data
-        });
+        if (status === Status.SUCCESS) {
+            mixpanel.track('Complete Quest', {
+                distinct_id: validateData?.twitterId,
+                '_data': data
+            });
+        }
 
         return res.status(status).json({
             status,

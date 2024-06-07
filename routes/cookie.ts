@@ -21,10 +21,12 @@ router.post('/deposit', async (req, res) => {
 
         const { status, message, data } = await depositCookies(validateData?.twitterId, amount);
 
-        mixpanel.track('Deposit Cookies', {
-            distinct_id: validateData?.twitterId,
-            '_data': data,
-        });
+        if (status === Status.SUCCESS) {
+            mixpanel.track('Deposit Cookies', {
+                distinct_id: validateData?.twitterId,
+                '_data': data,
+            });
+        }
 
         return res.status(status).json({
             status,
@@ -54,10 +56,12 @@ router.post('/withdraw', async (req, res) => {
 
         const { status, message, data } = await withdrawCookies(validateData?.twitterId, amount);
 
-        mixpanel.track('Withdraw Cookies', {
-            distinct_id: validateData?.twitterId,
-            '_data': data,
-        });
+        if (status === Status.SUCCESS) { 
+            mixpanel.track('Withdraw Cookies', {
+                distinct_id: validateData?.twitterId,
+                '_data': data,
+            });
+        }
 
         return res.status(status).json({
             status,

@@ -25,11 +25,13 @@ router.post('/place_bit', async (req, res) => {
             })
         }
         const { status, message, data } = await placeBit(validateData?.twitterId, islandId, bitId);
-
-        mixpanel.track('Place Bit', {
-            distinct_id: validateData?.twitterId,
-            '_data': data,
-        });
+        
+        if (status === Status.SUCCESS) {
+            mixpanel.track('Place Bit', {
+                distinct_id: validateData?.twitterId,
+                '_data': data,
+            });
+        }
 
         return res.status(status).json({
             status,
@@ -58,11 +60,13 @@ router.post('/unplace_bit', async (req, res) => {
         }
 
         const { status, message, data } = await unplaceBit(validateData?.twitterId, bitId);
-
-        mixpanel.track('Unplace Bit', {
-            distinct_id: validateData?.twitterId,
-            '_data': data,
-        });
+        
+        if (status === Status.SUCCESS) {
+            mixpanel.track('Unplace Bit', {
+                distinct_id: validateData?.twitterId,
+                '_data': data,
+            });
+        }
 
         return res.status(status).json({
             status,
@@ -91,11 +95,13 @@ router.post('/remove_island', async (req, res) => {
         }
 
         const { status, message, data } = await removeIsland(validateData?.twitterId, islandId);
-
-        mixpanel.track('Remove Island', {
-            distinct_id: validateData?.twitterId,
-            '_islandId': islandId,
-        });
+        
+        if (status === Status.SUCCESS) {
+            mixpanel.track('Remove Island', {
+                distinct_id: validateData?.twitterId,
+                '_islandId': islandId,
+            });
+        }
 
         return res.status(status).json({
             status,
@@ -143,12 +149,14 @@ router.post('/evolve_island', async (req, res) => {
         }
 
         const { status, message, data } = await evolveIsland(validateData?.twitterId, islandId, choice);
-
-        mixpanel.track('Currency Tracker', {
-            distinct_id: validateData?.twitterId,
-            '_type': 'Evolve Island',
-            '_data': data,
-        });
+        
+        if (status === Status.SUCCESS) {
+            mixpanel.track('Currency Tracker', {
+                distinct_id: validateData?.twitterId,
+                '_type': 'Evolve Island',
+                '_data': data,
+            });
+        }
 
         return res.status(status).json({
             status,
@@ -178,11 +186,13 @@ router.post('/claim_xcookies_and_crumbs', async (req, res) => {
         }
 
         const { status, message, data } = await claimXCookiesAndCrumbs(validateData?.twitterId, islandId);
-
-        mixpanel.track('Claim Cookies & Crumbs', {
-            distinct_id: validateData?.twitterId,
-            '_data': data,
-        });
+        
+        if (status === Status.SUCCESS) {
+            mixpanel.track('Claim Cookies & Crumbs', {
+                distinct_id: validateData?.twitterId,
+                '_data': data,
+            });
+        }
 
         return res.status(status).json({
             status,
@@ -216,12 +226,14 @@ router.post('/claim_resources', async (req, res) => {
             claimType,
             chosenResources ?? null
         );
-
-        mixpanel.track('Claim Resources', {
-            distinct_id: validateData?.twitterId,
-            '_claimType': claimType,
-            '_claimedResources': data?.claimedResources,
-        });
+            
+        if (status === Status.SUCCESS) {
+            mixpanel.track('Claim Resources', {
+                distinct_id: validateData?.twitterId,
+                '_claimType': claimType,
+                '_claimedResources': data?.claimedResources,
+            });
+        }
 
         return res.status(status).json({
             status,
@@ -441,12 +453,14 @@ router.post('/apply_gathering_progress_booster', async (req, res) => {
         }
 
         const { status, message, data } = await applyGatheringProgressBooster(validateData?.twitterId, islandId, boosters);
-
-        mixpanel.track('Apply Gathering Booster', {
-            distinct_id: validateData?.twitterId,
-            '_isandId': islandId,
-            '_data': data,
-        });
+        
+        if (status === Status.SUCCESS) {
+            mixpanel.track('Apply Gathering Booster', {
+                distinct_id: validateData?.twitterId,
+                '_isandId': islandId,
+                '_data': data,
+            });
+        }
 
         return res.status(status).json({
             status,

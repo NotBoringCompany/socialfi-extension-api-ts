@@ -28,11 +28,13 @@ router.post('/rename_bit', async (req, res) => {
 
         const { status, message, data } = await renameBit(validateData?.twitterId, bitId, newName);
 
-        mixpanel.track('Rename Bit', {
-            distinct_id: validateData?.twitterId,
-            '_bitId': bitId,
-            '_newName': newName,
-        });
+        if (status === Status.SUCCESS) {
+            mixpanel.track('Rename Bit', {
+                distinct_id: validateData?.twitterId,
+                '_bitId': bitId,
+                '_newName': newName,
+            });
+        }
 
         return res.status(status).json({
             status,
@@ -62,10 +64,12 @@ router.post('/release_bit', async (req, res) => {
 
         const { status, message, data } = await releaseBit(validateData?.twitterId, bitId);
 
-        mixpanel.track('Release Bit', {
-            distinct_id: validateData?.twitterId,
-            '_bitId': bitId,
-        });
+        if (status === Status.SUCCESS) {
+            mixpanel.track('Release Bit', {
+                distinct_id: validateData?.twitterId,
+                '_bitId': bitId,
+            });
+        }
 
         return res.status(status).json({
             status,
@@ -94,12 +98,14 @@ router.post('/evolve_bit', async (req, res) => {
         }
 
         const { status, message, data } = await evolveBit(validateData?.twitterId, bitId);
-        
-        mixpanel.track('Currency Tracker', {
-            distinct_id: validateData?.twitterId,
-            '_type': 'Evolve Bit',
-            '_data': data,
-        });
+
+        if (status === Status.SUCCESS) {
+            mixpanel.track('Currency Tracker', {
+                distinct_id: validateData?.twitterId,
+                '_type': 'Evolve Bit',
+                '_data': data,
+            });
+        }
 
         return res.status(status).json({
             status,
@@ -129,11 +135,13 @@ router.post('/feed_bit', async (req, res) => {
 
         const { status, message, data } = await feedBit(validateData?.twitterId, bitId, <FoodType>foodType);
 
-        mixpanel.track('Feed Bit', {
-            distinct_id: validateData?.twitterId,
-            '_bitId': bitId,
-            '_foodType': foodType,
-        });
+        if (status === Status.SUCCESS) {
+            mixpanel.track('Feed Bit', {
+                distinct_id: validateData?.twitterId,
+                '_bitId': bitId,
+                '_foodType': foodType,
+            });
+        }
 
         return res.status(status).json({
             status,

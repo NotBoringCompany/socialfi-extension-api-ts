@@ -298,7 +298,12 @@ export const acceptPendingSquadMember = async (leaderTwitterId: string, memberTw
 
         return {
             status: Status.SUCCESS,
-            message: `(acceptPendingSquadMember) Accepted pending squad member successfully.`
+            message: `(acceptPendingSquadMember) Accepted pending squad member successfully.`,
+            data: {
+                memberTwitterId,
+                memberUserId,
+                currentMember: squad.members.length,
+            }
         }
     } catch (err: any) {
         return {
@@ -797,7 +802,10 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
 
             return {
                 status: Status.SUCCESS,
-                message: `(leaveSquad) Left squad successfully.`
+                message: `(leaveSquad) Left squad successfully.`,
+                data: {
+                    currentMember: squad.members.length,
+                }
             }
         }
     } catch (err: any) {
@@ -1069,7 +1077,12 @@ export const kickMember = async (leaderTwitterId: string, memberTwitterId?: stri
 
         return {
             status: Status.SUCCESS,
-            message: `(kickMember) Kicked member successfully.`
+            message: `(kickMember) Kicked member successfully.`,
+            data: {
+                memberTwitterId,
+                memberUserId,
+                currentMember: squad.members.length,
+            }
         }
     } catch (err: any) {
         return {

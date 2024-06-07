@@ -67,10 +67,12 @@ router.post('/remove_resources', async (req, res) => {
 
         const { status, message, data } = await removeResources(validateData?.twitterId, resourcesToRemove);
 
-        mixpanel.track('Remove Resources', {
-            distinct_id: validateData?.twitterId,
-            '_removedResource': resourcesToRemove,
-        });
+        if (status === Status.SUCCESS) {
+            mixpanel.track('Remove Resources', {
+                distinct_id: validateData?.twitterId,
+                '_removedResource': resourcesToRemove,
+            });
+        }
 
         return res.status(status).json({
             status,
@@ -152,10 +154,12 @@ router.post('/claim_daily_rewards', async (req, res) => {
 
         const { status, message, data } = await claimDailyRewards(validateData?.twitterId, leaderboardName);
 
-        mixpanel.track('Claim Daily Rewards', {
-            distinct_id: validateData?.twitterId,
-            '_rewards': data?.dailyLoginRewards,
-        });
+        if (status === Status.SUCCESS) {
+            mixpanel.track('Claim Daily Rewards', {
+                distinct_id: validateData?.twitterId,
+                '_rewards': data?.dailyLoginRewards,
+            });
+        }
 
         return res.status(status).json({
             status,
@@ -185,11 +189,13 @@ router.post('/link_invite_code', async (req, res) => {
 
         const { status, message, data } = await linkInviteCode(validateData?.twitterId, code);
 
-        mixpanel.track('Link Invite Code', {
-            distinct_id: validateData?.twitterId,
-            '_code': code,
-            '_data': data
-        });
+        if (status === Status.SUCCESS) {
+            mixpanel.track('Link Invite Code', {
+                distinct_id: validateData?.twitterId,
+                '_code': code,
+                '_data': data
+            });
+        }
 
         return res.status(status).json({
             status,
@@ -236,10 +242,12 @@ router.post('/claim_beginner_rewards', async (req, res) => {
 
         const { status, message, data } = await claimBeginnerRewards(validateData?.twitterId);
 
-        mixpanel.track('Claim Beginner Rewards', {
-            distinct_id: validateData?.twitterId,
-            '_rewards': data?.rewards,
-        });
+        if (status === Status.SUCCESS) {
+            mixpanel.track('Claim Beginner Rewards', {
+                distinct_id: validateData?.twitterId,
+                '_rewards': data?.rewards,
+            });
+        }
 
         return res.status(status).json({
             status,

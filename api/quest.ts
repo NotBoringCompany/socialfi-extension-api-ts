@@ -311,6 +311,8 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                         };
                     }
 
+                    obtainedRewards.push({ type: rewardType, amount })
+
                     break;
                 // if default, return an error (shouldn't happen)
                 default:
