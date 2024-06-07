@@ -14,6 +14,7 @@ router.get('/login', async (req, res, next) => {
 
     const host = req.query.host || 'https://x.com';
     (req.session as any).redirectHost = host;
+    (req.session as any).version = req.query.version || '-';
 
     if (token) {
         // check for validation
@@ -62,6 +63,7 @@ router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/',
         } else {
             const token = generateJWT(twitterId, twitterAccessToken, twitterRefreshToken, twitterExpiryDate - Math.floor(Date.now() / 1000));
             const host = (req.session as any).redirectHost || 'https://x.com';
+            const version = (req.session as any).version || '-';
 
             mixpanel.track('Login Callback', {
                 distinct_id: twitterId,
@@ -69,6 +71,7 @@ router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/',
                 '_refreshToken': twitterRefreshToken,
                 '_expiryDate': twitterExpiryDate,
                 '_origin': host,
+                '_version': version,
             });
 
             return res.redirect(`${host}?jwt=${token}`);
