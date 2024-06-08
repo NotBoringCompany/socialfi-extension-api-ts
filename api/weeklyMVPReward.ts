@@ -33,6 +33,7 @@ export const getWeeklyMVPContenders = async (): Promise<ReturnValue> => {
         const mvpData: {
             userId: string;
             username: string;
+            twitterProfilePicture: string;
             xCookiesSpent: number;
             bitOrbsConsumed: number;
             terraCapsulatorsConsumed: number;
@@ -57,6 +58,7 @@ export const getWeeklyMVPContenders = async (): Promise<ReturnValue> => {
             mvpData.push({
                 userId: user._id,
                 username: user.twitterUsername,
+                twitterProfilePicture: user.twitterProfilePicture,
                 xCookiesSpent,
                 bitOrbsConsumed,
                 terraCapsulatorsConsumed,
@@ -79,16 +81,19 @@ export const getWeeklyMVPContenders = async (): Promise<ReturnValue> => {
                 xCookiesMVP: {
                     userId: xCookiesMVPData.userId,
                     username: xCookiesMVPData.username,
+                    profilePicture: xCookiesMVPData.twitterProfilePicture,
                     xCookiesSpent: xCookiesMVPData.xCookiesSpent
                 },
                 bitOrbsMVP: {
                     userId: bitOrbsMVPData.userId,
                     username: bitOrbsMVPData.username,
+                    profilePicture: bitOrbsMVPData.twitterProfilePicture,
                     bitOrbsConsumed: bitOrbsMVPData.bitOrbsConsumed
                 },
                 terraCapsulatorsMVP: {
                     userId: terraCapsulatorsMVPData.userId,
                     username: terraCapsulatorsMVPData.username,
+                    profilePicture: terraCapsulatorsMVPData.twitterProfilePicture,
                     terraCapsulatorsConsumed: terraCapsulatorsMVPData.terraCapsulatorsConsumed
                 }
             }
