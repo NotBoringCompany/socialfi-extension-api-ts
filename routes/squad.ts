@@ -273,7 +273,8 @@ router.get('/get_squad_data/:twitterId/:squadId', async (req, res) => {
 
         mixpanel.track('Current User Squad', {
             distinct_id: twitterId,
-            '_data': data ?? 'User currently has no Squad',
+            '_data': data,
+            '_inSquad': status === Status.SUCCESS,
         });
 
         return res.status(status).json({
