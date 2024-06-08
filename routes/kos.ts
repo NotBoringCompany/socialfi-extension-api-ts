@@ -14,8 +14,8 @@ router.get('/get_owned_key_ids/:twitterId', async (req, res) => {
         if (status === Status.SUCCESS) {
             mixpanel.track('User Owned Key', {
                 distinct_id: twitterId,
-                '_data': data,
-                '_ownedKey': data?.ownedKeyIDs.length
+                '_ownedKey': data?.ownedKeyIDs.length,
+                '_ownedKeyIds': data?.ownedKeyIDs,
             });
         }
 
@@ -40,8 +40,8 @@ router.get('/get_owned_keychain_ids/:twitterId', async (req, res) => {
         if (status === Status.SUCCESS) {
             mixpanel.track('User Owned Keychain', {
                 distinct_id: twitterId,
-                '_data': data,
-                '_ownedKeychain': data?.ownedKeychainIDs.length
+                '_ownedKeychain': data?.ownedKeychainIDs.length,
+                '_ownedKeychainIds': data?.ownedKeychainIDs,
             });
         }
 
@@ -67,7 +67,8 @@ router.get('/get_owned_superior_keychain_ids/:twitterId', async (req, res) => {
             mixpanel.track('User Owned Superior Keychain', {
                 distinct_id: twitterId,
                 '_data': data,
-                '_ownedSuperiorKeychain': data?.ownedSuperiorKeychainIDs.length
+                '_ownedSuperiorKeychain': data?.ownedSuperiorKeychainIDs.length,
+                '_ownedSuperiorKeychainIds': data?.ownedSuperiorKeychainIDs,
             });
         }
 
