@@ -266,10 +266,16 @@ router.post('/kick_member', async (req, res) => {
     }
 })
 
-router.get('/get_squad_data/:squadId', async (req, res) => {
-    const { squadId } = req.params;
+router.get('/get_squad_data/:twitterId/:squadId', async (req, res) => {
+    const { twitterId, squadId } = req.params;
     try {
+        
         const { status, message, data } = await getSquadData(squadId);
+
+        mixpanel.track('Current User Squad', {
+            distinct_id: twitterId,
+            '_data': data,
+        });
 
         return res.status(status).json({
             status,
