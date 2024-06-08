@@ -2,7 +2,7 @@ import express from 'express';
 import { claimDailyKOSRewards, claimWeeklyKOSRewards, getClaimableDailyKOSRewards, getClaimableWeeklyKOSRewards, getOwnedKeyIDs, getOwnedKeychainIDs, getOwnedSuperiorKeychainIDs } from '../api/kos';
 import { Status } from '../utils/retVal';
 import { validateRequestAuth } from '../utils/auth';
-import mixpanel from 'mixpanel';
+import { mixpanel } from '../utils/mixpanel';
 
 const router = express.Router();
 
