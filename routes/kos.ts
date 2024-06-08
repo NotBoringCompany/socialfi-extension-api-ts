@@ -15,6 +15,7 @@ router.get('/get_owned_key_ids/:twitterId', async (req, res) => {
             mixpanel.track('User Owned Key', {
                 distinct_id: twitterId,
                 '_data': data,
+                '_ownedKey': data?.ownedKeyIDs ?? 0
             });
         }
 
@@ -40,6 +41,7 @@ router.get('/get_owned_keychain_ids/:twitterId', async (req, res) => {
             mixpanel.track('User Owned Keychain', {
                 distinct_id: twitterId,
                 '_data': data,
+                '_ownedKeychain': data?.ownedKeychainIDs ?? 0
             });
         }
 
@@ -65,6 +67,7 @@ router.get('/get_owned_superior_keychain_ids/:twitterId', async (req, res) => {
             mixpanel.track('User Owned Superior Keychain', {
                 distinct_id: twitterId,
                 '_data': data,
+                '_ownedSuperiorKeychain': data?.ownedSuperiorKeychainIDs ?? 0
             });
         }
 
