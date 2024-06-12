@@ -3,6 +3,7 @@ import { SquadModel, UserModel } from '../utils/constants/db';
 import { CREATE_SQUAD_COST, INITIAL_MAX_MEMBERS, MAX_MEMBERS_INCREASE_UPON_UPGRADE, MAX_MEMBERS_LIMIT, RENAME_SQUAD_COOLDOWN, RENAME_SQUAD_COST, SQUAD_LEAVE_COOLDOWN, UPGRADE_SQUAD_MAX_MEMBERS_COST } from '../utils/constants/squad';
 import { generateObjectId } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
+import { getOwnedKeyIDs } from './kos';
 
 /**
  * Attempts to join the referrer's squad if possible.
@@ -1117,6 +1118,80 @@ export const getSquadData = async (squadId?: string): Promise<ReturnValue> => {
         return {
             status: Status.ERROR,
             message: `(getSquadData) ${err.message}`
+        }
+    }
+}
+
+/**
+ * Gets the amount of KOS (Key Of Salvation) owned by the members of the user's squad.
+ * 
+ * Returns 0 if the user is not in a squad.
+ */
+export const squadKOSCount = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(squadKOSCount) User not found.`
+            }
+        }
+
+        // check if the user is in a squad.
+        if (user.inGameData.squadId === null) {
+            return {
+                status: Status.SUCCESS,
+                message: `(squadKOSCount) User is not in a squad.`,
+                data: {
+                    squadKOSCount: 0
+                }
+            }
+        }
+
+        // get the squad data.
+        const squad = await SquadModel.findOne({ _id: user.inGameData.squadId }).lean();
+
+        if (!squad) {
+            return {
+                status: Status.ERROR,
+                message: `(squadKOSCount) Squad not found.`
+            }
+        }
+
+        // get the user id of each member and call `getOwnedKeyIDs` for each member.
+        const memberUserIds = squad.members.map(member => member.userId);
+
+        const ownedKeyIDs = await Promise.all(memberUserIds.map(async (memberUserId) => {
+            const member = await UserModel.findOne({ _id: memberUserId }).lean();
+
+            if (!member) {
+                return [];
+            }
+
+            const ownedKeyIds = await getOwnedKeyIDs(member.twitterId);
+
+            if (ownedKeyIds.status !== Status.SUCCESS) {
+                return [];
+            }
+
+            return (ownedKeyIds.data?.ownedKeyIDs as (string | number)[]);
+        }));
+
+        // flatten the array of owned key IDs.
+        const flattenedOwnedKeyIDs = ownedKeyIDs.flat().filter(keyId => keyId !== undefined && keyId !== null);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(squadKOSCount) Got squad KOS count successfully.`,
+            data: {
+                squadKOSCount: flattenedOwnedKeyIDs.length
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(squadKOSCount) ${err.message}`
         }
     }
 }
