@@ -20,11 +20,11 @@ export const RENAME_SQUAD_COOLDOWN = 604800;
  */
 export const UPGRADE_SQUAD_MAX_MEMBERS_COST = (currentMaxMembers: number) => {
     if (currentMaxMembers < 25) {
-        return 2;
+        return 20;
     } else if (currentMaxMembers < 50) {
-        return 5;
+        return 40;
     } else if (currentMaxMembers < 100) {
-        return 10;
+        return 80;
     } else {
         throw new Error('Cannot upgrade max members count beyond 100.');
     }
