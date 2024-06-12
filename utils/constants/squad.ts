@@ -30,6 +30,44 @@ export const UPGRADE_SQUAD_MAX_MEMBERS_COST = (currentMaxMembers: number) => {
     }
 }
 
+/**
+ * Gets the benefits for each member (or a specific member if applicable) of a squad depending on the accumulated owned KOS amount.
+ */
+export const SQUAD_KOS_BENEFITS = (totalKeys: number): {
+    // boost in points when selling assets in POI (in ratio. 1 means no boost, 1.05 means 5% boost, etc.)
+    sellAssetPointBoost: number
+} => {
+    if (totalKeys < 5) {
+        return {
+            sellAssetPointBoost: 1
+        }
+    } else if (totalKeys < 10) {
+        return {
+            sellAssetPointBoost: 1.01
+        }
+    } else if (totalKeys < 20) {
+        return {
+            sellAssetPointBoost: 1.02
+        }
+    } else if (totalKeys < 35) {
+        return {
+            sellAssetPointBoost: 1.03
+        }
+    } else if (totalKeys < 50) {
+        return {
+            sellAssetPointBoost: 1.04
+        }
+    } else if (totalKeys < 100) {
+        return {
+            sellAssetPointBoost: 1.05
+        }
+    } else {
+        return {
+            sellAssetPointBoost: 1.10
+        }
+    }
+}
+
 /** cost in xCookies for creating a squad */
 export const CREATE_SQUAD_COST = 30;
 /** cost in xCookies for renaming a squad */

@@ -8,8 +8,10 @@ import { Squad } from '../models/squad';
 import { LeaderboardModel, POIModel, RaftModel, SquadLeaderboardModel, SquadModel, UserModel } from '../utils/constants/db';
 import { POI_TRAVEL_LEVEL_REQUIREMENT } from '../utils/constants/poi';
 import { ACTUAL_RAFT_SPEED } from '../utils/constants/raft';
+import { SQUAD_KOS_BENEFITS } from '../utils/constants/squad';
 import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
 import { ReturnValue, Status } from '../utils/retVal';
+import { squadKOSCount } from './squad';
 import { updateReferredUsersData } from './user';
 
 /**
@@ -723,10 +725,10 @@ export const sellItemsInPOIShop = async (
 
         console.log('items are valid.');
 
-        // calculate the total leaderboard points to give to the user per item.
+        // calculate the base leaderboard points to give to the user per item.
         // if a leaderboard is not specified, we give the points to the most recent leaderboard.
         // if a leaderboard is specified, we give the points to that leaderboard.
-        const leaderboardPoints = items.reduce((acc, item) => {
+        const baseLeaderboardPoints = items.reduce((acc, item) => {
             const globalItems = poiShop.globalItems;
             const playerItems = poiShop.playerItems;
 
@@ -739,7 +741,22 @@ export const sellItemsInPOIShop = async (
             return acc + (item.amount * (itemData.sellingPrice.leaderboardPoints as number));
         }, 0);
 
-        console.log('leaderboard points:', leaderboardPoints);
+        // get the squad's KOS count to potentially increase the leaderboardPoints.
+        const { status: squadKOSCountStatus, message: squadKOSCountMessage, data: squadKOSCountData } = await squadKOSCount(twitterId);
+
+        if (squadKOSCountStatus !== Status.SUCCESS) {
+            return {
+                status: squadKOSCountStatus,
+                message: `(sellItemsInPOIShop) Error from squadKOSCount: ${squadKOSCountMessage}`
+            }
+        }
+
+        // get the benefits from the squad's KOS count
+        const { sellAssetPointBoost } = SQUAD_KOS_BENEFITS(squadKOSCountData.squadKOSCount);
+
+        // calculate the total leaderboard points based on the sell asset point boost and the base leaderboard points.
+        // if no boost is present, `sellAssetPointBoost` remains at 1.
+        const leaderboardPoints = sellAssetPointBoost * baseLeaderboardPoints;
 
         // check if leaderboard is specified
         // if not, we find the most recent one.
