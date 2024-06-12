@@ -33,4 +33,4 @@ export const UPGRADE_SQUAD_MAX_MEMBERS_COST = (currentMaxMembers: number) => {
 /** cost in xCookies for creating a squad */
 export const CREATE_SQUAD_COST = 30;
 /** cost in xCookies for renaming a squad */
-export const RENAME_SQUAD_COST = 5;
+export const RENAME_SQUAD_COST = 15;
