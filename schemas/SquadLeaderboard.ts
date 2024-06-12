@@ -19,4 +19,21 @@ export const SquadLeaderboardSchema = new mongoose.Schema({
             points: Number
         }]
     }]
+});
+
+/**
+ * Squad member claimable weekly reward schema. Represents closely to the `SquadMemberClaimableWeeklyReward` interface in `models/squadLeaderboard.ts`.
+ */
+export const SquadMemberClaimableWeeklyRewardSchema = new mongoose.Schema({
+    _id: {
+        type: String,
+        default: generateObjectId()
+    },
+    userId: String,
+    username: String,
+    twitterProfilePicture: String,
+    claimableRewards: [{
+        type: String,
+        amount: Number
+    }]
 })
