@@ -913,7 +913,7 @@ export const sellItemsInPOIShop = async (
             }
 
             // add the points to the squad's `totalSquadPoints` as well (excluding the additional points)
-            if (squadId !== '' && squadId !== null) {
+            if (!squadId) {
                 // get the squad
                 const squad = await SquadModel.findOne({ _id: squadId }).lean();
 
@@ -1417,7 +1417,10 @@ export const buyItemsInPOIShop = async (
                 } else {
                     userUpdateOperations.$inc[`inventory.foods.${foodIndex}.amount`] = item.amount;
                 }
-            } else if (item.item === POIShopItemName.TERRA_CAPSULATOR_I) {
+            } else if (
+                item.item === POIShopItemName.TERRA_CAPSULATOR_I || 
+                item.item === POIShopItemName.TERRA_CAPSULATOR_II
+                ) {
                 // check if the terra capsulator exists in the user's inventory.
                 // if it does, increment the amount of the terra capsulator.
                 // if it doesn't, add a new terra capsulator.
@@ -1433,7 +1436,11 @@ export const buyItemsInPOIShop = async (
                 } else {
                     userUpdateOperations.$inc[`inventory.items.${terraCapsulatorIndex}.amount`] = item.amount;
                 }
-            } else if (item.item === POIShopItemName.BIT_ORB_I) {
+            } else if (
+                item.item === POIShopItemName.BIT_ORB_I || 
+                item.item === POIShopItemName.BIT_ORB_II || 
+                item.item === POIShopItemName.BIT_ORB_III
+                ) {
                 // check if the bit orb exists in the user's inventory.
                 // if it does, increment the amount of the bit orb.
                 // if it doesn't, add a new bit orb.
