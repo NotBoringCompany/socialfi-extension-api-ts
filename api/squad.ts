@@ -303,7 +303,7 @@ export const acceptPendingSquadMember = async (leaderTwitterId: string, memberTw
             data: {
                 memberTwitterId,
                 memberUserId,
-                currentMember: squad.members.length,
+                currentMembers: squad.members.length,
             }
         }
     } catch (err: any) {
@@ -739,7 +739,10 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
 
                 return {
                     status: Status.SUCCESS,
-                    message: `(leaveSquad) Disbanded squad successfully.`
+                    message: `(leaveSquad) Disbanded squad successfully.`,
+                    data: {
+                        currentMembers: 0,
+                    }
                 }
             } else {
                 console.log('member is leader, but not the last person in the squad.');
@@ -801,11 +804,13 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
                 'inGameData.lastLeftSquad': Math.floor(Date.now() / 1000)
             })
 
+            console.log(`User ${user._id} left the squad ${squad._id}`)
+
             return {
                 status: Status.SUCCESS,
                 message: `(leaveSquad) Left squad successfully.`,
                 data: {
-                    currentMember: squad.members.length,
+                    currentMembers: squad.members.length,
                 }
             }
         }

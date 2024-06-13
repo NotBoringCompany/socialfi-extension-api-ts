@@ -159,7 +159,7 @@ router.post('/leave_squad', async (req, res) => {
             mixpanel.track('Squad Member', {
                 distinct_id: validateData?.twitterId,
                 '_type': 'Leave',
-                '_currentMember': data.currentMember,
+                '_currentMembers': data.currentMembers,
             });
         }
 

@@ -1,6 +1,6 @@
 import cron from 'node-cron';
 import { updateClaimableCrumbs, updateClaimableXCookies, updateDailyBonusResourcesGathered, updateGatheringProgressAndDropResource } from '../api/island';
-import { addSquadLeaderboard, calculateWeeklySquadRanking } from '../api/squadLeaderboard';
+import { addSquadLeaderboard, calculateWeeklySquadRankingAndGiveRewards } from '../api/squadLeaderboard';
 
 /**
  * Calls `calculateWeeklySquadRanking` every Sunday 23:59 UTC to calculate the points earned by each squad and assign a rank to each squad.
@@ -11,7 +11,7 @@ export const calculateWeeklySquadRankingAndAddSquadLeaderboardScheduler = async 
     try {
         cron.schedule('59 23 * * 0', async () => {
             console.log('Running calculateWeeklySquadRankingAndAddSquadLeaderboardScheduler...');
-            await calculateWeeklySquadRanking();
+            await calculateWeeklySquadRankingAndGiveRewards();
             await addSquadLeaderboard();
         });
     } catch (err: any) {

@@ -1,5 +1,5 @@
 import { SquadRank } from '../models/squad';
-import { SquadLeaderboardModel, SquadModel } from '../utils/constants/db';
+import { SquadLeaderboardModel, SquadMemberClaimableWeeklyRewardModel, SquadModel } from '../utils/constants/db';
 import { GET_SQUAD_WEEKLY_RANKING } from '../utils/constants/squadLeaderboard';
 import { ReturnValue, Status } from '../utils/retVal';
 
@@ -66,35 +66,38 @@ export const getLatestWeeklyLeaderboard = async (): Promise<ReturnValue> => {
 /**
  * Calculates the points earned by each squad and assigns a rank to each squad. 
  * 
+ * Also gives rewards to each member if they are eligible.
+ * 
  * Gets called around every Sunday 23:59 UTC by a scheduler, just before a new squad leaderboard is created.
  */
-export const calculateWeeklySquadRanking = async (): Promise<void> => {
+export const calculateWeeklySquadRankingAndGiveRewards = async (): Promise<void> => {
     try {
         const latestSquadLeaderboard = await SquadLeaderboardModel.findOne().sort({ week: -1 });
 
         // if no leaderboard exists, return
         if (!latestSquadLeaderboard) {
-            console.log('(calculateWeeklySquadRanking) No squad leaderboard found.');
+            console.log('(calculateWeeklySquadRankingAndGiveRewards) No squad leaderboard found.');
             return;
         }
 
         const squads = await SquadModel.find();
 
         if (squads.length === 0 || !squads) {
-            console.log('(calculateWeeklySquadRanking) No squads found.');
+            console.log('(calculateWeeklySquadRankingAndGiveRewards) No squads found.');
             return;
         }
 
         // prepare bulk write operations to update all squads' ranks
-        const bulkWriteOperations = squads.map((squad) => {
-            let updateOperations = [];
+        const bulkWriteOpsPromises = squads.map(async (squad) => {
+            const squadUpdateOperations = [];
+            const squadMemberWeeklyRewardOperations = [];
 
             // find the squad in the latest squad leaderboard
             const squadInLeaderboard = latestSquadLeaderboard.pointsData.find((squadData) => squadData.squadId === squad._id);
 
             // if the squad is not in the leaderboard, add the new SquadRankingData instance with a rank of `UNRANKED`
             if (!squadInLeaderboard) {
-                updateOperations.push({
+                squadUpdateOperations.push({
                     updateOne: {
                         filter: { _id: squad._id },
                         update: { 
@@ -115,7 +118,7 @@ export const calculateWeeklySquadRanking = async (): Promise<void> => {
                 // assign a rank based on the total points
                 const rank = GET_SQUAD_WEEKLY_RANKING(totalPoints);
 
-                updateOperations.push({
+                squadUpdateOperations.push({
                     updateOne: {
                         filter: { _id: squad._id },
                         update: { 
@@ -130,14 +133,28 @@ export const calculateWeeklySquadRanking = async (): Promise<void> => {
                 });
             }
 
-            return updateOperations;
-        }).flat();
+            return {
+                squadUpdateOperations,
+                squadMemberWeeklyRewardOperations
+            };
+        });
+
+        const bulkWriteOperations = await Promise.all(bulkWriteOpsPromises);
+
+        const squadUpdateOperations = bulkWriteOperations.map((bulkWriteOperation) => bulkWriteOperation.squadUpdateOperations).flat().filter(op => op !== undefined);
+        const squadMemberWeeklyRewardOperations = bulkWriteOperations.map((bulkWriteOperation) => bulkWriteOperation.squadMemberWeeklyRewardOperations).flat().filter(op => op !== undefined);
+
+        if (squadUpdateOperations.length === 0 && squadMemberWeeklyRewardOperations.length === 0) {
+            console.log('(calculateWeeklySquadRankingAndGiveRewards) No squads to update.');
+            return;
+        }
 
         // execute the bulk write operations
-        await SquadModel.bulkWrite(bulkWriteOperations);
+        await SquadModel.bulkWrite(squadUpdateOperations);
+        await SquadMemberClaimableWeeklyRewardModel.bulkWrite(squadMemberWeeklyRewardOperations);
 
-        console.log('(calculateWeeklySquadRanking) Successfully calculated weekly squad rankings.');
+        console.log('(calculateWeeklySquadRankingAndGiveRewards) Successfully calculated weekly squad rankings and gave eligible rewards.');
     } catch (err: any) {
-        console.error('Error in calculateWeeklySquadRanking:', err.message);
+        console.error('Error in calculateWeeklySquadRankingAndGiveRewards:', err.message);
     }
 }
