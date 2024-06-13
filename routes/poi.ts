@@ -1,7 +1,7 @@
 import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
-import { addOrReplacePOIShop, addPOI, applyTravelBooster, buyItemsInPOIShop, getAvailablePOIDestinations, getCurrentLocation, getCurrentPOI, getUserTransactionData, sellItemsInPOIShop, travelToPOI, updateArrival } from '../api/poi';
+import { addOrReplacePOIShop, addPOI, applyTravelBooster, buyItemsInPOIShop, getAvailablePOIDestinations, getCurrentLocation, getCurrentPOI, getSellItemsInPOIPointsBoost, getUserTransactionData, sellItemsInPOIShop, travelToPOI, updateArrival } from '../api/poi';
 import { ExtendedProfile } from '../utils/types';
 import { mixpanel } from '../utils/mixpanel';
 
@@ -299,6 +299,32 @@ router.get('/get_user_transaction_data', async (req, res) => {
             status,
             message,
             data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
+
+router.get('/get_sell_items_in_poi_points_boost', async (req, res) => {
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'get_sell_items_in_poi_points_boost');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
+        const { status, message, data } = await getSellItemsInPOIPointsBoost(validateData?.twitterId);
+
+        return res.status(status).json({
+            status,
+            message,
+            data: data.sellItemsInPOIPointsBoost
         });
     } catch (err: any) {
         return res.status(500).json({
