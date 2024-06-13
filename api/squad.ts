@@ -584,6 +584,16 @@ export const createSquad = async (twitterId: string, squadName: string): Promise
             }
         }
 
+        // check if the user is still under the squad leave cooldown.
+        const currentTimestamp = Math.floor(Date.now() / 1000);
+
+        if (user.inGameData.lastLeftSquad + SQUAD_LEAVE_COOLDOWN > currentTimestamp) {
+            return {
+                status: Status.ERROR,
+                message: `(requestToJoinSquad) User is still under the squad leave cooldown.`
+            }
+        }
+
         // check if the squadName meets the following:
         // 1. squad name can only be up to 20 characters long.
         // 2. squad name cannot be empty.
