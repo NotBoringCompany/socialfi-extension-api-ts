@@ -1627,7 +1627,11 @@ export const getSellItemsInPOIPointsBoost = async (twitterId: string): Promise<R
         if (!user) {
             return {
                 status: Status.ERROR,
-                message: `(getSellItemsInPOIPointsBoost) User not found.`
+                message: `(getSellItemsInPOIPointsBoost) User not found.`,
+                data: {
+                    ownedKOSPointsBoost: 1,
+                    squadWeeklyRankingPointsBoost: 1,
+                }
             }
         }
 
@@ -1637,8 +1641,8 @@ export const getSellItemsInPOIPointsBoost = async (twitterId: string): Promise<R
                 status: Status.SUCCESS,
                 message: `(getSellItemsInPOIPointsBoost) User not in a squad.`,
                 data: {
-                    ownedKOSPointsBoost: 0,
-                    squadWeeklyRankingPointsBoost: 0,
+                    ownedKOSPointsBoost: 1,
+                    squadWeeklyRankingPointsBoost: 1,
                 }
             }
         }
@@ -1650,7 +1654,11 @@ export const getSellItemsInPOIPointsBoost = async (twitterId: string): Promise<R
         if (squadKOSCountStatus !== Status.SUCCESS) {
             return {
                 status: squadKOSCountStatus,
-                message: `(getSellItemsInPOIPointsBoost) ${squadKOSCountMessage}`
+                message: `(getSellItemsInPOIPointsBoost) ${squadKOSCountMessage}`,
+                data: {
+                    ownedKOSPointsBoost: 1,
+                    squadWeeklyRankingPointsBoost: 1,
+                }
             }
         }
 
@@ -1662,7 +1670,11 @@ export const getSellItemsInPOIPointsBoost = async (twitterId: string): Promise<R
         if (!squad) {
             return {
                 status: Status.ERROR,
-                message: `(getSellItemsInPOIPointsBoost) Squad not found.`
+                message: `(getSellItemsInPOIPointsBoost) Squad not found.`,
+                data: {
+                    ownedKOSPointsBoost: sellAssetPointsBoost,
+                    squadWeeklyRankingPointsBoost: 1,
+                }
             }
         }
 
@@ -1675,7 +1687,11 @@ export const getSellItemsInPOIPointsBoost = async (twitterId: string): Promise<R
         if (squadWeeklyRankingStatus !== Status.SUCCESS) {
             return {
                 status: squadWeeklyRankingStatus,
-                message: `(getSellItemsInPOIPointsBoost) ${squadWeeklyRankingMessage}`
+                message: `(getSellItemsInPOIPointsBoost) ${squadWeeklyRankingMessage}`,
+                data: {
+                    ownedKOSPointsBoost: sellAssetPointsBoost,
+                    squadWeeklyRankingPointsBoost: 1,
+                }
             }
         }
 
@@ -1692,12 +1708,15 @@ export const getSellItemsInPOIPointsBoost = async (twitterId: string): Promise<R
                 ownedKOSPointsBoost: sellAssetPointsBoost,
                 squadWeeklyRankingPointsBoost
             }
-        
         }
     } catch (err: any) {
         return {
             status: Status.ERROR,
-            message: `(getSellItemsInPOIPointsBoost) ${err.message}`
+            message: `(getSellItemsInPOIPointsBoost) ${err.message}`,
+            data: {
+                ownedKOSPointsBoost: 1,
+                squadWeeklyRankingPointsBoost: 1,
+            }
         }
     }
 }
