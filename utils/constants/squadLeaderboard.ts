@@ -23,6 +23,30 @@ export const GET_SQUAD_WEEKLY_RANKING = (points: number): SquadRank => {
 }
 
 /**
+ * Gets the bonus in points a squad leader can get based on their squad's weekly ranking while selling items in the POI.
+ * 
+ * 1 means no boost, 1.05 means 5% boost, etc.
+ */
+export const GET_LEADER_SQUAD_WEEKLY_RANKING_POI_POINTS_BOOST = (rank: SquadRank): number => {
+    switch (rank) {
+        case SquadRank.UNRANKED:
+            return 1;
+        case SquadRank.BRONZE:
+            return 1.01;
+        case SquadRank.SILVER:
+            return 1.02;
+        case SquadRank.GOLD:
+            return 1.03;
+        case SquadRank.PLATINUM:
+            return 1.05;
+        case SquadRank.DIAMOND:
+            return 1.07;
+        case SquadRank.MASTER:
+            return 1.10;
+    }
+}
+
+/**
  * Shows the eligible rewards the leader and members can get based on their squad's weekly ranking.
  */
 export const GET_SQUAD_WEEKLY_RANKING_REWARDS = (rank: SquadRank): {

@@ -1210,3 +1210,35 @@ export const squadKOSCount = async (twitterId: string): Promise<ReturnValue> => 
         }
     }
 }
+
+/**
+ * Gets the latest weekly ranking of the user's squad.
+ */
+export const getLatestSquadWeeklyRanking = async (squadId: string): Promise<ReturnValue> => {
+    try {
+        const squad = await SquadModel.findOne({ _id: squadId }).lean();
+
+        if (!squad) {
+            return {
+                status: Status.ERROR,
+                message: `(getLatestSquadWeeklyRanking) Squad not found.`
+            }
+        }
+
+        // get the latest weekly ranking by finding the latest ranking data (i.e. the data with the highest `week` number)
+        const latestRankingData = squad.squadRankingData.reduce((prev, current) => (prev.week > current.week) ? prev : current);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getLatestSquadWeeklyRanking) Got latest squad weekly ranking successfully.`,
+            data: {
+                latestRank: latestRankingData.rank ?? SquadRank.UNRANKED,
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getLatestSquadWeeklyRanking) ${err.message}`
+        }
+    }
+}

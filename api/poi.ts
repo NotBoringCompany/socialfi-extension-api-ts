@@ -4,14 +4,15 @@ import { Item } from '../models/item';
 import { LeaderboardPointsSource } from '../models/leaderboard';
 import { POIName, POIShop, POIShopActionItemData, POIShopItemName } from '../models/poi';
 import { ExtendedResource } from '../models/resource';
-import { Squad } from '../models/squad';
+import { Squad, SquadRole } from '../models/squad';
 import { LeaderboardModel, POIModel, RaftModel, SquadLeaderboardModel, SquadModel, UserModel } from '../utils/constants/db';
 import { POI_TRAVEL_LEVEL_REQUIREMENT } from '../utils/constants/poi';
 import { ACTUAL_RAFT_SPEED } from '../utils/constants/raft';
 import { SQUAD_KOS_BENEFITS } from '../utils/constants/squad';
+import { GET_LEADER_SQUAD_WEEKLY_RANKING_POI_POINTS_BOOST } from '../utils/constants/squadLeaderboard';
 import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
 import { ReturnValue, Status } from '../utils/retVal';
-import { squadKOSCount } from './squad';
+import { getLatestSquadWeeklyRanking, squadKOSCount } from './squad';
 import { updateReferredUsersData } from './user';
 
 /**
@@ -751,12 +752,41 @@ export const sellItemsInPOIShop = async (
             }
         }
 
-        // get the benefits from the squad's KOS count
+        // get the points boost from the squad's KOS count
         const { sellAssetPointBoost } = SQUAD_KOS_BENEFITS(squadKOSCountData.squadKOSCount);
 
-        // calculate the total leaderboard points based on the sell asset point boost and the base leaderboard points.
-        // if no boost is present, `sellAssetPointBoost` remains at 1.
-        const leaderboardPoints = sellAssetPointBoost * baseLeaderboardPoints;
+        // also get the points boost from the squad's weekly ranking (if the user is a squad leader).
+        // else, this will be 1 (or no boost).
+        // get the squad
+        const squad = await SquadModel.findOne({ squadId }).lean();
+
+        if (!squad) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(sellItemsInPOIShop) Squad not found.`
+            }
+        }
+
+        // get the user's squad role
+        const squadRole = squad.members.find(member => member.userId === user._id)?.role;
+        const { status: weeklyRankingStatus, message: weeklyRankingMessage, data: weeklyRankingData } = await getLatestSquadWeeklyRanking(squad._id);
+
+        if (weeklyRankingStatus !== Status.SUCCESS) {
+            return {
+                status: weeklyRankingStatus,
+                message: `(sellItemsInPOIShop) Error from getLatestSquadWeeklyRanking: ${weeklyRankingMessage}`
+            }
+        }
+
+        // get the points boost from the squad's weekly ranking
+        const squadWeeklyRankingPointBoost = squadRole === SquadRole.LEADER ? 
+            GET_LEADER_SQUAD_WEEKLY_RANKING_POI_POINTS_BOOST(weeklyRankingData.latestRank) : 
+            1;
+
+
+        // calculate the total leaderboard points based on the sell asset point boost, squad weekly ranking point boost and the base leaderboard points.
+        // if no boost is present, `sellAssetPointBoost` and/or `squadWeeklyRankingPointBoost` remains at 1.
+        const leaderboardPoints = (sellAssetPointBoost + squadWeeklyRankingPointBoost) * baseLeaderboardPoints;
 
         // check if leaderboard is specified
         // if not, we find the most recent one.
@@ -811,16 +841,6 @@ export const sellItemsInPOIShop = async (
 
             // if user has a squad, add the points to the squad's `totalSquadPoints` as well.
             if (squadId) {
-                // get the squad
-                const squad = await SquadModel.findOne({ squadId }).lean();
-
-                if (!squad) {
-                    return {
-                        status: Status.BAD_REQUEST,
-                        message: `(sellItemsInPOIShop) Squad not found.`
-                    }
-                }
-
                 squadUpdateOperations.$inc[`totalSquadPoints`] = leaderboardPoints;
 
                 // get the latest week of the squad leaderboard
