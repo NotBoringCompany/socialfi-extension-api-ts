@@ -32,8 +32,5 @@ export const SquadMemberClaimableWeeklyRewardSchema = new mongoose.Schema({
     userId: String,
     username: String,
     twitterProfilePicture: String,
-    claimableRewards: [{
-        type: String,
-        amount: Number
-    }]
+    claimableRewards: Array,
 })

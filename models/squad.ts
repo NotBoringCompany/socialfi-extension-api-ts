@@ -61,6 +61,8 @@ export interface SquadMember {
     userId: string;
     /** the member's username */
     username: string;
+    /** the member's twitter profile picture URL */
+    twitterProfilePicture: string;
     /** the role of the member within this squad */
     role: SquadRole;
     /** when this member joined */
@@ -77,6 +79,8 @@ export interface PendingSquadMember {
     userId: string;
     /** the member's username */
     username: string;
+    /** the member's twitter profile picture URL */
+    twitterProfilePicture: string;
     /** when this member requested to join */
     requestedTimestamp: number;
 }

@@ -15,6 +15,7 @@ export const SquadSchema = new mongoose.Schema({
     members: [{
         userId: String,
         username: String,
+        twitterProfilePicture: String,
         role: String,
         joinedTimestamp: Number,
         roleUpdatedTimestamp: Number
@@ -22,6 +23,7 @@ export const SquadSchema = new mongoose.Schema({
     pendingMembers: [{
         userId: String,
         username: String,
+        twitterProfilePicture: String,
         requestedTimestamp: Number
     }],
     maxMembers: Number,

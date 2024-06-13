@@ -1,6 +1,7 @@
-import { SquadRank } from '../models/squad';
+import { SquadRank, SquadRole } from '../models/squad';
+import { SquadReward, SquadRewardType } from '../models/squadLeaderboard';
 import { SquadLeaderboardModel, SquadMemberClaimableWeeklyRewardModel, SquadModel } from '../utils/constants/db';
-import { GET_SQUAD_WEEKLY_RANKING } from '../utils/constants/squadLeaderboard';
+import { GET_SQUAD_WEEKLY_RANKING, GET_SQUAD_WEEKLY_RANKING_REWARDS } from '../utils/constants/squadLeaderboard';
 import { ReturnValue, Status } from '../utils/retVal';
 
 /**
@@ -131,6 +132,124 @@ export const calculateWeeklySquadRankingAndGiveRewards = async (): Promise<void>
                         }
                     }
                 });
+
+                // if the squad is eligible for rewards, add the rewards to each squad member (also the leader)
+                const { leader: leaderRewards, member: memberRewards } = GET_SQUAD_WEEKLY_RANKING_REWARDS(rank);
+
+                // fetch the leader and squad members from `SquadModel`
+                const squadData = await SquadModel.findOne({ _id: squad._id });
+
+                if (!squadData) {
+                    console.log('(calculateWeeklySquadRankingAndGiveRewards) No squad data found.');
+                    return;
+                }
+
+                // right now, theres only 1 leader possible, so we take the 0th index.
+                const leader = squadData.members.filter((member) => member.role === SquadRole.LEADER)[0];
+                const members = squadData.members.filter((member) => member.role === SquadRole.MEMBER);
+
+                // get the squad member weekly rewards 
+                const squadMemberClaimableWeeklyRewards = await SquadMemberClaimableWeeklyRewardModel.find();
+
+                // add the leader's rewards
+                if (leaderRewards.length > 0) {
+                    // check if the leader is already in the `squadMemberClaimableWeeklyRewards` array
+                    // if not, add the leader to the array
+                    // if they do, check, for each item, if the reward type already exists. If it does, add the amount to the existing reward.
+                    const leaderIndex = squadMemberClaimableWeeklyRewards.findIndex((member) => member.userId === leader.userId);
+
+                    if (leaderIndex === -1) {
+                        squadMemberWeeklyRewardOperations.push({
+                            insertOne: {
+                                document: {
+                                    userId: leader.userId,
+                                    username: leader.username,
+                                    twitterProfilePicture: leader.twitterProfilePicture,
+                                    claimableRewards: leaderRewards
+                                }
+                            }
+                        });
+                    } else {
+                        leaderRewards.forEach((leaderReward) => {
+                            const rewardIndex = squadMemberClaimableWeeklyRewards[leaderIndex].claimableRewards.findIndex((reward: SquadReward) => reward.type === leaderReward.type);
+
+                            if (rewardIndex === -1) {
+                                squadMemberWeeklyRewardOperations.push({
+                                    updateOne: {
+                                        filter: { userId: leader.userId },
+                                        update: {
+                                            $push: {
+                                                claimableRewards: leaderReward
+                                            }
+                                        }
+                                    }
+                                });
+                            } else {
+                                squadMemberWeeklyRewardOperations.push({
+                                    updateOne: {
+                                        filter: { userId: leader.userId },
+                                        update: {
+                                            $inc: {
+                                                [`claimableRewards.${rewardIndex}.amount`]: leaderReward.amount
+                                            }
+                                        }
+                                    }
+                                });
+                            }
+                        });
+                    }
+                }
+
+                // add the members' rewards
+                if (memberRewards.length > 0) {
+                    members.forEach((member) => {
+                        // check if the member is already in the `squadMemberClaimableWeeklyRewards` array
+                        // if not, add the member to the array
+                        // if they do, check, for each item, if the reward type already exists. If it does, add the amount to the existing reward.
+                        const memberIndex = squadMemberClaimableWeeklyRewards.findIndex((member) => member.userId === member.userId);
+
+                        if (memberIndex === -1) {
+                            squadMemberWeeklyRewardOperations.push({
+                                insertOne: {
+                                    document: {
+                                        userId: member.userId,
+                                        username: member.username,
+                                        twitterProfilePicture: member.twitterProfilePicture,
+                                        claimableRewards: memberRewards
+                                    }
+                                }
+                            });
+                        } else {
+                            memberRewards.forEach((memberReward) => {
+                                const rewardIndex = squadMemberClaimableWeeklyRewards[memberIndex].claimableRewards.findIndex((reward: SquadReward) => reward.type === memberReward.type);
+
+                                if (rewardIndex === -1) {
+                                    squadMemberWeeklyRewardOperations.push({
+                                        updateOne: {
+                                            filter: { userId: member.userId },
+                                            update: {
+                                                $push: {
+                                                    claimableRewards: memberReward
+                                                }
+                                            }
+                                        }
+                                    });
+                                } else {
+                                    squadMemberWeeklyRewardOperations.push({
+                                        updateOne: {
+                                            filter: { userId: member.userId },
+                                            update: {
+                                                $inc: {
+                                                    [`claimableRewards.${rewardIndex}.amount`]: memberReward.amount
+                                                }
+                                            }
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    });
+                }
             }
 
             return {
@@ -148,6 +267,9 @@ export const calculateWeeklySquadRankingAndGiveRewards = async (): Promise<void>
             console.log('(calculateWeeklySquadRankingAndGiveRewards) No squads to update.');
             return;
         }
+
+        console.log('squad update operations from calculateWeeklySquadRankingAndGiveRewards:', squadUpdateOperations);
+        console.log('squad member weekly reward operations from calculateWeeklySquadRankingAndGiveRewards:', squadMemberWeeklyRewardOperations);
 
         // execute the bulk write operations
         await SquadModel.bulkWrite(squadUpdateOperations);
