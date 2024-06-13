@@ -35,35 +35,35 @@ export const UPGRADE_SQUAD_MAX_MEMBERS_COST = (currentMaxMembers: number) => {
  */
 export const SQUAD_KOS_BENEFITS = (totalKeys: number): {
     // boost in points when selling assets in POI (in ratio. 1 means no boost, 1.05 means 5% boost, etc.)
-    sellAssetPointBoost: number
+    sellAssetPointsBoost: number
 } => {
     if (totalKeys < 5) {
         return {
-            sellAssetPointBoost: 1
+            sellAssetPointsBoost: 1
         }
     } else if (totalKeys < 10) {
         return {
-            sellAssetPointBoost: 1.01
+            sellAssetPointsBoost: 1.01
         }
     } else if (totalKeys < 20) {
         return {
-            sellAssetPointBoost: 1.02
+            sellAssetPointsBoost: 1.02
         }
     } else if (totalKeys < 35) {
         return {
-            sellAssetPointBoost: 1.03
+            sellAssetPointsBoost: 1.03
         }
     } else if (totalKeys < 50) {
         return {
-            sellAssetPointBoost: 1.04
+            sellAssetPointsBoost: 1.04
         }
     } else if (totalKeys < 100) {
         return {
-            sellAssetPointBoost: 1.05
+            sellAssetPointsBoost: 1.05
         }
     } else {
         return {
-            sellAssetPointBoost: 1.10
+            sellAssetPointsBoost: 1.10
         }
     }
 }

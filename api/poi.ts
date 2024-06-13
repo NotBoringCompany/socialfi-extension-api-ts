@@ -742,51 +742,19 @@ export const sellItemsInPOIShop = async (
             return acc + (item.amount * (itemData.sellingPrice.leaderboardPoints as number));
         }, 0);
 
-        // get the squad's KOS count to potentially increase the leaderboardPoints.
-        const { status: squadKOSCountStatus, message: squadKOSCountMessage, data: squadKOSCountData } = await squadKOSCount(twitterId);
+        const { status: itemsPOIPointsBoostStatus, message: itemsPOIPointsBoostMessage, data: itemsPOIPointsBoostData } = await getSellItemsInPOIPointsBoost(twitterId);
 
-        if (squadKOSCountStatus !== Status.SUCCESS) {
+        if (itemsPOIPointsBoostStatus !== Status.SUCCESS) {
             return {
-                status: squadKOSCountStatus,
-                message: `(sellItemsInPOIShop) Error from squadKOSCount: ${squadKOSCountMessage}`
+                status: itemsPOIPointsBoostStatus,
+                message: `(sellItemsInPOIShop) Error from getSellitemsInPOIPointsBoost: ${itemsPOIPointsBoostMessage}`
             }
         }
-
-        // get the points boost from the squad's KOS count
-        const { sellAssetPointBoost } = SQUAD_KOS_BENEFITS(squadKOSCountData.squadKOSCount);
-
-        // also get the points boost from the squad's weekly ranking (if the user is a squad leader).
-        // else, this will be 1 (or no boost).
-        // get the squad
-        const squad = await SquadModel.findOne({ squadId }).lean();
-
-        if (!squad) {
-            return {
-                status: Status.BAD_REQUEST,
-                message: `(sellItemsInPOIShop) Squad not found.`
-            }
-        }
-
-        // get the user's squad role
-        const squadRole = squad.members.find(member => member.userId === user._id)?.role;
-        const { status: weeklyRankingStatus, message: weeklyRankingMessage, data: weeklyRankingData } = await getLatestSquadWeeklyRanking(squad._id);
-
-        if (weeklyRankingStatus !== Status.SUCCESS) {
-            return {
-                status: weeklyRankingStatus,
-                message: `(sellItemsInPOIShop) Error from getLatestSquadWeeklyRanking: ${weeklyRankingMessage}`
-            }
-        }
-
-        // get the points boost from the squad's weekly ranking
-        const squadWeeklyRankingPointBoost = squadRole === SquadRole.LEADER ? 
-            GET_LEADER_SQUAD_WEEKLY_RANKING_POI_POINTS_BOOST(weeklyRankingData.latestRank) : 
-            1;
 
 
         // calculate the total leaderboard points based on the sell asset point boost, squad weekly ranking point boost and the base leaderboard points.
-        // if no boost is present, `sellAssetPointBoost` and/or `squadWeeklyRankingPointBoost` remains at 1.
-        const leaderboardPoints = (sellAssetPointBoost + squadWeeklyRankingPointBoost) * baseLeaderboardPoints;
+        // if no boost is present, `ownedKOSPointsBoost` and/or `squadWeeklyRankingPointsBoost` remains at 1.
+        const leaderboardPoints = (itemsPOIPointsBoostData.ownedKOSPointsBoost + itemsPOIPointsBoostData.squadWeeklyRankingPointsBoost) * baseLeaderboardPoints;
 
         // check if leaderboard is specified
         // if not, we find the most recent one.
@@ -841,6 +809,15 @@ export const sellItemsInPOIShop = async (
 
             // if user has a squad, add the points to the squad's `totalSquadPoints` as well.
             if (squadId) {
+                const squad = await SquadModel.findOne({ _id: squadId }).lean();
+
+                if (!squad) {
+                    return {
+                        status: Status.BAD_REQUEST,
+                        message: `(sellItemsInPOIShop) Squad not found.`
+                    }
+                }
+
                 squadUpdateOperations.$inc[`totalSquadPoints`] = leaderboardPoints;
 
                 // get the latest week of the squad leaderboard
@@ -1636,6 +1613,91 @@ export const getUserTransactionData = async (
         return {
             status: Status.ERROR,
             message: `(getUserTransactionData) ${err.message}`
+        }
+    }
+}
+
+/**
+ * Fetches the points boost the user gets from selling items in the POI's shop based on some reward eligibility (e.g. KOS and squad weekly ranking).
+ */
+export const getSellItemsInPOIPointsBoost = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(getSellItemsInPOIPointsBoost) User not found.`
+            }
+        }
+
+        // if the user not in a squad, return 0 for the points boost.
+        if (user.inGameData.squadId === null) {
+            return {
+                status: Status.SUCCESS,
+                message: `(getSellItemsInPOIPointsBoost) User not in a squad.`,
+                data: {
+                    ownedKOSPointsBoost: 0,
+                    squadWeeklyRankingPointsBoost: 0,
+                }
+            }
+        }
+
+        // get the user's squad's KOS count
+        const { status: squadKOSCountStatus, message: squadKOSCountMessage, data: squadKOSCountData } = await squadKOSCount(twitterId);
+
+        // if there's an error, return the error.
+        if (squadKOSCountStatus !== Status.SUCCESS) {
+            return {
+                status: squadKOSCountStatus,
+                message: `(getSellItemsInPOIPointsBoost) ${squadKOSCountMessage}`
+            }
+        }
+
+        const { sellAssetPointsBoost } = SQUAD_KOS_BENEFITS(squadKOSCountData.kosCount);
+
+        // get the user's squad
+        const squad = await SquadModel.findOne({ _id: user.inGameData.squadId }).lean();
+
+        if (!squad) {
+            return {
+                status: Status.ERROR,
+                message: `(getSellItemsInPOIPointsBoost) Squad not found.`
+            }
+        }
+
+        // get the user's squad role.
+        const squadRole = squad.members.find(member => member.userId === user._id)?.role;
+
+        const { status: squadWeeklyRankingStatus, message: squadWeeklyRankingMessage, data: squadWeeklyRankingData } = await getLatestSquadWeeklyRanking(user.inGameData.squadId);
+
+        // if there's an error, return the error.
+        if (squadWeeklyRankingStatus !== Status.SUCCESS) {
+            return {
+                status: squadWeeklyRankingStatus,
+                message: `(getSellItemsInPOIPointsBoost) ${squadWeeklyRankingMessage}`
+            }
+        }
+
+        // get the user's squad weekly ranking
+        const squadWeeklyRankingPointsBoost = squadRole === SquadRole.LEADER ? 
+            GET_LEADER_SQUAD_WEEKLY_RANKING_POI_POINTS_BOOST(squadWeeklyRankingData.latestRank) :
+            1;
+        
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getSellItemsInPOIPointsBoost) Points boost fetched.`,
+            data: {
+                ownedKOSPointsBoost: sellAssetPointsBoost,
+                squadWeeklyRankingPointsBoost
+            }
+        
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getSellItemsInPOIPointsBoost) ${err.message}`
         }
     }
 }
