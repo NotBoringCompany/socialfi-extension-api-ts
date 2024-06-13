@@ -1,7 +1,7 @@
 import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
-import { acceptPendingSquadMember, checkSquadCreationMethodAndCost, createSquad, declinePendingSquadMember, delegateLeadership, getSquadData, kickMember, leaveSquad, renameSquad, requestToJoinSquad, squadKOSCount, upgradeSquadLimit } from '../api/squad';
+import { acceptPendingSquadMember, checkSquadCreationMethodAndCost, createSquad, declinePendingSquadMember, delegateLeadership, getLatestSquadWeeklyRanking, getSquadData, kickMember, leaveSquad, renameSquad, requestToJoinSquad, squadKOSCount, upgradeSquadLimit } from '../api/squad';
 import { mixpanel } from '../utils/mixpanel';
 
 const router = express.Router();
@@ -369,5 +369,23 @@ router.get('/get_squad_kos_count', async (req, res) => {
         })
     }
 })
+
+router.get('/get_latest_squad_weekly_ranking/:squadId', async (req, res) => {
+    const { squadId } = req.params;
+    try {
+        const { status, message, data } = await getLatestSquadWeeklyRanking(squadId);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+});
 
 export default router;
