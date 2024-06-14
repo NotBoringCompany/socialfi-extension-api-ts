@@ -747,7 +747,7 @@ export const sellItemsInPOIShop = async (
         if (itemsPOIPointsBoostStatus !== Status.SUCCESS) {
             return {
                 status: itemsPOIPointsBoostStatus,
-                message: `(sellItemsInPOIShop) Error from getSellitemsInPOIPointsBoost: ${itemsPOIPointsBoostMessage}`
+                message: `(sellItemsInPOIShop) Error from getSellitemsInPOIPointsBoost: ${itemsPOIPointsBoostMessage}`,
             }
         }
 
@@ -1699,6 +1699,10 @@ export const getSellItemsInPOIPointsBoost = async (twitterId: string): Promise<R
         const squadWeeklyRankingPointsBoost = squadRole === SquadRole.LEADER ? 
             GET_LEADER_SQUAD_WEEKLY_RANKING_POI_POINTS_BOOST(squadWeeklyRankingData.latestRank) :
             1;
+
+        console.log('sellAssetPointsBoost: ', sellAssetPointsBoost);
+        console.log('squadWeeklyRankingPointsBoost: ', squadWeeklyRankingPointsBoost);
+
         
 
         return {
