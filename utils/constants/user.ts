@@ -180,27 +180,27 @@ export const GET_SEASON_0_PLAYER_LEVEL_REWARDS = (level: number): number => {
         case 1:
             return 0;
         case 2:
-            return 100;
+            return 50;
         case 3:
-            return 250;
+            return 100;
         case 4:
-            return 450;
+            return 250;
         case 5:
-            return 700;
+            return 450;
         case 6:
-            return 1000;
+            return 700;
         case 7:
-            return 1350;
+            return 1000;
         case 8:
-            return 1750;
+            return 1350;
         case 9:
-            return 2200;
+            return 1750;
         case 10:
-            return 2700;
+            return 2200;
         default:
             // For level 10 or above it'll receive 500 additional points
             if (level > 10)
-                return 2700 + (500 * (level - 10));
+                return 2200 + (500 * (level - 10));
             // For any other value of `level`, including 0, NaN, and invalid levels, it returns 0 additional points
             else
                 return 0;

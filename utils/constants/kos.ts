@@ -12,9 +12,9 @@ export const CURRENT_HOUSE_ROTATION: KOSHouseTypes = KOSHouseTypes.TRADITION;
 /** a constant used to calculate the weekly points earnable for KOS benefits */
 export const BASE_POINTS_EARNING_RATE = 1000;
 /** a constant used to calculate the weekly points earnable for KOS benefits */
-export const BASE_POINTS_EARNING_GROWTH_RATE = 650;
+export const BASE_POINTS_EARNING_GROWTH_RATE = 300;
 /** the exponential decay constant used to calculate weekly points earnable for KOS benefits */
-export const BASE_POINTS_EXPONENTIAL_DECAY_RATE = 0.005;
+export const BASE_POINTS_EXPONENTIAL_DECAY_RATE = 0.002;
 
 /**
  * Gets the benefits (xCookies and gathering boosters) for holding a certain amount of keys and other requirements daily.
@@ -30,39 +30,39 @@ export const KOS_DAILY_BENEFITS = (
     const bronzeKeys = keys.filter(key => key.attributes.find(attr => attr.traitType === 'Coating' && attr.value === 'Bronze')).length;
     const silverKeys = keys.filter(key => key.attributes.find(attr => attr.traitType === 'Coating' && attr.value === 'Silver')).length;
     const goldKeys = keys.filter(key => key.attributes.find(attr => attr.traitType === 'Coating' && attr.value === 'Gold')).length;
-    const keysOwned = keys.length;
+    // const keysOwned = keys.length;
 
-    let xCookies: number = 0;
+    // let xCookies: number = 0;
     const earnableGatheringBooster25 = KOS_BENEFITS_EARNABLE_GATHERING_BOOSTER_25(bronzeKeys);
     const earnableGatheringBooster50 = KOS_BENEFITS_EARNABLE_GATHERING_BOOSTER_50(silverKeys);
     const earnableGatheringBooster100 = KOS_BENEFITS_EARNABLE_GATHERING_BOOSTER_100(goldKeys);
 
-    if (keysOwned < 1) {
-        xCookies = 0;
-    } else if (keysOwned === 1) {
-        xCookies = 50;
-    } else if (keysOwned === 2) {
-        xCookies = 60;
-    } else if (keysOwned >= 3 && keysOwned < 5) {
-        xCookies = 90;
-    } else if (keysOwned >= 5 && keysOwned < 7) {
-        xCookies = 150;
-    } else if (keysOwned >= 7 && keysOwned < 15) {
-        xCookies = 210;
-    } else if (keysOwned >= 15 && keysOwned < 25) {
-        xCookies = 450;
-    } else if (keysOwned >= 25 && keysOwned < 50) {
-        xCookies = 750;
-    } else if (keysOwned >= 50 && keysOwned < 100) {
-        xCookies = 1500;
-    } else if (keysOwned >= 100 && keysOwned < 200) {
-        xCookies = 3000;
-    } else {
-        xCookies = 6000;
-    }
+    // if (keysOwned < 1) {
+    //     xCookies = 0;
+    // } else if (keysOwned === 1) {
+    //     xCookies = 50;
+    // } else if (keysOwned === 2) {
+    //     xCookies = 60;
+    // } else if (keysOwned >= 3 && keysOwned < 5) {
+    //     xCookies = 90;
+    // } else if (keysOwned >= 5 && keysOwned < 7) {
+    //     xCookies = 150;
+    // } else if (keysOwned >= 7 && keysOwned < 15) {
+    //     xCookies = 210;
+    // } else if (keysOwned >= 15 && keysOwned < 25) {
+    //     xCookies = 450;
+    // } else if (keysOwned >= 25 && keysOwned < 50) {
+    //     xCookies = 750;
+    // } else if (keysOwned >= 50 && keysOwned < 100) {
+    //     xCookies = 1500;
+    // } else if (keysOwned >= 100 && keysOwned < 200) {
+    //     xCookies = 3000;
+    // } else {
+    //     xCookies = 6000;
+    // }
 
     return {
-        xCookies,
+        xCookies: 0,
         gatheringBooster25: earnableGatheringBooster25,
         gatheringBooster50: earnableGatheringBooster50,
         gatheringBooster100: earnableGatheringBooster100
