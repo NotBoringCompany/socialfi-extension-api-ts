@@ -1226,7 +1226,7 @@ export const getLatestSquadWeeklyRanking = async (squadId: string): Promise<Retu
         }
 
         // get the latest weekly ranking by finding the latest ranking data (i.e. the data with the highest `week` number)
-        const latestRankingData = squad.squadRankingData && squad.squadRankingData.length !== 0 ? squad.squadRankingData.reduce((prev, current) => (prev.week > current.week) ? prev : current) : { rank: SquadRank.UNRANKED };
+        const latestRankingData = squad.squadRankingData && squad.squadRankingData.length !== 0 ? squad.squadRankingData.reduce((prev, current) => (prev.week > current.week) ? prev : current) : { rank: SquadRank.UNRANKED }
 
         return {
             status: Status.SUCCESS,
