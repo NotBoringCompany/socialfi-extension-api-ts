@@ -157,60 +157,60 @@ export const ISLAND_EVOLUTION_COST = (type: IslandType, currentLevel: number): {
         case IslandType.PRIMAL_ISLES:
             if (currentLevel === 1) {
                 return {
-                    xCookies: 50,
+                    xCookies: 10,
                     cookieCrumbs: 100
                 }
             } else {
                 return {
-                    xCookies: 50 + (15 * (currentLevel - 1)),
+                    xCookies: 10 + (0 * (currentLevel - 1)),
                     cookieCrumbs: 100 + (30 * (currentLevel - 1))
                 }
             }
         case IslandType.VERDANT_ISLES:
             if (currentLevel === 1) {
                 return {
-                    xCookies: 100,
+                    xCookies: 20,
                     cookieCrumbs: 200
                 }
             } else {
                 return {
-                    xCookies: 100 + (30 * (currentLevel - 1)),
+                    xCookies: 20 + (0 * (currentLevel - 1)),
                     cookieCrumbs: 200 + (60 * (currentLevel - 1))
                 }
             }
         case IslandType.EXOTIC_ISLES:
             if (currentLevel === 1) {
                 return {
-                    xCookies: 250,
+                    xCookies: 40,
                     cookieCrumbs: 500
                 }
             } else {
                 return {
-                    xCookies: 250 + (75 * (currentLevel - 1)),
+                    xCookies: 40 + (0 * (currentLevel - 1)),
                     cookieCrumbs: 500 + (150 * (currentLevel - 1))
                 }
             }
         case IslandType.CRYSTAL_ISLES:
             if (currentLevel === 1) {
                 return {
-                    xCookies: 700,
+                    xCookies: 70,
                     cookieCrumbs: 1400
                 }
             } else {
                 return {
-                    xCookies: 700 + (210 * (currentLevel - 1)),
+                    xCookies: 70 + (0 * (currentLevel - 1)),
                     cookieCrumbs: 1400 + (420 * (currentLevel - 1))
                 }
             }
         case IslandType.CELESTIAL_ISLES:
             if (currentLevel === 1) {
                 return {
-                    xCookies: 1500,
+                    xCookies: 100,
                     cookieCrumbs: 3000
                 }
             } else {
                 return {
-                    xCookies: 1500 + (450 * (currentLevel - 1)),
+                    xCookies: 100 + (0 * (currentLevel - 1)),
                     cookieCrumbs: 3000 + (900 * (currentLevel - 1))
                 }
             }
