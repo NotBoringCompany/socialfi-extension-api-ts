@@ -1,7 +1,11 @@
 import express from 'express';
 import { addGroupCollab, getGroupCollabs, deleteGroupCollab, addGroup, addGroupParticipant, removeGroup, removeGroupParticipant } from '../api/groupCollab';
+import keyMiddleware from '../middlewares/key';
 
 const router = express.Router();
+
+// secure all routes
+router.use(keyMiddleware);
 
 // Route to add a Group Collab
 router.post('/add_group_collab', async (req, res) => {

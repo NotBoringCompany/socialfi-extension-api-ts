@@ -9,8 +9,12 @@ import {
     removeKOLParticipant,
     updateKOLParticipant,
 } from '../api/kol';
+import keyMiddleware from '../middlewares/key';
 
 const router = express.Router();
+
+// secure all routes
+router.use(keyMiddleware);
 
 router.post('/add_kol_collab', async (req, res) => {
     const { tier, maxUsers, rewards, participants, claimable, approved } = req.body;
