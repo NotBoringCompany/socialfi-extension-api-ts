@@ -934,7 +934,7 @@ export const sellItemsInPOIShop = async (
                 if (!squad) {
                     return {
                         status: Status.BAD_REQUEST,
-                        message: `(sellItemsInPOIShop) Squad not found.`
+                        message: `(sellItemsInPOIShop) Squad not found. Null or Undefine`
                     }
                 }
 
