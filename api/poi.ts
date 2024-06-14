@@ -1700,11 +1700,6 @@ export const getSellItemsInPOIPointsBoost = async (twitterId: string): Promise<R
             GET_LEADER_SQUAD_WEEKLY_RANKING_POI_POINTS_BOOST(squadWeeklyRankingData.latestRank) :
             1;
 
-        console.log('sellAssetPointsBoost: ', sellAssetPointsBoost);
-        console.log('squadWeeklyRankingPointsBoost: ', squadWeeklyRankingPointsBoost);
-
-        
-
         return {
             status: Status.SUCCESS,
             message: `(getSellItemsInPOIPointsBoost) Points boost fetched.`,
