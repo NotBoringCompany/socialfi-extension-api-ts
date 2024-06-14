@@ -927,14 +927,14 @@ export const sellItemsInPOIShop = async (
             }
 
             // add the points to the squad's `totalSquadPoints` as well (excluding the additional points)
-            if (!squadId) {
+            if (squadId) {
                 // get the squad
                 const squad = await SquadModel.findOne({ _id: squadId }).lean();
 
                 if (!squad) {
                     return {
                         status: Status.BAD_REQUEST,
-                        message: `(sellItemsInPOIShop) Squad not found. Null or Undefine`
+                        message: `(sellItemsInPOIShop) Squad not found.`
                     }
                 }
 
