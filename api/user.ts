@@ -570,10 +570,10 @@ export const getWallets = async (twitterId: string): Promise<ReturnValue> => {
         const walletAddresses: string[] = [];
 
         // add the main wallet's public key
-        walletAddresses.push(user.wallet.address);
+        walletAddresses.push(user.wallet?.address ?? '');
 
         // loop through `secondaryWallets` assuming length is not 0 and add each public key
-        if (user.secondaryWallets.length > 0) {
+        if (user.secondaryWallets && user.secondaryWallets.length > 0) {
             for (const secondaryWallet of user.secondaryWallets) {
                 walletAddresses.push(secondaryWallet.address);
             }

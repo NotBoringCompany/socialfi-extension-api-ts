@@ -521,6 +521,8 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
  */
 export const checkDailyKOSRewards = async (): Promise<ReturnValue> => {
     try {
+        await mongoose.connect(process.env.MONGODB_URI!);
+
         const errors: string[] = [];
         const users = await UserModel.find();
 
@@ -577,6 +579,8 @@ export const checkDailyKOSRewards = async (): Promise<ReturnValue> => {
             // if the user isn't found, we will create a new entry and directly add the rewards and update the database.
             // if found, we will add it to `updateOperations` and update the database later.
             if (!kosRewardUser) {
+                console.log('new user found. adding user to KOSClaimableDailyRewards.');
+
                 const newKOSRewardUser = new KOSClaimableDailyRewardsModel({
                     _id: generateObjectId(),
                     userId: user._id,
@@ -609,6 +613,8 @@ export const checkDailyKOSRewards = async (): Promise<ReturnValue> => {
 
                 return [];
             } else {
+                console.log('existing user found. updating user in KOSClaimableDailyRewards.');
+
                 // if user is found, we will increment the amounts for xCookies, gatheringBooster25, gatheringBooster50, gatheringBooster100.
                 // and add it to `updateOperations` to update the database later.
                 const xCookiesIndex = (kosRewardUser.claimableRewards as KOSReward[]).findIndex(reward => reward.type === KOSRewardType.X_COOKIES);
@@ -1131,8 +1137,21 @@ export const getOwnedKeyIDs = async (twitterId: string): Promise<ReturnValue> =>
             };
         }
 
+        // check if wallet addresses have empty strings. filter these out.
+        const validAddresses = data.walletAddresses.filter((address: string) => address !== '');
+
+        if (validAddresses.length === 0 || validAddresses === null || validAddresses === undefined) {
+            return {
+                status: Status.SUCCESS,
+                message: `(getOwnedKeys) No owned Key of Salvation IDs found.`,
+                data: {
+                    ownedKeyIDs: []
+                }
+            };
+        }
+
         // Create an array of requests to call `tokensOfOwner` in the contract
-        const requests: Promise<BigNumber[]>[] = data.walletAddresses.map((walletAddress: string) =>
+        const requests: Promise<BigNumber[]>[] = validAddresses.map((walletAddress: string) =>
             KOS_CONTRACT.tokensOfOwner(walletAddress)
         );
 
@@ -1181,8 +1200,21 @@ export const getOwnedKeychainIDs = async (twitterId: string): Promise<ReturnValu
             };
         }
 
+        // check if wallet addresses have empty strings. filter these out.
+        const validAddresses = data.walletAddresses.filter((address: string) => address !== '');
+
+        if (validAddresses.length === 0 || validAddresses === null || validAddresses === undefined) {
+            return {
+                status: Status.SUCCESS,
+                message: `(getOwnedKeys) No owned Key of Salvation IDs found.`,
+                data: {
+                    ownedKeyIDs: []
+                }
+            };
+        }
+
         // Create an array of requests to call `tokensOfOwner` in the contract
-        const requests: Promise<BigNumber[]>[] = data.walletAddresses.map((walletAddress: string) =>
+        const requests: Promise<BigNumber[]>[] = validAddresses.map((walletAddress: string) =>
             KEYCHAIN_CONTRACT.tokensOfOwner(walletAddress)
         );
 
@@ -1231,8 +1263,21 @@ export const getOwnedSuperiorKeychainIDs = async (twitterId: string): Promise<Re
             };
         }
 
+        // check if wallet addresses have empty strings. filter these out.
+        const validAddresses = data.walletAddresses.filter((address: string) => address !== '');
+
+        if (validAddresses.length === 0 || validAddresses === null || validAddresses === undefined) {
+            return {
+                status: Status.SUCCESS,
+                message: `(getOwnedKeys) No owned Key of Salvation IDs found.`,
+                data: {
+                    ownedKeyIDs: []
+                }
+            };
+        }
+
         // Create an array of requests to call `tokensOfOwner` in the contract
-        const requests: Promise<BigNumber[]>[] = data.walletAddresses.map((walletAddress: string) =>
+        const requests: Promise<BigNumber[]>[] = validAddresses.map((walletAddress: string) =>
             SUPERIOR_KEYCHAIN_CONTRACT.tokensOfOwner(walletAddress)
         );
 
