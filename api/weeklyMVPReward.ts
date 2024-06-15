@@ -40,12 +40,12 @@ export const getWeeklyMVPContenders = async (): Promise<ReturnValue> => {
         }[] = [];
 
         for (const user of users) {
-            const userItems = user.inventory?.items && user.inventory?.items.length !== 0 ? user.inventory.items as Item[] : [];
+            const userItems = !user.inventory?.items || user.inventory?.items.length === 0 ? [] : user.inventory.items as Item[];
 
             const xCookiesSpent = (user.inventory?.xCookieData as XCookieData)?.weeklyXCookiesSpent ?? 0;
 
             const bitOrbsConsumed = !userItems || userItems.length === 0 ? 0 :
-                (user.inventory.items as Item[]).reduce((acc, item) => {
+                userItems.reduce((acc, item) => {
                     if (item.type === BitOrbType.BIT_ORB_I || item.type === BitOrbType.BIT_ORB_II || item.type === BitOrbType.BIT_ORB_III) {
                         return acc + item.weeklyAmountConsumed;
                     }
@@ -53,7 +53,7 @@ export const getWeeklyMVPContenders = async (): Promise<ReturnValue> => {
                 }, 0);
 
             const terraCapsulatorsConsumed = !userItems || userItems.length ? 0 :
-                (user.inventory.items as Item[]).reduce((acc, item) => {
+                userItems.reduce((acc, item) => {
                     if (item.type === TerraCapsulatorType.TERRA_CAPSULATOR_I || item.type === TerraCapsulatorType.TERRA_CAPSULATOR_II) {
                         return acc + item.weeklyAmountConsumed;
                     }
@@ -139,12 +139,12 @@ export const distributeWeeklyMVPRewards = async (): Promise<void> => {
         }[] = [];
 
         for (const user of users) {
-            const userItems = user.inventory?.items && user.inventory?.items.length !== 0 ? user.inventory.items as Item[] : [];
+            const userItems = !user.inventory?.items || user.inventory?.items.length === 0 ? [] : user.inventory.items as Item[];
 
             const xCookiesSpent = (user.inventory.xCookieData as XCookieData)?.weeklyXCookiesSpent ?? 0;
 
             const bitOrbsConsumed = !userItems || userItems.length === 0 ? 0 :
-                (user.inventory.items as Item[]).reduce((acc, item) => {
+                userItems.reduce((acc, item) => {
                     if (item.type === BitOrbType.BIT_ORB_I || item.type === BitOrbType.BIT_ORB_II || item.type === BitOrbType.BIT_ORB_III) {
                         return acc + item.weeklyAmountConsumed;
                     }
@@ -152,7 +152,7 @@ export const distributeWeeklyMVPRewards = async (): Promise<void> => {
                 }, 0);
 
             const terraCapsulatorsConsumed = !userItems || userItems.length ? 0 :
-                (user.inventory.items as Item[]).reduce((acc, item) => {
+                userItems.reduce((acc, item) => {
                     if (item.type === TerraCapsulatorType.TERRA_CAPSULATOR_I || item.type === TerraCapsulatorType.TERRA_CAPSULATOR_II) {
                         return acc + item.weeklyAmountConsumed;
                     }
