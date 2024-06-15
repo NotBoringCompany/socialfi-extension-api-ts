@@ -1,7 +1,8 @@
 import { ReturnValue, Status } from '../utils/retVal';
 import { generateObjectId } from '../utils/crypto';
-import { KOLCollabModel } from '../utils/constants/db';
+import { KOLCollabModel, UserModel } from '../utils/constants/db';
 import { KOLCollab, Participant } from '../models/collab';
+import { readSheet } from '../utils/sheet';
 
 /**
  * Adds a KOL collab to the database.
@@ -252,6 +253,69 @@ export const updateKOLParticipant = async (collabId: string, participantId: stri
         return {
             status: Status.ERROR,
             message: `(updateKOLParticipant) ${err.message}`,
+        };
+    }
+};
+
+/**
+ * Import KOL participant using Google Sheet
+ */
+export const importKOLParticipant = async (spreadsheetId: string, range: string) => {
+    try {
+        const data = (await readSheet(spreadsheetId, range)) as Array<{
+            Tier: string | null;
+            Name: string | null;
+            'Twitter ID': string | null;
+            'Discord ID': string | null;
+            'Invite Code': string | null;
+            Approved: string | 'TRUE' | 'FALSE' | null;
+        }>;
+
+        // check if the data empty
+        if (data.length == 0) {
+            return {
+                status: Status.ERROR,
+                message: `(importKOLParticipant) Sheet empty`,
+            };
+        }
+
+        const collabs = await KOLCollabModel.find({ tier: { $in: [...new Set(data.map(({ Tier }) => Tier))] } });
+
+        for (const collab of collabs) {
+            const participants = data
+                .filter((item) => item.Tier === collab.tier)
+                .map((item) => {
+                    const participant = collab.participants.find(({ twitterUsername }) => twitterUsername === item['Twitter ID']);
+
+                    return {
+                        _id: participant?._id ?? generateObjectId(),
+                        name: participant?.name ?? item.Name,
+                        approved: item.Approved === 'TRUE',
+                        claimable: participant?.claimable ?? true,
+                        code: participant?.code ?? item['Invite Code'],
+                        discordId: participant?.discordId ?? item['Discord ID'],
+                        role: 'leader',
+                        twitterUsername: participant?.twitterUsername ?? item['Twitter ID'],
+                    } as Participant;
+                });
+
+            await collab.updateOne({
+                $set: {
+                    participants,
+                },
+            });
+        }
+
+        // const registeredUser = await UserModel.find({ twitterUsername: { $in: data.map((item) => item['Twitter ID']) } });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(importKOLParticipant) Participant imported in the KOL collab`,
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(importKOLParticipant) ${err.message}`,
         };
     }
 };

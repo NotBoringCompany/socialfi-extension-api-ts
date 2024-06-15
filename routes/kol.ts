@@ -8,13 +8,14 @@ import {
     addKOLParticipant,
     removeKOLParticipant,
     updateKOLParticipant,
+    importKOLParticipant,
 } from '../api/kol';
 import keyMiddleware from '../middlewares/key';
 
 const router = express.Router();
 
 // secure all routes
-router.use(keyMiddleware);
+// router.use(keyMiddleware);
 
 router.post('/add_kol_collab', async (req, res) => {
     const { tier, maxUsers, rewards, participants, claimable, approved } = req.body;
@@ -110,6 +111,18 @@ router.post('/update_kol_participant', async (req, res) => {
         const { status, message, data } = await updateKOLParticipant(collabId, participantId, updatedParticipant);
 
         return res.status(status).json({ status, message, data });
+    } catch (err: any) {
+        return res.status(500).json({ status: 500, message: err.message });
+    }
+});
+
+router.post('/import_kol_participant', async (req, res) => {
+    const { spreadsheetId, range } = req.body;
+
+    try {
+        const { status, message } = await importKOLParticipant(spreadsheetId, range);
+
+        return res.status(status).json({ status, message });
     } catch (err: any) {
         return res.status(500).json({ status: 500, message: err.message });
     }

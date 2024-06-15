@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "wonderverse-426410",
+  "private_key_id": "a9feba49036e5a39f9750afde57fd5a350165dec",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDa9FPdBYR4tyCJ\n4nNi7/R90TcUo75MTTpiv3JRQes1vZjQ+XiRQXT/wpMbGoD9Le27Z/vBDmXXhz9X\n4qvuD7hqXYNxh1aK+vYv03C+gfnXE0wJrVQJIGkuXjF9gfu2HiBr6WXI5iMkJJSb\nVM+qwr3wUmnEesJY7IRTvLxlfP/fjNJ323cUc1RfmN/v1J26X+6GRqENLTj+WvA1\nT/+foqZpY+pQj+ezFRL16YiEgLiruy8Lp87XrYSy2TILGOkG7VTq6F66CJmowKRP\nqod6WLeAAom0Z6LIbtgxSctfvG06tSALxgQUoDhNqqBJUpvPXVO9bKuWKv08O36w\nOAtgS3PJAgMBAAECggEAGCOzisS41QvAjj8dgFEK9COgplmCqZwilaA8iOWi+lTt\nwA1fC+mq7ecsa4Ktqawaf4zAammNVBikxMpYcPnB99UZQKcehRpT0dRGg/RlwH7v\nxUnbH9n3Sq3HGEqgPxT9d1Q/POnVgj63tRPhxNZtVS1q3Ib5vg7ObIJ8hVZlieZj\nCpaMa/qSNuS52Llm5IBWNLJVjwDmAHbpm4Z31NH3CeNE7bfav8QnPqrMm/6M+e+1\n1bEDyk/nDk/0KDrGgrVwNvhoqR+h52ETQNjhrOsY4QxnFwXjMn7pYRcMS71zFeR1\nMKepeZ1YSAon3lyzASAT75u7vbmL1xsa9K4exb8qoQKBgQD4bH8ca57RVsnn62DL\nQNPO8vzOCfJd4YijWBSPPVIqL527C+yznvypeiq2DNAdjXkSB5aXID1YCdj68Xs3\nN9etYf9726VGphuJZqD5ce31KSayJeKmi4NijGuZsBls/f/XLuA//5FwKH4OcgUh\nGm+SWuis+oasa4oCFFE04qhXYQKBgQDhocGkKfZB1ZdSIxmbaPrVHLWVA8EIH46e\n43BQxipQTkKI/yyqs1nUeiUglzVqGs944LsAjFogwbahlt/tm41uOpldwkbRvbX6\njTI6eyrYTRiyu8vX4sM0sxLkdYj06e1fdrLSJJLreURCI5mo970+g9YrB9rOR1tm\nurJ38t29aQKBgQDrPXpEhFiY7PE2rzoyXgn0Hz5rMRoT8lx8KQ0W8r9aeUqIc+tJ\n0BR7u9a0G3/7bBsoioz8QKg2NOUGBCNkj3mpknHmbICeXO8YdlmavFrT24rsCVoN\n0XCxojzGBO6eugtJTfdGQxEKvx1XOntG9IyQb4uDOZzLqu29uFWJmdRFIQKBgCo3\nP6ndiAvNUOC3XIUtYTEajAbzitxgOykTWOJkEWqxGdXUGKFfqUEOEYBFimLt3T+6\nnIJ/wCU82VTmi8NDRXUIVcWrIeEAY9obLPiwLtYFpsdaR8t+zBNCJhjEvPlGA3nH\nFbIn0a1pJRJS4t8wayIVPK8UayYJR9qyt82ljUNxAoGBAL/Q6VuUS0fIr9iTZ5b2\nXp/6xGbiK3ltZ8QLhzXv+Vmy7SrYFu2MuOXvN2SLFKwIpc5GAVBCrNxvpZnrGcZC\nB38ALyYpPZVBWGUqMdGD0ysFjUSSf5aly7nCKWZWQd4x1hRoT+cExdK+lbdprlJ3\nHmoz6wgmDGheZ27e7/NtoOjC\n-----END PRIVATE KEY-----\n",
+  "client_email": "wonderverse@wonderverse-426410.iam.gserviceaccount.com",
+  "client_id": "113380905807216083887",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/wonderverse%40wonderverse-426410.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
