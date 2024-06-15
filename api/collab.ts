@@ -488,8 +488,8 @@ export const importParticipants = async (spreadsheetId: string, range: string): 
 export const importGroupParticipants = async (spreadsheetId: string, range: string): Promise<ReturnValue> => {
     try {
         const data = (await readSheet(spreadsheetId, range)) as Array<{
-            Tier: string | null;
             Name: string | null;
+            Role: string | null;
             'Group Name': string | null;
             'Twitter ID': string | null;
             'Discord ID': string | null;
@@ -501,7 +501,7 @@ export const importGroupParticipants = async (spreadsheetId: string, range: stri
         if (data.length == 0) {
             return {
                 status: Status.ERROR,
-                message: `(importParticipants) Sheet empty`,
+                message: `(importGroupParticipants) Sheet empty`,
             };
         }
 
@@ -510,38 +510,43 @@ export const importGroupParticipants = async (spreadsheetId: string, range: stri
         });
 
         for (const collab of collabs) {
-            const participants = data
-                .filter((item) => item.Tier === collab.tier)
-                .map((item) => {
-                    const participant = collab.participants.find(({ twitterUsername }) => twitterUsername === item['Twitter ID']);
+            const groups = collab.groups.map((group) => {
+                const participants = data
+                    .filter((item) => group['name'] === item['Group Name'])
+                    .map((item) => {
+                        const participant = group.participants.find(({ twitterUsername }) => twitterUsername === item['Twitter ID']);
 
-                    return {
-                        _id: participant?._id ?? generateObjectId(),
-                        name: participant?.name ?? item.Name,
-                        approved: item.Approved === 'TRUE',
-                        claimable: participant?.claimable ?? true,
-                        code: participant?.code ?? item['Invite Code'],
-                        discordId: participant?.discordId ?? item['Discord ID'],
-                        role: 'leader',
-                        twitterUsername: participant?.twitterUsername ?? item['Twitter ID'],
-                    } as Participant;
-                });
+                        return {
+                            _id: participant?._id ?? generateObjectId(),
+                            name: participant?.name ?? item.Name,
+                            approved: item.Approved === 'TRUE',
+                            claimable: participant?.claimable ?? true,
+                            code: participant?.code ?? item['Invite Code'],
+                            discordId: participant?.discordId ?? item['Discord ID'],
+                            role: participant?.role ?? item['Role'],
+                            twitterUsername: participant?.twitterUsername ?? item['Twitter ID'],
+                        } as Participant;
+                    });
+
+                return {
+                    ...group.toObject(),
+                    participants,
+                };
+            });
 
             await collab.updateOne({
-                $set: {
-                    participants,
-                },
+                $set: { groups },
             });
         }
 
         return {
             status: Status.SUCCESS,
-            message: `(importParticipants) Participants imported in the collab`,
+            message: `(importGroupParticipants) Group Participants imported in the collab`,
         };
     } catch (err: any) {
         return {
             status: Status.ERROR,
-            message: `(importParticipants) ${err.message}`,
+            message: `(importGroupParticipants) ${err.message}`,
         };
     }
 };

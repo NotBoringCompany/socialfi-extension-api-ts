@@ -81,53 +81,6 @@ const GroupSchema = new mongoose.Schema({
 });
 
 /**
- * KOL Collab schema. Represents a KOL reward tier.
- */
-export const KOLCollabSchema = new mongoose.Schema({
-    _id: {
-        type: String,
-        required: true,
-        default: generateObjectId(),
-    },
-    tier: {
-        type: String,
-        required: true,
-    },
-    maxUsers: {
-        type: Number,
-        required: true,
-    },
-    rewards: [CollabRewardSchema],
-    participants: [ParticipantSchema],
-});
-
-/**
- * Group Collab schema. Represents a group reward tier.
- */
-export const GroupCollabSchema = new mongoose.Schema({
-    _id: {
-        type: String,
-        required: true,
-        default: generateObjectId(),
-    },
-    tier: {
-        type: String,
-        required: true,
-    },
-    maxGroups: {
-        type: Number,
-        default: null,
-    },
-    maxMembers: {
-        type: Number,
-        default: null,
-    },
-    leaderRewards: [CollabRewardSchema],
-    memberRewards: [CollabRewardSchema],
-    groups: [GroupSchema],
-});
-
-/**
  * Collab schema. Represents a collab reward tier.
  */
 /**
