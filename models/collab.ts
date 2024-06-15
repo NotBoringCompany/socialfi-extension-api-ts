@@ -34,8 +34,8 @@ export interface Participant {
     name: string;
     /** The code of the participant */
     code: string;
-    /** The role of the participant (leader or member) */
-    role: 'leader' | 'member';
+    /** The role of the participant (Leader or Member) */
+    role: 'Leader' | 'Member';
     /** The Twitter username of the participant */
     twitterUsername: string;
     /** The Discord ID of the participant */

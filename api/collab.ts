@@ -458,7 +458,7 @@ export const importParticipants = async (spreadsheetId: string, range: string): 
                         claimable: participant?.claimable ?? true,
                         code: participant?.code ?? item['Invite Code'],
                         discordId: participant?.discordId ?? item['Discord ID'],
-                        role: 'leader',
+                        role: 'Leader',
                         twitterUsername: participant?.twitterUsername ?? item['Twitter ID'],
                     } as Participant;
                 });
