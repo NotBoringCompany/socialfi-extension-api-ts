@@ -39,7 +39,7 @@ const ParticipantSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['leader', 'member'],
+        enum: ['Leader', 'Member'],
         required: true,
     },
     twitterUsername: {

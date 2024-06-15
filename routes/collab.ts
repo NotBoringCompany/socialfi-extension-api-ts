@@ -14,6 +14,8 @@ import {
     removeGroupParticipant,
     importParticipants,
     importGroupParticipants,
+    getCollabRewards,
+    claimCollabRewards,
 } from '../api/collab';
 import keyMiddleware from '../middlewares/key';
 
@@ -185,6 +187,30 @@ router.post('/import_group_participants', async (req, res) => {
     try {
         const { status, message } = await importGroupParticipants(spreadsheetId, range);
         return res.status(status).json({ status, message });
+    } catch (err: any) {
+        return res.status(500).json({ status: 500, message: err.message });
+    }
+});
+
+// Route to get collab rewards by twitter username
+router.get('/get_collab_rewards/:twitterUsername', async (req, res) => {
+    const { twitterUsername } = req.params;
+
+    try {
+        const { status, message, data } = await getCollabRewards(twitterUsername);
+        return res.status(status).json({ status, message, data });
+    } catch (err: any) {
+        return res.status(500).json({ status: 500, message: err.message });
+    }
+});
+
+// Route to claim collab rewards by twitter username
+router.post('/claim_collab_rewards/:twitterUsername', async (req, res) => {
+    const { twitterUsername } = req.params;
+
+    try {
+        const { status, message, data } = await claimCollabRewards(twitterUsername);
+        return res.status(status).json({ status, message, data });
     } catch (err: any) {
         return res.status(500).json({ status: 500, message: err.message });
     }

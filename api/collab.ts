@@ -1,8 +1,11 @@
 import { ReturnValue, Status } from '../utils/retVal';
 import { generateObjectId } from '../utils/crypto';
 import { CollabModel, UserModel } from '../utils/constants/db';
-import { Collab, Group, Participant } from '../models/collab';
+import { Collab, CollabReward, CollabRewardType, Group, Participant } from '../models/collab';
 import { readSheet } from '../utils/sheet';
+import { Item } from '../models/item';
+import { BitOrbType } from '../models/bitOrb';
+import { ExtendedXCookieData, XCookieSource } from '../models/user';
 
 /**
  * Adds a collab to the database.
@@ -581,6 +584,234 @@ export const importGroupParticipants = async (spreadsheetId: string, range: stri
         return {
             status: Status.ERROR,
             message: `(importGroupParticipants) ${err.message}`,
+        };
+    }
+};
+
+export const getCollabRewards = async (twitterUsername: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterUsername }).lean();
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(claimCollabRewards) User not found.`,
+            };
+        }
+
+        const collab = await CollabModel.findOne({
+            $or: [{ 'participants.twitterUsername': twitterUsername }, { 'groups.participants.twitterUsername': twitterUsername }],
+        }).lean();
+
+        if (!collab) {
+            return {
+                status: Status.ERROR,
+                message: `(getCollabReward) You don't registered to any collab program`,
+            };
+        }
+
+        let isLeader = false;
+        let rewards: any | null = null;
+        let isClaimable = false;
+        let isApproved = false;
+
+        // Check if the user is the Leader in KOL collab
+        if (collab.type === 'kol' && collab.participants) {
+            const participant = collab.participants.find((p) => p.twitterUsername === twitterUsername);
+            if (participant) {
+                isApproved = participant.approved;
+                isClaimable = participant.approved && participant.claimable;
+
+                if (participant.role === 'Leader') {
+                    isLeader = true;
+                    rewards = collab.leaderRewards;
+                } else {
+                    rewards = collab.memberRewards;
+                }
+            }
+        }
+
+        // Check if the user is the Leader or Member in Group collab
+        if (collab.type === 'group' && collab.groups) {
+            for (const group of collab.groups) {
+                const participant = group.participants.find((p) => p.twitterUsername === twitterUsername);
+                if (participant) {
+                    isApproved = participant.approved;
+                    isClaimable = participant.approved && participant.claimable;
+
+                    if (participant.role === 'Leader') {
+                        isLeader = true;
+                        rewards = collab.leaderRewards;
+                    } else {
+                        rewards = collab.memberRewards;
+                    }
+                    break;
+                }
+            }
+        }
+
+        if (!rewards) {
+            return {
+                status: Status.ERROR,
+                message: `(getCollabReward) Could not determine your role in the collab program`,
+            };
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getCollabReward) Collab reward fetched`,
+            data: {
+                rewards,
+                isClaimable,
+                isApproved,
+            },
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getCollabReward) ${err.message}`,
+        };
+    }
+};
+
+export const claimCollabRewards = async (twitterUsername: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterUsername }).lean();
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(claimCollabRewards) User not found.`,
+            };
+        }
+
+        const { data, status, message } = await getCollabRewards(twitterUsername);
+        if (status !== Status.SUCCESS) {
+            return {
+                status,
+                message: `(claimCollabRewards) Error for getCollabRewards: ${message}`,
+            };
+        }
+
+        if (!data.isApproved) {
+            return {
+                status,
+                message: `(claimCollabRewards) You're not fulfilled the requirement`,
+            };
+        }
+
+        if (!data.isClaimable) {
+            return {
+                status,
+                message: `(claimCollabRewards) You already claim the reward`,
+            };
+        }
+
+        const collab = await CollabModel.findOne({
+            $or: [{ 'participants.twitterUsername': twitterUsername }, { 'groups.participants.twitterUsername': twitterUsername }],
+        });
+
+        if (!collab) {
+            return {
+                status: Status.ERROR,
+                message: `(claimCollabRewards) You don't registered to any collab program`,
+            };
+        }
+
+        let participantUpdated = false;
+
+        if (collab.type === 'kol' && collab.participants) {
+            const participant = collab.participants.find((p) => p.twitterUsername === twitterUsername);
+            if (participant && participant.claimable) {
+                participant.claimable = false;
+                participantUpdated = true;
+            }
+        }
+
+        if (collab.type === 'group' && collab.groups) {
+            for (const group of collab.groups) {
+                const participant = group.participants.find((p: Participant) => p.twitterUsername === twitterUsername);
+                if (participant && participant.claimable) {
+                    participant.claimable = false;
+                    participantUpdated = true;
+                    break;
+                }
+            }
+        }
+
+        if (!participantUpdated) {
+            return {
+                status: Status.ERROR,
+                message: `(claimCollabRewards) Participant not found or already claimed the reward`,
+            };
+        }
+
+        await collab.save();
+
+        const userUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {},
+        };
+
+        for (const reward of data.rewards as CollabReward[]) {
+            switch (reward.type) {
+                case CollabRewardType.BIT_ORB_I:
+                case CollabRewardType.BIT_ORB_II:
+                case CollabRewardType.BIT_ORB_III:
+                case CollabRewardType.TERRA_CAPSULATOR_I:
+                case CollabRewardType.TERRA_CAPSULATOR_II:
+                    // add the item to the user's inventory
+                    const existingItemIndex = (user.inventory?.items as Item[]).findIndex((i) => i.type === (reward.type as any));
+
+                    if (existingItemIndex !== -1) {
+                        userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = reward.amount;
+                    } else {
+                        if (!userUpdateOperations.$push['inventory.items']) {
+                            userUpdateOperations.$push['inventory.items'] = {
+                                $each: [],
+                            };
+                        }
+
+                        userUpdateOperations.$push['inventory.items'].$each.push({
+                            type: reward.type,
+                            amount: reward.amount,
+                            totalAmountConsumed: 0,
+                            weeklyAmountConsumed: 0,
+                        });
+                    }
+                    break;
+                case CollabRewardType.X_BIT_BERRY:
+                    userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = reward.amount;
+
+                    // check if the user's `xCookieData.extendedXCookieData` contains a source called QUEST_REWARDS.
+                    // if yes, we increment the amount, if not, we create a new entry for the source
+                    const questRewardsIndex = (user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(
+                        (data) => data.source === XCookieSource.COLLAB_REWARDS
+                    );
+
+                    if (questRewardsIndex !== -1) {
+                        userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${questRewardsIndex}.xCookies`] = reward.amount;
+                    } else {
+                        userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = {
+                            xCookies: reward.amount,
+                            source: XCookieSource.COLLAB_REWARDS,
+                        };
+                    }
+                    break;
+            }
+        }
+
+        await UserModel.updateOne({ twitterUsername }, { $inc: userUpdateOperations.$inc });
+        await UserModel.updateOne({ twitterUsername }, { $push: userUpdateOperations.$push });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(claimCollabRewards) Collab awarded`,
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(claimCollabRewards) ${err.message}`,
         };
     }
 };
