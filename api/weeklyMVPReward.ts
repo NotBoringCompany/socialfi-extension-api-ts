@@ -40,18 +40,21 @@ export const getWeeklyMVPContenders = async (): Promise<ReturnValue> => {
         }[] = [];
 
         for (const user of users) {
+            const userItems = user.inventory.items as Item[];
+
             const xCookiesSpent = (user.inventory?.xCookieData as XCookieData)?.weeklyXCookiesSpent ?? 0;
 
             console.log(`User ${user.twitterUsername} has spent ${xCookiesSpent} xCookies.`);
 
-            const bitOrbsConsumed = (user.inventory?.items as Item[]).length === 0 ? 0 :
+            const bitOrbsConsumed = !userItems || userItems.length === 0 ? 0 :
                 (user.inventory.items as Item[]).reduce((acc, item) => {
                     if (item.type === BitOrbType.BIT_ORB_I || item.type === BitOrbType.BIT_ORB_II || item.type === BitOrbType.BIT_ORB_III) {
                         return acc + item.weeklyAmountConsumed;
                     }
                     return acc;
                 }, 0);
-            const terraCapsulatorsConsumed = (user.inventory?.items as Item[]).length === 0 ? 0 :
+
+            const terraCapsulatorsConsumed = !userItems || userItems.length ? 0 :
                 (user.inventory.items as Item[]).reduce((acc, item) => {
                     if (item.type === TerraCapsulatorType.TERRA_CAPSULATOR_I || item.type === TerraCapsulatorType.TERRA_CAPSULATOR_II) {
                         return acc + item.weeklyAmountConsumed;
@@ -138,16 +141,19 @@ export const distributeWeeklyMVPRewards = async (): Promise<void> => {
         }[] = [];
 
         for (const user of users) {
+            const userItems = user.inventory.items as Item[];
+            
             const xCookiesSpent = (user.inventory.xCookieData as XCookieData)?.weeklyXCookiesSpent ?? 0;
 
-            const bitOrbsConsumed = (user.inventory.items as Item[]).length === 0 ? 0 :
+            const bitOrbsConsumed = !userItems || userItems.length === 0 ? 0 :
                 (user.inventory.items as Item[]).reduce((acc, item) => {
                     if (item.type === BitOrbType.BIT_ORB_I || item.type === BitOrbType.BIT_ORB_II || item.type === BitOrbType.BIT_ORB_III) {
                         return acc + item.weeklyAmountConsumed;
                     }
                     return acc;
                 }, 0);
-            const terraCapsulatorsConsumed = (user.inventory.items as Item[]).length === 0 ? 0 :
+
+            const terraCapsulatorsConsumed = !userItems || userItems.length ? 0 :
                 (user.inventory.items as Item[]).reduce((acc, item) => {
                     if (item.type === TerraCapsulatorType.TERRA_CAPSULATOR_I || item.type === TerraCapsulatorType.TERRA_CAPSULATOR_II) {
                         return acc + item.weeklyAmountConsumed;
