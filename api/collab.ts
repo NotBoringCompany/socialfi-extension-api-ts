@@ -470,6 +470,23 @@ export const importParticipants = async (spreadsheetId: string, range: string): 
             });
         }
 
+        const registeredUser = await UserModel.find({ twitterUsername: data.map((item) => item['Twitter ID']) }).lean();
+        const unregisteredUser = data.filter((item) => !registeredUser.find((user) => user.twitterUsername === item['Twitter ID']));
+
+        // handle pre-register user
+        await UserModel.create(
+            unregisteredUser.map((user) => ({
+                _id: generateObjectId(),
+                twitterId: null,
+                twitterUsername: user['Twitter ID'],
+                inviteCodeData: {
+                    usedStarterCode: user['Invite Code'],
+                    usedReferralCode: null,
+                    referrerId: null,
+                },
+            }))
+        );
+
         return {
             status: Status.SUCCESS,
             message: `(importParticipants) Participants imported in the collab`,
@@ -538,6 +555,23 @@ export const importGroupParticipants = async (spreadsheetId: string, range: stri
                 $set: { groups },
             });
         }
+
+        const registeredUser = await UserModel.find({ twitterUsername: data.map((item) => item['Twitter ID']) }).lean();
+        const unregisteredUser = data.filter((item) => !registeredUser.find((user) => user.twitterUsername === item['Twitter ID']));
+
+        // handle pre-register user
+        await UserModel.create(
+            unregisteredUser.map((user) => ({
+                _id: generateObjectId(),
+                twitterId: null,
+                twitterUsername: user['Twitter ID'],
+                inviteCodeData: {
+                    usedStarterCode: user['Invite Code'],
+                    usedReferralCode: null,
+                    referrerId: null,
+                },
+            }))
+        );
 
         return {
             status: Status.SUCCESS,
