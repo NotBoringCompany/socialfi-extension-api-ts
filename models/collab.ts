@@ -7,8 +7,11 @@
  */
 export enum CollabRewardType {
     X_BIT_BERRY = 'xBitBerry',
-    BIT_ORBS = 'BitOrbs',
-    TERRA_CAPSULES = 'Terra Capsules',
+    BIT_ORB_I = 'Bit Orb (I)',
+    BIT_ORB_II = 'Bit Orb (II)',
+    BIT_ORB_III = 'Bit Orb (III)',
+    TERRA_CAPSULATOR_I = 'Terra Capsulator (I)',
+    TERRA_CAPSULATOR_II = 'Terra Capsulator (II)',
 }
 
 /**

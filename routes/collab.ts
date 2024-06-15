@@ -19,7 +19,7 @@ import keyMiddleware from '../middlewares/key';
 
 const router = express.Router();
 
-router.use(keyMiddleware); // Apply the middleware to all routes in this router
+// router.use(keyMiddleware); // Apply the middleware to all routes in this router
 
 // Route to add a collab
 router.post('/add_collab', async (req, res) => {
@@ -46,8 +46,8 @@ router.get('/get_collabs/:type', async (req, res) => {
 });
 
 // Route to delete a collab
-router.delete('/delete_collab/:id', async (req, res) => {
-    const { id } = req.params;
+router.post('/delete_collab', async (req, res) => {
+    const { id } = req.body;
 
     try {
         const { status, message, data } = await deleteCollab(id);
@@ -70,8 +70,8 @@ router.get('/get_collab/:id', async (req, res) => {
 });
 
 // Route to update a collab
-router.put('/update_collab/:id', async (req, res) => {
-    const { id } = req.params;
+router.post('/update_collab', async (req, res) => {
+    const { id } = req.body;
     const data = req.body;
 
     try {
@@ -95,7 +95,7 @@ router.post('/add_participant', async (req, res) => {
 });
 
 // Route to remove a participant from a collab
-router.delete('/remove_participant', async (req, res) => {
+router.post('/remove_participant', async (req, res) => {
     const { collabId, participantId } = req.body;
 
     try {
@@ -107,7 +107,7 @@ router.delete('/remove_participant', async (req, res) => {
 });
 
 // Route to update a participant in a collab
-router.put('/update_participant', async (req, res) => {
+router.post('/update_participant', async (req, res) => {
     const { collabId, participantId, updatedParticipant } = req.body;
 
     try {
@@ -131,7 +131,7 @@ router.post('/add_group', async (req, res) => {
 });
 
 // Route to remove a group from a collab
-router.delete('/remove_group', async (req, res) => {
+router.post('/remove_group', async (req, res) => {
     const { collabId, groupId } = req.body;
 
     try {
@@ -155,7 +155,7 @@ router.post('/add_group_participant', async (req, res) => {
 });
 
 // Route to remove a participant from a group in a collab
-router.delete('/remove_group_participant', async (req, res) => {
+router.post('/remove_group_participant', async (req, res) => {
     const { collabId, groupId, participantId } = req.body;
 
     try {
