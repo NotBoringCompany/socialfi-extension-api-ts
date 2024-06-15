@@ -90,3 +90,22 @@ export interface GroupCollab {
     /** The groups in this tier */
     groups: Group[];
 }
+
+/**
+ * Represents a collab tier.
+ */
+export interface Collab {
+    _id: string;
+    /** The name of the tier */
+    tier: string;
+    /** The type of the collab */
+    type: 'kol' | 'group';
+    /** The rewards for leaders in this tier, this is also used for KOL rewards */
+    leaderRewards: CollabReward[] | null;
+    /** The rewards for members in this tier */
+    memberRewards: CollabReward[] | null;
+    /** The participants of KOL collab */
+    participants?: Participant[];
+    /** The groups of group collab */
+    groups?: Group[];
+}

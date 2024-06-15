@@ -1873,3 +1873,201 @@ export const resetWeeklyItemsConsumed = async (): Promise<void> => {
         console.error('Error in resetWeeklyItemsConsumed:', err.message);
     }
 }
+
+/**
+ * Twitter login logic. Creates a new user or simply log them in if they already exist.
+ */
+export const registerCollabUser = async (
+    twitterId: string,
+    profile?: ExtendedProfile
+): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        // if user doesn't exist, create a new user
+        if (!user) {
+            // generates a new object id for the user
+            const userObjectId = generateObjectId();
+
+            // creates a new raft for the user with the generated user object id
+            const { status, message, data } = await createRaft(userObjectId);
+
+            if (status !== Status.SUCCESS) {
+                return {
+                    status,
+                    message: `(handleTwitterLogin) Error from createRaft: ${message}`,
+                };
+            }
+
+            // get the latest bit ID from the database
+            const { status: bitIdStatus, message: bitIdMessage, data: bitIdData } = await getLatestBitId();
+
+            if (bitIdStatus !== Status.SUCCESS) {
+                return {
+                    status: bitIdStatus,
+                    message: `(handleTwitterLogin) Error from getLatestBitId: ${bitIdMessage}`,
+                };
+            }
+
+            const rarity = BitRarity.COMMON;
+            const bitType = randomizeBitType();
+
+            const traits = randomizeBitTraits(rarity);
+
+            const bitStatsModifiers = getBitStatsModifiersFromTraits(traits.map((trait) => trait.trait));
+
+            // add a premium common bit to the user's inventory (users get 1 for free when they sign up)
+            const {
+                status: bitStatus,
+                message: bitMessage,
+                data: bitData,
+            } = await addBitToDatabase({
+                bitId: bitIdData?.latestBitId + 1,
+                bitType,
+                bitNameData: {
+                    name: bitType,
+                    lastChanged: 0,
+                },
+                rarity,
+                gender: RANDOMIZE_GENDER(),
+                premium: true,
+                owner: userObjectId,
+                purchaseDate: Math.floor(Date.now() / 1000),
+                obtainMethod: ObtainMethod.SIGN_UP,
+                placedIslandId: 0,
+                lastRelocationTimestamp: 0,
+                currentFarmingLevel: 1, // starts at level 1
+                traits,
+                farmingStats: {
+                    ...randomizeFarmingStats(rarity),
+                    currentEnergy: 50, // set energy to half for tutorial purposes
+                },
+                bitStatsModifiers,
+            });
+
+            if (bitStatus !== Status.SUCCESS) {
+                return {
+                    status: bitStatus,
+                    message: `(handleTwitterLogin) Error from addBitToDatabase: ${bitMessage}`,
+                };
+            }
+
+            // creates the wallet for the user
+            const { privateKey, address } = createUserWallet();
+
+            const newUser = new UserModel({
+                _id: userObjectId,
+                twitterId,
+                twitterProfilePicture: profile.photos[0].value ?? '',
+                twitterUsername: profile.username,
+                twitterDisplayName: profile.displayName,
+                createdTimestamp: Math.floor(Date.now() / 1000),
+                // invite code data will be null until users input their invite code.
+                inviteCodeData: {
+                    usedStarterCode: null,
+                    usedReferralCode: null,
+                    referrerId: null,
+                },
+                referralData: {
+                    referralCode: generateReferralCode(),
+                    referredUsersData: [],
+                    claimableReferralRewards: {
+                        xCookies: 0,
+                        leaderboardPoints: 0,
+                    },
+                },
+                wallet: {
+                    privateKey,
+                    address,
+                },
+                secondaryWallets: [],
+                openedTweetIdsToday: [],
+                inventory: {
+                    weight: 0,
+                    maxWeight: MAX_INVENTORY_WEIGHT,
+                    xCookieData: {
+                        currentXCookies: 0,
+                        extendedXCookieData: [],
+                    },
+                    cookieCrumbs: 0,
+                    resources: [],
+                    items: [
+                        {
+                            type: BoosterItem['GATHERING_PROGRESS_BOOSTER_1000'],
+                            amount: 1,
+                        },
+                    ],
+                    foods: [
+                        {
+                            type: FoodType['BURGER'],
+                            amount: 1,
+                        },
+                    ],
+                    raftId: data.raft.raftId,
+                    islandIds: [],
+                    bitIds: [bitIdData?.latestBitId + 1],
+                },
+                inGameData: {
+                    level: 1,
+                    completedTutorialIds: [],
+                    beginnerRewardData: {
+                        lastClaimedTimestamp: 0,
+                        isClaimable: true,
+                        daysClaimed: [],
+                        daysMissed: [],
+                    },
+                    dailyLoginRewardData: {
+                        lastClaimedTimestamp: 0,
+                        isDailyClaimable: true,
+                        consecutiveDaysClaimed: 0,
+                    },
+                    squadId: null,
+                    lastLeftSquad: 0,
+                    location: POIName.HOME,
+                    travellingTo: null,
+                    destinationArrival: 0,
+                },
+            });
+
+            await newUser.save();
+
+            return {
+                status: Status.SUCCESS,
+                message: `(handleTwitterLogin) New user created and free Rafting Bit added to raft.`,
+                data: {
+                    userId: newUser._id,
+                    twitterId,
+                },
+            };
+        } else {
+            // update user's Twitter profile information if available
+            if (!!profile) {
+                await UserModel.updateOne(
+                    { twitterId },
+                    {
+                        $set: {
+                            twitterProfilePicture: profile.photos[0].value ?? '',
+                            twitterDisplayName: profile.displayName,
+                            twitterUsername: profile.username,
+                        },
+                    }
+                );
+            }
+
+            // user exists, return
+            return {
+                status: Status.SUCCESS,
+                message: `(handleTwitterLogin) User found. Logging in.`,
+                data: {
+                    userId: user._id,
+                    twitterId,
+                },
+            };
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(handleTwitterLogin) ${err.message}`,
+        };
+    }
+};

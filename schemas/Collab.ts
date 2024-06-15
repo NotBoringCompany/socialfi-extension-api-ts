@@ -126,3 +126,29 @@ export const GroupCollabSchema = new mongoose.Schema({
     memberRewards: [CollabRewardSchema],
     groups: [GroupSchema],
 });
+
+/**
+ * Collab schema. Represents a collab reward tier.
+ */
+/**
+ * KOL Collab schema. Represents a KOL reward tier.
+ */
+export const CollabSchema = new mongoose.Schema({
+    _id: {
+        type: String,
+        required: true,
+        default: generateObjectId(),
+    },
+    type: {
+        type: String,
+        required: true,
+    },
+    tier: {
+        type: String,
+        required: true,
+    },
+    leaderRewards: [CollabRewardSchema],
+    memberRewards: [CollabRewardSchema],
+    participants: [ParticipantSchema],
+    groups: [GroupSchema],
+});
