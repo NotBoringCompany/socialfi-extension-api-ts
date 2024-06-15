@@ -40,7 +40,7 @@ export const getWeeklyMVPContenders = async (): Promise<ReturnValue> => {
         }[] = [];
 
         for (const user of users) {
-            const userItems = user.inventory?.items as Item[] ?? [];
+            const userItems = user.inventory?.items && user.inventory?.items.length !== 0 ? user.inventory.items as Item[] : [];
 
             const xCookiesSpent = (user.inventory?.xCookieData as XCookieData)?.weeklyXCookiesSpent ?? 0;
 
@@ -139,7 +139,7 @@ export const distributeWeeklyMVPRewards = async (): Promise<void> => {
         }[] = [];
 
         for (const user of users) {
-            const userItems = user.inventory?.items as Item[] ?? [];
+            const userItems = user.inventory?.items && user.inventory?.items.length !== 0 ? user.inventory.items as Item[] : [];
 
             const xCookiesSpent = (user.inventory.xCookieData as XCookieData)?.weeklyXCookiesSpent ?? 0;
 
