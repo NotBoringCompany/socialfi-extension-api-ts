@@ -1,15 +1,12 @@
 import { google } from 'googleapis';
-import { GoogleAuth } from 'google-auth-library';
-
-// Path to the service account key file
-const KEYFILEPATH = './utils/wonderverse-426410-a9feba49036e.json';
-const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
+import { JWT } from 'google-auth-library';
 
 export async function getGoogleSheetsClient() {
-    const auth = new GoogleAuth({
-        keyFile: KEYFILEPATH,
-        scopes: SCOPES,
-    });
+    const auth = new JWT({
+        email: process.env.GOOGLE_SERVICE_EMAIL,
+        key: process.env.GOOGLE_SERVICE_KEY,
+        scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+      });
 
     const googleSheets = google.sheets({ version: 'v4', auth });
     return googleSheets;
