@@ -40,11 +40,9 @@ export const getWeeklyMVPContenders = async (): Promise<ReturnValue> => {
         }[] = [];
 
         for (const user of users) {
-            const userItems = user.inventory.items as Item[];
+            const userItems = user.inventory?.items as Item[] ?? [];
 
             const xCookiesSpent = (user.inventory?.xCookieData as XCookieData)?.weeklyXCookiesSpent ?? 0;
-
-            console.log(`User ${user.twitterUsername} has spent ${xCookiesSpent} xCookies.`);
 
             const bitOrbsConsumed = !userItems || userItems.length === 0 ? 0 :
                 (user.inventory.items as Item[]).reduce((acc, item) => {
@@ -141,8 +139,8 @@ export const distributeWeeklyMVPRewards = async (): Promise<void> => {
         }[] = [];
 
         for (const user of users) {
-            const userItems = user.inventory.items as Item[];
-            
+            const userItems = user.inventory?.items as Item[] ?? [];
+
             const xCookiesSpent = (user.inventory.xCookieData as XCookieData)?.weeklyXCookiesSpent ?? 0;
 
             const bitOrbsConsumed = !userItems || userItems.length === 0 ? 0 :
