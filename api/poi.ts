@@ -12,7 +12,7 @@ import { SQUAD_KOS_BENEFITS } from '../utils/constants/squad';
 import { GET_LEADER_SQUAD_WEEKLY_RANKING_POI_POINTS_BOOST } from '../utils/constants/squadLeaderboard';
 import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
 import { ReturnValue, Status } from '../utils/retVal';
-import { getLatestSquadWeeklyRanking, squadKOSCount } from './squad';
+import { getLatestSquadWeeklyRanking, squadKOSData } from './squad';
 import { updateReferredUsersData } from './user';
 
 /**
@@ -1648,13 +1648,13 @@ export const getSellItemsInPOIPointsBoost = async (twitterId: string): Promise<R
         }
 
         // get the user's squad's KOS count
-        const { status: squadKOSCountStatus, message: squadKOSCountMessage, data: squadKOSCountData } = await squadKOSCount(twitterId);
+        const { status: squadKOSDataStatus, message: squadKOSDataMessage, data: squadKOSDataData } = await squadKOSData(twitterId);
 
         // if there's an error, return the error.
-        if (squadKOSCountStatus !== Status.SUCCESS) {
+        if (squadKOSDataStatus !== Status.SUCCESS) {
             return {
-                status: squadKOSCountStatus,
-                message: `(getSellItemsInPOIPointsBoost) ${squadKOSCountMessage}`,
+                status: squadKOSDataStatus,
+                message: `(getSellItemsInPOIPointsBoost) ${squadKOSDataMessage}`,
                 data: {
                     ownedKOSPointsBoost: 1,
                     squadWeeklyRankingPointsBoost: 1,
@@ -1662,7 +1662,7 @@ export const getSellItemsInPOIPointsBoost = async (twitterId: string): Promise<R
             }
         }
 
-        const { sellAssetPointsBoost } = SQUAD_KOS_BENEFITS(squadKOSCountData.kosCount);
+        const { sellAssetPointsBoost } = SQUAD_KOS_BENEFITS(squadKOSDataData.totalSquadKOSCount);
 
         // get the user's squad
         const squad = await SquadModel.findOne({ _id: user.inGameData.squadId }).lean();

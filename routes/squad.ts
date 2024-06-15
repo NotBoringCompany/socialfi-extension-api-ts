@@ -1,7 +1,7 @@
 import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
-import { acceptPendingSquadMember, checkSquadCreationMethodAndCost, createSquad, declinePendingSquadMember, delegateLeadership, getLatestSquadWeeklyRanking, getSquadData, kickMember, leaveSquad, renameSquad, requestToJoinSquad, squadKOSCount, upgradeSquadLimit } from '../api/squad';
+import { acceptPendingSquadMember, checkSquadCreationMethodAndCost, createSquad, declinePendingSquadMember, delegateLeadership, getLatestSquadWeeklyRanking, getSquadData, kickMember, leaveSquad, renameSquad, requestToJoinSquad, squadKOSData, upgradeSquadLimit } from '../api/squad';
 import { mixpanel } from '../utils/mixpanel';
 
 const router = express.Router();
@@ -344,9 +344,9 @@ router.get('/get_create_squad_method_and_cost', async (req, res) => {
     }
 })
 
-router.get('/get_squad_kos_count', async (req, res) => {
+router.get('/get_squad_kos_data', async (req, res) => {
     try {
-        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'get_squad_kos_count');
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'get_squad_kos_data');
 
         if (validateStatus !== Status.SUCCESS) {
             return res.status(validateStatus).json({
@@ -355,7 +355,7 @@ router.get('/get_squad_kos_count', async (req, res) => {
             })
         }
         
-        const { status, message, data } = await squadKOSCount(validateData?.twitterId);
+        const { status, message, data } = await squadKOSData(validateData?.twitterId);
 
         return res.status(status).json({
             status,

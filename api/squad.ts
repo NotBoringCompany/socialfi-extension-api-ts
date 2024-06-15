@@ -1138,11 +1138,11 @@ export const getSquadData = async (squadId?: string): Promise<ReturnValue> => {
 }
 
 /**
- * Gets the amount of KOS (Key Of Salvation) owned by the members of the user's squad.
+ * Gets the total amount of KOS (Key Of Salvation) owned by the members of the user's squad and also the individual KOS count of each member.
  * 
  * Returns 0 if the user is not in a squad.
  */
-export const squadKOSCount = async (twitterId: string): Promise<ReturnValue> => {
+export const squadKOSData = async (twitterId: string): Promise<ReturnValue> => {
     try {
         const user = await UserModel.findOne({ twitterId }).lean();
 
@@ -1159,7 +1159,8 @@ export const squadKOSCount = async (twitterId: string): Promise<ReturnValue> => 
                 status: Status.SUCCESS,
                 message: `(squadKOSCount) User is not in a squad.`,
                 data: {
-                    squadKOSCount: 0
+                    totalSquadKOSCount: 0,
+                    individualKOSCounts: []
                 }
             }
         }
@@ -1200,7 +1201,12 @@ export const squadKOSCount = async (twitterId: string): Promise<ReturnValue> => 
             status: Status.SUCCESS,
             message: `(squadKOSCount) Got squad KOS count successfully.`,
             data: {
-                squadKOSCount: flattenedOwnedKeyIDs.length
+                totalSquadKOSCount: flattenedOwnedKeyIDs.length,
+                individualKOSCounts: ownedKeyIDs.map((ownedKeyIDs, index) => ({
+                    userId: squad.members[index].userId,
+                    username: squad.members[index].username,
+                    kosCount: ownedKeyIDs.length
+                }))
             }
         }
     } catch (err: any) {
