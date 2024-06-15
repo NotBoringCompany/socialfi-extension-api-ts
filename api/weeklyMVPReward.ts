@@ -40,7 +40,7 @@ export const getWeeklyMVPContenders = async (): Promise<ReturnValue> => {
         }[] = [];
 
         for (const user of users) {
-            const xCookiesSpent = (user.inventory.xCookieData as XCookieData).weeklyXCookiesSpent ?? 0;
+            const xCookiesSpent = (user.inventory.xCookieData as XCookieData)?.weeklyXCookiesSpent ?? 0;
 
             const bitOrbsConsumed = (user.inventory.items as Item[]).reduce((acc, item) => {
                 if (item.type === BitOrbType.BIT_ORB_I || item.type === BitOrbType.BIT_ORB_II || item.type === BitOrbType.BIT_ORB_III) {
@@ -134,7 +134,7 @@ export const distributeWeeklyMVPRewards = async (): Promise<void> => {
         }[] = [];
 
         for (const user of users) {
-            const xCookiesSpent = (user.inventory.xCookieData as XCookieData).weeklyXCookiesSpent ?? 0;
+            const xCookiesSpent = (user.inventory.xCookieData as XCookieData)?.weeklyXCookiesSpent ?? 0;
 
             const bitOrbsConsumed = (user.inventory.items as Item[]).reduce((acc, item) => {
                 if (item.type === BitOrbType.BIT_ORB_I || item.type === BitOrbType.BIT_ORB_II || item.type === BitOrbType.BIT_ORB_III) {
