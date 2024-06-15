@@ -588,9 +588,9 @@ export const importGroupParticipants = async (spreadsheetId: string, range: stri
     }
 };
 
-export const getCollabRewards = async (twitterUsername: string): Promise<ReturnValue> => {
+export const getCollabRewards = async (twitterId: string): Promise<ReturnValue> => {
     try {
-        const user = await UserModel.findOne({ twitterUsername }).lean();
+        const user = await UserModel.findOne({ twitterId }).lean();
         if (!user) {
             return {
                 status: Status.ERROR,
@@ -599,7 +599,7 @@ export const getCollabRewards = async (twitterUsername: string): Promise<ReturnV
         }
 
         const collab = await CollabModel.findOne({
-            $or: [{ 'participants.twitterUsername': twitterUsername }, { 'groups.participants.twitterUsername': twitterUsername }],
+            $or: [{ 'participants.twitterUsername': user.twitterUsername }, { 'groups.participants.twitterUsername': user.twitterUsername }],
         }).lean();
 
         if (!collab) {
@@ -616,7 +616,7 @@ export const getCollabRewards = async (twitterUsername: string): Promise<ReturnV
 
         // Check if the user is the Leader in KOL collab
         if (collab.type === 'kol' && collab.participants) {
-            const participant = collab.participants.find((p) => p.twitterUsername === twitterUsername);
+            const participant = collab.participants.find((p) => p.twitterUsername === user.twitterUsername);
             if (participant) {
                 isApproved = participant.approved;
                 isClaimable = participant.approved && participant.claimable;
@@ -633,7 +633,7 @@ export const getCollabRewards = async (twitterUsername: string): Promise<ReturnV
         // Check if the user is the Leader or Member in Group collab
         if (collab.type === 'group' && collab.groups) {
             for (const group of collab.groups) {
-                const participant = group.participants.find((p) => p.twitterUsername === twitterUsername);
+                const participant = group.participants.find((p) => p.twitterUsername === user.twitterUsername);
                 if (participant) {
                     isApproved = participant.approved;
                     isClaimable = participant.approved && participant.claimable;
@@ -673,9 +673,9 @@ export const getCollabRewards = async (twitterUsername: string): Promise<ReturnV
     }
 };
 
-export const claimCollabRewards = async (twitterUsername: string): Promise<ReturnValue> => {
+export const claimCollabRewards = async (twitterId: string): Promise<ReturnValue> => {
     try {
-        const user = await UserModel.findOne({ twitterUsername }).lean();
+        const user = await UserModel.findOne({ twitterId }).lean();
         if (!user) {
             return {
                 status: Status.ERROR,
@@ -683,7 +683,7 @@ export const claimCollabRewards = async (twitterUsername: string): Promise<Retur
             };
         }
 
-        const { data, status, message } = await getCollabRewards(twitterUsername);
+        const { data, status, message } = await getCollabRewards(user.twitterUsername);
         if (status !== Status.SUCCESS) {
             return {
                 status,
@@ -706,7 +706,7 @@ export const claimCollabRewards = async (twitterUsername: string): Promise<Retur
         }
 
         const collab = await CollabModel.findOne({
-            $or: [{ 'participants.twitterUsername': twitterUsername }, { 'groups.participants.twitterUsername': twitterUsername }],
+            $or: [{ 'participants.twitterUsername': user.twitterUsername }, { 'groups.participants.twitterUsername': user.twitterUsername }],
         });
 
         if (!collab) {
@@ -719,7 +719,7 @@ export const claimCollabRewards = async (twitterUsername: string): Promise<Retur
         let participantUpdated = false;
 
         if (collab.type === 'kol' && collab.participants) {
-            const participant = collab.participants.find((p) => p.twitterUsername === twitterUsername);
+            const participant = collab.participants.find((p) => p.twitterUsername === user.twitterUsername);
             if (participant && participant.claimable) {
                 participant.claimable = false;
                 participantUpdated = true;
@@ -728,7 +728,7 @@ export const claimCollabRewards = async (twitterUsername: string): Promise<Retur
 
         if (collab.type === 'group' && collab.groups) {
             for (const group of collab.groups) {
-                const participant = group.participants.find((p: Participant) => p.twitterUsername === twitterUsername);
+                const participant = group.participants.find((p: Participant) => p.twitterUsername === user.twitterUsername);
                 if (participant && participant.claimable) {
                     participant.claimable = false;
                     participantUpdated = true;
@@ -801,8 +801,8 @@ export const claimCollabRewards = async (twitterUsername: string): Promise<Retur
             }
         }
 
-        await UserModel.updateOne({ twitterUsername }, { $inc: userUpdateOperations.$inc });
-        await UserModel.updateOne({ twitterUsername }, { $push: userUpdateOperations.$push });
+        await UserModel.updateOne({ twitterId }, { $inc: userUpdateOperations.$inc });
+        await UserModel.updateOne({ twitterId }, { $push: userUpdateOperations.$push });
 
         return {
             status: Status.SUCCESS,
