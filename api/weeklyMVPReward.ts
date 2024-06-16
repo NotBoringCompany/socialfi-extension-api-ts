@@ -526,15 +526,21 @@ export const claimWeeklyMVPRewards = async (twitterId: string): Promise<ReturnVa
             }
         }
 
+        console.log('leaderboardUpdateOperations:', leaderboardUpdateOperations);
+        console.log('squadUpdateOperations:', squadUpdateOperations);
+        console.log('squadLeaderboardUpdateOperations:', squadLeaderboardUpdateOperations);
+        console.log('userUpdateOperations:', userUpdateOperations);
+
         // execute the update operations
         await Promise.all([
             LeaderboardModel.updateOne({ name: 'Season 0' }, leaderboardUpdateOperations),
             SquadModel.updateOne({ _id: user.inGameData.squadId }, squadUpdateOperations),
             SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, squadLeaderboardUpdateOperations),
-            // set the claimableRewards back to an empty array.
-            WeeklyMVPClaimableRewardsModel.updateOne({ userId: user._id }, { $set: { claimableRewards: [] } }),
             UserModel.updateOne({ twitterId }, userUpdateOperations)
         ]);
+
+        // set the claimableRewards back to an empty array.
+        await WeeklyMVPClaimableRewardsModel.updateOne({ userId: user._id }, { $set: { claimableRewards: [] } });
 
         return {
             status: Status.SUCCESS,
