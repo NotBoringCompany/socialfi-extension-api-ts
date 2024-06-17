@@ -10,7 +10,7 @@ import { BitOrbType } from '../models/bitOrb';
 import { TerraCapsulatorType } from '../models/terraCapsulator';
 import { Item } from '../models/item';
 import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
-import { WeeklyMVPRewardType } from '../models/weeklyMVPReward';
+import { WeeklyMVPReward, WeeklyMVPRewardType } from '../models/weeklyMVPReward';
 import { XCookieData } from '../models/user';
 /**
  * Fetches the current contenders to be the weekly MVP for most xCookies spent or most terra caps/bit orbs consumed.
@@ -378,9 +378,8 @@ export const claimWeeklyMVPRewards = async (twitterId: string): Promise<ReturnVa
             $set: {}
         }
 
-        const claimableLeaderboardPoints = weeklyMVPRewards.claimableRewards.findIndex(reward => reward.type === WeeklyMVPRewardType.LEADERBOARD_POINTS);
-
-        console.log('claimableLeaderboardPoints from claimWeeklyMVPRewards:', claimableLeaderboardPoints);
+        const claimableLeaderboardPointsIndex = (weeklyMVPRewards.claimableRewards as WeeklyMVPReward[]).findIndex(reward => reward.type === WeeklyMVPRewardType.LEADERBOARD_POINTS);
+        const claimableLeaderboardPoints = (weeklyMVPRewards.claimableRewards as WeeklyMVPReward[])[claimableLeaderboardPointsIndex].amount;
 
         const latestSquadLeaderboard = await SquadLeaderboardModel.findOne().sort({ week: -1 }).lean();
 
