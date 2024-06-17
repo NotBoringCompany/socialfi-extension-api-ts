@@ -380,6 +380,8 @@ export const claimWeeklyMVPRewards = async (twitterId: string): Promise<ReturnVa
 
         const claimableLeaderboardPoints = weeklyMVPRewards.claimableRewards.findIndex(reward => reward.type === WeeklyMVPRewardType.LEADERBOARD_POINTS);
 
+        console.log('claimableLeaderboardPoints from claimWeeklyMVPRewards:', claimableLeaderboardPoints);
+
         const latestSquadLeaderboard = await SquadLeaderboardModel.findOne().sort({ week: -1 }).lean();
 
         if (!latestSquadLeaderboard) {
