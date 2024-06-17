@@ -214,7 +214,7 @@ export const distributeWeeklyMVPRewards = async (): Promise<void> => {
                 claimableRewards: [
                     {
                         type: WeeklyMVPRewardType.LEADERBOARD_POINTS,
-                        amount: WEEKLY_MVP_REWARDS('xCookies')
+                        amount: WEEKLY_MVP_REWARDS('xCookies').leaderboardPoints
                     }
                 ]
             });
@@ -230,10 +230,10 @@ export const distributeWeeklyMVPRewards = async (): Promise<void> => {
             if (leaderboardPointsIndex === -1) {
                 xCookiesMVPRewardsUpdateOperations.$push['claimableRewards'] = {
                     type: WeeklyMVPRewardType.LEADERBOARD_POINTS,
-                    amount: WEEKLY_MVP_REWARDS('xCookies')
+                    amount: WEEKLY_MVP_REWARDS('xCookies').leaderboardPoints
                 };
             } else {
-                xCookiesMVPRewardsUpdateOperations.$inc[`claimableRewards.${leaderboardPointsIndex}.amount`] = WEEKLY_MVP_REWARDS('xCookies');
+                xCookiesMVPRewardsUpdateOperations.$inc[`claimableRewards.${leaderboardPointsIndex}.amount`] = WEEKLY_MVP_REWARDS('xCookies').leaderboardPoints;
             }
 
             console.log(`Updated xCookies MVP entry for user ${xCookiesMVPData.username}.`);
@@ -248,7 +248,7 @@ export const distributeWeeklyMVPRewards = async (): Promise<void> => {
                 claimableRewards: [
                     {
                         type: WeeklyMVPRewardType.LEADERBOARD_POINTS,
-                        amount: WEEKLY_MVP_REWARDS('Bit Orb')
+                        amount: WEEKLY_MVP_REWARDS('Bit Orb').leaderboardPoints
                     }
                 ]
             });
@@ -264,10 +264,10 @@ export const distributeWeeklyMVPRewards = async (): Promise<void> => {
             if (leaderboardPointsIndex === -1) {
                 bitOrbsMVPRewardsUpdateOperations.$push['claimableRewards'] = {
                     type: WeeklyMVPRewardType.LEADERBOARD_POINTS,
-                    amount: WEEKLY_MVP_REWARDS('Bit Orb')
+                    amount: WEEKLY_MVP_REWARDS('Bit Orb').leaderboardPoints
                 };
             } else {
-                bitOrbsMVPRewardsUpdateOperations.$inc[`claimableRewards.${leaderboardPointsIndex}.amount`] = WEEKLY_MVP_REWARDS('Bit Orb');
+                bitOrbsMVPRewardsUpdateOperations.$inc[`claimableRewards.${leaderboardPointsIndex}.amount`] = WEEKLY_MVP_REWARDS('Bit Orb').leaderboardPoints;
             }
 
             console.log(`Updated Bit Orbs MVP entry for user ${bitOrbsMVPData.username}.`);
@@ -282,7 +282,7 @@ export const distributeWeeklyMVPRewards = async (): Promise<void> => {
                 claimableRewards: [
                     {
                         type: WeeklyMVPRewardType.LEADERBOARD_POINTS,
-                        amount: WEEKLY_MVP_REWARDS('Terra Capsulator')
+                        amount: WEEKLY_MVP_REWARDS('Terra Capsulator').leaderboardPoints
                     }
                 ]
             });
@@ -298,10 +298,10 @@ export const distributeWeeklyMVPRewards = async (): Promise<void> => {
             if (leaderboardPointsIndex === -1) {
                 terraCapsulatorsMVPRewardsUpdateOperations.$push['claimableRewards'] = {
                     type: WeeklyMVPRewardType.LEADERBOARD_POINTS,
-                    amount: WEEKLY_MVP_REWARDS('Terra Capsulator')
+                    amount: WEEKLY_MVP_REWARDS('Terra Capsulator').leaderboardPoints
                 };
             } else {
-                terraCapsulatorsMVPRewardsUpdateOperations.$inc[`claimableRewards.${leaderboardPointsIndex}.amount`] = WEEKLY_MVP_REWARDS('Terra Capsulator');
+                terraCapsulatorsMVPRewardsUpdateOperations.$inc[`claimableRewards.${leaderboardPointsIndex}.amount`] = WEEKLY_MVP_REWARDS('Terra Capsulator').leaderboardPoints;
             }
 
             console.log(`Updated Terra Capsulators MVP entry for user ${terraCapsulatorsMVPData.username}.`);
