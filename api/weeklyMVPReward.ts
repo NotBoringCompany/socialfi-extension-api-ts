@@ -527,13 +527,44 @@ export const claimWeeklyMVPRewards = async (twitterId: string): Promise<ReturnVa
             }
         }
 
-        // execute the update operations
+        // execute the update operations ($set and $inc, then $push and $pull to prevent conflicts)
         await Promise.all([
-            LeaderboardModel.updateOne({ name: 'Season 0' }, leaderboardUpdateOperations),
-            SquadModel.updateOne({ _id: user.inGameData.squadId }, squadUpdateOperations),
-            SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, squadLeaderboardUpdateOperations),
-            UserModel.updateOne({ twitterId }, userUpdateOperations)
+            LeaderboardModel.updateOne({ name: 'Season 0' }, {
+                $set: leaderboardUpdateOperations.$set,
+                $inc: leaderboardUpdateOperations.$inc,
+            }),
+            SquadModel.updateOne({ _id: user.inGameData.squadId }, {
+                $set: squadUpdateOperations.$set,
+                $inc: squadUpdateOperations.$inc,
+            }),
+            SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, {
+                $set: squadLeaderboardUpdateOperations.$set,
+                $inc: squadLeaderboardUpdateOperations.$inc,
+            }),
+            UserModel.updateOne({ twitterId }, {
+                $set: userUpdateOperations.$set,
+                $inc: userUpdateOperations.$inc,
+            })        
         ]);
+
+        await Promise.all([
+            LeaderboardModel.updateOne({ name: 'Season 0' }, {
+                $push: leaderboardUpdateOperations.$push,
+                $pull: leaderboardUpdateOperations.$pull,
+            }),
+            SquadModel.updateOne({ _id: user.inGameData.squadId }, {
+                $push: squadUpdateOperations.$push,
+                $pull: squadUpdateOperations.$pull,
+            }),
+            SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, {
+                $push: squadLeaderboardUpdateOperations.$push,
+                $pull: squadLeaderboardUpdateOperations.$pull,
+            }),
+            UserModel.updateOne({ twitterId }, {
+                $push: userUpdateOperations.$push,
+                $pull: userUpdateOperations.$pull,
+            })        
+        ])
 
         // set the claimableRewards back to an empty array.
         await WeeklyMVPClaimableRewardsModel.updateOne({ userId: user._id }, { $set: { claimableRewards: [] } });
