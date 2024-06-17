@@ -527,11 +527,6 @@ export const claimWeeklyMVPRewards = async (twitterId: string): Promise<ReturnVa
             }
         }
 
-        console.log('leaderboardUpdateOperations:', leaderboardUpdateOperations);
-        console.log('squadUpdateOperations:', squadUpdateOperations);
-        console.log('squadLeaderboardUpdateOperations:', squadLeaderboardUpdateOperations);
-        console.log('userUpdateOperations:', userUpdateOperations);
-
         // execute the update operations
         await Promise.all([
             LeaderboardModel.updateOne({ name: 'Season 0' }, leaderboardUpdateOperations),
