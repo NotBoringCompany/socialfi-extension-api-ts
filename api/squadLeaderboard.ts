@@ -145,6 +145,8 @@ export const calculateWeeklySquadRankingAndGiveRewards = async (): Promise<void>
                 // assign a rank based on the total points
                 const rank = GET_SQUAD_WEEKLY_RANKING(totalPoints);
 
+                console.log(`rank of squad ${squad.name} is ${rank}.`);
+
                 squadUpdateOperations.push({
                     squadId: squad._id,
                     updateOperations: {
@@ -162,6 +164,8 @@ export const calculateWeeklySquadRankingAndGiveRewards = async (): Promise<void>
 
                 // if the squad is eligible for rewards, add the rewards to each squad member (also the leader)
                 const { leader: leaderRewards, member: memberRewards } = GET_SQUAD_WEEKLY_RANKING_REWARDS(rank);
+
+                console.log(`leader rewards: ${leaderRewards}, member rewards: ${memberRewards}`);
 
                 // fetch the leader and squad members from `SquadModel`
                 const squadData = await SquadModel.findOne({ _id: squad._id });
@@ -185,20 +189,15 @@ export const calculateWeeklySquadRankingAndGiveRewards = async (): Promise<void>
                     // if they do, check, for each item, if the reward type already exists. If it does, add the amount to the existing reward.
                     const leaderIndex = squadMemberClaimableWeeklyRewards.findIndex((member) => member.userId === leader.userId);
 
+                    console.log('leader index: ', leaderIndex);
+
                     if (leaderIndex === -1) {
-                        squadMemberClaimableWeeklyRewardsUpdateOperations.push({
+                        // create a new SquadMemberClaimableWeeklyReward instance for the leader
+                        await SquadMemberClaimableWeeklyRewardModel.create({
                             userId: leader.userId,
-                            updateOperations: {
-                                $set: {
-                                    userId: leader.userId,
-                                    username: leader.username,
-                                    twitterProfilePicture: leader.twitterProfilePicture,
-                                    claimableRewards: leaderRewards
-                                },
-                                $push: {},
-                                $inc: {},
-                                $pull: {}
-                            }
+                            username: leader.username,
+                            twitterProfilePicture: leader.twitterProfilePicture,
+                            claimableRewards: leaderRewards
                         });
                     } else {
                         leaderRewards.forEach((leaderReward) => {
@@ -235,26 +234,19 @@ export const calculateWeeklySquadRankingAndGiveRewards = async (): Promise<void>
 
                 // add the members' rewards
                 if (memberRewards.length > 0) {
-                    members.forEach((member) => {
+                    members.forEach(async (member) => {
                         // check if the member is already in the `squadMemberClaimableWeeklyRewards` array
                         // if not, add the member to the array
                         // if they do, check, for each item, if the reward type already exists. If it does, add the amount to the existing reward.
                         const memberIndex = squadMemberClaimableWeeklyRewards.findIndex((member) => member.userId === member.userId);
 
                         if (memberIndex === -1) {
-                            squadMemberClaimableWeeklyRewardsUpdateOperations.push({
+                            // create a new SquadMemberClaimableWeeklyReward instance for the member
+                            await SquadMemberClaimableWeeklyRewardModel.create({
                                 userId: member.userId,
-                                updateOperations: {
-                                    $set: {
-                                        userId: member.userId,
-                                        username: member.username,
-                                        twitterProfilePicture: member.twitterProfilePicture,
-                                        claimableRewards: memberRewards
-                                    },
-                                    $push: {},
-                                    $inc: {},
-                                    $pull: {}
-                                }
+                                username: member.username,
+                                twitterProfilePicture: member.twitterProfilePicture,
+                                claimableRewards: memberRewards
                             });
                         } else {
                             memberRewards.forEach((memberReward) => {
