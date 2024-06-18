@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { BoosterItem } from '../models/booster';
 import { Food } from '../models/food';
 import { Item } from '../models/item';
@@ -14,6 +15,7 @@ import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '..
 import { ReturnValue, Status } from '../utils/retVal';
 import { getLatestSquadWeeklyRanking, squadKOSData } from './squad';
 import { updateReferredUsersData } from './user';
+import * as dotenv from 'dotenv';
 
 /**
  * Resets the `currentBuyableAmount` and `currentSellableAmount` of all global items in all POI shops every day at 23:59 UTC.
@@ -22,7 +24,8 @@ import { updateReferredUsersData } from './user';
  */
 export const resetGlobalItemsDailyBuyableAndSellableAmount = async (): Promise<void> => {
     try {
-        const allPOIs = await POIModel.find({}).lean();
+        await mongoose.connect(process.env.MONGODB_URI);
+        const allPOIs = await POIModel.find().lean();
 
         const bulkWriteOperations = allPOIs.map(poi => {
             const globalItems = poi.shop.globalItems;
