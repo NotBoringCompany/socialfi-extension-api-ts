@@ -187,7 +187,7 @@ export const requestToJoinSquad = async (twitterId: string, squadId?: string, sq
 /**
  * Accepts a pending squad member into the squad. Only callable by a squad leader.
  */
-export const acceptPendingSquadMember = async (leaderTwitterId: string, memberTwitterId?: string, memberUserId?: string): Promise<ReturnValue> => {
+export const acceptPendingSquadMember = async (leaderTwitterId: string, memberTwitterId: string = '', memberUserId: string = ''): Promise<ReturnValue> => {
     try {
         const [leader, member] = await Promise.all([
             UserModel.findOne({ twitterId: leaderTwitterId }).lean(),
@@ -317,7 +317,7 @@ export const acceptPendingSquadMember = async (leaderTwitterId: string, memberTw
 /**
  * Declines a pending squad member from joining the squad. Only callable by a squad leader.
  */
-export const declinePendingSquadMember = async (leaderTwitterId: string, memberTwitterId?: string, memberUserId?: string): Promise<ReturnValue> => {
+export const declinePendingSquadMember = async (leaderTwitterId: string, memberTwitterId: string = '', memberUserId: string = ''): Promise<ReturnValue> => {
     try {
         const [leader, member] = await Promise.all([
             UserModel.findOne({ twitterId: leaderTwitterId }).lean(),
@@ -923,7 +923,7 @@ export const upgradeSquadLimit = async (twitterId: string): Promise<ReturnValue>
 /**
  * Delegates the leader role to another member in the squad. Only callable by a squad leader.
  */
-export const delegateLeadership = async (currentLeaderTwitterId: string, newLeaderTwitterId?: string, newLeaderUserId?: string): Promise<ReturnValue> => {
+export const delegateLeadership = async (currentLeaderTwitterId: string, newLeaderTwitterId: string = '', newLeaderUserId: string = ''): Promise<ReturnValue> => {
     try {
         const [currentLeader, newLeader] = await Promise.all([
             UserModel.findOne({ twitterId: currentLeaderTwitterId }).lean(),
@@ -1015,7 +1015,7 @@ export const delegateLeadership = async (currentLeaderTwitterId: string, newLead
     }
 }
 
-export const kickMember = async (leaderTwitterId: string, memberTwitterId?: string, memberUserId?: string): Promise<ReturnValue> => {
+export const kickMember = async (leaderTwitterId: string, memberTwitterId: string = '', memberUserId: string = ''): Promise<ReturnValue> => {
     try {
         const [leader, member] = await Promise.all([
             UserModel.findOne({ twitterId: leaderTwitterId }).lean(),

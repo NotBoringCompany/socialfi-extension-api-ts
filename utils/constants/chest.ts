@@ -19,19 +19,19 @@ export const RANDOMIZE_CHEST_ITEM = (): {
     switch (true) {
         // 100% chance for resource (Season 0)
         case rand < 10000:
-            // randomize the food with probabilities
-            // 50% chance for apple
-            // 30% chance for chocolate
-            // 15% chance for juice
-            // 5% chance for burger
+            // Randomize the food with updated probabilities
+            // 5% chance for candy
+            // 10% chance for chocolate
+            // 25% chance for juice
+            // 60% chance for burger
             const foodRand = Math.floor(Math.random() * 100) + 1;
 
             switch (true) {
-                case foodRand < 51:
+                case foodRand < 6:
                     return { item: FoodType.CANDY, amount: 1}
-                case foodRand < 81:
+                case foodRand < 16:
                     return { item: FoodType.CHOCOLATE, amount: 1}
-                case foodRand < 96:
+                case foodRand < 41:
                     return { item: FoodType.JUICE, amount: 1}
                 default:
                     return { item: FoodType.BURGER, amount: 1}
