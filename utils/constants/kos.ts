@@ -250,8 +250,8 @@ export const KOS_BENEFITS_POINTS_FORMULA = (
     const averageLuckBoost = keys.length > 0 ? keys.reduce((acc, key) => acc + parseInt(key.attributes.find(attr => attr.traitType === 'Luck Boost')?.value as string), 0) / keysOwned : 0;
 
     // get bonus weekly points based on amount of keys owned milestone
-    // if >= 5 keys, get 2000 extra points. if >= 25 keys, get 5000 extra points. if >= 100 keys, get 10000 extra points.
-    const bonusWeeklyPoints = keysOwned >= 5 ? 2000 : keysOwned >= 25 ? 5000 : keysOwned >= 100 ? 10000 : 0;
+    // if >= 5 keys, get 500 extra points. if >= 25 keys, get 1000 extra points. if >= 100 keys, get 2000 extra points.
+    const bonusWeeklyPoints = keysOwned >= 5 ? 500 : keysOwned >= 25 ? 1000 : keysOwned >= 100 ? 2000 : 0;
 
     // temporarily make it so that 0 keys owned gives 0 points because the formula is not accurate for 0 keys owned and gives users points.
     return keysOwned === 0 ? 
