@@ -237,7 +237,7 @@ export const acceptPendingSquadMember = async (leaderTwitterId: string, memberTw
         if (!squad.pendingMembers.find(pendingMember => pendingMember.userId === member._id)) {
             return {
                 status: Status.ERROR,
-                message: `(acceptPendingSquadMember) Member is not in the pending members list ${member._id} === ${memberUserId}.`
+                message: `(acceptPendingSquadMember) Member is not in the pending members list.`
             }
         }
 
@@ -367,7 +367,7 @@ export const declinePendingSquadMember = async (leaderTwitterId: string, memberT
         if (!squad.pendingMembers.find(pendingMember => pendingMember.userId === member._id)) {
             return {
                 status: Status.ERROR,
-                message: `(declinePendingSquadMember) Member is not in the pending members list ${member._id} === ${memberUserId}.`
+                message: `(declinePendingSquadMember) Member is not in the pending members list.`
             }
         }
 
