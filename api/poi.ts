@@ -757,7 +757,8 @@ export const sellItemsInPOIShop = async (
 
         // calculate the total leaderboard points based on the sell asset point boost, squad weekly ranking point boost and the base leaderboard points.
         // if no boost is present, `ownedKOSPointsBoost` and/or `squadWeeklyRankingPointsBoost` remains at 1.
-        const leaderboardPoints = (itemsPOIPointsBoostData.ownedKOSPointsBoost + itemsPOIPointsBoostData.squadWeeklyRankingPointsBoost) * baseLeaderboardPoints;
+        // if we just add the boosts directly, the minimum boost will be 2. this is not what we want (because it means a 2x multiplier). therefore, we subtract 1 at the end.
+        const leaderboardPoints = ((itemsPOIPointsBoostData.ownedKOSPointsBoost + itemsPOIPointsBoostData.squadWeeklyRankingPointsBoost) - 1) * baseLeaderboardPoints;
 
         // check if leaderboard is specified
         // if not, we find the most recent one.
@@ -1128,18 +1129,6 @@ export const sellItemsInPOIShop = async (
 
         // lastly, reduce the user inventory's weight by `totalWeightToReduce`
         userUpdateOperations.$inc[`inventory.weight`] = -totalWeightToReduce;
-
-        console.log('sell items in poi shop leaderboard update operations: ', leaderboardUpdateOperations);
-        console.log('poi update operations: ', poiUpdateOperations);
-
-        console.log('leaderboard to be updated: ', leaderboard._id);
-
-        // execute the update operations
-        // await Promise.all([
-        //     UserModel.updateOne({ twitterId }, userUpdateOperations),
-        //     LeaderboardModel.updateOne({ _id: leaderboard._id }, leaderboardUpdateOperations),
-        //     POIModel.updateOne({ name: user.inGameData.location }, poiUpdateOperations)
-        // ]);
 
         // divide update operations into two; $set and $inc on one, and $push and $pull on the other to prevent conflicts.
         await UserModel.updateOne({ twitterId }, {
