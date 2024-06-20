@@ -10,7 +10,7 @@ export const resources: Resource[] = [
     { type: OreResource.SILVER, line: ResourceLine.ORE, rarity: ResourceRarity.EPIC, weight: 5 },
     { type: OreResource.GOLD, line: ResourceLine.ORE, rarity: ResourceRarity.LEGENDARY, weight: 5 },
     // Fruit resources
-    { type: FruitResource.BLUEBERRY, line: ResourceLine.FRUIT, rarity: ResourceRarity.COMMON, weight: 2 },
+    { type: FruitResource.TOMATO, line: ResourceLine.FRUIT, rarity: ResourceRarity.COMMON, weight: 2 },
     { type: FruitResource.APPLE, line: ResourceLine.FRUIT, rarity: ResourceRarity.UNCOMMON, weight: 2 },
     { type: FruitResource.STAR_FRUIT, line: ResourceLine.FRUIT, rarity: ResourceRarity.RARE, weight: 2 },
     { type: FruitResource.MELON, line: ResourceLine.FRUIT, rarity: ResourceRarity.EPIC, weight: 2 },

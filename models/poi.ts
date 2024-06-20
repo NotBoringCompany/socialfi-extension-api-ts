@@ -144,7 +144,7 @@ export enum POIShopItemName {
     IRON = 'Iron',
     SILVER = 'Silver',
     GOLD = 'Gold',
-    BLUEBERRY = 'Blueberry',
+    TOMATO = 'TOMATO',
     APPLE = 'Apple',
     STAR_FRUIT = 'Star Fruit',
     MELON = 'Melon',

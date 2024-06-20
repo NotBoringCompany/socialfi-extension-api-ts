@@ -104,7 +104,7 @@ export enum OreResource {
  * Lists all fruit resources from common-legendary.
  */
 export enum FruitResource {
-    BLUEBERRY = 'Blueberry',
+    TOMATO = 'Tomato',
     APPLE = 'Apple',
     STAR_FRUIT = 'Star Fruit',
     MELON = 'Melon',

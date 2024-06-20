@@ -678,7 +678,7 @@ export const sellItemsInPOIShop = async (
                 item.item === POIShopItemName.IRON ||
                 item.item === POIShopItemName.SILVER ||
                 item.item === POIShopItemName.GOLD ||
-                item.item === POIShopItemName.BLUEBERRY ||
+                item.item === POIShopItemName.TOMATO ||
                 item.item === POIShopItemName.APPLE ||
                 item.item === POIShopItemName.STAR_FRUIT ||
                 item.item === POIShopItemName.MELON ||
@@ -1001,7 +1001,7 @@ export const sellItemsInPOIShop = async (
                 item.item === POIShopItemName.IRON ||
                 item.item === POIShopItemName.SILVER ||
                 item.item === POIShopItemName.GOLD ||
-                item.item === POIShopItemName.BLUEBERRY ||
+                item.item === POIShopItemName.TOMATO ||
                 item.item === POIShopItemName.APPLE ||
                 item.item === POIShopItemName.STAR_FRUIT ||
                 item.item === POIShopItemName.MELON ||
@@ -1380,7 +1380,7 @@ export const buyItemsInPOIShop = async (
                 item.item === POIShopItemName.IRON ||
                 item.item === POIShopItemName.SILVER ||
                 item.item === POIShopItemName.GOLD ||
-                item.item === POIShopItemName.BLUEBERRY ||
+                item.item === POIShopItemName.TOMATO ||
                 item.item === POIShopItemName.APPLE ||
                 item.item === POIShopItemName.STAR_FRUIT ||
                 item.item === POIShopItemName.MELON ||
