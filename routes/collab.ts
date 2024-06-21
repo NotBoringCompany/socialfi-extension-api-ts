@@ -17,14 +17,14 @@ import {
     getCollabRewards,
     claimCollabRewards,
 } from '../api/collab';
-import keyMiddleware from '../middlewares/key';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
+import { authMiddleware } from '../middlewares/auth';
 
 const router = express.Router();
 
 // Route to add a collab
-router.post('/add_collab', keyMiddleware, async (req, res) => {
+router.post('/add_collab', authMiddleware(3), async (req, res) => {
     const data = req.body;
 
     try {
@@ -36,7 +36,7 @@ router.post('/add_collab', keyMiddleware, async (req, res) => {
 });
 
 // Route to get all collabs
-router.get('/get_collabs/:type', keyMiddleware, async (req, res) => {
+router.get('/get_collabs/:type', authMiddleware(3), async (req, res) => {
     const { type } = req.params;
 
     try {
@@ -48,7 +48,7 @@ router.get('/get_collabs/:type', keyMiddleware, async (req, res) => {
 });
 
 // Route to delete a collab
-router.post('/delete_collab', keyMiddleware, async (req, res) => {
+router.post('/delete_collab', authMiddleware(3), async (req, res) => {
     const { id } = req.body;
 
     try {
@@ -60,7 +60,7 @@ router.post('/delete_collab', keyMiddleware, async (req, res) => {
 });
 
 // Route to get a collab by ID
-router.get('/get_collab/:id', keyMiddleware, async (req, res) => {
+router.get('/get_collab/:id', authMiddleware(3), async (req, res) => {
     const { id } = req.params;
 
     try {
@@ -72,7 +72,7 @@ router.get('/get_collab/:id', keyMiddleware, async (req, res) => {
 });
 
 // Route to update a collab
-router.post('/update_collab', keyMiddleware, async (req, res) => {
+router.post('/update_collab', authMiddleware(3), async (req, res) => {
     const { id } = req.body;
     const data = req.body;
 
@@ -85,7 +85,7 @@ router.post('/update_collab', keyMiddleware, async (req, res) => {
 });
 
 // Route to add a participant to a collab
-router.post('/add_participant', keyMiddleware, async (req, res) => {
+router.post('/add_participant', authMiddleware(3), async (req, res) => {
     const { collabId, participant } = req.body;
 
     try {
@@ -97,7 +97,7 @@ router.post('/add_participant', keyMiddleware, async (req, res) => {
 });
 
 // Route to remove a participant from a collab
-router.post('/remove_participant', keyMiddleware, async (req, res) => {
+router.post('/remove_participant', authMiddleware(3), async (req, res) => {
     const { collabId, participantId } = req.body;
 
     try {
@@ -109,7 +109,7 @@ router.post('/remove_participant', keyMiddleware, async (req, res) => {
 });
 
 // Route to update a participant in a collab
-router.post('/update_participant', keyMiddleware, async (req, res) => {
+router.post('/update_participant', authMiddleware(3), async (req, res) => {
     const { collabId, participantId, updatedParticipant } = req.body;
 
     try {
@@ -121,7 +121,7 @@ router.post('/update_participant', keyMiddleware, async (req, res) => {
 });
 
 // Route to add a group to a collab
-router.post('/add_group', keyMiddleware, async (req, res) => {
+router.post('/add_group', authMiddleware(3), async (req, res) => {
     const { collabId, group } = req.body;
 
     try {
@@ -133,7 +133,7 @@ router.post('/add_group', keyMiddleware, async (req, res) => {
 });
 
 // Route to remove a group from a collab
-router.post('/remove_group', keyMiddleware, async (req, res) => {
+router.post('/remove_group', authMiddleware(3), async (req, res) => {
     const { collabId, groupId } = req.body;
 
     try {
@@ -145,7 +145,7 @@ router.post('/remove_group', keyMiddleware, async (req, res) => {
 });
 
 // Route to add a participant to a group in a collab
-router.post('/add_group_participant', keyMiddleware, async (req, res) => {
+router.post('/add_group_participant', authMiddleware(3), async (req, res) => {
     const { collabId, groupId, participant } = req.body;
 
     try {
@@ -157,7 +157,7 @@ router.post('/add_group_participant', keyMiddleware, async (req, res) => {
 });
 
 // Route to remove a participant from a group in a collab
-router.post('/remove_group_participant', keyMiddleware, async (req, res) => {
+router.post('/remove_group_participant', authMiddleware(3), async (req, res) => {
     const { collabId, groupId, participantId } = req.body;
 
     try {
@@ -169,7 +169,7 @@ router.post('/remove_group_participant', keyMiddleware, async (req, res) => {
 });
 
 // Route to import participants using Google Sheet
-router.post('/import_participants', keyMiddleware, async (req, res) => {
+router.post('/import_participants', authMiddleware(3), async (req, res) => {
     const { spreadsheetId, range } = req.body;
 
     try {
@@ -181,7 +181,7 @@ router.post('/import_participants', keyMiddleware, async (req, res) => {
 });
 
 // Route to import group participants using Google Sheet
-router.post('/import_group_participants', keyMiddleware, async (req, res) => {
+router.post('/import_group_participants', authMiddleware(3), async (req, res) => {
     const { spreadsheetId, range } = req.body;
 
     try {
