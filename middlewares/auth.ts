@@ -33,8 +33,13 @@ export const authMiddleware = (level: number) => {
         const token = parts[1];
 
         try {
-            const { data } = await verifyToken(token);
-            const { creds } = data;
+            const { message: validateMessage, status: validateStatus, data: creds } = await verifyToken(token);
+            if (validateStatus !== Status.SUCCESS) {
+                return res.status(validateStatus).json({
+                    status: validateStatus,
+                    message: validateMessage,
+                });
+            }
 
             // Ensure the role is authorized based on the provided level
             if (creds.role < level) {

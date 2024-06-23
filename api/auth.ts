@@ -1,5 +1,5 @@
 import { axios } from '../configs/axios';
-import { Authenticated } from '../models/auth';
+import { Creds } from '../models/auth';
 import { ReturnValue, Status } from '../utils/retVal';
 
 /**
@@ -8,7 +8,7 @@ import { ReturnValue, Status } from '../utils/retVal';
  * @param token Token obtained from the Wonderverse backend.
  * @returns Promise<ReturnValue> The result of the token verification.
  */
-export const verifyToken = async (token: string): Promise<ReturnValue<Authenticated>> => {
+export const verifyToken = async (token: string): Promise<ReturnValue<Creds>> => {
     try {
         const res = await axios.get('/auth/me', {
             headers: {
@@ -19,8 +19,9 @@ export const verifyToken = async (token: string): Promise<ReturnValue<Authentica
         return res.data;
     } catch (err) {
         return {
-            status: Status.ERROR,
-            message: `(verifyToken) ${err.message}`,
+            status: err.response?.data?.status ?? Status.ERROR,
+            message: `(verifyToken) ${err.response?.data?.message ?? 'Authorization failed'}`,
+            data: undefined,
         };
     }
 };
