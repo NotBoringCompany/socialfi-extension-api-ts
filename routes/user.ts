@@ -7,18 +7,26 @@ import { mixpanel } from '../utils/mixpanel';
 
 const router = express.Router();
 
-router.get('/get_user_data', async (req, res) => {
+router.get('/get_user_data/:adminKey/:twitterId', async (req, res) => {
+    const { adminKey, twitterId } = req.params;
     try {
-        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'get_user_data');
+        let actualTwitterId: string = '';
 
-        if (validateStatus !== Status.SUCCESS) {
-            return res.status(validateStatus).json({
-                status: validateStatus,
-                message: validateMessage
-            })
+        // if admin key is empty or not the same as ADMIN_KEY, use `validateRequestAuth` to check if the request is valid via JWT token
+        if (adminKey !== process.env.ADMIN_KEY) {
+            const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'get_user_data');
+
+            if (validateStatus !== Status.SUCCESS) {
+                return res.status(validateStatus).json({
+                    status: validateStatus,
+                    message: validateMessage
+                })
+            }
+            actualTwitterId = validateData?.twitterId;
+        } else {
+            actualTwitterId = twitterId;
         }
-
-        const { status, message, data } = await getUserData(validateData?.twitterId);
+        const { status, message, data } = await getUserData(actualTwitterId);
 
         return res.status(status).json({
             status,

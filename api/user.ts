@@ -36,10 +36,6 @@ import { Signature, recoverMessageAddress } from 'viem';
 import { joinReferrerSquad } from './squad';
 import { ExtendedDiscordProfile, ExtendedProfile } from '../utils/types';
 import { WeeklyMVPRewardType } from '../models/weeklyMVPReward';
-import mongoose from 'mongoose';
-import * as dotenv from 'dotenv';
-
-dotenv.config();
 
 /**
  * Returns the user's data.
