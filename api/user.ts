@@ -36,6 +36,10 @@ import { Signature, recoverMessageAddress } from 'viem';
 import { joinReferrerSquad } from './squad';
 import { ExtendedDiscordProfile, ExtendedProfile } from '../utils/types';
 import { WeeklyMVPRewardType } from '../models/weeklyMVPReward';
+import mongoose from 'mongoose';
+import * as dotenv from 'dotenv';
+
+dotenv.config();
 
 /**
  * Returns the user's data.
@@ -1543,6 +1547,27 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
     }
 };
 
+// export const checkBeginnerRewardsData = async (): Promise<void> => {
+//     try {
+//         await mongoose.connect(process.env.MONGODB_URI);
+
+//         const users = await UserModel.find().lean();
+
+//         // find users who have undefined `beginnerRewardData` or `beginnerRewardData` as null
+//         const usersToUpdate = users.filter((user) => {
+//             if (user?.inGameData?.beginnerRewardData === undefined) {
+//                 console.log('user with undefined beginner reward data: ', user._id);
+//                 return true;
+//             }
+//         });
+
+//         console.log('users to update length: ', usersToUpdate.length);
+//     } catch (err: any) {
+//         console.error('Error in checkBeginnerRewardsData:', err.message);
+//     }
+// }
+
+
 /**
  * Updates all users' beginner reward data daily. Called by a scheduler every 00:00 UTC.
  *
@@ -1557,8 +1582,8 @@ export const updateBeginnerRewardsData = async (): Promise<void> => {
 
         // filter out users who are not eligible for beginner rewards
         const eligibleUsers = users.filter((user) => {
-            const beginnerRewardData = user.inGameData.beginnerRewardData as BeginnerRewardData;
-            return beginnerRewardData.daysClaimed.length + beginnerRewardData.daysMissed.length < MAX_BEGINNER_REWARD_DAY;
+            const beginnerRewardData = user.inGameData.beginnerRewardData as BeginnerRewardData ?? undefined;
+            return beginnerRewardData && beginnerRewardData.daysClaimed.length + beginnerRewardData.daysMissed.length < MAX_BEGINNER_REWARD_DAY;
         });
 
         const userUpdateOperations: Array<{
@@ -1572,7 +1597,11 @@ export const updateBeginnerRewardsData = async (): Promise<void> => {
         }> = [];
 
         for (const user of eligibleUsers) {
-            const beginnerRewardData = user.inGameData.beginnerRewardData as BeginnerRewardData;
+            const beginnerRewardData = user.inGameData?.beginnerRewardData as BeginnerRewardData ?? undefined;
+
+            if (beginnerRewardData === undefined) {
+                continue;
+            }
 
             // for users that have `isClaimable` as false, it means they claimed the rewards already.
             // simply convert `isClaimable` to true.
@@ -1609,12 +1638,25 @@ export const updateBeginnerRewardsData = async (): Promise<void> => {
             }
         }
 
-        // execute the update operations
-        const userUpdatePromises = userUpdateOperations.map(async (op) => {
-            return UserModel.updateOne({ _id: op.userId }, op.updateOperations);
+        // execute the update operations ($set and $inc, $push and $pull respectively)
+        const userUpdatePromisesOne = userUpdateOperations.map(async (op) => {
+            return UserModel.updateOne({ _id: op.userId }, {
+                $set: op.updateOperations.$set,
+                $inc: op.updateOperations.$inc,
+            });
         });
 
-        await Promise.all(userUpdatePromises);
+        const userUpdatePromisesTwo = userUpdateOperations.map(async (op) => {
+            return UserModel.updateOne({ _id: op.userId }, {
+                $push: op.updateOperations.$push,
+                $pull: op.updateOperations.$pull,
+            });
+        });
+
+        await Promise.all(userUpdatePromisesOne);
+        await Promise.all(userUpdatePromisesTwo);
+
+        console.log(`(updateBeginnerRewardsData) Updated ${eligibleUsers.length} users' beginner rewards data.`);
     } catch (err: any) {
         console.error('Error in updateBeginnerRewardsData:', err.message);
     }
