@@ -119,7 +119,7 @@ export const getWeeklyMVPContenders = async (): Promise<ReturnValue> => {
  */
 export const distributeWeeklyMVPRewards = async (): Promise<void> => {
     try {
-        const users = await UserModel.find().lean();
+        const users = await UserModel.find({ twitterId: { $ne: null, $exists: true } }).lean();
 
         if (users.length === 0 || !users) {
             return;

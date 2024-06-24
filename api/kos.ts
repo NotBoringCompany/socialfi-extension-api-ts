@@ -541,7 +541,7 @@ export const checkDailyKOSRewards = async (): Promise<ReturnValue> => {
         await mongoose.connect(process.env.MONGODB_URI!);
 
         const errors: string[] = [];
-        const users = await UserModel.find();
+        const users = await UserModel.find({ twitterId: { $ne: null, $exists: true } });
 
         if (!users || users.length === 0) {
             return {
@@ -788,7 +788,7 @@ export const checkDailyKOSRewards = async (): Promise<ReturnValue> => {
  */
 export const checkWeeklyKOSRewards = async (): Promise<ReturnValue> => {
     try {
-        const users = await UserModel.find();
+        const users = await UserModel.find({ twitterId: { $ne: null, $exists: true } });
 
         if (!users || users.length === 0) {
             return {

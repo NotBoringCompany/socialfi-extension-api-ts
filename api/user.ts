@@ -1100,7 +1100,7 @@ export const claimDailyRewards = async (twitterId: string, leaderboardName: stri
 export const updateDailyLoginRewardsData = async (): Promise<void> => {
     try {
         // fetch all users
-        const users = await UserModel.find().lean();
+        const users = await UserModel.find({ twitterId: { $ne: null, $exists: true } }).lean();
 
         // users who have `isDailyClaimable` = false means they already claimed their rewards.
         // in this case, set `isDailyClaimable` back to true.
@@ -1578,7 +1578,7 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
  */
 export const updateBeginnerRewardsData = async (): Promise<void> => {
     try {
-        const users = await UserModel.find().lean();
+        const users = await UserModel.find({ twitterId: { $ne: null, $exists: true } }).lean();
 
         // filter out users who are not eligible for beginner rewards
         const eligibleUsers = users.filter((user) => {
@@ -1832,7 +1832,7 @@ export const disconnectFromDiscord = async (twitterId: string): Promise<ReturnVa
  */
 export const resetWeeklyXCookiesSpent = async (): Promise<void> => {
     try {
-        const users = await UserModel.find().lean();
+        const users = await UserModel.find({ twitterId: { $ne: null, $exists: true } }).lean();
 
         const userUpdateOperations: Array<{
             userId: string;
@@ -1876,7 +1876,7 @@ export const resetWeeklyXCookiesSpent = async (): Promise<void> => {
  */
 export const resetWeeklyItemsConsumed = async (): Promise<void> => {
     try {
-        const users = await UserModel.find().lean();
+        const users = await UserModel.find({ twitterId: { $ne: null, $exists: true } }).lean();
 
         if (users.length === 0 || !users) {
             return;
