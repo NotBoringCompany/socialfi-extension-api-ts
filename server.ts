@@ -53,6 +53,7 @@ import poap from './routes/poap';
 import squadLeaderboard from './routes/squadLeaderboard';
 import weeklyMVPReward from './routes/weeklyMVPReward';
 import collab from './routes/collab';
+import collabV2 from './routes/collab_v2';
 import { schedulers } from './schedulers/schedulers';
 
 app.use('/auth/twitter', twitterAuth);
@@ -80,6 +81,7 @@ app.use('/poap', poap);
 app.use('/squad_leaderboard', squadLeaderboard);
 app.use('/weekly_mvp_reward', weeklyMVPReward);
 app.use('/collab', collab);
+app.use('/v2/collab', collabV2);
 
 app.listen(port, async () => {
     console.log(`Server running on port ${port}`);

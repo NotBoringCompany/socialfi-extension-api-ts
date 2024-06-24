@@ -16,6 +16,7 @@ import { POAPSchema } from '../../schemas/POAP';
 import { KOSClaimableDailyRewardsSchema, KOSClaimableWeeklyRewardsSchema } from '../../schemas/KOSRewards';
 import { WeeklyMVPClaimableRewardSchema } from '../../schemas/WeeklyMVPReward';
 import { CollabSchema } from '../../schemas/Collab';
+import { CollabBasketSchema, CollabParticipantSchema } from '../../schemas/CollabV2';
 
 export const UserModel = mongoose.model('Users', UserSchema, 'Users');
 export const BitModel = mongoose.model('Bits', BitSchema, 'Bits');
@@ -37,3 +38,5 @@ export const KOSClaimableWeeklyRewardsModel = mongoose.model('KOSClaimableWeekly
 export const WeeklyMVPClaimableRewardsModel = mongoose.model('WeeklyMVPClaimableRewards', WeeklyMVPClaimableRewardSchema, 'WeeklyMVPClaimableRewards');
 export const SquadMemberClaimableWeeklyRewardModel = mongoose.model('SquadMemberClaimableWeeklyRewards', SquadMemberClaimableWeeklyRewardSchema, 'SquadMemberClaimableWeeklyRewards');
 export const CollabModel = mongoose.model('Collabs', CollabSchema, 'Collabs');
+export const CollabParticipantModel = mongoose.model('CollabParticipants', CollabParticipantSchema, 'CollabParticipants');
+export const CollabBasketModel = mongoose.model('CollabBaskets', CollabBasketSchema, 'CollabBaskets');
