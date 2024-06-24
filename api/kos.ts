@@ -472,6 +472,23 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
                         weeklyAmountConsumed: 0
                     }
                 }
+            // if reward type is xCookies
+            } else if (reward.type === KOSRewardType.X_COOKIES) {
+                // increase the user's xCookies
+                userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = reward.amount;
+
+                // check if the user's `extendedXCookieData` already has a source called KOS_BENEFITS.
+                // if not, create a new entry, else increment the amount.
+                const kosBenefitsIndex = (user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(data => data.source === XCookieSource.KOS_BENEFITS);
+
+                if (kosBenefitsIndex !== -1) {
+                    userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${kosBenefitsIndex}.xCookies`] = reward.amount;
+                } else {
+                    userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = {
+                        xCookies: reward.amount,
+                        source: XCookieSource.KOS_BENEFITS
+                    }
+                }
             }
         });
 
@@ -869,7 +886,7 @@ export const checkWeeklyKOSRewards = async (): Promise<ReturnValue> => {
             const validSuperiorKeychains = superiorKeychainOwnerships.filter((ownership) => ownership.startTimestamp <= Math.floor(Date.now() / 1000) - 604800);
 
             // get the eligible weekly rewards
-            const { points, bitOrbI, bitOrbII, terraCapI, terraCapII, raftBooster60 } = KOS_WEEKLY_BENEFITS(
+            const { points, xCookies, bitOrbI, bitOrbII, terraCapI, terraCapII, raftBooster60 } = KOS_WEEKLY_BENEFITS(
                 validKeysMetadata,
                 validKeychains.length,
                 validSuperiorKeychains.length
@@ -925,6 +942,7 @@ export const checkWeeklyKOSRewards = async (): Promise<ReturnValue> => {
                 // if user is found, we will increment the amounts for each reward.
                 // and add it to `updateOperations` to update the database later.
                 const pointsIndex = (kosRewardUser.claimableRewards as KOSReward[]).findIndex(reward => reward.type === KOSRewardType.LEADERBOARD_POINTS);
+                const xCookiesIndex = (kosRewardUser.claimableRewards as KOSReward[]).findIndex(reward => reward.type === KOSRewardType.X_COOKIES);
                 const bitOrbIIndex = (kosRewardUser.claimableRewards as KOSReward[]).findIndex(reward => reward.type === KOSRewardType.BIT_ORB_I);
                 const bitOrbIIIndex = (kosRewardUser.claimableRewards as KOSReward[]).findIndex(reward => reward.type === KOSRewardType.BIT_ORB_II);
                 const terraCapIIndex = (kosRewardUser.claimableRewards as KOSReward[]).findIndex(reward => reward.type === KOSRewardType.TERRA_CAPSULATOR_I);
@@ -951,6 +969,33 @@ export const checkWeeklyKOSRewards = async (): Promise<ReturnValue> => {
                                     'claimableRewards': {
                                         type: KOSRewardType.LEADERBOARD_POINTS,
                                         amount: points
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                if (xCookiesIndex !== -1) {
+                    updateOperations.push({
+                        updateOne: {
+                            filter: { userId: user._id },
+                            update: {
+                                $inc: {
+                                    [`claimableRewards.${xCookiesIndex}.amount`]: xCookies
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    updateOperations.push({
+                        updateOne: {
+                            filter: { userId: user._id },
+                            update: {
+                                $push: {
+                                    'claimableRewards': {
+                                        type: KOSRewardType.X_COOKIES,
+                                        amount: xCookies
                                     }
                                 }
                             }

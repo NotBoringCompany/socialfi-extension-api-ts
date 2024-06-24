@@ -9,12 +9,12 @@ export const CURRENT_AURA_ROTATION: KOSAuraTypes = KOSAuraTypes.SNOW;
 /** represents the current house rotation where, if a user obtains X amount of keys with this house, they get benefits. */
 export const CURRENT_HOUSE_ROTATION: KOSHouseTypes = KOSHouseTypes.TRADITION;
 
-/** a constant used to calculate the weekly points earnable for KOS benefits */
-export const BASE_POINTS_EARNING_RATE = 700;
-/** a constant used to calculate the weekly points earnable for KOS benefits */
-export const BASE_POINTS_EARNING_GROWTH_RATE = 25;
-/** the exponential decay constant used to calculate weekly points earnable for KOS benefits */
-export const BASE_POINTS_EXPONENTIAL_DECAY_RATE = 0.0002;
+/** a constant used to calculate the weekly xCookies earnable for KOS benefits */
+export const BASE_X_COOKIES_EARNING_RATE = 700;
+/** a constant used to calculate the weekly xCookies earnable for KOS benefits */
+export const BASE_X_COOKIES_EARNING_GROWTH_RATE = 25;
+/** the exponential decay constant used to calculate weekly xCookies earnable for KOS benefits */
+export const BASE_X_COOKIES_EXPONENTIAL_DECAY_RATE = 0.0002;
 
 /**
  * Gets the benefits (xCookies and gathering boosters) for holding a certain amount of keys and other requirements daily.
@@ -78,6 +78,7 @@ export const KOS_WEEKLY_BENEFITS = (
     superiorKeychainsOwned: number
 ): {
     points: number,
+    xCookies: number,
     bitOrbI: number,
     bitOrbII: number,
     terraCapI: number,
@@ -91,7 +92,8 @@ export const KOS_WEEKLY_BENEFITS = (
     // there are 3 podiums, timeless triune, primordial prism and stellar selenite. check if the user has all 3 podiums from all the keys (not for each key since they can only have 1 podium each)
     const hasAllPodiums = keys.filter(key => key.attributes.find(attr => attr.traitType === 'Podium' && (attr.value === 'Timeless Triune' || attr.value === 'Primordial Prism' || attr.value === 'Stellar Selenite'))).length === 3;
 
-    const points = KOS_BENEFITS_POINTS_FORMULA(keys, keychainsOwned, superiorKeychainsOwned);
+    const points = KOS_BENEFITS_POINTS_FORMULA(keys);
+    const xCookies = KOS_BENEFITS_X_COOKIES_FORMULA(keys, keychainsOwned, superiorKeychainsOwned);
     const obtainableBitOrbI = KOS_BENEFITS_EARNABLE_BIT_ORB_I(keys.filter(key => key.attributes.find(attr => attr.traitType === 'Aura' && attr.value === CURRENT_AURA_ROTATION)).length);
     const obtainableTerraCapI = KOS_BENEFITS_EARNABLE_TERRA_CAP_I(keys.filter(key => key.attributes.find(attr => attr.traitType === 'House' && attr.value === CURRENT_HOUSE_ROTATION)).length);
 
@@ -101,6 +103,7 @@ export const KOS_WEEKLY_BENEFITS = (
 
     return {
         points,
+        xCookies,
         bitOrbI: obtainableBitOrbI,
         bitOrbII: obtainableBitOrbII,
         terraCapI: obtainableTerraCapI,
@@ -239,6 +242,31 @@ export const KOS_BENEFITS_EARNABLE_GATHERING_BOOSTER_100 = (goldKeys: number): n
  */
 export const KOS_BENEFITS_POINTS_FORMULA = (
     keys: KOSMetadata[],
+): number => {
+    const keysOwned = keys.length;
+
+    if (keysOwned < 2) {
+        return 0;
+    } else if (keysOwned >= 2 && keysOwned < 5) {
+        return 250;
+    } else if (keysOwned >= 5 && keysOwned < 10) {
+        return 500;
+    } else if (keysOwned >= 10 && keysOwned < 25) {
+        return 1000;
+    } else if (keysOwned >= 25 && keysOwned < 50) {
+        return 1500;
+    } else if (keysOwned >= 50 && keysOwned < 100) {
+        return 2000;
+    } else {
+        return 3000;
+    }
+}
+
+/**
+ * Gets the total xCookies earnable weekly from the benefits of holding a certain amount of keys based on its luck-related attributes as well.
+ */
+export const KOS_BENEFITS_X_COOKIES_FORMULA = (
+    keys: KOSMetadata[],
     keychainsOwned: number,
     superiorKeychainsOwned: number
 ): number => {
@@ -249,12 +277,7 @@ export const KOS_BENEFITS_POINTS_FORMULA = (
     const averageLuck = keys.length > 0 ? keys.reduce((acc, key) => acc + parseInt(key.attributes.find(attr => attr.traitType === 'Luck')?.value as string), 0) / keysOwned : 0;
     const averageLuckBoost = keys.length > 0 ? keys.reduce((acc, key) => acc + parseInt(key.attributes.find(attr => attr.traitType === 'Luck Boost')?.value as string), 0) / keysOwned : 0;
 
-    // get bonus weekly points based on amount of keys owned milestone
-    // if >= 5 keys, get 500 extra points. if >= 25 keys, get 1000 extra points. if >= 100 keys, get 2000 extra points.
-    const bonusWeeklyPoints = keysOwned >= 5 ? 500 : keysOwned >= 25 ? 1000 : keysOwned >= 100 ? 2000 : 0;
-
-    // temporarily make it so that 0 keys owned gives 0 points because the formula is not accurate for 0 keys owned and gives users points.
-    return keysOwned === 0 ? 
-        0 : 
-        (BASE_POINTS_EARNING_RATE + ((BASE_POINTS_EARNING_GROWTH_RATE + averageLuck) * (1 + (averageLuckBoost / 100) * totalKeychainMultiplier) * (keysOwned - 1) * Math.exp(-BASE_POINTS_EXPONENTIAL_DECAY_RATE * (keysOwned - 1)))) + bonusWeeklyPoints;
+    return keysOwned === 0 ?
+        0 :
+        (BASE_X_COOKIES_EARNING_RATE + ((BASE_X_COOKIES_EARNING_GROWTH_RATE + averageLuck) * (1 + (averageLuckBoost / 100) * totalKeychainMultiplier) * (keysOwned - 1) * Math.exp(-BASE_X_COOKIES_EXPONENTIAL_DECAY_RATE * (keysOwned - 1))));
 }
