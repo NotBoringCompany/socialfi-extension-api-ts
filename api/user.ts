@@ -232,7 +232,7 @@ export const handleTwitterLogin = async (
 
             return {
                 status: Status.SUCCESS,
-                message: `(handleTwitterLogin) New user created and free Rafting Bit added to raft.`,
+                message: `(handleTwitterLogin) New user created.`,
                 data: {
                     userId: newUser._id,
                     twitterId,
