@@ -7,8 +7,8 @@ import { mixpanel } from '../utils/mixpanel';
 
 const router = express.Router();
 
-router.get('/get_user_data/:adminKey/:twitterId', async (req, res) => {
-    const { adminKey, twitterId } = req.params;
+router.get('/get_user_data/:twitterId/:adminKey', async (req, res) => {
+    const { twitterId, adminKey } = req.params;
     try {
         let actualTwitterId: string = '';
 
