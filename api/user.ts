@@ -82,6 +82,8 @@ export const handleTwitterLogin = async (
     adminKey?: string,
 ): Promise<ReturnValue> => {
     try {
+        console.log('handleTwitterLogin1');
+
         // if adminCall, check if the admin key is valid.
         if (adminCall) {
             if (!adminKey || adminKey !== process.env.ADMIN_KEY) {
@@ -92,10 +94,14 @@ export const handleTwitterLogin = async (
             }
         }
 
+        console.log('handleTwitterLogin2');
+
         const user = await UserModel.findOne({ twitterId }).lean();
 
         // if user doesn't exist, create a new user
         if (!user) {
+            console.log('handleTwitterLogin3');
+
             // generates a new object id for the user
             const userObjectId = generateObjectId();
 
@@ -161,6 +167,8 @@ export const handleTwitterLogin = async (
                     message: `(handleTwitterLogin) Error from addBitToDatabase: ${bitMessage}`,
                 };
             }
+
+            console.log('handleTwitterLogin4');
 
             // creates the wallet for the user
             const { privateKey, address } = createUserWallet();
@@ -238,6 +246,8 @@ export const handleTwitterLogin = async (
                     destinationArrival: 0,
                 },
             });
+
+            console.log('handleTwitterLogin5')
 
             await newUser.save();
 
