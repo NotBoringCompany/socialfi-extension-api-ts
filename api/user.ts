@@ -71,12 +71,27 @@ export const getUserData = async (twitterId: string): Promise<ReturnValue> => {
  *
  * If users sign up, they are required to input an invite code (either from a starter code or a referral code).
  * Otherwise, they can't sign up.
+ * 
+ * Also callable from admin for external account creations (e.g. from Wonderchamps for the current structure format (will be refactored)).
+ * If so, `adminKey` is required.
  */
 export const handleTwitterLogin = async (
     twitterId: string,
-    profile?: ExtendedProfile
+    adminCall: boolean,
+    profile?: ExtendedProfile,
+    adminKey?: string,
 ): Promise<ReturnValue> => {
     try {
+        // if adminCall, check if the admin key is valid.
+        if (adminCall) {
+            if (!adminKey || adminKey !== process.env.ADMIN_KEY) {
+                return {
+                    status: Status.UNAUTHORIZED,
+                    message: `(handleTwitterLogin) Unauthorized admin call.`,
+                };
+            }
+        }
+
         const user = await UserModel.findOne({ twitterId }).lean();
 
         // if user doesn't exist, create a new user
