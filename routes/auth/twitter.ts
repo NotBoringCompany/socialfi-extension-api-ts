@@ -108,11 +108,11 @@ router.post('/wonderbits_admin_registration', async (req, res) => {
 
         const { status, message, data } = await handleTwitterLogin(twitterId, adminCall, profile, adminKey);
 
-        return {
+        return res.status(status).json({
             status,
             message,
             data
-        }
+        });
     } catch (err: any) {
         return res.status(500).json({
             status: Status.ERROR,

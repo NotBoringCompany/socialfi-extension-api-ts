@@ -86,8 +86,6 @@ export const handleTwitterLogin = async (
     adminKey?: string,
 ): Promise<ReturnValue> => {
     try {
-        console.log('handleTwitterLogin1');
-
         // if adminCall, check if the admin key is valid.
         if (adminCall) {
             if (!adminKey || adminKey !== process.env.ADMIN_KEY) {
@@ -98,14 +96,10 @@ export const handleTwitterLogin = async (
             }
         }
 
-        console.log('handleTwitterLogin2');
-
         const user = await UserModel.findOne({ twitterId }).lean();
 
         // if user doesn't exist, create a new user
         if (!user) {
-            console.log('handleTwitterLogin3');
-
             // generates a new object id for the user
             const userObjectId = generateObjectId();
 
@@ -172,12 +166,8 @@ export const handleTwitterLogin = async (
                 };
             }
 
-            console.log('handleTwitterLogin4');
-
             // creates the wallet for the user
             const { privateKey, address } = createUserWallet();
-
-            console.log('handleTwitterLogin5');
 
             const newUser = new UserModel({
                 _id: userObjectId,
@@ -253,11 +243,7 @@ export const handleTwitterLogin = async (
                 },
             });
 
-            console.log('handleTwitterLogin6');
-
             await newUser.save();
-
-            console.log('handleTwitterLogin7');
 
             return {
                 status: Status.SUCCESS,
@@ -293,7 +279,6 @@ export const handleTwitterLogin = async (
             };
         }
     } catch (err: any) {
-        console.log('error here', err);
         return {
             status: Status.ERROR,
             message: `(handleTwitterLogin) ${err.message}`,
