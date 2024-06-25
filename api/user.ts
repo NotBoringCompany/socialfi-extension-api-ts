@@ -36,6 +36,10 @@ import { Signature, recoverMessageAddress } from 'viem';
 import { joinReferrerSquad } from './squad';
 import { ExtendedDiscordProfile, ExtendedProfile } from '../utils/types';
 import { WeeklyMVPRewardType } from '../models/weeklyMVPReward';
+import mongoose from 'mongoose';
+import * as dotenv from 'dotenv';
+
+dotenv.config();
 
 /**
  * Returns the user's data.
@@ -253,6 +257,8 @@ export const handleTwitterLogin = async (
 
             await newUser.save();
 
+            console.log('handleTwitterLogin7');
+
             return {
                 status: Status.SUCCESS,
                 message: `(handleTwitterLogin) New user created.`,
@@ -287,6 +293,7 @@ export const handleTwitterLogin = async (
             };
         }
     } catch (err: any) {
+        console.log('error here', err);
         return {
             status: Status.ERROR,
             message: `(handleTwitterLogin) ${err.message}`,
