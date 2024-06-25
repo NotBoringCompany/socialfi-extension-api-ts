@@ -173,12 +173,14 @@ export const handleTwitterLogin = async (
             // creates the wallet for the user
             const { privateKey, address } = createUserWallet();
 
+            console.log('handleTwitterLogin5');
+
             const newUser = new UserModel({
                 _id: userObjectId,
                 twitterId,
-                twitterProfilePicture: profile.photos[0].value ?? '',
-                twitterUsername: profile.username,
-                twitterDisplayName: profile.displayName,
+                twitterProfilePicture: profile?.photos[0]?.value ?? '',
+                twitterUsername: profile?.username ?? null,
+                twitterDisplayName: profile?.displayName ?? null,
                 createdTimestamp: Math.floor(Date.now() / 1000),
                 // invite code data will be null until users input their invite code.
                 inviteCodeData: {
@@ -247,7 +249,7 @@ export const handleTwitterLogin = async (
                 },
             });
 
-            console.log('handleTwitterLogin5')
+            console.log('handleTwitterLogin6');
 
             await newUser.save();
 
