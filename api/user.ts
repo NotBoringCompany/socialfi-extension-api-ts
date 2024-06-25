@@ -78,7 +78,7 @@ export const getUserData = async (twitterId: string): Promise<ReturnValue> => {
 export const handleTwitterLogin = async (
     twitterId: string,
     adminCall: boolean,
-    profile?: ExtendedProfile,
+    profile?: ExtendedProfile | null,
     adminKey?: string,
 ): Promise<ReturnValue> => {
     try {
