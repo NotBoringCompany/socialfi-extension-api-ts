@@ -11,11 +11,11 @@ export enum Status {
 /**
  * `ReturnValue` returns a status, message and optionally data.
  */
-export interface ReturnValue {
+export interface ReturnValue<T = any> {
     /** the status (either SUCCESS or ERROR) */
     status: Status
     /** a return message (can be anything, usually to add on to the status) */
     message: string
     /** the data if SUCCESS is returned. usually an object containing required values */
-    data?: any
+    data?: T
 }

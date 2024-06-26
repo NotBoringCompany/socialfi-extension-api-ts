@@ -94,7 +94,11 @@ export const handleTwitterLogin = async (
                     message: `(handleTwitterLogin) Unauthorized admin call.`,
                 };
             }
+
         }
+
+        const preregisteredUser = await UserModel.findOne({ $and: [{ twitterUsername: profile.username }, { twitterId: null }] }).lean();
+        if (preregisteredUser) return handlePreRegister(twitterId, profile);
 
         const user = await UserModel.findOne({ twitterId }).lean();
 
@@ -408,13 +412,13 @@ export const generateSignatureMessage = (walletAddress: string): string => {
  * The message will follow this format:
  *
  * `Please sign the following message to unlink this wallet from your account.
- * 
+ *
  * Wallet address: <walletAddress>
- * 
+ *
  * Timestamp: <timestamp>
- * 
+ *
  * Hash salt: <hashSalt>`
- * 
+ *
  * The message will then be sent to the frontend for the user to sign with their secondary wallet.
  */
 export const generateUnlinkSignatureMessage = (walletAddress: string): string => {
@@ -429,8 +433,7 @@ export const generateUnlinkSignatureMessage = (walletAddress: string): string =>
     `;
 
     return message;
-
-}
+};
 
 /**
  * Links a secondary wallet to the user's account if signature check is valid.
@@ -508,7 +511,7 @@ export const linkSecondaryWallet = async (
  * Unlinks a secondary wallet from a user's account. Requires a signature to ensure that the user is the one unlinking the wallet.
  */
 export const unlinkSecondaryWallet = async (
-    twitterId: string, 
+    twitterId: string,
     walletAddress: string,
     signatureMessage: string,
     signature: Uint8Array | `0x${string}` | Signature
@@ -569,8 +572,7 @@ export const unlinkSecondaryWallet = async (
             message: `(unlinkSecondaryWallet) ${err.message}`,
         };
     }
-}
-
+};
 
 /**
  * Gets a user's main and secondary wallets linked to their account.
@@ -839,7 +841,7 @@ export const claimDailyRewards = async (twitterId: string, leaderboardName: stri
                             {
                                 points: additionalPoints,
                                 source: LeaderboardPointsSource.LEVELLING_UP,
-                            }
+                            },
                         ],
                     };
 
@@ -1029,25 +1031,37 @@ export const claimDailyRewards = async (twitterId: string, leaderboardName: stri
 
         // execute the update operations
         // divide the operations into $set and $inc on one and $push and $pull on the other
-        await UserModel.updateOne({ twitterId }, {
-            $set: userUpdateOperations.$set,
-            $inc: userUpdateOperations.$inc,
-        });
+        await UserModel.updateOne(
+            { twitterId },
+            {
+                $set: userUpdateOperations.$set,
+                $inc: userUpdateOperations.$inc,
+            }
+        );
 
-        await UserModel.updateOne({ twitterId }, {
-            $push: userUpdateOperations.$push,
-            $pull: userUpdateOperations.$pull,
-        });
+        await UserModel.updateOne(
+            { twitterId },
+            {
+                $push: userUpdateOperations.$push,
+                $pull: userUpdateOperations.$pull,
+            }
+        );
 
-        await LeaderboardModel.updateOne({ _id: leaderboard._id }, {
-            $set: leaderboardUpdateOperations.$set,
-            $inc: leaderboardUpdateOperations.$inc,
-        });
+        await LeaderboardModel.updateOne(
+            { _id: leaderboard._id },
+            {
+                $set: leaderboardUpdateOperations.$set,
+                $inc: leaderboardUpdateOperations.$inc,
+            }
+        );
 
-        await LeaderboardModel.updateOne({ _id: leaderboard._id }, {
-            $push: leaderboardUpdateOperations.$push,
-            $pull: leaderboardUpdateOperations.$pull,
-        });
+        await LeaderboardModel.updateOne(
+            { _id: leaderboard._id },
+            {
+                $push: leaderboardUpdateOperations.$push,
+                $pull: leaderboardUpdateOperations.$pull,
+            }
+        );
 
         // if user is in a squad, update the squad's total points
         if (squadId) {
@@ -1502,7 +1516,7 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
                         type: BitOrbType.BIT_ORB_I,
                         amount: reward.amount,
                         totalAmountConsumed: 0,
-                        weeklyAmountConsumed: 0
+                        weeklyAmountConsumed: 0,
                     });
                 }
             }
@@ -1520,7 +1534,7 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
                         type: TerraCapsulatorType.TERRA_CAPSULATOR_I,
                         amount: reward.amount,
                         totalAmountConsumed: 0,
-                        weeklyAmountConsumed: 0
+                        weeklyAmountConsumed: 0,
                     });
                 }
             }
@@ -1884,7 +1898,7 @@ export const resetWeeklyXCookiesSpent = async (): Promise<void> => {
     } catch (err: any) {
         console.error('Error in resetWeeklyXCookiesSpent:', err.message);
     }
-}
+};
 
 /**
  * Resets all users' `weeklyAmountConsumed` for each item in `inventory.items` to 0 every week at Sunday 23:59 UTC (called by a scheduler).
@@ -1897,36 +1911,193 @@ export const resetWeeklyItemsConsumed = async (): Promise<void> => {
             return;
         }
 
-        const bulkWriteOps = users.map(user => {
-            const updateOperations = [];
+        const bulkWriteOps = users
+            .map((user) => {
+                const updateOperations = [];
 
-            const userItems = user.inventory.items as Item[];
+                const userItems = user.inventory.items as Item[];
 
-            if (userItems.length === 0) {
-                return;
-            }
-
-            for (const item of userItems) {
-                if (item.weeklyAmountConsumed === 0) {
-                    continue;
+                if (userItems.length === 0) {
+                    return;
                 }
 
-                updateOperations.push({
-                    updateOne: {
-                        filter: { _id: user._id, 'inventory.items.type': item.type },
-                        update: {
-                            $set: { 'inventory.items.$.weeklyAmountConsumed': 0 },
-                        },
-                    },
-                });
-            }
+                for (const item of userItems) {
+                    if (item.weeklyAmountConsumed === 0) {
+                        continue;
+                    }
 
-            return updateOperations;
-        }).flat();
+                    updateOperations.push({
+                        updateOne: {
+                            filter: { _id: user._id, 'inventory.items.type': item.type },
+                            update: {
+                                $set: { 'inventory.items.$.weeklyAmountConsumed': 0 },
+                            },
+                        },
+                    });
+                }
+
+                return updateOperations;
+            })
+            .flat();
 
         // execute the bulk write operations
         await UserModel.bulkWrite(bulkWriteOps);
     } catch (err: any) {
         console.error('Error in resetWeeklyItemsConsumed:', err.message);
     }
-}
+};
+
+export const handlePreRegister = async (twitterId: string, profile?: ExtendedProfile): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterUsername: profile.username });
+
+        // creates a new raft for the user with the generated user object id
+        const { status, message, data } = await createRaft(user._id);
+
+        if (status !== Status.SUCCESS) {
+            return {
+                status,
+                message: `(handlePreRegister) Error from createRaft: ${message}`,
+            };
+        }
+
+        // get the latest bit ID from the database
+        const { status: bitIdStatus, message: bitIdMessage, data: bitIdData } = await getLatestBitId();
+
+        if (bitIdStatus !== Status.SUCCESS) {
+            return {
+                status: bitIdStatus,
+                message: `(handlePreRegister) Error from getLatestBitId: ${bitIdMessage}`,
+            };
+        }
+
+        const rarity = BitRarity.COMMON;
+        const bitType = randomizeBitType();
+
+        const traits = randomizeBitTraits(rarity);
+
+        const bitStatsModifiers = getBitStatsModifiersFromTraits(traits.map((trait) => trait.trait));
+
+        // add a premium common bit to the user's inventory (users get 1 for free when they sign up)
+        const { status: bitStatus, message: bitMessage } = await addBitToDatabase({
+            bitId: bitIdData?.latestBitId + 1,
+            bitType,
+            bitNameData: {
+                name: bitType,
+                lastChanged: 0,
+            },
+            rarity,
+            gender: RANDOMIZE_GENDER(),
+            premium: true,
+            owner: user._id,
+            purchaseDate: Math.floor(Date.now() / 1000),
+            obtainMethod: ObtainMethod.SIGN_UP,
+            placedIslandId: 0,
+            lastRelocationTimestamp: 0,
+            currentFarmingLevel: 1, // starts at level 1
+            traits,
+            farmingStats: {
+                ...randomizeFarmingStats(rarity),
+                currentEnergy: 50, // set energy to half for tutorial purposes
+            },
+            bitStatsModifiers,
+        });
+
+        if (bitStatus !== Status.SUCCESS) {
+            return {
+                status: bitStatus,
+                message: `(handlePreRegister) Error from addBitToDatabase: ${bitMessage}`,
+            };
+        }
+
+        // creates the wallet for the user
+        const { privateKey, address } = createUserWallet();
+
+        await user.updateOne({
+            twitterId,
+            twitterProfilePicture: profile.photos[0].value ?? '',
+            twitterUsername: profile.username,
+            twitterDisplayName: profile.displayName,
+            createdTimestamp: Math.floor(Date.now() / 1000),
+            // invite code data will be null until users input their invite code.
+            inviteCodeData: {
+                usedStarterCode: null,
+                usedReferralCode: null,
+                referrerId: null,
+            },
+            referralData: {
+                referralCode: generateReferralCode(),
+                referredUsersData: [],
+                claimableReferralRewards: {
+                    xCookies: 0,
+                    leaderboardPoints: 0,
+                },
+            },
+            wallet: {
+                privateKey,
+                address,
+            },
+            secondaryWallets: [],
+            openedTweetIdsToday: [],
+            inventory: {
+                weight: 0,
+                maxWeight: MAX_INVENTORY_WEIGHT,
+                xCookieData: {
+                    currentXCookies: 0,
+                    extendedXCookieData: [],
+                },
+                cookieCrumbs: 0,
+                resources: [],
+                items: [
+                    {
+                        type: BoosterItem['GATHERING_PROGRESS_BOOSTER_1000'],
+                        amount: 1,
+                    },
+                ],
+                foods: [
+                    {
+                        type: FoodType['BURGER'],
+                        amount: 1,
+                    },
+                ],
+                raftId: data.raft.raftId,
+                islandIds: [],
+                bitIds: [bitIdData?.latestBitId + 1],
+            },
+            inGameData: {
+                level: 1,
+                completedTutorialIds: [],
+                beginnerRewardData: {
+                    lastClaimedTimestamp: 0,
+                    isClaimable: true,
+                    daysClaimed: [],
+                    daysMissed: [],
+                },
+                dailyLoginRewardData: {
+                    lastClaimedTimestamp: 0,
+                    isDailyClaimable: true,
+                    consecutiveDaysClaimed: 0,
+                },
+                squadId: null,
+                lastLeftSquad: 0,
+                location: POIName.HOME,
+                travellingTo: null,
+                destinationArrival: 0,
+            },
+        });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(handlePreRegister) New user created and free Rafting Bit added to raft.`,
+            data: {
+                userId: user._id,
+                twitterId: user.twitterId,
+            },
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(handlePreRegister) ${err.message}`,
+        };
+    }
+};
