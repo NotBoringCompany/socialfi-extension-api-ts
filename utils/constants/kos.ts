@@ -245,8 +245,10 @@ export const KOS_BENEFITS_POINTS_FORMULA = (
 ): number => {
     const keysOwned = keys.length;
 
-    if (keysOwned < 2) {
+    if (keysOwned < 1) {
         return 0;
+    } else if (keysOwned == 1) {
+        return 50;
     } else if (keysOwned >= 2 && keysOwned < 5) {
         return 250;
     } else if (keysOwned >= 5 && keysOwned < 10) {
