@@ -4,7 +4,7 @@ import { ExtendedXCookieData, XCookieSource } from '../models/user';
 import { CollabBasketModel, CollabParticipantModel, UserModel } from '../utils/constants/db';
 import { generateObjectId } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
-import { readSheet, readSheetObject } from '../utils/sheet';
+import { appendData, readSheet, readSheetObject } from '../utils/sheet';
 
 /**
  * Adds a participant to the database.
@@ -520,6 +520,36 @@ export const getCollabStatus = async (spreadsheetId: string, range: string, link
         return {
             status: Status.ERROR,
             message: `(getCollabStatus) ${err.message}`,
+        };
+    }
+};
+
+/**
+ * Append collab winner change request
+ */
+export const collabWinnerChange = async (
+    spreadsheetId: string,
+    range: string,
+    projectLink: string,
+    winnerId: string,
+    changeId: string
+): Promise<ReturnValue> => {
+    try {
+        // Prepare new data
+        const newRow = [projectLink, winnerId, changeId];
+
+        // Append new data
+        await appendData(spreadsheetId, range, [newRow]);
+
+        return {
+            status: Status.SUCCESS,
+            message: `Successfully appended the winner change request.`,
+            data: { projectLink, winnerId, changeId },
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(collabWinnerChange) ${err.message}`,
         };
     }
 };

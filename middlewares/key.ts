@@ -23,7 +23,7 @@
 import { Request, Response, NextFunction } from 'express';
 
 // NOTE: will need to replace the variable from env
-const apiKey = 'thisisasecret';
+const apiKey = process.env.API_KEY ?? 'thisisasecret';
 
 /**
  * Middleware function to check for the presence and validity of the API key.

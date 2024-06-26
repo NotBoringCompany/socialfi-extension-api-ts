@@ -74,3 +74,24 @@ export async function readSheet(spreadsheetId: string, range: string): Promise<a
         throw new Error('Failed to load the sheet');
     }
 }
+
+export async function appendData(spreadsheetId: string, range: string, values: any[][]): Promise<void> {
+    try {
+        const sheets = await getGoogleSheetsClient();
+
+        const result = await sheets.spreadsheets.values.append({
+            spreadsheetId,
+            range,
+            valueInputOption: 'RAW',
+            insertDataOption: 'INSERT_ROWS',
+            requestBody: {
+                values,
+            },
+        });
+
+        console.log(`Appended ${result.data.updates?.updatedCells} cells.`);
+    } catch (err) {
+        console.error('The API returned an error:', err);
+        throw new Error('Failed to append data to the sheet');
+    }
+}

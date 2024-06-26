@@ -11,10 +11,12 @@ import {
     getCollabReward,
     claimCollabReward,
     getCollabStatus,
+    collabWinnerChange,
 } from '../api/collab_v2';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { authMiddleware } from '../middlewares/auth';
+import keyMiddleware from '../middlewares/key';
 
 const router = express.Router();
 
@@ -156,6 +158,20 @@ router.post('/get_collab_status', async (req, res) => {
 
     try {
         const { status, message, data } = await getCollabStatus(spreadsheetId, range, link, messages);
+        return res.status(status).json({ status, message, data });
+    } catch (err: any) {
+        return res.status(500).json({ status: 500, message: err.message });
+    }
+});
+
+/**
+ * Route to append collab winner change request
+ */
+router.post('/collab_winner_change', keyMiddleware, async (req, res) => {
+    const { spreadsheetId, range, projectLink, winnerId, changeId } = req.body;
+
+    try {
+        const { status, message, data } = await collabWinnerChange(spreadsheetId, range, projectLink, winnerId, changeId);
         return res.status(status).json({ status, message, data });
     } catch (err: any) {
         return res.status(500).json({ status: 500, message: err.message });
