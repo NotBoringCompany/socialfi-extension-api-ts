@@ -5,8 +5,8 @@ export async function getGoogleSheetsClient() {
     const auth = new JWT({
         email: process.env.GOOGLE_SERVICE_EMAIL,
         key: process.env.GOOGLE_SERVICE_KEY,
-        scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-      });
+        scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
 
     const googleSheets = google.sheets({ version: 'v4', auth });
     return googleSheets;
@@ -16,7 +16,7 @@ interface SheetData {
     [key: string]: string | number | boolean | null;
 }
 
-export async function readSheet(spreadsheetId: string, range: string): Promise<SheetData[]> {
+export async function readSheetObject(spreadsheetId: string, range: string): Promise<SheetData[]> {
     try {
         const sheets = await getGoogleSheetsClient();
 
@@ -48,7 +48,29 @@ export async function readSheet(spreadsheetId: string, range: string): Promise<S
 
         return data;
     } catch (err) {
-        console.log(err)
+        console.log(err);
+        throw new Error('Failed to load the sheet');
+    }
+}
+
+export async function readSheet(spreadsheetId: string, range: string): Promise<any[][]> {
+    try {
+        const sheets = await getGoogleSheetsClient();
+
+        const response = await sheets.spreadsheets.values.get({
+            spreadsheetId,
+            range,
+        });
+
+        const rows = response.data.values;
+        if (!rows || rows.length === 0) {
+            console.log('No data found.');
+            return [];
+        }
+
+        return rows;
+    } catch (err) {
+        console.log(err);
         throw new Error('Failed to load the sheet');
     }
 }

@@ -2,7 +2,7 @@ import { ReturnValue, Status } from '../utils/retVal';
 import { generateObjectId } from '../utils/crypto';
 import { CollabModel, UserModel } from '../utils/constants/db';
 import { Collab, CollabReward, CollabRewardType, Group, Participant } from '../models/collab';
-import { readSheet } from '../utils/sheet';
+import { readSheetObject } from '../utils/sheet';
 import { Item } from '../models/item';
 import { BitOrbType } from '../models/bitOrb';
 import { ExtendedXCookieData, XCookieSource } from '../models/user';
@@ -429,7 +429,7 @@ export const removeGroupParticipant = async (collabId: string, groupId: string, 
  */
 export const importParticipants = async (spreadsheetId: string, range: string): Promise<ReturnValue> => {
     try {
-        const data = (await readSheet(spreadsheetId, range)) as Array<{
+        const data = (await readSheetObject(spreadsheetId, range)) as Array<{
             Tier: string | null;
             Name: string | null;
             'Twitter ID': string | null;
@@ -507,7 +507,7 @@ export const importParticipants = async (spreadsheetId: string, range: string): 
  */
 export const importGroupParticipants = async (spreadsheetId: string, range: string): Promise<ReturnValue> => {
     try {
-        const data = (await readSheet(spreadsheetId, range)) as Array<{
+        const data = (await readSheetObject(spreadsheetId, range)) as Array<{
             Name: string | null;
             Role: string | null;
             'Group Name': string | null;

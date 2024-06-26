@@ -4,7 +4,7 @@ import { ExtendedXCookieData, XCookieSource } from '../models/user';
 import { CollabBasketModel, CollabParticipantModel, UserModel } from '../utils/constants/db';
 import { generateObjectId } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
-import { readSheet } from '../utils/sheet';
+import { readSheet, readSheetObject } from '../utils/sheet';
 
 /**
  * Adds a participant to the database.
@@ -214,7 +214,7 @@ export const deleteBasket = async (id: string): Promise<ReturnValue> => {
  */
 export const importParticipants = async (spreadsheetId: string, range: string): Promise<ReturnValue> => {
     try {
-        const data = (await readSheet(spreadsheetId, range)) as Array<{
+        const data = (await readSheetObject(spreadsheetId, range)) as Array<{
             'Community Name': string | null;
             'Discord Name': string | null;
             'Discord ID': string | null;
@@ -445,6 +445,81 @@ export const claimCollabReward = async (twitterId: string): Promise<ReturnValue>
         return {
             status: Status.ERROR,
             message: `(claimCollabReward) ${err.message}`,
+        };
+    }
+};
+
+/**
+ * Get collab request status from google spreadsheet
+ */
+export const getCollabStatus = async (spreadsheetId: string, range: string, link: string, messages: { [key: string]: string } = {}): Promise<ReturnValue> => {
+    try {
+        const data = (await readSheet(spreadsheetId, range)) as any[][];
+
+        if (!data || data.length === 0) {
+            return {
+                status: Status.SUCCESS,
+                message: `(getCollabStatus) ${messages['NOT_REGISTERED'] ?? `You're not registered to our collab program`}`,
+                data: {
+                    status: messages['NOT_REGISTERED'] ?? `You're not registered to our collab program`,
+                },
+            };
+        }
+
+        // Iterate through the sheet data to find the link
+        for (let i = 0; i < data.length; i++) {
+            const row = data[i];
+            const name = row[0];
+            const collabLink = row[1];
+            const collabStatus = row[2];
+
+            // Check if the provided link matches the link in the sheet
+            if (collabLink && collabLink.includes(link)) {
+                let customMessage = '';
+                switch (collabStatus) {
+                    case 'Collab Cancelled':
+                        customMessage = messages['CANCELED'] ?? 'Collab Cancelled';
+                        break;
+                    case 'Collab Complete':
+                        customMessage = messages['COMPLETE'] ?? 'Collab Complete';
+                        break;
+                    case 'Application Received, Pending Review':
+                        customMessage = messages['PENDING'] ?? 'Application Received, Pending Review';
+                        break;
+                    case 'Collab Pre-Accepted, Open GC':
+                        customMessage = messages['PRE_ACCEPTED'] ?? 'Collab Pre-Accepted, Open GC';
+                        break;
+                    case 'Collab Declined':
+                        customMessage = messages['DECLINED'] ?? 'Collab Declined';
+                        break;
+                    default:
+                        customMessage = collabStatus;
+                }
+
+                return {
+                    status: Status.SUCCESS,
+                    message: `(getCollabStatus) Collab status found: ${customMessage}`,
+                    data: {
+                        name: name,
+                        link: collabLink,
+                        status: customMessage,
+                    },
+                };
+            }
+        }
+
+        // If no matching link is found
+        return {
+            status: Status.SUCCESS,
+            message: `(getCollabStatus) ${messages['NOT_REGISTERED'] ?? `You're not registered to our collab program`}`,
+            data: {
+                status: messages['NOT_REGISTERED'] ?? `You're not registered to our collab program`,
+            },
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getCollabStatus) ${err.message}`,
         };
     }
 };

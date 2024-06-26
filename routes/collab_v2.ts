@@ -10,6 +10,7 @@ import {
     importParticipants,
     getCollabReward,
     claimCollabReward,
+    getCollabStatus,
 } from '../api/collab_v2';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
@@ -141,6 +142,20 @@ router.post('/claim_collab_reward', async (req, res) => {
         }
 
         const { status, message, data } = await claimCollabReward(validateData?.twitterId);
+        return res.status(status).json({ status, message, data });
+    } catch (err: any) {
+        return res.status(500).json({ status: 500, message: err.message });
+    }
+});
+
+/**
+ * Route to get collab status by link
+ */
+router.post('/get_collab_status', async (req, res) => {
+    const { spreadsheetId, range, link, messages } = req.body;
+
+    try {
+        const { status, message, data } = await getCollabStatus(spreadsheetId, range, link, messages);
         return res.status(status).json({ status, message, data });
     } catch (err: any) {
         return res.status(500).json({ status: 500, message: err.message });
