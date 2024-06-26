@@ -10,7 +10,7 @@ import { BitOrbType } from '../models/bitOrb';
 import { TerraCapsulatorType } from '../models/terraCapsulator';
 import { Item } from '../models/item';
 import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
-import { WeeklyMVPRewardType } from '../models/weeklyMVPReward';
+import { WeeklyMVPReward, WeeklyMVPRewardType } from '../models/weeklyMVPReward';
 import { XCookieData } from '../models/user';
 /**
  * Fetches the current contenders to be the weekly MVP for most xCookies spent or most terra caps/bit orbs consumed.
@@ -40,20 +40,25 @@ export const getWeeklyMVPContenders = async (): Promise<ReturnValue> => {
         }[] = [];
 
         for (const user of users) {
-            const xCookiesSpent = (user.inventory.xCookieData as XCookieData).weeklyXCookiesSpent ?? 0;
+            const userItems = !user.inventory?.items || user.inventory?.items.length === 0 ? [] : user.inventory.items as Item[];
 
-            const bitOrbsConsumed = (user.inventory.items as Item[]).reduce((acc, item) => {
-                if (item.type === BitOrbType.BIT_ORB_I || item.type === BitOrbType.BIT_ORB_II || item.type === BitOrbType.BIT_ORB_III) {
-                    return acc + item.weeklyAmountConsumed;
-                }
-                return acc;
-            }, 0);
-            const terraCapsulatorsConsumed = (user.inventory.items as Item[]).reduce((acc, item) => {
-                if (item.type === TerraCapsulatorType.TERRA_CAPSULATOR_I || item.type === TerraCapsulatorType.TERRA_CAPSULATOR_II) {
-                    return acc + item.weeklyAmountConsumed;
-                }
-                return acc;
-            }, 0);
+            const xCookiesSpent = (user.inventory?.xCookieData as XCookieData)?.weeklyXCookiesSpent ?? 0;
+
+            const bitOrbsConsumed = !userItems || userItems.length === 0 ? 0 :
+                userItems.reduce((acc, item) => {
+                    if (item.type === BitOrbType.BIT_ORB_I || item.type === BitOrbType.BIT_ORB_II || item.type === BitOrbType.BIT_ORB_III) {
+                        return acc + item.weeklyAmountConsumed;
+                    }
+                    return acc;
+                }, 0);
+
+            const terraCapsulatorsConsumed = !userItems || userItems.length ? 0 :
+                userItems.reduce((acc, item) => {
+                    if (item.type === TerraCapsulatorType.TERRA_CAPSULATOR_I || item.type === TerraCapsulatorType.TERRA_CAPSULATOR_II) {
+                        return acc + item.weeklyAmountConsumed;
+                    }
+                    return acc;
+                }, 0);
 
             mvpData.push({
                 userId: user._id,
@@ -114,7 +119,7 @@ export const getWeeklyMVPContenders = async (): Promise<ReturnValue> => {
  */
 export const distributeWeeklyMVPRewards = async (): Promise<void> => {
     try {
-        const users = await UserModel.find().lean();
+        const users = await UserModel.find({ twitterId: { $ne: null, $exists: true } }).lean();
 
         if (users.length === 0 || !users) {
             return;
@@ -134,20 +139,25 @@ export const distributeWeeklyMVPRewards = async (): Promise<void> => {
         }[] = [];
 
         for (const user of users) {
-            const xCookiesSpent = (user.inventory.xCookieData as XCookieData).weeklyXCookiesSpent ?? 0;
+            const userItems = !user.inventory?.items || user.inventory?.items.length === 0 ? [] : user.inventory.items as Item[];
 
-            const bitOrbsConsumed = (user.inventory.items as Item[]).reduce((acc, item) => {
-                if (item.type === BitOrbType.BIT_ORB_I || item.type === BitOrbType.BIT_ORB_II || item.type === BitOrbType.BIT_ORB_III) {
-                    return acc + item.weeklyAmountConsumed;
-                }
-                return acc;
-            }, 0);
-            const terraCapsulatorsConsumed = (user.inventory.items as Item[]).reduce((acc, item) => {
-                if (item.type === TerraCapsulatorType.TERRA_CAPSULATOR_I || item.type === TerraCapsulatorType.TERRA_CAPSULATOR_II) {
-                    return acc + item.weeklyAmountConsumed;
-                }
-                return acc;
-            }, 0);
+            const xCookiesSpent = (user.inventory.xCookieData as XCookieData)?.weeklyXCookiesSpent ?? 0;
+
+            const bitOrbsConsumed = !userItems || userItems.length === 0 ? 0 :
+                userItems.reduce((acc, item) => {
+                    if (item.type === BitOrbType.BIT_ORB_I || item.type === BitOrbType.BIT_ORB_II || item.type === BitOrbType.BIT_ORB_III) {
+                        return acc + item.weeklyAmountConsumed;
+                    }
+                    return acc;
+                }, 0);
+
+            const terraCapsulatorsConsumed = !userItems || userItems.length ? 0 :
+                userItems.reduce((acc, item) => {
+                    if (item.type === TerraCapsulatorType.TERRA_CAPSULATOR_I || item.type === TerraCapsulatorType.TERRA_CAPSULATOR_II) {
+                        return acc + item.weeklyAmountConsumed;
+                    }
+                    return acc;
+                }, 0);
 
             mvpData.push({
                 userId: user._id,
@@ -204,7 +214,7 @@ export const distributeWeeklyMVPRewards = async (): Promise<void> => {
                 claimableRewards: [
                     {
                         type: WeeklyMVPRewardType.LEADERBOARD_POINTS,
-                        amount: WEEKLY_MVP_REWARDS('xCookies')
+                        amount: WEEKLY_MVP_REWARDS('xCookies').leaderboardPoints
                     }
                 ]
             });
@@ -220,10 +230,10 @@ export const distributeWeeklyMVPRewards = async (): Promise<void> => {
             if (leaderboardPointsIndex === -1) {
                 xCookiesMVPRewardsUpdateOperations.$push['claimableRewards'] = {
                     type: WeeklyMVPRewardType.LEADERBOARD_POINTS,
-                    amount: WEEKLY_MVP_REWARDS('xCookies')
+                    amount: WEEKLY_MVP_REWARDS('xCookies').leaderboardPoints
                 };
             } else {
-                xCookiesMVPRewardsUpdateOperations.$inc[`claimableRewards.${leaderboardPointsIndex}.amount`] = WEEKLY_MVP_REWARDS('xCookies');
+                xCookiesMVPRewardsUpdateOperations.$inc[`claimableRewards.${leaderboardPointsIndex}.amount`] = WEEKLY_MVP_REWARDS('xCookies').leaderboardPoints;
             }
 
             console.log(`Updated xCookies MVP entry for user ${xCookiesMVPData.username}.`);
@@ -238,7 +248,7 @@ export const distributeWeeklyMVPRewards = async (): Promise<void> => {
                 claimableRewards: [
                     {
                         type: WeeklyMVPRewardType.LEADERBOARD_POINTS,
-                        amount: WEEKLY_MVP_REWARDS('Bit Orb')
+                        amount: WEEKLY_MVP_REWARDS('Bit Orb').leaderboardPoints
                     }
                 ]
             });
@@ -254,10 +264,10 @@ export const distributeWeeklyMVPRewards = async (): Promise<void> => {
             if (leaderboardPointsIndex === -1) {
                 bitOrbsMVPRewardsUpdateOperations.$push['claimableRewards'] = {
                     type: WeeklyMVPRewardType.LEADERBOARD_POINTS,
-                    amount: WEEKLY_MVP_REWARDS('Bit Orb')
+                    amount: WEEKLY_MVP_REWARDS('Bit Orb').leaderboardPoints
                 };
             } else {
-                bitOrbsMVPRewardsUpdateOperations.$inc[`claimableRewards.${leaderboardPointsIndex}.amount`] = WEEKLY_MVP_REWARDS('Bit Orb');
+                bitOrbsMVPRewardsUpdateOperations.$inc[`claimableRewards.${leaderboardPointsIndex}.amount`] = WEEKLY_MVP_REWARDS('Bit Orb').leaderboardPoints;
             }
 
             console.log(`Updated Bit Orbs MVP entry for user ${bitOrbsMVPData.username}.`);
@@ -272,7 +282,7 @@ export const distributeWeeklyMVPRewards = async (): Promise<void> => {
                 claimableRewards: [
                     {
                         type: WeeklyMVPRewardType.LEADERBOARD_POINTS,
-                        amount: WEEKLY_MVP_REWARDS('Terra Capsulator')
+                        amount: WEEKLY_MVP_REWARDS('Terra Capsulator').leaderboardPoints
                     }
                 ]
             });
@@ -288,10 +298,10 @@ export const distributeWeeklyMVPRewards = async (): Promise<void> => {
             if (leaderboardPointsIndex === -1) {
                 terraCapsulatorsMVPRewardsUpdateOperations.$push['claimableRewards'] = {
                     type: WeeklyMVPRewardType.LEADERBOARD_POINTS,
-                    amount: WEEKLY_MVP_REWARDS('Terra Capsulator')
+                    amount: WEEKLY_MVP_REWARDS('Terra Capsulator').leaderboardPoints
                 };
             } else {
-                terraCapsulatorsMVPRewardsUpdateOperations.$inc[`claimableRewards.${leaderboardPointsIndex}.amount`] = WEEKLY_MVP_REWARDS('Terra Capsulator');
+                terraCapsulatorsMVPRewardsUpdateOperations.$inc[`claimableRewards.${leaderboardPointsIndex}.amount`] = WEEKLY_MVP_REWARDS('Terra Capsulator').leaderboardPoints;
             }
 
             console.log(`Updated Terra Capsulators MVP entry for user ${terraCapsulatorsMVPData.username}.`);
@@ -368,7 +378,8 @@ export const claimWeeklyMVPRewards = async (twitterId: string): Promise<ReturnVa
             $set: {}
         }
 
-        const claimableLeaderboardPoints = weeklyMVPRewards.claimableRewards.findIndex(reward => reward.type === WeeklyMVPRewardType.LEADERBOARD_POINTS);
+        const claimableLeaderboardPointsIndex = (weeklyMVPRewards.claimableRewards as WeeklyMVPReward[]).findIndex(reward => reward.type === WeeklyMVPRewardType.LEADERBOARD_POINTS);
+        const claimableLeaderboardPoints = (weeklyMVPRewards.claimableRewards as WeeklyMVPReward[])[claimableLeaderboardPointsIndex].amount;
 
         const latestSquadLeaderboard = await SquadLeaderboardModel.findOne().sort({ week: -1 }).lean();
 
@@ -516,15 +527,47 @@ export const claimWeeklyMVPRewards = async (twitterId: string): Promise<ReturnVa
             }
         }
 
-        // execute the update operations
+        // execute the update operations ($set and $inc, then $push and $pull to prevent conflicts)
         await Promise.all([
-            LeaderboardModel.updateOne({ name: 'Season 0' }, leaderboardUpdateOperations),
-            SquadModel.updateOne({ _id: user.inGameData.squadId }, squadUpdateOperations),
-            SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, squadLeaderboardUpdateOperations),
-            // set the claimableRewards back to an empty array.
-            WeeklyMVPClaimableRewardsModel.updateOne({ userId: user._id }, { $set: { claimableRewards: [] } }),
-            UserModel.updateOne({ twitterId }, userUpdateOperations)
+            LeaderboardModel.updateOne({ name: 'Season 0' }, {
+                $set: leaderboardUpdateOperations.$set,
+                $inc: leaderboardUpdateOperations.$inc,
+            }),
+            SquadModel.updateOne({ _id: user.inGameData.squadId }, {
+                $set: squadUpdateOperations.$set,
+                $inc: squadUpdateOperations.$inc,
+            }),
+            SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, {
+                $set: squadLeaderboardUpdateOperations.$set,
+                $inc: squadLeaderboardUpdateOperations.$inc,
+            }),
+            UserModel.updateOne({ twitterId }, {
+                $set: userUpdateOperations.$set,
+                $inc: userUpdateOperations.$inc,
+            })        
         ]);
+
+        await Promise.all([
+            LeaderboardModel.updateOne({ name: 'Season 0' }, {
+                $push: leaderboardUpdateOperations.$push,
+                $pull: leaderboardUpdateOperations.$pull,
+            }),
+            SquadModel.updateOne({ _id: user.inGameData.squadId }, {
+                $push: squadUpdateOperations.$push,
+                $pull: squadUpdateOperations.$pull,
+            }),
+            SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, {
+                $push: squadLeaderboardUpdateOperations.$push,
+                $pull: squadLeaderboardUpdateOperations.$pull,
+            }),
+            UserModel.updateOne({ twitterId }, {
+                $push: userUpdateOperations.$push,
+                $pull: userUpdateOperations.$pull,
+            })        
+        ])
+
+        // set the claimableRewards back to an empty array.
+        await WeeklyMVPClaimableRewardsModel.updateOne({ userId: user._id }, { $set: { claimableRewards: [] } });
 
         return {
             status: Status.SUCCESS,

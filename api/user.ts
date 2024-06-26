@@ -36,6 +36,10 @@ import { Signature, recoverMessageAddress } from 'viem';
 import { joinReferrerSquad } from './squad';
 import { ExtendedDiscordProfile, ExtendedProfile } from '../utils/types';
 import { WeeklyMVPRewardType } from '../models/weeklyMVPReward';
+import mongoose from 'mongoose';
+import * as dotenv from 'dotenv';
+
+dotenv.config();
 
 /**
  * Returns the user's data.
@@ -71,13 +75,30 @@ export const getUserData = async (twitterId: string): Promise<ReturnValue> => {
  *
  * If users sign up, they are required to input an invite code (either from a starter code or a referral code).
  * Otherwise, they can't sign up.
+ * 
+ * Also callable from admin for external account creations (e.g. from Wonderchamps for the current structure format (will be refactored)).
+ * If so, `adminKey` is required.
  */
-export const handleTwitterLogin = async (twitterId: string, profile?: ExtendedProfile): Promise<ReturnValue> => {
+export const handleTwitterLogin = async (
+    twitterId: string,
+    adminCall: boolean,
+    profile?: ExtendedProfile | null,
+    adminKey?: string,
+): Promise<ReturnValue> => {
     try {
-        const preregisteredUser = await UserModel.findOne({ $and: [{ twitterUsername: profile.username }, { twitterId: null }] }).lean();
-        if (preregisteredUser) {
-            return handlePreRegister(twitterId, profile);
+        // if adminCall, check if the admin key is valid.
+        if (adminCall) {
+            if (!adminKey || adminKey !== process.env.ADMIN_KEY) {
+                return {
+                    status: Status.UNAUTHORIZED,
+                    message: `(handleTwitterLogin) Unauthorized admin call.`,
+                };
+            }
+
         }
+
+        const preregisteredUser = await UserModel.findOne({ $and: [{ twitterUsername: profile.username }, { twitterId: null }] }).lean();
+        if (preregisteredUser) return handlePreRegister(twitterId, profile);
 
         const user = await UserModel.findOne({ twitterId }).lean();
 
@@ -155,9 +176,9 @@ export const handleTwitterLogin = async (twitterId: string, profile?: ExtendedPr
             const newUser = new UserModel({
                 _id: userObjectId,
                 twitterId,
-                twitterProfilePicture: profile.photos[0].value ?? '',
-                twitterUsername: profile.username,
-                twitterDisplayName: profile.displayName,
+                twitterProfilePicture: profile?.photos[0]?.value ?? '',
+                twitterUsername: profile?.username ?? null,
+                twitterDisplayName: profile?.displayName ?? null,
                 createdTimestamp: Math.floor(Date.now() / 1000),
                 // invite code data will be null until users input their invite code.
                 inviteCodeData: {
@@ -230,7 +251,7 @@ export const handleTwitterLogin = async (twitterId: string, profile?: ExtendedPr
 
             return {
                 status: Status.SUCCESS,
-                message: `(handleTwitterLogin) New user created and free Rafting Bit added to raft.`,
+                message: `(handleTwitterLogin) New user created.`,
                 data: {
                     userId: newUser._id,
                     twitterId,
@@ -570,10 +591,10 @@ export const getWallets = async (twitterId: string): Promise<ReturnValue> => {
         const walletAddresses: string[] = [];
 
         // add the main wallet's public key
-        walletAddresses.push(user.wallet.address);
+        walletAddresses.push(user.wallet?.address ?? '');
 
         // loop through `secondaryWallets` assuming length is not 0 and add each public key
-        if (user.secondaryWallets.length > 0) {
+        if (user.secondaryWallets && user.secondaryWallets.length > 0) {
             for (const secondaryWallet of user.secondaryWallets) {
                 walletAddresses.push(secondaryWallet.address);
             }
@@ -1108,7 +1129,7 @@ export const claimDailyRewards = async (twitterId: string, leaderboardName: stri
 export const updateDailyLoginRewardsData = async (): Promise<void> => {
     try {
         // fetch all users
-        const users = await UserModel.find().lean();
+        const users = await UserModel.find({ twitterId: { $ne: null, $exists: true } }).lean();
 
         // users who have `isDailyClaimable` = false means they already claimed their rewards.
         // in this case, set `isDailyClaimable` back to true.
@@ -1555,6 +1576,27 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
     }
 };
 
+// export const checkBeginnerRewardsData = async (): Promise<void> => {
+//     try {
+//         await mongoose.connect(process.env.MONGODB_URI);
+
+//         const users = await UserModel.find().lean();
+
+//         // find users who have undefined `beginnerRewardData` or `beginnerRewardData` as null
+//         const usersToUpdate = users.filter((user) => {
+//             if (user?.inGameData?.beginnerRewardData === undefined) {
+//                 console.log('user with undefined beginner reward data: ', user._id);
+//                 return true;
+//             }
+//         });
+
+//         console.log('users to update length: ', usersToUpdate.length);
+//     } catch (err: any) {
+//         console.error('Error in checkBeginnerRewardsData:', err.message);
+//     }
+// }
+
+
 /**
  * Updates all users' beginner reward data daily. Called by a scheduler every 00:00 UTC.
  *
@@ -1565,12 +1607,12 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
  */
 export const updateBeginnerRewardsData = async (): Promise<void> => {
     try {
-        const users = await UserModel.find().lean();
+        const users = await UserModel.find({ twitterId: { $ne: null, $exists: true } }).lean();
 
         // filter out users who are not eligible for beginner rewards
         const eligibleUsers = users.filter((user) => {
-            const beginnerRewardData = user.inGameData.beginnerRewardData as BeginnerRewardData;
-            return beginnerRewardData.daysClaimed.length + beginnerRewardData.daysMissed.length < MAX_BEGINNER_REWARD_DAY;
+            const beginnerRewardData = user.inGameData.beginnerRewardData as BeginnerRewardData ?? undefined;
+            return beginnerRewardData && beginnerRewardData.daysClaimed.length + beginnerRewardData.daysMissed.length < MAX_BEGINNER_REWARD_DAY;
         });
 
         const userUpdateOperations: Array<{
@@ -1584,7 +1626,11 @@ export const updateBeginnerRewardsData = async (): Promise<void> => {
         }> = [];
 
         for (const user of eligibleUsers) {
-            const beginnerRewardData = user.inGameData.beginnerRewardData as BeginnerRewardData;
+            const beginnerRewardData = user.inGameData?.beginnerRewardData as BeginnerRewardData ?? undefined;
+
+            if (beginnerRewardData === undefined) {
+                continue;
+            }
 
             // for users that have `isClaimable` as false, it means they claimed the rewards already.
             // simply convert `isClaimable` to true.
@@ -1621,12 +1667,25 @@ export const updateBeginnerRewardsData = async (): Promise<void> => {
             }
         }
 
-        // execute the update operations
-        const userUpdatePromises = userUpdateOperations.map(async (op) => {
-            return UserModel.updateOne({ _id: op.userId }, op.updateOperations);
+        // execute the update operations ($set and $inc, $push and $pull respectively)
+        const userUpdatePromisesOne = userUpdateOperations.map(async (op) => {
+            return UserModel.updateOne({ _id: op.userId }, {
+                $set: op.updateOperations.$set,
+                $inc: op.updateOperations.$inc,
+            });
         });
 
-        await Promise.all(userUpdatePromises);
+        const userUpdatePromisesTwo = userUpdateOperations.map(async (op) => {
+            return UserModel.updateOne({ _id: op.userId }, {
+                $push: op.updateOperations.$push,
+                $pull: op.updateOperations.$pull,
+            });
+        });
+
+        await Promise.all(userUpdatePromisesOne);
+        await Promise.all(userUpdatePromisesTwo);
+
+        console.log(`(updateBeginnerRewardsData) Updated ${eligibleUsers.length} users' beginner rewards data.`);
     } catch (err: any) {
         console.error('Error in updateBeginnerRewardsData:', err.message);
     }
@@ -1802,7 +1861,7 @@ export const disconnectFromDiscord = async (twitterId: string): Promise<ReturnVa
  */
 export const resetWeeklyXCookiesSpent = async (): Promise<void> => {
     try {
-        const users = await UserModel.find().lean();
+        const users = await UserModel.find({ twitterId: { $ne: null, $exists: true } }).lean();
 
         const userUpdateOperations: Array<{
             userId: string;
@@ -1846,7 +1905,7 @@ export const resetWeeklyXCookiesSpent = async (): Promise<void> => {
  */
 export const resetWeeklyItemsConsumed = async (): Promise<void> => {
     try {
-        const users = await UserModel.find().lean();
+        const users = await UserModel.find({ twitterId: { $ne: null, $exists: true } }).lean();
 
         if (users.length === 0 || !users) {
             return;

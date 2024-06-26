@@ -2,11 +2,11 @@ import cron from 'node-cron';
 import { resetWeeklyItemsConsumed, resetWeeklyXCookiesSpent, updateBeginnerRewardsData, updateDailyLoginRewardsData } from '../api/user';
 
 /**
- * Updates all users' daily login rewards data every day at 00:00 UTC
+ * Updates all users' daily login rewards data every day at 23:59 UTC
  */
 export const updateDailyLoginRewardsDataScheduler = async (): Promise<void> => {
     try {
-        cron.schedule('0 0 * * *', async () => {
+        cron.schedule('59 23 * * *', async () => {
             console.log('Running updateDailyLoginRewardsData...');
 
             await updateDailyLoginRewardsData();
@@ -21,7 +21,7 @@ export const updateDailyLoginRewardsDataScheduler = async (): Promise<void> => {
  */
 export const updateBeginnerRewardsDataScheduler = async (): Promise<void> => {
     try {
-        cron.schedule('0 0 * * *', async () => {
+        cron.schedule('59 23 * * *', async () => {
             console.log('Running updateBeginnerRewardsData...');
 
             await updateBeginnerRewardsData();

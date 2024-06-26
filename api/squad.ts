@@ -187,7 +187,7 @@ export const requestToJoinSquad = async (twitterId: string, squadId?: string, sq
 /**
  * Accepts a pending squad member into the squad. Only callable by a squad leader.
  */
-export const acceptPendingSquadMember = async (leaderTwitterId: string, memberTwitterId?: string, memberUserId?: string): Promise<ReturnValue> => {
+export const acceptPendingSquadMember = async (leaderTwitterId: string, memberTwitterId: string = '', memberUserId: string = ''): Promise<ReturnValue> => {
     try {
         const [leader, member] = await Promise.all([
             UserModel.findOne({ twitterId: leaderTwitterId }).lean(),
@@ -317,7 +317,7 @@ export const acceptPendingSquadMember = async (leaderTwitterId: string, memberTw
 /**
  * Declines a pending squad member from joining the squad. Only callable by a squad leader.
  */
-export const declinePendingSquadMember = async (leaderTwitterId: string, memberTwitterId?: string, memberUserId?: string): Promise<ReturnValue> => {
+export const declinePendingSquadMember = async (leaderTwitterId: string, memberTwitterId: string = '', memberUserId: string = ''): Promise<ReturnValue> => {
     try {
         const [leader, member] = await Promise.all([
             UserModel.findOne({ twitterId: leaderTwitterId }).lean(),
@@ -923,7 +923,7 @@ export const upgradeSquadLimit = async (twitterId: string): Promise<ReturnValue>
 /**
  * Delegates the leader role to another member in the squad. Only callable by a squad leader.
  */
-export const delegateLeadership = async (currentLeaderTwitterId: string, newLeaderTwitterId?: string, newLeaderUserId?: string): Promise<ReturnValue> => {
+export const delegateLeadership = async (currentLeaderTwitterId: string, newLeaderTwitterId: string = '', newLeaderUserId: string = ''): Promise<ReturnValue> => {
     try {
         const [currentLeader, newLeader] = await Promise.all([
             UserModel.findOne({ twitterId: currentLeaderTwitterId }).lean(),
@@ -1015,7 +1015,7 @@ export const delegateLeadership = async (currentLeaderTwitterId: string, newLead
     }
 }
 
-export const kickMember = async (leaderTwitterId: string, memberTwitterId?: string, memberUserId?: string): Promise<ReturnValue> => {
+export const kickMember = async (leaderTwitterId: string, memberTwitterId: string = '', memberUserId: string = ''): Promise<ReturnValue> => {
     try {
         const [leader, member] = await Promise.all([
             UserModel.findOne({ twitterId: leaderTwitterId }).lean(),
@@ -1138,11 +1138,11 @@ export const getSquadData = async (squadId?: string): Promise<ReturnValue> => {
 }
 
 /**
- * Gets the amount of KOS (Key Of Salvation) owned by the members of the user's squad.
+ * Gets the total amount of KOS (Key Of Salvation) owned by the members of the user's squad and also the individual KOS count of each member.
  * 
  * Returns 0 if the user is not in a squad.
  */
-export const squadKOSCount = async (twitterId: string): Promise<ReturnValue> => {
+export const squadKOSData = async (twitterId: string): Promise<ReturnValue> => {
     try {
         const user = await UserModel.findOne({ twitterId }).lean();
 
@@ -1159,7 +1159,8 @@ export const squadKOSCount = async (twitterId: string): Promise<ReturnValue> => 
                 status: Status.SUCCESS,
                 message: `(squadKOSCount) User is not in a squad.`,
                 data: {
-                    squadKOSCount: 0
+                    totalSquadKOSCount: 0,
+                    individualKOSCounts: []
                 }
             }
         }
@@ -1200,7 +1201,12 @@ export const squadKOSCount = async (twitterId: string): Promise<ReturnValue> => 
             status: Status.SUCCESS,
             message: `(squadKOSCount) Got squad KOS count successfully.`,
             data: {
-                squadKOSCount: flattenedOwnedKeyIDs.length
+                totalSquadKOSCount: flattenedOwnedKeyIDs.length,
+                individualKOSCounts: ownedKeyIDs.map((ownedKeyIDs, index) => ({
+                    userId: squad.members[index].userId,
+                    username: squad.members[index].username,
+                    kosCount: ownedKeyIDs.length
+                }))
             }
         }
     } catch (err: any) {
@@ -1226,7 +1232,7 @@ export const getLatestSquadWeeklyRanking = async (squadId: string): Promise<Retu
         }
 
         // get the latest weekly ranking by finding the latest ranking data (i.e. the data with the highest `week` number)
-        const latestRankingData = squad.squadRankingData.reduce((prev, current) => (prev.week > current.week) ? prev : current);
+        const latestRankingData = squad.squadRankingData && squad.squadRankingData.length !== 0 ? squad.squadRankingData.reduce((prev, current) => (prev.week > current.week) ? prev : current) : { rank: SquadRank.UNRANKED }
 
         return {
             status: Status.SUCCESS,

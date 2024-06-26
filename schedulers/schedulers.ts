@@ -2,6 +2,7 @@ import { depleteEnergyScheduler } from './bit';
 import { removeOpenedTweetIdsTodayScheduler } from './chest';
 import { updateClaimableCrumbsScheduler, updateClaimableXCookiesScheduler, updateDailyBonusResourcesGatheredScheduler, updateGatheringProgressAndDropResourceScheduler } from './island';
 import { checkDailyKOSRewardsScheduler, checkWeeklyKOSRewardsScheduler } from './kos';
+import { resetGlobalItemsDailyBuyableAndSellableAmountScheduler } from './poi';
 import { calculateWeeklySquadRankingAndAddSquadLeaderboardScheduler } from './squadLeaderboard';
 import { updateBeginnerRewardsDataScheduler, updateDailyLoginRewardsDataScheduler } from './user';
 import { distributeWeeklyMVPRewardsScheduler } from './weeklyMVPReward';
@@ -18,6 +19,7 @@ export const schedulers = async (): Promise<void> => {
         await updateDailyBonusResourcesGatheredScheduler();
         await updateDailyLoginRewardsDataScheduler();
         await updateBeginnerRewardsDataScheduler();
+        await resetGlobalItemsDailyBuyableAndSellableAmountScheduler();
 
         await calculateWeeklySquadRankingAndAddSquadLeaderboardScheduler();
 

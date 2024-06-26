@@ -324,7 +324,7 @@ router.get('/get_sell_items_in_poi_points_boost', async (req, res) => {
         return res.status(status).json({
             status,
             message,
-            data: data.sellItemsInPOIPointsBoost
+            data
         });
     } catch (err: any) {
         return res.status(500).json({

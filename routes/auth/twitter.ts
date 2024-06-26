@@ -53,7 +53,7 @@ router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/',
         const profile = req.user as ExtendedProfile;
         const { id: twitterId, twitterAccessToken, twitterRefreshToken, twitterExpiryDate } = profile;
 
-        const { status, message } = await handleTwitterLogin(twitterId, profile);
+        const { status, message } = await handleTwitterLogin(twitterId, false, profile);
 
         if (status !== Status.SUCCESS) {
             return res.status(status).json({
@@ -85,5 +85,40 @@ router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/',
         })
     }
 });
+
+// used for external registration for a user in Wonderbits.
+// e.g. use case = logging in from Wonderchamps and creating a new user in Wonderbits
+router.post('/wonderbits_admin_registration', async (req, res) => {
+    const { twitterId, adminCall, profile, adminKey } = req.body;
+
+    try {
+        if (!adminCall) {
+            return res.status(401).json({
+                status: Status.UNAUTHORIZED,
+                message: `(wonderbits_admin_registration) Only admin calls are allowed. Please provide the admin key.`
+            })
+        }
+
+        if (adminCall && adminKey !== process.env.ADMIN_KEY) {
+            return res.status(401).json({
+                status: Status.UNAUTHORIZED,
+                message: `(wonderbits_admin_registration) Invalid admin key.`
+            })
+        }
+
+        const { status, message, data } = await handleTwitterLogin(twitterId, adminCall, profile, adminKey);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: Status.ERROR,
+            message: err.message
+        })
+    }
+})
 
 export default router;

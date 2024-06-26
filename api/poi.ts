@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { BoosterItem } from '../models/booster';
 import { Food } from '../models/food';
 import { Item } from '../models/item';
@@ -12,8 +13,9 @@ import { SQUAD_KOS_BENEFITS } from '../utils/constants/squad';
 import { GET_LEADER_SQUAD_WEEKLY_RANKING_POI_POINTS_BOOST } from '../utils/constants/squadLeaderboard';
 import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
 import { ReturnValue, Status } from '../utils/retVal';
-import { getLatestSquadWeeklyRanking, squadKOSCount } from './squad';
+import { getLatestSquadWeeklyRanking, squadKOSData } from './squad';
 import { updateReferredUsersData } from './user';
+import * as dotenv from 'dotenv';
 
 /**
  * Resets the `currentBuyableAmount` and `currentSellableAmount` of all global items in all POI shops every day at 23:59 UTC.
@@ -22,7 +24,8 @@ import { updateReferredUsersData } from './user';
  */
 export const resetGlobalItemsDailyBuyableAndSellableAmount = async (): Promise<void> => {
     try {
-        const allPOIs = await POIModel.find({}).lean();
+        await mongoose.connect(process.env.MONGODB_URI);
+        const allPOIs = await POIModel.find().lean();
 
         const bulkWriteOperations = allPOIs.map(poi => {
             const globalItems = poi.shop.globalItems;
@@ -675,7 +678,7 @@ export const sellItemsInPOIShop = async (
                 item.item === POIShopItemName.IRON ||
                 item.item === POIShopItemName.SILVER ||
                 item.item === POIShopItemName.GOLD ||
-                item.item === POIShopItemName.BLUEBERRY ||
+                item.item === POIShopItemName.TOMATO ||
                 item.item === POIShopItemName.APPLE ||
                 item.item === POIShopItemName.STAR_FRUIT ||
                 item.item === POIShopItemName.MELON ||
@@ -747,14 +750,15 @@ export const sellItemsInPOIShop = async (
         if (itemsPOIPointsBoostStatus !== Status.SUCCESS) {
             return {
                 status: itemsPOIPointsBoostStatus,
-                message: `(sellItemsInPOIShop) Error from getSellitemsInPOIPointsBoost: ${itemsPOIPointsBoostMessage}`
+                message: `(sellItemsInPOIShop) Error from getSellitemsInPOIPointsBoost: ${itemsPOIPointsBoostMessage}`,
             }
         }
 
 
         // calculate the total leaderboard points based on the sell asset point boost, squad weekly ranking point boost and the base leaderboard points.
         // if no boost is present, `ownedKOSPointsBoost` and/or `squadWeeklyRankingPointsBoost` remains at 1.
-        const leaderboardPoints = (itemsPOIPointsBoostData.ownedKOSPointsBoost + itemsPOIPointsBoostData.squadWeeklyRankingPointsBoost) * baseLeaderboardPoints;
+        // if we just add the boosts directly, the minimum boost will be 2. this is not what we want (because it means a 2x multiplier). therefore, we subtract 1 at the end.
+        const leaderboardPoints = ((itemsPOIPointsBoostData.ownedKOSPointsBoost + itemsPOIPointsBoostData.squadWeeklyRankingPointsBoost) - 1) * baseLeaderboardPoints;
 
         // check if leaderboard is specified
         // if not, we find the most recent one.
@@ -997,7 +1001,7 @@ export const sellItemsInPOIShop = async (
                 item.item === POIShopItemName.IRON ||
                 item.item === POIShopItemName.SILVER ||
                 item.item === POIShopItemName.GOLD ||
-                item.item === POIShopItemName.BLUEBERRY ||
+                item.item === POIShopItemName.TOMATO ||
                 item.item === POIShopItemName.APPLE ||
                 item.item === POIShopItemName.STAR_FRUIT ||
                 item.item === POIShopItemName.MELON ||
@@ -1125,18 +1129,6 @@ export const sellItemsInPOIShop = async (
 
         // lastly, reduce the user inventory's weight by `totalWeightToReduce`
         userUpdateOperations.$inc[`inventory.weight`] = -totalWeightToReduce;
-
-        console.log('sell items in poi shop leaderboard update operations: ', leaderboardUpdateOperations);
-        console.log('poi update operations: ', poiUpdateOperations);
-
-        console.log('leaderboard to be updated: ', leaderboard._id);
-
-        // execute the update operations
-        // await Promise.all([
-        //     UserModel.updateOne({ twitterId }, userUpdateOperations),
-        //     LeaderboardModel.updateOne({ _id: leaderboard._id }, leaderboardUpdateOperations),
-        //     POIModel.updateOne({ name: user.inGameData.location }, poiUpdateOperations)
-        // ]);
 
         // divide update operations into two; $set and $inc on one, and $push and $pull on the other to prevent conflicts.
         await UserModel.updateOne({ twitterId }, {
@@ -1388,7 +1380,7 @@ export const buyItemsInPOIShop = async (
                 item.item === POIShopItemName.IRON ||
                 item.item === POIShopItemName.SILVER ||
                 item.item === POIShopItemName.GOLD ||
-                item.item === POIShopItemName.BLUEBERRY ||
+                item.item === POIShopItemName.TOMATO ||
                 item.item === POIShopItemName.APPLE ||
                 item.item === POIShopItemName.STAR_FRUIT ||
                 item.item === POIShopItemName.MELON ||
@@ -1648,13 +1640,13 @@ export const getSellItemsInPOIPointsBoost = async (twitterId: string): Promise<R
         }
 
         // get the user's squad's KOS count
-        const { status: squadKOSCountStatus, message: squadKOSCountMessage, data: squadKOSCountData } = await squadKOSCount(twitterId);
+        const { status: squadKOSDataStatus, message: squadKOSDataMessage, data: squadKOSDataData } = await squadKOSData(twitterId);
 
         // if there's an error, return the error.
-        if (squadKOSCountStatus !== Status.SUCCESS) {
+        if (squadKOSDataStatus !== Status.SUCCESS) {
             return {
-                status: squadKOSCountStatus,
-                message: `(getSellItemsInPOIPointsBoost) ${squadKOSCountMessage}`,
+                status: squadKOSDataStatus,
+                message: `(getSellItemsInPOIPointsBoost) ${squadKOSDataMessage}`,
                 data: {
                     ownedKOSPointsBoost: 1,
                     squadWeeklyRankingPointsBoost: 1,
@@ -1662,7 +1654,7 @@ export const getSellItemsInPOIPointsBoost = async (twitterId: string): Promise<R
             }
         }
 
-        const { sellAssetPointsBoost } = SQUAD_KOS_BENEFITS(squadKOSCountData.kosCount);
+        const { sellAssetPointsBoost } = SQUAD_KOS_BENEFITS(squadKOSDataData.totalSquadKOSCount);
 
         // get the user's squad
         const squad = await SquadModel.findOne({ _id: user.inGameData.squadId }).lean();
@@ -1699,7 +1691,6 @@ export const getSellItemsInPOIPointsBoost = async (twitterId: string): Promise<R
         const squadWeeklyRankingPointsBoost = squadRole === SquadRole.LEADER ? 
             GET_LEADER_SQUAD_WEEKLY_RANKING_POI_POINTS_BOOST(squadWeeklyRankingData.latestRank) :
             1;
-        
 
         return {
             status: Status.SUCCESS,

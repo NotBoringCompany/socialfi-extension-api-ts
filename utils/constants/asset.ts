@@ -17,7 +17,7 @@ export const assets: Asset[] = [
         description: 'A solid and sturdy rock.'
     },
     {
-        type: FruitResource.BLUEBERRY,
+        type: FruitResource.TOMATO,
         description: 'Little bursts of blue sweetness in every bite.'
     },
     {
