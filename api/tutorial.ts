@@ -153,8 +153,11 @@ export const completeTutorial = async (twitterId: string, tutorialId: number): P
         // check if the user has already completed this tutorial
         if (userTutorials.includes(tutorialId)) {
             return {
-                status: Status.ERROR,
-                message: `(completeTutorial) User has already completed tutorial ID ${tutorialId}.`,
+                status: Status.SUCCESS,
+                message: `(completeTutorial) User has completed tutorial ID ${tutorialId}.`,
+                data: { 
+                    tutorial 
+                }
             };
         }
 
