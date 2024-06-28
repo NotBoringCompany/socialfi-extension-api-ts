@@ -17,8 +17,8 @@ export const RANDOMIZE_CHEST_ITEM = (): {
     const rand = Math.floor(Math.random() * 10000) + 1;
 
     switch (true) {
-        // 100% chance for resource (Season 0)
-        case rand < 10000:
+        // 95% chance for food (Season 0)
+        case rand <= 9500:
             // Randomize the food with updated probabilities
             // 5% chance for candy
             // 10% chance for chocolate
@@ -37,7 +37,7 @@ export const RANDOMIZE_CHEST_ITEM = (): {
                     return { item: FoodType.BURGER, amount: 1}
             }
         // 0% chance for resource (Season 0)
-        case rand < 0:
+        case rand <= 0:
             // randomize the resource with probabilities
             // 80% chance of a common resource of any type
             // 15% chance of an uncommon resource of any type
@@ -65,11 +65,11 @@ export const RANDOMIZE_CHEST_ITEM = (): {
 
                     return { item: rareResource.type, amount: 1 }
             }
-        // 0% chance for xCookies (Season 0)
-        case rand < 0:
-            return { item: 'xCookies', amount: 10 }
+        // 5% chance for xCookies (Season 0)
+        case rand <= 10000:
+            return { item: 'xCookies', amount: 1 }
         // 0% chance for Terra Capsulator (Season 0)
-        case rand < 0:
+        case rand <= 0:
             return { item: TerraCapsulatorType.TERRA_CAPSULATOR_I, amount: 1 }
         // 0% chance for Bit Orb (Season 0)
         default:
