@@ -10,7 +10,7 @@ export const CURRENT_AURA_ROTATION: KOSAuraTypes = KOSAuraTypes.SNOW;
 export const CURRENT_HOUSE_ROTATION: KOSHouseTypes = KOSHouseTypes.TRADITION;
 
 /** a constant used to calculate the weekly xCookies earnable for KOS benefits */
-export const BASE_X_COOKIES_EARNING_RATE = 700;
+export const BASE_X_COOKIES_EARNING_RATE = 900;
 /** a constant used to calculate the weekly xCookies earnable for KOS benefits */
 export const BASE_X_COOKIES_EARNING_GROWTH_RATE = 25;
 /** the exponential decay constant used to calculate weekly xCookies earnable for KOS benefits */
@@ -272,14 +272,30 @@ export const KOS_BENEFITS_X_COOKIES_FORMULA = (
     keychainsOwned: number,
     superiorKeychainsOwned: number
 ): number => {
+    const keysOwned = keys.length;
+
+    if (keysOwned === 0) return 0;
+
+    if (keysOwned < 7) {
+        if (keysOwned === 1) return 150;
+        if (keysOwned === 2) return 300;
+        if (keysOwned === 3) return 450;
+        if (keysOwned === 4) return 600;
+        if (keysOwned === 5) return 800;
+        if (keysOwned === 6) return 1000;
+    }
+
     // for every keychain owned, add 0.06% to the total multiplier. for every superior keychain owned, add 0.4% to the total multiplier.
     const totalKeychainMultiplier = 1 + (keychainsOwned * 0.0006) + (superiorKeychainsOwned * 0.004);
 
-    const keysOwned = keys.length;
-    const averageLuck = keys.length > 0 ? keys.reduce((acc, key) => acc + parseInt(key.attributes.find(attr => attr.traitType === 'Luck')?.value as string), 0) / keysOwned : 0;
-    const averageLuckBoost = keys.length > 0 ? keys.reduce((acc, key) => acc + parseInt(key.attributes.find(attr => attr.traitType === 'Luck Boost')?.value as string), 0) / keysOwned : 0;
+    const averageLuck = keys.length > 0 ? keys.reduce((acc, key) => acc + parseInt(key.attributes.find(attr => attr.traitType === 'Luck')?.value as string ?? '0'), 0) / keysOwned : 0;
+    const averageLuckBoost = keys.length > 0 ? keys.reduce((acc, key) => acc + parseInt(key.attributes.find(attr => attr.traitType === 'Luck Boost')?.value as string ?? '0'), 0) / keysOwned : 0;
 
-    return keysOwned === 0 ?
-        0 :
-        (BASE_X_COOKIES_EARNING_RATE + ((BASE_X_COOKIES_EARNING_GROWTH_RATE + averageLuck) * (1 + (averageLuckBoost / 100) * totalKeychainMultiplier) * (keysOwned - 1) * Math.exp(-BASE_X_COOKIES_EXPONENTIAL_DECAY_RATE * (keysOwned - 1))));
+    return Math.floor(
+        BASE_X_COOKIES_EARNING_RATE +
+            (BASE_X_COOKIES_EARNING_GROWTH_RATE + averageLuck) *
+                (1 + (averageLuckBoost / 100) * totalKeychainMultiplier) *
+                (keysOwned - 1) *
+                Math.exp(-BASE_X_COOKIES_EXPONENTIAL_DECAY_RATE * (keysOwned - 1))
+    );
 }
