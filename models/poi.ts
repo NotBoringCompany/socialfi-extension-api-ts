@@ -1,5 +1,7 @@
 import { BitOrbType } from './bitOrb';
 import { BoosterItem } from './booster';
+import { FoodType } from './food';
+import { BarrenResource, FruitResource, LiquidResource, OreResource } from './resource';
 import { TerraCapsulatorType } from './terraCapsulator';
 
 /**
@@ -138,26 +140,26 @@ export interface ShopItemUserTransactionData {
  * Lists all shop items in cities.
  */
 export enum POIShopItemName {
-    SEAWEED = 'Seaweed',
-    STONE = 'Stone',
-    COPPER = 'Copper',
-    IRON = 'Iron',
-    SILVER = 'Silver',
-    GOLD = 'Gold',
-    TOMATO = 'TOMATO',
-    APPLE = 'Apple',
-    STAR_FRUIT = 'Star Fruit',
-    MELON = 'Melon',
-    DRAGON_FRUIT = 'Dragon Fruit',
-    WATER = 'Water',
-    MAPLE_SYRUP = 'Maple Syrup',
-    HONEY = 'Honey',
-    MOONLIGHT_DEW = 'Moonlight Dew',
-    PHOENIX_TEAR = 'Phoenix Tear',
-    CANDY = 'Candy',
-    CHOCOLATE = 'Chocolate',
-    JUICE = 'Juice',
-    BURGER = 'Burger',
+    SEAWEED = BarrenResource.SEAWEED,
+    STONE = OreResource.STONE,
+    COPPER = OreResource.COPPER,
+    IRON = OreResource.IRON,
+    SILVER = OreResource.SILVER,
+    GOLD = OreResource.GOLD,
+    TOMATO = FruitResource.TOMATO,
+    APPLE = FruitResource.APPLE,
+    STAR_FRUIT = FruitResource.STAR_FRUIT,
+    MELON = FruitResource.MELON,
+    DRAGON_FRUIT = FruitResource.DRAGON_FRUIT,
+    WATER = LiquidResource.WATER,
+    MAPLE_SYRUP = LiquidResource.MAPLE_SYRUP,
+    HONEY = LiquidResource.HONEY,
+    MOONLIGHT_DEW = LiquidResource.MOONLIGHT_DEW,
+    PHOENIX_TEAR = LiquidResource.PHOENIX_TEAR,
+    CANDY = FoodType.CANDY,
+    CHOCOLATE = FoodType.CHOCOLATE,
+    JUICE = FoodType.JUICE,
+    BURGER = FoodType.BURGER,
     GATHERING_PROGRESS_BOOSTER_10 = BoosterItem.GATHERING_PROGRESS_BOOSTER_10,
     GATHERING_PROGRESS_BOOSTER_25 = BoosterItem.GATHERING_PROGRESS_BOOSTER_25,
     GATHERING_PROGRESS_BOOSTER_50 = BoosterItem.GATHERING_PROGRESS_BOOSTER_50,
