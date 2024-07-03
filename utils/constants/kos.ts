@@ -251,13 +251,13 @@ export const KOS_BENEFITS_POINTS_FORMULA = (
         return 50;
     } else if (keysOwned >= 2 && keysOwned < 5) {
         return 250;
-    } else if (keysOwned >= 5 && keysOwned < 10) {
+    } else if (keysOwned >= 5 && keysOwned < 7) {
         return 500;
-    } else if (keysOwned >= 10 && keysOwned < 25) {
+    } else if (keysOwned >= 7 && keysOwned < 10) {
         return 1000;
-    } else if (keysOwned >= 25 && keysOwned < 50) {
+    } else if (keysOwned >= 10 && keysOwned < 25) {
         return 1500;
-    } else if (keysOwned >= 50 && keysOwned < 100) {
+    } else if (keysOwned >= 25 && keysOwned < 100) {
         return 2000;
     } else {
         return 3000;
@@ -294,7 +294,7 @@ export const KOS_BENEFITS_X_COOKIES_FORMULA = (
     return Math.floor(
         BASE_X_COOKIES_EARNING_RATE +
             (BASE_X_COOKIES_EARNING_GROWTH_RATE + averageLuck) *
-                (1 + (averageLuckBoost / 100) * totalKeychainMultiplier) *
+                (1 + (averageLuckBoost / 100)) * totalKeychainMultiplier *
                 (keysOwned - 1) *
                 Math.exp(-BASE_X_COOKIES_EXPONENTIAL_DECAY_RATE * (keysOwned - 1))
     );
