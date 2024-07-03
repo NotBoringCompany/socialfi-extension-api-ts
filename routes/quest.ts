@@ -1,9 +1,10 @@
 import express from 'express';
-import { addQuest, completeQuest, deleteQuest, getQuests, getUserClaimableQuest, getUserCompletedQuests } from '../api/quest';
+import { addQuest, completeQuest, deleteQuest, getQuests, getUserClaimableQuest, getUserCompletedQuests, updateQuest } from '../api/quest';
 import { Status } from '../utils/retVal';
 import { validateRequestAuth } from '../utils/auth';
 import { QuestCategory } from '../models/quest';
 import { mixpanel } from '../utils/mixpanel';
+import { authMiddleware } from '../middlewares/auth';
 
 const router = express.Router();
 
@@ -154,6 +155,25 @@ router.get('/get_user_claimable_quests/:twitterId', async (req, res) => {
 
     try {
         const { status, message, data } = await getUserClaimableQuest(twitterId);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
+
+router.post('/update_quest', authMiddleware(3), async (req, res) => {
+    const { questId, name, description, type, imageUrl, rewards, completedBy, requirements, category } = req.body;
+
+    try {
+        const { status, message, data } = await updateQuest(questId, name, description, type, imageUrl, rewards, completedBy, requirements, category);
 
         return res.status(status).json({
             status,

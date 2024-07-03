@@ -529,3 +529,58 @@ export const getUserClaimableQuest = async (twitterId: string): Promise<ReturnVa
         };
     }
 };
+
+/**
+ * Updates a quest's data given the quest ID. Admin only.
+ */
+export const updateQuest = async (
+    questId: number, 
+    name?: string | null,
+    description?: string | null,
+    type?: QuestType | null,
+    imageUrl?: string | null,
+    rewards?: QuestReward[] | null,
+    completedBy?: string[] | null,
+    requirements?: QuestRequirement[] | null,
+    category?: QuestCategory | null,
+): Promise<ReturnValue> => {
+    try {
+        const quest = await QuestModel.findOne({ questId }).lean();
+
+        if (!quest) {
+            return {
+                status: Status.ERROR,
+                message: `(updateQuest) Quest not found. Quest ID: ${questId}`
+            }
+        }
+
+        const updateOperations = {
+            $set: {}
+        }
+
+        if (name) updateOperations.$set['name'] = name;
+        if (description) updateOperations.$set['description'] = description;
+        if (type) updateOperations.$set['type'] = type;
+        if (imageUrl) updateOperations.$set['imageUrl'] = imageUrl;
+        if (rewards) updateOperations.$set['rewards'] = rewards;
+        if (completedBy) updateOperations.$set['completedBy'] = completedBy;
+        if (requirements) updateOperations.$set['requirements'] = requirements;
+        if (category) updateOperations.$set['category'] = category;
+
+        await QuestModel.updateOne({ questId }, updateOperations);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(updateQuest) Quest updated.`,
+            data: {
+                questId,
+                updatedFields: updateOperations.$set
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(updateQuest) ${err.message}`
+        }
+    }
+}
