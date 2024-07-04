@@ -20,6 +20,8 @@ export interface Quest {
     category: QuestCategory;
     /** quest image URL */
     imageUrl: string;
+    /** quest banner URL */
+    bannerUrl?: string;
     /** start timestamp of the quest */
     start: number;
     /** end timestamp of the quest */

@@ -15,6 +15,7 @@ export const QuestSchema = new mongoose.Schema({
     type: String,
     category: String,
     imageUrl: String,
+    bannerUrl: String,
     start: Number,
     end: Number,
     rewards: Array,
