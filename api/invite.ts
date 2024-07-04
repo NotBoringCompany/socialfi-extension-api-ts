@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { ReferralReward, StarterCodeData } from '../models/invite';
+import { ReferralReward, ReferredUserData, StarterCodeData } from '../models/invite';
 import { LeaderboardModel, StarterCodeModel, UserModel } from '../utils/constants/db';
 import { generateObjectId, generateStarterCode } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
@@ -228,6 +228,66 @@ export const claimReferralRewards = async (twitterId: string): Promise<ReturnVal
         return {
             status: Status.ERROR,
             message: `(claimReferralRewards) ${err.message}`
+        }
+    }
+}
+
+/**
+ * Gets the KOS count of each referred user the user has referred.
+ */
+export const getReferredUsersKOSCount = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(getReferredUsersKOSCount) User not found.`
+            }
+        }
+
+        // get the referredUsersData in `user.referralData`
+        const referredUsersData = user?.referralData as ReferredUserData[];
+
+        const kosCountData: Array<{
+            twitterId: string;
+            kosCount: number;
+        }> = [];
+
+        if (referredUsersData.length === 0) {
+            return {
+                status: Status.SUCCESS,
+                message: `(getReferredUsersKOSCount) No referred users found.`,
+                data: {
+                    kosCountData
+                }
+            }
+        }
+
+        for (const referredUserData of referredUsersData) {
+            const referredUser = await UserModel.findOne({ _id: referredUserData.userId }).lean();
+
+            if (!referredUser) {
+                continue;
+            }
+
+            kosCountData.push({
+                twitterId: referredUser.twitterId,
+                kosCount: referredUser.inGameData.kosCount
+            });
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getReferredUsersKOSCount) Referred users' KOS count retrieved.`,
+            data: {
+                kosCountData
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getReferredUsersKOSCount) ${err.message}`
         }
     }
 }
