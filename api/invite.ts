@@ -247,7 +247,7 @@ export const getReferredUsersKOSCount = async (twitterId: string): Promise<Retur
         }
 
         // get the referredUsersData in `user.referralData`
-        const referredUsersData = user?.referralData as ReferredUserData[];
+        const referredUsersData = user?.referralData.referredUsersData as ReferredUserData[];
 
         const kosCountData: Array<{
             userId: string;
