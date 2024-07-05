@@ -10,7 +10,7 @@ import { BitOrbType } from '../models/bitOrb';
 import { TerraCapsulatorType } from '../models/terraCapsulator';
 import { Item } from '../models/item';
 import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
-import { WeeklyMVPReward, WeeklyMVPRewardType } from '../models/weeklyMVPReward';
+import { WeeklyMVPRankingData, WeeklyMVPReward, WeeklyMVPRewardType } from '../models/weeklyMVPReward';
 import { XCookieData } from '../models/user';
 /**
  * Fetches the current contenders to be the weekly MVP for most xCookies spent or most terra caps/bit orbs consumed.
@@ -218,6 +218,37 @@ export const storeWeeklyMVPRankingData = async (): Promise<void> => {
         console.log('Weekly MVP ranking data stored.');
     } catch (err: any) {
         console.error('(storeWeeklyMVPRankingData)', err.message);
+    }
+}
+
+/**
+ * Fetches the weekly MVP ranking data for the specified week. If 'latest', then it fetches the latest weekly MVP ranking data.
+ */
+export const fetchWeeklyMVPRankingData = async (week: number | 'latest'): Promise<ReturnValue> => {
+    try {
+        const weeklyMVPRankingData: WeeklyMVPRankingData = week === 'latest' ? await WeeklyMVPRankingDataModel.findOne().sort({ week: -1 }).lean() : await WeeklyMVPRankingDataModel.findOne({ week }).lean();
+
+        if (!weeklyMVPRankingData) {
+            return {
+                status: Status.ERROR,
+                message: `(fetchWeeklyMVPRankingData) Weekly MVP ranking data not found.`
+            }
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(fetchWeeklyMVPRankingData) Weekly MVP ranking data fetched.`,
+            data: {
+                weeklyMVPRankingData
+            }
+        }
+
+    } catch (err: any) {
+        console.error('(fetchWeeklyMVPRankingData)', err.message);
+        return {
+            status: Status.ERROR,
+            message: `(fetchWeeklyMVPRankingData) ${err.message}`
+        }
     }
 }
 
