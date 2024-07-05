@@ -1,5 +1,6 @@
+import { Leaderboard, LeaderboardPointsSource } from '../models/leaderboard';
 import { SquadCreationMethod, SquadMember, SquadRank, SquadRole } from '../models/squad';
-import { SquadModel, UserModel } from '../utils/constants/db';
+import { LeaderboardModel, SquadModel, UserModel } from '../utils/constants/db';
 import { CREATE_SQUAD_COST, INITIAL_MAX_MEMBERS, MAX_MEMBERS_INCREASE_UPON_UPGRADE, MAX_MEMBERS_LIMIT, RENAME_SQUAD_COOLDOWN, RENAME_SQUAD_COST, SQUAD_LEAVE_COOLDOWN, UPGRADE_SQUAD_MAX_MEMBERS_COST } from '../utils/constants/squad';
 import { generateObjectId } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
@@ -1245,6 +1246,103 @@ export const getLatestSquadWeeklyRanking = async (squadId: string): Promise<Retu
         return {
             status: Status.ERROR,
             message: `(getLatestSquadWeeklyRanking) ${err.message}`
+        }
+    }
+}
+
+/**
+ * Fetches the following information from a squad member:
+ * their in-game level, their total leaderboard points (excluding additional points), their leaderboard current season rank (e.g. season 0, etc.) and KOS count
+ * 
+ * This is not really a squad-related function, but is fetched when getting a squad member detail, thus it's here.
+ */
+export const getSquadMemberData = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(getSquadMemberData) User not found.`
+            }
+        }
+
+        // get the user's in-game level.
+        const inGameLevel = user?.inGameData?.level as number ?? 1;
+
+        // get user's leaderboard points (excl. additional points) 
+        let totalLeaderboardPoints = 0;
+        const seasonRanks: Array<{
+            season: string,
+            rank: number
+        }> = [];
+        // get the user's season rank
+        let currentSeasonRank: number = 0;
+
+        const leaderboards: Leaderboard[] = await LeaderboardModel.find().lean();
+
+        // right now, there is only season 0 (i.e. one leaderboard)
+        // but this helps in case there are multiple leaderboards in the future to make it more future-proof.
+        for (const leaderboard of leaderboards) {
+            // sort the users by their total points in descending order.
+            // to get the total points, each userData contains an array of `pointsData` which contains the points for each source.
+            // we sum all the points from each source to get the total points (excluding the leaderboard points source for LEVELLING_UP (for now, may be more in the future)).
+            // firstly, we get the user data from this leaderboard.
+            const userData = leaderboard.userData;
+
+            // sort the user data by their total points in descending order.
+            // to do this, the points for each `pointsData` must be summed up (excluding LeaderboardPointsSource.LEVELLING_UP)
+            const sortedUserData = userData.sort((a, b) => {
+                const aTotalPoints = a.pointsData.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0);
+                const bTotalPoints = b.pointsData.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0);
+
+                return bTotalPoints - aTotalPoints;
+            });
+
+            // get the user's leaderboard points. its index + 1 is the rank.
+            const userIndex = sortedUserData.findIndex(data => data.userId === user._id);
+            totalLeaderboardPoints = sortedUserData[userIndex].pointsData.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0);
+
+            // get the user's season rank.
+            seasonRanks.push({
+                season: leaderboard.name,
+                rank: userIndex + 1
+            });
+        }
+
+        // get the latest season rank. seasons are named "Season 0", "Season 1"... so on.
+        // we sort the season ranks by the season number in descending order and fetch the highest number.
+        const sortedSeasonRanks = seasonRanks.sort((a, b) => parseInt(b.season.split(' ')[1]) - parseInt(a.season.split(' ')[1]));
+
+        currentSeasonRank = sortedSeasonRanks[0].rank;
+
+        // get the user's KOS count
+        const { status, message, data } = await getOwnedKeyIDs(twitterId);
+
+        if (status !== Status.SUCCESS) {
+            return {
+                status,
+                message: `(getSquadMemberData) Error from getOwnedKeyIDs: ${message}`
+            }
+        }
+
+        const kosCount = data?.ownedKeyIDs.length ?? 0;
+        
+        return {
+            status: Status.SUCCESS,
+            message: `(getSquadMemberData) Got squad member data successfully.`,
+            data: {
+                inGameLevel,
+                totalLeaderboardPoints,
+                currentSeasonRank,
+                kosCount
+            }
+        }
+
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getSquadMemberData) ${err.message}`
         }
     }
 }

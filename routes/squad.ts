@@ -1,8 +1,9 @@
 import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
-import { acceptPendingSquadMember, checkSquadCreationMethodAndCost, createSquad, declinePendingSquadMember, delegateLeadership, getLatestSquadWeeklyRanking, getSquadData, kickMember, leaveSquad, renameSquad, requestToJoinSquad, squadKOSData, upgradeSquadLimit } from '../api/squad';
+import { acceptPendingSquadMember, checkSquadCreationMethodAndCost, createSquad, declinePendingSquadMember, delegateLeadership, getLatestSquadWeeklyRanking, getSquadData, getSquadMemberData, kickMember, leaveSquad, renameSquad, requestToJoinSquad, squadKOSData, upgradeSquadLimit } from '../api/squad';
 import { mixpanel } from '../utils/mixpanel';
+import { authMiddleware } from '../middlewares/auth';
 
 const router = express.Router();
 
@@ -387,5 +388,23 @@ router.get('/get_latest_squad_weekly_ranking/:squadId', async (req, res) => {
         })
     }
 });
+
+router.get('/get_squad_member_data/:twitterId', authMiddleware(3), async (req, res) => {
+    const { twitterId } = req.params;
+    try {
+        const { status, message, data } = await getSquadMemberData(twitterId);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
 
 export default router;
