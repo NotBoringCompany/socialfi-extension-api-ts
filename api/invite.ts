@@ -247,10 +247,10 @@ export const getReferredUsersKOSCount = async (twitterId: string): Promise<Retur
         }
 
         // get the referredUsersData in `user.referralData`
-        const referredUsersData = user?.referralData as ReferredUserData[];
+        const referredUsersData = user?.referralData.referredUsersData as ReferredUserData[];
 
         const kosCountData: Array<{
-            twitterId: string;
+            userId: string;
             kosCount: number;
         }> = [];
 
@@ -272,7 +272,7 @@ export const getReferredUsersKOSCount = async (twitterId: string): Promise<Retur
             }
 
             kosCountData.push({
-                twitterId: referredUser.twitterId,
+                userId: referredUser._id,
                 kosCount: referredUser.inGameData.kosCount
             });
         }
