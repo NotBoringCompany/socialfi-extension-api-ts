@@ -14,3 +14,34 @@ export const WeeklyMVPClaimableRewardSchema = new mongoose.Schema({
     twitterProfilePicture: String,
     claimableRewards: Array
 });
+
+export const WeeklyMVPRankingDataSchema = new mongoose.Schema({
+    _id: {
+        type: String,
+        default: generateObjectId()
+    },
+    week: Number,
+    startTimestamp: Number,
+    endTimestamp: Number,
+    xCookiesSpentRankingData: [{
+        userId: String,
+        username: String,
+        twitterProfilePicture: String,
+        ranking: Number,
+        amount: Number
+    }],
+    bitOrbsConsumedRankingData: [{
+        userId: String,
+        username: String,
+        twitterProfilePicture: String,
+        ranking: Number,
+        amount: Number
+    }],
+    terraCapsulatorsConsumedRankingData: [{
+        userId: String,
+        username: String,
+        twitterProfilePicture: String,
+        ranking: Number,
+        amount: Number
+    }]
+})

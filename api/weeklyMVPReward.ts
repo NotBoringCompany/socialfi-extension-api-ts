@@ -1,6 +1,6 @@
 import { ReturnValue, Status } from '../utils/retVal';
 import { generateObjectId } from '../utils/crypto';
-import { LeaderboardModel, SquadLeaderboardModel, SquadModel, UserModel, WeeklyMVPClaimableRewardsModel } from '../utils/constants/db';
+import { LeaderboardModel, SquadLeaderboardModel, SquadModel, UserModel, WeeklyMVPClaimableRewardsModel, WeeklyMVPRankingDataModel } from '../utils/constants/db';
 import {
     GET_SEASON_0_PLAYER_LEVEL,
     GET_SEASON_0_PLAYER_LEVEL_REWARDS,
@@ -109,6 +109,115 @@ export const getWeeklyMVPContenders = async (): Promise<ReturnValue> => {
             status: Status.ERROR,
             message: `(getWeeklyMVPContenders) ${err.message}`
         }
+    }
+}
+
+/**
+ * Stores the current week's MVP ranking data after the weekly MVP rewards have been distributed.
+ * 
+ * This is done before resetting the weekly xCookies spent and weekly items consumed.
+ */
+export const storeWeeklyMVPRankingData = async (): Promise<void> => {
+    try {
+        const users = await UserModel.find({ twitterId: { $ne: null, $exists: true } }).lean();
+
+        if (users.length === 0 || !users) {
+            return;
+        }
+
+        // do the following:
+        // 1. loop through each user.
+        // 2. for each user, get the user's xCookies spent, bit orbs consumed and terra caps consumed.
+        // 3. for each type (xCookies spent, bit orbs consumed, terra caps consumed), sort the users by the highest amount spent/consumed to the lowest, and rank them from 1 to n.
+        // 4. store the ranking data in the `WeeklyMVPRanking` model for this week.
+        const mvpData: {
+            userId: string;
+            username: string;
+            twitterProfilePicture: string;
+            xCookiesSpent: number;
+            bitOrbsConsumed: number;
+            terraCapsulatorsConsumed: number;
+        }[] = [];
+
+        for (const user of users) {
+            const userItems = !user.inventory?.items || user.inventory?.items.length === 0 ? [] : user.inventory.items as Item[];
+
+            const xCookiesSpent = (user.inventory.xCookieData as XCookieData)?.weeklyXCookiesSpent ?? 0;
+
+            const bitOrbsConsumed = !userItems || userItems.length === 0 ? 0 :
+                userItems.reduce((acc, item) => {
+                    if (item.type === BitOrbType.BIT_ORB_I || item.type === BitOrbType.BIT_ORB_II || item.type === BitOrbType.BIT_ORB_III) {
+                        return acc + item.weeklyAmountConsumed;
+                    }
+                    return acc;
+                }, 0);
+
+            const terraCapsulatorsConsumed = !userItems || userItems.length ? 0 :
+                userItems.reduce((acc, item) => {
+                    if (item.type === TerraCapsulatorType.TERRA_CAPSULATOR_I || item.type === TerraCapsulatorType.TERRA_CAPSULATOR_II) {
+                        return acc + item.weeklyAmountConsumed;
+                    }
+                    return acc;
+                }, 0);
+
+            mvpData.push({
+                userId: user._id,
+                username: user.twitterUsername,
+                twitterProfilePicture: user.twitterProfilePicture,
+                xCookiesSpent,
+                bitOrbsConsumed,
+                terraCapsulatorsConsumed,
+            });
+        }
+
+        // sort the MVP data by the most xCookies spent
+        const xCookiesMVPData = mvpData.sort((a, b) => b.xCookiesSpent - a.xCookiesSpent);
+        // sort the MVP data by the most bit orbs consumed
+        const bitOrbsMVPData = mvpData.sort((a, b) => b.bitOrbsConsumed - a.bitOrbsConsumed);
+        // sort the MVP data by the most terra capsulators consumed
+        const terraCapsulatorsMVPData = mvpData.sort((a, b) => b.terraCapsulatorsConsumed - a.terraCapsulatorsConsumed);
+
+        // get the latest week from the `WeeklyMVPRankingData` model
+        const latestWeekMVPRankingData = await WeeklyMVPRankingDataModel.findOne().sort({ week: -1 });
+
+        const week = latestWeekMVPRankingData ? latestWeekMVPRankingData.week + 1 : 1;
+
+        // store the ranking data for this week
+        const newWeeklyMVPRankingData = new WeeklyMVPRankingDataModel({
+            _id: generateObjectId(),
+            week,
+            // the start timestamp should be the previous `endTimestamp`. else, 0 by default.
+            startTimestamp: latestWeekMVPRankingData ? latestWeekMVPRankingData.endTimestamp : 0,
+            // the end timestamp is now
+            endTimestamp: Math.floor(Date.now() / 1000),
+            xCookiesSpentRankingData: xCookiesMVPData.map((data, index) => ({
+                userId: data.userId,
+                username: data.username,
+                twitterProfilePicture: data.twitterProfilePicture,
+                ranking: index + 1,
+                amount: data.xCookiesSpent
+            })),
+            bitOrbsConsumedRankingData: bitOrbsMVPData.map((data, index) => ({
+                userId: data.userId,
+                username: data.username,
+                twitterProfilePicture: data.twitterProfilePicture,
+                ranking: index + 1,
+                amount: data.bitOrbsConsumed
+            })),
+            terraCapsulatorsConsumedRankingData: terraCapsulatorsMVPData.map((data, index) => ({
+                userId: data.userId,
+                username: data.username,
+                twitterProfilePicture: data.twitterProfilePicture,
+                ranking: index + 1,
+                amount: data.terraCapsulatorsConsumed
+            }))
+        });
+
+        await newWeeklyMVPRankingData.save();
+
+        console.log('Weekly MVP ranking data stored.');
+    } catch (err: any) {
+        console.error('(storeWeeklyMVPRankingData)', err.message);
     }
 }
 
