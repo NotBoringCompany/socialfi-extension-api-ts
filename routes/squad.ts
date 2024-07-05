@@ -389,7 +389,7 @@ router.get('/get_latest_squad_weekly_ranking/:squadId', async (req, res) => {
     }
 });
 
-router.get('/get_squad_member_data/:twitterId', authMiddleware(3), async (req, res) => {
+router.get('/get_squad_member_data/:twitterId', async (req, res) => {
     const { twitterId } = req.params;
     try {
         const { status, message, data } = await getSquadMemberData(twitterId);
