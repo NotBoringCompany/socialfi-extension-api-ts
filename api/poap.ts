@@ -152,6 +152,9 @@ export const redeemCode = async (twitterId: string, code: string): Promise<Retur
         return {
             status: Status.SUCCESS,
             message: `(redeemCode) Code accepted.`,
+            data: {
+                poap: poap,
+            },
         };
     } catch (err: any) {
         return {
