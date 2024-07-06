@@ -1256,9 +1256,9 @@ export const getLatestSquadWeeklyRanking = async (squadId: string): Promise<Retu
  * 
  * This is not really a squad-related function, but is fetched when getting a squad member detail, thus it's here.
  */
-export const getSquadMemberData = async (twitterId: string): Promise<ReturnValue> => {
+export const getSquadMemberData = async (userId: string): Promise<ReturnValue> => {
     try {
-        const user = await UserModel.findOne({ twitterId }).lean();
+        const user = await UserModel.findOne({ _id: userId }).lean();
 
         if (!user) {
             return {
@@ -1317,7 +1317,7 @@ export const getSquadMemberData = async (twitterId: string): Promise<ReturnValue
         currentSeasonRank = sortedSeasonRanks[0].rank;
 
         // get the user's KOS count
-        const { status, message, data } = await getOwnedKeyIDs(twitterId);
+        const { status, message, data } = await getOwnedKeyIDs(user.twitterId);
 
         if (status !== Status.SUCCESS) {
             return {
