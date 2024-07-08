@@ -1911,41 +1911,48 @@ export const resetWeeklyItemsConsumed = async (): Promise<void> => {
             return;
         }
 
-        const bulkWriteOps = users
-            .map((user) => {
-                const updateOperations = [];
+        const userUpdateOperations: Array<{
+            userId: string;
+            $set: {};
+        }> = [];
 
-                const userItems = user.inventory.items as Item[];
+        users.map((user) => {
+            const userItems = user.inventory.items as Item[];
 
-                if (userItems.length === 0) {
-                    return;
+            if (userItems.length === 0) {
+                return;
+            }
+
+            for (const item of userItems) {
+                if (!item.weeklyAmountConsumed || item.weeklyAmountConsumed === 0) {
+                    continue;
                 }
 
-                for (const item of userItems) {
-                    if (!item.weeklyAmountConsumed || item.weeklyAmountConsumed === 0) {
-                        continue;
-                    }
+                const itemIndex = userItems.findIndex((i) => i.type === item.type);
 
-                    updateOperations.push({
-                        updateOne: {
-                            filter: { _id: user._id, 'inventory.items.type': item.type },
-                            update: {
-                                $set: { 'inventory.items.$.weeklyAmountConsumed': 0 },
-                            },
-                        },
-                    });
+                if (itemIndex === -1) {
+                    continue;
                 }
 
-                return updateOperations;
-            })
-            .flat();
+                userUpdateOperations.push({
+                    userId: user._id,
+                    $set: { [`inventory.items.${itemIndex}.weeklyAmountConsumed`]: 0 },
+                });
+            }
+        })
 
-        // execute the bulk write operations
-        await UserModel.bulkWrite(bulkWriteOps);
+        // execute the update operations
+        const userUpdatePromises = userUpdateOperations.map(async (op) => {
+            return UserModel.updateOne({ _id: op.userId }, op.$set);
+        });
+
+        await Promise.all(userUpdatePromises);
+
+        console.log('Weekly items consumed reset.');
     } catch (err: any) {
         console.error('Error in resetWeeklyItemsConsumed:', err.message);
     }
-};
+}
 
 export const handlePreRegister = async (twitterId: string, profile?: ExtendedProfile): Promise<ReturnValue> => {
     try {
