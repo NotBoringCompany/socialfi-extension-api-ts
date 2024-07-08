@@ -1922,7 +1922,7 @@ export const resetWeeklyItemsConsumed = async (): Promise<void> => {
                 }
 
                 for (const item of userItems) {
-                    if (item.weeklyAmountConsumed === 0) {
+                    if (!item.weeklyAmountConsumed || item.weeklyAmountConsumed === 0) {
                         continue;
                     }
 
