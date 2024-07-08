@@ -27,7 +27,7 @@ export enum WeeklyMVPRewardType {
 }
 
 /**
- * Represents the weekly MVP ranking for each week.
+ * Represents the weekly MVP ranking leaderboard for each week.
  */
 export interface WeeklyMVPRanking {
     /** the week number */

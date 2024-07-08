@@ -15,7 +15,10 @@ export const WeeklyMVPClaimableRewardSchema = new mongoose.Schema({
     claimableRewards: Array
 });
 
-export const WeeklyMVPRankingDataSchema = new mongoose.Schema({
+/**
+ * WeeklyMVPRankingLeaderboard schema. Represents closely to the `WeeklyMVPRanking` interface in `models/weeklyMVPReward.ts`.
+ */
+export const WeeklyMVPRankingLeaderboardSchema = new mongoose.Schema({
     _id: {
         type: String,
         default: generateObjectId()

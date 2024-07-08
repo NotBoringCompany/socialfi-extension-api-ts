@@ -14,7 +14,7 @@ import { SquadLeaderboardSchema, SquadMemberClaimableWeeklyRewardSchema } from '
 import { SettingSchema } from '../../schemas/Setting';
 import { POAPSchema } from '../../schemas/POAP';
 import { KOSClaimableDailyRewardsSchema, KOSClaimableWeeklyRewardsSchema } from '../../schemas/KOSRewards';
-import { WeeklyMVPClaimableRewardSchema, WeeklyMVPRankingDataSchema } from '../../schemas/WeeklyMVPReward';
+import { WeeklyMVPClaimableRewardSchema, WeeklyMVPRankingLeaderboardSchema } from '../../schemas/WeeklyMVPReward';
 import { CollabSchema } from '../../schemas/Collab';
 import { CollabBasketSchema, CollabParticipantSchema } from '../../schemas/CollabV2';
 
@@ -40,4 +40,4 @@ export const SquadMemberClaimableWeeklyRewardModel = mongoose.model('SquadMember
 export const CollabModel = mongoose.model('Collabs', CollabSchema, 'Collabs');
 export const CollabParticipantModel = mongoose.model('CollabParticipants', CollabParticipantSchema, 'CollabParticipants');
 export const CollabBasketModel = mongoose.model('CollabBaskets', CollabBasketSchema, 'CollabBaskets');
-export const WeeklyMVPRankingDataModel = mongoose.model('WeeklyMVPRankingData', WeeklyMVPRankingDataSchema, 'WeeklyMVPRankingData');
+export const WeeklyMVPRankingLeaderboardModel = mongoose.model('WeeklyMVPRankingData', WeeklyMVPRankingLeaderboardSchema, 'WeeklyMVPRankingData');
