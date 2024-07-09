@@ -10,7 +10,7 @@ import { BitOrbType } from '../models/bitOrb';
 import { TerraCapsulatorType } from '../models/terraCapsulator';
 import { Item } from '../models/item';
 import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
-import { WeeklyMVPRankingData, WeeklyMVPReward, WeeklyMVPRewardType } from '../models/weeklyMVPReward';
+import { WeeklyMVPRanking, WeeklyMVPRankingData, WeeklyMVPReward, WeeklyMVPRewardType } from '../models/weeklyMVPReward';
 import { XCookieData } from '../models/user';
 import mongoose from 'mongoose';
 import * as dotenv from 'dotenv';
@@ -122,7 +122,7 @@ export const getWeeklyMVPContenders = async (): Promise<ReturnValue> => {
  */
 export const fetchWeeklyMVPRankingData = async (week: number | 'latest'): Promise<ReturnValue> => {
     try {
-        const weeklyMVPRankingData: WeeklyMVPRankingData = week === 'latest' ? await WeeklyMVPRankingLeaderboardModel.findOne().sort({ week: -1 }).lean() : await WeeklyMVPRankingLeaderboardModel.findOne({ week }).lean();
+        const weeklyMVPRankingData: WeeklyMVPRanking = week === 'latest' ? await WeeklyMVPRankingLeaderboardModel.findOne().sort({ week: -1 }).lean() : await WeeklyMVPRankingLeaderboardModel.findOne({ week }).lean();
 
         if (!weeklyMVPRankingData) {
             return {
