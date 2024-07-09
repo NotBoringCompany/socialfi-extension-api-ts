@@ -76,7 +76,7 @@ router.get('/get_claimable_weekly_mvp_rewards', async (req, res) => {
     }
 })
 
-router.get('/fetch_weekly_mvp_ranking_data/:week', authMiddleware(3), async (req, res) => {
+router.get('/fetch_weekly_mvp_ranking_data/:week', async (req, res) => {
     const { week } = req.params;
     try {
         const { status, message, data } = await fetchWeeklyMVPRankingData(week as number | 'latest');
