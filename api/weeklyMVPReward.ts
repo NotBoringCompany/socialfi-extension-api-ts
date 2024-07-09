@@ -138,7 +138,6 @@ export const fetchWeeklyMVPRankingData = async (week: number | 'latest'): Promis
                 weeklyMVPRankingData
             }
         }
-
     } catch (err: any) {
         console.error('(fetchWeeklyMVPRankingData)', err.message);
         return {
@@ -813,7 +812,7 @@ export const updateCurrentWeeklyMVPRankingLeaderboard = async (): Promise<Return
             }
         });
 
-        console.log('Weekly MVP ranking data updated.');
+        console.log('Weekly MVP ranking data updated. Updated: ', latestWeekMVPRankingData.week);
     } catch (err: any) {
         console.error('(updateCurrentWeeklyMVPRankingLeaderboard)', err.message);
 

@@ -5,7 +5,7 @@ import { checkDailyKOSRewardsScheduler, checkWeeklyKOSRewardsScheduler } from '.
 import { resetGlobalItemsDailyBuyableAndSellableAmountScheduler } from './poi';
 import { calculateWeeklySquadRankingAndAddSquadLeaderboardScheduler } from './squadLeaderboard';
 import { updateBeginnerRewardsDataScheduler, updateDailyLoginRewardsDataScheduler } from './user';
-import { distributeWeeklyMVPRewardsScheduler } from './weeklyMVPReward';
+import { distributeWeeklyMVPRewardsScheduler, updateCurrentWeeklyMVPRankingLeaderboardScheduler } from './weeklyMVPReward';
 
 export const schedulers = async (): Promise<void> => {
     try {
@@ -14,6 +14,8 @@ export const schedulers = async (): Promise<void> => {
         await updateClaimableXCookiesScheduler();
         await updateClaimableCrumbsScheduler();
         await depleteEnergyScheduler();
+
+        await updateCurrentWeeklyMVPRankingLeaderboardScheduler();
 
         await removeOpenedTweetIdsTodayScheduler();
         await updateDailyBonusResourcesGatheredScheduler();
