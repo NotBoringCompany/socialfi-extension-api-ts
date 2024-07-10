@@ -21,4 +21,6 @@ export enum ChatMessageType {
     GLOBAL = 'Global',
     SQUAD = 'Squad',
     DIRECT = 'Direct',
+    // called upon first WS connection to register user and squad ID
+    REGISTER = 'Register',
 }

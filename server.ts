@@ -55,6 +55,8 @@ import weeklyMVPReward from './routes/weeklyMVPReward';
 import collab from './routes/collab';
 import collabV2 from './routes/collab_v2';
 import { schedulers } from './schedulers/schedulers';
+import { initChatSystemWS } from './api/chatSystem';
+import { createServer } from 'http';
 
 app.use('/auth/twitter', twitterAuth);
 app.use('/auth/discord', discordAuth);
@@ -82,10 +84,14 @@ app.use('/squad_leaderboard', squadLeaderboard);
 app.use('/weekly_mvp_reward', weeklyMVPReward);
 app.use('/collab', collabV2);
 
-app.listen(port, async () => {
+const server = createServer(app);
+
+server.listen(port, async () => {
     console.log(`Server running on port ${port}`);
 
     await mongoose.connect(mongoUri);
 
     await schedulers();
+
+    initChatSystemWS(server);
 });
