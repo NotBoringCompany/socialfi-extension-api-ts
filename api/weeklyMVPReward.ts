@@ -768,6 +768,8 @@ export const updateCurrentWeeklyMVPRankingLeaderboard = async (): Promise<Return
             });
         }
 
+        console.log('mvp data (chris): ', mvpData.find(data => data.username === 'petanigt123'));
+
         // filter any data with 0 amount spent/consumed and then sort the MVP data by the most xCookies spent
         const xCookiesMVPData = mvpData.filter(data => data.xCookiesSpent > 0).sort((a, b) => b.xCookiesSpent - a.xCookiesSpent);
         // filter any data with 0 amount spent/consumed and then sort the MVP data by the most bit orbs consumed
