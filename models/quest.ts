@@ -3,6 +3,7 @@
  ****************/
 
 import { BoosterItem } from './booster';
+import { ResourceType } from './resource';
 
 /**
  * Represents a Quest.
@@ -16,6 +17,12 @@ export interface Quest {
     description: string;
     /** quest type */
     type: QuestType;
+    /** 
+     * the limit of the amount of times the user can complete this quest 
+     * 
+     * NOTE: this should only be > 1 if the quest is a DAILY or REFRESHABLE quest.
+     */
+    limit: number;
     /** quest category */
     category: QuestCategory;
     /** quest image URL */
@@ -28,8 +35,11 @@ export interface Quest {
     end: number;
     /** quest rewards */
     rewards: QuestReward[];
-    /** completed by (database user IDs) */
-    completedBy: string[];
+    /** completed by (database user IDs and the amount of times they completed this quest.) */
+    completedBy: Array<{
+        twitterId: string;
+        timesCompleted: number;
+    }>
     /** requirements to complete the quest */
     requirements: QuestRequirement[];
 }
@@ -103,6 +113,8 @@ export enum QuestRequirementType {
     REPLY_WITH_TEXT = 'Reply with Text',
     // requires the tweet ID
     COMPLETE_TUTORIAL = 'Complete Tutorial',
+    // 'submits' resources to complete a resource quest
+    RESOURCE_SUBMISSION = 'Resource Submission',
 }
 
 /**
@@ -117,4 +129,16 @@ export interface QuestRequirementParameters {
     requiredText?: string;
     /** completed tutorial id */
     tutorialId?: number;
+    /** the resources required to submit */
+    resources?: QuestRequirementResource[];
+}
+
+/**
+ * Represents the resources required to complete a resource-related quest.
+ */
+export interface QuestRequirementResource {
+    /** the resource type */
+    resourceType: ResourceType;
+    /** the amount of the resource required */
+    amount: number;
 }

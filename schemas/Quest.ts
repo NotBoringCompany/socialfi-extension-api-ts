@@ -13,12 +13,17 @@ export const QuestSchema = new mongoose.Schema({
     name: String,
     description: String,
     type: String,
+    limit: Number,
     category: String,
     imageUrl: String,
     bannerUrl: String,
     start: Number,
     end: Number,
     rewards: Array,
-    completedBy: Array,
+    completedBy: [{
+        twitterId: String,
+        timesCompleted: Number,
+        _id: false
+    }],
     requirements: Array
 })

@@ -14,6 +14,7 @@ import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
 import { ObtainMethod } from '../models/obtainMethod';
 import { Modifier } from '../models/modifier';
 import { BoosterItem } from '../models/booster';
+import { ExtendedResource } from '../models/resource';
 
 /**
  * Adds a quest to the database. Requires admin key.
@@ -22,6 +23,7 @@ export const addQuest = async (
     name: string,
     description: string,
     type: QuestType,
+    limit: number,
     category: QuestCategory,
     imageUrl: string,
     start: number,
@@ -47,6 +49,7 @@ export const addQuest = async (
             name,
             description,
             type,
+            limit,
             category,
             imageUrl,
             start,
@@ -123,8 +126,82 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
             }
         }
 
+        // Check quest requirement (optional for quests that have to be completed outside of this function)
+        const { status: requirementStatus } = await checkQuestRequirements(twitterId, questId);
+
+        if (requirementStatus === Status.ERROR) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(completeQuest) User has not fulfilled the quest requirements. Quest ID: ${questId}`
+            }
+        }
+
+        /// TO DO:
+        /// 1. FOR RESOURCE QUESTS, REMOVE THE RESOURCE FROM THE USER'S INVENTORY
+        /// 2. FOR TWITTER-RELATED QUESTS, ADD THE FOLLOWING/TWEET CHECKS HERE
+        const requirements: QuestRequirement[] = quest.requirements;
+
+        for (let i = 0; i < requirements.length; i++) {
+            const requirement = requirements[i];
+
+            if (requirement.type === QuestRequirementType.RESOURCE_SUBMISSION) {
+                // the inventory weight of the user will be reduced by the total weight of the resources required
+                let inventoryWeightToReduce = 0;
+
+                // check what resources need to be submitted over
+                const resources = requirement.parameters.resources ?? [];
+
+                if (resources.length === 0) {
+                    return {
+                        status: Status.ERROR,
+                        message: `(completeQuest) Quest requires resources to be submitted. Quest ID: ${questId}`
+                    }
+                }
+
+                // check if the user has the required resources
+                for (let j = 0; j < resources.length; j++) {
+                    const resource = resources[j];
+
+                    const resourceType = resource.resourceType;
+                    const resourceAmount = resource.amount;
+
+                    const userResourceIndex = (user.inventory.resources as ExtendedResource[]).findIndex((r) => r.type === resourceType);
+
+                    if (userResourceIndex === -1) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(completeQuest) User does not have the required resources. Quest ID: ${questId}`
+                        }
+                    }
+
+                    // check if the user has enough resources
+                    if (user.inventory.resources[userResourceIndex].amount < resourceAmount) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(completeQuest) User does not have enough of one or more of the required resources. Quest ID: ${questId}`
+                        }
+                    }
+
+                    // remove the resources from the user's inventory
+                    userUpdateOperations.$inc[`inventory.resources.${userResourceIndex}.amount`] = -resourceAmount;
+
+                    // increment the inventory weight to reduce
+                    inventoryWeightToReduce += (user.inventory.resources as ExtendedResource[])[userResourceIndex].weight * resource.amount;
+                }
+
+                // reduce the user's inventory weight
+                userUpdateOperations.$inc['inventory.weight'] = -inventoryWeightToReduce;
+            }
+        }
+
         // check if the user has already completed this quest
-        const userHasCompletedQuest = quest.completedBy.find((id) => user.twitterId === id);
+        // to do this:
+        // 1. get the `completedBy` array from the quest
+        // 2. check if the user's twitter id is in the array. if it is:
+        // 3. check if `timesCompleted` is equal to the quest's `limit`. if not, then the user can complete the quest again
+        // 4. if yes, then the user has already completed the quest
+        const userHasCompletedQuestAtLeastOnce = quest.completedBy.find((user) => user.twitterId === twitterId);
+        const userHasCompletedQuest = userHasCompletedQuestAtLeastOnce && userHasCompletedQuestAtLeastOnce.timesCompleted >= quest.limit;
 
         console.log(`(completeQuest) User ${twitterId} has completed quest ${questId}: ${userHasCompletedQuest}`);
 
@@ -135,17 +212,14 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
             }
         }
 
-        // add the user to the `completedBy` array
-        questUpdateOperations.$push['completedBy'] = twitterId;
+        // if user doesn't exist in the `completedBy` array, add the user to the array and set `timesCompleted` to 1
+        // else, increment the `timesCompleted` by 1
+        if (!userHasCompletedQuestAtLeastOnce) {
+            questUpdateOperations.$push['completedBy'] = { twitterId, timesCompleted: 1 };
+        } else {
+            const userIndex = quest.completedBy.findIndex((user) => user.twitterId === twitterId);
 
-        // Check quest requirement
-        const { status: requirementStatus } = await checkQuestRequirements(twitterId, questId);
-
-        if (requirementStatus === Status.ERROR) {
-            return {
-                status: Status.BAD_REQUEST,
-                message: `(completeQuest) User has not fulfilled the quest requirements. Quest ID: ${questId}`
-            }
+            questUpdateOperations.$inc[`completedBy.${userIndex}.timesCompleted`] = 1;
         }
 
         // loop through the rewards and add them to the user's inventory
@@ -197,7 +271,7 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
 
                     obtainedRewards.push({ type: food, amount });
                     break;
-                // give user bit, TODO: might need to add looping for the amount bit rewarded
+                // give user a bit, TODO: might need to add looping for the amount of bits rewarded
                 case QuestRewardType.BIT:
                     const rarity = BitRarity.COMMON;
                     const bitType = randomizeBitType();
@@ -535,6 +609,7 @@ export const getUserClaimableQuest = async (twitterId: string): Promise<ReturnVa
  */
 export const updateQuest = async (
     questId: number, 
+    limit?: number | null,
     name?: string | null,
     description?: string | null,
     type?: QuestType | null,
@@ -559,6 +634,7 @@ export const updateQuest = async (
         }
 
         if (name) updateOperations.$set['name'] = name;
+        if (limit) updateOperations.$set['limit'] = limit;
         if (description) updateOperations.$set['description'] = description;
         if (type) updateOperations.$set['type'] = type;
         if (imageUrl) updateOperations.$set['imageUrl'] = imageUrl;
