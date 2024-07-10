@@ -745,15 +745,15 @@ export const updateCurrentWeeklyMVPRankingLeaderboard = async (): Promise<Return
             const bitOrbsConsumed = !userItems || userItems.length === 0 ? 0 :
                 userItems.reduce((acc, item) => {
                     if (item.type === BitOrbType.BIT_ORB_I || item.type === BitOrbType.BIT_ORB_II || item.type === BitOrbType.BIT_ORB_III) {
-                        return acc + item.weeklyAmountConsumed;
+                        return acc + (item.weeklyAmountConsumed ?? 0);
                     }
                     return acc;
                 }, 0);
 
-            const terraCapsulatorsConsumed = !userItems || userItems.length ? 0 :
+            const terraCapsulatorsConsumed = !userItems || userItems.length === 0 ? 0 :
                 userItems.reduce((acc, item) => {
                     if (item.type === TerraCapsulatorType.TERRA_CAPSULATOR_I || item.type === TerraCapsulatorType.TERRA_CAPSULATOR_II) {
-                        return acc + item.weeklyAmountConsumed;
+                        return acc + (item.weeklyAmountConsumed ?? 0);
                     }
                     return acc;
                 }, 0);
@@ -767,8 +767,6 @@ export const updateCurrentWeeklyMVPRankingLeaderboard = async (): Promise<Return
                 terraCapsulatorsConsumed,
             });
         }
-
-        console.log('mvp data (chris): ', mvpData.find(data => data.username === 'petanigt123'));
 
         // filter any data with 0 amount spent/consumed and then sort the MVP data by the most xCookies spent
         const xCookiesMVPData = mvpData.filter(data => data.xCookiesSpent > 0).sort((a, b) => b.xCookiesSpent - a.xCookiesSpent);
@@ -824,3 +822,5 @@ export const updateCurrentWeeklyMVPRankingLeaderboard = async (): Promise<Return
         }
     }
 }
+
+updateCurrentWeeklyMVPRankingLeaderboard();
