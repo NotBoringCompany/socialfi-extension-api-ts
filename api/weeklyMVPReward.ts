@@ -822,5 +822,3 @@ export const updateCurrentWeeklyMVPRankingLeaderboard = async (): Promise<Return
         }
     }
 }
-
-updateCurrentWeeklyMVPRankingLeaderboard();
