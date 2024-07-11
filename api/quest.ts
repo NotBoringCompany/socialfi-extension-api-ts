@@ -189,6 +189,9 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                     inventoryWeightToReduce += (user.inventory.resources as ExtendedResource[])[userResourceIndex].weight * resource.amount;
                 }
 
+                console.log('user current weight: ', user.inventory.weight);
+                console.log('(completeQuest) Inventory weight to reduce:', inventoryWeightToReduce);
+
                 // reduce the user's inventory weight
                 userUpdateOperations.$inc['inventory.weight'] = -inventoryWeightToReduce;
             }
