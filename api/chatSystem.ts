@@ -90,7 +90,7 @@ export const initChatSystemWS = (server: Server): void => {
         const recipient = users.get(data.recipientId || '');
 
         if (recipient && recipient.readyState === WebSocket.OPEN) {
-        recipient.send(JSON.stringify(data));
+            recipient.send(JSON.stringify(data));
         }
     };
 };
