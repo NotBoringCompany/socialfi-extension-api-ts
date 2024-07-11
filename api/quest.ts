@@ -504,7 +504,7 @@ export const deleteQuest = async (questId: number, adminKey: string): Promise<Re
  */
 export const getUserCompletedQuests = async (twitterId: string): Promise<ReturnValue> => {
     try {
-        const completedQuests = await QuestModel.find({ completedBy: twitterId }).lean();
+        const completedQuests = await QuestModel.find({ 'completedBy.twitterId': twitterId }).lean();
 
         return {
             status: Status.SUCCESS,
@@ -576,7 +576,7 @@ export const checkQuestRequirements = async (twitterId: string, questId: number)
  */
 export const getUserClaimableQuest = async (twitterId: string): Promise<ReturnValue> => {
     try {
-        const uncompletedQuest = await QuestModel.find({ completedBy: { $ne: twitterId } }).lean();
+        const uncompletedQuest = await QuestModel.find({ 'completedBy.twitterId': { $ne: twitterId } }).lean();
 
         // check each quest requirements
         const claimableQuestPromises = uncompletedQuest.map(async (quest) => {
