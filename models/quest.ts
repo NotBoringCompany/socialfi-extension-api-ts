@@ -3,6 +3,7 @@
  ****************/
 
 import { BoosterItem } from './booster';
+import { POIName } from './poi';
 import { ResourceType } from './resource';
 
 /**
@@ -29,6 +30,10 @@ export interface Quest {
     imageUrl: string;
     /** quest banner URL */
     bannerUrl?: string;
+    /** 
+     * the locations (POI) where the quest can be done. if 'anywhere', then the quest can be done anywhere.
+     */
+    poi: 'anywhere' | POIName;
     /** start timestamp of the quest */
     start: number;
     /** end timestamp of the quest */

@@ -15,6 +15,7 @@ import { ObtainMethod } from '../models/obtainMethod';
 import { Modifier } from '../models/modifier';
 import { BoosterItem } from '../models/booster';
 import { ExtendedResource } from '../models/resource';
+import { POIName } from '../models/poi';
 
 /**
  * Adds a quest to the database. Requires admin key.
@@ -26,6 +27,7 @@ export const addQuest = async (
     limit: number,
     category: QuestCategory,
     imageUrl: string,
+    poi: 'anywhere' | POIName,
     start: number,
     end: number,
     rewards: QuestReward[],
@@ -52,6 +54,7 @@ export const addQuest = async (
             limit,
             category,
             imageUrl,
+            poi,
             start,
             end,
             rewards,
@@ -123,6 +126,15 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
             return {
                 status: Status.ERROR,
                 message: `(completeQuest) User not found. Twitter ID: ${twitterId}`
+            }
+        }
+
+        // check the POI allowance for the quest. if 'anywhere', then continue.
+        // else, check if the user is in the correct POI to complete the quest. if not, return an error.
+        if (quest.poi && quest.poi !== 'anywhere' && (user.inGameData?.location as POIName) !== quest.poi) {
+            return {
+                status: Status.ERROR,
+                message: `(completeQuest) User is not in the correct POI to complete the quest. Quest ID: ${questId}`
             }
         }
 
