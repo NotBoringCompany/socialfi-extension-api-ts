@@ -397,9 +397,6 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
             }
         }
 
-        // add the twitter id to the quest's `completedBy` array
-        questUpdateOperations.$push['completedBy'] = twitterId;
-
         // create an array of promises for updating the islands
         const islandUpdatePromises = islandUpdateOperations.map(async op => {
             return IslandModel.updateOne({ islandId: op.islandId }, op.updateOperations);
