@@ -64,6 +64,8 @@ export enum QuestCategory {
     SOCIAL = 'Social',
     /** game quest */
     GAME = 'Game',
+    /** board quest */
+    BOARD = 'Board',
 }
 
 /**
