@@ -7,7 +7,7 @@ import { CookieDepositSchema, CookieWithdrawalSchema } from '../../schemas/Cooki
 import { QuestSchema } from '../../schemas/Quest';
 import { POISchema } from '../../schemas/POI';
 import { LeaderboardSchema } from '../../schemas/Leaderboard';
-import { StarterCodeSchema } from '../../schemas/Invite';
+import { StarterCodeSchema, SuccessfulIndirectReferralSchema } from '../../schemas/Invite';
 import { TutorialSchema } from '../../schemas/Tutorial';
 import { SquadSchema } from '../../schemas/Squad';
 import { SquadLeaderboardSchema, SquadMemberClaimableWeeklyRewardSchema } from '../../schemas/SquadLeaderboard';
