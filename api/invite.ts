@@ -307,8 +307,6 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
             return;
         }
 
-        console.log('User count: ', users.length);
-
         // get the successful indirect referrals
         const successfulIndirectReferrals = await SuccessfulIndirectReferralModel.find().lean();
 
@@ -346,8 +344,6 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
             const referredUsersReachedLevel4 = referredUsersData.filter(referredUserData => referredUserData.hasReachedLevel4);
 
             if (referredUsersReachedLevel4.length === 0) {
-                console.log(`User ${user._id} has no referred users that have reached level 4.`);
-
                 return;
             }
 
