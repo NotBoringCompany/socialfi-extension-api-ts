@@ -134,6 +134,16 @@ export const GET_SEASON_0_REFERRAL_REWARDS = (userCount: number): ReferralReward
             xCookies: 3000,
             leaderboardPoints: 0
         }
+    } else if (userCount === 300) {
+        return {
+            xCookies: 4500,
+            leaderboardPoints: 0
+        }
+    } else if (userCount === 500) {
+        return {
+            xCookies: 7500,
+            leaderboardPoints: 0
+        }
     } else {
         return {
             xCookies: 0,
