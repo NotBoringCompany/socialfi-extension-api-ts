@@ -333,7 +333,7 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
         // if they do, skip the existing entries and only add new indirect referrals.
         users.map(user => {
             // get the users the user has referred
-            const referredUsersData = (user?.referralData as ReferralData).referredUsersData;
+            const referredUsersData = (user?.referralData as ReferralData)?.referredUsersData ?? [];
 
             if (!referredUsersData || referredUsersData.length === 0) {
                 return;
