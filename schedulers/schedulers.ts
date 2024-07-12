@@ -1,5 +1,6 @@
 import { depleteEnergyScheduler } from './bit';
 import { removeOpenedTweetIdsTodayScheduler } from './chest';
+import { updateSuccessfulIndirectReferralsScheduler } from './invite';
 import { updateClaimableCrumbsScheduler, updateClaimableXCookiesScheduler, updateDailyBonusResourcesGatheredScheduler, updateGatheringProgressAndDropResourceScheduler } from './island';
 import { checkDailyKOSRewardsScheduler, checkWeeklyKOSRewardsScheduler } from './kos';
 import { resetGlobalItemsDailyBuyableAndSellableAmountScheduler } from './poi';
@@ -15,6 +16,8 @@ export const schedulers = async (): Promise<void> => {
         await updateClaimableCrumbsScheduler();
         await depleteEnergyScheduler();
 
+        await updateSuccessfulIndirectReferralsScheduler();
+        
         await updateCurrentWeeklyMVPRankingLeaderboardScheduler();
 
         await removeOpenedTweetIdsTodayScheduler();

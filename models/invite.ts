@@ -89,14 +89,26 @@ export interface SuccessfulIndirectReferral {
  */
 export interface IndirectReferralData {
     /** 
-     * the user count milestone of the reward that the main user (User A) has obtained for the indirect referrals (i.e. the referrals of User B). 
+     * the user count milestone of the rewards that the main user (User A) has obtained for the indirect referrals (i.e. the referrals of User B). 
      * 
      * the milestones can be obtained in `GET_SEASON_0_REFERRAL_REWARDS`.
      * 
-     * For example, if User A has indirectly earned the rewards for User B referring User C, D and E, then `obtainedRewardMilestone` will be 3.
-     * If the next milestone is 5 and User B has successfully referred User F (i.e. now the count is 4), then the reward milestone will stay at 3.
+     * For example, if User A has indirectly earned the rewards for User B referring User C, D and E, then `obtainedRewardMilestone` will be 3 once the user has claimed the rewards.
      */
     obtainedRewardMilestone: number;
+    /** 
+     * the claimable indirect referral reward data based on the obtained reward milestone. 
+     * 
+     * for example, if the milestone is 3, then the user has already obtained the rewards for 3 indirect referrals. they will get the rewards for indirectly referring 3 users.
+     * once claimed, `obtainedRewardMilestone` will be set to 3.
+     */
+    claimableRewardData: {
+        // the milestone count for this reward data (e.g. 3 indirect referrals)
+        userCountMilestone: number;
+        xCookies: number;
+        leaderboardPoints: number;
+
+    };
     /** the referred user's user ID (i.e. User B's user ID) */
     referredUserId: string;
     /** the user IDs that User B referred to, which are indirect referrals to User A */

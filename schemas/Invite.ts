@@ -25,6 +25,11 @@ export const SuccessfulIndirectReferralSchema = new mongoose.Schema({
     userId: String,
     indirectReferralData: [{
         obtainedRewardMilestone: Number,
+        claimableRewardData: {
+            userCountMilestone: Number,
+            xCookies: Number,
+            leaderboardPoints: Number
+        },
         referredUserId: String,
         indirectReferredUserIds: Array,
         _id: false

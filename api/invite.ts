@@ -1,11 +1,11 @@
 import mongoose from 'mongoose';
-import { ReferralReward, ReferredUserData, StarterCodeData } from '../models/invite';
-import { LeaderboardModel, StarterCodeModel, UserModel } from '../utils/constants/db';
+import { IndirectReferralData, ReferralData, ReferralReward, ReferredUserData, StarterCodeData } from '../models/invite';
+import { LeaderboardModel, StarterCodeModel, SuccessfulIndirectReferralModel, UserModel } from '../utils/constants/db';
 import { generateObjectId, generateStarterCode } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
 import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
 import { ExtendedXCookieData, XCookieSource } from '../models/user';
-import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
+import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS, GET_SEASON_0_REFERRAL_REWARDS } from '../utils/constants/user';
 
 /**
  * Generates starter codes and stores them in the database.
@@ -289,5 +289,222 @@ export const getReferredUsersKOSCount = async (twitterId: string): Promise<Retur
             status: Status.ERROR,
             message: `(getReferredUsersKOSCount) ${err.message}`
         }
+    }
+}
+
+/**
+ * Updates the successful indirect referrals of each user (if applicable).
+ * 
+ * This requires the referred users to reach Level 4 first before counting the indirect referrals (i.e. the referrals from each referred user).
+ * 
+ * For example, User A refers User B. User B refers User C, D and E. If C, D and E have reached Level 4 but User B hasn't, then User A won't get the rewards.
+ */
+export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
+    try {
+        const users = await UserModel.find().lean();
+
+        if (!users || users.length === 0) {
+            return;
+        }
+
+        // get the successful indirect referrals
+        const successfulIndirectReferrals = await SuccessfulIndirectReferralModel.find().lean();
+
+        // an array to update existing entries in `successfulIndirectReferrals`
+        const successfulIndirectReferralsUpdateOperations: Array<{
+            userId: string;
+            updateOperations: {
+                $set: {
+                };
+                $push: {};
+                $inc: {};
+                $pull: {};
+            }
+        }> = [];
+
+        // a promise array for adding new entries to `successfulIndirectReferrals`
+        const successfulIndirectReferralsNewEntries = [];
+
+        // loop through each user.
+        // check if they have referred users that have reached level 4. if none, skip this user.
+        // if they have, check if these referred users have referred users that have reached level 4.
+        // if they have, check if the main user already has an entry in `successfulIndirectReferrals`.
+        // if they don't, create a new entry.
+        // if they do, skip the existing entries and only add new indirect referrals.
+        users.map(user => {
+            // get the users the user has referred
+            const referredUsersData = (user?.referralData as ReferralData).referredUsersData;
+
+            if (!referredUsersData || referredUsersData.length === 0) {
+                return;
+            }
+
+            // if the user has no referred users OR all referred users have not reached level 4, skip this user.
+            // to check if the referred users have reached level 4, we filter the referred users by `hasReachedLevel4`.
+            const referredUsersReachedLevel4 = referredUsersData.filter(referredUserData => referredUserData.hasReachedLevel4);
+
+            if (referredUsersReachedLevel4.length === 0) {
+                return;
+            }
+
+            // create the `indirectReferralData` array for the user.
+            // this essentially loops through all of the referred users of User A that have reached level 4.
+            // then, it checks for any referred users of the referred users of User A that have reached level 4.
+            const indirectReferralData: IndirectReferralData[] = referredUsersReachedLevel4.map(successfulReferredUserData => {
+                // get this referred user's user instance
+                const referredUser = users.find(u => u._id === successfulReferredUserData.userId);
+
+                if (!referredUser) {
+                    return {
+                        obtainedRewardMilestone: 0,
+                        claimableRewardData: {
+                            userCountMilestone: 0,
+                            xCookies: 0,
+                            leaderboardPoints: 0
+                        },
+                        referredUserId: successfulReferredUserData.userId,
+                        indirectReferredUserIds: []
+                    }
+                }
+
+                // get the referred user's referred users data.
+                // this will be the main user's indirect referrals.
+                const indirectReferredUserData = (referredUser?.referralData as ReferralData).referredUsersData;
+
+                if (!indirectReferredUserData || indirectReferredUserData.length === 0) {
+                    return {
+                        obtainedRewardMilestone: 0,
+                        claimableRewardData: {
+                            userCountMilestone: 0,
+                            xCookies: 0,
+                            leaderboardPoints: 0
+                        },
+                        referredUserId: successfulReferredUserData.userId,
+                        indirectReferredUserIds: []
+                    }
+                }
+
+                // filter these indirect referred users by `hasReachedLevel4`
+                const indirectUsersReachedLevel4 = indirectReferredUserData.filter(data => data.hasReachedLevel4);
+
+                if (indirectUsersReachedLevel4.length === 0) {
+                    return {
+                        obtainedRewardMilestone: 0,
+                        claimableRewardData: {
+                            userCountMilestone: 0,
+                            xCookies: 0,
+                            leaderboardPoints: 0
+                        },
+                        referredUserId: successfulReferredUserData.userId,
+                        indirectReferredUserIds: []
+                    }
+                }
+
+                // get the indirect referred users' user IDs
+                const indirectReferredUserIds = indirectUsersReachedLevel4.map(data => data.userId);
+
+                // firstly, check if the main user already has an entry in `successfulIndirectReferrals` for this referred user.
+                const existingIndirectReferralData = successfulIndirectReferrals.find(data => data.userId === user._id)?.indirectReferralData.find(data => data.referredUserId === successfulReferredUserData.userId) as IndirectReferralData;
+
+                // hard-coded milestones for the referral rewards. may need to change this to be dynamic later.
+                const milestones = [1, 3, 5, 10, 20, 50, 100, 200, 300, 500];
+
+                // if found, update the required parameters if necessary.
+                // this includes the `claimableRewardData` if the main user now has more indirect referrals because of the referred user.
+                // this also includes the `indirectReferredUserIDs`.
+                if (existingIndirectReferralData) {
+                    // get the previous `claimableRewardData`
+                    const claimableRewardData = existingIndirectReferralData.claimableRewardData;
+
+                    // check if there are any milestones skipped. if so, accumulate the rewards.
+                    // for example, let's say, previously, the referred user has successfully referred 3 users. the main user gets 25% of the rewards for 3 indirect referrals.
+                    // now, the referred user has successfully referred 10 users. that means that the user will get the rewards for 5 and 10 indirect referrals.
+                    // we check the `userCountMilestone`, because `obtainedRewardMilestone` only gets updated once the user has claimed the rewards for a specific milestone.
+                    // this means that obtainedRewardMilestone can be 0 when `claimableRewardData.userCountMilestone` can be 5, for example.
+                    // if we check `obtainedRewardMilestone`, then the rewards for 1, 3 and 5 will be recounted again, which is what we don't want.
+                    const skippedAndNewMilestones = milestones.filter(milestone => milestone > claimableRewardData.userCountMilestone && milestone <= indirectReferredUserIds.length);
+
+                    let skippedAndNewXCookies = 0;
+                    let skippedAndNewLeaderboardPoints = 0;
+
+                    // for each skipped milestone, increment the `skippedAndNewXCookies` and `skippedAndNewLeaderboardPoints` by the rewards for that milestone.
+                    skippedAndNewMilestones.forEach(milestone => {
+                        const milestoneRewards = GET_SEASON_0_REFERRAL_REWARDS(milestone);
+
+                        skippedAndNewXCookies += milestoneRewards.xCookies;
+                        skippedAndNewLeaderboardPoints += milestoneRewards.leaderboardPoints;
+                    });
+
+                    return {
+                        // `obtainedRewardMilestone` will only be updated if the user has claimed the reward data for that milestone.
+                        obtainedRewardMilestone: existingIndirectReferralData.obtainedRewardMilestone,
+                        claimableRewardData: {
+                            userCountMilestone: milestones.find(milestone => milestone >= indirectReferredUserIds.length) || 0,
+                            xCookies: claimableRewardData.xCookies + skippedAndNewXCookies,
+                            leaderboardPoints: claimableRewardData.leaderboardPoints + skippedAndNewLeaderboardPoints
+                        },
+                        referredUserId: successfulReferredUserData.userId,
+                        indirectReferredUserIds
+                    }
+                // if not found, we create a new entry.
+                } else {
+                    const rewards = GET_SEASON_0_REFERRAL_REWARDS(indirectReferredUserIds.length);
+
+                    return {
+                        obtainedRewardMilestone: 0,
+                        claimableRewardData: {
+                            userCountMilestone: milestones.find(milestone => milestone >= indirectReferredUserIds.length) || 0,
+                            xCookies: rewards.xCookies,
+                            leaderboardPoints: rewards.leaderboardPoints
+                        },
+                        referredUserId: successfulReferredUserData.userId,
+                        indirectReferredUserIds
+                    }
+                }
+            })
+
+            // if there are no indirect referrals, skip this user.
+            if (indirectReferralData.length === 0) {
+                return;
+            }
+
+            // check if the user already has an entry in `successfulIndirectReferrals`.
+            // if they do, update the entire `indirectReferralData` array. based on the logic above, any overrides should be safe because it takes into account the previous data.
+            // if they don't, create a new entry.
+            const existingIndirectReferral = successfulIndirectReferrals.find(data => data.userId === user._id);
+
+            if (existingIndirectReferral) {
+                successfulIndirectReferralsUpdateOperations.push({
+                    userId: user._id,
+                    updateOperations: {
+                        $set: {
+                            indirectReferralData
+                        },
+                        $push: {},
+                        $inc: {},
+                        $pull: {}
+                    }
+                });
+            } else {
+                // create a new entry for the user and add it to the `successfullIndirectReferralsNewEntries` array to be Promise.all'ed later.
+                successfulIndirectReferralsNewEntries.push(SuccessfulIndirectReferralModel.create({
+                    userId: user._id,
+                    indirectReferralData
+                }));
+            }
+        });
+
+        const updatePromises = successfulIndirectReferralsUpdateOperations.map(async op => {
+            return SuccessfulIndirectReferralModel.updateOne({ userId: op.userId }, op.updateOperations);
+        })
+
+        console.log(`(updateSuccessfulIndirectReferrals) Updating ${updatePromises.length} existing entries.`);
+        console.log(`(updateSuccessfulIndirectReferrals) Creating ${successfulIndirectReferralsNewEntries.length} new entries.`);
+
+        // execute the create operations and then the update operations
+        await Promise.all(successfulIndirectReferralsNewEntries);
+        await Promise.all(updatePromises);
+    } catch (err: any) {
+        console.log('(updateSuccessfulIndirectReferrals)', err.message);
     }
 }

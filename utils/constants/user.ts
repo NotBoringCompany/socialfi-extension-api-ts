@@ -99,47 +99,47 @@ export const GET_SEASON_0_REFERRAL_REWARDS = (userCount: number): ReferralReward
             xCookies: 10,
             leaderboardPoints: 0
         }
-    } else if (userCount === 3) {
+    } else if (userCount > 1 && userCount <= 3) {
         return {
             xCookies: 45,
             leaderboardPoints: 0
         }
-    } else if (userCount === 5) {
+    } else if (userCount > 3 && userCount <= 5) {
         return {
             xCookies: 75,
             leaderboardPoints: 0
         }
-    } else if (userCount === 10) {
+    } else if (userCount > 5 && userCount <= 10) {
         return {
             xCookies: 150,
             leaderboardPoints: 0
         }
-    } else if (userCount === 20) {
+    } else if (userCount > 10 && userCount <= 20) {
         return {
             xCookies: 300,
             leaderboardPoints: 0
         }
-    } else if (userCount === 50) {
+    } else if (userCount > 20 && userCount <= 50) {
         return {
             xCookies: 750,
             leaderboardPoints: 0
         }
-    } else if (userCount === 100) {
+    } else if (userCount > 50 && userCount <= 100) {
         return {
             xCookies: 1500,
             leaderboardPoints: 0
         }
-    } else if (userCount === 200) {
+    } else if (userCount > 100 && userCount <= 200) {
         return {
             xCookies: 3000,
             leaderboardPoints: 0
         }
-    } else if (userCount === 300) {
+    } else if (userCount > 200 && userCount <= 300) {
         return {
             xCookies: 4500,
             leaderboardPoints: 0
         }
-    } else if (userCount === 500) {
+    } else if (userCount > 300 && userCount <= 500) {
         return {
             xCookies: 7500,
             leaderboardPoints: 0
