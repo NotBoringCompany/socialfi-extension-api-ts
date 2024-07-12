@@ -345,9 +345,11 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
 
             if (referredUsersReachedLevel4.length === 0) {
                 console.log(`User ${user._id} has no referred users that have reached level 4.`);
-                
+
                 return;
             }
+
+            console.log(`User ${user._id} has ${referredUsersReachedLevel4.length} referred users that have reached level 4.`)
 
             // create the `indirectReferralData` array for the user.
             // this essentially loops through all of the referred users of User A that have reached level 4.
