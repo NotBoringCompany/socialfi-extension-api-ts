@@ -307,6 +307,8 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
             return;
         }
 
+        console.log('User count: ', users.length);
+
         // get the successful indirect referrals
         const successfulIndirectReferrals = await SuccessfulIndirectReferralModel.find().lean();
 
