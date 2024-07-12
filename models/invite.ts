@@ -67,3 +67,38 @@ export interface ReferralReward {
     /** the amount of leaderboard points the user gets */
     leaderboardPoints: number;
 }
+
+/**
+ * Represents the data of a referrer who successfully referred a user who successfully referred one or more users.
+ * 
+ * For example, User A refers User B, and User B refers User C and User D. User C and D are indirect referrals of User A.
+ * 
+ * Once User C and D reaches level 4, User B gets rewards, while User A gets 25% of the rewards User B gets.
+ * 
+ * NOTE: In order for this to happen, User B must be level 4 first anyways.
+ */
+export interface SuccessfulIndirectReferral {
+    /** the main referrer's user ID (i.e. User A) */
+    userId: string;
+    /** the indirect referral data for successful indirect referrals */
+    indirectReferralData: IndirectReferralData[];
+}
+
+/**
+ * Represents the data of an indirect referral.
+ */
+export interface IndirectReferralData {
+    /** 
+     * the user count milestone of the reward that the main user (User A) has obtained for the indirect referrals (i.e. the referrals of User B). 
+     * 
+     * the milestones can be obtained in `GET_SEASON_0_REFERRAL_REWARDS`.
+     * 
+     * For example, if User A has indirectly earned the rewards for User B referring User C, D and E, then `obtainedRewardMilestone` will be 3.
+     * If the next milestone is 5 and User B has successfully referred User F (i.e. now the count is 4), then the reward milestone will stay at 3.
+     */
+    obtainedRewardMilestone: number;
+    /** the referred user's user ID (i.e. User B's user ID) */
+    referredUserId: string;
+    /** the user IDs that User B referred to, which are indirect referrals to User A */
+    indirectReferredUserIds: string[];
+}

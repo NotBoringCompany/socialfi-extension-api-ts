@@ -41,3 +41,4 @@ export const CollabModel = mongoose.model('Collabs', CollabSchema, 'Collabs');
 export const CollabParticipantModel = mongoose.model('CollabParticipants', CollabParticipantSchema, 'CollabParticipants');
 export const CollabBasketModel = mongoose.model('CollabBaskets', CollabBasketSchema, 'CollabBaskets');
 export const WeeklyMVPRankingLeaderboardModel = mongoose.model('WeeklyMVPRankingData', WeeklyMVPRankingLeaderboardSchema, 'WeeklyMVPRankingData');
+export const SuccessfulIndirectReferralModel = mongoose.model('SuccessfulIndirectReferrals', SuccessfulIndirectReferralSchema, 'SuccessfulIndirectReferrals');

@@ -13,3 +13,20 @@ export const StarterCodeSchema = new mongoose.Schema({
     maxUses: Number,
     usedBy: Array
 });
+
+/**
+ * SuccessfulIndirectReferral schema. Represents closely to the `SuccessfulIndirectReferral` interface in `models/invite.ts`.
+ */
+export const SuccessfulIndirectReferralSchema = new mongoose.Schema({
+    _id: {
+        type: String,
+        default: generateObjectId()
+    },
+    userId: String,
+    indirectReferralData: [{
+        obtainedRewardMilestone: Number,
+        referredUserId: String,
+        indirectReferredUserIds: Array,
+        _id: false
+    }]
+})
