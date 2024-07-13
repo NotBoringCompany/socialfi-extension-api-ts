@@ -1805,7 +1805,7 @@ export const connectToDiscord = async (twitterId: string, profile: ExtendedDisco
             },
         });
 
-        const discordUser = await UserModel.findOne({ 'discordProfile.discordId': user.discordProfile?.discordId });
+        const discordUser = await UserModel.findOne({ 'discordProfile.discordId': profile.id });
         if (discordUser) {
             const amount = user.inventory.xCookieData.currentXCookies;
 
