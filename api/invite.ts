@@ -510,6 +510,9 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
             return SuccessfulIndirectReferralModel.updateOne({ userId: op.userId }, op.updateOperations);
         })
 
+        console.log('create entries: ', successfulIndirectReferralsNewEntries);
+        console.log('update entries: ', updatePromises);
+
         console.log(`(updateSuccessfulIndirectReferrals) Updating ${updatePromises.length} existing entries.`);
         console.log(`(updateSuccessfulIndirectReferrals) Creating ${successfulIndirectReferralsNewEntries.length} new entries.`);
 
