@@ -490,6 +490,7 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
             } else {
                 // create a new entry for the user and add it to the `successfullIndirectReferralsNewEntries` array to be Promise.all'ed later.
                 successfulIndirectReferralsNewEntries.push(SuccessfulIndirectReferralModel.create({
+                    _id: generateObjectId(),
                     userId: user._id,
                     indirectReferralData
                 }));
