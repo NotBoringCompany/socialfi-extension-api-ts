@@ -111,6 +111,6 @@ export interface IndirectReferralData {
     };
     /** the referred user's user ID (i.e. User B's user ID) */
     referredUserId: string;
-    /** the user IDs that User B referred to, which are indirect referrals to User A */
+    /** the user IDs that User B referred to (e.g. User C, D, E...), which are indirect referrals to User A */
     indirectReferredUserIds: string[];
 }

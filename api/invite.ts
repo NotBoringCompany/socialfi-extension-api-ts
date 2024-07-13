@@ -347,8 +347,6 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
                 return;
             }
 
-            console.log(`User ${user._id} has ${referredUsersReachedLevel4.length} referred users that have reached level 4.`)
-
             // create the `indirectReferralData` array for the user.
             // this essentially loops through all of the referred users of User A that have reached level 4.
             // then, it checks for any referred users of the referred users of User A that have reached level 4.
@@ -478,8 +476,6 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
             if (indirectReferralData.length === 0) {
                 return;
             }
-
-            console.log('indirect referral data: ', indirectReferralData);
 
             // check if the user already has an entry in `successfulIndirectReferrals`.
             // if they do, update the entire `indirectReferralData` array. based on the logic above, any overrides should be safe because it takes into account the previous data.
