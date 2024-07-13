@@ -75,16 +75,11 @@ export const getUserData = async (twitterId: string): Promise<ReturnValue> => {
  *
  * If users sign up, they are required to input an invite code (either from a starter code or a referral code).
  * Otherwise, they can't sign up.
- * 
+ *
  * Also callable from admin for external account creations (e.g. from Wonderchamps for the current structure format (will be refactored)).
  * If so, `adminKey` is required.
  */
-export const handleTwitterLogin = async (
-    twitterId: string,
-    adminCall: boolean,
-    profile?: ExtendedProfile | null,
-    adminKey?: string,
-): Promise<ReturnValue> => {
+export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, profile?: ExtendedProfile | null, adminKey?: string): Promise<ReturnValue> => {
     try {
         // if adminCall, check if the admin key is valid.
         if (adminCall) {
@@ -94,7 +89,6 @@ export const handleTwitterLogin = async (
                     message: `(handleTwitterLogin) Unauthorized admin call.`,
                 };
             }
-
         }
 
         const preregisteredUser = await UserModel.findOne({ $and: [{ twitterUsername: profile.username }, { twitterId: null }] }).lean();
@@ -1596,7 +1590,6 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
 //     }
 // }
 
-
 /**
  * Updates all users' beginner reward data daily. Called by a scheduler every 00:00 UTC.
  *
@@ -1611,7 +1604,7 @@ export const updateBeginnerRewardsData = async (): Promise<void> => {
 
         // filter out users who are not eligible for beginner rewards
         const eligibleUsers = users.filter((user) => {
-            const beginnerRewardData = user.inGameData.beginnerRewardData as BeginnerRewardData ?? undefined;
+            const beginnerRewardData = (user.inGameData.beginnerRewardData as BeginnerRewardData) ?? undefined;
             return beginnerRewardData && beginnerRewardData.daysClaimed.length + beginnerRewardData.daysMissed.length < MAX_BEGINNER_REWARD_DAY;
         });
 
@@ -1626,7 +1619,7 @@ export const updateBeginnerRewardsData = async (): Promise<void> => {
         }> = [];
 
         for (const user of eligibleUsers) {
-            const beginnerRewardData = user.inGameData?.beginnerRewardData as BeginnerRewardData ?? undefined;
+            const beginnerRewardData = (user.inGameData?.beginnerRewardData as BeginnerRewardData) ?? undefined;
 
             if (beginnerRewardData === undefined) {
                 continue;
@@ -1669,17 +1662,23 @@ export const updateBeginnerRewardsData = async (): Promise<void> => {
 
         // execute the update operations ($set and $inc, $push and $pull respectively)
         const userUpdatePromisesOne = userUpdateOperations.map(async (op) => {
-            return UserModel.updateOne({ _id: op.userId }, {
-                $set: op.updateOperations.$set,
-                $inc: op.updateOperations.$inc,
-            });
+            return UserModel.updateOne(
+                { _id: op.userId },
+                {
+                    $set: op.updateOperations.$set,
+                    $inc: op.updateOperations.$inc,
+                }
+            );
         });
 
         const userUpdatePromisesTwo = userUpdateOperations.map(async (op) => {
-            return UserModel.updateOne({ _id: op.userId }, {
-                $push: op.updateOperations.$push,
-                $pull: op.updateOperations.$pull,
-            });
+            return UserModel.updateOne(
+                { _id: op.userId },
+                {
+                    $push: op.updateOperations.$push,
+                    $pull: op.updateOperations.$pull,
+                }
+            );
         });
 
         await Promise.all(userUpdatePromisesOne);
@@ -1793,6 +1792,38 @@ export const connectToDiscord = async (twitterId: string, profile: ExtendedDisco
                 status: Status.BAD_REQUEST,
                 message: `(connectToDiscord) User is already connected.`,
             };
+        }
+
+        const discordUser = await UserModel.findOne({ 'discordProfile.discordId': profile.id });
+        if (discordUser) {
+            const amount = user.inventory.xCookieData.currentXCookies;
+
+            const cookieDepositIndex = (user.inventory?.extendedXCookieData as ExtendedXCookieData[]).findIndex(
+                (data) => data.source === XCookieSource.DISCORD_ENGAGEMENT
+            );
+
+            if (cookieDepositIndex !== -1) {
+                await user.updateOne({
+                    $inc: {
+                        [`inventory.xCookieData.extendedXCookieData.${cookieDepositIndex}.xCookies`]: amount,
+                        'inventory.xCookieData.currentXCookies': amount,
+                    },
+                });
+            } else {
+                await user.updateOne({
+                    $inc: {
+                        'inventory.xCookieData.currentXCookies': amount,
+                    },
+                    $push: {
+                        'inventory.xCookieData.extendedXCookieData': {
+                            xCookies: amount,
+                            source: XCookieSource.DISCORD_ENGAGEMENT,
+                        },
+                    },
+                });
+            }
+
+            await discordUser.deleteOne();
         }
 
         await user.updateOne({
@@ -1939,7 +1970,7 @@ export const resetWeeklyItemsConsumed = async (): Promise<void> => {
                     $set: { [`inventory.items.${itemIndex}.weeklyAmountConsumed`]: 0 },
                 });
             }
-        })
+        });
 
         // execute the update operations
         const userUpdatePromises = userUpdateOperations.map(async (op) => {
@@ -1952,7 +1983,7 @@ export const resetWeeklyItemsConsumed = async (): Promise<void> => {
     } catch (err: any) {
         console.error('Error in resetWeeklyItemsConsumed:', err.message);
     }
-}
+};
 
 export const handlePreRegister = async (twitterId: string, profile?: ExtendedProfile): Promise<ReturnValue> => {
     try {
