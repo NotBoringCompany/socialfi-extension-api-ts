@@ -437,9 +437,11 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
                         skippedAndNewLeaderboardPoints += milestoneRewards.leaderboardPoints;
                     });
 
-                    const userCountMilestone = milestones.find(milestone => milestone >= indirectReferredUserIds.length) || 0;
+                    // reverse the milestones and check the first milestone that is less than or equal to the indirect referred user count.
+                    // for example, if the `indirectReferredUserIds` length is 8, return 5, which is the nearest milestone from 8 less than the length.
+                    const userCountMilestone = milestones.slice().reverse().find(milestone => milestone <= indirectReferredUserIds.length) || 0;
 
-                    console.log('user count milestone: ', userCountMilestone);
+                    console.log('user count milestone from existing indirect referral data: ', userCountMilestone);
 
                     return {
                         // `obtainedRewardMilestone` will only be updated if the user has claimed the reward data for that milestone.
@@ -457,7 +459,7 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
                     const rewards = GET_SEASON_0_REFERRAL_REWARDS(indirectReferredUserIds.length);
                     const userCountMilestone = milestones.find(milestone => milestone >= indirectReferredUserIds.length) || 0;
 
-                    console.log('user count milestone: ', userCountMilestone);
+                    console.log('user count milestone from nonexisting indirect referral data: ', userCountMilestone);
 
                     return {
                         obtainedRewardMilestone: 0,
