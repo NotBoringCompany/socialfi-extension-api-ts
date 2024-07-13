@@ -402,6 +402,8 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
                     }
                 }
 
+                console.log(`User ${user.twitterUsername} has ${indirectUsersReachedLevel4.length} indirect referred users that have reached level 4.`);
+
                 // get the indirect referred users' user IDs
                 const indirectReferredUserIds = indirectUsersReachedLevel4.map(data => data.userId);
 
@@ -437,11 +439,15 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
                         skippedAndNewLeaderboardPoints += milestoneRewards.leaderboardPoints;
                     });
 
+                    const userCountMilestone = milestones.find(milestone => milestone >= indirectReferredUserIds.length) || 0;
+
+                    console.log('user count milestone: ', userCountMilestone);
+
                     return {
                         // `obtainedRewardMilestone` will only be updated if the user has claimed the reward data for that milestone.
                         obtainedRewardMilestone: existingIndirectReferralData.obtainedRewardMilestone,
                         claimableRewardData: {
-                            userCountMilestone: milestones.find(milestone => milestone >= indirectReferredUserIds.length) || 0,
+                            userCountMilestone,
                             xCookies: claimableRewardData.xCookies + skippedAndNewXCookies,
                             leaderboardPoints: claimableRewardData.leaderboardPoints + skippedAndNewLeaderboardPoints
                         },
@@ -451,11 +457,14 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
                 // if not found, we create a new entry.
                 } else {
                     const rewards = GET_SEASON_0_REFERRAL_REWARDS(indirectReferredUserIds.length);
+                    const userCountMilestone = milestones.find(milestone => milestone >= indirectReferredUserIds.length) || 0;
+
+                    console.log('user count milestone: ', userCountMilestone);
 
                     return {
                         obtainedRewardMilestone: 0,
                         claimableRewardData: {
-                            userCountMilestone: milestones.find(milestone => milestone >= indirectReferredUserIds.length) || 0,
+                            userCountMilestone,
                             xCookies: rewards.xCookies,
                             leaderboardPoints: rewards.leaderboardPoints
                         },
