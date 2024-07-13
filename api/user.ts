@@ -1794,17 +1794,6 @@ export const connectToDiscord = async (twitterId: string, profile: ExtendedDisco
             };
         }
 
-        await user.updateOne({
-            $set: {
-                discordProfile: {
-                    discordId: profile.id,
-                    name: profile?.global_name ?? profile.username,
-                    username: profile.username,
-                    token: profile.discordRefreshToken,
-                },
-            },
-        });
-
         const discordUser = await UserModel.findOne({ 'discordProfile.discordId': profile.id });
         if (discordUser) {
             const amount = user.inventory.xCookieData.currentXCookies;
@@ -1836,6 +1825,17 @@ export const connectToDiscord = async (twitterId: string, profile: ExtendedDisco
 
             await discordUser.deleteOne();
         }
+
+        await user.updateOne({
+            $set: {
+                discordProfile: {
+                    discordId: profile.id,
+                    name: profile?.global_name ?? profile.username,
+                    username: profile.username,
+                    token: profile.discordRefreshToken,
+                },
+            },
+        });
 
         return {
             status: Status.SUCCESS,
