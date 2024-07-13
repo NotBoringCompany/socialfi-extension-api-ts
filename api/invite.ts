@@ -448,8 +448,10 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
                         obtainedRewardMilestone: existingIndirectReferralData.obtainedRewardMilestone,
                         claimableRewardData: {
                             userCountMilestone,
-                            xCookies: claimableRewardData.xCookies + skippedAndNewXCookies,
-                            leaderboardPoints: claimableRewardData.leaderboardPoints + skippedAndNewLeaderboardPoints
+                            // receive 25% of the rewards for the skipped milestones and the new milestones.
+                            xCookies: claimableRewardData.xCookies + (0.25 * skippedAndNewXCookies),
+                            // receive 25% of the rewards for the skipped milestones and the new milestones.
+                            leaderboardPoints: claimableRewardData.leaderboardPoints + (0.25 * skippedAndNewLeaderboardPoints)
                         },
                         referredUserId: successfulReferredUserData.userId,
                         indirectReferredUserIds
@@ -465,8 +467,10 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
                         obtainedRewardMilestone: 0,
                         claimableRewardData: {
                             userCountMilestone,
-                            xCookies: rewards.xCookies,
-                            leaderboardPoints: rewards.leaderboardPoints
+                            // receive 25% of the rewards for the new milestone.
+                            xCookies: (0.25 * rewards.xCookies),
+                            // receive 25% of the rewards for the new milestone.
+                            leaderboardPoints: (0.25 * rewards.leaderboardPoints)
                         },
                         referredUserId: successfulReferredUserData.userId,
                         indirectReferredUserIds
