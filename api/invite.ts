@@ -406,7 +406,7 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
                 const indirectReferredUserIds = indirectUsersReachedLevel4.map(data => data.userId);
 
                 // firstly, check if the main user already has an entry in `successfulIndirectReferrals` for this referred user.
-                const existingIndirectReferralData = successfulIndirectReferrals.find(data => data._id === user._id)?.indirectReferralData.find(data => data.referredUserId === successfulReferredUserData.userId) as IndirectReferralData;
+                const existingIndirectReferralData = successfulIndirectReferrals.find(data => data.userId === user._id)?.indirectReferralData.find(data => data.referredUserId === successfulReferredUserData.userId) as IndirectReferralData;
 
                 // hard-coded milestones for the referral rewards. may need to change this to be dynamic later.
                 const milestones = [1, 3, 5, 10, 20, 50, 100, 200, 300, 500];
@@ -480,7 +480,7 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
             // check if the user already has an entry in `successfulIndirectReferrals`.
             // if they do, update the entire `indirectReferralData` array. based on the logic above, any overrides should be safe because it takes into account the previous data.
             // if they don't, create a new entry.
-            const existingIndirectReferral = successfulIndirectReferrals.find(data => data._id === user._id);
+            const existingIndirectReferral = successfulIndirectReferrals.find(data => data.userId === user._id);
 
             if (existingIndirectReferral) {
                 successfulIndirectReferralsUpdateOperations.push({
