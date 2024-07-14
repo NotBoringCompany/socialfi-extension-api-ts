@@ -126,6 +126,7 @@ export enum XCookieSource {
     RESOURCE_SELLING = 'Resource Selling',
     DAILY_LOGIN_REWARDS = 'Daily Login Rewards',
     REFERRAL_REWARDS = 'Referral Rewards',
+    INDIRECT_REFERRAL_REWARDS = 'Indirect Referral Rewards',
     BEGINNER_REWARDS = 'Beginner Rewards',
     CHEST_REWARDS = 'Chest Rewards',
     COLLAB_REWARDS = 'Collab Rewards',

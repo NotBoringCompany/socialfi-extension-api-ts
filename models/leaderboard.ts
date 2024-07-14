@@ -42,6 +42,7 @@ export interface LeaderboardPointsData {
 export enum LeaderboardPointsSource {
     RESOURCE_SELLING = 'Resource Selling',
     REFERRAL_REWARDS = 'Referral Rewards',
+    INDIRECT_REFERRAL_REWARDS = 'Indirect Referral Rewards',
     DAILY_LOGIN_REWARDS = 'Daily Login Rewards',
     BEGINNER_REWARDS = 'Beginner Rewards',
     CHEST_REWARDS = 'Chest Rewards',

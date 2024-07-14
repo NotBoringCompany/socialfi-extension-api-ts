@@ -590,3 +590,122 @@ export const fetchSuccessfulIndirectReferralRewards = async (twitterId: string):
         }
     }
 }
+
+/**
+ * Claims the rewards obtained from indirect referrals.
+ */
+export const claimSuccessfulIndirectReferralRewards = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(claimSuccessfulIndirectReferralRewards) User not found.`
+            }
+        }
+
+        // get the user ID
+        const userId = user._id;
+
+        // get the successful indirect referral with this user id
+        const successfulIndirectReferral = await SuccessfulIndirectReferralModel.findOne({ userId }).lean();
+
+        if (!successfulIndirectReferral) {
+            return {
+                status: Status.SUCCESS,
+                message: `(claimSuccessfulIndirectReferralRewards) No successful indirect referral data found.`,
+                data: {
+                    claimableRewardData: {
+                        xCookies: 0,
+                        leaderboardPoints: 0
+                    }
+                }
+            }
+        }
+
+        const indirectRefUpdateOperations = {
+            $set: {},
+            $push: {},
+            $inc: {},
+            $pull: {}
+        }
+
+        const userRefUpdateOperations = {
+            $set: {},
+            $push: {},
+            $inc: {},
+            $pull: {}
+        }
+
+        // get the `indirectReferralData` array
+        const indirectReferralData = successfulIndirectReferral.indirectReferralData as IndirectReferralData[];
+
+        let claimableXCookies = 0;
+        let claimablePoints = 0;
+
+        // loop through each data
+        for (const data of indirectReferralData) {
+            // sum up the rewards
+            claimableXCookies += data.claimableRewardData.xCookies;
+            claimablePoints += data.claimableRewardData.leaderboardPoints;
+
+            // do these things:
+            // 1. make the `obtainedRewardMilestone` to the `data.claimableRewardData.userCountMilestone`
+            // 2. set the `data.claimableRewardData.userCountMilestone` to 0
+            // 3. reset the xCookies and leaderboardPoints to 0.
+            const userCountMilestone = data.claimableRewardData.userCountMilestone;
+
+            const dataIndex = indirectReferralData.findIndex(d => d.referredUserId === data.referredUserId);
+
+            indirectRefUpdateOperations.$set[`indirectReferralData.${dataIndex}.obtainedRewardMilestone`] = userCountMilestone;
+            indirectRefUpdateOperations.$set[`indirectReferralData.${dataIndex}.claimableRewardData.userCountMilestone`] = 0;
+            indirectRefUpdateOperations.$set[`indirectReferralData.${dataIndex}.claimableRewardData.xCookies`] = 0;
+            indirectRefUpdateOperations.$set[`indirectReferralData.${dataIndex}.claimableRewardData.leaderboardPoints`] = 0;
+        }
+
+        // add the rewards to the user's inventory and leaderboard points
+        if (claimableXCookies > 0) {
+            userRefUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = claimableXCookies;
+
+            const indirectRefRewardsIndex = (user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(data => data.source === XCookieSource.INDIRECT_REFERRAL_REWARDS);
+
+            if (indirectRefRewardsIndex !== -1) {
+                userRefUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${indirectRefRewardsIndex}.xCookies`] = claimableXCookies;
+            } else {
+                userRefUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = {
+                    xCookies: claimableXCookies,
+                    source: XCookieSource.INDIRECT_REFERRAL_REWARDS,
+                }
+            }
+        }
+
+        if (claimablePoints > 0) {
+            // because we don't expect this for now (rewards don't contain leaderboard points); return an error.
+            return {
+                status: Status.ERROR,
+                message: `(claimSuccessfulIndirectReferralRewards) Claiming leaderboard points is not supported for now.`
+            }
+        }
+
+        // execute the update operations. to double check, we run the operation for the user first, then the indirect referral data.
+        await UserModel.updateOne({ twitterId }, userRefUpdateOperations);
+        await SuccessfulIndirectReferralModel.updateOne({ userId }, indirectRefUpdateOperations);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(claimSuccessfulIndirectReferralRewards) Rewards claimed.`,
+            data: {
+                claimableRewardData: {
+                    xCookies: claimableXCookies,
+                    leaderboardPoints: claimablePoints
+                }
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(claimSuccessfulIndirectReferralRewards) ${err.message}`
+        }
+    }
+}
