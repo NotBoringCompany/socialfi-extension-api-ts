@@ -527,3 +527,66 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
         console.log('(updateSuccessfulIndirectReferrals)', err.message);
     }
 }
+
+/**
+ * Fetches the rewards that are claimable from indirect referrals.
+ */
+export const fetchSuccessfulIndirectReferralRewards = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(fetchSuccessfulIndirectReferralRewards) User not found.`
+            }
+        }
+
+        // get the user ID
+        const userId = user._id;
+
+        // get the successful indirect referral with this user id
+        const successfulIndirectReferral = await SuccessfulIndirectReferralModel.findOne({ userId }).lean();
+
+        if (!successfulIndirectReferral) {
+            return {
+                status: Status.SUCCESS,
+                message: `(fetchSuccessfulIndirectReferralRewards) No successful indirect referral data found.`,
+                data: {
+                    claimableRewardData: {
+                        xCookies: 0,
+                        leaderboardPoints: 0
+                    }
+                }
+            }
+        }
+
+        // get the `indirectReferralData` array
+        const indirectReferralData = successfulIndirectReferral.indirectReferralData as IndirectReferralData[];
+
+        let claimableXCookies = 0;
+        let claimablePoints = 0;
+
+        // for each instance, fetch the `claimableRewardData` and add them up.
+        for (const data of indirectReferralData) {
+            claimableXCookies += data.claimableRewardData.xCookies;
+            claimablePoints = data.claimableRewardData.leaderboardPoints;
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(fetchSuccessfulIndirectReferralRewards) Claimable rewards fetched.`,
+            data: {
+                claimableRewardData: {
+                    xCookies: claimableXCookies,
+                    leaderboardPoints: claimablePoints
+                }
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(fetchSuccessfulIndirectReferralRewards) ${err.message}`
+        }
+    }
+}
