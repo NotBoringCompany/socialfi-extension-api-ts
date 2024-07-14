@@ -688,6 +688,9 @@ export const claimSuccessfulIndirectReferralRewards = async (twitterId: string):
             }
         }
 
+        console.log('user ref update: ', userRefUpdateOperations);
+        console.log('indirect ref update: ', indirectRefUpdateOperations);
+
         // execute the update operations. to double check, we run the operation for the user first, then the indirect referral data.
         await UserModel.updateOne({ twitterId }, userRefUpdateOperations);
         await SuccessfulIndirectReferralModel.updateOne({ userId }, indirectRefUpdateOperations);
