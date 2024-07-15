@@ -207,6 +207,16 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                 // reduce the user's inventory weight
                 userUpdateOperations.$inc['inventory.weight'] = -inventoryWeightToReduce;
             }
+
+            if (requirement.type === QuestRequirementType.CONNECT_DISCORD) {
+                // Check if user containing discord data
+                if (!user.discordProfile) {
+                    return {
+                        status: Status.ERROR,
+                        message: `(completeQuest) User discord profile is undefined. Quest ID: ${questId}`
+                    }
+                }
+            }
         }
 
         // check if the user has already completed this quest

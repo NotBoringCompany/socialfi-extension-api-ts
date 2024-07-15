@@ -122,6 +122,8 @@ export enum QuestRequirementType {
     COMPLETE_TUTORIAL = 'Complete Tutorial',
     // 'submits' resources to complete a resource quest
     RESOURCE_SUBMISSION = 'Resource Submission',
+    // Connect discord into user account
+    CONNECT_DISCORD = 'Connect Discord',
 }
 
 /**
