@@ -1794,14 +1794,17 @@ export const connectToDiscord = async (twitterId: string, profile: ExtendedDisco
             };
         }
 
+        // merge the account if the user's already registered via BerryBot
         const discordUser = await UserModel.findOne({ 'discordProfile.discordId': profile.id });
         if (discordUser) {
-            const amount = user.inventory.xCookieData.currentXCookies;
+            // get the current xCookies amount from the BerryBot account
+            const amount = discordUser.inventory.xCookieData.currentXCookies;
 
-            const cookieDepositIndex = (user.inventory?.extendedXCookieData as ExtendedXCookieData[]).findIndex(
+            const cookieDepositIndex = (user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(
                 (data) => data.source === XCookieSource.DISCORD_ENGAGEMENT
             );
 
+            // merge user's xCookies if the Discord engagement source already exists
             if (cookieDepositIndex !== -1) {
                 await user.updateOne({
                     $inc: {
@@ -1810,6 +1813,7 @@ export const connectToDiscord = async (twitterId: string, profile: ExtendedDisco
                     },
                 });
             } else {
+                // add a new entry for Discord engagement xCookies if it doesn't exist
                 await user.updateOne({
                     $inc: {
                         'inventory.xCookieData.currentXCookies': amount,
@@ -1823,6 +1827,7 @@ export const connectToDiscord = async (twitterId: string, profile: ExtendedDisco
                 });
             }
 
+            // delete the existing BerryBot account to prevent duplication
             await discordUser.deleteOne();
         }
 
