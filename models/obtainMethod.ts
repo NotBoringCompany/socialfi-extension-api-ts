@@ -21,4 +21,6 @@ export enum ObtainMethod {
     TUTORIAL = 'Tutorial',
     /* reward obtained from completing quest */
     QUEST = 'Quest',
+    /** obtained from xterio related quests/signup */
+    XTERIO = 'Xterio',
 }

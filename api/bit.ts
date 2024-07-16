@@ -1,5 +1,5 @@
 import { ReturnValue, Status } from '../utils/retVal';
-import { Bit, BitFarmingStats, BitNameData, BitRarity } from '../models/bit';
+import { Bit, BitFarmingStats, BitNameData, BitRarity, BitType } from '../models/bit';
 import {
     BASE_ENERGY_DEPLETION_RATE,
     BIT_EVOLUTION_COST,
@@ -10,6 +10,9 @@ import {
     ENERGY_THRESHOLD_REDUCTIONS,
     FREE_BIT_EVOLUTION_COST,
     MAX_BIT_LEVEL,
+    RANDOMIZE_GENDER,
+    getBitStatsModifiersFromTraits,
+    randomizeBitTraits,
 } from '../utils/constants/bit';
 import {
     EARNING_RATE_EXPONENTIAL_DECAY,
@@ -22,6 +25,95 @@ import { FOOD_ENERGY_REPLENISHMENT } from '../utils/constants/food';
 import { BarrenResource, ExtendedResource } from '../models/resource';
 import { generateObjectId } from '../utils/crypto';
 import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
+import { ObtainMethod } from '../models/obtainMethod';
+
+/**
+ * Gifts a user from Xterio an Xterio bit.
+ */
+export const giftXterioBit = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(giftXterioBit) User not found.`
+            }
+        }
+
+        const userUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const { status, message, data } = await getLatestBitId();
+
+        if (status !== Status.SUCCESS) {
+            return {
+                status: Status.ERROR,
+                message: `(giftXterioBit) Error: ${message}`
+            }
+        }
+
+        // get the latest bit id
+        const latestBitId = data?.latestBitId as number;
+
+        // xterio bits are always uncommon due to the logic from the game mechanics
+        const rarity = BitRarity.UNCOMMON;
+
+        const gender = RANDOMIZE_GENDER();
+
+        const traits = randomizeBitTraits(rarity);
+        const bitStatsModifiers = getBitStatsModifiersFromTraits(traits.map(trait => trait.trait));
+
+        const bit = new BitModel({
+            _id: generateObjectId(),
+            bitId: latestBitId + 1,
+            // the bit type will always be Xterio
+            bitType: BitType.XTERIO,
+            bitNameData: {
+                name: `Bit #${latestBitId + 1}`,
+                lastChanged: 0
+            },
+            rarity,
+            gender,
+            premium: true,
+            owner: user._id,
+            purchaseDate: Math.floor(Date.now() / 1000),
+            obtainMethod: ObtainMethod.XTERIO,
+            placedIslandId: 0,
+            lastRelocationTimestamp: 0,
+            currentFarmingLevel: 1,
+            farmingStats: randomizeFarmingStats(rarity),
+            traits,
+            bitStatsModifiers
+        })
+
+        // add the bit to the user's inventory
+        userUpdateOperations.$push['inventory.bitIds'] = bit.bitId;
+
+        // add the bit to the bit database
+        await bit.save();
+
+        // execute the user update operations
+        await UserModel.updateOne({ twitterId }, userUpdateOperations);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(giftXterioBit) Xterio bit gifted.`,
+            data: {
+                bit
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(giftXterioBit) Error: ${err.message}`
+        }
+    }
+}
 
 /**
  * (User) Renames a bit to a new name.
