@@ -401,7 +401,6 @@ export const RARITY_DEVIATION_REDUCTIONS = (type: IslandType, rarity: BitRarity)
                 default:
                     return {
                         gatheringRateReduction: 0,
-
                     }
             }
         // for exotic isles, only common and uncommon bits will get reductions.
@@ -414,6 +413,10 @@ export const RARITY_DEVIATION_REDUCTIONS = (type: IslandType, rarity: BitRarity)
                 case BitRarity.UNCOMMON:
                     return {
                         gatheringRateReduction: 3,
+                    }
+                default:
+                    return {
+                        gatheringRateReduction: 0,
                     }
             }
         // for crystal isles, commons cannot be placed, so technically only uncommons and rares will get reductions.
@@ -428,6 +431,10 @@ export const RARITY_DEVIATION_REDUCTIONS = (type: IslandType, rarity: BitRarity)
                 case BitRarity.RARE:
                     return {
                         gatheringRateReduction: 4,
+                    }
+                default:
+                    return {
+                        gatheringRateReduction: 0,
                     }
             }
         // for celestial isles, commons and uncommons cannot be placed, so technically only rares and epics will get reductions.
@@ -446,6 +453,22 @@ export const RARITY_DEVIATION_REDUCTIONS = (type: IslandType, rarity: BitRarity)
                         gatheringRateReduction: 5.25,
                     }
                 case BitRarity.LEGENDARY:
+                    return {
+                        gatheringRateReduction: 0,
+                    }
+                default:
+                    return {
+                        gatheringRateReduction: 0,
+                    }
+            }
+        // same like verdant isles
+        case IslandType.XTERIO_ISLES:
+            switch (rarity) {
+                case BitRarity.COMMON:
+                    return {
+                        gatheringRateReduction: 2,
+                    }
+                default:
                     return {
                         gatheringRateReduction: 0,
                     }
@@ -470,6 +493,9 @@ export const ISLAND_RARITY_DEVIATION_MODIFIERS = (type: IslandType): number => {
             return 1;
         case IslandType.CELESTIAL_ISLES:
             return 1;
+        // similar to verdant isles, but the modifier is 3 instead of 2.
+        case IslandType.XTERIO_ISLES:
+            return 3;
     }
 }
 

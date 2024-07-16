@@ -56,6 +56,8 @@ export enum IslandType {
     EXOTIC_ISLES = 'Exotic Isles',
     CRYSTAL_ISLES = 'Crystal Isles',
     CELESTIAL_ISLES = 'Celestial Isles',
+    // similar stats as verdant isles, but as a special, standalone type for Xterio users.
+    XTERIO_ISLES = 'Xterio Isles',
 }
 
 /**

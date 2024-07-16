@@ -8,7 +8,7 @@ import { BarrenResource, ExtendedResource, ExtendedResourceOrigin, Resource, Res
 import { UserSchema } from '../schemas/User';
 import { Modifier } from '../models/modifier';
 import { BitSchema } from '../schemas/Bit';
-import { Bit, BitRarity, BitRarityNumeric, BitStatsModifiers, BitTrait, BitTraitData } from '../models/bit';
+import { Bit, BitRarity, BitRarityNumeric, BitStatsModifiers, BitTrait, BitTraitData, BitType } from '../models/bit';
 import { generateObjectId } from '../utils/crypto';
 import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
 import { ObtainMethod } from '../models/obtainMethod';
@@ -17,6 +17,171 @@ import { ExtendedXCookieData, User, XCookieSource } from '../models/user';
 import { getResource, resources } from '../utils/constants/resource';
 import { Item } from '../models/item';
 import { BoosterItem } from '../models/booster';
+
+/**
+ * Gifts an Xterio user an Xterio island.
+ */
+export const giftXterioIsland = async (
+    twitterId: string
+): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(giftXterioIsland) User not found.`
+            }
+        }
+
+        const userUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const { status, message, data } = await getLatestIslandId();
+
+        if (status !== Status.SUCCESS) {
+            return {
+                status,
+                message: `(giftXterioIsland) Error from getLatestIslandId: ${message}`
+            }
+        }
+
+        // get the latest island id
+        const latestIslandId = data?.latestIslandId as number;
+
+        const islandType = IslandType.XTERIO_ISLES;
+
+        // xterio isles share similar stats to `Verdant Isles`
+        const baseResourceCap = randomizeBaseResourceCap(IslandType.VERDANT_ISLES);
+        const traits = randomizeIslandTraits();
+        const totalXCookiesEarnable = 0;
+        const totalCookieCrumbsEarnable = 0;
+
+        const userBitIds = user.inventory?.bitIds as number[];
+
+        const islandStatsModifiers: IslandStatsModifiers = {
+            resourceCapModifiers: [],
+            gatheringRateModifiers: [],
+            earningRateModifiers: []
+        }
+
+        // loop through each bit and see if they have these traits:
+        // influential, antagonistic, famous or mannerless
+        // if influential, add 1% to earning and gathering rate modifiers
+        // if antagonistic, reduce 1% to earning and gathering rate modifiers
+        // if famous, add 0.5% to earning and gathering rate modifiers
+        // if mannerless, reduce 0.5% to earning and gathering rate modifiers
+        const bits = await BitModel.find({ bitId: { $in: userBitIds } }).lean();
+
+        bits.forEach(bit => {
+            const bitTraits = bit.traits as BitTraitData[];
+
+            // check if the `trait` within each bitTraits instance contain the following traits
+            if (
+                bitTraits.some(traitData => {
+                    return traitData.trait === BitTrait.INFLUENTIAL ||
+                        traitData.trait === BitTrait.FAMOUS ||
+                        traitData.trait === BitTrait.MANNERLESS ||
+                        traitData.trait === BitTrait.ANTAGONISTIC
+                })
+            ) {
+                const gatheringRateModifier: Modifier = {
+                    origin: `Bit ID #${bit.bitId}'s Trait: ${
+                        bitTraits.some(traitData => traitData.trait === BitTrait.INFLUENTIAL) ? 'Influential' :
+                        bitTraits.some(traitData => traitData.trait === BitTrait.FAMOUS) ? 'Famous' :
+                        bitTraits.some(traitData => traitData.trait === BitTrait.MANNERLESS) ? 'Mannerless' :
+                        'Antagonistic'
+                    }`,
+                    value: bitTraits.some(traitData => traitData.trait === BitTrait.INFLUENTIAL) ? 1.01 :
+                        bitTraits.some(traitData => traitData.trait === BitTrait.FAMOUS) ? 1.005 :
+                        bitTraits.some(traitData => traitData.trait === BitTrait.MANNERLESS) ? 0.995 :
+                        0.99
+                };
+            
+                const earningRateModifier: Modifier = {
+                    origin: `Bit ID #${bit.bitId}'s Trait: ${
+                        bitTraits.some(traitData => traitData.trait === BitTrait.INFLUENTIAL) ? 'Influential' :
+                        bitTraits.some(traitData => traitData.trait === BitTrait.FAMOUS) ? 'Famous' :
+                        bitTraits.some(traitData => traitData.trait === BitTrait.MANNERLESS) ? 'Mannerless' :
+                        'Antagonistic'
+                    }`,
+                    value: bitTraits.some(traitData => traitData.trait === BitTrait.INFLUENTIAL) ? 1.01 :
+                        bitTraits.some(traitData => traitData.trait === BitTrait.FAMOUS) ? 1.005 :
+                        bitTraits.some(traitData => traitData.trait === BitTrait.MANNERLESS) ? 0.995 :
+                        0.99
+                };
+
+                islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
+                islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
+            }
+        });
+
+        // add the island to the user's inventory
+        userUpdateOperations.$push['inventory.islandIds'] = latestIslandId + 1;
+
+        const island = new IslandModel({
+            islandId: latestIslandId + 1,
+            type: islandType,
+            owner: user._id,
+            purchaseDate: Math.floor(Date.now() / 1000),
+            obtainMethod: ObtainMethod.XTERIO,
+            currentLevel: 1,
+            currentTax: 0,
+            placedBitIds: [],
+            traits,
+            islandResourceStats: {
+                baseResourceCap,
+                resourcesGathered: [],
+                dailyBonusResourcesGathered: 0,
+                claimableResources: [],
+                gatheringStart: 0,
+                gatheringEnd: 0,
+                lastClaimed: 0,
+                gatheringProgress: 0,
+                lastUpdatedGatheringProgress: Math.floor(Date.now() / 1000)
+            },
+            islandEarningStats: {
+                totalXCookiesSpent: 0,
+                totalXCookiesEarnable,
+                totalXCookiesEarned: 0,
+                claimableXCookies: 0,
+                totalCookieCrumbsSpent: 0,
+                totalCookieCrumbsEarnable,
+                totalCookieCrumbsEarned: 0,
+                claimableCookieCrumbs: 0,
+                earningStart: Math.floor(Date.now() / 1000),
+                crumbsEarningStart: Math.floor(Date.now() / 1000),
+                earningEnd: 0,
+                crumbsEarningEnd: 0,
+                lastClaimed: 0,
+            },
+            islandStatsModifiers
+        });
+
+        // save the island to the database
+        await island.save();
+
+        // update the user's inventory
+        await UserModel.updateOne({ twitterId }, userUpdateOperations);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(giftXterioIsland) Xterio island gifted to user.`,
+            data: {
+                island
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(giftXterioIsland) Error: ${err.message}`
+        }
+    }
+}
 
 /**
  * Generates a barren island. This is called when a user signs up or when a user obtains and opens a bottled message.
@@ -644,7 +809,12 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
         }
 
         // check for any limitations/negative modifiers from rarity deviation (if bit rarity is lower than the island's type)
-        const rarityDeviationReductions = RARITY_DEVIATION_REDUCTIONS(<IslandType>island.type, bitRarity);
+        // NOTE: if the bit is an xterio bit, there won't be any rarity deviation reductions.
+        const rarityDeviationReductions = 
+            bit.bitType === BitType.XTERIO ? {
+                gatheringRateReduction: 0,
+                earningRateReduction: 0
+            } : RARITY_DEVIATION_REDUCTIONS(<IslandType>island.type, bitRarity);
 
         // check for previous `gatheringRateModifiers` from the island's `IslandStatsModifiers`
         // by searching for an origin of `Rarity Deviation` on `gatheringRateModifiers`
