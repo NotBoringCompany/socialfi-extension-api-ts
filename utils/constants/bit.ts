@@ -147,7 +147,8 @@ export const randomizeBitTraits = (rarity: BitRarity): BitTraitData[] => {
  * Randomizes a type when summoning a Bit.
  */
 export const randomizeBitType = (): BitType => {
-    const types = Object.values(BitType);
+    // randomize all bit types APART from BitType.XTERIO.
+    const types = Object.values(BitType).filter(type => type !== BitType.XTERIO);
     const rand = Math.floor(Math.random() * types.length);
 
     return types[rand];

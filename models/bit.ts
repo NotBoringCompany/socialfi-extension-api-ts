@@ -217,4 +217,6 @@ export enum BitType {
     CUBIT = 'Cubit',
     BIBIT = 'Bibit',
     ZEBIT = 'Zebit',
+    // only users from xterio can obtain this bit
+    XTERIO = 'Xterio',
 }
