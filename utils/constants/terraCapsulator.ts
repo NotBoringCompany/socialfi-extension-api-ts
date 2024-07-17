@@ -15,7 +15,7 @@ export const randomizeTypeFromCapsulator = (type: TerraCapsulatorType): IslandTy
             return IslandType.VERDANT_ISLES;
         } else if (rand <= 950) {
             return IslandType.EXOTIC_ISLES;
-        } else if (rand <= 996) {
+        } else if (rand <= 995) {
             return IslandType.CRYSTAL_ISLES;
         } else {
             return IslandType.CELESTIAL_ISLES;
