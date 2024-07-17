@@ -1,4 +1,4 @@
-import { LeaderboardModel, POIModel, QuestModel, SettingModel, StarterCodeModel, TutorialModel, WonderbitsLeaderboardModel, WonderbitsPOIModel, WonderbitsQuestModel, WonderbitsSettingModel, WonderbitsStarterCodeModel, WonderbitsTutorialModel } from '../utils/constants/db';
+import { CollabModel, LeaderboardModel, POIModel, QuestModel, SettingModel, StarterCodeModel, TutorialModel, WonderbitsCollabModel, WonderbitsLeaderboardModel, WonderbitsPOIModel, WonderbitsQuestModel, WonderbitsSettingModel, WonderbitsStarterCodeModel, WonderbitsTutorialModel } from '../utils/constants/db';
 import { generateObjectId } from '../utils/crypto';
 
 /**
@@ -203,5 +203,42 @@ export const transferSettingData = async (): Promise<void> => {
         }
     } catch (err: any) {
         console.error(`(transferSettingData) Error: ${err.message}`);
+    }
+}
+
+/**
+ * Transfers all collab data from the test database to the wonderbits database.
+ */
+export const transferCollabData = async (): Promise<void> => {
+    try {
+        const collabData = await CollabModel.find().lean();
+
+        if (collabData.length === 0) {
+            console.log('(transferCollabData) No collab data found.');
+            return;
+        }
+
+        for (const collab of collabData) {
+            const newCollab = new WonderbitsCollabModel({
+                _id: generateObjectId(),
+                tier: collab.tier,
+                type: collab.type,
+                leaderRewards: collab.leaderRewards,
+                memberRewards: collab.memberRewards,
+                participants: null,
+                groups: collab.groups ? collab.groups.map(group => {
+                    return {
+                        _id: group._id,
+                        name: group.name,
+                        code: group.code,
+                        participants: []
+                    }
+                }) : null,
+            });
+
+            await newCollab.save();
+        }
+    } catch (err: any) {
+        console.error(`(transferCollabData) Error: ${err.message}`);
     }
 }
