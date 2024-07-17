@@ -18,7 +18,7 @@ import { WeeklyMVPClaimableRewardSchema, WeeklyMVPRankingLeaderboardSchema } fro
 import { CollabSchema } from '../../schemas/Collab';
 import { CollabBasketSchema, CollabParticipantSchema } from '../../schemas/CollabV2';
 
-export const WONDERBITS_DATABASE = process.env.MONGODB_URI!;
+export const WONDERBITS_DATABASE = process.env.WONDERBITS_MONGODB_URI!;
 // create a connection to the wonderbits database
 export const WONDERBITS_CONNECTION = mongoose.createConnection(WONDERBITS_DATABASE);
 
