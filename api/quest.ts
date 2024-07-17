@@ -16,6 +16,7 @@ import { Modifier } from '../models/modifier';
 import { BoosterItem } from '../models/booster';
 import { ExtendedResource } from '../models/resource';
 import { POIName } from '../models/poi';
+import { TwitterHelper } from '../utils/twitterHelper';
 
 /**
  * Adds a quest to the database. Requires admin key.
@@ -550,48 +551,85 @@ export const getUserCompletedQuests = async (twitterId: string): Promise<ReturnV
 export const checkQuestRequirements = async (twitterId: string, questId: number): Promise<ReturnValue> => {
     try {
         // NOTICE: duplicate query, might need refactoring
-        const [quest, user] = await Promise.all([
-            QuestModel.findOne({ questId }).lean(),
-            UserModel.findOne({ twitterId }).lean()
-        ]);
+        const [quest, user] = await Promise.all([QuestModel.findOne({ questId }).lean(), UserModel.findOne({ twitterId }).lean()]);
 
         if (!quest) {
             return {
                 status: Status.ERROR,
-                message: `(checkQuestRequirement) Quest not found. Quest ID: ${questId}`
-            }
+                message: `(checkQuestRequirement) Quest not found. Quest ID: ${questId}`,
+            };
         }
 
         if (!user) {
             return {
                 status: Status.ERROR,
-                message: `(checkQuestRequirement) User not found. Twitter ID: ${twitterId}`
+                message: `(checkQuestRequirement) User not found. Twitter ID: ${twitterId}`,
+            };
+        }
+
+        const relationshipPromises: Promise<any>[] = [];
+
+        for (const requirement of quest.requirements as QuestRequirement[]) {
+            if (requirement.type === QuestRequirementType.FOLLOW_USER) {
+                const source = user.twitterUsername;
+                const target = requirement.parameters.twitterUsername;
+
+                relationshipPromises.push(TwitterHelper.getRelationship({ source_screen_name: source, target_screen_name: target }));
             }
         }
 
-        for (const requirement of quest.requirements) {
+        const relationships = await Promise.all(relationshipPromises);
+
+        for (const [index, requirement] of (quest.requirements as QuestRequirement[]).entries()) {
             switch (requirement.type) {
+                case QuestRequirementType.CONNECT_DISCORD:
+                    if (!user.discordProfile) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(checkQuestRequirement) User has not fulfilled the quest requirements.`,
+                        };
+                    }
+                    break;
                 case QuestRequirementType.COMPLETE_TUTORIAL:
                     if (!user.inGameData.completedTutorialIds.includes(requirement.parameters.tutorialId)) {
                         return {
                             status: Status.ERROR,
-                            message: `(checkQuestRequirement) User has not fulfilled the quest requirements.`
-                        }
+                            message: `(checkQuestRequirement) User has not fulfilled the quest requirements.`,
+                        };
                     }
+                    break;
+                case QuestRequirementType.FOLLOW_USER:
+                    const relationship = relationships.shift();
+
+                    if (relationship.status !== Status.SUCCESS || !relationship.data) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(checkQuestRequirement) Failed to check the quest requirements, try again later.`,
+                        };
+                    }
+
+                    // check if the user already followed the targeted account
+                    if (!relationship.data.source.following) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(checkQuestRequirement) User has not fulfilled the quest requirements.`,
+                        };
+                    }
+                    break;
             }
         }
 
         return {
             status: Status.SUCCESS,
             message: `(checkQuestRequirement) User fulfilled the quest requirements.`,
-        }
+        };
     } catch (err: any) {
         return {
             status: Status.ERROR,
-            message: `(checkQuestRequirement) ${err.message}`
-        }
+            message: `(checkQuestRequirement) ${err.message}`,
+        };
     }
-}
+};
 
 /**
  * Retrieve all quests that a user can claim.
