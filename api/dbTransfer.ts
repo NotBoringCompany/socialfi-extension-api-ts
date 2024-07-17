@@ -1,4 +1,4 @@
-import { POIModel, TutorialModel, WonderbitsPOIModel, WonderbitsTutorialModel } from '../utils/constants/db';
+import { POIModel, StarterCodeModel, TutorialModel, WonderbitsPOIModel, WonderbitsStarterCodeModel, WonderbitsTutorialModel } from '../utils/constants/db';
 import { generateObjectId } from '../utils/crypto';
 
 /**
@@ -18,7 +18,7 @@ export const transferPOIData = async (): Promise<void> => {
         // 2. `currentSellableAmount` for each shop global item will be set to `sellableAmount`
         // 3. `userTransactionData` for each shop player item will be set to an empty array
         for (const poiData of poi) {
-            const globalItems = poiData.shop.globalItems.map(globalItem => {
+            const globalItems = poiData?.shop?.globalItems.map(globalItem => {
                 return {
                     name: globalItem.name,
                     buyableAmount: globalItem.buyableAmount,
@@ -30,7 +30,7 @@ export const transferPOIData = async (): Promise<void> => {
                 }
             });
 
-            const playerItems = poiData.shop.playerItems.map(playerItem => {
+            const playerItems = poiData?.shop?.playerItems.map(playerItem => {
                 return {
                     name: playerItem.name,
                     buyableAmount: playerItem.buyableAmount,
@@ -83,5 +83,32 @@ export const transferTutorialData = async (): Promise<void> => {
         }
     } catch (err: any) {
         console.error(`(transferTutorialData) Error: ${err.message}`);
+    }
+}
+
+/**
+ * Transfers starter code data from the test database to the wonderbits database.
+ */
+export const transferStarterCodeData = async (): Promise<void> => {
+    try {
+        const starterCodeData = await StarterCodeModel.find().lean();
+
+        if (starterCodeData.length === 0) {
+            console.log('(transferStarterCodeData) No starter code data found.');
+            return;
+        }
+
+        for (const starterCode of starterCodeData) {
+            const newStarterCode = new WonderbitsStarterCodeModel({
+                _id: generateObjectId(),
+                code: starterCode.code,
+                maxUses: starterCode.maxUses,
+                usedBy: []
+            });
+
+            await newStarterCode.save();
+        }
+    } catch (err: any) {
+        console.error(`(transferStarterCodeData) Error: ${err.message}`);   
     }
 }
