@@ -31,3 +31,25 @@ export const getUserTapping = async (twitterId: string): Promise<ReturnValue> =>
         }
     }  
 };
+
+export const applyTapping = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(getUserTapping) User not found.`,
+            };
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(applyTapping), Apply tapping success`,
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(applyTapping) Error: ${err.message}`
+        }
+    }
+}
