@@ -1,4 +1,4 @@
-import { POIModel, QuestModel, StarterCodeModel, TutorialModel, WonderbitsPOIModel, WonderbitsQuestModel, WonderbitsStarterCodeModel, WonderbitsTutorialModel } from '../utils/constants/db';
+import { LeaderboardModel, POIModel, QuestModel, SettingModel, StarterCodeModel, TutorialModel, WonderbitsLeaderboardModel, WonderbitsPOIModel, WonderbitsQuestModel, WonderbitsSettingModel, WonderbitsStarterCodeModel, WonderbitsTutorialModel } from '../utils/constants/db';
 import { generateObjectId } from '../utils/crypto';
 
 /**
@@ -148,5 +148,60 @@ export const transferQuestData = async (): Promise<void> => {
         }
     } catch (err: any) {
         console.error(`(transferQuestData) Error: ${err.message}`);
+    }
+}
+
+/**
+ * Transfers leaderboard data from the test database to the wonderbits database.
+ */
+export const transferLeaderboardData = async (): Promise<void> => {
+    try {
+        const leaderboardData = await LeaderboardModel.find().lean();
+
+        if (leaderboardData.length === 0) {
+            console.log('(transferLeaderboardData) No leaderboard data found.');
+            return;
+        }
+
+        for (const leaderboard of leaderboardData) {
+            const newLeaderboard = new WonderbitsLeaderboardModel({
+                _id: generateObjectId(),
+                name: leaderboard.name,
+                startTimestamp: leaderboard.startTimestamp,
+                userData: [],
+            });
+
+            await newLeaderboard.save();
+        }
+    } catch (err: any) {
+        console.error(`(transferLeaderboardData) Error: ${err.message}`);
+    }
+}
+
+/**
+ * Transfer settings data from the test database to the wonderbits database.
+ */
+export const transferSettingData = async (): Promise<void> => {
+    try {
+        const settings = await SettingModel.find().lean();
+
+        if (settings.length === 0) {
+            console.log('(transferSettingData) No setting data found.');
+            return;
+        }
+
+        for (const setting of settings) {
+            const newSetting = new WonderbitsSettingModel({
+                _id: generateObjectId(),
+                key: setting.key,
+                name: setting.name,
+                description: setting.description,
+                value: setting.value
+            });
+
+            await newSetting.save();
+        }
+    } catch (err: any) {
+        console.error(`(transferSettingData) Error: ${err.message}`);
     }
 }
