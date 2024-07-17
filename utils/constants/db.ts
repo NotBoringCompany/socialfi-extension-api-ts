@@ -38,6 +38,33 @@ WONDERBITS_CONNECTION.on('connected', () => {
     console.log('Connected to wonderbits database');
 })
 
+// ALL WONDERBITS DATABASE MODELS
+export const WonderbitsUserModel = WONDERBITS_CONNECTION.model('Users', UserSchema, 'Users');
+export const WonderbitsBitModel = WONDERBITS_CONNECTION.model('Bits', BitSchema, 'Bits');
+export const WonderbitsIslandModel = WONDERBITS_CONNECTION.model('Islands', IslandSchema, 'Islands');
+export const WonderbitsRaftModel = WONDERBITS_CONNECTION.model('Rafts', RaftSchema, 'Rafts');
+export const WonderbitsCookieDepositModel = WONDERBITS_CONNECTION.model('CookieDeposits', CookieDepositSchema, 'CookieDeposits');
+export const WonderbitsCookieWithdrawalModel = WONDERBITS_CONNECTION.model('CookieWithdrawals', CookieWithdrawalSchema, 'CookieWithdrawals');
+export const WonderbitsQuestModel = WONDERBITS_CONNECTION.model('Quests', QuestSchema, 'Quests');
+export const WonderbitsPOIModel = WONDERBITS_CONNECTION.model('POI', POISchema, 'POI');
+export const WonderbitsLeaderboardModel = WONDERBITS_CONNECTION.model('Leaderboards', LeaderboardSchema, 'Leaderboards');
+export const WonderbitsStarterCodeModel = WONDERBITS_CONNECTION.model('StarterCodes', StarterCodeSchema, 'StarterCodes');
+export const WonderbitsTutorialModel = WONDERBITS_CONNECTION.model('Tutorials', TutorialSchema, 'Tutorials');
+export const WonderbitsSquadModel = WONDERBITS_CONNECTION.model('Squads', SquadSchema, 'Squads');
+export const WonderbitsSquadLeaderboardModel = WONDERBITS_CONNECTION.model('SquadLeaderboards', SquadLeaderboardSchema, 'SquadLeaderboards');
+export const WonderbitsSettingModel = WONDERBITS_CONNECTION.model('Settings', SettingSchema, 'Settings');
+export const WonderbitsPOAPModel = WONDERBITS_CONNECTION.model('POAP', POAPSchema, 'POAP');
+export const WonderbitsKOSClaimableDailyRewardsModel = WONDERBITS_CONNECTION.model('KOSClaimableDailyRewards', KOSClaimableDailyRewardsSchema, 'KOSClaimableDailyRewards');
+export const WonderbitsKOSClaimableWeeklyRewardsModel = WONDERBITS_CONNECTION.model('KOSClaimableWeeklyRewards', KOSClaimableWeeklyRewardsSchema, 'KOSClaimableWeeklyRewards');
+export const WonderbitsWeeklyMVPClaimableRewardsModel = WONDERBITS_CONNECTION.model('WeeklyMVPClaimableRewards', WeeklyMVPClaimableRewardSchema, 'WeeklyMVPClaimableRewards');
+export const WonderbitsSquadMemberClaimableWeeklyRewardModel = WONDERBITS_CONNECTION.model('SquadMemberClaimableWeeklyRewards', SquadMemberClaimableWeeklyRewardSchema, 'SquadMemberClaimableWeeklyRewards');
+export const WonderbitsCollabModel = WONDERBITS_CONNECTION.model('Collabs', CollabSchema, 'Collabs');
+export const WonderbitsCollabParticipantModel = WONDERBITS_CONNECTION.model('CollabParticipants', CollabParticipantSchema, 'CollabParticipants');
+export const WonderbitsCollabBasketModel = WONDERBITS_CONNECTION.model('CollabBaskets', CollabBasketSchema, 'CollabBaskets');
+export const WonderbitsWeeklyMVPRankingLeaderboardModel = WONDERBITS_CONNECTION.model('WeeklyMVPRankingData', WeeklyMVPRankingLeaderboardSchema, 'WeeklyMVPRankingData');
+export const WonderbitsSuccessfulIndirectReferralModel = WONDERBITS_CONNECTION.model('SuccessfulIndirectReferrals', SuccessfulIndirectReferralSchema, 'SuccessfulIndirectReferrals');
+
+// ALL TEST DATABASE MODELS
 export const UserModel = TEST_CONNECTION.model('Users', UserSchema, 'Users');
 export const BitModel = TEST_CONNECTION.model('Bits', BitSchema, 'Bits');
 export const IslandModel = TEST_CONNECTION.model('Islands', IslandSchema, 'Islands');
