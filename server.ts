@@ -85,7 +85,5 @@ app.use('/collab', collabV2);
 app.listen(port, async () => {
     console.log(`Server running on port ${port}`);
 
-    await mongoose.connect(mongoUri);
-
     await schedulers();
 });
