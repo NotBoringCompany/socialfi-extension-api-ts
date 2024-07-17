@@ -28,22 +28,22 @@ export const BIT_EVOLUTION_COST = (currentLevel: number): number => {
         return 5;
     // level once upgraded = 10 to 19
     } else if (currentLevel >= 9 && currentLevel <= 18) {
-        return 10; 
+        return 15; 
     // level once upgraded = 20 to 29
     } else if (currentLevel >= 19 && currentLevel <= 28) {
-        return 20; 
+        return 45; 
     // level once upgraded = 30 to 39
     } else if (currentLevel >= 29 && currentLevel <= 38) {
-        return 60; 
+        return 135; 
     // level once upgraded = 40 to 49
     } else if (currentLevel >= 39 && currentLevel <= 48) {
-        return 180;
+        return 405;
     // level once upgraded = 50 to 59
     } else if (currentLevel >= 49 && currentLevel <= 58) {
-        return 360;
+        return 1215;
     // level once upgraded = 60 to 65
     } else if (currentLevel >= 59 && currentLevel <= 64) {
-        return 720;
+        return 3645;
     }
 }
 
