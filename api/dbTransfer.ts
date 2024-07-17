@@ -1,4 +1,4 @@
-import { POIModel, WonderbitsPOIModel } from '../utils/constants/db';
+import { POIModel, TutorialModel, WonderbitsPOIModel, WonderbitsTutorialModel } from '../utils/constants/db';
 import { generateObjectId } from '../utils/crypto';
 
 /**
@@ -56,5 +56,32 @@ export const transferPOIData = async (): Promise<void> => {
         }
     } catch (err: any) {
         console.error(`(transferPOIData) Error: ${err.message}`);
+    }
+}
+
+/**
+ * Transfers tutorial data from the test database to the wonderbits database.
+ */
+export const transferTutorialData = async (): Promise<void> => {
+    try {
+        const tutorial = await TutorialModel.find().lean();
+
+        if (tutorial.length === 0) {
+            console.log('(transferTutorialData) No tutorial data found.');
+            return;
+        }
+
+        for (const tutorialData of tutorial) {
+            const newTutorial = new WonderbitsTutorialModel({
+                _id: generateObjectId(),
+                id: tutorialData.id,
+                name: tutorialData.name,
+                rewards: tutorialData.rewards,
+            });
+
+            await newTutorial.save();
+        }
+    } catch (err: any) {
+        console.error(`(transferTutorialData) Error: ${err.message}`);
     }
 }
