@@ -22,6 +22,10 @@ export const WONDERBITS_DATABASE = process.env.MONGODB_URI!;
 // create a connection to the wonderbits database
 export const WONDERBITS_CONNECTION = mongoose.createConnection(WONDERBITS_DATABASE);
 
+WONDERBITS_CONNECTION.on('connected', () => {
+    console.log(`Connected to the wonderbits database.`);
+})
+
 export const UserModel = WONDERBITS_CONNECTION.model('Users', UserSchema, 'Users');
 export const BitModel = WONDERBITS_CONNECTION.model('Bits', BitSchema, 'Bits');
 export const IslandModel = WONDERBITS_CONNECTION.model('Islands', IslandSchema, 'Islands');
