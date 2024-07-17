@@ -1,4 +1,4 @@
-import { POIModel, StarterCodeModel, TutorialModel, WonderbitsPOIModel, WonderbitsStarterCodeModel, WonderbitsTutorialModel } from '../utils/constants/db';
+import { POIModel, QuestModel, StarterCodeModel, TutorialModel, WonderbitsPOIModel, WonderbitsQuestModel, WonderbitsStarterCodeModel, WonderbitsTutorialModel } from '../utils/constants/db';
 import { generateObjectId } from '../utils/crypto';
 
 /**
@@ -110,5 +110,43 @@ export const transferStarterCodeData = async (): Promise<void> => {
         }
     } catch (err: any) {
         console.error(`(transferStarterCodeData) Error: ${err.message}`);   
+    }
+}
+
+/**
+ * Transfers quest data from the test database to the wonderbits database.
+ */
+export const transferQuestData = async (): Promise<void> => {
+    try {
+        const questData = await QuestModel.find().lean();
+
+        if (questData.length === 0) {
+            console.log('(transferQuestData) No quest data found.');
+            return;
+        }
+
+        for (const quest of questData) {
+            const newQuest = new WonderbitsQuestModel({
+                _id: generateObjectId(),
+                questId: quest.questId,
+                name: quest.name,
+                description: quest.description,
+                type: quest.type,
+                limit: quest.limit,
+                category: quest.category,
+                imageUrl: quest.imageUrl,
+                bannerUrl: quest.bannerUrl,
+                poi: quest.poi,
+                start: quest.start,
+                end: quest.end,
+                rewards: quest.rewards,
+                completedBy: [],
+                requirements: quest.requirements
+            });
+
+            await newQuest.save();
+        }
+    } catch (err: any) {
+        console.error(`(transferQuestData) Error: ${err.message}`);
     }
 }
