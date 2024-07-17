@@ -582,6 +582,14 @@ export const checkQuestRequirements = async (twitterId: string, questId: number)
 
         for (const [index, requirement] of (quest.requirements as QuestRequirement[]).entries()) {
             switch (requirement.type) {
+                case QuestRequirementType.CONNECT_DISCORD:
+                    if (!user.discordProfile) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(checkQuestRequirement) User has not fulfilled the quest requirements.`,
+                        };
+                    }
+                    break;
                 case QuestRequirementType.COMPLETE_TUTORIAL:
                     if (!user.inGameData.completedTutorialIds.includes(requirement.parameters.tutorialId)) {
                         return {
