@@ -9,7 +9,7 @@ import { BitSchema } from '../schemas/Bit';
 import { BIT_EVOLUTION_COST, FREE_BIT_EVOLUTION_COST } from '../utils/constants/bit';
 import { BitModel } from '../utils/constants/db';
 import { Modifier } from '../models/modifier';
-import { mixpanel } from '../utils/mixpanel';
+import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 import { authMiddleware } from '../middlewares/auth';
 
 const router = express.Router();
@@ -49,7 +49,7 @@ router.post('/rename_bit', async (req, res) => {
 
         const { status, message, data } = await renameBit(validateData?.twitterId, bitId, newName);
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Rename Bit', {
                 distinct_id: validateData?.twitterId,
                 '_bitId': bitId,
@@ -85,7 +85,7 @@ router.post('/release_bit', async (req, res) => {
 
         const { status, message, data } = await releaseBit(validateData?.twitterId, bitId);
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Release Bit', {
                 distinct_id: validateData?.twitterId,
                 '_bitId': bitId,
@@ -120,7 +120,7 @@ router.post('/evolve_bit', async (req, res) => {
 
         const { status, message, data } = await evolveBit(validateData?.twitterId, bitId);
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Currency Tracker', {
                 distinct_id: validateData?.twitterId,
                 '_type': 'Evolve Bit',
@@ -156,7 +156,7 @@ router.post('/feed_bit', async (req, res) => {
 
         const { status, message, data } = await feedBit(validateData?.twitterId, bitId, <FoodType>foodType);
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Feed Bit', {
                 distinct_id: validateData?.twitterId,
                 '_bitId': bitId,

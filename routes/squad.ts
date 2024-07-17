@@ -2,7 +2,7 @@ import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { acceptPendingSquadMember, checkSquadCreationMethodAndCost, createSquad, declinePendingSquadMember, delegateLeadership, getLatestSquadWeeklyRanking, getSquadData, getSquadMemberData, kickMember, leaveSquad, renameSquad, requestToJoinSquad, squadKOSData, upgradeSquadLimit } from '../api/squad';
-import { mixpanel } from '../utils/mixpanel';
+import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 import { authMiddleware } from '../middlewares/auth';
 
 const router = express.Router();
@@ -50,7 +50,7 @@ router.post('/accept_pending_squad_member', async (req, res) => {
 
         const { status, message, data } = await acceptPendingSquadMember(validateData?.twitterId, memberTwitterId, memberUserId);
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Squad Member', {
                 distinct_id: validateData?.twitterId,
                 '_type': 'Join',
@@ -86,7 +86,7 @@ router.post('/rename_squad', async (req, res) => {
 
         const { status, message, data } = await renameSquad(validateData?.twitterId, newSquadName);
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Currency Tracker', {
                 distinct_id: validateData?.twitterId,
                 '_type': 'Rename Squad',
@@ -122,7 +122,7 @@ router.post('/create_squad', async (req, res) => {
 
         const { status, message, data } = await createSquad(validateData?.twitterId, squadName);
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Currency Tracker', {
                 distinct_id: validateData?.twitterId,
                 '_type': 'Create Squad',
@@ -156,7 +156,7 @@ router.post('/leave_squad', async (req, res) => {
 
         const { status, message, data } = await leaveSquad(validateData?.twitterId);
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Squad Member', {
                 distinct_id: validateData?.twitterId,
                 '_type': 'Leave',
@@ -246,7 +246,7 @@ router.post('/kick_member', async (req, res) => {
 
         const { status, message, data } = await kickMember(validateData?.twitterId, memberTwitterId, memberUserId);
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Squad Member', {
                 distinct_id: validateData?.twitterId,
                 '_type': 'Kick',
@@ -271,12 +271,13 @@ router.get('/get_squad_data/:twitterId/:squadId', async (req, res) => {
     const { twitterId, squadId } = req.params;
     try {
         const { status, message, data } = await getSquadData(squadId);
-
-        mixpanel.track('Current User Squad', {
-            distinct_id: twitterId,
-            '_data': data,
-            '_inSquad': status === Status.SUCCESS,
-        });
+        if (status === Status.SUCCESS && allowMixpanel) {
+            mixpanel.track('Current User Squad', {
+                distinct_id: twitterId,
+                '_data': data,
+                '_inSquad': status === Status.SUCCESS,
+            });
+        }
 
         return res.status(status).json({
             status,

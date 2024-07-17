@@ -8,7 +8,7 @@ import { ISLAND_EVOLUTION_COST, MAX_ISLAND_LEVEL } from '../utils/constants/isla
 import { BitModel, IslandModel } from '../utils/constants/db';
 import { getBits } from '../api/bit';
 import { Bit } from '../models/bit';
-import { mixpanel } from '../utils/mixpanel';
+import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 import { authMiddleware } from '../middlewares/auth';
 
 const router = express.Router();
@@ -46,7 +46,7 @@ router.post('/place_bit', async (req, res) => {
         }
         const { status, message, data } = await placeBit(validateData?.twitterId, islandId, bitId);
         
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Place Bit', {
                 distinct_id: validateData?.twitterId,
                 '_data': data,
@@ -81,7 +81,7 @@ router.post('/unplace_bit', async (req, res) => {
 
         const { status, message, data } = await unplaceBit(validateData?.twitterId, bitId);
         
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Unplace Bit', {
                 distinct_id: validateData?.twitterId,
                 '_data': data,
@@ -116,7 +116,7 @@ router.post('/remove_island', async (req, res) => {
 
         const { status, message, data } = await removeIsland(validateData?.twitterId, islandId);
         
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Remove Island', {
                 distinct_id: validateData?.twitterId,
                 '_islandId': islandId,
@@ -170,7 +170,7 @@ router.post('/evolve_island', async (req, res) => {
 
         const { status, message, data } = await evolveIsland(validateData?.twitterId, islandId, choice);
         
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Currency Tracker', {
                 distinct_id: validateData?.twitterId,
                 '_type': 'Evolve Island',
@@ -207,7 +207,7 @@ router.post('/claim_xcookies_and_crumbs', async (req, res) => {
 
         const { status, message, data } = await claimXCookiesAndCrumbs(validateData?.twitterId, islandId);
         
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Claim Cookies & Crumbs', {
                 distinct_id: validateData?.twitterId,
                 '_data': data,
@@ -247,7 +247,7 @@ router.post('/claim_resources', async (req, res) => {
             chosenResources ?? null
         );
             
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Claim Resources', {
                 distinct_id: validateData?.twitterId,
                 '_claimType': claimType,
@@ -474,7 +474,7 @@ router.post('/apply_gathering_progress_booster', async (req, res) => {
 
         const { status, message, data } = await applyGatheringProgressBooster(validateData?.twitterId, islandId, boosters);
         
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Apply Gathering Booster', {
                 distinct_id: validateData?.twitterId,
                 '_isandId': islandId,

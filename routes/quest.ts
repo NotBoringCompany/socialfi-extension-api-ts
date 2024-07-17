@@ -3,7 +3,7 @@ import { addQuest, completeQuest, deleteQuest, getQuests, getUserClaimableQuest,
 import { Status } from '../utils/retVal';
 import { validateRequestAuth } from '../utils/auth';
 import { QuestCategory } from '../models/quest';
-import { mixpanel } from '../utils/mixpanel';
+import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 import { authMiddleware } from '../middlewares/auth';
 
 const router = express.Router();
@@ -69,7 +69,7 @@ router.post('/complete_quest', async (req, res) => {
         
         const { status, message, data } = await completeQuest(validateData?.twitterId, questId);
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Complete Quest', {
                 distinct_id: validateData?.twitterId,
                 '_data': data
