@@ -208,16 +208,6 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                 // reduce the user's inventory weight
                 userUpdateOperations.$inc['inventory.weight'] = -inventoryWeightToReduce;
             }
-
-            if (requirement.type === QuestRequirementType.CONNECT_DISCORD) {
-                // Check if user containing discord data
-                if (!user.discordProfile) {
-                    return {
-                        status: Status.ERROR,
-                        message: `(completeQuest) User discord profile is undefined. Quest ID: ${questId}`
-                    }
-                }
-            }
         }
 
         // check if the user has already completed this quest
@@ -598,24 +588,24 @@ export const checkQuestRequirements = async (twitterId: string, questId: number)
                         };
                     }
                     break;
-                case QuestRequirementType.FOLLOW_USER:
-                    const relationship = relationships.shift();
+                // case QuestRequirementType.FOLLOW_USER:
+                //     const relationship = relationships.shift();
 
-                    if (relationship.status !== Status.SUCCESS || !relationship.data) {
-                        return {
-                            status: Status.ERROR,
-                            message: `(checkQuestRequirement) Failed to check the quest requirements, try again later.`,
-                        };
-                    }
+                //     if (relationship.status !== Status.SUCCESS || !relationship.data) {
+                //         return {
+                //             status: Status.ERROR,
+                //             message: `(checkQuestRequirement) Failed to check the quest requirements, try again later.`,
+                //         };
+                //     }
 
-                    // check if the user already followed the targeted account
-                    if (!relationship.data.source.following) {
-                        return {
-                            status: Status.ERROR,
-                            message: `(checkQuestRequirement) User has not fulfilled the quest requirements.`,
-                        };
-                    }
-                    break;
+                //     // check if the user already followed the targeted account
+                //     if (!relationship.data.source.following) {
+                //         return {
+                //             status: Status.ERROR,
+                //             message: `(checkQuestRequirement) User has not fulfilled the quest requirements.`,
+                //         };
+                //     }
+                //     break;
             }
         }
 
