@@ -23,6 +23,7 @@ export const WONDERBITS_DATABASE = process.env.WONDERBITS_MONGODB_URI!;
 export const WONDERBITS_CONNECTION = mongoose.createConnection(WONDERBITS_DATABASE);
 
 WONDERBITS_CONNECTION.on('connected', () => {
+    console.log('connected to: ', WONDERBITS_DATABASE);
     console.log(`Connected to the wonderbits database.`);
 })
 
