@@ -49,7 +49,7 @@ export const CollabParticipantSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    discordUsername: {
+    discordId: {
         type: String,
         required: true,
     },

@@ -1,7 +1,7 @@
 import { CollabBasket, CollabParticipant, CollabReward, CollabRewardType } from '../models/collab_v2';
 import { Item } from '../models/item';
-import { ExtendedXCookieData, XCookieSource } from '../models/user';
-import { CollabBasketModel, CollabParticipantModel, UserModel } from '../utils/constants/db';
+import { ExtendedXCookieData, InGameData, User, XCookieSource } from '../models/user';
+import { CollabBasketModel, CollabParticipantModel, TutorialModel, UserModel } from '../utils/constants/db';
 import { generateObjectId } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
 import { appendData, readSheet, readSheetObject } from '../utils/sheet';
@@ -214,7 +214,7 @@ export const deleteBasket = async (id: string): Promise<ReturnValue> => {
  */
 export const importParticipants = async (spreadsheetId: string, range: string): Promise<ReturnValue> => {
     try {
-        const data = (await readSheetObject(spreadsheetId, range)) as Array<{
+        const rows = (await readSheetObject(spreadsheetId, range)) as Array<{
             'Community Name': string | null;
             'Discord Name': string | null;
             'Discord ID': string | null;
@@ -223,12 +223,22 @@ export const importParticipants = async (spreadsheetId: string, range: string): 
         }>;
 
         // Check if the data is empty
-        if (data.length === 0) {
+        if (rows.length === 0) {
             return {
                 status: Status.ERROR,
                 message: `(importParticipants) Sheet empty`,
             };
         }
+
+        // sanitize the data
+        const data = rows
+            .filter((row) => {
+                return !!row['Twitter Handle'] && new RegExp(/^@\w+$/).exec(row['Twitter Handle'] || '') !== null;
+            })
+            .map((row) => ({
+                ...row,
+                'Twitter Handle': row['Twitter Handle'].trim().match(/^@(\w+)/)[1],
+            }));
 
         for (const item of data) {
             let basket = await CollabBasketModel.findOne({ name: item.Basket });
@@ -242,7 +252,7 @@ export const importParticipants = async (spreadsheetId: string, range: string): 
                 await basket.save();
             }
 
-            const existingParticipant = await CollabParticipantModel.findOne({ twitterUsername: item['Twitter Handle'] });
+            const existingParticipant = await CollabParticipantModel.findOne({ twitterUsername: item['Twitter Handle'], community: item['Community Name'] });
 
             if (existingParticipant) {
                 await CollabParticipantModel.updateOne(
@@ -262,12 +272,12 @@ export const importParticipants = async (spreadsheetId: string, range: string): 
                 const newParticipant = new CollabParticipantModel({
                     _id: generateObjectId(),
                     name: item['Discord Name'],
-                    code: generateObjectId(),
+                    code: item['Community Name'],
                     role: 'Member',
                     community: item['Community Name'],
                     twitterUsername: item['Twitter Handle'],
                     discordId: item['Discord ID'],
-                    basket: basket,
+                    basket,
                     claimable: true,
                     approved: true,
                 });
@@ -280,7 +290,17 @@ export const importParticipants = async (spreadsheetId: string, range: string): 
             twitterUsername: data.map((item) => item['Twitter Handle']),
         }).lean();
 
-        const unregisteredUsers = data.filter((item) => !registeredUsers.find((user) => user.twitterUsername === item['Twitter Handle']));
+        // Using a Set to store unique Twitter handles
+        const uniqueHandlers = new Set<string>();
+        const unregisteredUsers = data
+            .filter((item) => !registeredUsers.find((user) => user.twitterUsername === item['Twitter Handle']))
+            .filter((row) => {
+                if (row['Twitter Handle'] && !uniqueHandlers.has(row['Twitter Handle'])) {
+                    uniqueHandlers.add(row['Twitter Handle']);
+                    return true;
+                }
+                return false;
+            });
 
         // Handle pre-register user
         await UserModel.create(
@@ -289,12 +309,25 @@ export const importParticipants = async (spreadsheetId: string, range: string): 
                 twitterId: null,
                 twitterUsername: user['Twitter Handle'],
                 inviteCodeData: {
-                    usedStarterCode: '',
+                    usedStarterCode: user['Community Name'],
                     usedReferralCode: null,
                     referrerId: null,
                 },
+                discordProfile: {
+                    discordId: user['Discord ID'],
+                    name: user['Discord Name'],
+                },
             }))
         );
+
+        // handle auto-claim when registered user already completed the tutorial
+        const tutorialCount = await TutorialModel.countDocuments();
+
+        // get registered user who already completed the tutorial
+        const completedTutorialUsers = registeredUsers.filter(({ inGameData }) => (inGameData as InGameData).completedTutorialIds.length === tutorialCount);
+
+        // auto-claim the reward
+        await Promise.all(completedTutorialUsers.map((user) => claimCollabReward(user.twitterId)));
 
         return {
             status: Status.SUCCESS,
