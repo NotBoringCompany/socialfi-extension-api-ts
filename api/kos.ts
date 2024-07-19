@@ -142,6 +142,8 @@ export const claimDailyKOSRewards = async (twitterId: string): Promise<ReturnVal
             }
         }
 
+        const newItems: any[] = [];
+
         // filter out rewards with the amount of 0 and map the remaining to add the rewards to the user's account
         rewards.filter(reward => reward.amount > 0).map(reward => {
             // if xCookies, do 2 things:
@@ -156,12 +158,14 @@ export const claimDailyKOSRewards = async (twitterId: string): Promise<ReturnVal
                 userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = reward.amount;
 
                 if (kosBenefitsIndex !== -1) {
-                    userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${kosBenefitsIndex}.xCookies`] = reward.amount;
+                    userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${kosBenefitsIndex}.xCookies`] = (userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${kosBenefitsIndex}.xCookies`] || 0) + reward.amount;
                 } else {
-                    userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = {
-                        xCookies: reward.amount,
-                        source: XCookieSource.KOS_BENEFITS
-                    }
+                    newItems.push({
+                        type: reward.type,
+                        amount: reward.amount,
+                        totalAmountConsumed: 0,
+                        weeklyAmountConsumed: 0
+                    });
                 }
             } else if (reward.type === KOSRewardType.GATHERING_PROGRESS_BOOSTER_25 || reward.type === KOSRewardType.GATHERING_PROGRESS_BOOSTER_50 || reward.type === KOSRewardType.GATHERING_PROGRESS_BOOSTER_100) {
                 // if gathering progress booster, add the booster to the user's inventory.
@@ -170,22 +174,24 @@ export const claimDailyKOSRewards = async (twitterId: string): Promise<ReturnVal
                 const boosterIndex = (user.inventory?.items as Item[]).findIndex(item => item.type === reward.type as string);
 
                 if (boosterIndex !== -1) {
-                    userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = reward.amount;
+                    userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = (userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] || 0) + reward.amount;
                 } else {
-                    userUpdateOperations.$push['inventory.items'] = {
+                    newItems.push({
                         type: reward.type,
                         amount: reward.amount,
                         totalAmountConsumed: 0,
                         weeklyAmountConsumed: 0
-                    }
+                    });
                 }
             }
         });
 
-        // add the rewards to the user's account
+        if (newItems.length > 0) {
+            userUpdateOperations.$push['inventory.items'] = { $each: newItems };
+        }
+
         await UserModel.updateOne({ twitterId }, userUpdateOperations);
 
-        // reset all claimable rewards to 0
         await KOSClaimableDailyRewardsModel.updateOne({ userId: user._id }, {
             claimableRewards: []
         });
