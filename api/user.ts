@@ -463,15 +463,38 @@ export const linkSecondaryWallet = async (
             };
         }
 
-        // check if the wallet is already linked in the user's `secondaryWallets`
+        // check if the wallet is already linked in the user's `secondaryWallets` OR other users' `secondaryWallet` or `wallet`
+        const users = await UserModel.find().lean();
+
+        // loop through each user. check if any of their `wallet` (main wallet) or `secondaryWallets` contain the wallet address the user is trying to link.
+        const walletAlreadyLinkedToOtherUser = users.some((otherUser) => {
+            if (otherUser.wallet?.address.toLowerCase() === walletAddress.toLowerCase()) {
+                return true;
+            }
+
+            if (otherUser.secondaryWallets && otherUser.secondaryWallets.length > 0) {
+                return otherUser.secondaryWallets.some((wallet) => wallet.address.toLowerCase() === walletAddress.toLowerCase());
+            }
+
+            return false;
+        });
+
+        // check if the wallet is already linked in the own user's `secondaryWallets`
         // each secondaryWallet instance in `secondaryWallets` contain the `address`.
         // check if the `address` is the same as the `walletAddress`
-        const isWalletAlreadyLinked = user.secondaryWallets?.some((wallet) => wallet.address.toLowerCase() === walletAddress.toLowerCase());
+        const walletAlreadyLinkedToSelf = user.secondaryWallets?.some((wallet) => wallet.address.toLowerCase() === walletAddress.toLowerCase()); 
 
-        if (isWalletAlreadyLinked) {
+        if (walletAlreadyLinkedToOtherUser) {
             return {
                 status: Status.BAD_REQUEST,
-                message: `(linkSecondaryWallet) Wallet is already linked.`,
+                message: `(linkSecondaryWallet) Wallet is already linked to another user.`,
+            };
+        }
+
+        if (walletAlreadyLinkedToSelf) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(linkSecondaryWallet) Wallet is already linked to own account.`,
             };
         }
 
