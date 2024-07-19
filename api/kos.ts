@@ -142,56 +142,56 @@ export const claimDailyKOSRewards = async (twitterId: string): Promise<ReturnVal
             }
         }
 
-        const newItems: any[] = [];
+        for (const reward of rewards) {
+            switch (reward.type) {
+                    case KOSRewardType.GATHERING_PROGRESS_BOOSTER_25:
+                    case KOSRewardType.GATHERING_PROGRESS_BOOSTER_50:
+                    case KOSRewardType.GATHERING_PROGRESS_BOOSTER_100:
+                    // add the item to the user's inventory
+                    const existingItemIndex = (user.inventory?.items as Item[]).findIndex((i) => i.type === (reward.type as any));
 
-        // filter out rewards with the amount of 0 and map the remaining to add the rewards to the user's account
-        rewards.filter(reward => reward.amount > 0).map(reward => {
-            // if xCookies, do 2 things:
-            // 1. add the xCookies to `inventory.xCookieData.currentXCookies`
-            // 2. add the xCookies to `inventory.xCookieData.extendedXCookieData` with the source as KOS_BENEFITS
-            // but firstly check if the user's `extendedXCookieData` already has a source called KOS_BENEFITS.
-            // if not, create a new entry, else increment the amount.
-            if (reward.type === KOSRewardType.X_COOKIES) {
-                const kosBenefitsIndex = (user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(data => data.source === XCookieSource.KOS_BENEFITS);
+                    if (existingItemIndex !== -1) {
+                        userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = reward.amount;
+                    } else {
+                        if (!userUpdateOperations.$push['inventory.items']) {
+                            userUpdateOperations.$push['inventory.items'] = {
+                                $each: [],
+                            };
+                        }
 
-                // increment xCookies
-                userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = reward.amount;
+                        userUpdateOperations.$push['inventory.items'].$each.push({
+                            type: reward.type,
+                            amount: reward.amount,
+                            totalAmountConsumed: 0,
+                            weeklyAmountConsumed: 0,
+                        });
+                    }
+                    break;
+                case KOSRewardType.X_COOKIES:
+                    userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = reward.amount;
 
-                if (kosBenefitsIndex !== -1) {
-                    userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${kosBenefitsIndex}.xCookies`] = (userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${kosBenefitsIndex}.xCookies`] || 0) + reward.amount;
-                } else {
-                    newItems.push({
-                        type: reward.type,
-                        amount: reward.amount,
-                        totalAmountConsumed: 0,
-                        weeklyAmountConsumed: 0
-                    });
-                }
-            } else if (reward.type === KOSRewardType.GATHERING_PROGRESS_BOOSTER_25 || reward.type === KOSRewardType.GATHERING_PROGRESS_BOOSTER_50 || reward.type === KOSRewardType.GATHERING_PROGRESS_BOOSTER_100) {
-                // if gathering progress booster, add the booster to the user's inventory.
-                // firstly, check if the user's `inventory.items` already has the booster.
-                // if not, create a new entry, else increment the amount.
-                const boosterIndex = (user.inventory?.items as Item[]).findIndex(item => item.type === reward.type as string);
+                    // check if the user's `xCookieData.extendedXCookieData` contains a source called QUEST_REWARDS.
+                    // if yes, we increment the amount, if not, we create a new entry for the source
+                    const index = (user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(
+                        (data) => data.source === XCookieSource.KOS_BENEFITS
+                    );
 
-                if (boosterIndex !== -1) {
-                    userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = (userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] || 0) + reward.amount;
-                } else {
-                    newItems.push({
-                        type: reward.type,
-                        amount: reward.amount,
-                        totalAmountConsumed: 0,
-                        weeklyAmountConsumed: 0
-                    });
-                }
+                    if (index !== -1) {
+                        userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${index}.xCookies`] = reward.amount;
+                    } else {
+                        userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = {
+                            xCookies: reward.amount,
+                            source: XCookieSource.KOS_BENEFITS,
+                        };
+                    }
+                    break;
             }
-        });
-
-        if (newItems.length > 0) {
-            userUpdateOperations.$push['inventory.items'] = { $each: newItems };
         }
 
-        await UserModel.updateOne({ twitterId }, userUpdateOperations);
+        await UserModel.updateOne({ twitterId }, { $inc: userUpdateOperations.$inc });
+        await UserModel.updateOne({ twitterId }, { $push: userUpdateOperations.$push });
 
+        // reset all claimable rewards to 0
         await KOSClaimableDailyRewardsModel.updateOne({ userId: user._id }, {
             claimableRewards: []
         });
@@ -439,12 +439,18 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
                 if (bitOrbIndex !== -1) {
                     userUpdateOperations.$inc[`inventory.items.${bitOrbIndex}.amount`] = reward.amount;
                 } else {
-                    userUpdateOperations.$push['inventory.items'] = {
+                    if (!userUpdateOperations.$push['inventory.items']) {
+                        userUpdateOperations.$push['inventory.items'] = {
+                            $each: [],
+                        };
+                    }
+
+                    userUpdateOperations.$push['inventory.items'].$each.push({
                         type: reward.type,
                         amount: reward.amount,
                         totalAmountConsumed: 0,
-                        weeklyAmountConsumed: 0
-                    }
+                        weeklyAmountConsumed: 0,
+                    });
                 }
             // if reward is terra capsulator I or II
             } else if (reward.type === KOSRewardType.TERRA_CAPSULATOR_I || reward.type === KOSRewardType.TERRA_CAPSULATOR_II) {
@@ -455,12 +461,18 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
                 if (terraCapsulatorIndex !== -1) {
                     userUpdateOperations.$inc[`inventory.items.${terraCapsulatorIndex}.amount`] = reward.amount;
                 } else {
-                    userUpdateOperations.$push['inventory.items'] = {
+                    if (!userUpdateOperations.$push['inventory.items']) {
+                        userUpdateOperations.$push['inventory.items'] = {
+                            $each: [],
+                        };
+                    }
+
+                    userUpdateOperations.$push['inventory.items'].$each.push({
                         type: reward.type,
                         amount: reward.amount,
                         totalAmountConsumed: 0,
-                        weeklyAmountConsumed: 0
-                    }
+                        weeklyAmountConsumed: 0,
+                    });
                 }
             // if reward type is raft speed booster 60 min
             } else if (reward.type === KOSRewardType.RAFT_SPEED_BOOSTER_60_MIN) {
@@ -471,12 +483,18 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
                 if (raftSpeedBoosterIndex !== -1) {
                     userUpdateOperations.$inc[`inventory.items.${raftSpeedBoosterIndex}.amount`] = reward.amount;
                 } else {
-                    userUpdateOperations.$push['inventory.items'] = {
+                    if (!userUpdateOperations.$push['inventory.items']) {
+                        userUpdateOperations.$push['inventory.items'] = {
+                            $each: [],
+                        };
+                    }
+
+                    userUpdateOperations.$push['inventory.items'].$each.push({
                         type: reward.type,
                         amount: reward.amount,
                         totalAmountConsumed: 0,
-                        weeklyAmountConsumed: 0
-                    }
+                        weeklyAmountConsumed: 0,
+                    });
                 }
             // if reward type is xCookies
             } else if (reward.type === KOSRewardType.X_COOKIES) {
@@ -500,7 +518,8 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
 
         // execute the update operations
         await Promise.all([
-            UserModel.updateOne({ twitterId }, userUpdateOperations),
+            await UserModel.updateOne({ twitterId }, { $inc: userUpdateOperations.$inc }),
+            await UserModel.updateOne({ twitterId }, { $push: userUpdateOperations.$push }),
             SquadModel.updateOne({ _id: user.inGameData.squadId }, squadUpdateOperations),
             SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, squadLeaderboardUpdateOperations),
             LeaderboardModel.updateOne({ name: 'Season 0' }, leaderboardUpdateOperations)
