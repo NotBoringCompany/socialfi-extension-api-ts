@@ -1625,7 +1625,8 @@ export const updateBeginnerRewardsData = async (): Promise<void> => {
                 continue;
             }
 
-            if (beginnerRewardData.daysClaimed.length > 0) {
+            // Check if beginnerRewardData is claimed for the first time
+            if (beginnerRewardData.daysClaimed.length === 0) {
                 continue;
             }
 
