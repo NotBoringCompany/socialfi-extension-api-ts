@@ -10,7 +10,7 @@ export const RANDOMIZE_RARITY_FROM_ORB = (type: BitOrbType): BitRarity => {
     if (type === BitOrbType.BIT_ORB_I) {
         if (rand <= 750) {
             return BitRarity.COMMON;
-        } else if (rand <= 950) {
+        } else if (rand <= 985) {
             return BitRarity.UNCOMMON;
         } else {
             return BitRarity.RARE;
@@ -20,7 +20,7 @@ export const RANDOMIZE_RARITY_FROM_ORB = (type: BitOrbType): BitRarity => {
             return BitRarity.COMMON;
         } else if (rand <= 850) {
             return BitRarity.UNCOMMON;
-        } else if (rand <= 985) {
+        } else if (rand <= 975) {
             return BitRarity.RARE;
         } else {
             return BitRarity.EPIC;
@@ -30,7 +30,7 @@ export const RANDOMIZE_RARITY_FROM_ORB = (type: BitOrbType): BitRarity => {
             return BitRarity.UNCOMMON;
         } else if (rand <= 850) {
             return BitRarity.RARE;
-        } else if (rand <= 985) {
+        } else if (rand <= 975) {
             return BitRarity.EPIC;
         } else {
             return BitRarity.LEGENDARY;
