@@ -11,14 +11,6 @@ router.get('/get_owned_key_ids/:twitterId', async (req, res) => {
     try {
         const { status, message, data } = await getOwnedKeyIDs(twitterId);
 
-        if (status === Status.SUCCESS) {
-            mixpanel.track('User Owned Key', {
-                distinct_id: twitterId,
-                '_ownedKey': data?.ownedKeyIDs.length,
-                '_ownedKeyIds': data?.ownedKeyIDs,
-            });
-        }
-
         return res.status(status).json({
             status,
             message,
@@ -37,14 +29,6 @@ router.get('/get_owned_keychain_ids/:twitterId', async (req, res) => {
     try {
         const { status, message, data } = await getOwnedKeychainIDs(twitterId);
 
-        if (status === Status.SUCCESS) {
-            mixpanel.track('User Owned Keychain', {
-                distinct_id: twitterId,
-                '_ownedKeychain': data?.ownedKeychainIDs.length,
-                '_ownedKeychainIds': data?.ownedKeychainIDs,
-            });
-        }
-
         return res.status(status).json({
             status,
             message,
@@ -62,15 +46,6 @@ router.get('/get_owned_superior_keychain_ids/:twitterId', async (req, res) => {
     const { twitterId } = req.params;
     try {
         const { status, message, data } = await getOwnedSuperiorKeychainIDs(twitterId);
-
-        if (status === Status.SUCCESS) {
-            mixpanel.track('User Owned Superior Keychain', {
-                distinct_id: twitterId,
-                '_data': data,
-                '_ownedSuperiorKeychain': data?.ownedSuperiorKeychainIDs.length,
-                '_ownedSuperiorKeychainIds': data?.ownedSuperiorKeychainIDs,
-            });
-        }
 
         return res.status(status).json({
             status,
