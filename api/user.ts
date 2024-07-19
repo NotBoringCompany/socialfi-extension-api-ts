@@ -1625,6 +1625,10 @@ export const updateBeginnerRewardsData = async (): Promise<void> => {
                 continue;
             }
 
+            if (beginnerRewardData.daysClaimed.length > 0) {
+                continue;
+            }
+
             // for users that have `isClaimable` as false, it means they claimed the rewards already.
             // simply convert `isClaimable` to true.
             if (!beginnerRewardData.isClaimable) {
