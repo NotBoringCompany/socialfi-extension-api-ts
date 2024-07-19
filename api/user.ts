@@ -1620,8 +1620,14 @@ export const updateBeginnerRewardsData = async (): Promise<void> => {
 
         for (const user of eligibleUsers) {
             const beginnerRewardData = (user.inGameData?.beginnerRewardData as BeginnerRewardData) ?? undefined;
-
+            
+            // Check if beginnerRewardData is defined or not
             if (beginnerRewardData === undefined) {
+                continue;
+            }
+
+            // Check if beginnerRewardData is claimed for the first time
+            if (beginnerRewardData.daysClaimed.length === 0) {
                 continue;
             }
 
