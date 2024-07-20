@@ -17,8 +17,8 @@ import { generateObjectId } from '../utils/crypto';
 import mongoose from 'mongoose';
 import * as dotenv from 'dotenv';
 import { BigNumber } from 'ethers';
-import { checkWonderbitsAccountRegistrationRequired } from './web3';
 import { getUserCurrentPoints } from './leaderboard';
+import { checkWonderbitsAccountRegistrationRequired } from './web3';
 
 dotenv.config();
 
@@ -534,6 +534,22 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
 
         console.log(`(claimWeeklyKOSRewards) Successfully claimed weekly KOS rewards for user ${user.twitterUsername}.`);
 
+        // UPCOMING: `UPDATE POINTS` LOGIC TO WONDERBITS CONTRACT
+        // firstly, check if the user has an account registered in the contract.
+        const { status: wonderbitsAccStatus, message: wonderbitsAccMessage, data: wonderbitsAccData } = await checkWonderbitsAccountRegistrationRequired((user.wallet as UserWallet).address);
+
+        if (wonderbitsAccStatus !== Status.SUCCESS) {
+            return {
+                status: wonderbitsAccStatus,
+                message: `(claimReferralRewards) Error from checkWonderbitsAccountRegistrationRequired: ${wonderbitsAccMessage}`
+            }
+        }
+
+        // if the user has successfully registered their account, we update the user's points
+        // because the update operation for updating the leaderboard points is already done above, we call to check the newly updated points now.
+        const currentPoints = await getUserCurrentPoints(twitterId);
+        const updatePointsTx = await WONDERBITS_CONTRACT.updatePoints((user.wallet as UserWallet).address, currentPoints);
+
         return {
             status: Status.SUCCESS,
             message: `(claimWeeklyKOSRewards) Successfully claimed weekly KOS rewards for user ${user.twitterUsername}.`,
@@ -545,7 +561,8 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
                     terraCapsulatorI: rewards.find(reward => reward.type === KOSRewardType.TERRA_CAPSULATOR_I)?.amount || 0,
                     terraCapsulatorII: rewards.find(reward => reward.type === KOSRewardType.TERRA_CAPSULATOR_II)?.amount || 0,
                     raftSpeedBooster60Min: rewards.find(reward => reward.type === KOSRewardType.RAFT_SPEED_BOOSTER_60_MIN)?.amount || 0
-                }
+                },
+                updatePointsTxHash: updatePointsTx.hash
             }
         }
     } catch (err: any) {
