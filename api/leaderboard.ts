@@ -1,3 +1,4 @@
+import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
 import { LeaderboardModel, UserModel } from '../utils/constants/db';
 import { ReturnValue, Status } from '../utils/retVal';
 
@@ -169,6 +170,71 @@ export const getOwnLeaderboardRanking = async (
         return {
             status: Status.ERROR,
             message: `(getOwnLeaderboardRanking) ${err.message}`
+        }
+    }
+}
+
+/**
+ * Gets the amount of leaderboard points the user currently has (FOR SEASON 0 LEADERBOARD ONLY).
+ * 
+ * Excludes the points earned from levelling up.
+ */
+export const getUserCurrentPoints = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const leaderboard = await LeaderboardModel.findOne({ name: 'Season 0' }).lean();
+
+        if (!leaderboard) {
+            return {
+                status: Status.ERROR,
+                message: `(getUserCurrentPoints) Leaderboard not found.`
+            };
+        }
+
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(getUserCurrentPoints) User not found.`
+            };
+        }
+        
+        // get the leaderboard's user data.
+        const leaderboardUserData = leaderboard.userData;
+
+        // Find the user's data
+        const data = leaderboardUserData.find(data => data.userId === user._id);
+
+        if (!data) {
+            // return 0 points
+            return {
+                status: Status.SUCCESS,
+                message: `(getUserCurrentPoints) User has 0 points.`,
+                data: {
+                    points: 0
+                }
+            }
+        }
+
+        // Sum up the points from different sources APART FROM the source LeaderboardPointsSource.LEVELLING_UP
+        const points = data.pointsData.reduce((acc, data) => {
+            if (data.source !== LeaderboardPointsSource.LEVELLING_UP) {
+                return acc + data.points;
+            }
+            return acc;
+        }, 0);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getUserCurrentPoints) User has ${points} points.`,
+            data: {
+                points: typeof points === 'number' ? points : 0
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getUserCurrentPoints) ${err.message}`
         }
     }
 }

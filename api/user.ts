@@ -59,7 +59,7 @@ export const getUserData = async (twitterId: string): Promise<ReturnValue> => {
             status: Status.SUCCESS,
             message: `(getUserData) User data fetched.`,
             data: {
-                user,
+                user
             },
         };
     } catch (err: any) {

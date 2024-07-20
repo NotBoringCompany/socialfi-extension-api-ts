@@ -4,8 +4,11 @@ import { LeaderboardModel, StarterCodeModel, SuccessfulIndirectReferralModel, Us
 import { generateObjectId, generateStarterCode } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
 import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
-import { ExtendedXCookieData, XCookieSource } from '../models/user';
+import { ExtendedXCookieData, UserWallet, XCookieSource } from '../models/user';
 import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS, GET_SEASON_0_REFERRAL_REWARDS } from '../utils/constants/user';
+import { checkWonderbitsAccountRegistrationRequired } from './web3';
+import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
+import { getUserCurrentPoints } from './leaderboard';
 
 /**
  * Generates starter codes and stores them in the database.
@@ -217,11 +220,27 @@ export const claimReferralRewards = async (twitterId: string): Promise<ReturnVal
             LeaderboardModel.updateOne({ name: 'Season 0' }, leaderboardUpdateOperations)
         ]);
 
+        // update the user's current points in the wonderbits contract
+        const { status, message, data } = await checkWonderbitsAccountRegistrationRequired((user.wallet as UserWallet).address);
+
+        if (status !== Status.SUCCESS) {
+            return {
+                status,
+                message: `(claimReferralRewards) Error from checkWonderbitsAccountRegistrationRequired: ${message}`
+            }
+        }
+
+        // if the user has successfully registered their account, we update the user's points
+        // because the update operation for updating the leaderboard points is already done above, we call to check the newly updated points now.
+        const currentPoints = await getUserCurrentPoints(twitterId);
+        const updatePointsTx = await WONDERBITS_CONTRACT.updatePoints((user.wallet as UserWallet).address, currentPoints);
+
         return {
             status: Status.SUCCESS,
             message: `(claimReferralRewards) Referral rewards claimed.`,
             data: {
-                claimableReferralRewards
+                claimableReferralRewards,
+                updatePointsTxHash: updatePointsTx.hash
             }
         }
     } catch (err: any) {
