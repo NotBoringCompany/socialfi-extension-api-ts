@@ -290,6 +290,8 @@ export const importParticipants = async (spreadsheetId: string, range: string): 
             twitterUsername: data.map((item) => item['Twitter Handle']),
         }).lean();
 
+        console.log('registeredUsers', registeredUsers)
+
         // Using a Set to store unique Twitter handles
         const uniqueHandlers = new Set<string>();
         const unregisteredUsers = data
@@ -394,6 +396,8 @@ export const claimCollabReward = async (twitterId: string): Promise<ReturnValue>
             };
         }
 
+        console.log('claiming: ', user.twitterUsername)
+
         // update this to findAll
         const participants = await CollabParticipantModel.find({ twitterUsername: user.twitterUsername }).populate('basket');
         if (participants.length === 0) {
@@ -407,6 +411,7 @@ export const claimCollabReward = async (twitterId: string): Promise<ReturnValue>
             if (!participant.claimable) continue;
 
             participant.claimable = false;
+            participant.claimedAt = new Date();
             await participant.save();
 
             const userUpdateOperations = {

@@ -65,4 +65,7 @@ export const CollabParticipantSchema = new mongoose.Schema({
         type: Boolean,
         required: true,
     },
+    claimedAt: {
+        type: Date,
+    },
 });
