@@ -11,9 +11,12 @@ import { TerraCapsulatorType } from '../models/terraCapsulator';
 import { Item } from '../models/item';
 import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
 import { WeeklyMVPRanking, WeeklyMVPRankingData, WeeklyMVPReward, WeeklyMVPRewardType } from '../models/weeklyMVPReward';
-import { XCookieData } from '../models/user';
+import { UserWallet, XCookieData } from '../models/user';
 import mongoose from 'mongoose';
 import * as dotenv from 'dotenv';
+import { checkWonderbitsAccountRegistrationRequired } from './web3';
+import { getUserCurrentPoints } from './leaderboard';
+import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 
 dotenv.config();
 
@@ -504,12 +507,29 @@ export const claimWeeklyMVPRewards = async (twitterId: string): Promise<ReturnVa
         // set the claimableRewards back to an empty array.
         await WeeklyMVPClaimableRewardsModel.updateOne({ userId: user._id }, { $set: { claimableRewards: [] } });
 
+        // UPCOMING: `UPDATE POINTS` LOGIC TO WONDERBITS CONTRACT
+        // firstly, check if the user has an account registered in the contract.
+        const { status: wonderbitsAccStatus, message: wonderbitsAccMessage, data: wonderbitsAccData } = await checkWonderbitsAccountRegistrationRequired((user.wallet as UserWallet).address);
+
+        if (wonderbitsAccStatus !== Status.SUCCESS) {
+            return {
+                status: wonderbitsAccStatus,
+                message: `(claimReferralRewards) Error from checkWonderbitsAccountRegistrationRequired: ${wonderbitsAccMessage}`
+            }
+        }
+
+        // if the user has successfully registered their account, we update the user's points
+        // because the update operation for updating the leaderboard points is already done above, we call to check the newly updated points now.
+        const currentPoints = await getUserCurrentPoints(twitterId);
+        const updatePointsTx = await WONDERBITS_CONTRACT.updatePoints((user.wallet as UserWallet).address, currentPoints);
+
         return {
             status: Status.SUCCESS,
             message: `(claimWeeklyMVPRewards) Weekly MVP rewards claimed.`,
             data: {
                 leaderboardPoints: claimableLeaderboardPoints,
-                additionalPoints
+                additionalPoints,
+                updatePointsTxHash: updatePointsTx.hash
             }
         }
     } catch (err: any) {
