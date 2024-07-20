@@ -10,3 +10,11 @@ export const getLotteryContractBalance = async (): Promise<number> => {
     // convert the balance in wei to ether
     return parseFloat(ethers.utils.formatEther(balance));
 }
+
+/**
+ * Converts a random string into a Solidity bytes32 format.
+ */
+export const convertToBytes32 = (str: string): string => {
+    console.log(ethers.utils.formatBytes32String(str));
+    return ethers.utils.formatBytes32String(str);
+}
