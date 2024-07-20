@@ -249,6 +249,7 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
                 data: {
                     userId: newUser._id,
                     twitterId,
+                    loginType: 'Register',
                 },
             };
         } else {
@@ -273,6 +274,7 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
                 data: {
                     userId: user._id,
                     twitterId,
+                    loginType: 'Login'
                 },
             };
         }
@@ -2165,6 +2167,7 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
             data: {
                 userId: user._id,
                 twitterId: user.twitterId,
+                loginType: 'Pre-Register',
             },
         };
     } catch (err: any) {
