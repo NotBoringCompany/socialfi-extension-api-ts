@@ -1,0 +1,29 @@
+import { convertToBytes32 } from '../web3';
+
+// a list of mixpanel events in bytes32 format to be tracked on-chain using a more economical bytes32 => uint256 mapping.
+export const RENAME_BIT_MIXPANEL_EVENT_HASH = convertToBytes32('Rename Bit');
+export const RELEASE_BIT_MIXPANEL_EVENT_HASH = convertToBytes32('Release Bit');
+export const CURRENCY_TRACKER_MIXPANEL_EVENT_HASH = convertToBytes32('Currency Tracker');
+export const FEED_BIT_MIXPANEL_EVENT_HASH = convertToBytes32('Feed Bit');
+export const CONSUME_BIT_ORB_MIXPANEL_EVENT_HASH = convertToBytes32('Consume Bit Orb');
+export const OPEN_CHEST_MIXPANEL_EVENT_HASH = convertToBytes32('Open Chest');
+export const PLACE_BIT_MIXPANEL_EVENT_HASH = convertToBytes32('Place Bit');
+export const UNPLACE_BIT_MIXPANEL_EVENT_HASH = convertToBytes32('Unplace Bit');
+export const REMOVE_ISLAND_MIXPANEL_EVENT_HASH = convertToBytes32('Remove Island');
+export const CLAIM_RESOURCES_MIXPANEL_EVENT_HASH = convertToBytes32('Claim Resources');
+export const APPLY_GATHERING_BOOSTER_MIXPANEL_EVENT_HASH = convertToBytes32('Apply Gathering Booster');
+export const REDEEM_POAP_MIXPANEL_EVENT_HASH = convertToBytes32('Redeem POAP');
+export const TRAVEL_TO_POI_MIXPANEL_EVENT_HASH = convertToBytes32('Travel to POI');
+export const APPLY_TRAVELLING_BOOSTER_MIXPANEL_EVENT_HASH = convertToBytes32('Apply Travelling Booster');
+export const POINTS_EARNED_POI_SHOP_MIXPANEL_EVENT_HASH = convertToBytes32('Points Earned POI Shop');
+export const COMPLETE_QUEST_MIXPANEL_EVENT_HASH = convertToBytes32('Complete Quest');
+export const SQUAD_MEMBER_MIXPANEL_EVENT_HASH = convertToBytes32('Squad Member');
+export const CURRENT_USER_SQUAD_MIXPANEL_EVENT_HASH = convertToBytes32('Current User Squad');
+export const CONSUME_TERRA_CAPSULATOR_MIXPANEL_EVENT_HASH = convertToBytes32('Consume Terra Capsulator');
+export const REMOVE_RESOURCES_MIXPANEL_EVENT_HASH = convertToBytes32('Remove Resources');
+export const CLAIM_DAILY_REWARDS_MIXPANEL_EVENT_HASH = convertToBytes32('Claim Daily Rewards');
+export const LINK_INVITE_CODE_MIXPANEL_EVENT_HASH = convertToBytes32('Link Invite Code');
+export const CLAIM_BEGINNER_REWARDS_MIXPANEL_EVENT_HASH = convertToBytes32('Claim Beginner Rewards');
+export const CONNECT_DISCORD_CALLBACK_MIXPANEL_EVENT_HASH = convertToBytes32('Connect Discord Callback');
+export const DISCONNECT_DISCORD_MIXPANEL_EVENT_HASH = convertToBytes32('Disconnect Discord');
+export const LOGIN_CALLBACK_MIXPANEL_EVENT_HASH = convertToBytes32('Login Callback');
