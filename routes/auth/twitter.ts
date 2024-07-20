@@ -73,7 +73,7 @@ router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/',
                     '_expiryDate': twitterExpiryDate,
                     '_origin': host,
                     '_version': version,
-                    '_loginType': data.loginType,
+                    '_loginType': data?.loginType,
                 });
             }
 
