@@ -220,7 +220,8 @@ export const claimReferralRewards = async (twitterId: string): Promise<ReturnVal
             LeaderboardModel.updateOne({ name: 'Season 0' }, leaderboardUpdateOperations)
         ]);
 
-        // update the user's current points in the wonderbits contract
+        // UPCOMING: `UPDATE POINTS` LOGIC TO WONDERBITS CONTRACT
+        // firstly, check if the user has an account registered in the contract.
         const { status, message, data } = await checkWonderbitsAccountRegistrationRequired((user.wallet as UserWallet).address);
 
         if (status !== Status.SUCCESS) {
