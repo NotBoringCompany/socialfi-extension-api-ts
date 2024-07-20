@@ -10,7 +10,7 @@ import { addIslandToDatabase, getLatestIslandId, randomizeBaseResourceCap } from
 import { POIName } from '../models/poi';
 import { ExtendedResource, SimplifiedResource } from '../models/resource';
 import { resources } from '../utils/constants/resource';
-import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, XCookieSource } from '../models/user';
+import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, UserWallet, XCookieSource } from '../models/user';
 import {
     GET_BEGINNER_REWARDS,
     GET_DAILY_LOGIN_REWARDS,
@@ -38,6 +38,9 @@ import { ExtendedDiscordProfile, ExtendedProfile } from '../utils/types';
 import { WeeklyMVPRewardType } from '../models/weeklyMVPReward';
 import mongoose from 'mongoose';
 import * as dotenv from 'dotenv';
+import { getUserCurrentPoints } from './leaderboard';
+import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
+import { checkWonderbitsAccountRegistrationRequired } from './web3';
 
 dotenv.config();
 
@@ -1121,11 +1124,29 @@ export const claimDailyRewards = async (twitterId: string, leaderboardName: stri
                 }
             }
         }
+
+        // UPCOMING: `UPDATE POINTS` LOGIC TO WONDERBITS CONTRACT
+        // firstly, check if the user has an account registered in the contract.
+        const { status: wonderbitsAccStatus, message: wonderbitsAccMessage, data: wonderbitsAccData } = await checkWonderbitsAccountRegistrationRequired((user.wallet as UserWallet).address);
+
+        if (wonderbitsAccStatus !== Status.SUCCESS) {
+            return {
+                status: wonderbitsAccStatus,
+                message: `(claimReferralRewards) Error from checkWonderbitsAccountRegistrationRequired: ${wonderbitsAccMessage}`
+            }
+        }
+
+        // if the user has successfully registered their account, we update the user's points
+        // because the update operation for updating the leaderboard points is already done above, we call to check the newly updated points now.
+        const currentPoints = await getUserCurrentPoints(twitterId);
+        const updatePointsTx = await WONDERBITS_CONTRACT.updatePoints((user.wallet as UserWallet).address, currentPoints);
+
         return {
             status: Status.SUCCESS,
             message: `(claimDailyRewards) Daily rewards claimed.`,
             data: {
                 dailyLoginRewards,
+                updatePointsTxHash: updatePointsTx.hash,
             },
         };
     } catch (err: any) {
