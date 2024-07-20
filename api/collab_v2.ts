@@ -325,7 +325,7 @@ export const importParticipants = async (spreadsheetId: string, range: string): 
 
         // get registered user who already completed the tutorial
         const completedTutorialUsers = registeredUsers.filter(
-            ({ twitterUsername, inGameData }) => !!twitterUsername && (inGameData as InGameData).completedTutorialIds.length === tutorialCount
+            ({ twitterId, inGameData }) => !!twitterId && (inGameData as InGameData).completedTutorialIds.length === tutorialCount
         );
 
         // auto-claim the reward
