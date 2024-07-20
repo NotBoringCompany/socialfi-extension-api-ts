@@ -220,28 +220,11 @@ export const claimReferralRewards = async (twitterId: string): Promise<ReturnVal
             LeaderboardModel.updateOne({ name: 'Season 0' }, leaderboardUpdateOperations)
         ]);
 
-        // UPCOMING: `UPDATE POINTS` LOGIC TO WONDERBITS CONTRACT
-        // firstly, check if the user has an account registered in the contract.
-        const { status, message, data } = await checkWonderbitsAccountRegistrationRequired((user.wallet as UserWallet).address);
-
-        if (status !== Status.SUCCESS) {
-            return {
-                status,
-                message: `(claimReferralRewards) Error from checkWonderbitsAccountRegistrationRequired: ${message}`
-            }
-        }
-
-        // if the user has successfully registered their account, we update the user's points
-        // because the update operation for updating the leaderboard points is already done above, we call to check the newly updated points now.
-        const currentPoints = await getUserCurrentPoints(twitterId);
-        const updatePointsTx = await WONDERBITS_CONTRACT.updatePoints((user.wallet as UserWallet).address, currentPoints);
-
         return {
             status: Status.SUCCESS,
             message: `(claimReferralRewards) Referral rewards claimed.`,
             data: {
-                claimableReferralRewards,
-                updatePointsTxHash: updatePointsTx.hash
+                claimableReferralRewards
             }
         }
     } catch (err: any) {
