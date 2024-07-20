@@ -16,6 +16,10 @@ import { ReturnValue, Status } from '../utils/retVal';
 import { getLatestSquadWeeklyRanking, squadKOSData } from './squad';
 import { updateReferredUsersData } from './user';
 import * as dotenv from 'dotenv';
+import { checkWonderbitsAccountRegistrationRequired } from './web3';
+import { getUserCurrentPoints } from './leaderboard';
+import { UserWallet } from '../models/user';
+import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 
 /**
  * Resets the `currentBuyableAmount` and `currentSellableAmount` of all global items in all POI shops every day at 23:59 UTC.
@@ -1214,11 +1218,28 @@ export const sellItemsInPOIShop = async (
             }
         }
 
+        // UPCOMING: `UPDATE POINTS` LOGIC TO WONDERBITS CONTRACT
+        // firstly, check if the user has an account registered in the contract.
+        const { status: wonderbitsAccStatus, message: wonderbitsAccMessage, data: wonderbitsAccData } = await checkWonderbitsAccountRegistrationRequired((user.wallet as UserWallet).address);
+
+        if (wonderbitsAccStatus !== Status.SUCCESS) {
+            return {
+                status,
+                message: `(claimReferralRewards) Error from checkWonderbitsAccountRegistrationRequired: ${wonderbitsAccMessage}`
+            }
+        }
+
+        // if the user has successfully registered their account, we update the user's points
+        // because the update operation for updating the leaderboard points is already done above, we call to check the newly updated points now.
+        const currentPoints = await getUserCurrentPoints(twitterId);
+        const updatePointsTx = await WONDERBITS_CONTRACT.updatePoints((user.wallet as UserWallet).address, currentPoints);
+
         return {
             status: Status.SUCCESS,
             message: `(sellItemsInPOIShop) Items sold. Leaderboard points added.`,
             data: {
-                leaderboardPoints
+                leaderboardPoints,
+                updatePointsTxHash: updatePointsTx.hash
             }
         }
     } catch (err: any) {
