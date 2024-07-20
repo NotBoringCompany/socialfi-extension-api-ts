@@ -2093,6 +2093,11 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
             twitterUsername: profile.username,
             twitterDisplayName: profile.displayName,
             createdTimestamp: Math.floor(Date.now() / 1000),
+            inviteCodeData: {
+                usedStarterCode: user.inviteCodeData.usedStarterCode,
+                usedReferralCode: null,
+                referrerId: null,
+            },
             referralData: {
                 referralCode: generateReferralCode(),
                 referredUsersData: [],
