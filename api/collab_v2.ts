@@ -324,7 +324,9 @@ export const importParticipants = async (spreadsheetId: string, range: string): 
         const tutorialCount = await TutorialModel.countDocuments();
 
         // get registered user who already completed the tutorial
-        const completedTutorialUsers = registeredUsers.filter(({ inGameData }) => (inGameData as InGameData).completedTutorialIds.length === tutorialCount);
+        const completedTutorialUsers = registeredUsers.filter(
+            ({ twitterUsername, inGameData }) => !!twitterUsername && (inGameData as InGameData).completedTutorialIds.length === tutorialCount
+        );
 
         // auto-claim the reward
         await Promise.all(completedTutorialUsers.map((user) => claimCollabReward(user.twitterId)));
@@ -392,83 +394,81 @@ export const claimCollabReward = async (twitterId: string): Promise<ReturnValue>
             };
         }
 
-        const participant = await CollabParticipantModel.findOne({ twitterUsername: user.twitterUsername }).populate('basket');
-        if (!participant) {
+        // update this to findAll
+        const participants = await CollabParticipantModel.find({ twitterUsername: user.twitterUsername }).populate('basket');
+        if (participants.length === 0) {
             return {
                 status: Status.ERROR,
                 message: `(claimCollabReward) Participant not found.`,
             };
         }
 
-        if (!participant.claimable) {
-            return {
-                status: Status.ERROR,
-                message: `(claimCollabReward) Reward already claimed.`,
+        for (const participant of participants) {
+            if (!participant.claimable) continue;
+
+            participant.claimable = false;
+            await participant.save();
+
+            const userUpdateOperations = {
+                $pull: {},
+                $inc: {},
+                $set: {},
+                $push: {},
             };
-        }
 
-        participant.claimable = false;
-        await participant.save();
+            const rewards = participant.basket.rewards as CollabReward[];
 
-        const userUpdateOperations = {
-            $pull: {},
-            $inc: {},
-            $set: {},
-            $push: {},
-        };
+            for (const reward of rewards) {
+                switch (reward.type) {
+                    case CollabRewardType.BIT_ORB_I:
+                    case CollabRewardType.BIT_ORB_II:
+                    case CollabRewardType.BIT_ORB_III:
+                    case CollabRewardType.TERRA_CAPSULATOR_I:
+                    case CollabRewardType.TERRA_CAPSULATOR_II:
+                        // add the item to the user's inventory
+                        const existingItemIndex = (user.inventory?.items as Item[]).findIndex((i) => i.type === (reward.type as any));
 
-        const rewards = participant.basket.rewards as CollabReward[];
+                        if (existingItemIndex !== -1) {
+                            userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = reward.amount;
+                        } else {
+                            if (!userUpdateOperations.$push['inventory.items']) {
+                                userUpdateOperations.$push['inventory.items'] = {
+                                    $each: [],
+                                };
+                            }
 
-        for (const reward of rewards) {
-            switch (reward.type) {
-                case CollabRewardType.BIT_ORB_I:
-                case CollabRewardType.BIT_ORB_II:
-                case CollabRewardType.BIT_ORB_III:
-                case CollabRewardType.TERRA_CAPSULATOR_I:
-                case CollabRewardType.TERRA_CAPSULATOR_II:
-                    // add the item to the user's inventory
-                    const existingItemIndex = (user.inventory?.items as Item[]).findIndex((i) => i.type === (reward.type as any));
+                            userUpdateOperations.$push['inventory.items'].$each.push({
+                                type: reward.type,
+                                amount: reward.amount,
+                                totalAmountConsumed: 0,
+                                weeklyAmountConsumed: 0,
+                            });
+                        }
+                        break;
+                    case CollabRewardType.X_BIT_BERRY:
+                        userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = reward.amount;
 
-                    if (existingItemIndex !== -1) {
-                        userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = reward.amount;
-                    } else {
-                        if (!userUpdateOperations.$push['inventory.items']) {
-                            userUpdateOperations.$push['inventory.items'] = {
-                                $each: [],
+                        // check if the user's `xCookieData.extendedXCookieData` contains a source called QUEST_REWARDS.
+                        // if yes, we increment the amount, if not, we create a new entry for the source
+                        const questRewardsIndex = (user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(
+                            (data) => data.source === XCookieSource.COLLAB_REWARDS
+                        );
+
+                        if (questRewardsIndex !== -1) {
+                            userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${questRewardsIndex}.xCookies`] = reward.amount;
+                        } else {
+                            userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = {
+                                xCookies: reward.amount,
+                                source: XCookieSource.COLLAB_REWARDS,
                             };
                         }
-
-                        userUpdateOperations.$push['inventory.items'].$each.push({
-                            type: reward.type,
-                            amount: reward.amount,
-                            totalAmountConsumed: 0,
-                            weeklyAmountConsumed: 0,
-                        });
-                    }
-                    break;
-                case CollabRewardType.X_BIT_BERRY:
-                    userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = reward.amount;
-
-                    // check if the user's `xCookieData.extendedXCookieData` contains a source called QUEST_REWARDS.
-                    // if yes, we increment the amount, if not, we create a new entry for the source
-                    const questRewardsIndex = (user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(
-                        (data) => data.source === XCookieSource.COLLAB_REWARDS
-                    );
-
-                    if (questRewardsIndex !== -1) {
-                        userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${questRewardsIndex}.xCookies`] = reward.amount;
-                    } else {
-                        userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = {
-                            xCookies: reward.amount,
-                            source: XCookieSource.COLLAB_REWARDS,
-                        };
-                    }
-                    break;
+                        break;
+                }
             }
-        }
 
-        await UserModel.updateOne({ twitterId }, { $inc: userUpdateOperations.$inc });
-        await UserModel.updateOne({ twitterId }, { $push: userUpdateOperations.$push });
+            await UserModel.updateOne({ twitterId }, { $inc: userUpdateOperations.$inc });
+            await UserModel.updateOne({ twitterId }, { $push: userUpdateOperations.$push });
+        }
 
         return {
             status: Status.SUCCESS,
