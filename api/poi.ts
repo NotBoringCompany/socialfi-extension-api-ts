@@ -1224,15 +1224,22 @@ export const sellItemsInPOIShop = async (
 
         if (wonderbitsAccStatus !== Status.SUCCESS) {
             return {
-                status,
+                status: wonderbitsAccStatus,
                 message: `(claimReferralRewards) Error from checkWonderbitsAccountRegistrationRequired: ${wonderbitsAccMessage}`
             }
         }
 
         // if the user has successfully registered their account, we update the user's points
         // because the update operation for updating the leaderboard points is already done above, we call to check the newly updated points now.
-        const currentPoints = await getUserCurrentPoints(twitterId);
-        const updatePointsTx = await WONDERBITS_CONTRACT.updatePoints((user.wallet as UserWallet).address, currentPoints);
+        const { status: currentPointsStatus, message: currentPointsMessage, data: currentPointsData } = await getUserCurrentPoints(twitterId);
+
+        if (currentPointsStatus !== Status.SUCCESS) {
+            return {
+                status: currentPointsStatus,
+                message: `(claimReferralRewards) Error from getUserCurrentPoints: ${currentPointsMessage}`
+            }
+        }
+        const updatePointsTx = await WONDERBITS_CONTRACT.updatePoints((user.wallet as UserWallet).address, currentPointsData.points);
 
         return {
             status: Status.SUCCESS,
