@@ -216,12 +216,9 @@ export const getUserCurrentPoints = async (twitterId: string): Promise<ReturnVal
             }
         }
 
-        // Sum up the points from different sources APART FROM the source LeaderboardPointsSource.LEVELLING_UP
+        // Sum up the points from different sources
         const points = data.pointsData.reduce((acc, data) => {
-            if (data.source !== LeaderboardPointsSource.LEVELLING_UP) {
-                return acc + data.points;
-            }
-            return acc;
+            return acc + data.points;
         }, 0);
 
         return {
