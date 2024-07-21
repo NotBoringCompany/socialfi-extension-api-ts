@@ -62,4 +62,5 @@ export interface CollabParticipant {
     claimable: boolean;
     /** Whether the participant has fulfilled the requirements */
     approved: boolean;
+    claimedAt: Date;
 }

@@ -8,6 +8,7 @@ import { IslandModel, TutorialModel, UserModel } from '../utils/constants/db';
 import { generateObjectId } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
 import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
+import { claimCollabReward } from './collab_v2';
 
 /**
  * Adds a tutorial to the database.
@@ -129,13 +130,13 @@ export const completeTutorial = async (twitterId: string, tutorialId: number): P
         };
 
         const islandUpdateOperations: Array<{
-            islandId: number,
+            islandId: number;
             updateOperations: {
-                $pull: {},
-                $inc: {},
-                $set: {},
-                $push: {}
-            }
+                $pull: {};
+                $inc: {};
+                $set: {};
+                $push: {};
+            };
         }> = [];
 
         // get the user's list of tutorials
@@ -155,9 +156,9 @@ export const completeTutorial = async (twitterId: string, tutorialId: number): P
             return {
                 status: Status.SUCCESS,
                 message: `(completeTutorial) User has completed tutorial ID ${tutorialId}.`,
-                data: { 
-                    tutorial 
-                }
+                data: {
+                    tutorial,
+                },
             };
         }
 
@@ -174,7 +175,7 @@ export const completeTutorial = async (twitterId: string, tutorialId: number): P
                     // check if the user's `xCookieData.extendedXCookieData` contains a source called TUTORIAL_REWARDS.
                     // if yes, we increment the amount, if not, we create a new entry for the source
                     const questRewardsIndex = (user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(
-                        data => data.source === XCookieSource.TUTORIAL_REWARDS
+                        (data) => data.source === XCookieSource.TUTORIAL_REWARDS
                     );
 
                     if (questRewardsIndex !== -1) {
@@ -200,7 +201,7 @@ export const completeTutorial = async (twitterId: string, tutorialId: number): P
                         return {
                             status: Status.ERROR,
                             message: `(completeTutorial) Error from getLatestBitId: ${bitIdMessage}`,
-                        }
+                        };
                     }
 
                     // create a new Bit instance
@@ -222,31 +223,27 @@ export const completeTutorial = async (twitterId: string, tutorialId: number): P
                         currentFarmingLevel: 1, // starts at level 1
                         traits,
                         farmingStats: randomizeFarmingStats(rarity),
-                        bitStatsModifiers
-                    }
+                        bitStatsModifiers,
+                    };
 
                     // add a premium common bit to the user's inventory (users get 1 for free when they sign up)
-                    const {
-                        status: bitStatus,
-                        message: bitMessage,
-                        data: bitData,
-                    } = await addBitToDatabase(newBit);
+                    const { status: bitStatus, message: bitMessage, data: bitData } = await addBitToDatabase(newBit);
 
                     if (bitStatus !== Status.SUCCESS) {
                         return {
                             status: Status.ERROR,
                             message: `(completeTutorial) Error from addBitToDatabase: ${bitMessage}`,
-                        }
+                        };
                     }
 
                     // get the user's list of owned islands
                     const islands = user.inventory?.islandIds as number[];
 
                     // check if the bit has the infuential, antagonistic, famous or mannerless traits
-                    const hasInfluentialTrait = newBit.traits.some(trait => trait.trait === 'Influential');
-                    const hasAntagonisticTrait = newBit.traits.some(trait => trait.trait === 'Antagonistic');
-                    const hasFamousTrait = newBit.traits.some(trait => trait.trait === 'Famous');
-                    const hasMannerlessTrait = newBit.traits.some(trait => trait.trait === 'Mannerless');
+                    const hasInfluentialTrait = newBit.traits.some((trait) => trait.trait === 'Influential');
+                    const hasAntagonisticTrait = newBit.traits.some((trait) => trait.trait === 'Antagonistic');
+                    const hasFamousTrait = newBit.traits.some((trait) => trait.trait === 'Famous');
+                    const hasMannerlessTrait = newBit.traits.some((trait) => trait.trait === 'Mannerless');
 
                     // if bit has influential trait, add 1% working rate to all islands owned by the user
                     // if bit has antagonistic trait, reduce 1% working rate to all islands owned by the user
@@ -254,13 +251,17 @@ export const completeTutorial = async (twitterId: string, tutorialId: number): P
                     // if bit has mannerless trait, reduce 0.5% working rate to all islands owned by the user
                     if (hasInfluentialTrait || hasAntagonisticTrait || hasFamousTrait || hasMannerlessTrait) {
                         const gatheringRateModifier: Modifier = {
-                            origin: `Bit ID #${newBit.bitId}'s Trait: ${hasInfluentialTrait ? 'Influential' : hasAntagonisticTrait ? 'Antagonistic' : hasFamousTrait ? 'Famous' : 'Mannerless'}`,
-                            value: hasInfluentialTrait ? 1.01 : hasAntagonisticTrait ? 0.99 : hasFamousTrait ? 1.005 : 0.995
-                        }
+                            origin: `Bit ID #${newBit.bitId}'s Trait: ${
+                                hasInfluentialTrait ? 'Influential' : hasAntagonisticTrait ? 'Antagonistic' : hasFamousTrait ? 'Famous' : 'Mannerless'
+                            }`,
+                            value: hasInfluentialTrait ? 1.01 : hasAntagonisticTrait ? 0.99 : hasFamousTrait ? 1.005 : 0.995,
+                        };
                         const earningRateModifier: Modifier = {
-                            origin: `Bit ID #${newBit.bitId}'s Trait: ${hasInfluentialTrait ? 'Influential' : hasAntagonisticTrait ? 'Antagonistic' : hasFamousTrait ? 'Famous' : 'Mannerless'}`,
-                            value: hasInfluentialTrait ? 1.01 : hasAntagonisticTrait ? 0.99 : hasFamousTrait ? 1.005 : 0.995
-                        }
+                            origin: `Bit ID #${newBit.bitId}'s Trait: ${
+                                hasInfluentialTrait ? 'Influential' : hasAntagonisticTrait ? 'Antagonistic' : hasFamousTrait ? 'Famous' : 'Mannerless'
+                            }`,
+                            value: hasInfluentialTrait ? 1.01 : hasAntagonisticTrait ? 0.99 : hasFamousTrait ? 1.005 : 0.995,
+                        };
 
                         for (const islandId of islands) {
                             islandUpdateOperations.push({
@@ -268,12 +269,12 @@ export const completeTutorial = async (twitterId: string, tutorialId: number): P
                                 updateOperations: {
                                     $push: {
                                         'islandStatsModifiers.gatheringRateModifiers': gatheringRateModifier,
-                                        'islandStatsModifiers.earningRateModifiers': earningRateModifier
+                                        'islandStatsModifiers.earningRateModifiers': earningRateModifier,
                                     },
                                     $set: {},
                                     $pull: {},
-                                    $inc: {}
-                                }
+                                    $inc: {},
+                                },
                             });
                         }
                     }
@@ -289,25 +290,30 @@ export const completeTutorial = async (twitterId: string, tutorialId: number): P
             }
         }
 
-
         // create an array of promises for updating the islands
-        const islandUpdatePromises = islandUpdateOperations.map(async op => {
+        const islandUpdatePromises = islandUpdateOperations.map(async (op) => {
             return IslandModel.updateOne({ islandId: op.islandId }, op.updateOperations);
         });
 
         // execute the update operations
-        await Promise.all([
-            await UserModel.updateOne({ twitterId }, userUpdateOperations),
-            ...islandUpdatePromises,
-        ]);
+        await Promise.all([await UserModel.updateOne({ twitterId }, userUpdateOperations), ...islandUpdatePromises]);
+
+        // get is tutorial completed status
+        const tutorialCount = await TutorialModel.countDocuments();
+        const isCompleted = user.inGameData.completedTutorialIds.length + 1 === tutorialCount;
+
+        if (isCompleted) {
+            // handle auto-claim collab reward when completed all the tutorials
+            await claimCollabReward(user.twitterId);
+        }
 
         return {
             status: Status.SUCCESS,
             message: `(completeTutorial) User has completed tutorial ID ${tutorialId}.`,
-            data: { 
-                tutorial 
-            }
-        }
+            data: {
+                tutorial,
+            },
+        };
     } catch (err: any) {
         return {
             status: Status.ERROR,

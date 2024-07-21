@@ -2,6 +2,7 @@ import express from 'express';
 import { completeTutorial, getTutorials } from '../api/tutorial';
 import { Status } from '../utils/retVal';
 import { validateRequestAuth } from '../utils/auth';
+import mixpanel from 'mixpanel';
 
 const router = express.Router();
 
@@ -36,6 +37,12 @@ router.post('/complete_tutorial', async (req, res) => {
         }
 
         const { status, message, data } = await completeTutorial(validateData?.twitterId, tutorialId);
+
+        if (status === Status.SUCCESS && tutorialId === 11) {
+            mixpanel.track('Tutorial Completed', {
+                distinct_id: validateData?.twitterId,
+            });
+        }
 
         return res.status(status).json({
             status,
