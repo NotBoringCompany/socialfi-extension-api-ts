@@ -84,6 +84,7 @@ export const getUserData = async (twitterId: string): Promise<ReturnValue> => {
  */
 export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, profile?: ExtendedProfile | null, adminKey?: string): Promise<ReturnValue> => {
     try {
+        let loginType: 'Register' | 'Login';
         // if adminCall, check if the admin key is valid.
         if (adminCall) {
             if (!adminKey || adminKey !== process.env.ADMIN_KEY) {
@@ -103,6 +104,7 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
         if (!user) {
             // generates a new object id for the user
             const userObjectId = generateObjectId();
+            loginType = 'Register';
 
             // creates a new raft for the user with the generated user object id
             const { status, message, data } = await createRaft(userObjectId);
@@ -252,9 +254,11 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
                 data: {
                     userId: newUser._id,
                     twitterId,
+                    loginType: loginType,
                 },
             };
         } else {
+            loginType = 'Login';
             // update user's Twitter profile information if available
             if (!!profile) {
                 await UserModel.updateOne(
@@ -276,6 +280,7 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
                 data: {
                     userId: user._id,
                     twitterId,
+                    loginType: loginType
                 },
             };
         }
@@ -2044,6 +2049,7 @@ export const resetWeeklyItemsConsumed = async (): Promise<void> => {
 
 export const handlePreRegister = async (twitterId: string, profile?: ExtendedProfile): Promise<ReturnValue> => {
     try {
+        const loginType = 'Register';
         const user = await UserModel.findOne({ twitterUsername: profile.username });
 
         // creates a new raft for the user with the generated user object id
@@ -2114,9 +2120,8 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
             twitterUsername: profile.username,
             twitterDisplayName: profile.displayName,
             createdTimestamp: Math.floor(Date.now() / 1000),
-            // invite code data will be null until users input their invite code.
             inviteCodeData: {
-                usedStarterCode: null,
+                usedStarterCode: user.inviteCodeData.usedStarterCode,
                 usedReferralCode: null,
                 referrerId: null,
             },
@@ -2187,6 +2192,7 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
             data: {
                 userId: user._id,
                 twitterId: user.twitterId,
+                loginType: loginType,
             },
         };
     } catch (err: any) {

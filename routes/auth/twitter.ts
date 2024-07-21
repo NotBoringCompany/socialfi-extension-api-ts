@@ -53,7 +53,7 @@ router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/',
         const profile = req.user as ExtendedProfile;
         const { id: twitterId, twitterAccessToken, twitterRefreshToken, twitterExpiryDate } = profile;
 
-        const { status, message } = await handleTwitterLogin(twitterId, false, profile);
+        const { status, data, message } = await handleTwitterLogin(twitterId, false, profile);
 
         if (status !== Status.SUCCESS) {
             return res.status(status).json({
@@ -73,6 +73,7 @@ router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/',
                     '_expiryDate': twitterExpiryDate,
                     '_origin': host,
                     '_version': version,
+                    '_data': data,
                 });
             }
 
