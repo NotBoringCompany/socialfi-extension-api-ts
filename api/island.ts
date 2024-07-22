@@ -3498,7 +3498,8 @@ export const calcResourceDropChanceDiff = (type: IslandType, level: number): Res
 }
 
 /**
- * Get Island Tapping Data, if island has no tapping data in database, it'll Add new islandTappingData starting from 1st milestone
+ * Gets the island's tapping data. If the island has no tapping data in the database, 
+ * it'll add a new islandTappingData instance starting from the 1st milestone
  */
 export const getIslandTappingData = async (islandId: number): Promise<ReturnValue> => {
     try {
@@ -3518,15 +3519,18 @@ export const getIslandTappingData = async (islandId: number): Promise<ReturnValu
             };
         }
 
-        // Check if islandTappingData defined or not:
-        // 1. If undefined, create new islandTappingData starting from first Tier & return the data
-        // 2. Else, return the data
+        // Check if islandTappingData is defined.
+        // 1. If undefined, create new islandTappingData starting from the first tier & return the data
+        // 2. else, return the data
         if (!island.islandTappingData) {
             const newTappingData: IslandTappingData = ISLAND_TAPPING_MILESTONE(1);
 
-            // Saved the newTappingData to this Island database
+            // saves the newTappingData to this island
             islandUpdateOperations.$set['islandTappingData'] = newTappingData;
-            IslandModel.updateOne({ islandId: island.islandId }, islandUpdateOperations)
+
+            console.log('island update operations: ', islandUpdateOperations);
+
+            IslandModel.updateOne({ islandId}, islandUpdateOperations)
 
             return {
                 status: Status.SUCCESS,
@@ -3542,7 +3546,7 @@ export const getIslandTappingData = async (islandId: number): Promise<ReturnValu
                 status: Status.SUCCESS,
                 message: `(getIslandTappingData) Returning tapping data for Island with ID ${islandId}.`,
                 data: {
-                    tappingData,
+                    tappingData
                 }
             }
         }
