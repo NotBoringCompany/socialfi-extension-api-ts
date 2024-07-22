@@ -2,10 +2,13 @@ import express from 'express';
 import { ExtendedDiscordProfile } from '../../utils/types';
 import { Status } from '../../utils/retVal';
 import passport from '../../configs/passport';
-import { connectToDiscord, disconnectFromDiscord } from '../../api/user';
+import { connectToDiscord, disconnectFromDiscord, getMainWallet } from '../../api/user';
 import { validateJWT } from '../../utils/jwt';
 import { validateRequestAuth } from '../../utils/auth';
 import { allowMixpanel, mixpanel } from '../../utils/mixpanel';
+import { UserWallet } from '../../models/user';
+import { WONDERBITS_CONTRACT } from '../../utils/constants/web3';
+import { CONNECT_DISCORD_CALLBACK_MIXPANEL_EVENT_HASH, DISCONNECT_DISCORD_MIXPANEL_EVENT_HASH } from '../../utils/constants/mixpanelEvents';
 
 const router = express.Router();
 
@@ -105,6 +108,22 @@ router.get('/callback', passport.authenticate('discord', { failureRedirect: '/',
                 distinct_id: validateData?.twitterId,
                 '_profile': profile,
             });
+
+            // get the wallet address of the twitter ID
+            const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(validateData?.twitterId);
+
+            if (walletStatus !== Status.SUCCESS) {
+                // if there is an error somehow, ignore this and just redirect anyway.
+                return res.redirect(target.href);
+            }
+
+            const { address } = walletData.wallet as UserWallet;
+
+            // increment the counter for this mixpanel event on the wonderbits contract
+            await WONDERBITS_CONTRACT.incrementEventCounter(address, CONNECT_DISCORD_CALLBACK_MIXPANEL_EVENT_HASH).catch(err => {
+                console.error(`Error incrementing event counter for connect discord callback: ${err.message}`);
+                return res.redirect(target.href);
+            })
         }
 
         return res.redirect(target.href);
@@ -128,18 +147,44 @@ router.post('/disconnect', async (req, res) => {
         }
 
         const { status, message, data } = await disconnectFromDiscord(validateData?.twitterId);
+        let incrementCounterTxHash = '';
 
         if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Disconnect Discord', {
                 distinct_id: validateData?.twitterId,
                 '_data': data
             });
+
+            // get the wallet address of the twitter ID
+            const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(validateData?.twitterId);
+
+            if (walletStatus !== Status.SUCCESS) {
+                // if there is an error somehow, ignore this and just return a success for the API endpoint
+                // as this is just an optional tracking feature.
+                return res.status(status).json({
+                    status,
+                    message,
+                    data: {
+                        ...data,
+                        incrementCounterTxHash
+                    }
+                })
+            }
+
+            const { address } = walletData.wallet as UserWallet;
+
+            // increment the counter for this mixpanel event on the wonderbits contract
+            const incrementCounterTx = await WONDERBITS_CONTRACT.incrementEventCounter(address, DISCONNECT_DISCORD_MIXPANEL_EVENT_HASH);
+            incrementCounterTxHash = incrementCounterTx.hash;
         }
 
         return res.status(status).json({
             status,
             message,
-            data,
+            data: {
+                ...data,
+                incrementCounterTxHash
+            }
         });
     } catch (err: any) {
         return res.status(500).json({

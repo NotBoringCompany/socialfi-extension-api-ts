@@ -34,4 +34,5 @@ export const LINK_INVITE_CODE_MIXPANEL_EVENT_HASH = convertToBytes32('Link Invit
 export const CLAIM_BEGINNER_REWARDS_MIXPANEL_EVENT_HASH = convertToBytes32('Claim Beginner Rewards');
 export const CONNECT_DISCORD_CALLBACK_MIXPANEL_EVENT_HASH = convertToBytes32('Connect Discord Callback');
 export const DISCONNECT_DISCORD_MIXPANEL_EVENT_HASH = convertToBytes32('Disconnect Discord');
-export const LOGIN_CALLBACK_MIXPANEL_EVENT_HASH = convertToBytes32('Login Callback');
+export const TWITTER_LOGIN_CALLBACK_MIXPANEL_EVENT_HASH = convertToBytes32('Twitter Login Callback');
+export const TUTORIAL_COMPLETED_MIXPANEL_EVENT_HASH = convertToBytes32('Tutorial Completed');
