@@ -64,7 +64,10 @@ router.post('/consume', async (req, res) => {
         return res.status(status).json({
             status,
             message,
-            data,
+            data: {
+                ...data,
+                incrementCounterTxHash
+            }
         });
     } catch (err: any) {
         return res.status(500).json({
