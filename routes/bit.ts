@@ -14,7 +14,7 @@ import { authMiddleware } from '../middlewares/auth';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { getMainWallet } from '../api/user';
 import { UserWallet } from '../models/user';
-import { CURRENCY_TRACKER_MIXPANEL_EVENT_HASH, FEED_BIT_MIXPANEL_EVENT_HASH, RELEASE_BIT_MIXPANEL_EVENT_HASH, RENAME_BIT_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
+import { EVOLVE_BIT_MIXPANEL_EVENT_HASH, FEED_BIT_MIXPANEL_EVENT_HASH, RELEASE_BIT_MIXPANEL_EVENT_HASH, RENAME_BIT_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 
 const router = express.Router();
 
@@ -203,7 +203,7 @@ router.post('/evolve_bit', async (req, res) => {
             const { address } = walletData.wallet as UserWallet;
 
             // increment the counter for this mixpanel event on the wonderbits contract
-            const incrementCounterTx = await WONDERBITS_CONTRACT.incrementEventCounter(address, CURRENCY_TRACKER_MIXPANEL_EVENT_HASH);
+            const incrementCounterTx = await WONDERBITS_CONTRACT.incrementEventCounter(address, EVOLVE_BIT_MIXPANEL_EVENT_HASH);
             incrementCounterTxHash = incrementCounterTx.hash;
         }
 
