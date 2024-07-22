@@ -3596,14 +3596,14 @@ export const applyIslandTapping = async (twitterId: string, islandId: number): P
         // To Do: Apply Current Milestone Reward & Add the booster to the island.
         // ...
 
-        // Increase the tier Milestone to the next tier/rank. If already reached the max tier Return Error.
+        // Increase the tier Milestone to the next tier/rank. If milestone reaching the max tier, return error.
         // PLACEHOLDER TIER UP TO TIER 5 FOR NOW
         if (currentTappingData.currentMilestone < 5) {
             const nextTappingData: IslandTappingData = ISLAND_TAPPING_MILESTONE(currentTappingData.currentMilestone + 1);
 
-            // Saved the nextTappingData to this island database
+            // saves the nextTappingData to this island database
             islandUpdateOperations.$set['islandTappingData'] = nextTappingData;
-            IslandModel.updateOne({ islandId: island.islandId }, islandUpdateOperations)
+            await IslandModel.updateOne({ islandId: island.islandId }, islandUpdateOperations)
 
             return {
                 status: Status.SUCCESS,
