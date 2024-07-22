@@ -3521,6 +3521,7 @@ export const getIslandTappingData = async (islandId: number): Promise<ReturnValu
 
             // Saved the newTappingData to this Island database
             islandUpdateOperations.$set['islandTappingData'] = newTappingData;
+            IslandModel.updateOne({ islandId: island.islandId }, islandUpdateOperations)
 
             return {
                 status: Status.SUCCESS,
@@ -3594,8 +3595,8 @@ export const applyIslandTapping = async (twitterId: string, islandId: number): P
             const nextTappingData: IslandTappingData = ISLAND_TAPPING_MILESTONE(currentTappingData.currentMilestone + 1);
 
             // Saved the nextTappingData to this island database
-            // Saved the newTappingData to this Island database
             islandUpdateOperations.$set['islandTappingData'] = nextTappingData;
+            IslandModel.updateOne({ islandId: island.islandId }, islandUpdateOperations)
 
             return {
                 status: Status.SUCCESS,
