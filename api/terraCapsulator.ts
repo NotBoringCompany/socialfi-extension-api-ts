@@ -4,7 +4,7 @@ import { randomizeTypeFromCapsulator } from '../utils/constants/terraCapsulator'
 import { Island, IslandStatsModifiers, IslandType } from '../models/island';
 import { ObtainMethod } from '../models/obtainMethod';
 import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
-import { DEFAULT_ISLAND_TYPE, GET_TOTAL_COOKIE_CRUMBS_EARNABLE, GET_TOTAL_X_COOKIES_EARNABLE, randomizeIslandTraits } from '../utils/constants/island';
+import { DEFAULT_ISLAND_TYPE, GET_TOTAL_COOKIE_CRUMBS_EARNABLE, GET_TOTAL_X_COOKIES_EARNABLE, ISLAND_TAPPING_MILESTONE, randomizeIslandTraits } from '../utils/constants/island';
 import { BitTrait, BitTraitData } from '../models/bit';
 import { Modifier } from '../models/modifier';
 import { TerraCapsulatorType } from '../models/terraCapsulator';
@@ -234,7 +234,8 @@ export const summonIsland = async (
                 crumbsEarningEnd: 0,
                 lastClaimed: 0,
             },
-            islandStatsModifiers
+            islandStatsModifiers,
+            islandTappingData: ISLAND_TAPPING_MILESTONE(1),
         }
 
         console.log(`island stats modifiers for island #${island.islandId}: `, islandStatsModifiers);
