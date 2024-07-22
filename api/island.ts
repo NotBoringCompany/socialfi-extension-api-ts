@@ -3530,7 +3530,7 @@ export const getIslandTappingData = async (islandId: number): Promise<ReturnValu
 
             console.log('island update operations: ', islandUpdateOperations);
 
-            IslandModel.updateOne({ islandId}, islandUpdateOperations)
+            await IslandModel.updateOne({ islandId }, islandUpdateOperations);
 
             return {
                 status: Status.SUCCESS,
