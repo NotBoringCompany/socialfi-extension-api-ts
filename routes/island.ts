@@ -1,5 +1,5 @@
 import express from 'express';
-import { applyGatheringProgressBooster, calcEffectiveResourceDropChances, calcIslandCurrentRate, checkCurrentTax, claimResources, claimXCookiesAndCrumbs, evolveIsland, getIslands, giftXterioIsland, placeBit, removeIsland, unplaceBit, updateGatheringProgressAndDropResourceAlt } from '../api/island';
+import { applyGatheringProgressBooster, applyIslandTapping, calcEffectiveResourceDropChances, calcIslandCurrentRate, checkCurrentTax, claimResources, claimXCookiesAndCrumbs, evolveIsland, getIslandTappingData, getIslands, giftXterioIsland, placeBit, removeIsland, unplaceBit, updateGatheringProgressAndDropResourceAlt } from '../api/island';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { IslandType, RateType, ResourceDropChanceDiff } from '../models/island';
@@ -731,6 +731,56 @@ router.get('/calc_island_current_rate/:islandId/:rateType', async (req, res) => 
             status: 500,
             message: err.message
         });
+    }
+})
+
+router.get('/get_island_tapping_data/:islandId', async (req, res) => {
+    const { islandId } = req.params;
+
+    try {
+        const { status: validateStatus, message: validateMessage } = await validateRequestAuth(req, res, 'get_island_tapping_data');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage,
+            });
+        }
+
+        const { status, message, data } = await getIslandTappingData(parseInt(islandId));
+        
+        return res.status(status).json({
+            status,
+            message,
+            data,
+        })
+    } catch (err: any) {
+        return res.status(500).json({ status: 500, message: err.message });
+    }
+})
+
+router.post('/apply_island_tapping_data', async (req, res) => {
+    const { islandId }= req.body;
+    
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'apply_island_tapping_data');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage,
+            });
+        }
+
+        const { status, message, data } = await applyIslandTapping(validateData?.twitterId, parseInt(islandId));
+        
+        return res.status(status).json({
+            status,
+            message,
+            data,
+        })
+    } catch (err: any) {
+        return res.status(500).json({ status: 500, message: err.message });
     }
 })
 

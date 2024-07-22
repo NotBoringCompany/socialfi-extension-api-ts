@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
 import { IslandSchema } from '../schemas/Island';
-import { Island, IslandStatsModifiers, IslandTrait, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
-import { BARREN_ISLE_COMMON_DROP_CHANCE, BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DAILY_BONUS_RESOURCES_GATHERABLE, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLUTION_COST, ISLAND_RARITY_DEVIATION_MODIFIERS, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN, X_COOKIE_TAX, randomizeIslandTraits } from '../utils/constants/island';
+import { Island, IslandStatsModifiers, IslandTappingData, IslandTrait, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
+import { BARREN_ISLE_COMMON_DROP_CHANCE, BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DAILY_BONUS_RESOURCES_GATHERABLE, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLUTION_COST, ISLAND_RARITY_DEVIATION_MODIFIERS, ISLAND_TAPPING_MILESTONE, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN, X_COOKIE_TAX, randomizeIslandTraits } from '../utils/constants/island';
 import { calcBitCurrentRate, getBits } from './bit';
 import { BarrenResource, ExtendedResource, ExtendedResourceOrigin, Resource, ResourceLine, ResourceRarity, ResourceRarityNumeric, ResourceType, SimplifiedResource } from '../models/resource';
 import { UserSchema } from '../schemas/User';
@@ -3496,3 +3496,126 @@ export const calcResourceDropChanceDiff = (type: IslandType, level: number): Res
         legendary: resourceDiff.legendary * (level - 1)
     }
 }
+
+/**
+ * Get Island Tapping Data, if island has no tapping data in database, it'll Add new islandTappingData starting from 1st milestone
+ */
+export const getIslandTappingData = async (islandId: number): Promise<ReturnValue> => {
+    try {
+        const islandUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const island = await IslandModel.findOne({ islandId: islandId }).lean();
+
+        if (!island) {
+            return {
+                status: Status.ERROR,
+                message: `(getIslandTappingData) Island with ID ${islandId} not found.`
+            };
+        }
+
+        // Check if islandTappingData defined or not:
+        // 1. If undefined, create new islandTappingData starting from first Tier & return the data
+        // 2. Else, return the data
+        if (!island.islandTappingData) {
+            const newTappingData: IslandTappingData = ISLAND_TAPPING_MILESTONE(1);
+
+            // Saved the newTappingData to this Island database
+            islandUpdateOperations.$set['islandTappingData'] = newTappingData;
+
+            return {
+                status: Status.SUCCESS,
+                message: `(getIslandTappingData) Returning tapping data for Island with ID ${islandId}.`,
+                data: {
+                    tappingData: newTappingData,
+                }
+            }
+        } else {
+            const tappingData: IslandTappingData = island.islandTappingData;
+
+            return {
+                status: Status.SUCCESS,
+                message: `(getIslandTappingData) Returning tapping data for Island with ID ${islandId}.`,
+                data: {
+                    tappingData,
+                }
+            }
+        }
+
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getIslandTappingData) Error: ${err.message}`
+        }
+    }
+}
+
+export const applyIslandTapping = async (twitterId: string, islandId: number): Promise<ReturnValue> => {
+    try {
+        const userUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const islandUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        // user later will be used to add experience
+        const user = await UserModel.findOne({ userId: twitterId }).lean();
+        const island = await IslandModel.findOne({ islandId: islandId }).lean();
+
+        if (!island) {
+            return {
+                status: Status.ERROR,
+                message: `(getIslandTappingData) Island with ID ${islandId} not found.`
+            };
+        }
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(getIslandTappingData) User not found.`
+            };
+        }
+
+        const currentTappingData: IslandTappingData = island.islandTappingData;
+
+        // To Do: Apply Current Milestone Reward & Add the booster to the island.
+        // ...
+
+        // Increase the tier Milestone to the next tier/rank. If already reached the max tier Return Error.
+        // PLACEHOLDER TIER UP TO TIER 5 FOR NOW
+        if (currentTappingData.currentMilestone < 5) {
+            const nextTappingData: IslandTappingData = ISLAND_TAPPING_MILESTONE(currentTappingData.currentMilestone + 1);
+
+            // Saved the nextTappingData to this island database
+            // Saved the newTappingData to this Island database
+            islandUpdateOperations.$set['islandTappingData'] = nextTappingData;
+
+            return {
+                status: Status.SUCCESS,
+                message: `(getIslandTappingData) Applying tapping data for Island with ID ${islandId}. Increasing to tier ${nextTappingData.currentMilestone}`,
+            }
+        } else {
+            return {
+                status: Status.ERROR,
+                message: `(getIslandTappingData) Tapping milestone already reached the latest tier.`
+            };
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getIslandTappingData) Error: ${err.message}`
+        }
+    }  
+};
