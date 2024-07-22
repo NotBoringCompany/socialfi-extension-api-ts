@@ -5,6 +5,10 @@ import { validateRequestAuth } from '../utils/auth';
 import { QuestCategory } from '../models/quest';
 import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 import { authMiddleware } from '../middlewares/auth';
+import { UserWallet } from '../models/user';
+import { getMainWallet } from '../api/user';
+import { COMPLETE_QUEST_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
+import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 
 const router = express.Router();
 
@@ -68,18 +72,44 @@ router.post('/complete_quest', async (req, res) => {
         }
         
         const { status, message, data } = await completeQuest(validateData?.twitterId, questId);
+        let incrementCounterTxHash = '';
 
         if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Complete Quest', {
                 distinct_id: validateData?.twitterId,
                 '_data': data
             });
+
+            // get the wallet address of the twitter ID
+            const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(validateData?.twitterId);
+
+            if (walletStatus !== Status.SUCCESS) {
+                // if there is an error somehow, ignore this and just return a success for the API endpoint
+                // as this is just an optional tracking feature.
+                return res.status(status).json({
+                    status,
+                    message,
+                    data: {
+                        ...data,
+                        incrementCounterTxHash
+                    }
+                })
+            }
+
+            const { address } = walletData.wallet as UserWallet;
+
+            // increment the counter for this mixpanel event on the wonderbits contract
+            const incrementCounterTx = await WONDERBITS_CONTRACT.incrementEventCounter(address, COMPLETE_QUEST_MIXPANEL_EVENT_HASH);
+            incrementCounterTxHash = incrementCounterTx.hash;
         }
 
         return res.status(status).json({
             status,
             message,
-            data
+            data: {
+                ...data,
+                incrementCounterTxHash
+            }
         });
     } catch (err: any) {
         return res.status(500).json({
