@@ -62,8 +62,6 @@ router.get('/get_owned_superior_keychain_ids/:twitterId', async (req, res) => {
 
 router.post('/claim_daily_kos_rewards', async (req, res) => {
     try {
-        throw new Error('Sorry, this feature was temporarily disabled');
-
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'claim_daily_kos_rewards');
 
         if (validateStatus !== Status.SUCCESS) {
@@ -90,8 +88,6 @@ router.post('/claim_daily_kos_rewards', async (req, res) => {
 
 router.post('/claim_weekly_kos_rewards', async (req, res) => {
     try {
-        throw new Error('Sorry, this feature was temporarily disabled');
-
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'claim_weekly_kos_rewards');
 
         if (validateStatus !== Status.SUCCESS) {
