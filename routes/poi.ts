@@ -4,6 +4,10 @@ import { Status } from '../utils/retVal';
 import { addOrReplacePOIShop, addPOI, applyTravelBooster, buyItemsInPOIShop, getAvailablePOIDestinations, getCurrentLocation, getCurrentPOI, getSellItemsInPOIPointsBoost, getUserTransactionData, sellItemsInPOIShop, travelToPOI, updateArrival } from '../api/poi';
 import { ExtendedProfile } from '../utils/types';
 import { allowMixpanel, mixpanel } from '../utils/mixpanel';
+import { TRAVEL_TO_POI_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
+import { getMainWallet } from '../api/user';
+import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
+import { UserWallet } from '../models/user';
 
 const router = express.Router();
 
@@ -43,17 +47,42 @@ router.post('/travel_to_poi', async (req, res) => {
         }
 
         const { status, message } = await travelToPOI(validateData?.twitterId, destination);
+        let incrementCounterTxHash = '';
 
         if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Travel to Poi', {
                 distinct_id: validateData?.twitterId,
                 '_destination': destination,
             });
+
+            // get the wallet address of the twitter ID
+            const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(validateData?.twitterId);
+
+            if (walletStatus !== Status.SUCCESS) {
+                // if there is an error somehow, ignore this and just return a success for the API endpoint
+                // as this is just an optional tracking feature.
+                return res.status(status).json({
+                    status,
+                    message,
+                    data: {
+                        incrementCounterTxHash
+                    }
+                })
+            }
+
+            const { address } = walletData.wallet as UserWallet;
+
+            // increment the counter for this mixpanel event on the wonderbits contract
+            const incrementCounterTx = await WONDERBITS_CONTRACT.incrementEventCounter(address, TRAVEL_TO_POI_MIXPANEL_EVENT_HASH);
+            incrementCounterTxHash = incrementCounterTx.hash;
         }
 
         return res.status(status).json({
             status,
-            message
+            message,
+            data: {
+                incrementCounterTxHash
+            }
         });
     } catch (err: any) {
         return res.status(500).json({
