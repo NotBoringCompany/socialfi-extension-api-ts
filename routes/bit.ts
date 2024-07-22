@@ -14,7 +14,7 @@ import { authMiddleware } from '../middlewares/auth';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { getMainWallet } from '../api/user';
 import { UserWallet } from '../models/user';
-import { RENAME_BIT_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
+import { CURRENCY_TRACKER_MIXPANEL_EVENT_HASH, FEED_BIT_MIXPANEL_EVENT_HASH, RELEASE_BIT_MIXPANEL_EVENT_HASH, RENAME_BIT_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 
 const router = express.Router();
 
@@ -114,18 +114,44 @@ router.post('/release_bit', async (req, res) => {
         }
 
         const { status, message, data } = await releaseBit(validateData?.twitterId, bitId);
+        let incrementCounterTxHash = '';
 
         if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Release Bit', {
                 distinct_id: validateData?.twitterId,
                 '_bitId': bitId,
             });
+
+            // get the wallet address of the twitter ID
+            const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(validateData?.twitterId);
+
+            if (walletStatus !== Status.SUCCESS) {
+                // if there is an error somehow, ignore this and just return a success for the API endpoint
+                // as this is just an optional tracking feature.
+                return res.status(status).json({
+                    status,
+                    message,
+                    data: {
+                        ...data,
+                        incrementCounterTxHash
+                    }
+                })
+            }
+
+            const { address } = walletData.wallet as UserWallet;
+
+            // increment the counter for this mixpanel event on the wonderbits contract
+            const incrementCounterTx = await WONDERBITS_CONTRACT.incrementEventCounter(address, RELEASE_BIT_MIXPANEL_EVENT_HASH);
+            incrementCounterTxHash = incrementCounterTx.hash;
         }
 
         return res.status(status).json({
             status,
             message,
-            data
+            data: {
+                ...data,
+                incrementCounterTxHash
+            }
         });
     } catch (err: any) {
         return res.status(500).json({
@@ -149,6 +175,7 @@ router.post('/evolve_bit', async (req, res) => {
         }
 
         const { status, message, data } = await evolveBit(validateData?.twitterId, bitId);
+        let incrementCounterTxHash = '';
 
         if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Currency Tracker', {
@@ -156,12 +183,37 @@ router.post('/evolve_bit', async (req, res) => {
                 '_type': 'Evolve Bit',
                 '_data': data,
             });
+
+            // get the wallet address of the twitter ID
+            const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(validateData?.twitterId);
+
+            if (walletStatus !== Status.SUCCESS) {
+                // if there is an error somehow, ignore this and just return a success for the API endpoint
+                // as this is just an optional tracking feature.
+                return res.status(status).json({
+                    status,
+                    message,
+                    data: {
+                        ...data,
+                        incrementCounterTxHash
+                    }
+                })
+            }
+
+            const { address } = walletData.wallet as UserWallet;
+
+            // increment the counter for this mixpanel event on the wonderbits contract
+            const incrementCounterTx = await WONDERBITS_CONTRACT.incrementEventCounter(address, CURRENCY_TRACKER_MIXPANEL_EVENT_HASH);
+            incrementCounterTxHash = incrementCounterTx.hash;
         }
 
         return res.status(status).json({
             status,
             message,
-            data
+            data: {
+                ...data,
+                incrementCounterTxHash
+            }
         });
     } catch (err: any) {
         return res.status(500).json({
@@ -185,6 +237,7 @@ router.post('/feed_bit', async (req, res) => {
         }
 
         const { status, message, data } = await feedBit(validateData?.twitterId, bitId, <FoodType>foodType);
+        let incrementCounterTxHash = '';
 
         if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Feed Bit', {
@@ -192,12 +245,37 @@ router.post('/feed_bit', async (req, res) => {
                 '_bitId': bitId,
                 '_foodType': foodType,
             });
+
+            // get the wallet address of the twitter ID
+            const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(validateData?.twitterId);
+
+            if (walletStatus !== Status.SUCCESS) {
+                // if there is an error somehow, ignore this and just return a success for the API endpoint
+                // as this is just an optional tracking feature.
+                return res.status(status).json({
+                    status,
+                    message,
+                    data: {
+                        ...data,
+                        incrementCounterTxHash
+                    }
+                })
+            }
+
+            const { address } = walletData.wallet as UserWallet;
+
+            // increment the counter for this mixpanel event on the wonderbits contract
+            const incrementCounterTx = await WONDERBITS_CONTRACT.incrementEventCounter(address, FEED_BIT_MIXPANEL_EVENT_HASH);
+            incrementCounterTxHash = incrementCounterTx.hash;
         }
 
         return res.status(status).json({
             status,
             message,
-            data
+            data: {
+                ...data,
+                incrementCounterTxHash
+            }
         });
     } catch (err: any) {
         return res.status(500).json({
