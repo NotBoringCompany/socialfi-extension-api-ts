@@ -3528,8 +3528,6 @@ export const getIslandTappingData = async (islandId: number): Promise<ReturnValu
             // saves the newTappingData to this island
             islandUpdateOperations.$set['islandTappingData'] = newTappingData;
 
-            console.log('island update operations: ', islandUpdateOperations);
-
             await IslandModel.updateOne({ islandId }, islandUpdateOperations);
 
             return {
