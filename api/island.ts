@@ -3566,7 +3566,7 @@ export const applyIslandTapping = async (twitterId: string, islandId: number): P
         }
 
         // user later will be used to add experience
-        const user = await UserModel.findOne({ userId: twitterId }).lean();
+        const user = await UserModel.findOne({ twitterId }).lean();
         const island = await IslandModel.findOne({ islandId: islandId }).lean();
 
         if (!island) {
