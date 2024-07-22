@@ -43,6 +43,8 @@ export interface Island {
     islandEarningStats: IslandEarningStats;
     /** modifiers for both resource and earning stats (incl. boost and reduction) */
     islandStatsModifiers: IslandStatsModifiers;
+    /** island tapping related data */
+    islandTappingData: IslandTappingData;
 }
 
 /**
@@ -192,4 +194,16 @@ export enum RateType {
 export interface RarityDeviationReduction {
     /** the reduction in gathering rate (by a fixed %)  */
     gatheringRateReduction: number;
+}
+
+/**
+ * Used for Island Tapping mechanic
+ */
+export interface IslandTappingData {
+    /** current tapping milestone progress */
+    currentMilestone: number;
+    /** Booster reward when reaching current tapping milestone */
+    milestoneReward: number;
+    /**  */
+    tappingCountRequirement: number;
 }
