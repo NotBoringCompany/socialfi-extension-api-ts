@@ -642,6 +642,35 @@ export const getWallets = async (twitterId: string): Promise<ReturnValue> => {
 };
 
 /**
+ * Gets the main wallet of the user.
+ */
+export const getMainWallet = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(getMainWallet) User not found.`,
+            };
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getMainWallet) Main wallet fetched.`,
+            data: {
+                wallet: user.wallet,
+            },
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getMainWallet) ${err.message}`,
+        };
+    }
+}
+
+/**
  * (User) Manually removes a specific amount of resources that the user owns.
  */
 export const removeResources = async (twitterId: string, resourcesToRemove: SimplifiedResource[]): Promise<ReturnValue> => {

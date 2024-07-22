@@ -11,6 +11,10 @@ import { BitModel } from '../utils/constants/db';
 import { Modifier } from '../models/modifier';
 import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 import { authMiddleware } from '../middlewares/auth';
+import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
+import { getMainWallet } from '../api/user';
+import { UserWallet } from '../models/user';
+import { RENAME_BIT_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 
 const router = express.Router();
 
@@ -48,6 +52,7 @@ router.post('/rename_bit', async (req, res) => {
         }
 
         const { status, message, data } = await renameBit(validateData?.twitterId, bitId, newName);
+        let incrementCounterTxHash = '';
 
         if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Rename Bit', {
@@ -55,12 +60,37 @@ router.post('/rename_bit', async (req, res) => {
                 '_bitId': bitId,
                 '_newName': newName,
             });
+
+            // get the wallet address of the twitter ID
+            const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(validateData?.twitterId);
+
+            if (walletStatus !== Status.SUCCESS) {
+                // if there is an error somehow, ignore this and just return a success for the API endpoint
+                // as this is just an optional tracking feature.
+                return res.status(status).json({
+                    status,
+                    message,
+                    data: {
+                        ...data,
+                        incrementCounterTxHash
+                    }
+                })
+            }
+
+            const { address } = walletData.wallet as UserWallet;
+
+            // increment the counter for this mixpanel event on the wonderbits contract
+            const incrementCounterTx = await WONDERBITS_CONTRACT.incrementEventCounter(address, RENAME_BIT_MIXPANEL_EVENT_HASH);
+            incrementCounterTxHash = incrementCounterTx.hash;
         }
 
         return res.status(status).json({
             status,
             message,
-            data
+            data: {
+                ...data,
+                incrementCounterTxHash
+            }
         });
     } catch (err: any) {
         return res.status(500).json({
