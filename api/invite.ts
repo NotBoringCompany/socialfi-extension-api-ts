@@ -241,6 +241,8 @@ export const claimReferralRewards = async (twitterId: string): Promise<ReturnVal
                 message: `(claimReferralRewards) Error from getUserCurrentPoints: ${currentPointsMessage}`
             }
         }
+
+        // round it to the nearest integer because solidity doesn't accept floats
         const updatePointsTx = await WONDERBITS_CONTRACT.updatePoints((user.wallet as UserWallet).address, Math.round(currentPointsData.points));
 
         return {
