@@ -286,27 +286,34 @@ export const importParticipants = async (spreadsheetId: string, range: string): 
             }
         }
 
+        const twitterHandles = data.map((item) => item['Twitter Handle']);
+        const uniqueTwitterHandles = Array.from(new Set(twitterHandles));
+
+        const orConditions = uniqueTwitterHandles.map((handle) => ({
+            twitterUsername: { $regex: new RegExp(`^${handle}$`, 'i') },
+        }));
+
         const registeredUsers = await UserModel.find({
-            twitterUsername: data.map((item) => item['Twitter Handle']),
+            $or: orConditions,
         }).lean();
 
-        console.log('registeredUsers', registeredUsers)
+        // Create a Set of registered Twitter usernames for fast lookup
+        const registeredUsernames = new Set(registeredUsers.map((user) => user.twitterUsername.toLowerCase()));
 
-        // Using a Set to store unique Twitter handles
-        const uniqueHandlers = new Set<string>();
-        const unregisteredUsers = data
-            .filter((item) => !registeredUsers.find((user) => user.twitterUsername === item['Twitter Handle']))
-            .filter((row) => {
-                if (row['Twitter Handle'] && !uniqueHandlers.has(row['Twitter Handle'])) {
-                    uniqueHandlers.add(row['Twitter Handle']);
-                    return true;
-                }
-                return false;
-            });
+        // Filter out unregistered users and ensure uniqueness
+        const unregisteredUsers = data.filter((item) => {
+            const twitterHandle = item['Twitter Handle'];
+            return twitterHandle && !registeredUsernames.has(twitterHandle.toLowerCase());
+        });
+
+        // Ensure unique unregistered users based on Twitter Handle
+        const uniqueUnregisteredUsers = Array.from(new Set(unregisteredUsers.map((user) => user['Twitter Handle']))).map((handle) =>
+            unregisteredUsers.find((user) => user['Twitter Handle'] === handle)
+        );
 
         // Handle pre-register user
-        await UserModel.create(
-            unregisteredUsers.map((user) => ({
+        await UserModel.insertMany(
+            uniqueUnregisteredUsers.map((user) => ({
                 _id: generateObjectId(),
                 twitterId: null,
                 twitterUsername: user['Twitter Handle'],
@@ -321,7 +328,6 @@ export const importParticipants = async (spreadsheetId: string, range: string): 
                 },
             }))
         );
-
         // handle auto-claim when registered user already completed the tutorial
         const tutorialCount = await TutorialModel.countDocuments();
 
@@ -358,7 +364,11 @@ export const getCollabReward = async (twitterId: string): Promise<ReturnValue> =
             };
         }
 
-        const participant = await CollabParticipantModel.findOne({ twitterUsername: user.twitterUsername }).populate('basket').lean();
+        console.log('claiming: ', user.twitterUsername)
+
+        const participant = await CollabParticipantModel.findOne({ twitterUsername: { $regex: new RegExp(`^${user.twitterUsername}$`, 'i') } })
+            .populate('basket')
+            .lean();
         if (!participant) {
             return {
                 status: Status.ERROR,
@@ -396,10 +406,10 @@ export const claimCollabReward = async (twitterId: string): Promise<ReturnValue>
             };
         }
 
-        console.log('claiming: ', user.twitterUsername)
+        console.log('claiming: ', user.twitterUsername);
 
         // update this to findAll
-        const participants = await CollabParticipantModel.find({ twitterUsername: user.twitterUsername }).populate('basket');
+        const participants = await CollabParticipantModel.find({ twitterUsername: { $regex: new RegExp(user.twitterUsername, 'i') } }).populate('basket');
         if (participants.length === 0) {
             return {
                 status: Status.ERROR,
