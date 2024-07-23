@@ -326,6 +326,12 @@ export const importParticipants = async (spreadsheetId: string, range: string): 
                     discordId: user['Discord ID'],
                     name: user['Discord Name'],
                 },
+                inventory: {
+                    xCookieData: {
+                        currentXCookies: 0,
+                        extendedXCookieData: [],
+                    },
+                },
             }))
         );
         // handle auto-claim when registered user already completed the tutorial
@@ -364,7 +370,7 @@ export const getCollabReward = async (twitterId: string): Promise<ReturnValue> =
             };
         }
 
-        console.log('claiming: ', user.twitterUsername)
+        console.log('claiming: ', user.twitterUsername);
 
         const participant = await CollabParticipantModel.findOne({ twitterUsername: { $regex: new RegExp(`^${user.twitterUsername}$`, 'i') } })
             .populate('basket')
