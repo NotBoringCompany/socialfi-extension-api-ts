@@ -10,7 +10,7 @@ import { addIslandToDatabase, getLatestIslandId, randomizeBaseResourceCap } from
 import { POIName } from '../models/poi';
 import { ExtendedResource, SimplifiedResource } from '../models/resource';
 import { resources } from '../utils/constants/resource';
-import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, UserWallet, XCookieSource } from '../models/user';
+import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, PlayerEnergy, UserWallet, XCookieSource } from '../models/user';
 import {
     GET_BEGINNER_REWARDS,
     GET_DAILY_LOGIN_REWARDS,
@@ -172,6 +172,12 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
             // creates the wallet for the user
             const { privateKey, address } = createUserWallet();
 
+            // initialize PlayerEnergy fot user
+            const newEnergy: PlayerEnergy = {
+                currentEnergy: 5000,
+                maxEnergy: 5000,
+            }
+
             const newUser = new UserModel({
                 _id: userObjectId,
                 twitterId,
@@ -226,6 +232,7 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
                 },
                 inGameData: {
                     level: 1,
+                    energy: newEnergy,
                     completedTutorialIds: [],
                     beginnerRewardData: {
                         lastClaimedTimestamp: 0,
@@ -2150,6 +2157,12 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
         // creates the wallet for the user
         const { privateKey, address } = createUserWallet();
 
+        // initialize PlayerEnergy fot user
+        const newEnergy: PlayerEnergy = {
+            currentEnergy: 5000,
+            maxEnergy: 5000,
+        }
+
         await user.updateOne({
             twitterId,
             twitterProfilePicture: profile.photos[0].value ?? '',
@@ -2202,6 +2215,7 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
             },
             inGameData: {
                 level: 1,
+                energy: newEnergy,
                 completedTutorialIds: [],
                 beginnerRewardData: {
                     lastClaimedTimestamp: 0,
