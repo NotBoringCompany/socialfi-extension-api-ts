@@ -7,6 +7,7 @@ import { CONSUME_TERRA_CAPSULATOR_MIXPANEL_EVENT_HASH } from '../utils/constants
 import { getMainWallet } from '../api/user';
 import { UserWallet } from '../models/user';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
+import { checkWonderbitsAccountRegistrationRequired } from '../api/web3';
 
 const router = express.Router();
 
@@ -45,6 +46,19 @@ router.post('/consume', async (req, res) => {
             }
 
             const { address } = walletData.wallet as UserWallet;
+
+            // check if the user has an account registered in the contract.
+            const { status: wonderbitsAccStatus } = await checkWonderbitsAccountRegistrationRequired(address);
+
+            if (wonderbitsAccStatus !== Status.SUCCESS) {
+                // if there is an error somehow, ignore this and just return a success for the API endpoint
+                // as this is just an optional tracking feature.
+                return res.status(status).json({
+                    status,
+                    message,
+                    data
+                })
+            }
 
             // increment the counter for this mixpanel event on the wonderbits contract
             await WONDERBITS_CONTRACT.incrementEventCounter(address, CONSUME_TERRA_CAPSULATOR_MIXPANEL_EVENT_HASH).catch((err: any) => {
