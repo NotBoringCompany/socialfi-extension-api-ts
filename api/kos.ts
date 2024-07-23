@@ -562,6 +562,9 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
                 message: `(claimReferralRewards) Error from getUserCurrentPoints: ${currentPointsMessage}`
             }
         }
+
+        console.log('current points data: ', currentPointsData.points);
+
         const updatePointsTx = await WONDERBITS_CONTRACT.updatePoints((user.wallet as UserWallet).address, currentPointsData.points);
 
         return {
