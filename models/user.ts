@@ -146,6 +146,8 @@ export enum XCookieSource {
 export interface InGameData {
     /** the user's level */
     level: number;
+    /** the user PlayerEnergy data */
+    energy: PlayerEnergy;
     /** the list of tutorial IDs the user has completed at the start */
     completedTutorialIds: number[];
     /** 
@@ -269,4 +271,12 @@ export interface DiscordProfile {
     username: string;
     /** discord oauth refresh token, lasts for 365 days */
     token: string;
+}
+
+/**
+ * Represents user Energy data.
+ */
+export interface PlayerEnergy {
+    maxEnergy: number;
+    currentEnergy: number;
 }
