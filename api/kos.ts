@@ -556,6 +556,7 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
         const { status: currentPointsStatus, message: currentPointsMessage, data: currentPointsData } = await getUserCurrentPoints(twitterId);
 
         if (currentPointsStatus !== Status.SUCCESS) {
+            console.log('error here: ', currentPointsMessage);
             return {
                 status: currentPointsStatus,
                 message: `(claimReferralRewards) Error from getUserCurrentPoints: ${currentPointsMessage}`
@@ -579,6 +580,7 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
             }
         }
     } catch (err: any) {
+        console.log('error from claimWeeklyKOSRewards: ', err);
         return {
             status: Status.ERROR,
             message: `(claimWeeklyKOSRewards) Error: ${err.message}`
