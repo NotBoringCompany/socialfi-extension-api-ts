@@ -563,9 +563,7 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
             }
         }
 
-        console.log('current points data: ', currentPointsData.points);
-
-        const updatePointsTx = await WONDERBITS_CONTRACT.updatePoints((user.wallet as UserWallet).address, currentPointsData.points);
+        const updatePointsTx = await WONDERBITS_CONTRACT.updatePoints((user.wallet as UserWallet).address, Math.round(currentPointsData.points));
 
         return {
             status: Status.SUCCESS,
