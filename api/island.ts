@@ -3591,7 +3591,7 @@ export const applyIslandTapping = async (twitterId: string, islandId: number): P
         // ...
 
         // Increase the tier Milestone to the next tier/rank. If milestone reaching the max tier, return error.
-        if (currentTappingData.currentMilestone < islandTappingLimit) {
+        if (currentTappingData.currentMilestone <= islandTappingLimit) {
             const nextTappingData: IslandTappingData = ISLAND_TAPPING_REQUIREMENT(currentTappingData.currentMilestone + 1);
 
             // saves the nextTappingData to this island database
