@@ -10,7 +10,7 @@ import { addIslandToDatabase, getLatestIslandId, randomizeBaseResourceCap } from
 import { POIName } from '../models/poi';
 import { ExtendedResource, SimplifiedResource } from '../models/resource';
 import { resources } from '../utils/constants/resource';
-import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, XCookieSource } from '../models/user';
+import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, UserWallet, XCookieSource } from '../models/user';
 import {
     GET_BEGINNER_REWARDS,
     GET_DAILY_LOGIN_REWARDS,
@@ -38,6 +38,9 @@ import { ExtendedDiscordProfile, ExtendedProfile } from '../utils/types';
 import { WeeklyMVPRewardType } from '../models/weeklyMVPReward';
 import mongoose from 'mongoose';
 import * as dotenv from 'dotenv';
+import { checkWonderbitsAccountRegistrationRequired } from './web3';
+import { getUserCurrentPoints } from './leaderboard';
+import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 
 dotenv.config();
 
@@ -1126,6 +1129,50 @@ export const claimDailyRewards = async (twitterId: string, leaderboardName: stri
                 }
             }
         }
+
+        // UPCOMING: `UPDATE POINTS` LOGIC TO WONDERBITS CONTRACT
+        // firstly, check if the user has an account registered in the contract.
+        const { status: wonderbitsAccStatus, message: wonderbitsAccMessage, data: wonderbitsAccData } = await checkWonderbitsAccountRegistrationRequired((user.wallet as UserWallet).address);
+
+        if (wonderbitsAccStatus !== Status.SUCCESS) {
+            // upon error, return success anyway (this is just an optional feature)
+            return {
+                status: Status.SUCCESS,
+                message: `(claimDailyRewards) Daily rewards claimed.`,
+                data: {
+                    dailyLoginRewards,
+                },
+            }
+        }
+
+        // if the user has successfully registered their account, we update the user's points
+        // because the update operation for updating the leaderboard points is already done above, we call to check the newly updated points now.
+        const { status: currentPointsStatus, message: currentPointsMessage, data: currentPointsData } = await getUserCurrentPoints(twitterId);
+
+        if (currentPointsStatus !== Status.SUCCESS) {
+            // upon error, return success anyway (this is just an optional feature)
+            return {
+                status: Status.SUCCESS,
+                message: `(claimDailyRewards) Daily rewards claimed.`,
+                data: {
+                    dailyLoginRewards,
+                },
+            }
+        }
+
+        // round it to the nearest integer because solidity doesn't accept floats
+        await WONDERBITS_CONTRACT.updatePoints((user.wallet as UserWallet).address, Math.round(currentPointsData.points)).catch((err: any) => {
+            console.error(`(claimDailyRewards) Error from Wonderbits contract: ${err.message}`);
+            // upon error, return success anyway (this is just an optional feature)
+            return {
+                status: Status.SUCCESS,
+                message: `(claimDailyRewards) Daily rewards claimed.`,
+                data: {
+                    dailyLoginRewards,
+                },
+            }
+        })
+
         return {
             status: Status.SUCCESS,
             message: `(claimDailyRewards) Daily rewards claimed.`,
