@@ -15,6 +15,7 @@ import { EVOLVE_BIT_MIXPANEL_EVENT_HASH, FEED_BIT_MIXPANEL_EVENT_HASH, RELEASE_B
 import { UserWallet } from '../models/user';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { getMainWallet } from '../api/user';
+import { checkWonderbitsAccountRegistrationRequired } from '../api/web3';
 
 const router = express.Router();
 
@@ -74,6 +75,29 @@ router.post('/rename_bit', async (req, res) => {
             }
 
             const { address } = walletData.wallet as UserWallet;
+
+            // check if the user has an account registered in the contract.
+            const { status: wonderbitsAccStatus } = await checkWonderbitsAccountRegistrationRequired(address);
+
+            if (wonderbitsAccStatus !== Status.SUCCESS) {
+                // if there is an error somehow, ignore this and just return a success for the API endpoint
+                // as this is just an optional tracking feature.
+                return res.status(status).json({
+                    status,
+                    message,
+                    data
+                })
+            }
+
+            if (walletStatus !== Status.SUCCESS) {
+                // if there is an error somehow, ignore this and just return a success for the API endpoint
+                // as this is just an optional tracking feature.
+                return res.status(status).json({
+                    status,
+                    message,
+                    data
+                })
+            }
 
             // increment the counter for this mixpanel event on the wonderbits contract
             await WONDERBITS_CONTRACT.incrementEventCounter(address, RENAME_BIT_MIXPANEL_EVENT_HASH).catch((err: any) => {
@@ -135,6 +159,19 @@ router.post('/release_bit', async (req, res) => {
             }
 
             const { address } = walletData.wallet as UserWallet;
+
+            // check if the user has an account registered in the contract.
+            const { status: wonderbitsAccStatus } = await checkWonderbitsAccountRegistrationRequired(address);
+
+            if (wonderbitsAccStatus !== Status.SUCCESS) {
+                // if there is an error somehow, ignore this and just return a success for the API endpoint
+                // as this is just an optional tracking feature.
+                return res.status(status).json({
+                    status,
+                    message,
+                    data
+                })
+            }
 
             // increment the counter for this mixpanel event on the wonderbits contract
             await WONDERBITS_CONTRACT.incrementEventCounter(address, RELEASE_BIT_MIXPANEL_EVENT_HASH).catch((err: any) => {
@@ -198,6 +235,19 @@ router.post('/evolve_bit', async (req, res) => {
 
             const { address } = walletData.wallet as UserWallet;
 
+            // check if the user has an account registered in the contract.
+            const { status: wonderbitsAccStatus } = await checkWonderbitsAccountRegistrationRequired(address);
+
+            if (wonderbitsAccStatus !== Status.SUCCESS) {
+                // if there is an error somehow, ignore this and just return a success for the API endpoint
+                // as this is just an optional tracking feature.
+                return res.status(status).json({
+                    status,
+                    message,
+                    data
+                })
+            }
+
             // increment the counter for this mixpanel event on the wonderbits contract
             await WONDERBITS_CONTRACT.incrementEventCounter(address, EVOLVE_BIT_MIXPANEL_EVENT_HASH).catch((err: any) => {
                 // if there is an error somehow, ignore this and just return a success for the API endpoint
@@ -259,6 +309,19 @@ router.post('/feed_bit', async (req, res) => {
             }
 
             const { address } = walletData.wallet as UserWallet;
+
+            // check if the user has an account registered in the contract.
+            const { status: wonderbitsAccStatus } = await checkWonderbitsAccountRegistrationRequired(address);
+
+            if (wonderbitsAccStatus !== Status.SUCCESS) {
+                // if there is an error somehow, ignore this and just return a success for the API endpoint
+                // as this is just an optional tracking feature.
+                return res.status(status).json({
+                    status,
+                    message,
+                    data
+                })
+            }
 
             // increment the counter for this mixpanel event on the wonderbits contract
             await WONDERBITS_CONTRACT.incrementEventCounter(address, FEED_BIT_MIXPANEL_EVENT_HASH).catch((err: any) => {

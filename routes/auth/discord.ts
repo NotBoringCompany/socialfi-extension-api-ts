@@ -9,6 +9,7 @@ import { mixpanel } from '../../utils/mixpanel';
 import { UserWallet } from '../../models/user';
 import { CONNECT_DISCORD_CALLBACK_MIXPANEL_EVENT_HASH, DISCONNECT_DISCORD_MIXPANEL_EVENT_HASH } from '../../utils/constants/mixpanelEvents';
 import { WONDERBITS_CONTRACT } from '../../utils/constants/web3';
+import { checkWonderbitsAccountRegistrationRequired } from '../../api/web3';
 
 const router = express.Router();
 
@@ -120,6 +121,15 @@ router.get('/callback', passport.authenticate('discord', { failureRedirect: '/',
 
             const { address } = walletData.wallet as UserWallet;
 
+            // check if the user has an account registered in the contract.
+            const { status: wonderbitsAccStatus } = await checkWonderbitsAccountRegistrationRequired(address);
+
+            if (wonderbitsAccStatus !== Status.SUCCESS) {
+                // if there is an error somehow, ignore this and just return a success for the API endpoint
+                // as this is just an optional tracking feature.
+                return res.redirect(target.href);
+            }
+
             // increment the counter for this mixpanel event on the wonderbits contract
             await WONDERBITS_CONTRACT.incrementEventCounter(address, CONNECT_DISCORD_CALLBACK_MIXPANEL_EVENT_HASH).catch((err: any) => {
                 // if there is an error somehow, ignore this and just redirect.
@@ -170,6 +180,19 @@ router.post('/disconnect', async (req, res) => {
             }
 
             const { address } = walletData.wallet as UserWallet;
+
+            // check if the user has an account registered in the contract.
+            const { status: wonderbitsAccStatus } = await checkWonderbitsAccountRegistrationRequired(address);
+
+            if (wonderbitsAccStatus !== Status.SUCCESS) {
+                // if there is an error somehow, ignore this and just return a success for the API endpoint
+                // as this is just an optional tracking feature.
+                return res.status(status).json({
+                    status,
+                    message,
+                    data
+                })
+            }
 
             // increment the counter for this mixpanel event on the wonderbits contract
             await WONDERBITS_CONTRACT.incrementEventCounter(address, DISCONNECT_DISCORD_MIXPANEL_EVENT_HASH).catch((err: any) => {
