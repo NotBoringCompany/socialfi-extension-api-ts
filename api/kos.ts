@@ -1210,13 +1210,10 @@ export const checkWeeklyKOSRewards = async (): Promise<ReturnValue> => {
             return;
         }
 
-        console.log('bulk write ops: ', bulkWriteOps);
-
         // execute the bulk write operations
         await KOSClaimableWeeklyRewardsModel.bulkWrite(bulkWriteOps);
 
         if (errors.length > 0) {
-            console.log(`(checkWeeklyKOSOwnership) Errors: ${errors.join('\n')}`);
             console.error(`(checkWeeklyKOSOwnership) Errors: ${errors.join('\n')}`);
         }
 
@@ -1229,8 +1226,6 @@ export const checkWeeklyKOSRewards = async (): Promise<ReturnValue> => {
         }
     }
 }
-
-checkWeeklyKOSRewards();
 
 /**
  * Gets all Key of Salvation IDs owned by the user (main + secondary wallets).
