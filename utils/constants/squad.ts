@@ -1,7 +1,7 @@
 /** the initial max members allowed for new squads */
 export const INITIAL_MAX_MEMBERS = 10;
 /** the max amount of max members a squad can have */
-export const MAX_MEMBERS_LIMIT = 100;
+export const MAX_MEMBERS_LIMIT = 50;
 /** the max number of leaders a squad can have */
 export const MAX_LEADERS_LIMIT = 1;
 
