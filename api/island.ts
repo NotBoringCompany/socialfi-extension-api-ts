@@ -3615,3 +3615,37 @@ export const applyIslandTapping = async (twitterId: string, islandId: number): P
         }
     }  
 };
+
+/**
+ * Resets the `currentMilestone` field of all islands with a milestone greater than 1
+ * to the value associated with milestoneTier 1.
+ * Called by a scheduler every 23:59 UTC.
+ */
+export const resetDailyIslandTappingMilestone = async (): Promise<void> => {
+    try {
+        // Find all available islands with currentMilestone greater than 1.
+        const islands = await IslandModel.find({'islandTappingData.currentMilestone': {$gt: 1}}).lean();
+        
+        if (islands.length === 0 || !islands) {
+            console.error(`(resetDailyIslandTappingMilestone) No islands found.`);
+            return;
+        }
+        
+        const bulkWriteOps = islands.map(island => {
+            return{
+                updateOne: {
+                    filter: { islandId: island.islandId },
+                    update: {
+                        $set: {
+                            'islandTappingData.currentMilestone': ISLAND_TAPPING_REQUIREMENT(1)
+                        }
+                    }
+                }
+            }
+        });
+
+        await IslandModel.bulkWrite(bulkWriteOps);
+    } catch (err: any) {
+        console.error(`(resetDailyIslandTappingMilestone) Error: ${err.message}`);
+    }
+};

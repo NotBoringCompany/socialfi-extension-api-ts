@@ -648,7 +648,13 @@ export const X_COOKIE_TAX = (
  */
 export const ISLAND_TAPPING_REQUIREMENT = (milestoneTier: number): IslandTappingData => {
   // calculate current milestone caress required based on milestonTier parameter.
-  const caressEnergyRequired = Math.ceil(BASE_CARESS_METER * EXP_BASE_DIFF ** (milestoneTier * (1 + EXP_MULTIPLIER) - 1));
+  let caressEnergyRequired: number;
+
+  if (milestoneTier === 1) {
+    caressEnergyRequired = BASE_CARESS_METER;
+  } else {
+    Math.ceil(BASE_CARESS_METER * EXP_BASE_DIFF ** (milestoneTier * (1 + EXP_MULTIPLIER) - 1));
+  }
 
   // return IslandTappingData after calculating caressEnergyMeter required for this milestoneTier
   return {

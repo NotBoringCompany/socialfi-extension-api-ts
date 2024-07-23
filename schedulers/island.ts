@@ -1,5 +1,5 @@
 import cron from 'node-cron';
-import { updateClaimableCrumbs, updateClaimableXCookies, updateDailyBonusResourcesGathered, updateGatheringProgressAndDropResource } from '../api/island';
+import { resetDailyIslandTappingMilestone, updateClaimableCrumbs, updateClaimableXCookies, updateDailyBonusResourcesGathered, updateGatheringProgressAndDropResource } from '../api/island';
 
 /**
  * Calls `updateGatheringProgressAndDropResource` every 3 minutes to update all islands' gathering progress and drop a resource for any eligible islands.
@@ -56,3 +56,17 @@ export const updateDailyBonusResourcesGatheredScheduler = async (): Promise<void
         console.error('Error in updateDailyBonusResourcesGathered:', err.message);
     }
 }
+
+/**
+ * Call `resetDailyIslandTappingMilestone` every day at 23:59 to reset the islandTappingData back to first Milestone
+ */
+export const resetDailyIslandTappingMilestoneScheduler = async (): Promise<void> => {
+    try {
+        cron.schedule('59 23 * * *', async () => {
+            console.log('Running resetDailyIslandTappingMilestoneScheduler...');
+            await resetDailyIslandTappingMilestone();
+        })
+    } catch (err: any) {
+        console.error('Error in resetDailyIslandTappingMilestoneScheduler:', err.message);
+    }
+};
