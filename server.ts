@@ -45,7 +45,6 @@ import poi from './routes/poi';
 import leaderboard from './routes/leaderboard';
 import kos from './routes/kos';
 import asset from './routes/asset';
-import tapping from './routes/tapping';
 import tutorial from './routes/tutorial';
 import invite from './routes/invite';
 import squad from './routes/squad';
@@ -74,7 +73,6 @@ app.use('/cookie', cookie);
 app.use('/leaderboard', leaderboard);
 app.use('/kos', kos);
 app.use('/asset', asset);
-app.use('/tapping', tapping);
 app.use('/tutorial', tutorial);
 app.use('/invite', invite);
 app.use('/squad', squad);
@@ -84,8 +82,8 @@ app.use('/squad_leaderboard', squadLeaderboard);
 app.use('/weekly_mvp_reward', weeklyMVPReward);
 app.use('/collab', collabV2);
 
-app.listen(port, async () => {
-    console.log(`Server running on port ${port}`);
+// app.listen(port, async () => {
+//     console.log(`Server running on port ${port}`);
 
-    await schedulers();
-});
+//     await schedulers();
+// });
