@@ -3,6 +3,10 @@ import { Status } from '../utils/retVal';
 import { validateRequestAuth } from '../utils/auth';
 import { addPOAP, getAllPOAP, getUserPOAP, redeemCode } from '../api/poap';
 import { mixpanel } from '../utils/mixpanel';
+import { UserWallet } from '../models/user';
+import { getMainWallet } from '../api/user';
+import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
+import { REDEEM_POAP_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 
 const router = express.Router();
 
@@ -92,6 +96,32 @@ router.post('/redeem_poap', async (req, res) => {
                 distinct_id: validateData?.twitterId,
                 '_code': code,
             });
+
+            // get the wallet address of the twitter ID
+            const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(validateData?.twitterId);
+
+            if (walletStatus !== Status.SUCCESS) {
+                // if there is an error somehow, ignore this and just return a success for the API endpoint
+                // as this is just an optional tracking feature.
+                return res.status(status).json({
+                    status,
+                    message,
+                    data
+                })
+            }
+
+            const { address } = walletData.wallet as UserWallet;
+
+            // increment the counter for this mixpanel event on the wonderbits contract
+            await WONDERBITS_CONTRACT.incrementEventCounter(address, REDEEM_POAP_MIXPANEL_EVENT_HASH).catch((err: any) => {
+                // if there is an error somehow, ignore this and just return a success for the API endpoint
+                // as this is just an optional tracking feature.
+                return res.status(status).json({
+                    status,
+                    message,
+                    data
+                })
+            })
         }
 
         return res.status(status).json({

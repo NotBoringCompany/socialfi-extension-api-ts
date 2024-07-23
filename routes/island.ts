@@ -10,6 +10,10 @@ import { getBits } from '../api/bit';
 import { Bit } from '../models/bit';
 import { mixpanel } from '../utils/mixpanel';
 import { authMiddleware } from '../middlewares/auth';
+import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
+import { APPLY_GATHERING_BOOSTER_MIXPANEL_EVENT_HASH, CLAIM_RESOURCES_MIXPANEL_EVENT_HASH, EVOLVE_ISLAND_MIXPANEL_EVENT_HASH, PLACE_BIT_MIXPANEL_EVENT_HASH, REMOVE_ISLAND_MIXPANEL_EVENT_HASH, UNPLACE_BIT_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
+import { getMainWallet } from '../api/user';
+import { UserWallet } from '../models/user';
 
 const router = express.Router();
 
@@ -51,6 +55,32 @@ router.post('/place_bit', async (req, res) => {
                 distinct_id: validateData?.twitterId,
                 '_data': data,
             });
+
+            // get the wallet address of the twitter ID
+            const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(validateData?.twitterId);
+
+            if (walletStatus !== Status.SUCCESS) {
+                // if there is an error somehow, ignore this and just return a success for the API endpoint
+                // as this is just an optional tracking feature.
+                return res.status(status).json({
+                    status,
+                    message,
+                    data
+                })
+            }
+
+            const { address } = walletData.wallet as UserWallet;
+
+            // increment the counter for this mixpanel event on the wonderbits contract
+            await WONDERBITS_CONTRACT.incrementEventCounter(address, PLACE_BIT_MIXPANEL_EVENT_HASH).catch((err: any) => {
+                // if there is an error somehow, ignore this and just return a success for the API endpoint
+                // as this is just an optional tracking feature.
+                return res.status(status).json({
+                    status,
+                    message,
+                    data
+                })
+            })
         }
 
         return res.status(status).json({
@@ -86,6 +116,32 @@ router.post('/unplace_bit', async (req, res) => {
                 distinct_id: validateData?.twitterId,
                 '_data': data,
             });
+
+            // get the wallet address of the twitter ID
+            const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(validateData?.twitterId);
+
+            if (walletStatus !== Status.SUCCESS) {
+                // if there is an error somehow, ignore this and just return a success for the API endpoint
+                // as this is just an optional tracking feature.
+                return res.status(status).json({
+                    status,
+                    message,
+                    data
+                })
+            }
+
+            const { address } = walletData.wallet as UserWallet;
+
+            // increment the counter for this mixpanel event on the wonderbits contract
+            await WONDERBITS_CONTRACT.incrementEventCounter(address, UNPLACE_BIT_MIXPANEL_EVENT_HASH).catch((err: any) => {
+                // if there is an error somehow, ignore this and just return a success for the API endpoint
+                // as this is just an optional tracking feature.
+                return res.status(status).json({
+                    status,
+                    message,
+                    data
+                })
+            })
         }
 
         return res.status(status).json({
@@ -121,6 +177,32 @@ router.post('/remove_island', async (req, res) => {
                 distinct_id: validateData?.twitterId,
                 '_islandId': islandId,
             });
+
+            // get the wallet address of the twitter ID
+            const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(validateData?.twitterId);
+
+            if (walletStatus !== Status.SUCCESS) {
+                // if there is an error somehow, ignore this and just return a success for the API endpoint
+                // as this is just an optional tracking feature.
+                return res.status(status).json({
+                    status,
+                    message,
+                    data
+                })
+            }
+
+            const { address } = walletData.wallet as UserWallet;
+
+            // increment the counter for this mixpanel event on the wonderbits contract
+            await WONDERBITS_CONTRACT.incrementEventCounter(address, REMOVE_ISLAND_MIXPANEL_EVENT_HASH).catch((err: any) => {
+                // if there is an error somehow, ignore this and just return a success for the API endpoint
+                // as this is just an optional tracking feature.
+                return res.status(status).json({
+                    status,
+                    message,
+                    data
+                })
+            })
         }
 
         return res.status(status).json({
@@ -176,6 +258,32 @@ router.post('/evolve_island', async (req, res) => {
                 '_type': 'Evolve Island',
                 '_data': data,
             });
+
+            // get the wallet address of the twitter ID
+            const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(validateData?.twitterId);
+
+            if (walletStatus !== Status.SUCCESS) {
+                // if there is an error somehow, ignore this and just return a success for the API endpoint
+                // as this is just an optional tracking feature.
+                return res.status(status).json({
+                    status,
+                    message,
+                    data
+                })
+            }
+
+            const { address } = walletData.wallet as UserWallet;
+
+            // increment the counter for this mixpanel event on the wonderbits contract
+            await WONDERBITS_CONTRACT.incrementEventCounter(address, EVOLVE_ISLAND_MIXPANEL_EVENT_HASH).catch((err: any) => {
+                // if there is an error somehow, ignore this and just return a success for the API endpoint
+                // as this is just an optional tracking feature.
+                return res.status(status).json({
+                    status,
+                    message,
+                    data
+                })
+            })
         }
 
         return res.status(status).json({
@@ -253,6 +361,32 @@ router.post('/claim_resources', async (req, res) => {
                 '_claimType': claimType,
                 '_claimedResources': data?.claimedResources,
             });
+
+            // get the wallet address of the twitter ID
+            const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(validateData?.twitterId);
+
+            if (walletStatus !== Status.SUCCESS) {
+                // if there is an error somehow, ignore this and just return a success for the API endpoint
+                // as this is just an optional tracking feature.
+                return res.status(status).json({
+                    status,
+                    message,
+                    data
+                })
+            }
+
+            const { address } = walletData.wallet as UserWallet;
+
+            // increment the counter for this mixpanel event on the wonderbits contract
+            await WONDERBITS_CONTRACT.incrementEventCounter(address, CLAIM_RESOURCES_MIXPANEL_EVENT_HASH).catch((err: any) => {
+                // if there is an error somehow, ignore this and just return a success for the API endpoint
+                // as this is just an optional tracking feature.
+                return res.status(status).json({
+                    status,
+                    message,
+                    data
+                })
+            })
         }
 
         return res.status(status).json({
@@ -480,6 +614,32 @@ router.post('/apply_gathering_progress_booster', async (req, res) => {
                 '_isandId': islandId,
                 '_data': data,
             });
+
+            // get the wallet address of the twitter ID
+            const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(validateData?.twitterId);
+
+            if (walletStatus !== Status.SUCCESS) {
+                // if there is an error somehow, ignore this and just return a success for the API endpoint
+                // as this is just an optional tracking feature.
+                return res.status(status).json({
+                    status,
+                    message,
+                    data
+                })
+            }
+
+            const { address } = walletData.wallet as UserWallet;
+
+            // increment the counter for this mixpanel event on the wonderbits contract
+            await WONDERBITS_CONTRACT.incrementEventCounter(address, APPLY_GATHERING_BOOSTER_MIXPANEL_EVENT_HASH).catch((err: any) => {
+                // if there is an error somehow, ignore this and just return a success for the API endpoint
+                // as this is just an optional tracking feature.
+                return res.status(status).json({
+                    status,
+                    message,
+                    data
+                })
+            })
         }
 
         return res.status(status).json({

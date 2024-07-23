@@ -129,11 +129,11 @@ export const KOS_BENEFITS_EARNABLE_BIT_ORB_I = (keysWithAuraRotationOwned: numbe
     } else if (keysWithAuraRotationOwned >= 7 && keysWithAuraRotationOwned < 15) {
         return 5;
     } else if (keysWithAuraRotationOwned >= 15 && keysWithAuraRotationOwned < 25) {
-        return 8;
+        return 7;
     } else if (keysWithAuraRotationOwned >= 25 && keysWithAuraRotationOwned < 50) {
-        return 15;
+        return 12;
     } else {
-        return 25;
+        return 20;
     }
 }
 
@@ -154,11 +154,11 @@ export const KOS_BENEFITS_EARNABLE_TERRA_CAP_I = (keysWithHouseRotationOwned: nu
     } else if (keysWithHouseRotationOwned >= 7 && keysWithHouseRotationOwned < 15) {
         return 5;
     } else if (keysWithHouseRotationOwned >= 15 && keysWithHouseRotationOwned < 25) {
-        return 8;
+        return 7;
     } else if (keysWithHouseRotationOwned >= 25 && keysWithHouseRotationOwned < 50) {
-        return 15;
+        return 12;
     } else {
-        return 25;
+        return 20;
     }
 }
 
@@ -169,21 +169,21 @@ export const KOS_BENEFITS_EARNABLE_GATHERING_BOOSTER_25 = (bronzeKeys: number): 
     if (bronzeKeys < 1) {
         return 0;
     } else if (bronzeKeys === 1) {
-        return 5;
+        return 4;
     } else if (bronzeKeys === 2) {
-        return 10;
+        return 8;
     } else if (bronzeKeys >= 3 && bronzeKeys < 5) {
-        return 15;
+        return 12;
     } else if (bronzeKeys >= 5 && bronzeKeys < 7) {
-        return 25;
+        return 20;
     } else if (bronzeKeys >= 7 && bronzeKeys < 15) {
-        return 35;
+        return 28;
     } else if (bronzeKeys >= 15 && bronzeKeys < 25) {
-        return 50;
+        return 44;
     } else if (bronzeKeys >= 25 && bronzeKeys < 50) {
-        return 80;
+        return 64;
     } else {
-        return 125;
+        return 92;
     }
 }
 
@@ -194,21 +194,21 @@ export const KOS_BENEFITS_EARNABLE_GATHERING_BOOSTER_50 = (silverKeys: number): 
     if (silverKeys < 1) {
         return 0;
     } else if (silverKeys === 1) {
-        return 5;
+        return 4;
     } else if (silverKeys === 2) {
-        return 10;
+        return 8;
     } else if (silverKeys >= 3 && silverKeys < 5) {
-        return 15;
+        return 12;
     } else if (silverKeys >= 5 && silverKeys < 7) {
-        return 25;
+        return 20;
     } else if (silverKeys >= 7 && silverKeys < 15) {
-        return 35;
+        return 28;
     } else if (silverKeys >= 15 && silverKeys < 25) {
-        return 50;
+        return 44;
     } else if (silverKeys >= 25 && silverKeys < 50) {
-        return 80;
+        return 64;
     } else {
-        return 125;
+        return 92;
     }
 }
 
@@ -219,21 +219,21 @@ export const KOS_BENEFITS_EARNABLE_GATHERING_BOOSTER_100 = (goldKeys: number): n
     if (goldKeys < 1) {
         return 0;
     } else if (goldKeys === 1) {
-        return 5;
+        return 4;
     } else if (goldKeys === 2) {
-        return 10;
+        return 8;
     } else if (goldKeys >= 3 && goldKeys < 5) {
-        return 15;
+        return 12;
     } else if (goldKeys >= 5 && goldKeys < 7) {
-        return 25;
+        return 20;
     } else if (goldKeys >= 7 && goldKeys < 15) {
-        return 35;
+        return 28;
     } else if (goldKeys >= 15 && goldKeys < 25) {
-        return 50;
+        return 44;
     } else if (goldKeys >= 25 && goldKeys < 50) {
-        return 80;
+        return 64;
     } else {
-        return 125;
+        return 92;
     }
 }
 
