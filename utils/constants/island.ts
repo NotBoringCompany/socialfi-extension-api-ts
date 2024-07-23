@@ -49,6 +49,22 @@ export const DEFAULT_ISLAND_TYPE = IslandType['PRIMAL_ISLES'];
  */
 export const TOTAL_ACTIVE_ISLANDS_ALLOWED = 30;
 
+/** base energy needed per one tapping */
+export const BASE_ENERGY_PER_TAPPING = 5;
+
+/** base caress energy meter gained per one tapping */
+export const BASE_CARESS_PER_TAPPING = 5;
+
+/** base caress enery meter */
+export const BASE_CARESS_METER = 100;
+
+/** caress exp base diff */
+export const EXP_BASE_DIFF = 1.1;
+
+/** caress exp multiplier */
+export const EXP_MULTIPLIER = 0.006;
+
+
 /**
  * gets the amount of bonus resources that can be gathered daily based on the island type.
  */
@@ -626,41 +642,39 @@ export const X_COOKIE_TAX = (
   }
 };
 
-export const ISLAND_TAPPING_MILESTONE = (
-  milestoneTier: number
-): IslandTappingData => {
-  if (milestoneTier === 1) {
-    return {
-      currentMilestone: 1,
-      milestoneReward: 1,
-      tappingCountRequirement: 25,
-    };
-  } else if (milestoneTier === 2) {
-    return {
-      currentMilestone: 2,
-      milestoneReward: 2,
-      tappingCountRequirement: 50,
-    };
-  } else if (milestoneTier === 3) {
-    return {
-      currentMilestone: 3,
-      milestoneReward: 3,
-      tappingCountRequirement: 75,
-    };
-  } else if (milestoneTier === 4) {
-    return {
-      currentMilestone: 4,
-      milestoneReward: 4,
-      tappingCountRequirement: 100,
-    };
-  } else if (milestoneTier === 5) {
-    return {
-      currentMilestone: 5,
-      milestoneReward: 5,
-      tappingCountRequirement: 125,
-    };
-  } else {
-    // Handle default case or throw an error if the milestoneTier is invalid
-    throw new Error('Invalid milestoneTier');
+/**
+ * Calculates the caress energy meter required for a given milestone tier
+ * and returns the associated IslandTappingData.
+ */
+export const ISLAND_TAPPING_REQUIREMENT = (milestoneTier: number): IslandTappingData => {
+  // calculate current milestone caress required based on milestonTier parameter.
+  const caressEnergyRequired = Math.ceil(BASE_CARESS_METER * EXP_BASE_DIFF ** (milestoneTier * (1 + EXP_MULTIPLIER) - 1));
+
+  // return IslandTappingData after calculating caressEnergyMeter required for this milestoneTier
+  return {
+    currentMilestone: milestoneTier,
+    milestoneReward: 5, /** PLACEHOLDER REWARD FOR NOW */
+    caressEnergyMeter: caressEnergyRequired,
+  }
+};
+
+/**
+ * Determines the milestone limit for a given island type.
+ */
+export const ISLAND_TAPPING_MILESTONE_LIMIT = (type: IslandType): number => {
+  switch(type){
+    case IslandType.BARREN: 
+      return 0;
+    case IslandType.PRIMAL_ISLES:
+      return 5;
+    case IslandType.VERDANT_ISLES:
+    case IslandType.XTERIO_ISLES:
+      return 10;
+    case IslandType.EXOTIC_ISLES:
+      return 15;
+    case IslandType.CRYSTAL_ISLES:
+      return 20;
+    case IslandType.CELESTIAL_ISLES:
+      return 25;
   }
 };

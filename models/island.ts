@@ -202,8 +202,8 @@ export interface RarityDeviationReduction {
 export interface IslandTappingData {
     /** current tapping milestone progress */
     currentMilestone: number;
-    /** Booster reward when reaching current tapping milestone */
+    /** booster reward when reaching current tapping milestone */
     milestoneReward: number;
-    /**  */
-    tappingCountRequirement: number;
+    /** caress energy meter required to apply current tapping milestone effect */
+    caressEnergyMeter: number;
 }
