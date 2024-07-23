@@ -7,7 +7,8 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 export const BLAST_TESTNET_PROVIDER = new ethers.providers.JsonRpcProvider(`https://sepolia.blast.io`);
-export const ETH_MAINNET_PROVIDER = new ethers.providers.JsonRpcProvider(`https://ethereum.blockpi.network/v1/rpc/public`);
+export const ETH_MAINNET_PROVIDER = new ethers.providers.JsonRpcProvider(`https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY!}`);
+export const XPROTOCOL_TESTNET_PROVIDER = new ethers.providers.JsonRpcProvider('https://rpc.testnet.xprotocol.org');
 
 /** Gets a deployer wallet instance based on the provider the deployer wallet will operate in */
 export const DEPLOYER_WALLET = (provider: ethers.providers.JsonRpcProvider) => {
@@ -21,6 +22,9 @@ export const COOKIE_CONTRACT_DECIMALS = 8;
 export const KOS_CONTRACT_ADDRESS = process.env.KOS_CONTRACT!;
 export const KEYCHAIN_CONTRACT_ADDRESS = process.env.KEYCHAIN_CONTRACT!;
 export const SUPERIOR_KEYCHAIN_CONTRACT_ADDRESS = process.env.SUPERIOR_KEYCHAIN_CONTRACT!;
+
+// wonderbits address in XProtocol testnet
+export const WONDERBITS_CONTRACT_ADDRESS = process.env.WONDERBITS_CONTRACT!;
 
 export const LOTTERY_ARTIFACT = JSON.parse(
     fs.readFileSync(
@@ -49,6 +53,12 @@ export const KEYCHAIN_ARTIFACT = JSON.parse(
 export const SUPERIOR_KEYCHAIN_ARTIFACT = JSON.parse(
     fs.readFileSync(
         path.join(__dirname, '../../artifacts/SuperiorKeychain.json')
+    ).toString()
+);
+
+export const WONDERBITS_ARTIFACT = JSON.parse(
+    fs.readFileSync(
+        path.join(__dirname, '../../artifacts/Wonderbits.json')
     ).toString()
 );
 
@@ -95,6 +105,15 @@ export const SUPERIOR_KEYCHAIN_CONTRACT = new ethers.Contract(
     SUPERIOR_KEYCHAIN_CONTRACT_ADDRESS,
     SUPERIOR_KEYCHAIN_ARTIFACT.abi,
     DEPLOYER_WALLET(ETH_MAINNET_PROVIDER)
+);
+
+/**
+ * The wonderbits contract instance (using admin wallet)
+ */
+export const WONDERBITS_CONTRACT = new ethers.Contract(
+    WONDERBITS_CONTRACT_ADDRESS,
+    WONDERBITS_ARTIFACT.abi,
+    DEPLOYER_WALLET(XPROTOCOL_TESTNET_PROVIDER)
 );
 
 /**
@@ -158,6 +177,19 @@ export const SUPERIOR_KEYCHAIN_CONTRACT_USER = (privateKey: string) => {
     return new ethers.Contract(
         SUPERIOR_KEYCHAIN_CONTRACT_ADDRESS,
         SUPERIOR_KEYCHAIN_ARTIFACT.abi,
+        wallet
+    );
+}
+
+/**
+ * The wonderbits contract instance (using user wallet, requires their private key)
+ */
+export const WONDERBITS_CONTRACT_USER = (privateKey: string) => {
+    const wallet = new ethers.Wallet(privateKey, XPROTOCOL_TESTNET_PROVIDER);
+
+    return new ethers.Contract(
+        WONDERBITS_CONTRACT_ADDRESS,
+        WONDERBITS_ARTIFACT.abi,
         wallet
     );
 }
