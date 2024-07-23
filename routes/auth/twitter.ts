@@ -3,8 +3,11 @@ import { ExtendedProfile } from '../../utils/types';
 import { generateJWT, validateJWT } from '../../utils/jwt';
 import { Status } from '../../utils/retVal';
 import passport from '../../configs/passport';
-import { handleTwitterLogin } from '../../api/user';
+import { getMainWallet, handleTwitterLogin } from '../../api/user';
 import { mixpanel } from '../../utils/mixpanel';
+import { TWITTER_LOGIN_CALLBACK_MIXPANEL_EVENT_HASH } from '../../utils/constants/mixpanelEvents';
+import { WONDERBITS_CONTRACT } from '../../utils/constants/web3';
+import { UserWallet } from '../../models/user';
 
 const router = express.Router();
 
@@ -75,6 +78,32 @@ router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/',
                     '_version': version,
                     '_data': data,
                 });
+
+                // get the wallet address of the twitter ID
+            const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(twitterId);
+
+            if (walletStatus !== Status.SUCCESS) {
+                // if there is an error somehow, ignore this and just return a success for the API endpoint
+                // as this is just an optional tracking feature.
+                return res.status(status).json({
+                    status,
+                    message,
+                    data
+                })
+            }
+
+            const { address } = walletData.wallet as UserWallet;
+
+            // increment the counter for this mixpanel event on the wonderbits contract
+            await WONDERBITS_CONTRACT.incrementEventCounter(address, TWITTER_LOGIN_CALLBACK_MIXPANEL_EVENT_HASH).catch((err: any) => {
+                // if there is an error somehow, ignore this and just return a success for the API endpoint
+                // as this is just an optional tracking feature.
+                return res.status(status).json({
+                    status,
+                    message,
+                    data
+                })
+            })
             }
 
             return res.redirect(`${host}?jwt=${token}`);

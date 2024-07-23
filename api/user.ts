@@ -2228,3 +2228,32 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
         };
     }
 };
+
+/**
+ * Gets the main wallet of the user.
+ */
+export const getMainWallet = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(getMainWallet) User not found.`,
+            };
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getMainWallet) Main wallet fetched.`,
+            data: {
+                wallet: user.wallet,
+            },
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getMainWallet) ${err.message}`,
+        };
+    }
+}
