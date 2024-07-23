@@ -7,7 +7,8 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 export const BLAST_TESTNET_PROVIDER = new ethers.providers.JsonRpcProvider(`https://sepolia.blast.io`);
-export const ETH_MAINNET_PROVIDER = new ethers.providers.JsonRpcProvider(`https://ethereum.blockpi.network/v1/rpc/public`);
+// export const ETH_MAINNET_PROVIDER = new ethers.providers.JsonRpcProvider(`https://eth-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY!}`);
+export const ETH_MAINNET_PROVIDER = new ethers.providers.JsonRpcProvider(`https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY!}`);
 export const XPROTOCOL_TESTNET_PROVIDER = new ethers.providers.JsonRpcProvider('https://rpc.testnet.xprotocol.org');
 
 /** Gets a deployer wallet instance based on the provider the deployer wallet will operate in */

@@ -518,13 +518,19 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
             }
         });
 
-        // execute the update operations
+        // execute the update operations. $set and $inc first, then $push and $pull to avoid conflicts.
         await Promise.all([
-            await UserModel.updateOne({ twitterId }, { $inc: userUpdateOperations.$inc }),
-            await UserModel.updateOne({ twitterId }, { $push: userUpdateOperations.$push }),
-            SquadModel.updateOne({ _id: user.inGameData.squadId }, squadUpdateOperations),
-            SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, squadLeaderboardUpdateOperations),
-            LeaderboardModel.updateOne({ name: 'Season 0' }, leaderboardUpdateOperations)
+            await UserModel.updateOne({ twitterId }, { $set: userUpdateOperations.$set, $inc: userUpdateOperations.$inc }),
+            await SquadModel.updateOne({ _id: user.inGameData.squadId }, { $set: squadUpdateOperations.$set, $inc: squadUpdateOperations.$inc }),
+            await SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, { $set: squadLeaderboardUpdateOperations.$set, $inc: squadLeaderboardUpdateOperations.$inc }),
+            await LeaderboardModel.updateOne({ name: 'Season 0' }, { $set: leaderboardUpdateOperations.$set, $inc: leaderboardUpdateOperations.$inc }),
+        ]);
+
+        await Promise.all([
+            await UserModel.updateOne({ twitterId }, { $push: userUpdateOperations.$push, $pull: userUpdateOperations.$pull }),
+            await SquadModel.updateOne({ _id: user.inGameData.squadId }, { $push: squadUpdateOperations.$push, $pull: squadUpdateOperations.$pull }),
+            await SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, { $push: squadLeaderboardUpdateOperations.$push, $pull: squadLeaderboardUpdateOperations.$pull }),
+            await LeaderboardModel.updateOne({ name: 'Season 0' }, { $push: leaderboardUpdateOperations.$push, $pull: leaderboardUpdateOperations.$pull }),
         ]);
 
         // reset all claimable rewards to 0
@@ -984,6 +990,8 @@ export const checkWeeklyKOSRewards = async (): Promise<ReturnValue> => {
                     ]
                 });
 
+                console.log('new kos reward: ', newKOSRewardUser);
+
                 await newKOSRewardUser.save();
 
                 console.log(`new user found. adding user ${user.twitterUsername} to KOSClaimableWeeklyRewards.`);
@@ -1202,21 +1210,27 @@ export const checkWeeklyKOSRewards = async (): Promise<ReturnValue> => {
             return;
         }
 
+        console.log('bulk write ops: ', bulkWriteOps);
+
         // execute the bulk write operations
         await KOSClaimableWeeklyRewardsModel.bulkWrite(bulkWriteOps);
 
         if (errors.length > 0) {
+            console.log(`(checkWeeklyKOSOwnership) Errors: ${errors.join('\n')}`);
             console.error(`(checkWeeklyKOSOwnership) Errors: ${errors.join('\n')}`);
         }
 
         console.log(`(checkWeeklyKOSOwnership) Successfully updated claimable weekly KOS rewards.`);
     } catch (err: any) {
+        console.log('error from checkWeeklyKOSOwnership: ', err.message);
         return {
             status: Status.ERROR,
             message: `(checkWeeklyKOSOwnership) Error: ${err.message}`
         }
     }
 }
+
+checkWeeklyKOSRewards();
 
 /**
  * Gets all Key of Salvation IDs owned by the user (main + secondary wallets).
