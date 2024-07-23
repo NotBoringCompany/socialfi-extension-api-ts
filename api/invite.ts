@@ -241,7 +241,7 @@ export const claimReferralRewards = async (twitterId: string): Promise<ReturnVal
                 message: `(claimReferralRewards) Error from getUserCurrentPoints: ${currentPointsMessage}`
             }
         }
-        const updatePointsTx = await WONDERBITS_CONTRACT.updatePoints((user.wallet as UserWallet).address, currentPointsData.points);
+        const updatePointsTx = await WONDERBITS_CONTRACT.updatePoints((user.wallet as UserWallet).address, Math.round(currentPointsData.points));
 
         return {
             status: Status.SUCCESS,

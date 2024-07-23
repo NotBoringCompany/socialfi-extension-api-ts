@@ -1187,7 +1187,8 @@ export const claimDailyRewards = async (twitterId: string, leaderboardName: stri
                 message: `(claimReferralRewards) Error from getUserCurrentPoints: ${currentPointsMessage}`
             }
         }
-        const updatePointsTx = await WONDERBITS_CONTRACT.updatePoints((user.wallet as UserWallet).address, currentPointsData.points);
+        // round it to the nearest integer because solidity doesn't accept floats
+        const updatePointsTx = await WONDERBITS_CONTRACT.updatePoints((user.wallet as UserWallet).address, Math.round(currentPointsData.points));
 
         return {
             status: Status.SUCCESS,

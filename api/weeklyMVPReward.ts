@@ -528,7 +528,8 @@ export const claimWeeklyMVPRewards = async (twitterId: string): Promise<ReturnVa
                 message: `(claimReferralRewards) Error from getUserCurrentPoints: ${currentPointsMessage}`
             }
         }
-        const updatePointsTx = await WONDERBITS_CONTRACT.updatePoints((user.wallet as UserWallet).address, currentPointsData.points);
+        // round it to the nearest integer because solidity doesn't accept floats
+        const updatePointsTx = await WONDERBITS_CONTRACT.updatePoints((user.wallet as UserWallet).address, Math.round(currentPointsData.points));
 
         return {
             status: Status.SUCCESS,
