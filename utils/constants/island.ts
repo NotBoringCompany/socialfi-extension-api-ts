@@ -653,7 +653,7 @@ export const ISLAND_TAPPING_REQUIREMENT = (milestoneTier: number): IslandTapping
   if (milestoneTier === 1) {
     caressEnergyRequired = BASE_CARESS_METER;
   } else {
-    Math.ceil(BASE_CARESS_METER * EXP_BASE_DIFF ** (milestoneTier * (1 + EXP_MULTIPLIER) - 1));
+    caressEnergyRequired = Math.ceil(BASE_CARESS_METER * EXP_BASE_DIFF ** (milestoneTier * (1 + EXP_MULTIPLIER) - 1));
   }
 
   // return IslandTappingData after calculating caressEnergyMeter required for this milestoneTier
