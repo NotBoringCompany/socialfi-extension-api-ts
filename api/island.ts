@@ -3584,11 +3584,99 @@ export const applyIslandTapping = async (twitterId: string, islandId: number): P
             };
         }
 
+        // Initialize currentTappingData information
         const currentTappingData: IslandTappingData = island.islandTappingData;
         const islandTappingLimit = ISLAND_TAPPING_MILESTONE_LIMIT(island.type as IslandType);
+        const boosterPercentage = currentTappingData.milestoneReward;
 
-        // To Do: Apply Current Milestone Reward & Add the booster to the island.
-        // ...
+        // Apply current milestone reward as gathering booster to the island.
+        // get only resources that have an origin of `ExtendedResourceOrigin.NORMAL`
+        const normalResourcesGathered = (island.islandResourceStats?.resourcesGathered as ExtendedResource[]).filter(resource => resource.origin === ExtendedResourceOrigin.NORMAL);
+        // add the amount of resources per `normalResourcesGathered` instance
+        const normalResourcesGatheredAmount = normalResourcesGathered.reduce((acc, resource) => acc + resource.amount, 0);
+        const resourcesLeft = island.islandResourceStats?.baseResourceCap - normalResourcesGatheredAmount;
+
+        console.log(`(applyIslandTapping), resources left for island ${island.islandId}: `, resourcesLeft);
+        
+        // if the booster is less than 100, get the current `gatheringProgress` of the island.
+        if (boosterPercentage < 100) {
+            const gatheringProgress = island.islandResourceStats?.gatheringProgress;
+
+            // if the gathering progress + booster percentage is greater than 100:
+            // 1. drop a resource
+            // 2. reset the gathering progress to the remaining overflow of %
+            if (gatheringProgress + boosterPercentage > 100) {
+                // check if a single resource can be dropped
+                if (resourcesLeft === 0) {
+                    console.log(`(applyIslandTapping) Island ID ${islandId} has no resources left to drop. Cannot apply booster.`);
+
+                    return {
+                        status: Status.ERROR,
+                        message: `(applyIslandTapping) Island ID ${islandId} has no resources left to drop. Cannot apply booster.`
+                    }
+                }
+
+                // calculate the remaining overflow of %
+                const finalGatheringProgress = (gatheringProgress + boosterPercentage) - 100;
+
+                // reset the gathering progress back to 0 + the remaining overflow of %
+                islandUpdateOperations.$set['islandResourceStats.gatheringProgress'] = finalGatheringProgress;
+
+                // drop a resource
+                const { status, message } = await dropResource(islandId);
+
+                if (status !== Status.SUCCESS) {
+                    console.log(`(applyIslandTapping) Error from dropResource: ${message}`);
+
+                    return {
+                        status: Status.ERROR,
+                        message: `(applyIslandTapping) Error: ${message}`
+                    }
+                }
+            // if not, just increment the gathering progress by the booster percentage and deduct the booster from the user's inventory.
+            } else {
+                islandUpdateOperations.$inc['islandResourceStats.gatheringProgress'] = boosterPercentage;
+            }
+        // if the booster is greater than 100,
+        // 1. check the final non-modulo gathering progress. e.g. if the current gathering progress is 70 and a 500% booster is applied, the non-modulo progress will be 570%.
+        // 2. this means that Math.floor(570/100) = 5 resources will be dropped, and the final gathering progress will be 70.
+        } else {
+            const gatheringProgress = island.islandResourceStats?.gatheringProgress;
+            const finalNonModuloGatheringProgress = gatheringProgress + boosterPercentage;
+            const resourcesToDrop = Math.floor(finalNonModuloGatheringProgress / 100);
+
+            console.log(`(applyIslandTapping), gathering progress of island ${island.islandId}: `, gatheringProgress);
+            console.log(`(applyIslandTapping), final non-modulo gathering progress of island ${island.islandId}: `, finalNonModuloGatheringProgress);
+            console.log(`(applyIslandTapping), resources to drop: `, resourcesToDrop);
+
+            // check if the resources to drop is greater than the resources left
+            if (resourcesToDrop > resourcesLeft) {
+                console.log(`(applyIslandTapping) Island ID ${islandId} does not have enough resources left to drop. Cannot apply booster.`);
+
+                return {
+                    status: Status.ERROR,
+                    message: `(applyIslandTapping) Island ID ${islandId} does not have enough resources left to drop. Cannot apply booster.`
+                }
+            }
+
+            // update the island's final gathering progress after moduloing it by 100
+            islandUpdateOperations.$set['islandResourceStats.gatheringProgress'] = finalNonModuloGatheringProgress % 100;
+            // update the island's `lastUpdatedGatheringProgress` to the current time
+            islandUpdateOperations.$set['islandResourceStats.lastUpdatedGatheringProgress'] = Math.floor(Date.now() / 1000);
+
+            // we cannot use Promise.all to drop all resources at once as it will cause race issues with existing resource types.
+            // we will need to loop through the resources to drop and drop them one by one
+            for (let i = 0; i < resourcesToDrop; i++) {
+                // drop a resource
+                const { status, message, data } = await dropResource(islandId);
+
+                console.log(`dropped a resource for Island ${islandId} x${i+1}. resource: ${data.resource}`);
+
+                if (status !== Status.SUCCESS) {
+                    console.log(`(applyIslandTapping) Error from dropResource in loop: ${message}`);
+                }
+            }
+        }
 
         // Increase the tier Milestone to the next tier/rank. If milestone reaching the max tier, return error.
         if (currentTappingData.currentMilestone <= islandTappingLimit) {
@@ -3596,15 +3684,20 @@ export const applyIslandTapping = async (twitterId: string, islandId: number): P
 
             // saves the nextTappingData to this island database
             islandUpdateOperations.$set['islandTappingData'] = nextTappingData;
-            await IslandModel.updateOne({ islandId: island.islandId }, islandUpdateOperations)
+
+            // update IslandModel for this island data
+            await IslandModel.updateOne({ islandId: island.islandId }, islandUpdateOperations);
 
             return {
                 status: Status.SUCCESS,
                 message: `(getIslandTappingData) Applying tapping data for Island with ID ${islandId}. Increasing to tier ${nextTappingData.currentMilestone}`,
             }
         } else {
+            // update IslandModel for this island data
+            await IslandModel.updateOne({ islandId: island.islandId }, islandUpdateOperations);
+
             return {
-                status: Status.ERROR,
+                status: Status.SUCCESS,
                 message: `(getIslandTappingData) Tapping milestone already reached the latest tier.`
             };
         }
