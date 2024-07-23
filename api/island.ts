@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
 import { IslandSchema } from '../schemas/Island';
 import { Island, IslandStatsModifiers, IslandTappingData, IslandTrait, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
-import { BARREN_ISLE_COMMON_DROP_CHANCE, BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DAILY_BONUS_RESOURCES_GATHERABLE, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLUTION_COST, ISLAND_RARITY_DEVIATION_MODIFIERS, ISLAND_TAPPING_MILESTONE, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN, X_COOKIE_TAX, randomizeIslandTraits } from '../utils/constants/island';
+import { BARREN_ISLE_COMMON_DROP_CHANCE, BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DAILY_BONUS_RESOURCES_GATHERABLE, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLUTION_COST, ISLAND_RARITY_DEVIATION_MODIFIERS, ISLAND_TAPPING_MILESTONE_LIMIT, ISLAND_TAPPING_REQUIREMENT, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN, X_COOKIE_TAX, randomizeIslandTraits } from '../utils/constants/island';
 import { calcBitCurrentRate, getBits } from './bit';
 import { BarrenResource, ExtendedResource, ExtendedResourceOrigin, Resource, ResourceLine, ResourceRarity, ResourceRarityNumeric, ResourceType, SimplifiedResource } from '../models/resource';
 import { UserSchema } from '../schemas/User';
@@ -3517,7 +3517,7 @@ export const getIslandTappingData = async (islandId: number): Promise<ReturnValu
         // 1. If undefined, create new islandTappingData starting from first Tier & return the data
         // 2. Else, return the data
         if (!island.islandTappingData) {
-            const newTappingData: IslandTappingData = ISLAND_TAPPING_MILESTONE(1);
+            const newTappingData: IslandTappingData = ISLAND_TAPPING_REQUIREMENT(1);
 
             // Saved the newTappingData to this Island database
             islandUpdateOperations.$set['islandTappingData'] = newTappingData;
@@ -3585,14 +3585,14 @@ export const applyIslandTapping = async (twitterId: string, islandId: number): P
         }
 
         const currentTappingData: IslandTappingData = island.islandTappingData;
+        const islandTappingLimit = ISLAND_TAPPING_MILESTONE_LIMIT(island.type as IslandType);
 
         // To Do: Apply Current Milestone Reward & Add the booster to the island.
         // ...
 
         // Increase the tier Milestone to the next tier/rank. If milestone reaching the max tier, return error.
-        // PLACEHOLDER TIER UP TO TIER 5 FOR NOW
-        if (currentTappingData.currentMilestone < 5) {
-            const nextTappingData: IslandTappingData = ISLAND_TAPPING_MILESTONE(currentTappingData.currentMilestone + 1);
+        if (currentTappingData.currentMilestone < islandTappingLimit) {
+            const nextTappingData: IslandTappingData = ISLAND_TAPPING_REQUIREMENT(currentTappingData.currentMilestone + 1);
 
             // saves the nextTappingData to this island database
             islandUpdateOperations.$set['islandTappingData'] = nextTappingData;
