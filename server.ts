@@ -82,8 +82,8 @@ app.use('/squad_leaderboard', squadLeaderboard);
 app.use('/weekly_mvp_reward', weeklyMVPReward);
 app.use('/collab', collabV2);
 
-// app.listen(port, async () => {
-//     console.log(`Server running on port ${port}`);
+app.listen(port, async () => {
+    console.log(`Server running on port ${port}`);
 
-//     await schedulers();
-// });
+    await schedulers();
+});
