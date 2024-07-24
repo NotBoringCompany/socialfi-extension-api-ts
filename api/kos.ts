@@ -628,7 +628,7 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
  * The rewards will be sent to the `KOSClaimableDailyRewards` collection.
  * Called by a scheduler every day at 23:59 UTC.
  */
-export const checkDailyKOSRewards = async (): Promise<ReturnValue> => {
+export const checkDailyKOSRewards = async (): Promise<void> => {
     try {
         await mongoose.connect(process.env.MONGODB_URI!);
 
@@ -636,42 +636,57 @@ export const checkDailyKOSRewards = async (): Promise<ReturnValue> => {
         const users = await UserModel.find({ twitterId: { $ne: null, $exists: true } });
 
         if (!users || users.length === 0) {
-            return {
-                status: Status.ERROR,
-                message: `(checkDailyKOSOwnership) No users found.`
-            }
+            console.error(`(checkDailyKOSOwnership) No users found.`);
+            return;
         }
 
         // fetch the metadata file
         const metadataFile = fetchKOSMetadataFile();
 
+        // get explicit ownerships of keys
+        // create an array for ID 1 to 5000 (since that's all the IDs for the keys)
+        const keyIds = Array.from({ length: 5000 }, (_, i) => i + 1);
+        const { status: ownershipStatus, message: ownershipMessage, data: ownershipData } = await explicitOwnershipsOfKOS(keyIds);
+
+        if (ownershipStatus !== Status.SUCCESS) {
+            console.error(`(checkDailyKOSOwnership) Error: ${ownershipMessage}`);
+            return;
+        }
+
+        const { keyOwnerships } = ownershipData;
+
         const bulkWriteOpsPromises = users.map(async (user) => {
             const updateOperations = [];
 
-            // get all owned key IDs of the user
-            const { status, message, data } = await getOwnedKeyIDs(user.twitterId);
+            // get all of the user's wallet addresses (main wallet + secondary wallets)
+            const { status: walletStatus, message: walletMessage, data: walletData } = await getWallets(user.twitterId);
 
-            if (status !== Status.SUCCESS) {
-                errors.push(message + ` User: ${user.twitterId}`);
-                // continue to the next user if there was an error
+            if (walletStatus !== Status.SUCCESS) {
+                // if wallet can't be fetched, then skip this user; add it to the errors list.
+                errors.push(walletMessage + `User: ${user.twitterId}`);
+                // continue to the next user.
                 return [];
             }
 
-            const ownedKeyIds = data.ownedKeyIDs;
-
-            // get the explicit ownerships of the owned key IDs
-            const { status: ownershipStatus, message: ownershipMessage, data: ownershipData } = await explicitOwnershipsOfKOS(ownedKeyIds);
-
-            if (ownershipStatus !== Status.SUCCESS) {
-                errors.push(ownershipMessage + ` User: ${user.twitterId}`);
-                // continue to the next user if there was an error
-                return;
+            // filter for empty string and convert all to lower case
+            const validAddresses = (walletData.walletAddresses as string[]).filter((address: string) => address !== '').map((address: string) => address.toLowerCase());
+            if (validAddresses.length === 0 || validAddresses === null || validAddresses === undefined) {
+                // if no valid addresses, skip this user; add to errors.
+                errors.push(`(checkDailyKOSRewards): No valid addresses found for user: ${user.twitterId}`);
+                return [];
             }
 
-            const keyOwnerships = ownershipData.keyOwnerships as KOSExplicitOwnership[];
+            // get user's owned keys
+            const ownedKeys: KOSExplicitOwnership[] = [];
+
+            for (const keyOwnership of keyOwnerships) {
+                if (validAddresses.includes(keyOwnership.owner.toLowerCase())) {
+                    ownedKeys.push(keyOwnership);
+                }
+            }
 
             // get the total keys owned by the user for at least 1 day
-            const validKeys = keyOwnerships.filter((ownership) => ownership.startTimestamp <= Math.floor(Date.now() / 1000) - 86400);
+            const validKeys = ownedKeys.filter((ownership) => ownership.startTimestamp <= Math.floor(Date.now() / 1000) - 86400);
 
             // get the metadata for each of the valid keys
             const validKeysMetadata: KOSMetadata[] = validKeys.map((key) => {
@@ -848,24 +863,20 @@ export const checkDailyKOSRewards = async (): Promise<ReturnValue> => {
         const bulkWriteOps = bulkWriteOpsArrays.flat().filter(op => op !== undefined);
 
         if (bulkWriteOps.length === 0) {
-            console.log(`(checkDailyKOSOwnership) No existing users were eligible to update their daily KOS rewards.`);
+            console.log(`(checkDailyKOSRewards) No existing users were eligible to update their daily KOS rewards.`);
             return;
         }
 
         // execute the bulk write operations
         await KOSClaimableDailyRewardsModel.bulkWrite(bulkWriteOps);
 
-
         if (errors.length > 0) {
-            console.error(`(checkDailyKOSOwnership) Errors: ${errors.join('\n')}`);
+            console.error(`(checkDailyKOSRewards) Errors: ${errors.join('\n')}`);
         }
 
-        console.log(`(checkDailyKOSOwnership) Successfully updated claimable daily KOS rewards.`);
+        console.log(`(checkDailyKOSRewards) Successfully updated claimable daily KOS rewards.`);
     } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(checkDailyKOSOwnership) Error: ${err.message}`
-        }
+        console.error(`(checkDailyKOSRewards) Error: ${err.message}`);
     }
 }
 
