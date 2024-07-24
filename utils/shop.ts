@@ -21,24 +21,24 @@ export const shop: Shop = {
                 xCookies: 150
             }
         },
-        {
-            type: BitOrbType.BIT_ORB_III,
-            price: {
-                xCookies: 1000
-            }
-        },
+        // {
+        //     type: BitOrbType.BIT_ORB_III,
+        //     price: {
+        //         xCookies: 1000
+        //     }
+        // },
         {
             type: TerraCapsulatorType.TERRA_CAPSULATOR_I,
             price: {
                 xCookies: 20
             }
         },
-        {
-            type: TerraCapsulatorType.TERRA_CAPSULATOR_II,
-            price: {
-                xCookies: 200
-            }
-        },
+        // {
+        //     type: TerraCapsulatorType.TERRA_CAPSULATOR_II,
+        //     price: {
+        //         xCookies: 200
+        //     }
+        // },
         {
             type: BoosterItem.GATHERING_PROGRESS_BOOSTER_10,
             price: {
@@ -75,30 +75,30 @@ export const shop: Shop = {
                 xCookies: 15
             }
         },
-        {
-            type: BoosterItem.GATHERING_PROGRESS_BOOSTER_500,
-            price: {
-                xCookies: 25
-            }
-        },
-        {
-            type: BoosterItem.GATHERING_PROGRESS_BOOSTER_1000,
-            price: {
-                xCookies: 50
-            }
-        },
-        {
-            type: BoosterItem.GATHERING_PROGRESS_BOOSTER_2000,
-            price: {
-                xCookies: 100
-            }
-        },
-        {
-            type: BoosterItem.GATHERING_PROGRESS_BOOSTER_3000,
-            price: {
-                xCookies: 150
-            }
-        },
+        // {
+        //     type: BoosterItem.GATHERING_PROGRESS_BOOSTER_500,
+        //     price: {
+        //         xCookies: 25
+        //     }
+        // },
+        // {
+        //     type: BoosterItem.GATHERING_PROGRESS_BOOSTER_1000,
+        //     price: {
+        //         xCookies: 50
+        //     }
+        // },
+        // {
+        //     type: BoosterItem.GATHERING_PROGRESS_BOOSTER_2000,
+        //     price: {
+        //         xCookies: 100
+        //     }
+        // },
+        // {
+        //     type: BoosterItem.GATHERING_PROGRESS_BOOSTER_3000,
+        //     price: {
+        //         xCookies: 150
+        //     }
+        // },
         {
             type: BoosterItem.RAFT_SPEED_BOOSTER_1_MIN,
             price: {
@@ -129,24 +129,24 @@ export const shop: Shop = {
                 xCookies: 50
             }
         },
-        {
-            type: BoosterItem.RAFT_SPEED_BOOSTER_15_MIN,
-            price: {
-                xCookies: 75
-            }
-        },
-        {
-            type: BoosterItem.RAFT_SPEED_BOOSTER_30_MIN,
-            price: {
-                xCookies: 150
-            }
-        },
-        {
-            type: BoosterItem.RAFT_SPEED_BOOSTER_60_MIN,
-            price: {
-                xCookies: 300
-            }
-        }
+        // {
+        //     type: BoosterItem.RAFT_SPEED_BOOSTER_15_MIN,
+        //     price: {
+        //         xCookies: 75
+        //     }
+        // },
+        // {
+        //     type: BoosterItem.RAFT_SPEED_BOOSTER_30_MIN,
+        //     price: {
+        //         xCookies: 150
+        //     }
+        // },
+        // {
+        //     type: BoosterItem.RAFT_SPEED_BOOSTER_60_MIN,
+        //     price: {
+        //         xCookies: 300
+        //     }
+        // }
     ],
     foods: [
         {
