@@ -3730,7 +3730,7 @@ export const resetDailyIslandTappingMilestone = async (): Promise<void> => {
                     filter: { islandId: island.islandId },
                     update: {
                         $set: {
-                            'islandTappingData.currentMilestone': ISLAND_TAPPING_REQUIREMENT(1)
+                            'islandTappingData': ISLAND_TAPPING_REQUIREMENT(1)
                         }
                     }
                 }
