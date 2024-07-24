@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
 import { IslandSchema } from '../schemas/Island';
 import { Island, IslandStatsModifiers, IslandTappingData, IslandTrait, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
-import { BARREN_ISLE_COMMON_DROP_CHANCE, BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DAILY_BONUS_RESOURCES_GATHERABLE, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLUTION_COST, ISLAND_RARITY_DEVIATION_MODIFIERS, ISLAND_TAPPING_MILESTONE_LIMIT, ISLAND_TAPPING_REQUIREMENT, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN, X_COOKIE_TAX, randomizeIslandTraits } from '../utils/constants/island';
+import { BARREN_ISLE_COMMON_DROP_CHANCE, BASE_CARESS_PER_TAPPING, BASE_ENERGY_PER_TAPPING, BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DAILY_BONUS_RESOURCES_GATHERABLE, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLUTION_COST, ISLAND_RARITY_DEVIATION_MODIFIERS, ISLAND_TAPPING_MILESTONE_LIMIT, ISLAND_TAPPING_REQUIREMENT, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN, X_COOKIE_TAX, randomizeIslandTraits } from '../utils/constants/island';
 import { calcBitCurrentRate, getBits } from './bit';
 import { BarrenResource, ExtendedResource, ExtendedResourceOrigin, Resource, ResourceLine, ResourceRarity, ResourceRarityNumeric, ResourceType, SimplifiedResource } from '../models/resource';
 import { UserSchema } from '../schemas/User';
@@ -13,7 +13,7 @@ import { generateObjectId } from '../utils/crypto';
 import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
 import { ObtainMethod } from '../models/obtainMethod';
 import { RELOCATION_COOLDOWN } from '../utils/constants/bit';
-import { ExtendedXCookieData, User, XCookieSource } from '../models/user';
+import { ExtendedXCookieData, PlayerEnergy, User, XCookieSource } from '../models/user';
 import { getResource, resources } from '../utils/constants/resource';
 import { Item } from '../models/item';
 import { BoosterItem } from '../models/booster';
@@ -3566,7 +3566,6 @@ export const applyIslandTapping = async (twitterId: string, islandId: number): P
             $push: {}
         }
 
-        // user later will be used to add experience
         const user = await UserModel.findOne({ twitterId }).lean();
         const island = await IslandModel.findOne({ islandId: islandId }).lean();
 
@@ -3678,6 +3677,24 @@ export const applyIslandTapping = async (twitterId: string, islandId: number): P
             }
         }
 
+        // Deduct User Energy after applying IslandTappping
+        // initialize user current energy & calculate energy required to apply island tapping
+        const { currentEnergy } = user.inGameData.energy as PlayerEnergy;
+        const energyRequired = Math.floor(currentTappingData.caressEnergyMeter / BASE_CARESS_PER_TAPPING) * BASE_ENERGY_PER_TAPPING;
+
+        // Check user currentEnergy is >= energyRequired
+        if ( currentEnergy >= energyRequired) {
+            const newCurrentEnergy = Math.max(currentEnergy - energyRequired, 0);
+            // Save newCurrentEnergy to userUpdateOperations
+            userUpdateOperations.$set['inGameData.energy.currentEnergy'] = newCurrentEnergy;
+            console.log(`(applyIslandTapping) deduct ${user.twitterUsername} energy to ${newCurrentEnergy} energy`);
+        } else {
+            return {
+                status: Status.ERROR,
+                message: `(getIslandTappingData) User doens't have enough energy to continue this action.`
+            };
+        }
+
         // Increase the tier Milestone to the next tier/rank. If milestone reaching the max tier, return error.
         if (currentTappingData.currentMilestone <= islandTappingLimit) {
             const nextTappingData: IslandTappingData = ISLAND_TAPPING_REQUIREMENT(currentTappingData.currentMilestone + 1);
@@ -3686,7 +3703,10 @@ export const applyIslandTapping = async (twitterId: string, islandId: number): P
             islandUpdateOperations.$set['islandTappingData'] = nextTappingData;
 
             // update IslandModel for this island data
-            await IslandModel.updateOne({ islandId: island.islandId }, islandUpdateOperations);
+            await Promise.all([
+                UserModel.updateOne({ _id: user._id }, userUpdateOperations),
+                IslandModel.updateOne({ islandId: island.islandId }, islandUpdateOperations),
+            ])
 
             return {
                 status: Status.SUCCESS,
@@ -3694,7 +3714,10 @@ export const applyIslandTapping = async (twitterId: string, islandId: number): P
             }
         } else {
             // update IslandModel for this island data
-            await IslandModel.updateOne({ islandId: island.islandId }, islandUpdateOperations);
+            await Promise.all([
+                UserModel.updateOne({ _id: user._id }, userUpdateOperations),
+                IslandModel.updateOne({ islandId: island.islandId }, islandUpdateOperations),
+            ])
 
             return {
                 status: Status.SUCCESS,
