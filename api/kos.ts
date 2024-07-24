@@ -597,18 +597,19 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
  * The rewards will be sent to the `KOSClaimableDailyRewards` collection.
  * Called by a scheduler every day at 23:59 UTC.
  */
-export const checkDailyKOSRewards = async (): Promise<ReturnValue> => {
+export const checkDailyKOSRewards = async (): Promise<void> => {
     try {
+        // check time taken to execute fn
+        const start = Date.now();
+
         await mongoose.connect(process.env.MONGODB_URI!);
 
         const errors: string[] = [];
         const users = await UserModel.find({ twitterId: { $ne: null, $exists: true } });
 
         if (!users || users.length === 0) {
-            return {
-                status: Status.ERROR,
-                message: `(checkDailyKOSOwnership) No users found.`
-            }
+            console.error(`(checkDailyKOSOwnership) No users found.`);
+            return;
         }
 
         // fetch the metadata file
@@ -619,208 +620,212 @@ export const checkDailyKOSRewards = async (): Promise<ReturnValue> => {
         const keyIds = Array.from({ length: 5000 }, (_, i) => i + 1);
         const { status: ownershipStatus, message: ownershipMessage, data: ownershipData } = await explicitOwnershipsOfKOS(keyIds);
 
+        if (ownershipStatus !== Status.SUCCESS) {
+            console.error(`(checkDailyKOSOwnership) Error: ${ownershipMessage}`);
+            return;
+        }
+
         const { keyOwnerships } = ownershipData;
 
         const bulkWriteOpsPromises = users.map(async (user) => {
             const updateOperations = [];
 
-            // // get all owned key IDs of the user
-            // const { status, message, data } = await getOwnedKeyIDs(user.twitterId);
+            // get all of the user's wallet addresses (main wallet + secondary wallets)
+            const { status: walletStatus, message: walletMessage, data: walletData } = await getWallets(user.twitterId);
 
-            // if (status !== Status.SUCCESS) {
-            //     errors.push(message + ` User: ${user.twitterId}`);
-            //     // continue to the next user if there was an error
-            //     return [];
-            // }
+            if (walletStatus !== Status.SUCCESS) {
+                // if wallet can't be fetched, then skip this user; add it to the errors list.
+                errors.push(walletMessage + `User: ${user.twitterId}`);
+                // continue to the next user.
+                return [];
+            }
 
-            // const ownedKeyIds = data.ownedKeyIDs;
+            // filter for empty string and convert all to lower case
+            const validAddresses = (walletData.walletAddresses as string[]).filter((address: string) => address !== '').map((address: string) => address.toLowerCase());
+            if (validAddresses.length === 0 || validAddresses === null || validAddresses === undefined) {
+                // if no valid addresses, skip this user; add to errors.
+                errors.push(`No valid addresses found for user: ${user.twitterId}`);
+                return [];
+            }
 
-            // // get the explicit ownerships of the owned key IDs
-            // const { status: ownershipStatus, message: ownershipMessage, data: ownershipData } = await explicitOwnershipsOfKOS(ownedKeyIds);
+            // get user's owned keys
+            const ownedKeys: KOSExplicitOwnership[] = [];
 
-            // if (ownershipStatus !== Status.SUCCESS) {
-            //     errors.push(ownershipMessage + ` User: ${user.twitterId}`);
-            //     // continue to the next user if there was an error
-            //     return;
-            // }
+            for (const keyOwnership of keyOwnerships) {
+                if (validAddresses.includes(keyOwnership.owner.toLowerCase())) {
+                    ownedKeys.push(keyOwnership);
+                }
+            }
 
-            // const keyOwnerships = ownershipData.keyOwnerships as KOSExplicitOwnership[];
+            // get the total keys owned by the user for at least 1 day
+            const validKeys = ownedKeys.filter((ownership) => ownership.startTimestamp <= Math.floor(Date.now() / 1000) - 86400);
 
-            // // get the total keys owned by the user for at least 1 day
-            // const validKeys = keyOwnerships.filter((ownership) => ownership.startTimestamp <= Math.floor(Date.now() / 1000) - 86400);
+            // get the metadata for each of the valid keys
+            const validKeysMetadata: KOSMetadata[] = validKeys.map((key) => {
+                return metadataFile.find((metadata) => metadata.keyId === key.tokenId) as KOSMetadata;
+            });
 
-            // // get the metadata for each of the valid keys
-            // const validKeysMetadata: KOSMetadata[] = validKeys.map((key) => {
-            //     return metadataFile.find((metadata) => metadata.keyId === key.tokenId) as KOSMetadata;
-            // });
+            // get the eligible daily rewards
+            const { xCookies, gatheringBooster25, gatheringBooster50, gatheringBooster100 } = KOS_DAILY_BENEFITS(validKeysMetadata);
 
+            // check if the user exists in the `KOSClaimableDailyRewards` collection.
+            // if it doesn't, add a new entry. else, update the entry.
+            const kosRewardUser = await KOSClaimableDailyRewardsModel.findOne({ userId: user._id });
 
+            // if the user isn't found, we will create a new entry and directly add the rewards and update the database.
+            // if found, we will add it to `updateOperations` and update the database later.
+            if (!kosRewardUser) {
+                console.log('new user found. adding user to KOSClaimableDailyRewards.');
 
+                const newKOSRewardUser = new KOSClaimableDailyRewardsModel({
+                    _id: generateObjectId(),
+                    userId: user._id,
+                    username: user.twitterUsername,
+                    twitterProfilePicture: user.twitterProfilePicture,
+                    // add each reward
+                    claimableRewards: [
+                        {
+                            type: KOSRewardType.X_COOKIES,
+                            amount: xCookies
+                        },
+                        {
+                            type: KOSRewardType.GATHERING_PROGRESS_BOOSTER_25,
+                            amount: gatheringBooster25
+                        },
+                        {
+                            type: KOSRewardType.GATHERING_PROGRESS_BOOSTER_50,
+                            amount: gatheringBooster50
+                        },
+                        {
+                            type: KOSRewardType.GATHERING_PROGRESS_BOOSTER_100,
+                            amount: gatheringBooster100
+                        }
+                    ]
+                });
 
+                await newKOSRewardUser.save();
 
-            
+                console.log(`new user found. adding user ${user.twitterUsername} to KOSClaimableDailyRewards.`);
 
-            // // get the eligible daily rewards
-            // const { xCookies, gatheringBooster25, gatheringBooster50, gatheringBooster100 } = KOS_DAILY_BENEFITS(validKeysMetadata);
+                return [];
+            } else {
+                console.log('existing user found. updating user in KOSClaimableDailyRewards.');
 
-            // // check if the user exists in the `KOSClaimableDailyRewards` collection.
-            // // if it doesn't, add a new entry. else, update the entry.
-            // const kosRewardUser = await KOSClaimableDailyRewardsModel.findOne({ userId: user._id });
+                // if user is found, we will increment the amounts for xCookies, gatheringBooster25, gatheringBooster50, gatheringBooster100.
+                // and add it to `updateOperations` to update the database later.
+                const xCookiesIndex = (kosRewardUser.claimableRewards as KOSReward[]).findIndex(reward => reward.type === KOSRewardType.X_COOKIES);
+                const gatheringBooster25Index = (kosRewardUser.claimableRewards as KOSReward[]).findIndex(reward => reward.type === KOSRewardType.GATHERING_PROGRESS_BOOSTER_25);
+                const gatheringBooster50Index = (kosRewardUser.claimableRewards as KOSReward[]).findIndex(reward => reward.type === KOSRewardType.GATHERING_PROGRESS_BOOSTER_50);
+                const gatheringBooster100Index = (kosRewardUser.claimableRewards as KOSReward[]).findIndex(reward => reward.type === KOSRewardType.GATHERING_PROGRESS_BOOSTER_100);
 
-            // // if the user isn't found, we will create a new entry and directly add the rewards and update the database.
-            // // if found, we will add it to `updateOperations` and update the database later.
-            // if (!kosRewardUser) {
-            //     console.log('new user found. adding user to KOSClaimableDailyRewards.');
+                if (xCookiesIndex !== -1) {
+                    updateOperations.push({
+                        updateOne: {
+                            filter: { userId: user._id },
+                            update: {
+                                $inc: {
+                                    [`claimableRewards.${xCookiesIndex}.amount`]: xCookies
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    updateOperations.push({
+                        updateOne: {
+                            filter: { userId: user._id },
+                            update: {
+                                $push: {
+                                    'claimableRewards': {
+                                        type: KOSRewardType.X_COOKIES,
+                                        amount: xCookies
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
 
-            //     const newKOSRewardUser = new KOSClaimableDailyRewardsModel({
-            //         _id: generateObjectId(),
-            //         userId: user._id,
-            //         username: user.twitterUsername,
-            //         twitterProfilePicture: user.twitterProfilePicture,
-            //         // add each reward
-            //         claimableRewards: [
-            //             {
-            //                 type: KOSRewardType.X_COOKIES,
-            //                 amount: xCookies
-            //             },
-            //             {
-            //                 type: KOSRewardType.GATHERING_PROGRESS_BOOSTER_25,
-            //                 amount: gatheringBooster25
-            //             },
-            //             {
-            //                 type: KOSRewardType.GATHERING_PROGRESS_BOOSTER_50,
-            //                 amount: gatheringBooster50
-            //             },
-            //             {
-            //                 type: KOSRewardType.GATHERING_PROGRESS_BOOSTER_100,
-            //                 amount: gatheringBooster100
-            //             }
-            //         ]
-            //     });
+                if (gatheringBooster25Index !== -1) {
+                    updateOperations.push({
+                        updateOne: {
+                            filter: { userId: user._id },
+                            update: {
+                                $inc: {
+                                    [`claimableRewards.${gatheringBooster25Index}.amount`]: gatheringBooster25
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    updateOperations.push({
+                        updateOne: {
+                            filter: { userId: user._id },
+                            update: {
+                                $push: {
+                                    'claimableRewards': {
+                                        type: KOSRewardType.GATHERING_PROGRESS_BOOSTER_25,
+                                        amount: gatheringBooster25
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
 
-            //     await newKOSRewardUser.save();
+                if (gatheringBooster50Index !== -1) {
+                    updateOperations.push({
+                        updateOne: {
+                            filter: { userId: user._id },
+                            update: {
+                                $inc: {
+                                    [`claimableRewards.${gatheringBooster50Index}.amount`]: gatheringBooster50
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    updateOperations.push({
+                        updateOne: {
+                            filter: { userId: user._id },
+                            update: {
+                                $push: {
+                                    'claimableRewards': {
+                                        type: KOSRewardType.GATHERING_PROGRESS_BOOSTER_50,
+                                        amount: gatheringBooster50
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
 
-            //     console.log(`new user found. adding user ${user.twitterUsername} to KOSClaimableDailyRewards.`);
-
-            //     return [];
-            // } else {
-            //     console.log('existing user found. updating user in KOSClaimableDailyRewards.');
-
-            //     // if user is found, we will increment the amounts for xCookies, gatheringBooster25, gatheringBooster50, gatheringBooster100.
-            //     // and add it to `updateOperations` to update the database later.
-            //     const xCookiesIndex = (kosRewardUser.claimableRewards as KOSReward[]).findIndex(reward => reward.type === KOSRewardType.X_COOKIES);
-            //     const gatheringBooster25Index = (kosRewardUser.claimableRewards as KOSReward[]).findIndex(reward => reward.type === KOSRewardType.GATHERING_PROGRESS_BOOSTER_25);
-            //     const gatheringBooster50Index = (kosRewardUser.claimableRewards as KOSReward[]).findIndex(reward => reward.type === KOSRewardType.GATHERING_PROGRESS_BOOSTER_50);
-            //     const gatheringBooster100Index = (kosRewardUser.claimableRewards as KOSReward[]).findIndex(reward => reward.type === KOSRewardType.GATHERING_PROGRESS_BOOSTER_100);
-
-            //     if (xCookiesIndex !== -1) {
-            //         updateOperations.push({
-            //             updateOne: {
-            //                 filter: { userId: user._id },
-            //                 update: {
-            //                     $inc: {
-            //                         [`claimableRewards.${xCookiesIndex}.amount`]: xCookies
-            //                     }
-            //                 }
-            //             }
-            //         });
-            //     } else {
-            //         updateOperations.push({
-            //             updateOne: {
-            //                 filter: { userId: user._id },
-            //                 update: {
-            //                     $push: {
-            //                         'claimableRewards': {
-            //                             type: KOSRewardType.X_COOKIES,
-            //                             amount: xCookies
-            //                         }
-            //                     }
-            //                 }
-            //             }
-            //         });
-            //     }
-
-            //     if (gatheringBooster25Index !== -1) {
-            //         updateOperations.push({
-            //             updateOne: {
-            //                 filter: { userId: user._id },
-            //                 update: {
-            //                     $inc: {
-            //                         [`claimableRewards.${gatheringBooster25Index}.amount`]: gatheringBooster25
-            //                     }
-            //                 }
-            //             }
-            //         });
-            //     } else {
-            //         updateOperations.push({
-            //             updateOne: {
-            //                 filter: { userId: user._id },
-            //                 update: {
-            //                     $push: {
-            //                         'claimableRewards': {
-            //                             type: KOSRewardType.GATHERING_PROGRESS_BOOSTER_25,
-            //                             amount: gatheringBooster25
-            //                         }
-            //                     }
-            //                 }
-            //             }
-            //         });
-            //     }
-
-            //     if (gatheringBooster50Index !== -1) {
-            //         updateOperations.push({
-            //             updateOne: {
-            //                 filter: { userId: user._id },
-            //                 update: {
-            //                     $inc: {
-            //                         [`claimableRewards.${gatheringBooster50Index}.amount`]: gatheringBooster50
-            //                     }
-            //                 }
-            //             }
-            //         });
-            //     } else {
-            //         updateOperations.push({
-            //             updateOne: {
-            //                 filter: { userId: user._id },
-            //                 update: {
-            //                     $push: {
-            //                         'claimableRewards': {
-            //                             type: KOSRewardType.GATHERING_PROGRESS_BOOSTER_50,
-            //                             amount: gatheringBooster50
-            //                         }
-            //                     }
-            //                 }
-            //             }
-            //         });
-            //     }
-
-            //     if (gatheringBooster100Index !== -1) {
-            //         updateOperations.push({
-            //             updateOne: {
-            //                 filter: { userId: user._id },
-            //                 update: {
-            //                     $inc: {
-            //                         [`claimableRewards.${gatheringBooster100Index}.amount`]: gatheringBooster100
-            //                     }
-            //                 }
-            //             }
-            //         });
-            //     } else {
-            //         updateOperations.push({
-            //             updateOne: {
-            //                 filter: { userId: user._id },
-            //                 update: {
-            //                     $push: {
-            //                         'claimableRewards': {
-            //                             type: KOSRewardType.GATHERING_PROGRESS_BOOSTER_100,
-            //                             amount: gatheringBooster100
-            //                         }
-            //                     }
-            //                 }
-            //             }
-            //         });
-            //     }
-            // }
+                if (gatheringBooster100Index !== -1) {
+                    updateOperations.push({
+                        updateOne: {
+                            filter: { userId: user._id },
+                            update: {
+                                $inc: {
+                                    [`claimableRewards.${gatheringBooster100Index}.amount`]: gatheringBooster100
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    updateOperations.push({
+                        updateOne: {
+                            filter: { userId: user._id },
+                            update: {
+                                $push: {
+                                    'claimableRewards': {
+                                        type: KOSRewardType.GATHERING_PROGRESS_BOOSTER_100,
+                                        amount: gatheringBooster100
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
 
             return updateOperations;
         });
@@ -837,17 +842,20 @@ export const checkDailyKOSRewards = async (): Promise<ReturnValue> => {
         // execute the bulk write operations
         await KOSClaimableDailyRewardsModel.bulkWrite(bulkWriteOps);
 
-
         if (errors.length > 0) {
             console.error(`(checkDailyKOSOwnership) Errors: ${errors.join('\n')}`);
         }
 
         console.log(`(checkDailyKOSOwnership) Successfully updated claimable daily KOS rewards.`);
+
+        const end = Date.now();
+
+        // time in seconds
+        const timeTaken = (end - start) / 1000;
+
+        console.log(`(checkDailyKOSOwnership) Time taken: ${timeTaken} seconds.`);
     } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(checkDailyKOSOwnership) Error: ${err.message}`
-        }
+        console.error(`(checkDailyKOSOwnership) Error: ${err.message}`);
     }
 }
 
