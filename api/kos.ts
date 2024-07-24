@@ -599,9 +599,6 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
  */
 export const checkDailyKOSRewards = async (): Promise<void> => {
     try {
-        // check time taken to execute fn
-        const start = Date.now();
-
         await mongoose.connect(process.env.MONGODB_URI!);
 
         const errors: string[] = [];
@@ -847,13 +844,6 @@ export const checkDailyKOSRewards = async (): Promise<void> => {
         }
 
         console.log(`(checkDailyKOSOwnership) Successfully updated claimable daily KOS rewards.`);
-
-        const end = Date.now();
-
-        // time in seconds
-        const timeTaken = (end - start) / 1000;
-
-        console.log(`(checkDailyKOSOwnership) Time taken: ${timeTaken} seconds.`);
     } catch (err: any) {
         console.error(`(checkDailyKOSOwnership) Error: ${err.message}`);
     }
