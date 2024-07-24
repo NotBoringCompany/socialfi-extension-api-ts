@@ -2409,3 +2409,36 @@ export const restoreUserCurrentEnergyAndResetReroll = async (): Promise<void> =>
         console.error(`(restoreUserCurrentEnergyAndResetReroll) Error: ${err.message}`);
     }
 };
+/**
+ * Updated all players level using the new values
+ */
+export const updatePlayerLevels = async () => {
+    try {
+        console.log('starting to update...');
+        const users = await UserModel.find();
+
+        console.log('total users found: ', users.length);
+
+        for (const user of users) {
+            if (!user.inventory) continue;
+
+            console.log('start updating level: ', user.twitterUsername);
+            const { data } = await getUserCurrentPoints(user.twitterId);
+            const newLevel = GET_SEASON_0_PLAYER_LEVEL(data.points);
+
+            await UserModel.updateOne(
+                { twitterUsername: user.twitterUsername },
+                {
+                    $set: {
+                        'inGameData.level': newLevel,
+                    },
+                }
+            );
+            console.log('finished updating level: ', user.twitterUsername);
+        }
+
+        console.log('All user levels have been updated successfully.');
+    } catch (error) {
+        console.error('Error updating user levels:', error);
+    }
+};
