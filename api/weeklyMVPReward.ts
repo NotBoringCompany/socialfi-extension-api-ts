@@ -402,7 +402,7 @@ export const claimWeeklyMVPRewards = async (twitterId: string): Promise<ReturnVa
             } else {
                 leaderboardUpdateOperations.$push[`userData.${userIndex}.pointsData`] = {
                     points: claimableLeaderboardPoints,
-                    source: LeaderboardPointsSource.KOS_BENEFITS
+                    source: LeaderboardPointsSource.WEEKLY_MVP_REWARDS
                 }
             }
 
