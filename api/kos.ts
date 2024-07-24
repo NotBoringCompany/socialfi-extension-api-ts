@@ -590,253 +590,253 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
     }
 }
 
-/**
- * Checks, for each user who owns at least 1 Key of Salvation, if they have owned each key for at least 1 day (from 23:59 UTC the previous day to 23:59 UTC now).
- * If they have, they will be eligible to earn the daily KOS rewards based on the amount of keys that match that 1-day criteria.
- * 
- * The rewards will be sent to the `KOSClaimableDailyRewards` collection.
- * Called by a scheduler every day at 23:59 UTC.
- */
-export const checkDailyKOSRewards = async (): Promise<ReturnValue> => {
-    try {
-        await mongoose.connect(process.env.MONGODB_URI!);
+// /**
+//  * Checks, for each user who owns at least 1 Key of Salvation, if they have owned each key for at least 1 day (from 23:59 UTC the previous day to 23:59 UTC now).
+//  * If they have, they will be eligible to earn the daily KOS rewards based on the amount of keys that match that 1-day criteria.
+//  * 
+//  * The rewards will be sent to the `KOSClaimableDailyRewards` collection.
+//  * Called by a scheduler every day at 23:59 UTC.
+//  */
+// export const checkDailyKOSRewards = async (): Promise<ReturnValue> => {
+//     try {
+//         await mongoose.connect(process.env.MONGODB_URI!);
 
-        const errors: string[] = [];
-        const users = await UserModel.find({ twitterId: { $ne: null, $exists: true } });
+//         const errors: string[] = [];
+//         const users = await UserModel.find({ twitterId: { $ne: null, $exists: true } });
 
-        if (!users || users.length === 0) {
-            return {
-                status: Status.ERROR,
-                message: `(checkDailyKOSOwnership) No users found.`
-            }
-        }
+//         if (!users || users.length === 0) {
+//             return {
+//                 status: Status.ERROR,
+//                 message: `(checkDailyKOSOwnership) No users found.`
+//             }
+//         }
 
-        // fetch the metadata file
-        const metadataFile = fetchKOSMetadataFile();
+//         // fetch the metadata file
+//         const metadataFile = fetchKOSMetadataFile();
 
-        const bulkWriteOpsPromises = users.map(async (user) => {
-            const updateOperations = [];
+//         const bulkWriteOpsPromises = users.map(async (user) => {
+//             const updateOperations = [];
 
-            // get all owned key IDs of the user
-            const { status, message, data } = await getOwnedKeyIDs(user.twitterId);
+//             // get all owned key IDs of the user
+//             const { status, message, data } = await getOwnedKeyIDs(user.twitterId);
 
-            if (status !== Status.SUCCESS) {
-                errors.push(message + ` User: ${user.twitterId}`);
-                // continue to the next user if there was an error
-                return [];
-            }
+//             if (status !== Status.SUCCESS) {
+//                 errors.push(message + ` User: ${user.twitterId}`);
+//                 // continue to the next user if there was an error
+//                 return [];
+//             }
 
-            const ownedKeyIds = data.ownedKeyIDs;
+//             const ownedKeyIds = data.ownedKeyIDs;
 
-            // get the explicit ownerships of the owned key IDs
-            const { status: ownershipStatus, message: ownershipMessage, data: ownershipData } = await explicitOwnershipsOfKOS(ownedKeyIds);
+//             // get the explicit ownerships of the owned key IDs
+//             const { status: ownershipStatus, message: ownershipMessage, data: ownershipData } = await explicitOwnershipsOfKOS(ownedKeyIds);
 
-            if (ownershipStatus !== Status.SUCCESS) {
-                errors.push(ownershipMessage + ` User: ${user.twitterId}`);
-                // continue to the next user if there was an error
-                return;
-            }
+//             if (ownershipStatus !== Status.SUCCESS) {
+//                 errors.push(ownershipMessage + ` User: ${user.twitterId}`);
+//                 // continue to the next user if there was an error
+//                 return;
+//             }
 
-            const keyOwnerships = ownershipData.keyOwnerships as KOSExplicitOwnership[];
+//             const keyOwnerships = ownershipData.keyOwnerships as KOSExplicitOwnership[];
 
-            // get the total keys owned by the user for at least 1 day
-            const validKeys = keyOwnerships.filter((ownership) => ownership.startTimestamp <= Math.floor(Date.now() / 1000) - 86400);
+//             // get the total keys owned by the user for at least 1 day
+//             const validKeys = keyOwnerships.filter((ownership) => ownership.startTimestamp <= Math.floor(Date.now() / 1000) - 86400);
 
-            // get the metadata for each of the valid keys
-            const validKeysMetadata: KOSMetadata[] = validKeys.map((key) => {
-                return metadataFile.find((metadata) => metadata.keyId === key.tokenId) as KOSMetadata;
-            });
+//             // get the metadata for each of the valid keys
+//             const validKeysMetadata: KOSMetadata[] = validKeys.map((key) => {
+//                 return metadataFile.find((metadata) => metadata.keyId === key.tokenId) as KOSMetadata;
+//             });
 
-            // get the eligible daily rewards
-            const { xCookies, gatheringBooster25, gatheringBooster50, gatheringBooster100 } = KOS_DAILY_BENEFITS(validKeysMetadata);
+//             // get the eligible daily rewards
+//             const { xCookies, gatheringBooster25, gatheringBooster50, gatheringBooster100 } = KOS_DAILY_BENEFITS(validKeysMetadata);
 
-            // check if the user exists in the `KOSClaimableDailyRewards` collection.
-            // if it doesn't, add a new entry. else, update the entry.
-            const kosRewardUser = await KOSClaimableDailyRewardsModel.findOne({ userId: user._id });
+//             // check if the user exists in the `KOSClaimableDailyRewards` collection.
+//             // if it doesn't, add a new entry. else, update the entry.
+//             const kosRewardUser = await KOSClaimableDailyRewardsModel.findOne({ userId: user._id });
 
-            // if the user isn't found, we will create a new entry and directly add the rewards and update the database.
-            // if found, we will add it to `updateOperations` and update the database later.
-            if (!kosRewardUser) {
-                console.log('new user found. adding user to KOSClaimableDailyRewards.');
+//             // if the user isn't found, we will create a new entry and directly add the rewards and update the database.
+//             // if found, we will add it to `updateOperations` and update the database later.
+//             if (!kosRewardUser) {
+//                 console.log('new user found. adding user to KOSClaimableDailyRewards.');
 
-                const newKOSRewardUser = new KOSClaimableDailyRewardsModel({
-                    _id: generateObjectId(),
-                    userId: user._id,
-                    username: user.twitterUsername,
-                    twitterProfilePicture: user.twitterProfilePicture,
-                    // add each reward
-                    claimableRewards: [
-                        {
-                            type: KOSRewardType.X_COOKIES,
-                            amount: xCookies
-                        },
-                        {
-                            type: KOSRewardType.GATHERING_PROGRESS_BOOSTER_25,
-                            amount: gatheringBooster25
-                        },
-                        {
-                            type: KOSRewardType.GATHERING_PROGRESS_BOOSTER_50,
-                            amount: gatheringBooster50
-                        },
-                        {
-                            type: KOSRewardType.GATHERING_PROGRESS_BOOSTER_100,
-                            amount: gatheringBooster100
-                        }
-                    ]
-                });
+//                 const newKOSRewardUser = new KOSClaimableDailyRewardsModel({
+//                     _id: generateObjectId(),
+//                     userId: user._id,
+//                     username: user.twitterUsername,
+//                     twitterProfilePicture: user.twitterProfilePicture,
+//                     // add each reward
+//                     claimableRewards: [
+//                         {
+//                             type: KOSRewardType.X_COOKIES,
+//                             amount: xCookies
+//                         },
+//                         {
+//                             type: KOSRewardType.GATHERING_PROGRESS_BOOSTER_25,
+//                             amount: gatheringBooster25
+//                         },
+//                         {
+//                             type: KOSRewardType.GATHERING_PROGRESS_BOOSTER_50,
+//                             amount: gatheringBooster50
+//                         },
+//                         {
+//                             type: KOSRewardType.GATHERING_PROGRESS_BOOSTER_100,
+//                             amount: gatheringBooster100
+//                         }
+//                     ]
+//                 });
 
-                await newKOSRewardUser.save();
+//                 await newKOSRewardUser.save();
 
-                console.log(`new user found. adding user ${user.twitterUsername} to KOSClaimableDailyRewards.`);
+//                 console.log(`new user found. adding user ${user.twitterUsername} to KOSClaimableDailyRewards.`);
 
-                return [];
-            } else {
-                console.log('existing user found. updating user in KOSClaimableDailyRewards.');
+//                 return [];
+//             } else {
+//                 console.log('existing user found. updating user in KOSClaimableDailyRewards.');
 
-                // if user is found, we will increment the amounts for xCookies, gatheringBooster25, gatheringBooster50, gatheringBooster100.
-                // and add it to `updateOperations` to update the database later.
-                const xCookiesIndex = (kosRewardUser.claimableRewards as KOSReward[]).findIndex(reward => reward.type === KOSRewardType.X_COOKIES);
-                const gatheringBooster25Index = (kosRewardUser.claimableRewards as KOSReward[]).findIndex(reward => reward.type === KOSRewardType.GATHERING_PROGRESS_BOOSTER_25);
-                const gatheringBooster50Index = (kosRewardUser.claimableRewards as KOSReward[]).findIndex(reward => reward.type === KOSRewardType.GATHERING_PROGRESS_BOOSTER_50);
-                const gatheringBooster100Index = (kosRewardUser.claimableRewards as KOSReward[]).findIndex(reward => reward.type === KOSRewardType.GATHERING_PROGRESS_BOOSTER_100);
+//                 // if user is found, we will increment the amounts for xCookies, gatheringBooster25, gatheringBooster50, gatheringBooster100.
+//                 // and add it to `updateOperations` to update the database later.
+//                 const xCookiesIndex = (kosRewardUser.claimableRewards as KOSReward[]).findIndex(reward => reward.type === KOSRewardType.X_COOKIES);
+//                 const gatheringBooster25Index = (kosRewardUser.claimableRewards as KOSReward[]).findIndex(reward => reward.type === KOSRewardType.GATHERING_PROGRESS_BOOSTER_25);
+//                 const gatheringBooster50Index = (kosRewardUser.claimableRewards as KOSReward[]).findIndex(reward => reward.type === KOSRewardType.GATHERING_PROGRESS_BOOSTER_50);
+//                 const gatheringBooster100Index = (kosRewardUser.claimableRewards as KOSReward[]).findIndex(reward => reward.type === KOSRewardType.GATHERING_PROGRESS_BOOSTER_100);
 
-                if (xCookiesIndex !== -1) {
-                    updateOperations.push({
-                        updateOne: {
-                            filter: { userId: user._id },
-                            update: {
-                                $inc: {
-                                    [`claimableRewards.${xCookiesIndex}.amount`]: xCookies
-                                }
-                            }
-                        }
-                    });
-                } else {
-                    updateOperations.push({
-                        updateOne: {
-                            filter: { userId: user._id },
-                            update: {
-                                $push: {
-                                    'claimableRewards': {
-                                        type: KOSRewardType.X_COOKIES,
-                                        amount: xCookies
-                                    }
-                                }
-                            }
-                        }
-                    });
-                }
+//                 if (xCookiesIndex !== -1) {
+//                     updateOperations.push({
+//                         updateOne: {
+//                             filter: { userId: user._id },
+//                             update: {
+//                                 $inc: {
+//                                     [`claimableRewards.${xCookiesIndex}.amount`]: xCookies
+//                                 }
+//                             }
+//                         }
+//                     });
+//                 } else {
+//                     updateOperations.push({
+//                         updateOne: {
+//                             filter: { userId: user._id },
+//                             update: {
+//                                 $push: {
+//                                     'claimableRewards': {
+//                                         type: KOSRewardType.X_COOKIES,
+//                                         amount: xCookies
+//                                     }
+//                                 }
+//                             }
+//                         }
+//                     });
+//                 }
 
-                if (gatheringBooster25Index !== -1) {
-                    updateOperations.push({
-                        updateOne: {
-                            filter: { userId: user._id },
-                            update: {
-                                $inc: {
-                                    [`claimableRewards.${gatheringBooster25Index}.amount`]: gatheringBooster25
-                                }
-                            }
-                        }
-                    });
-                } else {
-                    updateOperations.push({
-                        updateOne: {
-                            filter: { userId: user._id },
-                            update: {
-                                $push: {
-                                    'claimableRewards': {
-                                        type: KOSRewardType.GATHERING_PROGRESS_BOOSTER_25,
-                                        amount: gatheringBooster25
-                                    }
-                                }
-                            }
-                        }
-                    });
-                }
+//                 if (gatheringBooster25Index !== -1) {
+//                     updateOperations.push({
+//                         updateOne: {
+//                             filter: { userId: user._id },
+//                             update: {
+//                                 $inc: {
+//                                     [`claimableRewards.${gatheringBooster25Index}.amount`]: gatheringBooster25
+//                                 }
+//                             }
+//                         }
+//                     });
+//                 } else {
+//                     updateOperations.push({
+//                         updateOne: {
+//                             filter: { userId: user._id },
+//                             update: {
+//                                 $push: {
+//                                     'claimableRewards': {
+//                                         type: KOSRewardType.GATHERING_PROGRESS_BOOSTER_25,
+//                                         amount: gatheringBooster25
+//                                     }
+//                                 }
+//                             }
+//                         }
+//                     });
+//                 }
 
-                if (gatheringBooster50Index !== -1) {
-                    updateOperations.push({
-                        updateOne: {
-                            filter: { userId: user._id },
-                            update: {
-                                $inc: {
-                                    [`claimableRewards.${gatheringBooster50Index}.amount`]: gatheringBooster50
-                                }
-                            }
-                        }
-                    });
-                } else {
-                    updateOperations.push({
-                        updateOne: {
-                            filter: { userId: user._id },
-                            update: {
-                                $push: {
-                                    'claimableRewards': {
-                                        type: KOSRewardType.GATHERING_PROGRESS_BOOSTER_50,
-                                        amount: gatheringBooster50
-                                    }
-                                }
-                            }
-                        }
-                    });
-                }
+//                 if (gatheringBooster50Index !== -1) {
+//                     updateOperations.push({
+//                         updateOne: {
+//                             filter: { userId: user._id },
+//                             update: {
+//                                 $inc: {
+//                                     [`claimableRewards.${gatheringBooster50Index}.amount`]: gatheringBooster50
+//                                 }
+//                             }
+//                         }
+//                     });
+//                 } else {
+//                     updateOperations.push({
+//                         updateOne: {
+//                             filter: { userId: user._id },
+//                             update: {
+//                                 $push: {
+//                                     'claimableRewards': {
+//                                         type: KOSRewardType.GATHERING_PROGRESS_BOOSTER_50,
+//                                         amount: gatheringBooster50
+//                                     }
+//                                 }
+//                             }
+//                         }
+//                     });
+//                 }
 
-                if (gatheringBooster100Index !== -1) {
-                    updateOperations.push({
-                        updateOne: {
-                            filter: { userId: user._id },
-                            update: {
-                                $inc: {
-                                    [`claimableRewards.${gatheringBooster100Index}.amount`]: gatheringBooster100
-                                }
-                            }
-                        }
-                    });
-                } else {
-                    updateOperations.push({
-                        updateOne: {
-                            filter: { userId: user._id },
-                            update: {
-                                $push: {
-                                    'claimableRewards': {
-                                        type: KOSRewardType.GATHERING_PROGRESS_BOOSTER_100,
-                                        amount: gatheringBooster100
-                                    }
-                                }
-                            }
-                        }
-                    });
-                }
-            }
+//                 if (gatheringBooster100Index !== -1) {
+//                     updateOperations.push({
+//                         updateOne: {
+//                             filter: { userId: user._id },
+//                             update: {
+//                                 $inc: {
+//                                     [`claimableRewards.${gatheringBooster100Index}.amount`]: gatheringBooster100
+//                                 }
+//                             }
+//                         }
+//                     });
+//                 } else {
+//                     updateOperations.push({
+//                         updateOne: {
+//                             filter: { userId: user._id },
+//                             update: {
+//                                 $push: {
+//                                     'claimableRewards': {
+//                                         type: KOSRewardType.GATHERING_PROGRESS_BOOSTER_100,
+//                                         amount: gatheringBooster100
+//                                     }
+//                                 }
+//                             }
+//                         }
+//                     });
+//                 }
+//             }
 
-            return updateOperations;
-        });
+//             return updateOperations;
+//         });
 
-        const bulkWriteOpsArrays = await Promise.all(bulkWriteOpsPromises);
+//         const bulkWriteOpsArrays = await Promise.all(bulkWriteOpsPromises);
 
-        const bulkWriteOps = bulkWriteOpsArrays.flat().filter(op => op !== undefined);
+//         const bulkWriteOps = bulkWriteOpsArrays.flat().filter(op => op !== undefined);
 
-        if (bulkWriteOps.length === 0) {
-            console.log(`(checkDailyKOSOwnership) No existing users were eligible to update their daily KOS rewards.`);
-            return;
-        }
+//         if (bulkWriteOps.length === 0) {
+//             console.log(`(checkDailyKOSOwnership) No existing users were eligible to update their daily KOS rewards.`);
+//             return;
+//         }
 
-        // execute the bulk write operations
-        await KOSClaimableDailyRewardsModel.bulkWrite(bulkWriteOps);
+//         // execute the bulk write operations
+//         await KOSClaimableDailyRewardsModel.bulkWrite(bulkWriteOps);
 
 
-        if (errors.length > 0) {
-            console.error(`(checkDailyKOSOwnership) Errors: ${errors.join('\n')}`);
-        }
+//         if (errors.length > 0) {
+//             console.error(`(checkDailyKOSOwnership) Errors: ${errors.join('\n')}`);
+//         }
 
-        console.log(`(checkDailyKOSOwnership) Successfully updated claimable daily KOS rewards.`);
-    } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(checkDailyKOSOwnership) Error: ${err.message}`
-        }
-    }
-}
+//         console.log(`(checkDailyKOSOwnership) Successfully updated claimable daily KOS rewards.`);
+//     } catch (err: any) {
+//         return {
+//             status: Status.ERROR,
+//             message: `(checkDailyKOSOwnership) Error: ${err.message}`
+//         }
+//     }
+// }
 
 /**
  * Checks, for each user who owns at least 1 Key of Salvation, Keychain and/or Superior Keychain, if they have owned each key/keychain/superior keychain for at least 7 days (from 23:59 UTC 7 days ago to 23:59 UTC now).
@@ -847,15 +847,13 @@ export const checkDailyKOSRewards = async (): Promise<ReturnValue> => {
  * 
  * Called by a scheduler every Sunday at 23:59 UTC.
  */
-export const checkWeeklyKOSRewards = async (): Promise<ReturnValue> => {
+export const checkWeeklyKOSRewards = async (): Promise<void> => {
     try {
         const users = await UserModel.find({ twitterId: { $ne: null, $exists: true } });
 
         if (!users || users.length === 0) {
-            return {
-                status: Status.ERROR,
-                message: `(checkWeeklyKOSOwnership) No users found.`
-            }
+            console.error(`(checkWeeklyKOSRewards) No users found.`);
+            return;
         }
 
         const errors: string[] = [];
@@ -863,88 +861,72 @@ export const checkWeeklyKOSRewards = async (): Promise<ReturnValue> => {
         // fetch the metadata file
         const metadataFile = fetchKOSMetadataFile();
 
+        // fetch all explicit ownerships of keys, keychains and superior keychains
+        const { status: ownershipStatus, message: ownershipMessage, data: ownershipData } = await getAllExplicitOwnerships();
+
+        if (ownershipStatus !== Status.SUCCESS) {
+            console.error(`(checkWeeklyKOSRewards) Error: ${ownershipMessage}`);
+            return;
+        }
+
+        const { keyOwnerships, keychainOwnerships, superiorKeychainOwnerships } = ownershipData;
+
         const bulkWriteOpsPromises = users.map(async user => {
             const updateOperations = [];
 
-            // get all owned key IDs of the user
-            const { status, message, data } = await getOwnedKeyIDs(user.twitterId);
+            // get all of the user's wallet addresses (main wallet + secondary wallets)
+            const { status: walletStatus, message: walletMessage, data: walletData } = await getWallets(user.twitterId);
 
-            if (status !== Status.SUCCESS) {
-                errors.push(message + ` User: ${user.twitterId}`);
-                // continue to the next user if there was an error
+            if (walletStatus !== Status.SUCCESS) {
+                // if wallet can't be fetched, then skip this user; add it to the errors list.
+                errors.push(walletMessage + `User: ${user.twitterId}`);
+                // continue to the next user.
                 return [];
             }
 
-            const ownedKeyIds = data.ownedKeyIDs;
-
-            // get the explicit ownerships of the owned key IDs
-            const { status: ownershipStatus, message: ownershipMessage, data: ownershipData } = await explicitOwnershipsOfKOS(ownedKeyIds);
-
-            if (ownershipStatus !== Status.SUCCESS) {
-                errors.push(ownershipMessage + ` User: ${user.twitterId}`);
-                // continue to the next user if there was an error
+            // filter for empty string and convert all to lower case
+            const validAddresses = (walletData.walletAddresses as string[]).filter((address: string) => address !== '').map((address: string) => address.toLowerCase());
+            if (validAddresses.length === 0 || validAddresses === null || validAddresses === undefined) {
+                // if no valid addresses, skip this user; add to errors.
+                errors.push(`No valid addresses found for user: ${user.twitterId}`);
                 return [];
             }
 
-            const keyOwnerships = ownershipData.keyOwnerships as KOSExplicitOwnership[];
+            // check if the user has any keys, keychains or superior keychains
+            // to do this, the key, keychain and superior keychain ownerships are looped through and checked if `owner` matches any of the user's addresses.
+            const ownedKeys: KOSExplicitOwnership[] = [];
+            const ownedKeychains: KOSExplicitOwnership[] = [];
+            const ownedSuperiorKeychains: KOSExplicitOwnership[] = [];
+
+            for (const keyOwnership of keyOwnerships) {
+                if (validAddresses.includes(keyOwnership.owner.toLowerCase())) {
+                    ownedKeys.push(keyOwnership);
+                }
+            }
+
+            for (const keychainOwnership of keychainOwnerships) {
+                if (validAddresses.includes(keychainOwnership.owner.toLowerCase())) {
+                    ownedKeychains.push(keychainOwnership);
+                }
+            }
+
+            for (const superiorKeychainOwnership of superiorKeychainOwnerships) {
+                if (validAddresses.includes(superiorKeychainOwnership.owner.toLowerCase())) {
+                    ownedSuperiorKeychains.push(superiorKeychainOwnership);
+                }
+            }
 
             // get the total keys owned by the user for at least 7 days
-            const validKeys = keyOwnerships.filter((ownership) => ownership.startTimestamp <= Math.floor(Date.now() / 1000) - 604800);
-
-            // get the metadata for each of the valid keys
-            const validKeysMetadata: KOSMetadata[] = validKeys.map((key) => {
-                return metadataFile.find((metadata) => metadata.keyId === key.tokenId) as KOSMetadata;
-            });
-
-            // get all owned keychain IDs of the user
-            const { status: keychainStatus, message: keychainMessage, data: keychainData } = await getOwnedKeychainIDs(user.twitterId);
-
-            if (keychainStatus !== Status.SUCCESS) {
-                errors.push(keychainMessage + ` User: ${user.twitterId}`);
-                // continue to the next user if there was an error
-                return [];
-            }
-
-            const ownedKeychainIds = keychainData.ownedKeychainIDs;
-
-            // get the explicit ownerships of the owned keychain IDs
-            const { status: keychainOwnershipStatus, message: keychainOwnershipMessage, data: keychainOwnershipData } = await explicitOwnershipsOfKeychain(ownedKeychainIds);
-
-            if (keychainOwnershipStatus !== Status.SUCCESS) {
-                errors.push(keychainOwnershipMessage + ` User: ${user.twitterId}`);
-                // continue to the next user if there was an error
-                return [];
-            }
-
-            const keychainOwnerships = keychainOwnershipData.keychainOwnerships as KOSExplicitOwnership[];
-
+            const validKeys = ownedKeys.filter(ownership => ownership.startTimestamp <= Math.floor(Date.now() / 1000) - 604800);
             // get the total keychains owned by the user for at least 7 days
-            const validKeychains = keychainOwnerships.filter((ownership) => ownership.startTimestamp <= Math.floor(Date.now() / 1000) - 604800);
-
-            // get all owned superior keychain IDs of the user
-            const { status: superiorKeychainStatus, message: superiorKeychainMessage, data: superiorKeychainData } = await getOwnedSuperiorKeychainIDs(user.twitterId);
-
-            if (superiorKeychainStatus !== Status.SUCCESS) {
-                errors.push(superiorKeychainMessage + ` User: ${user.twitterId}`);
-                // continue to the next user if there was an error
-                return [];
-            }
-
-            const ownedSuperiorKeychainIds = superiorKeychainData.ownedSuperiorKeychainIDs;
-
-            // get the explicit ownerships of the owned keychain IDs
-            const { status: superiorKeychainOwnershipStatus, message: superiorKeychainOwnershipMessage, data: superiorKeychainOwnershipData } = await explicitOwnershipsOfSuperiorKeychain(ownedSuperiorKeychainIds);
-
-            if (superiorKeychainOwnershipStatus !== Status.SUCCESS) {
-                errors.push(superiorKeychainOwnershipMessage + ` User: ${user.twitterId}`);
-                // continue to the next user if there was an error
-                return [];
-            }
-
-            const superiorKeychainOwnerships = superiorKeychainOwnershipData.superiorKeychainOwnerships as KOSExplicitOwnership[];
-
+            const validKeychains = ownedKeychains.filter(ownership => ownership.startTimestamp <= Math.floor(Date.now() / 1000) - 604800);
             // get the total superior keychains owned by the user for at least 7 days
-            const validSuperiorKeychains = superiorKeychainOwnerships.filter((ownership) => ownership.startTimestamp <= Math.floor(Date.now() / 1000) - 604800);
+            const validSuperiorKeychains = ownedSuperiorKeychains.filter(ownership => ownership.startTimestamp <= Math.floor(Date.now() / 1000) - 604800);
+
+            // get the metadata for each valid key
+            const validKeysMetadata: KOSMetadata[] = validKeys.map(key => {
+                return metadataFile.find(metadata => metadata.keyId === key.tokenId) as KOSMetadata;
+            });
 
             // get the eligible weekly rewards
             const { points, xCookies, bitOrbI, bitOrbII, terraCapI, terraCapII, raftBooster60 } = KOS_WEEKLY_BENEFITS(
@@ -1224,9 +1206,79 @@ export const checkWeeklyKOSRewards = async (): Promise<ReturnValue> => {
         console.log(`(checkWeeklyKOSOwnership) Successfully updated claimable weekly KOS rewards.`);
     } catch (err: any) {
         console.log('error from checkWeeklyKOSOwnership: ', err.message);
+    }
+}
+
+/**
+ * Gets the `explicitOwnershipsOf` data for all KOS, Keychains and Superior Keychains.
+ * 
+ * This is a more effective method than to fetch the IDs manually per address due to rate limiting issues with the node endpoint.
+ */
+export const getAllExplicitOwnerships = async (): Promise<ReturnValue> => {
+    try {
+        // there is a limited supply of 5,000 for KOS. hence, we can just create an array for IDs from 1 to 5000.
+        const keyIds = Array.from({ length: 5000 }, (_, i) => i + 1);
+        // keychain collection has a limited supply of 800, so we can just create an array from 1 to 800
+        const keychainIds = Array.from({ length: 800 }, (_, i) => i + 1);
+        // sup keychain has a limited supply of 135, so we can just create an array from 1 to 135.
+        const supKeychainIds = Array.from({ length: 135 }, (_, i) => i + 1);
+
+        const keyOwnerships = await KOS_CONTRACT.explicitOwnershipsOf(keyIds);
+        const keychainOwnerships = await KEYCHAIN_CONTRACT.explicitOwnershipsOf(keychainIds);
+        const supKeychainOwnerships = await SUPERIOR_KEYCHAIN_CONTRACT.explicitOwnershipsOf(supKeychainIds);
+
+        const formattedKeyOwnerships: KOSExplicitOwnership[] = keyOwnerships.map((ownership: any, index: number) => {
+            return {
+                // get the key ID
+                tokenId: keyIds[index],
+                owner: ownership.addr,
+                // convert startTimestamp to unix
+                startTimestamp: ownership.startTimestamp.toNumber(),
+                burned: ownership.burned,
+                extraData: ownership.extraData
+            }
+        });
+
+        // we can use the KOSExplicitOwnership interface here because the struct is the same for both Key of Salvation and Keychain
+        const formattedKeychainOwnerships: KOSExplicitOwnership[] = keychainOwnerships.map((ownership: any, index: number) => {
+            return {
+                // get the keychain ID
+                tokenId: keychainIds[index],
+                owner: ownership.addr,
+                // convert startTimestamp to unix
+                startTimestamp: ownership.startTimestamp.toNumber(),
+                burned: ownership.burned,
+                extraData: ownership.extraData
+            }
+        })
+
+        // we can use the KOSExplicitOwnership interface here because the struct is the same for both Key of Salvation and Keychain
+        const formattedSupKeychainOwnerships: KOSExplicitOwnership[] = supKeychainOwnerships.map((ownership: any, index: number) => {
+            return {
+                // get the superior keychain ID
+                tokenId: supKeychainIds[index],
+                owner: ownership.addr,
+                // convert startTimestamp to unix
+                startTimestamp: ownership.startTimestamp.toNumber(),
+                burned: ownership.burned,
+                extraData: ownership.extraData
+            }
+        });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getKOSAndKeychainOwnerships) Successfully retrieved explicit ownerships of KOS, Keychains and Superior Keychains.`,
+            data: {
+                keyOwnerships: formattedKeyOwnerships,
+                keychainOwnerships: formattedKeychainOwnerships,
+                superiorKeychainOwnerships: formattedSupKeychainOwnerships
+            }
+        }
+    } catch (err: any) {
+        console.log('error from getKOSAndKeychainOwnerships: ', err.message);
         return {
             status: Status.ERROR,
-            message: `(checkWeeklyKOSOwnership) Error: ${err.message}`
+            message: `(getKOSAndKeychainOwnerships) Error: ${err.message}`
         }
     }
 }
@@ -1294,131 +1346,131 @@ export const getOwnedKeyIDs = async (twitterId: string): Promise<ReturnValue> =>
     }
 }
 
-/**
- * Gets all Keychain IDs owned by the user (main + secondary wallets).
- */
-export const getOwnedKeychainIDs = async (twitterId: string): Promise<ReturnValue> => {
-    try {
-        const { status, message, data } = await getWallets(twitterId);
+// /**
+//  * Gets all Keychain IDs owned by the user (main + secondary wallets).
+//  */
+// export const getOwnedKeychainIDs = async (twitterId: string): Promise<ReturnValue> => {
+//     try {
+//         const { status, message, data } = await getWallets(twitterId);
 
-        if (status !== Status.SUCCESS) {
-            console.log('error from wallet fetching from getOwnedKeychainIDs: ', message);
-            return {
-                status,
-                message: `(getOwnedKeychainIDs) Error from getWallets: ${message}`
-            };
-        }
+//         if (status !== Status.SUCCESS) {
+//             console.log('error from wallet fetching from getOwnedKeychainIDs: ', message);
+//             return {
+//                 status,
+//                 message: `(getOwnedKeychainIDs) Error from getWallets: ${message}`
+//             };
+//         }
 
-        // check if wallet addresses have empty strings. filter these out.
-        const validAddresses = data.walletAddresses.filter((address: string) => address !== '');
+//         // check if wallet addresses have empty strings. filter these out.
+//         const validAddresses = data.walletAddresses.filter((address: string) => address !== '');
 
-        if (validAddresses.length === 0 || validAddresses === null || validAddresses === undefined) {
-            return {
-                status: Status.SUCCESS,
-                message: `(getOwnedKeys) No owned Key of Salvation IDs found.`,
-                data: {
-                    ownedKeyIDs: []
-                }
-            };
-        }
+//         if (validAddresses.length === 0 || validAddresses === null || validAddresses === undefined) {
+//             return {
+//                 status: Status.SUCCESS,
+//                 message: `(getOwnedKeys) No owned Key of Salvation IDs found.`,
+//                 data: {
+//                     ownedKeyIDs: []
+//                 }
+//             };
+//         }
 
-        // Create an array of requests to call `tokensOfOwner` in the contract
-        const requests: Promise<BigNumber[]>[] = validAddresses.map((walletAddress: string) =>
-            KEYCHAIN_CONTRACT.tokensOfOwner(walletAddress)
-        );
+//         // Create an array of requests to call `tokensOfOwner` in the contract
+//         const requests: Promise<BigNumber[]>[] = validAddresses.map((walletAddress: string) =>
+//             KEYCHAIN_CONTRACT.tokensOfOwner(walletAddress)
+//         );
 
-        // Execute all the requests
-        const keychainIDsArray = await Promise.all(requests);
+//         // Execute all the requests
+//         const keychainIDsArray = await Promise.all(requests);
 
-        const keychainIDs = keychainIDsArray.flat()
-            .filter((id: BigNumber) => id !== null && id !== undefined)
-            .map((id: BigNumber) => {
-                try {
-                    return id.toNumber();
-                } catch (err: any) {
-                    console.log('error from getOwnedKeychainIDs when mapping from big number: ', err.message);
-                    return id.toString(); // Fallback to string if too large
-                }
-            });
+//         const keychainIDs = keychainIDsArray.flat()
+//             .filter((id: BigNumber) => id !== null && id !== undefined)
+//             .map((id: BigNumber) => {
+//                 try {
+//                     return id.toNumber();
+//                 } catch (err: any) {
+//                     console.log('error from getOwnedKeychainIDs when mapping from big number: ', err.message);
+//                     return id.toString(); // Fallback to string if too large
+//                 }
+//             });
 
-        return {
-            status: Status.SUCCESS,
-            message: `(getOwnedKeychainIDs) Successfully retrieved owned Keychain IDs.`,
-            data: {
-                ownedKeychainIDs: keychainIDs
-            }
-        };
-    } catch (err: any) {
-        console.log('error from getOwnedKeychainIDs: ', err.message);
-        return {
-            status: Status.ERROR,
-            message: `(getOwnedKeychainIDs) Error: ${err.message}`
-        };
-    }
-}
+//         return {
+//             status: Status.SUCCESS,
+//             message: `(getOwnedKeychainIDs) Successfully retrieved owned Keychain IDs.`,
+//             data: {
+//                 ownedKeychainIDs: keychainIDs
+//             }
+//         };
+//     } catch (err: any) {
+//         console.log('error from getOwnedKeychainIDs: ', err.message);
+//         return {
+//             status: Status.ERROR,
+//             message: `(getOwnedKeychainIDs) Error: ${err.message}`
+//         };
+//     }
+// }
 
-/**
- * Gets all Superior Keychain IDs owned by the user (main + secondary wallets).
- */
-export const getOwnedSuperiorKeychainIDs = async (twitterId: string): Promise<ReturnValue> => {
-    try {
-        const { status, message, data } = await getWallets(twitterId);
+// /**
+//  * Gets all Superior Keychain IDs owned by the user (main + secondary wallets).
+//  */
+// export const getOwnedSuperiorKeychainIDs = async (twitterId: string): Promise<ReturnValue> => {
+//     try {
+//         const { status, message, data } = await getWallets(twitterId);
 
-        if (status !== Status.SUCCESS) {
-            console.log('error from wallet fetching from getOwnedSuperiorKeychainIDs: ', message);
-            return {
-                status,
-                message: `(getOwnedSuperiorKeychainIDs) Error from getWallets: ${message}`
-            };
-        }
+//         if (status !== Status.SUCCESS) {
+//             console.log('error from wallet fetching from getOwnedSuperiorKeychainIDs: ', message);
+//             return {
+//                 status,
+//                 message: `(getOwnedSuperiorKeychainIDs) Error from getWallets: ${message}`
+//             };
+//         }
 
-        // check if wallet addresses have empty strings. filter these out.
-        const validAddresses = data.walletAddresses.filter((address: string) => address !== '');
+//         // check if wallet addresses have empty strings. filter these out.
+//         const validAddresses = data.walletAddresses.filter((address: string) => address !== '');
 
-        if (validAddresses.length === 0 || validAddresses === null || validAddresses === undefined) {
-            return {
-                status: Status.SUCCESS,
-                message: `(getOwnedKeys) No owned Key of Salvation IDs found.`,
-                data: {
-                    ownedKeyIDs: []
-                }
-            };
-        }
+//         if (validAddresses.length === 0 || validAddresses === null || validAddresses === undefined) {
+//             return {
+//                 status: Status.SUCCESS,
+//                 message: `(getOwnedKeys) No owned Key of Salvation IDs found.`,
+//                 data: {
+//                     ownedKeyIDs: []
+//                 }
+//             };
+//         }
 
-        // Create an array of requests to call `tokensOfOwner` in the contract
-        const requests: Promise<BigNumber[]>[] = validAddresses.map((walletAddress: string) =>
-            SUPERIOR_KEYCHAIN_CONTRACT.tokensOfOwner(walletAddress)
-        );
+//         // Create an array of requests to call `tokensOfOwner` in the contract
+//         const requests: Promise<BigNumber[]>[] = validAddresses.map((walletAddress: string) =>
+//             SUPERIOR_KEYCHAIN_CONTRACT.tokensOfOwner(walletAddress)
+//         );
 
-        // Execute all the requests
-        const superiorKeychainIDsArray = await Promise.all(requests);
+//         // Execute all the requests
+//         const superiorKeychainIDsArray = await Promise.all(requests);
 
-        const superiorKeychainIDs = superiorKeychainIDsArray.flat()
-            .filter((id: BigNumber) => id !== null && id !== undefined)
-            .map((id: BigNumber) => {
-                try {
-                    return id.toNumber();
-                } catch (err: any) {
-                    console.log('error from getOwnedSuperiorKeychainIDs when mapping from big number: ', err.message);
-                    return id.toString(); // Fallback to string if too large
-                }
-            });
+//         const superiorKeychainIDs = superiorKeychainIDsArray.flat()
+//             .filter((id: BigNumber) => id !== null && id !== undefined)
+//             .map((id: BigNumber) => {
+//                 try {
+//                     return id.toNumber();
+//                 } catch (err: any) {
+//                     console.log('error from getOwnedSuperiorKeychainIDs when mapping from big number: ', err.message);
+//                     return id.toString(); // Fallback to string if too large
+//                 }
+//             });
 
-        return {
-            status: Status.SUCCESS,
-            message: `(getOwnedSuperiorKeychainIDs) Successfully retrieved owned Superior Keychain IDs.`,
-            data: {
-                ownedSuperiorKeychainIDs: superiorKeychainIDs
-            }
-        };
-    } catch (err: any) {
-        console.log('error from getOwnedSuperiorKeychainIDs: ', err.message);
-        return {
-            status: Status.ERROR,
-            message: `(getOwnedSuperiorKeychainIDs) Error: ${err.message}`
-        };
-    }
-}
+//         return {
+//             status: Status.SUCCESS,
+//             message: `(getOwnedSuperiorKeychainIDs) Successfully retrieved owned Superior Keychain IDs.`,
+//             data: {
+//                 ownedSuperiorKeychainIDs: superiorKeychainIDs
+//             }
+//         };
+//     } catch (err: any) {
+//         console.log('error from getOwnedSuperiorKeychainIDs: ', err.message);
+//         return {
+//             status: Status.ERROR,
+//             message: `(getOwnedSuperiorKeychainIDs) Error: ${err.message}`
+//         };
+//     }
+// }
 
 /**
  * Fetches all metadata of the Key of Salvation NFTs from the kosMetadata.json file.
