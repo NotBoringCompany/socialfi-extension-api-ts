@@ -94,11 +94,12 @@ router.post('/accept_pending_squad_member', async (req, res) => {
             await WONDERBITS_CONTRACT.incrementEventCounter(address, JOIN_SQUAD_MIXPANEL_EVENT_HASH).catch((err: any) => {
                 // if there is an error somehow, ignore this and just return a success for the API endpoint
                 // as this is just an optional tracking feature.
-                return res.status(status).json({
-                    status,
-                    message,
-                    data
-                })
+                // return res.status(status).json({
+                //     status,
+                //     message,
+                //     data
+                // })
+                console.error('Error incrementing event counter:', err);
             })
         }
 
@@ -169,11 +170,12 @@ router.post('/rename_squad', async (req, res) => {
             await WONDERBITS_CONTRACT.incrementEventCounter(address, RENAME_SQUAD_MIXPANEL_EVENT_HASH).catch((err: any) => {
                 // if there is an error somehow, ignore this and just return a success for the API endpoint
                 // as this is just an optional tracking feature.
-                return res.status(status).json({
-                    status,
-                    message,
-                    data
-                })
+                // return res.status(status).json({
+                //     status,
+                //     message,
+                //     data
+                // })
+                console.error('Error incrementing event counter:', err);
             })
         }
 
@@ -244,11 +246,12 @@ router.post('/create_squad', async (req, res) => {
             await WONDERBITS_CONTRACT.incrementEventCounter(address, CREATE_SQUAD_MIXPANEL_EVENT_HASH).catch((err: any) => {
                 // if there is an error somehow, ignore this and just return a success for the API endpoint
                 // as this is just an optional tracking feature.
-                return res.status(status).json({
-                    status,
-                    message,
-                    data
-                })
+                // return res.status(status).json({
+                //     status,
+                //     message,
+                //     data
+                // })
+                console.error('Error incrementing event counter:', err);
             })
         }
 
@@ -317,11 +320,12 @@ router.post('/leave_squad', async (req, res) => {
             await WONDERBITS_CONTRACT.incrementEventCounter(address, LEAVE_SQUAD_MIXPANEL_EVENT_HASH).catch((err: any) => {
                 // if there is an error somehow, ignore this and just return a success for the API endpoint
                 // as this is just an optional tracking feature.
-                return res.status(status).json({
-                    status,
-                    message,
-                    data
-                })
+                // return res.status(status).json({
+                //     status,
+                //     message,
+                //     data
+                // })
+                console.error('Error incrementing event counter:', err);
             })
         }
 
@@ -446,11 +450,12 @@ router.post('/kick_member', async (req, res) => {
             await WONDERBITS_CONTRACT.incrementEventCounter(address, KICK_SQUAD_MEMBER_MIXPANEL_EVENT_HASH).catch((err: any) => {
                 // if there is an error somehow, ignore this and just return a success for the API endpoint
                 // as this is just an optional tracking feature.
-                return res.status(status).json({
-                    status,
-                    message,
-                    data
-                })
+                // return res.status(status).json({
+                //     status,
+                //     message,
+                //     data
+                // })
+                console.error('Error incrementing event counter:', err);
             })
         }
 
@@ -510,11 +515,12 @@ router.get('/get_squad_data/:twitterId/:squadId', async (req, res) => {
         await WONDERBITS_CONTRACT.incrementEventCounter(address, GET_CURRENT_USER_SQUAD_MIXPANEL_EVENT_HASH).catch((err: any) => {
             // if there is an error somehow, ignore this and just return a success for the API endpoint
             // as this is just an optional tracking feature.
-            return res.status(status).json({
-                status,
-                message,
-                data
-            })
+            // return res.status(status).json({
+            //     status,
+            //     message,
+            //     data
+            // })
+            console.error('Error incrementing event counter:', err);
         })
 
         return res.status(status).json({

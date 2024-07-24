@@ -103,11 +103,12 @@ router.post('/rename_bit', async (req, res) => {
             await WONDERBITS_CONTRACT.incrementEventCounter(address, RENAME_BIT_MIXPANEL_EVENT_HASH).catch((err: any) => {
                 // if there is an error somehow, ignore this and just return a success for the API endpoint
                 // as this is just an optional tracking feature.
-                return res.status(status).json({
-                    status,
-                    message,
-                    data
-                })
+                // return res.status(status).json({
+                //     status,
+                //     message,
+                //     data
+                // })
+                console.error('Error incrementing event counter:', err);
             })
         }
 
@@ -177,11 +178,12 @@ router.post('/release_bit', async (req, res) => {
             await WONDERBITS_CONTRACT.incrementEventCounter(address, RELEASE_BIT_MIXPANEL_EVENT_HASH).catch((err: any) => {
                 // if there is an error somehow, ignore this and just return a success for the API endpoint
                 // as this is just an optional tracking feature.
-                return res.status(status).json({
-                    status,
-                    message,
-                    data
-                })
+                // return res.status(status).json({
+                //     status,
+                //     message,
+                //     data
+                // })
+                console.error('Error incrementing event counter:', err);
             })
         }
 
@@ -252,11 +254,12 @@ router.post('/evolve_bit', async (req, res) => {
             await WONDERBITS_CONTRACT.incrementEventCounter(address, EVOLVE_BIT_MIXPANEL_EVENT_HASH).catch((err: any) => {
                 // if there is an error somehow, ignore this and just return a success for the API endpoint
                 // as this is just an optional tracking feature.
-                return res.status(status).json({
-                    status,
-                    message,
-                    data
-                })
+                // return res.status(status).json({
+                //     status,
+                //     message,
+                //     data
+                // })
+                console.error('Error incrementing event counter:', err);
             })
         }
 
@@ -327,11 +330,12 @@ router.post('/feed_bit', async (req, res) => {
             await WONDERBITS_CONTRACT.incrementEventCounter(address, FEED_BIT_MIXPANEL_EVENT_HASH).catch((err: any) => {
                 // if there is an error somehow, ignore this and just return a success for the API endpoint
                 // as this is just an optional tracking feature.
-                return res.status(status).json({
-                    status,
-                    message,
-                    data
-                })
+                // return res.status(status).json({
+                //     status,
+                //     message,
+                //     data
+                // })
+                console.error('Error incrementing event counter:', err);
             })
         }
 

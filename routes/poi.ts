@@ -85,10 +85,11 @@ router.post('/travel_to_poi', async (req, res) => {
             await WONDERBITS_CONTRACT.incrementEventCounter(address, TRAVEL_TO_POI_MIXPANEL_EVENT_HASH).catch((err: any) => {
                 // if there is an error somehow, ignore this and just return a success for the API endpoint
                 // as this is just an optional tracking feature.
-                return res.status(status).json({
-                    status,
-                    message,
-                })
+                // return res.status(status).json({
+                //     status,
+                //     message,
+                // })
+                console.error('Error incrementing event counter:', err);
             })
         }
 
@@ -159,10 +160,11 @@ router.post('/apply_travel_booster', async (req, res) => {
             await WONDERBITS_CONTRACT.incrementEventCounter(address, APPLY_TRAVELLING_BOOSTER_MIXPANEL_EVENT_HASH).catch((err: any) => {
                 // if there is an error somehow, ignore this and just return a success for the API endpoint
                 // as this is just an optional tracking feature.
-                return res.status(status).json({
-                    status,
-                    message,
-                })
+                // return res.status(status).json({
+                //     status,
+                //     message,
+                // })
+                console.error('Error incrementing event counter:', err);
             })
         }
 
@@ -341,11 +343,12 @@ router.post('/sell_items_in_poi_shop', async (req, res) => {
             await WONDERBITS_CONTRACT.incrementEventCounter(address, SELL_ITEMS_IN_POI_SHOP_MIXPANEL_EVENT_HASH).catch((err: any) => {
                 // if there is an error somehow, ignore this and just return a success for the API endpoint
                 // as this is just an optional tracking feature.
-                return res.status(status).json({
-                    status,
-                    message,
-                    data
-                })
+                // return res.status(status).json({
+                //     status,
+                //     message,
+                //     data
+                // })
+                console.error('Error incrementing event counter:', err);
             })
         }
 
@@ -416,11 +419,12 @@ router.post('/buy_items_in_poi_shop', async (req, res) => {
             await WONDERBITS_CONTRACT.incrementEventCounter(address, BUY_ITEMS_IN_POI_SHOP_MIXPANEL_EVENT_HASH).catch((err: any) => {
                 // if there is an error somehow, ignore this and just return a success for the API endpoint
                 // as this is just an optional tracking feature.
-                return res.status(status).json({
-                    status,
-                    message,
-                    data
-                })
+                // return res.status(status).json({
+                //     status,
+                //     message,
+                //     data
+                // })
+                console.error('Error incrementing event counter:', err);
             })
         }
 

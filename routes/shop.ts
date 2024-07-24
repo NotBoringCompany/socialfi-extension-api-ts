@@ -84,11 +84,12 @@ router.post('/purchase_shop_asset', async (req, res) => {
             await WONDERBITS_CONTRACT.incrementEventCounter(address, PURCHASE_SHOP_ASSET_MIXPANEL_EVENT_HASH).catch((err: any) => {
                 // if there is an error somehow, ignore this and just return a success for the API endpoint
                 // as this is just an optional tracking feature.
-                return res.status(status).json({
-                    status,
-                    message,
-                    data
-                })
+                // return res.status(status).json({
+                //     status,
+                //     message,
+                //     data
+                // })
+                console.error('Error incrementing event counter:', err);
             })
         }
 
