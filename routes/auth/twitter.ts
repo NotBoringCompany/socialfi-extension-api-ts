@@ -94,7 +94,8 @@ router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/',
             await WONDERBITS_CONTRACT.incrementEventCounter(address, TWITTER_LOGIN_CALLBACK_MIXPANEL_EVENT_HASH).catch((err: any) => {
                 // if there is an error somehow, ignore this and just return a success for the API endpoint
                 // as this is just an optional tracking feature.
-                return res.redirect(`${host}?jwt=${token}`);
+                // return res.redirect(`${host}?jwt=${token}`);
+                console.error('Error incrementing event counter:', err);
             })
             }
 

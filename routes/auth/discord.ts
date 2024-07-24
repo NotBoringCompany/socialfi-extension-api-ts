@@ -134,7 +134,8 @@ router.get('/callback', passport.authenticate('discord', { failureRedirect: '/',
             await WONDERBITS_CONTRACT.incrementEventCounter(address, CONNECT_DISCORD_CALLBACK_MIXPANEL_EVENT_HASH).catch((err: any) => {
                 // if there is an error somehow, ignore this and just redirect.
                 // as this is just an optional tracking feature.
-                return res.redirect(target.href);
+                // return res.redirect(target.href);
+                console.error('Error incrementing event counter:', err);
             })
         }
 
