@@ -878,15 +878,13 @@ export const checkDailyKOSRewards = async (): Promise<ReturnValue> => {
  * 
  * Called by a scheduler every Sunday at 23:59 UTC.
  */
-export const checkWeeklyKOSRewards = async (): Promise<ReturnValue> => {
+export const checkWeeklyKOSRewards = async (): Promise<void> => {
     try {
         const users = await UserModel.find({ twitterId: { $ne: null, $exists: true } });
 
         if (!users || users.length === 0) {
-            return {
-                status: Status.ERROR,
-                message: `(checkWeeklyKOSOwnership) No users found.`
-            }
+            console.error(`(checkWeeklyKOSRewards) No users found.`);
+            return;
         }
 
         const errors: string[] = [];
@@ -894,88 +892,72 @@ export const checkWeeklyKOSRewards = async (): Promise<ReturnValue> => {
         // fetch the metadata file
         const metadataFile = fetchKOSMetadataFile();
 
+        // fetch all explicit ownerships of keys, keychains and superior keychains
+        const { status: ownershipStatus, message: ownershipMessage, data: ownershipData } = await getAllExplicitOwnerships();
+
+        if (ownershipStatus !== Status.SUCCESS) {
+            console.error(`(checkWeeklyKOSRewards) Error: ${ownershipMessage}`);
+            return;
+        }
+
+        const { keyOwnerships, keychainOwnerships, superiorKeychainOwnerships } = ownershipData;
+
         const bulkWriteOpsPromises = users.map(async user => {
             const updateOperations = [];
 
-            // get all owned key IDs of the user
-            const { status, message, data } = await getOwnedKeyIDs(user.twitterId);
+            // get all of the user's wallet addresses (main wallet + secondary wallets)
+            const { status: walletStatus, message: walletMessage, data: walletData } = await getWallets(user.twitterId);
 
-            if (status !== Status.SUCCESS) {
-                errors.push(message + ` User: ${user.twitterId}`);
-                // continue to the next user if there was an error
+            if (walletStatus !== Status.SUCCESS) {
+                // if wallet can't be fetched, then skip this user; add it to the errors list.
+                errors.push(walletMessage + `User: ${user.twitterId}`);
+                // continue to the next user.
                 return [];
             }
 
-            const ownedKeyIds = data.ownedKeyIDs;
-
-            // get the explicit ownerships of the owned key IDs
-            const { status: ownershipStatus, message: ownershipMessage, data: ownershipData } = await explicitOwnershipsOfKOS(ownedKeyIds);
-
-            if (ownershipStatus !== Status.SUCCESS) {
-                errors.push(ownershipMessage + ` User: ${user.twitterId}`);
-                // continue to the next user if there was an error
+            // filter for empty string and convert all to lower case
+            const validAddresses = (walletData.walletAddresses as string[]).filter((address: string) => address !== '').map((address: string) => address.toLowerCase());
+            if (validAddresses.length === 0 || validAddresses === null || validAddresses === undefined) {
+                // if no valid addresses, skip this user; add to errors.
+                errors.push(`No valid addresses found for user: ${user.twitterId}`);
                 return [];
             }
 
-            const keyOwnerships = ownershipData.keyOwnerships as KOSExplicitOwnership[];
+            // check if the user has any keys, keychains or superior keychains
+            // to do this, the key, keychain and superior keychain ownerships are looped through and checked if `owner` matches any of the user's addresses.
+            const ownedKeys: KOSExplicitOwnership[] = [];
+            const ownedKeychains: KOSExplicitOwnership[] = [];
+            const ownedSuperiorKeychains: KOSExplicitOwnership[] = [];
+
+            for (const keyOwnership of keyOwnerships) {
+                if (validAddresses.includes(keyOwnership.owner.toLowerCase())) {
+                    ownedKeys.push(keyOwnership);
+                }
+            }
+
+            for (const keychainOwnership of keychainOwnerships) {
+                if (validAddresses.includes(keychainOwnership.owner.toLowerCase())) {
+                    ownedKeychains.push(keychainOwnership);
+                }
+            }
+
+            for (const superiorKeychainOwnership of superiorKeychainOwnerships) {
+                if (validAddresses.includes(superiorKeychainOwnership.owner.toLowerCase())) {
+                    ownedSuperiorKeychains.push(superiorKeychainOwnership);
+                }
+            }
 
             // get the total keys owned by the user for at least 7 days
-            const validKeys = keyOwnerships.filter((ownership) => ownership.startTimestamp <= Math.floor(Date.now() / 1000) - 604800);
-
-            // get the metadata for each of the valid keys
-            const validKeysMetadata: KOSMetadata[] = validKeys.map((key) => {
-                return metadataFile.find((metadata) => metadata.keyId === key.tokenId) as KOSMetadata;
-            });
-
-            // get all owned keychain IDs of the user
-            const { status: keychainStatus, message: keychainMessage, data: keychainData } = await getOwnedKeychainIDs(user.twitterId);
-
-            if (keychainStatus !== Status.SUCCESS) {
-                errors.push(keychainMessage + ` User: ${user.twitterId}`);
-                // continue to the next user if there was an error
-                return [];
-            }
-
-            const ownedKeychainIds = keychainData.ownedKeychainIDs;
-
-            // get the explicit ownerships of the owned keychain IDs
-            const { status: keychainOwnershipStatus, message: keychainOwnershipMessage, data: keychainOwnershipData } = await explicitOwnershipsOfKeychain(ownedKeychainIds);
-
-            if (keychainOwnershipStatus !== Status.SUCCESS) {
-                errors.push(keychainOwnershipMessage + ` User: ${user.twitterId}`);
-                // continue to the next user if there was an error
-                return [];
-            }
-
-            const keychainOwnerships = keychainOwnershipData.keychainOwnerships as KOSExplicitOwnership[];
-
+            const validKeys = ownedKeys.filter(ownership => ownership.startTimestamp <= Math.floor(Date.now() / 1000) - 604800);
             // get the total keychains owned by the user for at least 7 days
-            const validKeychains = keychainOwnerships.filter((ownership) => ownership.startTimestamp <= Math.floor(Date.now() / 1000) - 604800);
-
-            // get all owned superior keychain IDs of the user
-            const { status: superiorKeychainStatus, message: superiorKeychainMessage, data: superiorKeychainData } = await getOwnedSuperiorKeychainIDs(user.twitterId);
-
-            if (superiorKeychainStatus !== Status.SUCCESS) {
-                errors.push(superiorKeychainMessage + ` User: ${user.twitterId}`);
-                // continue to the next user if there was an error
-                return [];
-            }
-
-            const ownedSuperiorKeychainIds = superiorKeychainData.ownedSuperiorKeychainIDs;
-
-            // get the explicit ownerships of the owned keychain IDs
-            const { status: superiorKeychainOwnershipStatus, message: superiorKeychainOwnershipMessage, data: superiorKeychainOwnershipData } = await explicitOwnershipsOfSuperiorKeychain(ownedSuperiorKeychainIds);
-
-            if (superiorKeychainOwnershipStatus !== Status.SUCCESS) {
-                errors.push(superiorKeychainOwnershipMessage + ` User: ${user.twitterId}`);
-                // continue to the next user if there was an error
-                return [];
-            }
-
-            const superiorKeychainOwnerships = superiorKeychainOwnershipData.superiorKeychainOwnerships as KOSExplicitOwnership[];
-
+            const validKeychains = ownedKeychains.filter(ownership => ownership.startTimestamp <= Math.floor(Date.now() / 1000) - 604800);
             // get the total superior keychains owned by the user for at least 7 days
-            const validSuperiorKeychains = superiorKeychainOwnerships.filter((ownership) => ownership.startTimestamp <= Math.floor(Date.now() / 1000) - 604800);
+            const validSuperiorKeychains = ownedSuperiorKeychains.filter(ownership => ownership.startTimestamp <= Math.floor(Date.now() / 1000) - 604800);
+
+            // get the metadata for each valid key
+            const validKeysMetadata: KOSMetadata[] = validKeys.map(key => {
+                return metadataFile.find(metadata => metadata.keyId === key.tokenId) as KOSMetadata;
+            });
 
             // get the eligible weekly rewards
             const { points, xCookies, bitOrbI, bitOrbII, terraCapI, terraCapII, raftBooster60 } = KOS_WEEKLY_BENEFITS(
@@ -1024,6 +1006,8 @@ export const checkWeeklyKOSRewards = async (): Promise<ReturnValue> => {
                         }
                     ]
                 });
+
+                console.log('new kos reward: ', newKOSRewardUser);
 
                 await newKOSRewardUser.save();
 
@@ -1252,9 +1236,80 @@ export const checkWeeklyKOSRewards = async (): Promise<ReturnValue> => {
 
         console.log(`(checkWeeklyKOSOwnership) Successfully updated claimable weekly KOS rewards.`);
     } catch (err: any) {
+        console.log('error from checkWeeklyKOSOwnership: ', err.message);
+    }
+}
+
+/**
+ * Gets the `explicitOwnershipsOf` data for all KOS, Keychains and Superior Keychains.
+ * 
+ * This is a more effective method than to fetch the IDs manually per address due to rate limiting issues with the node endpoint.
+ */
+export const getAllExplicitOwnerships = async (): Promise<ReturnValue> => {
+    try {
+        // there is a limited supply of 5,000 for KOS. hence, we can just create an array for IDs from 1 to 5000.
+        const keyIds = Array.from({ length: 5000 }, (_, i) => i + 1);
+        // keychain collection has a limited supply of 800, so we can just create an array from 1 to 800
+        const keychainIds = Array.from({ length: 800 }, (_, i) => i + 1);
+        // sup keychain has a limited supply of 135, so we can just create an array from 1 to 135.
+        const supKeychainIds = Array.from({ length: 135 }, (_, i) => i + 1);
+
+        const keyOwnerships = await KOS_CONTRACT.explicitOwnershipsOf(keyIds);
+        const keychainOwnerships = await KEYCHAIN_CONTRACT.explicitOwnershipsOf(keychainIds);
+        const supKeychainOwnerships = await SUPERIOR_KEYCHAIN_CONTRACT.explicitOwnershipsOf(supKeychainIds);
+
+        const formattedKeyOwnerships: KOSExplicitOwnership[] = keyOwnerships.map((ownership: any, index: number) => {
+            return {
+                // get the key ID
+                tokenId: keyIds[index],
+                owner: ownership.addr,
+                // convert startTimestamp to unix
+                startTimestamp: ownership.startTimestamp.toNumber(),
+                burned: ownership.burned,
+                extraData: ownership.extraData
+            }
+        });
+
+        // we can use the KOSExplicitOwnership interface here because the struct is the same for both Key of Salvation and Keychain
+        const formattedKeychainOwnerships: KOSExplicitOwnership[] = keychainOwnerships.map((ownership: any, index: number) => {
+            return {
+                // get the keychain ID
+                tokenId: keychainIds[index],
+                owner: ownership.addr,
+                // convert startTimestamp to unix
+                startTimestamp: ownership.startTimestamp.toNumber(),
+                burned: ownership.burned,
+                extraData: ownership.extraData
+            }
+        })
+
+        // we can use the KOSExplicitOwnership interface here because the struct is the same for both Key of Salvation and Keychain
+        const formattedSupKeychainOwnerships: KOSExplicitOwnership[] = supKeychainOwnerships.map((ownership: any, index: number) => {
+            return {
+                // get the superior keychain ID
+                tokenId: supKeychainIds[index],
+                owner: ownership.addr,
+                // convert startTimestamp to unix
+                startTimestamp: ownership.startTimestamp.toNumber(),
+                burned: ownership.burned,
+                extraData: ownership.extraData
+            }
+        });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getKOSAndKeychainOwnerships) Successfully retrieved explicit ownerships of KOS, Keychains and Superior Keychains.`,
+            data: {
+                keyOwnerships: formattedKeyOwnerships,
+                keychainOwnerships: formattedKeychainOwnerships,
+                superiorKeychainOwnerships: formattedSupKeychainOwnerships
+            }
+        }
+    } catch (err: any) {
+        console.log('error from getKOSAndKeychainOwnerships: ', err.message);
         return {
             status: Status.ERROR,
-            message: `(checkWeeklyKOSOwnership) Error: ${err.message}`
+            message: `(getKOSAndKeychainOwnerships) Error: ${err.message}`
         }
     }
 }
