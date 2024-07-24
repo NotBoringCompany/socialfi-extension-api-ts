@@ -3680,7 +3680,7 @@ export const applyIslandTapping = async (twitterId: string, islandId: number): P
         // Deduct User Energy after applying IslandTappping
         // initialize user current energy & calculate energy required to apply island tapping
         const { currentEnergy } = user.inGameData.energy as PlayerEnergy;
-        const energyRequired = Math.floor(currentTappingData.caressEnergyMeter / BASE_CARESS_PER_TAPPING) * BASE_ENERGY_PER_TAPPING;
+        const energyRequired = Math.ceil(currentTappingData.caressEnergyMeter / BASE_CARESS_PER_TAPPING) * BASE_ENERGY_PER_TAPPING;
 
         // Check user currentEnergy is >= energyRequired
         if ( currentEnergy >= energyRequired) {
