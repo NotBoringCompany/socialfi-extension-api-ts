@@ -2396,292 +2396,67 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
     }
 };
 
-/**
- * Gets the main wallet of the user.
- */
-export const getMainWallet = async (twitterId: string): Promise<ReturnValue> => {
+export const consumeEnergyPotion = async (twitterId: string): Promise<ReturnValue> => {
     try {
+        const userUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {},
+        };
+
         const user = await UserModel.findOne({ twitterId }).lean();
 
         if (!user) {
             return {
                 status: Status.ERROR,
-                message: `(getMainWallet) User not found.`,
-            };
+                message: `(consumeEnergyPotion) User not found.`
+            }
         }
 
+        const { currentEnergy, maxEnergy, dailyEnergyPotion } = user.inGameData.energy as PlayerEnergy;
+
+        if (dailyEnergyPotion <= 0) {
+            return {
+                status: Status.ERROR,
+                message: `(consumeEnergyPotion) User has no Energy Potion left!`
+            }
+        }
+
+        if (currentEnergy >= maxEnergy) {
+            return {
+                status: Status.ERROR,
+                message: `(consumeEnergyPotion) User current energy already capped!`
+            }
+        }
+
+        // Calculate new current energy and new energy potion count
+        const newCurrentEnergy = Math.min(maxEnergy, currentEnergy + 1000);
+        const newEnergyPotionCount = Math.max(dailyEnergyPotion - 1, 0);
+
+        // Set the new current energy and daily energy potion count in the update operations
+        userUpdateOperations.$set['inGameData.energy.currentEnergy'] = newCurrentEnergy;
+        userUpdateOperations.$set['inGameData.energy.dailyEnergyPotion'] = newEnergyPotionCount;
+
+        // Update the user document in the database
+        await UserModel.updateOne({ twitterId }, userUpdateOperations);
+
+        // Return success status and message
         return {
             status: Status.SUCCESS,
-            message: `(getMainWallet) Main wallet fetched.`,
-            data: {
-                wallet: user.wallet,
-            },
+            message: `(consumeEnergyPotion) Energy Potion consumed successfully.`
         };
     } catch (err: any) {
         return {
             status: Status.ERROR,
-            message: `(getMainWallet) ${err.message}`,
-        };
-    }
-}
-
-/**
- * Updated all players level using the new values
- */
-export const updatePlayerLevels = async () => {
-    try {
-        console.log('starting to update...');
-        const users = await UserModel.find();
-
-        console.log('total users found: ', users.length);
-
-        for (const user of users) {
-            if (!user.inventory) continue;
-
-            console.log('start updating level: ', user.twitterUsername);
-            const { data } = await getUserCurrentPoints(user.twitterId);
-            const newLevel = GET_SEASON_0_PLAYER_LEVEL(data.points);
-
-            await UserModel.updateOne(
-                { twitterUsername: user.twitterUsername },
-                {
-                    $set: {
-                        'inGameData.level': newLevel,
-                    },
-                }
-            );
-            console.log('finished updating level: ', user.twitterUsername);
-        }
-
-        console.log('All user levels have been updated successfully.');
-    } catch (error) {
-        console.error('Error updating user levels:', error);
-    }
-};
-
-/**
- * Twitter login logic. Creates a new user or simply log them in if they already exist.
- *
- */
-export const handleTelegramLogin = async (initData: string): Promise<ReturnValue> => {
-    try {
-        let loginType: 'Register' | 'Login';
-
-        // validate the init data
-        const isValid = validateTelegramData(initData);
-        if (!isValid)
-            return {
-                status: Status.UNAUTHORIZED,
-                message: `(handleTelegramLogin) Unauthorized`,
-            };
-
-        const telegramData = parseTelegramData(initData);
-
-        const user = await UserModel.findOne({ twitterId: telegramData.user.id, method: 'telegram' }).lean();
-
-        // if user doesn't exist, create a new user
-        if (!user) {
-            console.log(`creating new telegram user: ${telegramData.user.id}`)
-            // generates a new object id for the user
-            const userObjectId = generateObjectId();
-            loginType = 'Register';
-
-            // creates a new raft for the user with the generated user object id
-            const { status, message, data } = await createRaft(userObjectId);
-
-            if (status !== Status.SUCCESS) {
-                return {
-                    status,
-                    message: `(handleTwitterLogin) Error from createRaft: ${message}`,
-                };
-            }
-
-            // get the latest bit ID from the database
-            const { status: bitIdStatus, message: bitIdMessage, data: bitIdData } = await getLatestBitId();
-
-            if (bitIdStatus !== Status.SUCCESS) {
-                return {
-                    status: bitIdStatus,
-                    message: `(handleTwitterLogin) Error from getLatestBitId: ${bitIdMessage}`,
-                };
-            }
-
-            const rarity = BitRarity.COMMON;
-            const bitType = randomizeBitType();
-
-            const traits = randomizeBitTraits(rarity);
-
-            const bitStatsModifiers = getBitStatsModifiersFromTraits(traits.map((trait) => trait.trait));
-
-            // add a premium common bit to the user's inventory (users get 1 for free when they sign up)
-            const {
-                status: bitStatus,
-                message: bitMessage,
-                data: bitData,
-            } = await addBitToDatabase({
-                bitId: bitIdData?.latestBitId + 1,
-                bitType,
-                bitNameData: {
-                    name: bitType,
-                    lastChanged: 0,
-                },
-                rarity,
-                gender: RANDOMIZE_GENDER(),
-                premium: true,
-                owner: userObjectId,
-                purchaseDate: Math.floor(Date.now() / 1000),
-                obtainMethod: ObtainMethod.SIGN_UP,
-                placedIslandId: 0,
-                lastRelocationTimestamp: 0,
-                currentFarmingLevel: 1, // starts at level 1
-                traits,
-                farmingStats: {
-                    ...randomizeFarmingStats(rarity),
-                    currentEnergy: 50, // set energy to half for tutorial purposes
-                },
-                bitStatsModifiers,
-            });
-
-            if (bitStatus !== Status.SUCCESS) {
-                return {
-                    status: bitStatus,
-                    message: `(handleTwitterLogin) Error from addBitToDatabase: ${bitMessage}`,
-                };
-            }
-
-            // creates the wallet for the user
-            const { privateKey, address } = createUserWallet();
-
-            // initialize PlayerEnergy for new user
-            const newEnergy: PlayerEnergy = {
-                currentEnergy: MAX_ENERGY_CAP,
-                maxEnergy: MAX_ENERGY_CAP,
-                dailyEnergyPotion: MAX_ENERGY_POTION_CAP,
-            };
-
-            // initialize PlayerMastery for new user
-            const newMastery: PlayerMastery = {
-                tapping: {
-                    level: 1,
-                    totalExp: 0,
-                    rerollCount: 6,
-                },
-            };
-
-            const newUser = new UserModel({
-                _id: userObjectId,
-                twitterId: telegramData.user.id,
-                method: 'telegram',
-                twitterProfilePicture: 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png',
-                twitterUsername: telegramData.user.id,
-                twitterDisplayName: `${telegramData.user.first_name} ${telegramData.user.last_name}`.trim(),
-                createdTimestamp: Math.floor(Date.now() / 1000),
-                // invite code data will be null until users input their invite code.
-                inviteCodeData: {
-                    usedStarterCode: null,
-                    usedReferralCode: null,
-                    referrerId: null,
-                },
-                referralData: {
-                    referralCode: generateReferralCode(),
-                    referredUsersData: [],
-                    claimableReferralRewards: {
-                        xCookies: 0,
-                        leaderboardPoints: 0,
-                    },
-                },
-                wallet: {
-                    privateKey,
-                    address,
-                },
-                secondaryWallets: [],
-                openedTweetIdsToday: [],
-                inventory: {
-                    weight: 0,
-                    maxWeight: MAX_INVENTORY_WEIGHT,
-                    xCookieData: {
-                        currentXCookies: 0,
-                        extendedXCookieData: [],
-                    },
-                    cookieCrumbs: 0,
-                    resources: [],
-                    items: [
-                        {
-                            type: BoosterItem['GATHERING_PROGRESS_BOOSTER_1000'],
-                            amount: 1,
-                        },
-                    ],
-                    foods: [
-                        {
-                            type: FoodType['BURGER'],
-                            amount: 1,
-                        },
-                    ],
-                    raftId: data.raft.raftId,
-                    islandIds: [],
-                    bitIds: [bitIdData?.latestBitId + 1],
-                },
-                inGameData: {
-                    level: 1,
-                    energy: newEnergy,
-                    mastery: newMastery,
-                    completedTutorialIds: [],
-                    beginnerRewardData: {
-                        lastClaimedTimestamp: 0,
-                        isClaimable: true,
-                        daysClaimed: [],
-                        daysMissed: [],
-                    },
-                    dailyLoginRewardData: {
-                        lastClaimedTimestamp: 0,
-                        isDailyClaimable: true,
-                        consecutiveDaysClaimed: 0,
-                    },
-                    squadId: null,
-                    lastLeftSquad: 0,
-                    location: POIName.HOME,
-                    travellingTo: null,
-                    destinationArrival: 0,
-                },
-            });
-
-            await newUser.save();
-
-            // give the user some KICK tokens
-            sendKICKUponRegistration(address);
-
-            return {
-                status: Status.SUCCESS,
-                message: `(handleTelegramLogin) New user created.`,
-                data: {
-                    userId: newUser._id,
-                    twitterId: telegramData.user.id,
-                    loginType: loginType
-                },
-            };
-        } else {
-            loginType = 'Login';
-
-            // user exists, return
-            return {
-                status: Status.SUCCESS,
-                message: `(handleTelegramLogin) User found. Logging in.`,
-                data: {
-                    userId: user._id,
-                    twitterId: telegramData.user.id,
-                    loginType: loginType,
-                },
-            };
-        }
-    } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(handleTelegramLogin) ${err.message}`,
+            message: `(consumeEnergyPotion) ${err.message}`,
         };
     }
 };
 
-// Function to update users' daily energy potion count if it's below the maximum cap
+/** 
+ * Function to update users' daily energy potion count if it's below the maximum cap
+ */
 export const updateUserEnergyPotion = async (): Promise<void> => {
     try {
         const users = await UserModel.find({ 'inGameData.energy.dailyEnergyPotion': { $lt: MAX_ENERGY_POTION_CAP } }).lean();
