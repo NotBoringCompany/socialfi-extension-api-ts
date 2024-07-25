@@ -213,4 +213,16 @@ export interface IslandTappingData {
 export interface TappingMilestoneReward {
     boosterReward: number;
     masteryExpReward: number;
+    bonusReward: TappingMilestoneBonusReward;
+}
+
+export interface TappingMilestoneBonusReward {
+    // First option reward will be Tapping Mastery Exp
+    firstOptionReward: number;
+    // Second option reward will be either Additional Exp, Currency Drop, or Point Drop
+    secondOptionReward: {
+        additionalExp?: number;
+        berryDrop?: number;
+        pointDrop?: number;
+    }
 }
