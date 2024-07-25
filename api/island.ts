@@ -3867,13 +3867,13 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
                 }
 
                 // if the user also has a squad, add the points to the squad's total points
-                if (user.inGameData.squad !== null) {
+                if (user.inGameData.squadId !== null) {
                     // get the squad
                     const squad = await SquadModel.findOne({ _id: user.inGameData.squadId }).lean();
 
                     if (!squad) {
                         return {
-                            status: Status.BAD_REQUEST,
+                            status: Status.ERROR,
                             message: `(getIslandTappingData) Squad not found.`
                         }
                     }
