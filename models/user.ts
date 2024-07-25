@@ -5,6 +5,7 @@ import { ExtendedResource } from './resource';
 import { InviteCodeData, ReferralData } from './invite';
 import { TerraCapsulatorType } from './terraCapsulator';
 import { BitOrbType } from './bitOrb';
+import { TappingMastery } from './mastery';
 
 /****************
  * USER-RELATED MODELS
@@ -148,6 +149,8 @@ export interface InGameData {
     level: number;
     /** the user PlayerEnergy data */
     energy: PlayerEnergy;
+    /** the user PlayerMastery level data */
+    mastery: PlayerMastery;
     /** the list of tutorial IDs the user has completed at the start */
     completedTutorialIds: number[];
     /** 
@@ -279,4 +282,8 @@ export interface DiscordProfile {
 export interface PlayerEnergy {
     maxEnergy: number;
     currentEnergy: number;
+}
+
+export interface PlayerMastery {
+    tapping: TappingMastery;
 }
