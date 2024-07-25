@@ -134,6 +134,7 @@ export enum XCookieSource {
     LEVELLING_UP = 'Levelling Up',
     QUEST_REWARDS = 'Quest Rewards',
     ISLAND_CLAIMING = 'Island Claiming',
+    ISLAND_TAPPING = 'Island Tapping',
     KOS_BENEFITS = 'KOS Benefits',
     TUTORIAL_REWARDS = 'Tutorial Rewards',
     DISCORD_ENGAGEMENT = 'Discord Engagement',
