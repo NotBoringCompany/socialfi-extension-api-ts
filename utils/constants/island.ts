@@ -6,6 +6,7 @@ import {
   RarityDeviationReduction,
   ResourceDropChance,
   ResourceDropChanceDiff,
+  TappingMilestoneReward,
 } from '../../models/island';
 import { TerraCapsulatorType } from '../../models/terraCapsulator';
 import { shop } from '../shop';
@@ -659,10 +660,30 @@ export const ISLAND_TAPPING_REQUIREMENT = (milestoneTier: number): IslandTapping
   // return IslandTappingData after calculating caressEnergyMeter required for this milestoneTier
   return {
     currentMilestone: milestoneTier,
-    milestoneReward: 5, /** PLACEHOLDER REWARD FOR NOW */
+    milestoneReward: ISLAND_TAPPING_MILESTONE_REWARD(milestoneTier),
     caressEnergyMeter: caressEnergyRequired,
+    currentCaressEnergyMeter: 0,
   }
 };
+
+export const ISLAND_TAPPING_MILESTONE_REWARD = (milestoneTier: number): TappingMilestoneReward => {
+  let reward: TappingMilestoneReward;
+  reward.boosterReward = 10 * milestoneTier;
+
+  if (milestoneTier >= 1 && milestoneTier <= 5) {
+    reward.masteryExpReward = 5;
+  } else if (milestoneTier >= 6 && milestoneTier <= 10) {
+    reward.masteryExpReward = 10;
+  } else if (milestoneTier >= 11 && milestoneTier <= 15) {
+    reward.masteryExpReward = 15;
+  } else if (milestoneTier >= 16 && milestoneTier <= 20) {
+    reward.masteryExpReward = 20;
+  } else {
+    reward.masteryExpReward = 25;
+  }
+
+  return reward;
+}
 
 /**
  * Determines the milestone limit for a given island type.

@@ -13,10 +13,11 @@ import { generateObjectId } from '../utils/crypto';
 import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
 import { ObtainMethod } from '../models/obtainMethod';
 import { RELOCATION_COOLDOWN } from '../utils/constants/bit';
-import { ExtendedXCookieData, PlayerEnergy, User, XCookieSource } from '../models/user';
+import { ExtendedXCookieData, PlayerEnergy, PlayerMastery, User, XCookieSource } from '../models/user';
 import { getResource, resources } from '../utils/constants/resource';
 import { Item } from '../models/item';
 import { BoosterItem } from '../models/booster';
+import { TAPPING_MASTERY_LEVEL } from '../utils/constants/mastery';
 
 /**
  * Gifts an Xterio user an Xterio island.
@@ -3591,9 +3592,9 @@ export const applyIslandTapping = async (twitterId: string, islandId: number): P
         }
 
         // Initialize currentTappingData information
-        const currentTappingData: IslandTappingData = island.islandTappingData;
+        const {caressEnergyMeter, currentCaressEnergyMeter, currentMilestone, milestoneReward} = island.islandTappingData as IslandTappingData;
         const islandTappingLimit = ISLAND_TAPPING_MILESTONE_LIMIT(island.type as IslandType);
-        const boosterPercentage = currentTappingData.milestoneReward;
+        const boosterPercentage = milestoneReward.boosterReward;
 
         // Apply current milestone reward as gathering booster to the island.
         // get only resources that have an origin of `ExtendedResourceOrigin.NORMAL`
@@ -3684,10 +3685,22 @@ export const applyIslandTapping = async (twitterId: string, islandId: number): P
             }
         }
 
+        // Add user tapping exp mastery
+        const { tapping } = user.inGameData.mastery as PlayerMastery;
+        const newTotalExp = tapping.totalExp + milestoneReward.masteryExpReward;
+        userUpdateOperations.$set['inGameData.mastery.tapping.totalExp'] = newTotalExp;
+
+        // Compare currentTappingLevel with newTappingLevel
+        const currentTappingLevel = tapping.level;
+        const newTappingLevel = TAPPING_MASTERY_LEVEL(newTotalExp);
+        if (newTappingLevel > currentTappingLevel) {
+            userUpdateOperations.$set['inGameData.mastery.tapping.level'] = newTappingLevel;
+        }
+
         // Deduct User Energy after applying IslandTappping
         // initialize user current energy & calculate energy required to apply island tapping
         const { currentEnergy } = user.inGameData.energy as PlayerEnergy;
-        const energyRequired = Math.ceil(currentTappingData.caressEnergyMeter / BASE_CARESS_PER_TAPPING) * BASE_ENERGY_PER_TAPPING;
+        const energyRequired = Math.ceil(caressEnergyMeter / BASE_CARESS_PER_TAPPING) * BASE_ENERGY_PER_TAPPING;
 
         // Check user currentEnergy is >= energyRequired
         if ( currentEnergy >= energyRequired) {
@@ -3703,8 +3716,8 @@ export const applyIslandTapping = async (twitterId: string, islandId: number): P
         }
 
         // Increase the tier Milestone to the next tier/rank. If milestone reaching the max tier, return error.
-        if (currentTappingData.currentMilestone <= islandTappingLimit) {
-            const nextTappingData: IslandTappingData = ISLAND_TAPPING_REQUIREMENT(currentTappingData.currentMilestone + 1);
+        if (currentMilestone <= islandTappingLimit) {
+            const nextTappingData: IslandTappingData = ISLAND_TAPPING_REQUIREMENT(currentMilestone + 1);
 
             // saves the nextTappingData to this island database
             islandUpdateOperations.$set['islandTappingData'] = nextTappingData;
