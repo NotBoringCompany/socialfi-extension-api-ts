@@ -18,6 +18,7 @@ import {
     GET_SEASON_0_PLAYER_LEVEL_REWARDS,
     GET_SEASON_0_REFERRAL_REWARDS,
     MAX_BEGINNER_REWARD_DAY,
+    MAX_ENERGY_CAP,
     MAX_ENERGY_POTION_CAP,
     MAX_INVENTORY_WEIGHT,
     WEEKLY_MVP_REWARDS,
@@ -176,8 +177,8 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
 
             // initialize PlayerEnergy fot user
             const newEnergy: PlayerEnergy = {
-                currentEnergy: 1000,
-                maxEnergy: 1000,
+                currentEnergy: MAX_ENERGY_CAP,
+                maxEnergy: MAX_ENERGY_CAP,
                 dailyEnergyPotion: MAX_ENERGY_POTION_CAP,
             }
 
@@ -2288,8 +2289,8 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
 
         // initialize PlayerEnergy for new user
         const newEnergy: PlayerEnergy = {
-            currentEnergy: 1000,
-            maxEnergy: 1000,
+            currentEnergy: MAX_ENERGY_CAP,
+            maxEnergy: MAX_ENERGY_CAP,
             dailyEnergyPotion: MAX_ENERGY_POTION_CAP,
         };
 
@@ -2686,7 +2687,7 @@ export const updateUserEnergyPotion = async (): Promise<void> => {
         const users = await UserModel.find({ 'inGameData.energy.dailyEnergyPotion': { $lt: MAX_ENERGY_POTION_CAP } }).lean();
         
         if (users.length === 0 || !users) {
-            console.error(`(UpdateAllUser) No users found.`);
+            console.error(`(updateUserEnergyPotion) No users found.`);
             return;
         }
 
@@ -2698,7 +2699,7 @@ export const updateUserEnergyPotion = async (): Promise<void> => {
                 updateOne: {
                     filter: { _id: user._id },
                     update: {
-                        $set: { 'inGameData.energy.dailyEnergyPotion': newEnergyPotionCount } // Set the new dailyEnergyPotion value
+                        $set: { 'inGameData.energy.dailyEnergyPotion': newEnergyPotionCount }
                     }
                 }
             };
@@ -2708,5 +2709,35 @@ export const updateUserEnergyPotion = async (): Promise<void> => {
         console.log(`(updateUserEnergyPotion), added 1 Energy Potion into ${users.length} Users`);
     } catch (err: any) {
         console.error(`(updateUserEnergyPotion), Error: ${err.message}`);
+    }
+};
+
+/** 
+ * Function to restore all available user currentEnergy back to maximum cap
+ */
+export const restoreUserCurrentEnergy = async (): Promise<void> => {
+    try {
+        const users = await UserModel.find({ 'inGameData.energy.currentEnergy': { $lt: MAX_ENERGY_CAP } }).lean();
+        
+        if (users.length === 0 || !users) {
+            console.error(`(restoreUserCurrentEnergy) No users found.`);
+            return;
+        }
+
+        const bulkWriteOps = users.map(user => {
+            return {
+                updateOne: {
+                    filter: { _id: user._id },
+                    update: {
+                        $set: { 'inGameData.energy.currentEnergy': MAX_ENERGY_CAP }
+                    }
+                }
+            };
+        });
+
+        await UserModel.bulkWrite(bulkWriteOps);
+        console.log(`(restoreUserCurrentEnergy), added 1 Energy Potion into ${users.length} Users`);
+    } catch (err: any) {
+        console.error(`(restoreUserCurrentEnergy), Error: ${err.message}`);
     }
 };
