@@ -6,6 +6,7 @@ import {
   RarityDeviationReduction,
   ResourceDropChance,
   ResourceDropChanceDiff,
+  TappingMilestoneBonusReward,
   TappingMilestoneReward,
 } from '../../models/island';
 import { TerraCapsulatorType } from '../../models/terraCapsulator';
@@ -673,6 +674,7 @@ export const ISLAND_TAPPING_MILESTONE_REWARD = (milestoneTier: number): TappingM
   let reward: TappingMilestoneReward = {
     boosterReward: 0,
     masteryExpReward: 0,
+    bonusReward: ISLAND_TAPPING_MILESTONE_BONUS_REWARD(milestoneTier),
   };
   reward.boosterReward = 10 * milestoneTier;
 
@@ -691,9 +693,30 @@ export const ISLAND_TAPPING_MILESTONE_REWARD = (milestoneTier: number): TappingM
   return reward;
 }
 
-export const ISLAND_TAPPING_MILESTONE_BONUS_REWARD = (milestoneTier: number) => {
-  // Option 1 always return mastery Exp Rewards
-  const masteryExpReward = 10 * milestoneTier;
+export const ISLAND_TAPPING_MILESTONE_BONUS_REWARD = (milestoneTier: number): TappingMilestoneBonusReward => {
+  const bonus: TappingMilestoneBonusReward = {
+    firstOptionReward: 10 * milestoneTier,
+    secondOptionReward: {},
+  };
+
+  // Option 2 randomize reward
+  const rand = Math.floor(Math.random() * 10000) + 1;
+  if (rand <= 3333) {
+    // Additional Exp
+    bonus.secondOptionReward.additionalExp = bonus.firstOptionReward * 1.25;
+  } else if (rand <= 6666) {
+    // Berry Bonus
+    const berryBonus = milestoneTier >= 21 ? 3 : milestoneTier >= 16 ? 2 :
+                       milestoneTier >= 11 ? 1.5 : 1;
+    bonus.secondOptionReward.berryDrop = berryBonus;
+  } else {
+    // Point Bonus
+    const pointBonus = milestoneTier >= 21 ? 15 : milestoneTier >= 16 ? 10 :
+                       milestoneTier >= 11 ? 7.5 : 5;
+    bonus.secondOptionReward.pointDrop = pointBonus;
+  }
+
+  return bonus;
 };
 
 /**
