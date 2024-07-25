@@ -3874,7 +3874,7 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
 
                     if (!squad) {
                         return {
-                            status: Status.ERROR,
+                            status: Status.BAD_REQUEST,
                             message: `(getIslandTappingData) Squad not found.`
                         }
                     }
