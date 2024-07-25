@@ -203,7 +203,14 @@ export interface IslandTappingData {
     /** current tapping milestone progress */
     currentMilestone: number;
     /** booster reward when reaching current tapping milestone */
-    milestoneReward: number;
+    milestoneReward: TappingMilestoneReward;
     /** caress energy meter required to apply current tapping milestone effect */
     caressEnergyMeter: number;
+    /** current caress energy meter data */
+    currentCaressEnergyMeter: number;
+}
+
+export interface TappingMilestoneReward {
+    boosterReward: number;
+    masteryExpReward: number;
 }
