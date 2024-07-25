@@ -66,6 +66,10 @@ export const EXP_BASE_DIFF = 1.1;
 /** caress exp multiplier */
 export const EXP_MULTIPLIER = 0.006;
 
+/** base additional exp multiplier for tapping */
+export const BASE_ADDITIONAL_EXP_MULTIPLIER = 1.05;
+
+export const BASE_BERRY_TO_POINT_MULTIPLIER = 5;
 
 /**
  * gets the amount of bonus resources that can be gathered daily based on the island type.
@@ -648,7 +652,7 @@ export const X_COOKIE_TAX = (
  * Calculates the caress energy meter required for a given milestone tier
  * and returns the associated IslandTappingData.
  */
-export const ISLAND_TAPPING_REQUIREMENT = (milestoneTier: number): IslandTappingData => {
+export const ISLAND_TAPPING_REQUIREMENT = (milestoneTier: number, tappingLevel: number): IslandTappingData => {
   // calculate current milestone caress required based on milestonTier parameter.
   let caressEnergyRequired: number;
 
@@ -661,7 +665,7 @@ export const ISLAND_TAPPING_REQUIREMENT = (milestoneTier: number): IslandTapping
   // return IslandTappingData after calculating caressEnergyMeter required for this milestoneTier
   return {
     currentMilestone: milestoneTier,
-    milestoneReward: ISLAND_TAPPING_MILESTONE_REWARD(milestoneTier),
+    milestoneReward: ISLAND_TAPPING_MILESTONE_REWARD(milestoneTier, tappingLevel),
     caressEnergyMeter: caressEnergyRequired,
     currentCaressEnergyMeter: 0,
   }
@@ -670,11 +674,11 @@ export const ISLAND_TAPPING_REQUIREMENT = (milestoneTier: number): IslandTapping
 /**
  * Return island tapping milestone reward based on given milestone tier
  */
-export const ISLAND_TAPPING_MILESTONE_REWARD = (milestoneTier: number): TappingMilestoneReward => {
+export const ISLAND_TAPPING_MILESTONE_REWARD = (milestoneTier: number, tappingLevel: number): TappingMilestoneReward => {
   let reward: TappingMilestoneReward = {
     boosterReward: 0,
     masteryExpReward: 0,
-    bonusReward: ISLAND_TAPPING_MILESTONE_BONUS_REWARD(milestoneTier),
+    bonusReward: ISLAND_TAPPING_MILESTONE_BONUS_REWARD(milestoneTier, tappingLevel),
   };
   reward.boosterReward = 10 * milestoneTier;
 
@@ -693,7 +697,7 @@ export const ISLAND_TAPPING_MILESTONE_REWARD = (milestoneTier: number): TappingM
   return reward;
 }
 
-export const ISLAND_TAPPING_MILESTONE_BONUS_REWARD = (milestoneTier: number): TappingMilestoneBonusReward => {
+export const ISLAND_TAPPING_MILESTONE_BONUS_REWARD = (milestoneTier: number, tappingLevel: number): TappingMilestoneBonusReward => {
   const bonus: TappingMilestoneBonusReward = {
     firstOptionReward: 10 * milestoneTier,
     secondOptionReward: {},
@@ -702,18 +706,20 @@ export const ISLAND_TAPPING_MILESTONE_BONUS_REWARD = (milestoneTier: number): Ta
   // Option 2 randomize reward
   const rand = Math.floor(Math.random() * 10000) + 1;
   if (rand <= 3333) {
-    // Additional Exp
-    bonus.secondOptionReward.additionalExp = bonus.firstOptionReward * 1.05;
+    // Additional Exp from firstOptionRewards * (1 + (0.05 *tappingLevel))
+    bonus.secondOptionReward.additionalExp = bonus.firstOptionReward * (BASE_ADDITIONAL_EXP_MULTIPLIER + (0.05 * (tappingLevel - 1)));
   } else if (rand <= 6666) {
     // Berry Bonus
-    const berryBonus = milestoneTier >= 21 ? 3 : milestoneTier >= 16 ? 2 :
+    const berryBonus = milestoneTier >= 21 ? 3 : 
+                       milestoneTier >= 16 ? 2 :
                        milestoneTier >= 11 ? 1.5 : 1;
     bonus.secondOptionReward.berryDrop = berryBonus;
   } else {
-    // Point Bonus
-    const pointBonus = milestoneTier >= 21 ? 15 : milestoneTier >= 16 ? 10 :
-                       milestoneTier >= 11 ? 7.5 : 5;
-    bonus.secondOptionReward.pointDrop = pointBonus;
+    // Calculate Point Bonus based on milestone tier and tapping level
+    const pointBonus = milestoneTier >= 21 ? 3 : 
+                       milestoneTier >= 16 ? 2 :
+                       milestoneTier >= 11 ? 1.5 : 1;
+    bonus.secondOptionReward.pointDrop = pointBonus * (BASE_BERRY_TO_POINT_MULTIPLIER + (tappingLevel - 1));
   }
 
   return bonus;
