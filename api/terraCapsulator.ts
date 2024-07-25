@@ -9,7 +9,7 @@ import { BitTrait, BitTraitData } from '../models/bit';
 import { Modifier } from '../models/modifier';
 import { TerraCapsulatorType } from '../models/terraCapsulator';
 import { Item } from '../models/item';
-import { User } from '../models/user';
+import { PlayerMastery, User } from '../models/user';
 
 /**
  * (User) Consumes a Terra Capsulator to obtain an island.
@@ -119,6 +119,8 @@ export const summonIsland = async (
                 message: `(summonIsland) User not found.`
             }
         }
+
+        const { tapping } = user.inGameData.mastery as PlayerMastery;
 
         const latestIslandId = data?.latestIslandId as number;
 
@@ -238,7 +240,7 @@ export const summonIsland = async (
                 lastClaimed: 0,
             },
             islandStatsModifiers,
-            islandTappingData: ISLAND_TAPPING_REQUIREMENT(1),
+            islandTappingData: ISLAND_TAPPING_REQUIREMENT(1, tapping.level),
         }
 
         console.log(`island stats modifiers for island #${island.islandId}: `, islandStatsModifiers);

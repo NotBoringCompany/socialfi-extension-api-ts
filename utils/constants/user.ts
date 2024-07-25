@@ -13,6 +13,9 @@ export const MAX_ENERGY_CAP = 1000;
 /** Maximum number of energy potions that can be stored */
 export const MAX_ENERGY_POTION_CAP = 4;
 
+/** Base number of reroll milestone chance */
+export const BASE_REROLL_BONUS_MILESTONE = 6;
+
 /**
  * Gets the daily login rewards. Currently only supports xCookies and leaderboard points.
  * 
@@ -248,3 +251,10 @@ export const WEEKLY_MVP_REWARDS = (mvpType: 'xCookies' | 'Bit Orb' | 'Terra Caps
             }
     }
 }
+
+/**
+ * Return user daily reroll bonus milestone reward based on given tappingLevel
+ */
+export const DAILY_REROLL_BONUS_MILESTONE = (tappingLevel: number) => {
+    return BASE_REROLL_BONUS_MILESTONE + (tappingLevel -1) * 1
+};

@@ -20,6 +20,7 @@ import { BoosterItem } from '../models/booster';
 import { TAPPING_MASTERY_LEVEL } from '../utils/constants/mastery';
 import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
 import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
+import { TappingMastery } from '../models/mastery';
 
 /**
  * Gifts an Xterio user an Xterio island.
@@ -3522,11 +3523,22 @@ export const getIslandTappingData = async (islandId: number): Promise<ReturnValu
             };
         }
 
+        const owner = await UserModel.findOne({ _id: island.owner }).lean();
+
+        if (!owner) {
+            return {
+                status: Status.ERROR,
+                message: `(getIslandTappingData) Owner of the island with ID ${islandId} not found.`
+            };
+        }
+
+        const { tapping } = owner.inGameData.mastery as PlayerMastery;
+
         // Check if islandTappingData is defined.
         // 1. If undefined, create new islandTappingData starting from the first tier & return the data
         // 2. else, return the data
         if (!island.islandTappingData) {
-            const newTappingData: IslandTappingData = ISLAND_TAPPING_REQUIREMENT(1);
+            const newTappingData: IslandTappingData = ISLAND_TAPPING_REQUIREMENT(1, tapping.level);
 
             // saves the newTappingData to this island
             islandUpdateOperations.$set['islandTappingData'] = newTappingData;
@@ -3936,7 +3948,7 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
 
         // Increase the tier Milestone to the next tier/rank. If milestone reaching the max tier, return error.
         if (currentMilestone <= islandTappingLimit) {
-            const nextTappingData: IslandTappingData = ISLAND_TAPPING_REQUIREMENT(currentMilestone + 1);
+            const nextTappingData: IslandTappingData = ISLAND_TAPPING_REQUIREMENT(currentMilestone + 1, tapping.level);
 
             // saves the nextTappingData to this island database
             islandUpdateOperations.$set['islandTappingData'] = nextTappingData;
@@ -4022,7 +4034,7 @@ export const rerollBonusMilestoneReward = async (twitterId: string, islandId: nu
             };
         }
 
-        const newMilestoneBonusReward = ISLAND_TAPPING_MILESTONE_BONUS_REWARD(currentMilestone);
+        const newMilestoneBonusReward = ISLAND_TAPPING_MILESTONE_BONUS_REWARD(currentMilestone, tapping.level);
         const newRerollCount = Math.max(tapping.rerollCount - 1, 0);
 
         // Set the newMilestoneBonusReward & newRerollCount
@@ -4056,27 +4068,45 @@ export const rerollBonusMilestoneReward = async (twitterId: string, islandId: nu
 export const resetDailyIslandTappingMilestone = async (): Promise<void> => {
     try {
         // Find all available islands with currentMilestone greater than 1.
-        const islands = await IslandModel.find({ 'islandTappingData.currentMilestone': {$gt: 1} }).lean();
+        const islands = await IslandModel.find({ 'islandTappingData.currentMilestone': { $gt: 1 } }).lean();
         
-        if (islands.length === 0 || !islands) {
+        if (islands.length === 0) {
             console.error(`(resetDailyIslandTappingMilestone) No islands found.`);
             return;
         }
-        
-        const bulkWriteOps = islands.map(island => {
-            return{
+
+        // Retrieve the owner and owner's tapping level for each island
+        const bulkWriteOps = await Promise.all(islands.map(async (island) => {
+            // Find the user who owns the island
+            const owner = await UserModel.findOne({ _id: island.owner }).lean();
+            
+            if (!owner) {
+                console.error(`(resetDailyIslandTappingMilestone) Owner not found for island ${island.islandId}`);
+                return null; // Skip this operation if the owner is not found
+            }
+
+            const { tapping } = owner.inGameData.mastery as PlayerMastery; // Assuming owner's tapping level is stored in 'tappingLevel'
+
+            return {
                 updateOne: {
                     filter: { islandId: island.islandId },
                     update: {
                         $set: {
-                            'islandTappingData': ISLAND_TAPPING_REQUIREMENT(1)
+                            'islandTappingData': ISLAND_TAPPING_REQUIREMENT(1, tapping.level) // Use the owner's tapping level
                         }
                     }
                 }
-            }
-        });
+            };
+        }));
 
-        await IslandModel.bulkWrite(bulkWriteOps);
+        // Remove null entries from the bulkWriteOps array
+        const validBulkWriteOps = bulkWriteOps.filter(op => op !== null);
+
+        if (validBulkWriteOps.length > 0) {
+            await IslandModel.bulkWrite(validBulkWriteOps);
+        } else {
+            console.error(`(resetDailyIslandTappingMilestone) No valid operations to execute.`);
+        }
     } catch (err: any) {
         console.error(`(resetDailyIslandTappingMilestone) Error: ${err.message}`);
     }

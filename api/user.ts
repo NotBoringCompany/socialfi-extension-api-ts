@@ -2396,14 +2396,18 @@ export const restoreUserCurrentEnergyAndResetReroll = async (): Promise<void> =>
 
         // Check if there are users with tapping mastery data and reset reroll count
         if (usersWithTappingMastery.length > 0) {
-            const bulkWriteRerollOps = usersWithTappingMastery.map(user => ({
-                updateOne: {
-                    filter: { _id: user._id },
-                    update: {
-                        $set: { 'inGameData.mastery.tapping.rerollCount': 6 }
+            const bulkWriteRerollOps = usersWithTappingMastery.map(user => {
+                const tappingLevel = user.inGameData.mastery.tapping.level;
+                const rerollCount = DAILY_REROLL_MILESTONE_CHANCE(tappingLevel);
+                return {
+                    updateOne: {
+                        filter: { _id: user._id },
+                        update: {
+                            $set: { 'inGameData.mastery.tapping.rerollCount': rerollCount }
+                        }
                     }
                 }
-            }));
+            });
             await UserModel.bulkWrite(bulkWriteRerollOps);
             console.log(`(restoreUserCurrentEnergyAndResetReroll) Reset reroll count for ${usersWithTappingMastery.length} users.`);
         } else {
@@ -2413,3 +2417,7 @@ export const restoreUserCurrentEnergyAndResetReroll = async (): Promise<void> =>
         console.error(`(restoreUserCurrentEnergyAndResetReroll) Error: ${err.message}`);
     }
 };
+
+function DAILY_REROLL_MILESTONE_CHANCE(tappingLevel: any) {
+    throw new Error('Function not implemented.');
+}
