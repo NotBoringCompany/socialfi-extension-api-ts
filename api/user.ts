@@ -186,6 +186,7 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
                 tapping: {
                     level: 1,
                     totalExp: 0,
+                    rerollCount: 6,
                 },
             };
 
@@ -2182,6 +2183,7 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
             tapping: {
                 level: 1,
                 totalExp: 0,
+                rerollCount: 6,
             },
         };
 

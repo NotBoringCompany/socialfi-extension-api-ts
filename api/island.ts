@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
 import { IslandSchema } from '../schemas/Island';
 import { Island, IslandStatsModifiers, IslandTappingData, IslandTrait, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
-import { BARREN_ISLE_COMMON_DROP_CHANCE, BASE_CARESS_PER_TAPPING, BASE_ENERGY_PER_TAPPING, BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DAILY_BONUS_RESOURCES_GATHERABLE, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLUTION_COST, ISLAND_RARITY_DEVIATION_MODIFIERS, ISLAND_TAPPING_MILESTONE_LIMIT, ISLAND_TAPPING_REQUIREMENT, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN, X_COOKIE_TAX, randomizeIslandTraits } from '../utils/constants/island';
+import { BARREN_ISLE_COMMON_DROP_CHANCE, BASE_CARESS_PER_TAPPING, BASE_ENERGY_PER_TAPPING, BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DAILY_BONUS_RESOURCES_GATHERABLE, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLUTION_COST, ISLAND_RARITY_DEVIATION_MODIFIERS, ISLAND_TAPPING_MILESTONE_BONUS_REWARD, ISLAND_TAPPING_MILESTONE_LIMIT, ISLAND_TAPPING_REQUIREMENT, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN, X_COOKIE_TAX, randomizeIslandTraits } from '../utils/constants/island';
 import { calcBitCurrentRate, getBits } from './bit';
 import { BarrenResource, ExtendedResource, ExtendedResourceOrigin, Resource, ResourceLine, ResourceRarity, ResourceRarityNumeric, ResourceType, SimplifiedResource } from '../models/resource';
 import { UserSchema } from '../schemas/User';
@@ -3941,7 +3941,7 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
             // saves the nextTappingData to this island database
             islandUpdateOperations.$set['islandTappingData'] = nextTappingData;
 
-            // update IslandModel for this island data
+            // update database affected by ApplyTappingIsland
             await Promise.all([
                 UserModel.updateOne({ _id: user._id }, userUpdateOperations),
                 IslandModel.updateOne({ islandId: island.islandId }, islandUpdateOperations),
@@ -3955,7 +3955,7 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
                 message: `(getIslandTappingData) Applying tapping data for Island with ID ${islandId}. Increasing to tier ${nextTappingData.currentMilestone}`,
             }
         } else {
-            // update IslandModel for this island data
+            // update database affected by ApplyTappingIsland
             await Promise.all([
                 UserModel.updateOne({ _id: user._id }, userUpdateOperations),
                 IslandModel.updateOne({ islandId: island.islandId }, islandUpdateOperations),
@@ -3977,23 +3977,93 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
     }  
 };
 
+export const rerollBonusMilestoneReward = async (twitterId: string, islandId: number): Promise<ReturnValue> => {
+    try {
+        const userUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const islandUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const user = await UserModel.findOne({ twitterId }).lean();
+        const island = await IslandModel.findOne({ islandId: islandId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(rerollBonusMilestoneReward) User not found.`
+            };
+        }
+
+        if (!island) {
+            return {
+                status: Status.ERROR,
+                message: `(rerollBonusMilestoneReward) Island with ID ${islandId} not found.`
+            };
+        }
+        
+        // Destructure necessary data
+        const { tapping } = user.inGameData.mastery as PlayerMastery;
+        const { currentMilestone } = island.islandTappingData as IslandTappingData;
+        
+        // Check if user reroll count is > 0
+        if (tapping.rerollCount <= 0) {
+            return {
+                status: Status.ERROR,
+                message: `(rerollBonusMilestoneReward) The user's reroll count has been used up.`
+            };
+        }
+
+        const newMilestoneBonusReward = ISLAND_TAPPING_MILESTONE_BONUS_REWARD(currentMilestone);
+        const newRerollCount = Math.max(tapping.rerollCount - 1, 0);
+
+        // Set the newMilestoneBonusReward & newRerollCount
+        userUpdateOperations.$set['inGameData.mastery.tapping.rerollCount'] = newRerollCount;
+        islandUpdateOperations.$set['islandTappingData.milestoneReward.bonusReward'] = newMilestoneBonusReward;
+
+        // update database for UserModel & IslandModel data
+        await Promise.all([
+            UserModel.updateOne({ twitterId }, userUpdateOperations),
+            IslandModel.updateOne({ islandId }, islandUpdateOperations),
+        ]);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(rerollBonusMilestoneReward) Successfully updated bonus milestone reward.`
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getIslandTappingData) Error: ${err.message}`
+        }
+    }
+}
+
 /**
  * Resets the `currentMilestone` field of all islands with a milestone greater than 1
  * to the value associated with milestoneTier 1.
- * Called by a scheduler every 23:59 UTC.
+ * Also resets the `rerollCount` field for all users with tapping mastery data.
+ * Called by a scheduler every day at 23:59 UTC.
  */
 export const resetDailyIslandTappingMilestone = async (): Promise<void> => {
     try {
         // Find all available islands with currentMilestone greater than 1.
-        const islands = await IslandModel.find({ 'islandTappingData.currentMilestone': {$gt: 1} }).lean();
-        
-        if (islands.length === 0 || !islands) {
+        const islands = await IslandModel.find({ 'islandTappingData.currentMilestone': { $gt: 1 } }).lean();
+        // Find all available users
+        const users = await UserModel.find({ 'inGameData.mastery.tapping': { $exists: true } }).lean();
+
+        if (islands.length === 0) {
             console.error(`(resetDailyIslandTappingMilestone) No islands found.`);
-            return;
-        }
-        
-        const bulkWriteOps = islands.map(island => {
-            return{
+        } else {
+            const bulkWriteIslandsOps = islands.map(island => ({
                 updateOne: {
                     filter: { islandId: island.islandId },
                     update: {
@@ -4002,10 +4072,27 @@ export const resetDailyIslandTappingMilestone = async (): Promise<void> => {
                         }
                     }
                 }
-            }
-        });
+            }));
 
-        await IslandModel.bulkWrite(bulkWriteOps);
+            await IslandModel.bulkWrite(bulkWriteIslandsOps);
+            console.log(`(resetDailyIslandTappingMilestone) Updated islands.`);
+        }
+
+        if (users.length === 0) {
+            console.error(`(resetDailyIslandTappingMilestone) No users found.`);
+        } else {
+            const bulkWriteUsersOps = users.map(user => ({
+                updateOne: {
+                    filter: { _id: user._id },
+                    update: {
+                        $set: { 'inGameData.mastery.tapping.rerollCount': 6 }
+                    }
+                }
+            }));
+
+            await UserModel.bulkWrite(bulkWriteUsersOps);
+            console.log(`(resetDailyIslandTappingMilestone) Updated users.`);
+        }
     } catch (err: any) {
         console.error(`(resetDailyIslandTappingMilestone) Error: ${err.message}`);
     }
