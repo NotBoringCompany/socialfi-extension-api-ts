@@ -518,13 +518,20 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
             }
         });
 
-        // execute the update operations
+        // separate $set and $inc, $push and $pull to prevent conflicts
+        // execute the update operations. $set and $inc first, then $push and $pull to avoid conflicts.
         await Promise.all([
-            await UserModel.updateOne({ twitterId }, { $inc: userUpdateOperations.$inc }),
-            await UserModel.updateOne({ twitterId }, { $push: userUpdateOperations.$push }),
-            SquadModel.updateOne({ _id: user.inGameData.squadId }, squadUpdateOperations),
-            SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, squadLeaderboardUpdateOperations),
-            LeaderboardModel.updateOne({ name: 'Season 0' }, leaderboardUpdateOperations)
+            await UserModel.updateOne({ twitterId }, { $set: userUpdateOperations.$set, $inc: userUpdateOperations.$inc }),
+            await SquadModel.updateOne({ _id: user.inGameData.squadId }, { $set: squadUpdateOperations.$set, $inc: squadUpdateOperations.$inc }),
+            await SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, { $set: squadLeaderboardUpdateOperations.$set, $inc: squadLeaderboardUpdateOperations.$inc }),
+            await LeaderboardModel.updateOne({ name: 'Season 0' }, { $set: leaderboardUpdateOperations.$set, $inc: leaderboardUpdateOperations.$inc }),
+        ]);
+
+        await Promise.all([
+            await UserModel.updateOne({ twitterId }, { $push: userUpdateOperations.$push, $pull: userUpdateOperations.$pull }),
+            await SquadModel.updateOne({ _id: user.inGameData.squadId }, { $push: squadUpdateOperations.$push, $pull: squadUpdateOperations.$pull }),
+            await SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, { $push: squadLeaderboardUpdateOperations.$push, $pull: squadLeaderboardUpdateOperations.$pull }),
+            await LeaderboardModel.updateOne({ name: 'Season 0' }, { $push: leaderboardUpdateOperations.$push, $pull: leaderboardUpdateOperations.$pull }),
         ]);
 
         // reset all claimable rewards to 0
