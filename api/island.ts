@@ -3944,6 +3944,9 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
             await Promise.all([
                 UserModel.updateOne({ _id: user._id }, userUpdateOperations),
                 IslandModel.updateOne({ islandId: island.islandId }, islandUpdateOperations),
+                LeaderboardModel.updateOne({ _id: leaderboard._id }, leaderboardUpdateOperations),
+                SquadModel.updateOne({ _id: user.inGameData.squadId }, squadUpdateOperations),
+                SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, squadLeaderboardUpdateOperations),
             ])
 
             return {
@@ -3955,6 +3958,9 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
             await Promise.all([
                 UserModel.updateOne({ _id: user._id }, userUpdateOperations),
                 IslandModel.updateOne({ islandId: island.islandId }, islandUpdateOperations),
+                LeaderboardModel.updateOne({ _id: leaderboard._id }, leaderboardUpdateOperations),
+                SquadModel.updateOne({ _id: user.inGameData.squadId }, squadUpdateOperations),
+                SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, squadLeaderboardUpdateOperations),
             ])
 
             return {
