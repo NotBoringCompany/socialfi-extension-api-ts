@@ -703,8 +703,6 @@ export const checkDailyKOSRewards = async (): Promise<void> => {
             // if the user isn't found, we will create a new entry and directly add the rewards and update the database.
             // if found, we will add it to `updateOperations` and update the database later.
             if (!kosRewardUser) {
-                console.log('new user found. adding user to KOSClaimableDailyRewards.');
-
                 const newKOSRewardUser = new KOSClaimableDailyRewardsModel({
                     _id: generateObjectId(),
                     userId: user._id,
@@ -733,12 +731,8 @@ export const checkDailyKOSRewards = async (): Promise<void> => {
 
                 await newKOSRewardUser.save();
 
-                console.log(`new user found. adding user ${user.twitterUsername} to KOSClaimableDailyRewards.`);
-
                 return [];
             } else {
-                console.log('existing user found. updating user in KOSClaimableDailyRewards.');
-
                 // if user is found, we will increment the amounts for xCookies, gatheringBooster25, gatheringBooster50, gatheringBooster100.
                 // and add it to `updateOperations` to update the database later.
                 const xCookiesIndex = (kosRewardUser.claimableRewards as KOSReward[]).findIndex(reward => reward.type === KOSRewardType.X_COOKIES);
@@ -996,6 +990,10 @@ export const checkWeeklyKOSRewards = async (): Promise<void> => {
                             amount: points
                         },
                         {
+                            type: KOSRewardType.X_COOKIES,
+                            amount: xCookies
+                        },
+                        {
                             type: KOSRewardType.BIT_ORB_I,
                             amount: bitOrbI
                         },
@@ -1018,11 +1016,7 @@ export const checkWeeklyKOSRewards = async (): Promise<void> => {
                     ]
                 });
 
-                console.log('new kos reward: ', newKOSRewardUser);
-
                 await newKOSRewardUser.save();
-
-                console.log(`new user found. adding user ${user.twitterUsername} to KOSClaimableWeeklyRewards.`);
 
                 return [];
             } else {
