@@ -666,6 +666,9 @@ export const ISLAND_TAPPING_REQUIREMENT = (milestoneTier: number): IslandTapping
   }
 };
 
+/**
+ * Return island tapping milestone reward based on given milestone tier
+ */
 export const ISLAND_TAPPING_MILESTONE_REWARD = (milestoneTier: number): TappingMilestoneReward => {
   let reward: TappingMilestoneReward = {
     boosterReward: 0,
@@ -687,6 +690,11 @@ export const ISLAND_TAPPING_MILESTONE_REWARD = (milestoneTier: number): TappingM
 
   return reward;
 }
+
+export const ISLAND_TAPPING_MILESTONE_BONUS_REWARD = (milestoneTier: number) => {
+  // Option 1 always return mastery Exp Rewards
+  const masteryExpReward = 10 * milestoneTier;
+};
 
 /**
  * Determines the milestone limit for a given island type.

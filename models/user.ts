@@ -282,6 +282,7 @@ export interface DiscordProfile {
 export interface PlayerEnergy {
     maxEnergy: number;
     currentEnergy: number;
+    dailyEnergyPotion: number;
 }
 
 export interface PlayerMastery {
