@@ -2679,3 +2679,34 @@ export const handleTelegramLogin = async (initData: string): Promise<ReturnValue
         };
     }
 };
+
+// Function to update users' daily energy potion count if it's below the maximum cap
+export const updateUserEnergyPotion = async (): Promise<void> => {
+    try {
+        const users = await UserModel.find({ 'inGameData.energy.dailyEnergyPotion': { $lt: MAX_ENERGY_POTION_CAP } }).lean();
+        
+        if (users.length === 0 || !users) {
+            console.error(`(UpdateAllUser) No users found.`);
+            return;
+        }
+
+        const bulkWriteOps = users.map(user => {
+            // Calculate the new daily energy potion value, ensuring it does not exceed the maximum cap
+            const newEnergyPotionCount = Math.min(user.inGameData.energy.dailyEnergyPotion + 1, MAX_ENERGY_POTION_CAP);
+
+            return {
+                updateOne: {
+                    filter: { _id: user._id },
+                    update: {
+                        $set: { 'inGameData.energy.dailyEnergyPotion': newEnergyPotionCount } // Set the new dailyEnergyPotion value
+                    }
+                }
+            };
+        });
+
+        await UserModel.bulkWrite(bulkWriteOps);
+        console.log(`(updateUserEnergyPotion), added 1 Energy Potion into ${users.length} Users`);
+    } catch (err: any) {
+        console.error(`(updateUserEnergyPotion), Error: ${err.message}`);
+    }
+};
