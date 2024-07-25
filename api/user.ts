@@ -2276,6 +2276,64 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
     }
 };
 
+export const consumeEnergyPotion = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const userUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {},
+        };
+
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(consumeEnergyPotion) User not found.`
+            }
+        }
+
+        const { currentEnergy, maxEnergy, dailyEnergyPotion } = user.inGameData.energy as PlayerEnergy;
+
+        if (dailyEnergyPotion <= 0) {
+            return {
+                status: Status.ERROR,
+                message: `(consumeEnergyPotion) User has no Energy Potion left!`
+            }
+        }
+
+        if (currentEnergy >= maxEnergy) {
+            return {
+                status: Status.ERROR,
+                message: `(consumeEnergyPotion) User current energy already capped!`
+            }
+        }
+
+        // Calculate new current energy and new energy potion count
+        const newCurrentEnergy = Math.min(maxEnergy, currentEnergy + 1000);
+        const newEnergyPotionCount = Math.max(dailyEnergyPotion - 1, 0);
+
+        // Set the new current energy and daily energy potion count in the update operations
+        userUpdateOperations.$set['inGameData.energy.currentEnergy'] = newCurrentEnergy;
+        userUpdateOperations.$set['inGameData.energy.dailyEnergyPotion'] = newEnergyPotionCount;
+
+        // Update the user document in the database
+        await UserModel.updateOne({ twitterId }, userUpdateOperations);
+
+        // Return success status and message
+        return {
+            status: Status.SUCCESS,
+            message: `(consumeEnergyPotion) Energy Potion consumed successfully.`
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(consumeEnergyPotion) ${err.message}`,
+        };
+    }
+};
+
 /** 
  * Function to update users' daily energy potion count if it's below the maximum cap
  */
