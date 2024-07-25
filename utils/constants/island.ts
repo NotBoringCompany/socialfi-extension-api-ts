@@ -667,7 +667,10 @@ export const ISLAND_TAPPING_REQUIREMENT = (milestoneTier: number): IslandTapping
 };
 
 export const ISLAND_TAPPING_MILESTONE_REWARD = (milestoneTier: number): TappingMilestoneReward => {
-  let reward: TappingMilestoneReward;
+  let reward: TappingMilestoneReward = {
+    boosterReward: 0,
+    masteryExpReward: 0,
+  };
   reward.boosterReward = 10 * milestoneTier;
 
   if (milestoneTier >= 1 && milestoneTier <= 5) {
