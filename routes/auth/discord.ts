@@ -111,32 +111,32 @@ router.get('/callback', passport.authenticate('discord', { failureRedirect: '/',
             });
 
             // get the wallet address of the twitter ID
-            const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(validateData?.twitterId);
+            // const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(validateData?.twitterId);
 
-            if (walletStatus !== Status.SUCCESS) {
-                // if there is an error somehow, ignore this and just redirect.
-                // as this is just an optional tracking feature.
-                return res.redirect(target.href);
-            }
+            // if (walletStatus !== Status.SUCCESS) {
+            //     // if there is an error somehow, ignore this and just redirect.
+            //     // as this is just an optional tracking feature.
+            //     return res.redirect(target.href);
+            // }
 
-            const { address } = walletData.wallet as UserWallet;
+            // const { address } = walletData.wallet as UserWallet;
 
-            // check if the user has an account registered in the contract.
-            const { status: wonderbitsAccStatus } = await checkWonderbitsAccountRegistrationRequired(address);
+            // // check if the user has an account registered in the contract.
+            // const { status: wonderbitsAccStatus } = await checkWonderbitsAccountRegistrationRequired(address);
 
-            if (wonderbitsAccStatus !== Status.SUCCESS) {
-                // if there is an error somehow, ignore this and just return a success for the API endpoint
-                // as this is just an optional tracking feature.
-                return res.redirect(target.href);
-            }
+            // if (wonderbitsAccStatus !== Status.SUCCESS) {
+            //     // if there is an error somehow, ignore this and just return a success for the API endpoint
+            //     // as this is just an optional tracking feature.
+            //     return res.redirect(target.href);
+            // }
 
-            // increment the counter for this mixpanel event on the wonderbits contract
-            await WONDERBITS_CONTRACT.incrementEventCounter(address, CONNECT_DISCORD_CALLBACK_MIXPANEL_EVENT_HASH).catch((err: any) => {
-                // if there is an error somehow, ignore this and just redirect.
-                // as this is just an optional tracking feature.
-                // return res.redirect(target.href);
-                console.error('Error incrementing event counter:', err);
-            })
+            // // increment the counter for this mixpanel event on the wonderbits contract
+            // await WONDERBITS_CONTRACT.incrementEventCounter(address, CONNECT_DISCORD_CALLBACK_MIXPANEL_EVENT_HASH).catch((err: any) => {
+            //     // if there is an error somehow, ignore this and just redirect.
+            //     // as this is just an optional tracking feature.
+            //     // return res.redirect(target.href);
+            //     console.error('Error incrementing event counter:', err);
+            // })
         }
 
         return res.redirect(target.href);
@@ -168,22 +168,22 @@ router.post('/disconnect', async (req, res) => {
             });
 
             // get the wallet address of the twitter ID
-            const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(validateData?.twitterId);
+            // const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(validateData?.twitterId);
 
-            if (walletStatus === Status.SUCCESS) {
-                const { address } = walletData.wallet as UserWallet;
+            // if (walletStatus === Status.SUCCESS) {
+            //     const { address } = walletData.wallet as UserWallet;
 
-                // check if the user has an account registered in the contract.
-                const { status: wonderbitsAccStatus } = await checkWonderbitsAccountRegistrationRequired(address);
+            //     // check if the user has an account registered in the contract.
+            //     const { status: wonderbitsAccStatus } = await checkWonderbitsAccountRegistrationRequired(address);
 
-                if (wonderbitsAccStatus === Status.SUCCESS) {
-                    // increment the counter for this mixpanel event on the wonderbits contract
-                    await WONDERBITS_CONTRACT.incrementEventCounter(address, DISCONNECT_DISCORD_MIXPANEL_EVENT_HASH).catch((err: any) => {
-                        console.error('Error incrementing event counter:', err);
-                        // Logging the error but not altering the response
-                    });
-                }
-            }
+            //     if (wonderbitsAccStatus === Status.SUCCESS) {
+            //         // increment the counter for this mixpanel event on the wonderbits contract
+            //         await WONDERBITS_CONTRACT.incrementEventCounter(address, DISCONNECT_DISCORD_MIXPANEL_EVENT_HASH).catch((err: any) => {
+            //             console.error('Error incrementing event counter:', err);
+            //             // Logging the error but not altering the response
+            //         });
+            //     }
+            // }
         }
 
         return res.status(status).json({

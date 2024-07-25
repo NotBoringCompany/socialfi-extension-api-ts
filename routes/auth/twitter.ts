@@ -47,8 +47,8 @@ router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/',
     if (!req.user) {
         return res.status(401).json({
             status: Status.UNAUTHORIZED,
-            message: 'You denied the app or your session has expired. Please log in again.'
-        })
+            message: 'You denied the app or your session has expired. Please log in again.',
+        });
     }
 
     try {
@@ -61,8 +61,8 @@ router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/',
         if (status !== Status.SUCCESS) {
             return res.status(status).json({
                 status,
-                message
-            })
+                message,
+            });
         } else {
             const token = generateJWT(twitterId, twitterAccessToken, twitterRefreshToken, twitterExpiryDate - Math.floor(Date.now() / 1000));
             const host = (req.session as any).redirectHost || 'https://x.com';
@@ -71,32 +71,32 @@ router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/',
             if (status === Status.SUCCESS) {
                 mixpanel.track('Login Callback', {
                     distinct_id: twitterId,
-                    '_accessToken': twitterAccessToken,
-                    '_refreshToken': twitterRefreshToken,
-                    '_expiryDate': twitterExpiryDate,
-                    '_origin': host,
-                    '_version': version,
-                    '_data': data,
+                    _accessToken: twitterAccessToken,
+                    _refreshToken: twitterRefreshToken,
+                    _expiryDate: twitterExpiryDate,
+                    _origin: host,
+                    _version: version,
+                    _data: data,
                 });
 
                 // get the wallet address of the twitter ID
-            const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(twitterId);
+                // const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(twitterId);
 
-            if (walletStatus !== Status.SUCCESS) {
-                // if there is an error somehow, ignore this and just return a success for the API endpoint
-                // as this is just an optional tracking feature.
-                return res.redirect(`${host}?jwt=${token}`);
-            }
+                // if (walletStatus !== Status.SUCCESS) {
+                //     // if there is an error somehow, ignore this and just return a success for the API endpoint
+                //     // as this is just an optional tracking feature.
+                //     return res.redirect(`${host}?jwt=${token}`);
+                // }
 
-            const { address } = walletData.wallet as UserWallet;
+                // const { address } = walletData.wallet as UserWallet;
 
-            // increment the counter for this mixpanel event on the wonderbits contract
-            await WONDERBITS_CONTRACT.incrementEventCounter(address, TWITTER_LOGIN_CALLBACK_MIXPANEL_EVENT_HASH).catch((err: any) => {
-                // if there is an error somehow, ignore this and just return a success for the API endpoint
-                // as this is just an optional tracking feature.
-                // return res.redirect(`${host}?jwt=${token}`);
-                console.error('Error incrementing event counter:', err);
-            })
+                // // increment the counter for this mixpanel event on the wonderbits contract
+                // await WONDERBITS_CONTRACT.incrementEventCounter(address, TWITTER_LOGIN_CALLBACK_MIXPANEL_EVENT_HASH).catch((err: any) => {
+                //     // if there is an error somehow, ignore this and just return a success for the API endpoint
+                //     // as this is just an optional tracking feature.
+                //     // return res.redirect(`${host}?jwt=${token}`);
+                //     console.error('Error incrementing event counter:', err);
+                // });
             }
 
             return res.redirect(`${host}?jwt=${token}`);
@@ -104,8 +104,8 @@ router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/',
     } catch (err: any) {
         return res.status(500).json({
             status: Status.ERROR,
-            message: err.message
-        })
+            message: err.message,
+        });
     }
 });
 
@@ -118,15 +118,15 @@ router.post('/wonderbits_admin_registration', async (req, res) => {
         if (!adminCall) {
             return res.status(401).json({
                 status: Status.UNAUTHORIZED,
-                message: `(wonderbits_admin_registration) Only admin calls are allowed. Please provide the admin key.`
-            })
+                message: `(wonderbits_admin_registration) Only admin calls are allowed. Please provide the admin key.`,
+            });
         }
 
         if (adminCall && adminKey !== process.env.ADMIN_KEY) {
             return res.status(401).json({
                 status: Status.UNAUTHORIZED,
-                message: `(wonderbits_admin_registration) Invalid admin key.`
-            })
+                message: `(wonderbits_admin_registration) Invalid admin key.`,
+            });
         }
 
         const { status, message, data } = await handleTwitterLogin(twitterId, adminCall, profile, adminKey);
@@ -134,14 +134,14 @@ router.post('/wonderbits_admin_registration', async (req, res) => {
         return res.status(status).json({
             status,
             message,
-            data
+            data,
         });
     } catch (err: any) {
         return res.status(500).json({
             status: Status.ERROR,
-            message: err.message
-        })
+            message: err.message,
+        });
     }
-})
+});
 
 export default router;

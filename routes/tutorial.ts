@@ -49,44 +49,44 @@ router.post('/complete_tutorial', async (req, res) => {
             });
 
             // get the wallet address of the twitter ID
-            const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(validateData?.twitterId);
+            // const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(validateData?.twitterId);
 
-            if (walletStatus !== Status.SUCCESS) {
-                // if there is an error somehow, ignore this and just return a success for the API endpoint
-                // as this is just an optional tracking feature.
-                return res.status(status).json({
-                    status,
-                    message,
-                    data
-                })
-            }
+            // if (walletStatus !== Status.SUCCESS) {
+            //     // if there is an error somehow, ignore this and just return a success for the API endpoint
+            //     // as this is just an optional tracking feature.
+            //     return res.status(status).json({
+            //         status,
+            //         message,
+            //         data
+            //     })
+            // }
 
-            const { address } = walletData.wallet as UserWallet;
+            // const { address } = walletData.wallet as UserWallet;
 
-            // check if the user has an account registered in the contract.
-            const { status: wonderbitsAccStatus } = await checkWonderbitsAccountRegistrationRequired(address);
+            // // check if the user has an account registered in the contract.
+            // const { status: wonderbitsAccStatus } = await checkWonderbitsAccountRegistrationRequired(address);
 
-            if (wonderbitsAccStatus !== Status.SUCCESS) {
-                // if there is an error somehow, ignore this and just return a success for the API endpoint
-                // as this is just an optional tracking feature.
-                return res.status(status).json({
-                    status,
-                    message,
-                    data
-                })
-            }
+            // if (wonderbitsAccStatus !== Status.SUCCESS) {
+            //     // if there is an error somehow, ignore this and just return a success for the API endpoint
+            //     // as this is just an optional tracking feature.
+            //     return res.status(status).json({
+            //         status,
+            //         message,
+            //         data
+            //     })
+            // }
 
-            // increment the counter for this mixpanel event on the wonderbits contract
-            await WONDERBITS_CONTRACT.incrementEventCounter(address, TUTORIAL_COMPLETED_MIXPANEL_EVENT_HASH).catch((err: any) => {
-                // if there is an error somehow, ignore this and just return a success for the API endpoint
-                // as this is just an optional tracking feature.
-                // return res.status(status).json({
-                //     status,
-                //     message,
-                //     data
-                // })
-                console.error('Error incrementing event counter:', err);
-            })
+            // // increment the counter for this mixpanel event on the wonderbits contract
+            // await WONDERBITS_CONTRACT.incrementEventCounter(address, TUTORIAL_COMPLETED_MIXPANEL_EVENT_HASH).catch((err: any) => {
+            //     // if there is an error somehow, ignore this and just return a success for the API endpoint
+            //     // as this is just an optional tracking feature.
+            //     // return res.status(status).json({
+            //     //     status,
+            //     //     message,
+            //     //     data
+            //     // })
+            //     console.error('Error incrementing event counter:', err);
+            // })
         }
 
         return res.status(status).json({

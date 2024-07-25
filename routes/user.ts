@@ -86,22 +86,22 @@ router.post('/remove_resources', async (req, res) => {
             });
 
             // get the wallet address of the twitter ID
-            const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(validateData?.twitterId);
+            // const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(validateData?.twitterId);
 
-            if (walletStatus === Status.SUCCESS) {
-                const { address } = walletData.wallet as UserWallet;
+            // if (walletStatus === Status.SUCCESS) {
+            //     const { address } = walletData.wallet as UserWallet;
 
-                // check if the user has an account registered in the contract.
-                const { status: wonderbitsAccStatus } = await checkWonderbitsAccountRegistrationRequired(address);
+            //     // check if the user has an account registered in the contract.
+            //     const { status: wonderbitsAccStatus } = await checkWonderbitsAccountRegistrationRequired(address);
 
-                if (wonderbitsAccStatus === Status.SUCCESS) {
-                    // increment the counter for this mixpanel event on the wonderbits contract
-                    await WONDERBITS_CONTRACT.incrementEventCounter(address, REMOVE_RESOURCES_MIXPANEL_EVENT_HASH).catch((err: any) => {
-                        console.error('Error incrementing event counter:', err);
-                        // Logging the error but not altering the response
-                    });
-                }
-            }
+            //     if (wonderbitsAccStatus === Status.SUCCESS) {
+            //         // increment the counter for this mixpanel event on the wonderbits contract
+            //         await WONDERBITS_CONTRACT.incrementEventCounter(address, REMOVE_RESOURCES_MIXPANEL_EVENT_HASH).catch((err: any) => {
+            //             console.error('Error incrementing event counter:', err);
+            //             // Logging the error but not altering the response
+            //         });
+            //     }
+            // }
         }
 
         return res.status(status).json({
@@ -191,22 +191,22 @@ router.post('/claim_daily_rewards', async (req, res) => {
             });
 
             // get the wallet address of the twitter ID
-            const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(validateData?.twitterId);
+            // const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(validateData?.twitterId);
 
-            if (walletStatus === Status.SUCCESS) {
-                const { address } = walletData.wallet as UserWallet;
+            // if (walletStatus === Status.SUCCESS) {
+            //     const { address } = walletData.wallet as UserWallet;
 
-                // check if the user has an account registered in the contract.
-                const { status: wonderbitsAccStatus } = await checkWonderbitsAccountRegistrationRequired(address);
+            //     // check if the user has an account registered in the contract.
+            //     const { status: wonderbitsAccStatus } = await checkWonderbitsAccountRegistrationRequired(address);
 
-                if (wonderbitsAccStatus === Status.SUCCESS) {
-                    // increment the counter for this mixpanel event on the wonderbits contract
-                    await WONDERBITS_CONTRACT.incrementEventCounter(address, CLAIM_DAILY_REWARDS_MIXPANEL_EVENT_HASH).catch((err: any) => {
-                        console.error('Error incrementing event counter:', err);
-                        // Logging the error but not altering the response
-                    });
-                }
-            }
+            //     if (wonderbitsAccStatus === Status.SUCCESS) {
+            //         // increment the counter for this mixpanel event on the wonderbits contract
+            //         await WONDERBITS_CONTRACT.incrementEventCounter(address, CLAIM_DAILY_REWARDS_MIXPANEL_EVENT_HASH).catch((err: any) => {
+            //             console.error('Error incrementing event counter:', err);
+            //             // Logging the error but not altering the response
+            //         });
+            //     }
+            // }
         }
 
         return res.status(status).json({
@@ -245,22 +245,22 @@ router.post('/link_invite_code', async (req, res) => {
             });
 
             // get the wallet address of the twitter ID
-            const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(validateData?.twitterId);
+            // const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(validateData?.twitterId);
 
-            if (walletStatus === Status.SUCCESS) {
-                const { address } = walletData.wallet as UserWallet;
+            // if (walletStatus === Status.SUCCESS) {
+            //     const { address } = walletData.wallet as UserWallet;
 
-                // check if the user has an account registered in the contract.
-                const { status: wonderbitsAccStatus } = await checkWonderbitsAccountRegistrationRequired(address);
+            //     // check if the user has an account registered in the contract.
+            //     const { status: wonderbitsAccStatus } = await checkWonderbitsAccountRegistrationRequired(address);
 
-                if (wonderbitsAccStatus === Status.SUCCESS) {
-                    // increment the counter for this mixpanel event on the wonderbits contract
-                    await WONDERBITS_CONTRACT.incrementEventCounter(address, LINK_INVITE_CODE_MIXPANEL_EVENT_HASH).catch((err: any) => {
-                        console.error('Error incrementing event counter:', err);
-                        // Logging the error but not altering the response
-                    });
-                }
-            }
+            //     if (wonderbitsAccStatus === Status.SUCCESS) {
+            //         // increment the counter for this mixpanel event on the wonderbits contract
+            //         await WONDERBITS_CONTRACT.incrementEventCounter(address, LINK_INVITE_CODE_MIXPANEL_EVENT_HASH).catch((err: any) => {
+            //             console.error('Error incrementing event counter:', err);
+            //             // Logging the error but not altering the response
+            //         });
+            //     }
+            // }
         }
 
         return res.status(status).json({
@@ -315,22 +315,22 @@ router.post('/claim_beginner_rewards', async (req, res) => {
             });
 
             // get the wallet address of the twitter ID
-            const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(validateData?.twitterId);
+            // const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(validateData?.twitterId);
 
-            if (walletStatus === Status.SUCCESS) {
-                const { address } = walletData.wallet as UserWallet;
+            // if (walletStatus === Status.SUCCESS) {
+            //     const { address } = walletData.wallet as UserWallet;
 
-                // check if the user has an account registered in the contract.
-                const { status: wonderbitsAccStatus } = await checkWonderbitsAccountRegistrationRequired(address);
+            //     // check if the user has an account registered in the contract.
+            //     const { status: wonderbitsAccStatus } = await checkWonderbitsAccountRegistrationRequired(address);
 
-                if (wonderbitsAccStatus === Status.SUCCESS) {
-                    // increment the counter for this mixpanel event on the wonderbits contract
-                    await WONDERBITS_CONTRACT.incrementEventCounter(address, CLAIM_BEGINNER_REWARDS_MIXPANEL_EVENT_HASH).catch((err: any) => {
-                        console.error('Error incrementing event counter:', err);
-                        // Logging the error but not altering the response
-                    });
-                }
-            }
+            //     if (wonderbitsAccStatus === Status.SUCCESS) {
+            //         // increment the counter for this mixpanel event on the wonderbits contract
+            //         await WONDERBITS_CONTRACT.incrementEventCounter(address, CLAIM_BEGINNER_REWARDS_MIXPANEL_EVENT_HASH).catch((err: any) => {
+            //             console.error('Error incrementing event counter:', err);
+            //             // Logging the error but not altering the response
+            //         });
+            //     }
+            // }
         }
 
         return res.status(status).json({
