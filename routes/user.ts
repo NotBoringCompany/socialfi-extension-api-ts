@@ -500,7 +500,7 @@ router.post('/consume_energy_potion', async (req, res) => {
             status,
             message,
             data,
-        })
+        });
     } catch (err: any) {
         return res.status(500).json({ status: 500, message: err.message });
     }
