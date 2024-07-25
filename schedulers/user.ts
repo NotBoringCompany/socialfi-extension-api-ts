@@ -1,5 +1,5 @@
 import cron from 'node-cron';
-import { resetWeeklyItemsConsumed, resetWeeklyXCookiesSpent, restoreUserCurrentEnergy, updateBeginnerRewardsData, updateDailyLoginRewardsData, updateUserEnergyPotion } from '../api/user';
+import { resetWeeklyItemsConsumed, resetWeeklyXCookiesSpent, restoreUserCurrentEnergyAndResetReroll, updateBeginnerRewardsData, updateDailyLoginRewardsData, updateUserEnergyPotion } from '../api/user';
 
 /**
  * Updates all users' daily login rewards data every day at 23:59 UTC
@@ -50,14 +50,14 @@ export const updateUserEnergyPotionScheduler = async (): Promise<void> => {
 /**
  * Restore user with current energy less than maximum cap every day at 23:59 UTC
  */
-export const restoreUserCurrentEnergyScheduler = async (): Promise<void> => {
+export const restoreUserCurrentEnergyAndResetRerollScheduler = async (): Promise<void> => {
     try {
         cron.schedule('59 23 * * *', async () => {
-            console.log('Running restoreUserCurrentEnergyScheduler...');
+            console.log('Running restoreUserCurrentEnergyAndResetRerollScheduler...');
 
-            await restoreUserCurrentEnergy();
+            await restoreUserCurrentEnergyAndResetReroll();
         });
     } catch (err: any) {
-        console.error('Error in restoreUserCurrentEnergyScheduler:', err.message);
+        console.error('Error in restoreUserCurrentEnergyAndResetRerollScheduler:', err.message);
     }
 }
