@@ -3638,15 +3638,15 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
         const boosterPercentage = milestoneReward.boosterReward;
 
         // if caressMeter passed from FE isn't equal than current caressEnergyMeter return error.
-        if (caressMeter !== caressEnergyMeter) {
-        console.log(
-            `(applyIslandTapping) cannot apply island id ${islandId} tapping. caressMeter isn't valid.`
-        );
+        if (caressMeter < caressEnergyMeter) {
+            console.log(
+                `(applyIslandTapping) cannot apply island id ${islandId} tapping. caressMeter isn't valid.`
+            );
 
-        return {
-            status: Status.ERROR,
-            message: `(applyIslandTapping) cannot apply island id ${islandId} tapping. caressMeter isn't valid.`,
-        };
+            return {
+                status: Status.ERROR,
+                message: `(applyIslandTapping) cannot apply island id ${islandId} tapping. caressMeter isn't valid.`,
+            };
         }
 
         // Deduct User Energy after applying IslandTappping
