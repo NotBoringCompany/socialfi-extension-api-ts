@@ -3767,7 +3767,9 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
             if (secondOptionReward.additionalExp) {
                 bonusExp = secondOptionReward.additionalExp;
             } else if (secondOptionReward.berryDrop) {
-                const cookieIndex = (user.inventory?.extendedXCookieData as ExtendedXCookieData[]).findIndex(data => data.source === XCookieSource.ISLAND_TAPPING);
+                const extendedXCookieData = user.inventory?.extendedXCookieData || [] as ExtendedXCookieData[];
+
+                const cookieIndex = extendedXCookieData.findIndex(data => data.source === XCookieSource.ISLAND_TAPPING);
 
                 const berryDropAmount = secondOptionReward.berryDrop;
 
