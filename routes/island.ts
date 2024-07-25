@@ -624,7 +624,7 @@ router.get('/get_island_tapping_data/:islandId', async (req, res) => {
 })
 
 router.post('/apply_island_tapping_data', async (req, res) => {
-    const { islandId, caressMeter }= req.body;
+    const { islandId, caressMeter, bonus }= req.body;
     
     try {
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'apply_island_tapping_data');
@@ -636,7 +636,7 @@ router.post('/apply_island_tapping_data', async (req, res) => {
             });
         }
 
-        const { status, message, data } = await applyIslandTapping(validateData?.twitterId, parseInt(islandId), parseInt(caressMeter));
+        const { status, message, data } = await applyIslandTapping(validateData?.twitterId, parseInt(islandId), parseInt(caressMeter), bonus);
         
         return res.status(status).json({
             status,

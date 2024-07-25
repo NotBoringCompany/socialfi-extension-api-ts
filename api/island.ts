@@ -10,7 +10,7 @@ import { Modifier } from '../models/modifier';
 import { BitSchema } from '../schemas/Bit';
 import { Bit, BitRarity, BitRarityNumeric, BitStatsModifiers, BitTrait, BitTraitData, BitType } from '../models/bit';
 import { generateObjectId } from '../utils/crypto';
-import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
+import { BitModel, IslandModel, LeaderboardModel, SquadLeaderboardModel, SquadModel, UserModel } from '../utils/constants/db';
 import { ObtainMethod } from '../models/obtainMethod';
 import { RELOCATION_COOLDOWN } from '../utils/constants/bit';
 import { ExtendedXCookieData, PlayerEnergy, PlayerMastery, User, XCookieSource } from '../models/user';
@@ -18,6 +18,8 @@ import { getResource, resources } from '../utils/constants/resource';
 import { Item } from '../models/item';
 import { BoosterItem } from '../models/booster';
 import { TAPPING_MASTERY_LEVEL } from '../utils/constants/mastery';
+import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
+import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
 
 /**
  * Gifts an Xterio user an Xterio island.
@@ -3560,7 +3562,7 @@ export const getIslandTappingData = async (islandId: number): Promise<ReturnValu
 /**
  * Applies tapping action to an island and updates relevant user and island data.
  */
-export const applyIslandTapping = async (twitterId: string, islandId: number, caressMeter: number): Promise<ReturnValue> => {
+export const applyIslandTapping = async (twitterId: string, islandId: number, caressMeter: number, bonus: 'First' | 'Second'): Promise<ReturnValue> => {
   try {
         const userUpdateOperations = {
             $pull: {},
@@ -3576,8 +3578,31 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
             $push: {}
         }
 
+        const leaderboardUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const squadUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const squadLeaderboardUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
         const user = await UserModel.findOne({ twitterId }).lean();
         const island = await IslandModel.findOne({ islandId: islandId }).lean();
+        const leaderboard = await LeaderboardModel.findOne().sort({ startTimestamp: -1 });
+        const latestSquadLeaderboard = await SquadLeaderboardModel.findOne().sort({ week: -1 }).lean();
 
         if (!island) {
             return {
@@ -3591,6 +3616,20 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
                 status: Status.ERROR,
                 message: `(getIslandTappingData) User not found.`
             };
+        }
+
+        if (!leaderboard) {
+            return {
+                status: Status.ERROR,
+                message: `(getIslandTappingData) Leaderboard not found.`
+            }
+        }
+
+        if (!latestSquadLeaderboard) {
+            return {
+                status: Status.ERROR,
+                message: `(getIslandTappingData) Squad leaderboard not found.`
+            }
         }
 
         // Initialize currentTappingData information
@@ -3608,6 +3647,24 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
             status: Status.ERROR,
             message: `(applyIslandTapping) cannot apply island id ${islandId} tapping. caressMeter isn't valid.`,
         };
+        }
+
+        // Deduct User Energy after applying IslandTappping
+        // initialize user current energy & calculate energy required to apply island tapping
+        const { currentEnergy } = user.inGameData.energy as PlayerEnergy;
+        const energyRequired = Math.ceil(caressEnergyMeter / BASE_CARESS_PER_TAPPING) * BASE_ENERGY_PER_TAPPING;
+
+        // Check user currentEnergy is >= energyRequired
+        if ( currentEnergy >= energyRequired) {
+            const newCurrentEnergy = Math.max(currentEnergy - energyRequired, 0);
+            // Save newCurrentEnergy to userUpdateOperations
+            userUpdateOperations.$set['inGameData.energy.currentEnergy'] = newCurrentEnergy;
+            console.log(`(applyIslandTapping) deduct ${user.twitterUsername} energy to ${newCurrentEnergy} energy`);
+        } else {
+            return {
+                status: Status.ERROR,
+                message: `(getIslandTappingData) User doens't have enough energy to continue this action.`
+            };
         }
 
         // Apply current milestone reward as gathering booster to the island.
@@ -3699,9 +3756,172 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
             }
         }
 
+        // Apply Bonus milestone reward
+        let bonusExp = 0;
+        
+        if (bonus === 'First') {
+            bonusExp = milestoneReward.bonusReward.firstOptionReward;
+        } else {
+            const secondOptionReward = milestoneReward.bonusReward.secondOptionReward;
+            
+            if (secondOptionReward.additionalExp) {
+                bonusExp = secondOptionReward.additionalExp;
+            } else if (secondOptionReward.berryDrop) {
+                const cookieIndex = (user.inventory?.extendedXCookieData as ExtendedXCookieData[]).findIndex(data => data.source === XCookieSource.ISLAND_TAPPING);
+
+                const berryDropAmount = secondOptionReward.berryDrop;
+
+                // Update operations
+                if (cookieIndex !== -1) {
+                    // Increment existing cookie data
+                    userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${cookieIndex}.xCookies`] = berryDropAmount;
+                } else {
+                    // Push new cookie data to the array
+                    userUpdateOperations.$push[`inventory.xCookieData.extendedXCookieData`] = {
+                        source: XCookieSource.ISLAND_TAPPING,
+                        xCookies: berryDropAmount
+                    };
+                }
+
+                // Always increment currentXCookies
+                userUpdateOperations.$inc[`inventory.xCookieData.currentXCookies`] = berryDropAmount;
+            } else if (secondOptionReward.pointDrop) {
+                const userIndex = (leaderboard.userData as LeaderboardUserData[]).findIndex(userData => userData.userId === user._id);
+
+                let additionalPoints = 0;
+
+                const currentLevel = user.inGameData.level;
+                
+                // if not found, create a new entry
+                if (userIndex === -1) {
+                    // check if the user is eligible to level up to the next level
+                    const newLevel = GET_SEASON_0_PLAYER_LEVEL(secondOptionReward.pointDrop);
+
+                    if (newLevel > currentLevel) {
+                        // set the user's `inGameData.level` to the new level
+                        userUpdateOperations.$set['inGameData.level'] = newLevel;
+
+                        // add the additional points based on the rewards obtainable
+                        additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
+                    }
+
+                    leaderboardUpdateOperations.$push['userData'] = {
+                        userId: user._id,
+                        username: user.twitterUsername,
+                        twitterProfilePicture: user.twitterProfilePicture,
+                        pointsData: [
+                            {
+                                points: secondOptionReward.pointDrop,
+                                source: LeaderboardPointsSource.ISLAND_TAPPING
+                            },
+                            {
+                                points: additionalPoints,
+                                source: LeaderboardPointsSource.LEVELLING_UP
+                            }
+                        ]
+                    }
+                // if the user is found, increment the points
+                } else {
+                    // get the user's total leaderboard points
+                    // this is done by summing up all the points from the `pointsData` array, BUT EXCLUDING SOURCES FROM:
+                    // 1. LeaderboardPointsSource.LEVELLING_UP
+                    const totalLeaderboardPoints = leaderboard.userData[userIndex].pointsData.reduce((acc, pointsData) => {
+                        if (pointsData.source !== LeaderboardPointsSource.LEVELLING_UP) {
+                            return acc + pointsData.points;
+                        }
+
+                        return acc;
+                    }, 0);
+
+                    const newLevel = GET_SEASON_0_PLAYER_LEVEL(totalLeaderboardPoints + secondOptionReward.pointDrop);
+
+                    if (newLevel > currentLevel) {
+                        userUpdateOperations.$set['inGameData.level'] = newLevel;
+                        additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
+                    }
+
+                    // get the source index for ISLAND_TAPPING
+                    const sourceIndex = leaderboard.userData[userIndex].pointsData.findIndex(pointsData => pointsData.source === LeaderboardPointsSource.ISLAND_TAPPING);
+
+                    if (sourceIndex !== -1) {
+                        leaderboardUpdateOperations.$inc[`userData.${userIndex}.pointsData.${sourceIndex}.points`] = secondOptionReward.pointDrop;
+                    } else {
+                        leaderboardUpdateOperations.$push[`userData.${userIndex}.pointsData`] = {
+                            points: secondOptionReward.pointDrop,
+                            source: LeaderboardPointsSource.ISLAND_TAPPING
+                        }
+                    }
+
+                    if (additionalPoints > 0) {
+                        const levellingUpIndex = leaderboard.userData[userIndex].pointsData.findIndex(pointsData => pointsData.source === LeaderboardPointsSource.LEVELLING_UP);
+
+                        if (levellingUpIndex !== -1) {
+                            leaderboardUpdateOperations.$inc[`userData.${userIndex}.pointsData.${levellingUpIndex}.points`] = additionalPoints;
+                        } else {
+                            leaderboardUpdateOperations.$push[`userData.${userIndex}.pointsData`] = {
+                                points: additionalPoints,
+                                source: LeaderboardPointsSource.LEVELLING_UP
+                            }
+                        }
+                    }
+                }
+
+                // if the user also has a squad, add the points to the squad's total points
+                if (user.inGameData.squad !== null) {
+                    // get the squad
+                    const squad = await SquadModel.findOne({ _id: user.inGameData.squadId }).lean();
+
+                    if (!squad) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(getIslandTappingData) Squad not found.`
+                        }
+                    }
+
+                    // add only the reward.amount (i.e. points) to the squad's total points
+                    squadUpdateOperations.$inc['totalSquadPoints'] = secondOptionReward.pointDrop;
+
+                    // check if the squad exists in the squad leaderboard's `pointsData`. if not, we create a new instance.
+                    const squadIndex = latestSquadLeaderboard.pointsData.findIndex(data => data.squadId === squad._id);
+
+                    if (squadIndex === -1) {
+                        squadLeaderboardUpdateOperations.$push['pointsData'] = {
+                            squadId: squad._id,
+                            squadName: squad.name,
+                            memberPoints: [
+                                {
+                                    userId: user._id,
+                                    username: user.twitterUsername,
+                                    points: secondOptionReward.pointDrop
+                                }
+                            ]
+                        }
+                    } else {
+                        // otherwise, we increment the points for the user in the squad
+                        const userIndex = latestSquadLeaderboard.pointsData[squadIndex].memberPoints.findIndex(member => member.userId === user._id);
+
+                        if (userIndex !== -1) {
+                            squadLeaderboardUpdateOperations.$inc[`pointsData.${squadIndex}.memberPoints.${userIndex}.points`] = secondOptionReward.pointDrop;
+                        } else {
+                            squadLeaderboardUpdateOperations.$push[`pointsData.${squadIndex}.memberPoints`] = {
+                                userId: user._id,
+                                username: user.twitterUsername,
+                                points: secondOptionReward.pointDrop
+                            }
+                        }
+                    }
+                }
+            } else {
+                return {
+                    status: Status.ERROR,
+                    message: `(getIslandTappingData) second option milestone reward is undefined.`
+                };
+            }
+        }
+
         // Add user tapping exp mastery
         const { tapping } = user.inGameData.mastery as PlayerMastery;
-        const newTotalExp = tapping.totalExp + milestoneReward.masteryExpReward;
+        const newTotalExp = tapping.totalExp + milestoneReward.masteryExpReward + bonusExp;
         userUpdateOperations.$set['inGameData.mastery.tapping.totalExp'] = newTotalExp;
 
         // Compare currentTappingLevel with newTappingLevel
@@ -3709,24 +3929,6 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
         const newTappingLevel = TAPPING_MASTERY_LEVEL(newTotalExp);
         if (newTappingLevel > currentTappingLevel) {
             userUpdateOperations.$set['inGameData.mastery.tapping.level'] = newTappingLevel;
-        }
-
-        // Deduct User Energy after applying IslandTappping
-        // initialize user current energy & calculate energy required to apply island tapping
-        const { currentEnergy } = user.inGameData.energy as PlayerEnergy;
-        const energyRequired = Math.ceil(caressEnergyMeter / BASE_CARESS_PER_TAPPING) * BASE_ENERGY_PER_TAPPING;
-
-        // Check user currentEnergy is >= energyRequired
-        if ( currentEnergy >= energyRequired) {
-            const newCurrentEnergy = Math.max(currentEnergy - energyRequired, 0);
-            // Save newCurrentEnergy to userUpdateOperations
-            userUpdateOperations.$set['inGameData.energy.currentEnergy'] = newCurrentEnergy;
-            console.log(`(applyIslandTapping) deduct ${user.twitterUsername} energy to ${newCurrentEnergy} energy`);
-        } else {
-            return {
-                status: Status.ERROR,
-                message: `(getIslandTappingData) User doens't have enough energy to continue this action.`
-            };
         }
 
         // Increase the tier Milestone to the next tier/rank. If milestone reaching the max tier, return error.

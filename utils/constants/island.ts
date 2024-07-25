@@ -703,7 +703,7 @@ export const ISLAND_TAPPING_MILESTONE_BONUS_REWARD = (milestoneTier: number): Ta
   const rand = Math.floor(Math.random() * 10000) + 1;
   if (rand <= 3333) {
     // Additional Exp
-    bonus.secondOptionReward.additionalExp = bonus.firstOptionReward * 1.25;
+    bonus.secondOptionReward.additionalExp = bonus.firstOptionReward * 1.05;
   } else if (rand <= 6666) {
     // Berry Bonus
     const berryBonus = milestoneTier >= 21 ? 3 : milestoneTier >= 16 ? 2 :
