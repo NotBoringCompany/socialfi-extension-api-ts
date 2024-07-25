@@ -18,6 +18,7 @@ import {
     GET_SEASON_0_PLAYER_LEVEL_REWARDS,
     GET_SEASON_0_REFERRAL_REWARDS,
     MAX_BEGINNER_REWARD_DAY,
+    MAX_ENERGY_POTION_CAP,
     MAX_INVENTORY_WEIGHT,
     WEEKLY_MVP_REWARDS,
 } from '../utils/constants/user';
@@ -176,6 +177,7 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
             const newEnergy: PlayerEnergy = {
                 currentEnergy: 1000,
                 maxEnergy: 1000,
+                dailyEnergyPotion: MAX_ENERGY_POTION_CAP,
             }
 
             // initialize PlayerMastery for new user
@@ -2171,6 +2173,7 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
         const newEnergy: PlayerEnergy = {
             currentEnergy: 1000,
             maxEnergy: 1000,
+            dailyEnergyPotion: MAX_ENERGY_POTION_CAP,
         };
 
         // initialize PlayerMastery for new user

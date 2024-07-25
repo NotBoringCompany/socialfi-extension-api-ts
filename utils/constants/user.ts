@@ -7,6 +7,9 @@ export const MAX_INVENTORY_WEIGHT = 50000;
 /** the last day to claim beginner rewards */
 export const MAX_BEGINNER_REWARD_DAY = 7;
 
+/** Maximum number of energy potions that can be stored */
+export const MAX_ENERGY_POTION_CAP = 4;
+
 /**
  * Gets the daily login rewards. Currently only supports xCookies and leaderboard points.
  * 
