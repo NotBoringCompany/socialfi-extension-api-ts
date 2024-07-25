@@ -30,6 +30,7 @@ app.use(passport.session());
 /** ROUTE IMPORTS */
 import twitterAuth from './routes/auth/twitter';
 import discordAuth from './routes/auth/discord';
+import telegramAuth from './routes/auth/telegram';
 import jwt from './routes/jwt';
 import shop from './routes/shop';
 import quest from './routes/quest';
@@ -58,6 +59,7 @@ import { schedulers } from './schedulers/schedulers';
 
 app.use('/auth/twitter', twitterAuth);
 app.use('/auth/discord', discordAuth);
+app.use('/auth/telegram', telegramAuth);
 app.use('/jwt', jwt);
 app.use('/shop', shop);
 app.use('/quest', quest);

@@ -18,6 +18,8 @@ export interface User {
     userId: string;
     /** the twitter user ID of the user */
     twitterId: string;
+    /** the login method of the account */
+    method?: 'twitter' | 'telegram';
     /** the user's twitter profile picture URL */
     twitterProfilePicture: string;
     /** the user's twitter username */
