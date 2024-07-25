@@ -10,7 +10,7 @@ import { addIslandToDatabase, getLatestIslandId, randomizeBaseResourceCap } from
 import { POIName } from '../models/poi';
 import { ExtendedResource, SimplifiedResource } from '../models/resource';
 import { resources } from '../utils/constants/resource';
-import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, PlayerEnergy, UserWallet, XCookieSource } from '../models/user';
+import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, PlayerEnergy, PlayerMastery, UserWallet, XCookieSource } from '../models/user';
 import {
     GET_BEGINNER_REWARDS,
     GET_DAILY_LOGIN_REWARDS,
@@ -174,9 +174,17 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
 
             // initialize PlayerEnergy fot user
             const newEnergy: PlayerEnergy = {
-                currentEnergy: 5000,
-                maxEnergy: 5000,
+                currentEnergy: 1000,
+                maxEnergy: 1000,
             }
+
+            // initialize PlayerMastery for new user
+            const newMastery: PlayerMastery = {
+                tapping: {
+                    level: 1,
+                    totalExp: 0,
+                },
+            };
 
             const newUser = new UserModel({
                 _id: userObjectId,
@@ -233,6 +241,7 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
                 inGameData: {
                     level: 1,
                     energy: newEnergy,
+                    mastery: newMastery,
                     completedTutorialIds: [],
                     beginnerRewardData: {
                         lastClaimedTimestamp: 0,
@@ -2158,11 +2167,19 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
         // creates the wallet for the user
         const { privateKey, address } = createUserWallet();
 
-        // initialize PlayerEnergy fot user
+        // initialize PlayerEnergy for new user
         const newEnergy: PlayerEnergy = {
-            currentEnergy: 5000,
-            maxEnergy: 5000,
-        }
+            currentEnergy: 1000,
+            maxEnergy: 1000,
+        };
+
+        // initialize PlayerMastery for new user
+        const newMastery: PlayerMastery = {
+            tapping: {
+                level: 1,
+                totalExp: 0,
+            },
+        };
 
         await user.updateOne({
             twitterId,
@@ -2217,6 +2234,7 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
             inGameData: {
                 level: 1,
                 energy: newEnergy,
+                mastery: newMastery,
                 completedTutorialIds: [],
                 beginnerRewardData: {
                     lastClaimedTimestamp: 0,
