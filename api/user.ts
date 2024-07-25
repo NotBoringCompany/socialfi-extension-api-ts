@@ -2492,29 +2492,44 @@ export const updateUserEnergyPotion = async (): Promise<void> => {
 /** 
  * Function to restore all available user currentEnergy back to maximum cap
  */
-export const restoreUserCurrentEnergy = async (): Promise<void> => {
+export const restoreUserCurrentEnergyAndResetReroll = async (): Promise<void> => {
     try {
-        const users = await UserModel.find({ 'inGameData.energy.currentEnergy': { $lt: MAX_ENERGY_CAP } }).lean();
-        
-        if (users.length === 0 || !users) {
-            console.error(`(restoreUserCurrentEnergy) No users found.`);
-            return;
-        }
+        // Restore user currentEnergy to the maximum cap
+        const usersWithLowEnergy = await UserModel.find({ 'inGameData.energy.currentEnergy': { $lt: MAX_ENERGY_CAP } }).lean();
+        const usersWithTappingMastery = await UserModel.find({ 'inGameData.mastery.tapping': { $exists: true } }).lean();
 
-        const bulkWriteOps = users.map(user => {
-            return {
+        // Check if there are users with low energy and update them
+        if (usersWithLowEnergy.length > 0) {
+            const bulkWriteEnergyOps = usersWithLowEnergy.map(user => ({
                 updateOne: {
                     filter: { _id: user._id },
                     update: {
                         $set: { 'inGameData.energy.currentEnergy': MAX_ENERGY_CAP }
                     }
                 }
-            };
-        });
+            }));
+            await UserModel.bulkWrite(bulkWriteEnergyOps);
+            console.log(`(restoreUserCurrentEnergyAndResetReroll) Restored energy for ${usersWithLowEnergy.length} users.`);
+        } else {
+            console.log(`(restoreUserCurrentEnergyAndResetReroll) No users with low energy found.`);
+        }
 
-        await UserModel.bulkWrite(bulkWriteOps);
-        console.log(`(restoreUserCurrentEnergy), added 1 Energy Potion into ${users.length} Users`);
+        // Check if there are users with tapping mastery data and reset reroll count
+        if (usersWithTappingMastery.length > 0) {
+            const bulkWriteRerollOps = usersWithTappingMastery.map(user => ({
+                updateOne: {
+                    filter: { _id: user._id },
+                    update: {
+                        $set: { 'inGameData.mastery.tapping.rerollCount': 6 }
+                    }
+                }
+            }));
+            await UserModel.bulkWrite(bulkWriteRerollOps);
+            console.log(`(restoreUserCurrentEnergyAndResetReroll) Reset reroll count for ${usersWithTappingMastery.length} users.`);
+        } else {
+            console.log(`(restoreUserCurrentEnergyAndResetReroll) No users with tapping mastery data found.`);
+        }
     } catch (err: any) {
-        console.error(`(restoreUserCurrentEnergy), Error: ${err.message}`);
+        console.error(`(restoreUserCurrentEnergyAndResetReroll) Error: ${err.message}`);
     }
 };

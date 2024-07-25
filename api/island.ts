@@ -4055,14 +4055,15 @@ export const rerollBonusMilestoneReward = async (twitterId: string, islandId: nu
 export const resetDailyIslandTappingMilestone = async (): Promise<void> => {
     try {
         // Find all available islands with currentMilestone greater than 1.
-        const islands = await IslandModel.find({ 'islandTappingData.currentMilestone': { $gt: 1 } }).lean();
-        // Find all available users
-        const users = await UserModel.find({ 'inGameData.mastery.tapping': { $exists: true } }).lean();
-
-        if (islands.length === 0) {
+        const islands = await IslandModel.find({ 'islandTappingData.currentMilestone': {$gt: 1} }).lean();
+        
+        if (islands.length === 0 || !islands) {
             console.error(`(resetDailyIslandTappingMilestone) No islands found.`);
-        } else {
-            const bulkWriteIslandsOps = islands.map(island => ({
+            return;
+        }
+        
+        const bulkWriteOps = islands.map(island => {
+            return{
                 updateOne: {
                     filter: { islandId: island.islandId },
                     update: {
@@ -4071,27 +4072,10 @@ export const resetDailyIslandTappingMilestone = async (): Promise<void> => {
                         }
                     }
                 }
-            }));
+            }
+        });
 
-            await IslandModel.bulkWrite(bulkWriteIslandsOps);
-            console.log(`(resetDailyIslandTappingMilestone) Updated islands.`);
-        }
-
-        if (users.length === 0) {
-            console.error(`(resetDailyIslandTappingMilestone) No users found.`);
-        } else {
-            const bulkWriteUsersOps = users.map(user => ({
-                updateOne: {
-                    filter: { _id: user._id },
-                    update: {
-                        $set: { 'inGameData.mastery.tapping.rerollCount': 6 }
-                    }
-                }
-            }));
-
-            await UserModel.bulkWrite(bulkWriteUsersOps);
-            console.log(`(resetDailyIslandTappingMilestone) Updated users.`);
-        }
+        await IslandModel.bulkWrite(bulkWriteOps);
     } catch (err: any) {
         console.error(`(resetDailyIslandTappingMilestone) Error: ${err.message}`);
     }
