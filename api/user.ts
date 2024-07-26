@@ -12,6 +12,7 @@ import { ExtendedResource, SimplifiedResource } from '../models/resource';
 import { resources } from '../utils/constants/resource';
 import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, PlayerEnergy, PlayerMastery, UserWallet, XCookieSource } from '../models/user';
 import {
+    DAILY_REROLL_BONUS_MILESTONE,
     GET_BEGINNER_REWARDS,
     GET_DAILY_LOGIN_REWARDS,
     GET_SEASON_0_PLAYER_LEVEL,
@@ -2399,7 +2400,7 @@ export const restoreUserCurrentEnergyAndResetReroll = async (): Promise<void> =>
         if (usersWithTappingMastery.length > 0) {
             const bulkWriteRerollOps = usersWithTappingMastery.map(user => {
                 const tappingLevel = user.inGameData.mastery.tapping.level;
-                const rerollCount = DAILY_REROLL_MILESTONE_CHANCE(tappingLevel);
+                const rerollCount = DAILY_REROLL_BONUS_MILESTONE(tappingLevel);
                 return {
                     updateOne: {
                         filter: { _id: user._id },
@@ -2418,7 +2419,3 @@ export const restoreUserCurrentEnergyAndResetReroll = async (): Promise<void> =>
         console.error(`(restoreUserCurrentEnergyAndResetReroll) Error: ${err.message}`);
     }
 };
-
-function DAILY_REROLL_MILESTONE_CHANCE(tappingLevel: any) {
-    throw new Error('Function not implemented.');
-}
