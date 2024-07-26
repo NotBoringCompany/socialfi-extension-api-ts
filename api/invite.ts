@@ -1,13 +1,14 @@
 import mongoose from 'mongoose';
 import { IndirectReferralData, ReferralData, ReferralReward, ReferredUserData, StarterCodeData } from '../models/invite';
 import { LeaderboardModel, StarterCodeModel, SuccessfulIndirectReferralModel, UserModel } from '../utils/constants/db';
-import { generateObjectId, generateStarterCode } from '../utils/crypto';
+import { generateHashSalt, generateObjectId, generateStarterCode, generateWonderbitsDataHash } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
 import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
 import { ExtendedXCookieData, UserWallet, XCookieSource } from '../models/user';
 import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS, GET_SEASON_0_REFERRAL_REWARDS } from '../utils/constants/user';
-import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
+import { DEPLOYER_WALLET, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
 import { getUserCurrentPoints } from './leaderboard';
+import { ethers } from 'ethers';
 
 /**
  * Generates starter codes and stores them in the database.
@@ -230,8 +231,16 @@ export const claimReferralRewards = async (twitterId: string): Promise<ReturnVal
             }
         }
 
+        const salt = generateHashSalt();
+        const dataHash = generateWonderbitsDataHash((user.wallet as UserWallet).address, salt);
+        const signature = await DEPLOYER_WALLET(XPROTOCOL_TESTNET_PROVIDER).signMessage(ethers.utils.arrayify(dataHash));
+
         // round it to the nearest integer because solidity doesn't accept floats
-        const updatePointsTx = await WONDERBITS_CONTRACT.updatePoints((user.wallet as UserWallet).address, Math.round(currentPointsData.points));
+        const updatePointsTx = await WONDERBITS_CONTRACT.updatePoints(
+            (user.wallet as UserWallet).address, 
+            Math.round(currentPointsData.points), 
+            [salt, signature]
+        );
 
         return {
             status: Status.SUCCESS,

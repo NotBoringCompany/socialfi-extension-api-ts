@@ -1,4 +1,4 @@
-import { KEYCHAIN_CONTRACT, KOS_CONTRACT, SUPERIOR_KEYCHAIN_CONTRACT, WONDERBITS_CONTRACT } from '../utils/constants/web3';
+import { DEPLOYER_WALLET, KEYCHAIN_CONTRACT, KOS_CONTRACT, SUPERIOR_KEYCHAIN_CONTRACT, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
 import { ReturnValue, Status } from '../utils/retVal';
 import { getWallets } from './user';
 import { KOSExplicitOwnership, KOSMetadata, KOSReward, KOSRewardType } from '../models/kos';
@@ -13,10 +13,10 @@ import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderbo
 import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
 import { BitOrbType } from '../models/bitOrb';
 import { TerraCapsulatorType } from '../models/terraCapsulator';
-import { generateObjectId } from '../utils/crypto';
+import { generateHashSalt, generateObjectId, generateWonderbitsDataHash } from '../utils/crypto';
 import mongoose from 'mongoose';
 import * as dotenv from 'dotenv';
-import { BigNumber } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 import { getUserCurrentPoints } from './leaderboard';
 
 dotenv.config();
@@ -551,8 +551,16 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
             }
         }
 
+        const salt = generateHashSalt();
+        const dataHash = generateWonderbitsDataHash((user.wallet as UserWallet).address, salt);
+        const signature = await DEPLOYER_WALLET(XPROTOCOL_TESTNET_PROVIDER).signMessage(ethers.utils.arrayify(dataHash));
+
         // round it to the nearest integer because solidity doesn't accept floats
-        const updatePointsTx = await WONDERBITS_CONTRACT.updatePoints((user.wallet as UserWallet).address, Math.round(currentPointsData.points));
+        const updatePointsTx = await WONDERBITS_CONTRACT.updatePoints(
+            (user.wallet as UserWallet).address, 
+            Math.round(currentPointsData.points), 
+            [salt, signature]
+        );
 
         return {
             status: Status.SUCCESS,

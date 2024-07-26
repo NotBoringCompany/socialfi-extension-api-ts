@@ -18,7 +18,9 @@ import { updateReferredUsersData } from './user';
 import * as dotenv from 'dotenv';
 import { getUserCurrentPoints } from './leaderboard';
 import { UserWallet } from '../models/user';
-import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
+import { DEPLOYER_WALLET, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
+import { generateHashSalt, generateWonderbitsDataHash } from '../utils/crypto';
+import { ethers } from 'ethers';
 
 /**
  * Resets the `currentBuyableAmount` and `currentSellableAmount` of all global items in all POI shops every day at 23:59 UTC.
@@ -1227,8 +1229,17 @@ export const sellItemsInPOIShop = async (
                 message: `(claimReferralRewards) Error from getUserCurrentPoints: ${currentPointsMessage}`
             }
         }
+
+        const salt = generateHashSalt();
+        const dataHash = generateWonderbitsDataHash((user.wallet as UserWallet).address, salt);
+        const signature = await DEPLOYER_WALLET(XPROTOCOL_TESTNET_PROVIDER).signMessage(ethers.utils.arrayify(dataHash));
+
         // round it to the nearest integer because solidity doesn't accept floats
-        const updatePointsTx = await WONDERBITS_CONTRACT.updatePoints((user.wallet as UserWallet).address, Math.round(currentPointsData.points));
+        const updatePointsTx = await WONDERBITS_CONTRACT.updatePoints(
+            (user.wallet as UserWallet).address, 
+            Math.round(currentPointsData.points), 
+            [salt, signature]
+        );
 
         return {
             status: Status.SUCCESS,

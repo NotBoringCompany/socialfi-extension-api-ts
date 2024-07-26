@@ -1,7 +1,7 @@
 import { ReturnValue, Status } from '../utils/retVal';
 import { createUserWallet } from '../utils/wallet';
 import { createRaft } from './raft';
-import { generateHashSalt, generateObjectId, generateReferralCode } from '../utils/crypto';
+import { generateHashSalt, generateObjectId, generateReferralCode, generateWonderbitsDataHash } from '../utils/crypto';
 import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
 import { RANDOMIZE_GENDER, getBitStatsModifiersFromTraits, randomizeBitTraits, randomizeBitType } from '../utils/constants/bit';
 import { ObtainMethod } from '../models/obtainMethod';
@@ -42,8 +42,9 @@ import { WeeklyMVPRewardType } from '../models/weeklyMVPReward';
 import mongoose from 'mongoose';
 import * as dotenv from 'dotenv';
 import { getUserCurrentPoints } from './leaderboard';
-import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
+import { DEPLOYER_WALLET, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
 import { sendKICKUponRegistration } from './web3';
+import { ethers } from 'ethers';
 
 dotenv.config();
 
@@ -1196,8 +1197,17 @@ export const claimDailyRewards = async (twitterId: string, leaderboardName: stri
                 message: `(claimReferralRewards) Error from getUserCurrentPoints: ${currentPointsMessage}`
             }
         }
+        
+        const salt = generateHashSalt();
+        const dataHash = generateWonderbitsDataHash((user.wallet as UserWallet).address, salt);
+        const signature = await DEPLOYER_WALLET(XPROTOCOL_TESTNET_PROVIDER).signMessage(ethers.utils.arrayify(dataHash));
+
         // round it to the nearest integer because solidity doesn't accept floats
-        const updatePointsTx = await WONDERBITS_CONTRACT.updatePoints((user.wallet as UserWallet).address, Math.round(currentPointsData.points));
+        const updatePointsTx = await WONDERBITS_CONTRACT.updatePoints(
+            (user.wallet as UserWallet).address, 
+            Math.round(currentPointsData.points), 
+            [salt, signature]
+        );
 
         return {
             status: Status.SUCCESS,
