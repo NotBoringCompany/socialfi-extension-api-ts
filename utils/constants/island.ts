@@ -58,7 +58,7 @@ export const BASE_ENERGY_PER_TAPPING = 5;
 export const BASE_CARESS_PER_TAPPING = 5;
 
 /** base caress enery meter */
-export const BASE_CARESS_METER = 100;
+export const BASE_CARESS_METER = 125;
 
 /** caress exp base diff */
 export const EXP_BASE_DIFF = 1.1;
