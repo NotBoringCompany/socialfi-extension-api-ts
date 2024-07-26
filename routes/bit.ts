@@ -88,7 +88,9 @@ router.post('/rename_bit', async (req, res) => {
             // increment the counter for this mixpanel event on the wonderbits contract
             await WONDERBITS_CONTRACT.incrementEventCounter(address, RENAME_BIT_MIXPANEL_EVENT_HASH, [salt, signature]).catch((err) => {
                 console.log(`Error incrementing counter for rename bit mixpanel event: ${err.message}`);
-            })
+            });
+
+            console.log('rename bit successful!');
         }
 
         return res.status(status).json({
