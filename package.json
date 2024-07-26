@@ -10,7 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@superfaceai/passport-twitter-oauth2": "^1.2.3",
+    "@superfaceai/passport-twitter-oauth2": "^1.2.4",
     "axios": "^1.6.8",
     "base64url": "^3.0.1",
     "connect-mongo": "^5.1.0",
