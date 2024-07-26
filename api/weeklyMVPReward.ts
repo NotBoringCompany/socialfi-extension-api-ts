@@ -507,35 +507,12 @@ export const claimWeeklyMVPRewards = async (twitterId: string): Promise<ReturnVa
         // set the claimableRewards back to an empty array.
         await WeeklyMVPClaimableRewardsModel.updateOne({ userId: user._id }, { $set: { claimableRewards: [] } });
 
-        // UPCOMING: `UPDATE POINTS` LOGIC TO WONDERBITS CONTRACT
-        // because the update operation for updating the leaderboard points is already done above, we call to check the newly updated points now.
-        const { status: currentPointsStatus, message: currentPointsMessage, data: currentPointsData } = await getUserCurrentPoints(twitterId);
-
-        if (currentPointsStatus !== Status.SUCCESS) {
-            return {
-                status: currentPointsStatus,
-                message: `(claimReferralRewards) Error from getUserCurrentPoints: ${currentPointsMessage}`
-            }
-        }
-
-        const salt = generateHashSalt();
-        const dataHash = generateWonderbitsDataHash((user.wallet as UserWallet).address, salt);
-        const signature = await DEPLOYER_WALLET(XPROTOCOL_TESTNET_PROVIDER).signMessage(ethers.utils.arrayify(dataHash));
-
-        // round it to the nearest integer because solidity doesn't accept floats
-        const updatePointsTx = await WONDERBITS_CONTRACT.updatePoints(
-            (user.wallet as UserWallet).address, 
-            Math.round(currentPointsData.points), 
-            [salt, signature]
-        );
-
         return {
             status: Status.SUCCESS,
             message: `(claimWeeklyMVPRewards) Weekly MVP rewards claimed.`,
             data: {
                 leaderboardPoints: claimableLeaderboardPoints,
-                additionalPoints,
-                updatePointsTxHash: updatePointsTx.hash
+                additionalPoints
             }
         }
     } catch (err: any) {

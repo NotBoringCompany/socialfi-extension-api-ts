@@ -1187,34 +1187,11 @@ export const claimDailyRewards = async (twitterId: string, leaderboardName: stri
             }
         }
 
-        // UPCOMING: `UPDATE POINTS` LOGIC TO WONDERBITS CONTRACT
-        // because the update operation for updating the leaderboard points is already done above, we call to check the newly updated points now.
-        const { status: currentPointsStatus, message: currentPointsMessage, data: currentPointsData } = await getUserCurrentPoints(twitterId);
-
-        if (currentPointsStatus !== Status.SUCCESS) {
-            return {
-                status: currentPointsStatus,
-                message: `(claimReferralRewards) Error from getUserCurrentPoints: ${currentPointsMessage}`
-            }
-        }
-        
-        const salt = generateHashSalt();
-        const dataHash = generateWonderbitsDataHash((user.wallet as UserWallet).address, salt);
-        const signature = await DEPLOYER_WALLET(XPROTOCOL_TESTNET_PROVIDER).signMessage(ethers.utils.arrayify(dataHash));
-
-        // round it to the nearest integer because solidity doesn't accept floats
-        const updatePointsTx = await WONDERBITS_CONTRACT.updatePoints(
-            (user.wallet as UserWallet).address, 
-            Math.round(currentPointsData.points), 
-            [salt, signature]
-        );
-
         return {
             status: Status.SUCCESS,
             message: `(claimDailyRewards) Daily rewards claimed.`,
             data: {
                 dailyLoginRewards,
-                updatePointsTxHash: updatePointsTx.hash,
             },
         };
     } catch (err: any) {

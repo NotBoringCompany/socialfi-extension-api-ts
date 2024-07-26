@@ -1219,38 +1219,11 @@ export const sellItemsInPOIShop = async (
             }
         }
 
-        // UPCOMING: `UPDATE POINTS` LOGIC TO WONDERBITS CONTRACT
-        // because the update operation for updating the leaderboard points is already done above, we call to check the newly updated points now.
-        const { status: currentPointsStatus, message: currentPointsMessage, data: currentPointsData } = await getUserCurrentPoints(twitterId);
-
-        if (currentPointsStatus !== Status.SUCCESS) {
-            return {
-                status: currentPointsStatus,
-                message: `(claimReferralRewards) Error from getUserCurrentPoints: ${currentPointsMessage}`
-            }
-        }
-
-        const salt = generateHashSalt();
-        const dataHash = generateWonderbitsDataHash((user.wallet as UserWallet).address, salt);
-        const signature = await DEPLOYER_WALLET(XPROTOCOL_TESTNET_PROVIDER).signMessage(ethers.utils.arrayify(dataHash)).catch((err: any) => {
-            console.log('error from signMessage in sellItemsInPOIShop: ', err.message);
-        })
-
-        // round it to the nearest integer because solidity doesn't accept floats
-        const updatePointsTx = await WONDERBITS_CONTRACT.updatePoints(
-            (user.wallet as UserWallet).address, 
-            Math.round(currentPointsData.points), 
-            [salt, signature]
-        ).catch((err: any) => {
-            console.log('error from updatePoints in sellItemsInPOIShop: ', err.message);
-        })
-
         return {
             status: Status.SUCCESS,
             message: `(sellItemsInPOIShop) Items sold. Leaderboard points added.`,
             data: {
-                leaderboardPoints,
-                updatePointsTxHash: updatePointsTx.hash
+                leaderboardPoints
             }
         }
     } catch (err: any) {
