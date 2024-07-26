@@ -86,7 +86,9 @@ router.post('/rename_bit', async (req, res) => {
             const signature = await DEPLOYER_WALLET(XPROTOCOL_TESTNET_PROVIDER).signMessage(ethers.utils.arrayify(dataHash));
 
             // increment the counter for this mixpanel event on the wonderbits contract
-            await WONDERBITS_CONTRACT.incrementEventCounter(address, RENAME_BIT_MIXPANEL_EVENT_HASH, [salt, signature]);
+            await WONDERBITS_CONTRACT.incrementEventCounter(address, RENAME_BIT_MIXPANEL_EVENT_HASH, [salt, signature]).catch((err) => {
+                console.log(`Error incrementing counter for rename bit mixpanel event: ${err.message}`);
+            })
         }
 
         return res.status(status).json({
