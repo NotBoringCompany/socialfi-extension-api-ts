@@ -54,7 +54,6 @@ router.post('/rename_bit', async (req, res) => {
         }
 
         const { status, message, data } = await renameBit(validateData?.twitterId, bitId, newName);
-        let incrementCounterTxHash = '';
 
         if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Rename Bit', {
@@ -62,35 +61,6 @@ router.post('/rename_bit', async (req, res) => {
                 '_bitId': bitId,
                 '_newName': newName,
             });
-
-            // get the wallet address of the twitter ID
-            const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(validateData?.twitterId);
-
-            if (walletStatus !== Status.SUCCESS) {
-                // if there is an error somehow, ignore this and just return a success for the API endpoint
-                // as this is just an optional tracking feature.
-                return res.status(status).json({
-                    status,
-                    message,
-                    data: {
-                        ...data,
-                        incrementCounterTxHash
-                    }
-                })
-            }
-
-            const { address } = walletData.wallet as UserWallet;
-
-            const salt = generateHashSalt();
-            const dataHash = generateWonderbitsDataHash(address, salt);
-            const signature = await DEPLOYER_WALLET(XPROTOCOL_TESTNET_PROVIDER).signMessage(ethers.utils.arrayify(dataHash));
-
-            // increment the counter for this mixpanel event on the wonderbits contract
-            await WONDERBITS_CONTRACT.incrementEventCounter(address, RENAME_BIT_MIXPANEL_EVENT_HASH, [salt, signature]).catch((err) => {
-                console.log(`Error incrementing counter for rename bit mixpanel event: ${err.message}`);
-            });
-
-            console.log('rename bit successful!');
         }
 
         return res.status(status).json({
