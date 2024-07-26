@@ -42,7 +42,7 @@ import mongoose from 'mongoose';
 import * as dotenv from 'dotenv';
 import { getUserCurrentPoints } from './leaderboard';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
-import { checkWonderbitsAccountRegistrationRequired } from './web3';
+import { checkWonderbitsAccountRegistrationRequired, sendKICKUponRegistration } from './web3';
 
 dotenv.config();
 
@@ -268,6 +268,9 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
 
             await newUser.save();
 
+            // give the user some KICK tokens
+            const { status: kickStatus, message: kickMessage } = await sendKICKUponRegistration(address);
+
             return {
                 status: Status.SUCCESS,
                 message: `(handleTwitterLogin) New user created.`,
@@ -275,6 +278,9 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
                     userId: newUser._id,
                     twitterId,
                     loginType: loginType,
+                    // checks if KICK is sent successfully to the user; if not, no need to throw an error.
+                    sendKICKStatus: kickStatus,
+                    sendKICKMessage: kickMessage,
                 },
             };
         } else {
@@ -2261,6 +2267,9 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
             },
         });
 
+        // give the user some KICK tokens
+        const { status: kickStatus, message: kickMessage } = await sendKICKUponRegistration(address);
+
         return {
             status: Status.SUCCESS,
             message: `(handlePreRegister) New user created and free Rafting Bit added to raft.`,
@@ -2268,6 +2277,9 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
                 userId: user._id,
                 twitterId: user.twitterId,
                 loginType: loginType,
+                // checks if sending KICK is successful; no need to throw error if unsuccessful.
+                sendKICKStatus: kickStatus,
+                sendKICKMessage: kickMessage,
             },
         };
     } catch (err: any) {
