@@ -3,6 +3,7 @@ import { claimDailyKOSRewards, claimWeeklyKOSRewards, getClaimableDailyKOSReward
 import { Status } from '../utils/retVal';
 import { validateRequestAuth } from '../utils/auth';
 import { mixpanel } from '../utils/mixpanel';
+import { validate } from 'node-cron';
 
 const router = express.Router();
 
@@ -10,6 +11,14 @@ router.get('/get_owned_key_ids/:twitterId', async (req, res) => {
     const { twitterId } = req.params;
     try {
         const { status, message, data } = await getOwnedKeyIDs(twitterId);
+
+        if (status === Status.SUCCESS) {
+            mixpanel.track('User Owned Key', {
+                distinct_id: twitterId,
+                '_ownedKey': data?.ownedKeyIDs.length,
+                '_ownedKeyIds': data?.ownedKeyIDs,
+            });
+        }
 
         return res.status(status).json({
             status,
@@ -29,6 +38,14 @@ router.get('/get_owned_keychain_ids/:twitterId', async (req, res) => {
     try {
         const { status, message, data } = await getOwnedKeychainIDs(twitterId);
 
+        if (status === Status.SUCCESS) {
+            mixpanel.track('User Owned Keychain', {
+                distinct_id: twitterId,
+                '_ownedKeychain': data?.ownedKeychainIDs.length,
+                '_ownedKeychainIds': data?.ownedKeychainIDs,
+            });
+        }
+
         return res.status(status).json({
             status,
             message,
@@ -46,6 +63,15 @@ router.get('/get_owned_superior_keychain_ids/:twitterId', async (req, res) => {
     const { twitterId } = req.params;
     try {
         const { status, message, data } = await getOwnedSuperiorKeychainIDs(twitterId);
+
+        if (status === Status.SUCCESS) {
+            mixpanel.track('User Owned Superior Keychain', {
+                distinct_id: twitterId,
+                '_data': data,
+                '_ownedSuperiorKeychain': data?.ownedSuperiorKeychainIDs.length,
+                '_ownedSuperiorKeychainIds': data?.ownedSuperiorKeychainIDs,
+            });
+        }
 
         return res.status(status).json({
             status,
@@ -73,6 +99,13 @@ router.post('/claim_daily_kos_rewards', async (req, res) => {
 
         const { status, message, data } = await claimDailyKOSRewards(validateData?.twitterId);
 
+        if (status === Status.SUCCESS) {
+            mixpanel.track('Claim Daily KOS', {
+                distinct_id: validateData?.twitterId,
+                '_data': data,
+            });
+        }
+
         return res.status(status).json({
             status,
             message,
@@ -99,6 +132,13 @@ router.post('/claim_weekly_kos_rewards', async (req, res) => {
         // }
 
         // const { status, message, data } = await claimWeeklyKOSRewards(validateData?.twitterId);
+
+        // if (status === Status.SUCCESS) {
+        //     mixpanel.track('Claim Weekly KOS', {
+        //         distinct_id: validateData?.twitterId,
+        //         '_data': data,
+        //     });
+        // }
 
         // return res.status(status).json({
         //     status,

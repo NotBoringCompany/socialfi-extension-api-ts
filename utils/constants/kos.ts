@@ -116,6 +116,9 @@ export const KOS_WEEKLY_BENEFITS = (
  * Gets the total number of Bit Orb (I) earnable from holding a certain amount of keys with the aura that's currently rotating.
  */
 export const KOS_BENEFITS_EARNABLE_BIT_ORB_I = (keysWithAuraRotationOwned: number): number => {
+    // Disabling Rotating Aura Benefits
+    return 0;
+
     if (keysWithAuraRotationOwned < 1) {
         return 0;
     } else if (keysWithAuraRotationOwned === 1) {
@@ -141,6 +144,9 @@ export const KOS_BENEFITS_EARNABLE_BIT_ORB_I = (keysWithAuraRotationOwned: numbe
  * Gets the total number of Terra Capsulator (I) earnable from holding a certain amount of keys with the house that's currently rotating.
  */
 export const KOS_BENEFITS_EARNABLE_TERRA_CAP_I = (keysWithHouseRotationOwned: number): number => {
+    // Disabling Rotating House Benefits
+    return 0;
+
     if (keysWithHouseRotationOwned < 1) {
         return 0;
     } else if (keysWithHouseRotationOwned === 1) {

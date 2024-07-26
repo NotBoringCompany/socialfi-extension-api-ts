@@ -63,7 +63,7 @@ export const SQUAD_KOS_BENEFITS = (totalKeys: number): {
         }
     } else {
         return {
-            sellAssetPointsBoost: 1.10
+            sellAssetPointsBoost: 1.07
         }
     }
 }
