@@ -11,10 +11,12 @@ import { BitModel } from '../utils/constants/db';
 import { Modifier } from '../models/modifier';
 import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 import { authMiddleware } from '../middlewares/auth';
-import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
+import { DEPLOYER_WALLET, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
 import { getMainWallet } from '../api/user';
 import { UserWallet } from '../models/user';
 import { EVOLVE_BIT_MIXPANEL_EVENT_HASH, FEED_BIT_MIXPANEL_EVENT_HASH, RELEASE_BIT_MIXPANEL_EVENT_HASH, RENAME_BIT_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
+import { generateHashSalt, generateWonderbitsDataHash } from '../utils/crypto';
+import { ethers } from 'ethers';
 
 const router = express.Router();
 
@@ -79,18 +81,18 @@ router.post('/rename_bit', async (req, res) => {
 
             const { address } = walletData.wallet as UserWallet;
 
+            const salt = generateHashSalt();
+            const dataHash = generateWonderbitsDataHash(address, salt);
+            const signature = await DEPLOYER_WALLET(XPROTOCOL_TESTNET_PROVIDER).signMessage(ethers.utils.arrayify(dataHash));
+
             // increment the counter for this mixpanel event on the wonderbits contract
-            const incrementCounterTx = await WONDERBITS_CONTRACT.incrementEventCounter(address, RENAME_BIT_MIXPANEL_EVENT_HASH);
-            incrementCounterTxHash = incrementCounterTx.hash;
+            await WONDERBITS_CONTRACT.incrementEventCounter(address, RENAME_BIT_MIXPANEL_EVENT_HASH, [salt, signature]);
         }
 
         return res.status(status).json({
             status,
             message,
-            data: {
-                ...data,
-                incrementCounterTxHash
-            }
+            data
         });
     } catch (err: any) {
         return res.status(500).json({

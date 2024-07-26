@@ -1240,7 +1240,7 @@ export const sellItemsInPOIShop = async (
         const updatePointsTx = await WONDERBITS_CONTRACT.updatePoints(
             (user.wallet as UserWallet).address, 
             Math.round(currentPointsData.points), 
-            [salt, signature!]
+            [salt, signature]
         ).catch((err: any) => {
             console.log('error from updatePoints in sellItemsInPOIShop: ', err.message);
         })
