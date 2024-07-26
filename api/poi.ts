@@ -1232,14 +1232,18 @@ export const sellItemsInPOIShop = async (
 
         const salt = generateHashSalt();
         const dataHash = generateWonderbitsDataHash((user.wallet as UserWallet).address, salt);
-        const signature = await DEPLOYER_WALLET(XPROTOCOL_TESTNET_PROVIDER).signMessage(ethers.utils.arrayify(dataHash));
+        const signature = await DEPLOYER_WALLET(XPROTOCOL_TESTNET_PROVIDER).signMessage(ethers.utils.arrayify(dataHash)).catch((err: any) => {
+            console.log('error from signMessage in sellItemsInPOIShop: ', err.message);
+        })
 
         // round it to the nearest integer because solidity doesn't accept floats
         const updatePointsTx = await WONDERBITS_CONTRACT.updatePoints(
             (user.wallet as UserWallet).address, 
             Math.round(currentPointsData.points), 
-            [salt, signature]
-        );
+            [salt, signature!]
+        ).catch((err: any) => {
+            console.log('error from updatePoints in sellItemsInPOIShop: ', err.message);
+        })
 
         return {
             status: Status.SUCCESS,
