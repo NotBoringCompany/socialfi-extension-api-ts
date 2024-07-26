@@ -78,23 +78,6 @@ router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/',
                     '_version': version,
                     '_data': data,
                 });
-
-                // get the wallet address of the twitter ID
-                const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(twitterId);
-
-                if (walletStatus !== Status.SUCCESS) {
-                    // if there's an error, redirect anyway.
-                    return res.redirect(`${host}?jwt=${token}`);
-                }
-
-                const { address } = walletData.wallet as UserWallet;
-
-                // increment the counter for this mixpanel event on the wonderbits contract
-                await WONDERBITS_CONTRACT.incrementEventCounter(address, TWITTER_LOGIN_CALLBACK_MIXPANEL_EVENT_HASH).catch(err => {
-                    // on error, redirect anyway.
-                    console.error(`(twitter/callback) Error incrementing mixpanel event counter: ${err.message}`);
-                    return res.redirect(`${host}?jwt=${token}`);
-                })
             }
 
             return res.redirect(`${host}?jwt=${token}`);

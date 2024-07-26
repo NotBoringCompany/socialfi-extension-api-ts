@@ -24,7 +24,6 @@ router.post('/open_chest', async (req, res) => {
         }
 
         const { status, message, data } = await openChest(validateData?.twitterId, tweetId);
-        let incrementCounterTxHash = '';
 
         if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Open Chest', {
@@ -32,38 +31,12 @@ router.post('/open_chest', async (req, res) => {
                 '_tweetId': tweetId,
                 '_data': data,
             });
-
-            // get the wallet address of the twitter ID
-            const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(validateData?.twitterId);
-
-            if (walletStatus !== Status.SUCCESS) {
-                // if there is an error somehow, ignore this and just return a success for the API endpoint
-                // as this is just an optional tracking feature.
-                return res.status(status).json({
-                    status,
-                    message,
-                    data: {
-                        ...data,
-                        incrementCounterTxHash
-                    }
-                })
-            }
-
-            const { address } = walletData.wallet as UserWallet;
-
-            // increment the counter for this mixpanel event on the wonderbits contract
-            const incrementCounterTx = await WONDERBITS_CONTRACT.incrementEventCounter(address, OPEN_CHEST_MIXPANEL_EVENT_HASH);
-            incrementCounterTxHash = incrementCounterTx.hash;
         }
 
         return res.status(status).json({
             status,
             message,
-            data: {
-                ...data,
-                incrementCounterTxHash
-            
-            }
+            data
         });
     } catch (err: any) {
         return res.status(500).json({

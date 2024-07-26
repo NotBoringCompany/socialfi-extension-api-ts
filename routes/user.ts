@@ -77,44 +77,18 @@ router.post('/remove_resources', async (req, res) => {
         }
 
         const { status, message, data } = await removeResources(validateData?.twitterId, resourcesToRemove);
-        let incrementCounterTxHash = '';
 
         if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Remove Resources', {
                 distinct_id: validateData?.twitterId,
                 '_removedResource': resourcesToRemove,
             });
-
-            // get the wallet address of the twitter ID
-            const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(validateData?.twitterId);
-
-            if (walletStatus !== Status.SUCCESS) {
-                // if there is an error somehow, ignore this and just return a success for the API endpoint
-                // as this is just an optional tracking feature.
-                return res.status(status).json({
-                    status,
-                    message,
-                    data: {
-                        ...data,
-                        incrementCounterTxHash
-                    }
-                })
-            }
-
-            const { address } = walletData.wallet as UserWallet;
-
-            // increment the counter for this mixpanel event on the wonderbits contract
-            const incrementCounterTx = await WONDERBITS_CONTRACT.incrementEventCounter(address, REMOVE_RESOURCES_MIXPANEL_EVENT_HASH);
-            incrementCounterTxHash = incrementCounterTx.hash;
         }
 
         return res.status(status).json({
             status,
             message,
-            data: {
-                ...data,
-                incrementCounterTxHash
-            }
+            data
         });
     } catch (err: any) {
         return res.status(500).json({
@@ -190,44 +164,18 @@ router.post('/claim_daily_rewards', async (req, res) => {
         }
 
         const { status, message, data } = await claimDailyRewards(validateData?.twitterId, leaderboardName);
-        let incrementCounterTxHash = '';
 
         if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Claim Daily Rewards', {
                 distinct_id: validateData?.twitterId,
                 '_rewards': data?.dailyLoginRewards,
             });
-
-            // get the wallet address of the twitter ID
-            const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(validateData?.twitterId);
-
-            if (walletStatus !== Status.SUCCESS) {
-                // if there is an error somehow, ignore this and just return a success for the API endpoint
-                // as this is just an optional tracking feature.
-                return res.status(status).json({
-                    status,
-                    message,
-                    data: {
-                        ...data,
-                        incrementCounterTxHash
-                    }
-                })
-            }
-
-            const { address } = walletData.wallet as UserWallet;
-
-            // increment the counter for this mixpanel event on the wonderbits contract
-            const incrementCounterTx = await WONDERBITS_CONTRACT.incrementEventCounter(address, CLAIM_DAILY_REWARDS_MIXPANEL_EVENT_HASH);
-            incrementCounterTxHash = incrementCounterTx.hash;
         }
 
         return res.status(status).json({
             status,
             message,
-            data: {
-                ...data,
-                incrementCounterTxHash
-            }
+            data
         });
     } catch (err: any) {
         return res.status(500).json({
@@ -251,7 +199,6 @@ router.post('/link_invite_code', async (req, res) => {
         }
 
         const { status, message, data } = await linkInviteCode(validateData?.twitterId, code);
-        let incrementCounterTxHash = '';
 
         if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Link Invite Code', {
@@ -259,37 +206,12 @@ router.post('/link_invite_code', async (req, res) => {
                 '_code': code,
                 '_data': data
             });
-
-            // get the wallet address of the twitter ID
-            const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(validateData?.twitterId);
-
-            if (walletStatus !== Status.SUCCESS) {
-                // if there is an error somehow, ignore this and just return a success for the API endpoint
-                // as this is just an optional tracking feature.
-                return res.status(status).json({
-                    status,
-                    message,
-                    data: {
-                        ...data,
-                        incrementCounterTxHash
-                    }
-                })
-            }
-
-            const { address } = walletData.wallet as UserWallet;
-
-            // increment the counter for this mixpanel event on the wonderbits contract
-            const incrementCounterTx = await WONDERBITS_CONTRACT.incrementEventCounter(address, LINK_INVITE_CODE_MIXPANEL_EVENT_HASH);
-            incrementCounterTxHash = incrementCounterTx.hash;
         }
 
         return res.status(status).json({
             status,
             message,
-            data: {
-                ...data,
-                incrementCounterTxHash
-            }
+            data
         });
     } catch (err: any) {
         return res.status(500).json({
@@ -330,44 +252,18 @@ router.post('/claim_beginner_rewards', async (req, res) => {
         }
 
         const { status, message, data } = await claimBeginnerRewards(validateData?.twitterId);
-        let incrementCounterTxHash = '';
 
         if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Claim Beginner Rewards', {
                 distinct_id: validateData?.twitterId,
                 '_rewards': data?.rewards,
             });
-
-            // get the wallet address of the twitter ID
-            const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(validateData?.twitterId);
-
-            if (walletStatus !== Status.SUCCESS) {
-                // if there is an error somehow, ignore this and just return a success for the API endpoint
-                // as this is just an optional tracking feature.
-                return res.status(status).json({
-                    status,
-                    message,
-                    data: {
-                        ...data,
-                        incrementCounterTxHash
-                    }
-                })
-            }
-
-            const { address } = walletData.wallet as UserWallet;
-
-            // increment the counter for this mixpanel event on the wonderbits contract
-            const incrementCounterTx = await WONDERBITS_CONTRACT.incrementEventCounter(address, CLAIM_BEGINNER_REWARDS_MIXPANEL_EVENT_HASH);
-            incrementCounterTxHash = incrementCounterTx.hash;
         }
 
         return res.status(status).json({
             status,
             message,
-            data: {
-                ...data,
-                incrementCounterTxHash
-            }
+            data
         });
     } catch (err: any) {
         return res.status(500).json({
