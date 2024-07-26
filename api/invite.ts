@@ -6,7 +6,6 @@ import { ReturnValue, Status } from '../utils/retVal';
 import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
 import { ExtendedXCookieData, UserWallet, XCookieSource } from '../models/user';
 import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS, GET_SEASON_0_REFERRAL_REWARDS } from '../utils/constants/user';
-import { checkWonderbitsAccountRegistrationRequired } from './web3';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { getUserCurrentPoints } from './leaderboard';
 
@@ -221,17 +220,6 @@ export const claimReferralRewards = async (twitterId: string): Promise<ReturnVal
         ]);
 
         // UPCOMING: `UPDATE POINTS` LOGIC TO WONDERBITS CONTRACT
-        // firstly, check if the user has an account registered in the contract.
-        const { status: wonderbitsAccStatus, message: wonderbitsAccMessage, data: wonderbitsAccData } = await checkWonderbitsAccountRegistrationRequired((user.wallet as UserWallet).address);
-
-        if (wonderbitsAccStatus !== Status.SUCCESS) {
-            return {
-                status: wonderbitsAccStatus,
-                message: `(claimReferralRewards) Error from checkWonderbitsAccountRegistrationRequired: ${wonderbitsAccMessage}`
-            }
-        }
-
-        // if the user has successfully registered their account, we update the user's points
         // because the update operation for updating the leaderboard points is already done above, we call to check the newly updated points now.
         const { status: currentPointsStatus, message: currentPointsMessage, data: currentPointsData } = await getUserCurrentPoints(twitterId);
 

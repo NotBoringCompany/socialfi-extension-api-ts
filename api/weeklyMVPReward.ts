@@ -1,5 +1,5 @@
 import { ReturnValue, Status } from '../utils/retVal';
-import { generateObjectId } from '../utils/crypto';
+import { generateHashSalt, generateObjectId, generateWonderbitsDataHash } from '../utils/crypto';
 import { LeaderboardModel, SquadLeaderboardModel, SquadModel, UserModel, WeeklyMVPClaimableRewardsModel, WeeklyMVPRankingLeaderboardModel } from '../utils/constants/db';
 import {
     GET_SEASON_0_PLAYER_LEVEL,
@@ -14,9 +14,9 @@ import { WeeklyMVPRanking, WeeklyMVPRankingData, WeeklyMVPReward, WeeklyMVPRewar
 import { UserWallet, XCookieData } from '../models/user';
 import mongoose from 'mongoose';
 import * as dotenv from 'dotenv';
-import { checkWonderbitsAccountRegistrationRequired } from './web3';
 import { getUserCurrentPoints } from './leaderboard';
-import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
+import { DEPLOYER_WALLET, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
+import { ethers } from 'ethers';
 
 dotenv.config();
 
@@ -508,17 +508,6 @@ export const claimWeeklyMVPRewards = async (twitterId: string): Promise<ReturnVa
         await WeeklyMVPClaimableRewardsModel.updateOne({ userId: user._id }, { $set: { claimableRewards: [] } });
 
         // UPCOMING: `UPDATE POINTS` LOGIC TO WONDERBITS CONTRACT
-        // firstly, check if the user has an account registered in the contract.
-        const { status: wonderbitsAccStatus, message: wonderbitsAccMessage, data: wonderbitsAccData } = await checkWonderbitsAccountRegistrationRequired((user.wallet as UserWallet).address);
-
-        if (wonderbitsAccStatus !== Status.SUCCESS) {
-            return {
-                status: wonderbitsAccStatus,
-                message: `(claimReferralRewards) Error from checkWonderbitsAccountRegistrationRequired: ${wonderbitsAccMessage}`
-            }
-        }
-
-        // if the user has successfully registered their account, we update the user's points
         // because the update operation for updating the leaderboard points is already done above, we call to check the newly updated points now.
         const { status: currentPointsStatus, message: currentPointsMessage, data: currentPointsData } = await getUserCurrentPoints(twitterId);
 
@@ -528,8 +517,17 @@ export const claimWeeklyMVPRewards = async (twitterId: string): Promise<ReturnVa
                 message: `(claimReferralRewards) Error from getUserCurrentPoints: ${currentPointsMessage}`
             }
         }
+
+        const salt = generateHashSalt();
+        const dataHash = generateWonderbitsDataHash((user.wallet as UserWallet).address, salt);
+        const signature = await DEPLOYER_WALLET(XPROTOCOL_TESTNET_PROVIDER).signMessage(ethers.utils.arrayify(dataHash));
+
         // round it to the nearest integer because solidity doesn't accept floats
-        const updatePointsTx = await WONDERBITS_CONTRACT.updatePoints((user.wallet as UserWallet).address, Math.round(currentPointsData.points));
+        const updatePointsTx = await WONDERBITS_CONTRACT.updatePoints(
+            (user.wallet as UserWallet).address, 
+            Math.round(currentPointsData.points), 
+            [salt, signature]
+        );
 
         return {
             status: Status.SUCCESS,

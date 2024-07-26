@@ -12,19 +12,6 @@ export const getLotteryContractBalance = async (): Promise<number> => {
 }
 
 /**
- * Checks if a given address has an account in the Wonderbits contract.
- */
-export const checkWonderbitsAccountExists = async (address: string): Promise<boolean> => {
-    try {
-        const exists = await WONDERBITS_CONTRACT.playerExists(address);
-
-        return exists;
-    } catch (err: any) {
-        throw new Error(err.message);
-    }
-} 
-
-/**
  * Converts a random string into a Solidity bytes32 format.
  */
 export const convertToBytes32 = (str: string): string => {

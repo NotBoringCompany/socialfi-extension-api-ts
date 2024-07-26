@@ -42,7 +42,7 @@ import mongoose from 'mongoose';
 import * as dotenv from 'dotenv';
 import { getUserCurrentPoints } from './leaderboard';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
-import { checkWonderbitsAccountRegistrationRequired, sendKICKUponRegistration } from './web3';
+import { sendKICKUponRegistration } from './web3';
 
 dotenv.config();
 
@@ -1186,17 +1186,6 @@ export const claimDailyRewards = async (twitterId: string, leaderboardName: stri
         }
 
         // UPCOMING: `UPDATE POINTS` LOGIC TO WONDERBITS CONTRACT
-        // firstly, check if the user has an account registered in the contract.
-        const { status: wonderbitsAccStatus, message: wonderbitsAccMessage, data: wonderbitsAccData } = await checkWonderbitsAccountRegistrationRequired((user.wallet as UserWallet).address);
-
-        if (wonderbitsAccStatus !== Status.SUCCESS) {
-            return {
-                status: wonderbitsAccStatus,
-                message: `(claimReferralRewards) Error from checkWonderbitsAccountRegistrationRequired: ${wonderbitsAccMessage}`
-            }
-        }
-
-        // if the user has successfully registered their account, we update the user's points
         // because the update operation for updating the leaderboard points is already done above, we call to check the newly updated points now.
         const { status: currentPointsStatus, message: currentPointsMessage, data: currentPointsData } = await getUserCurrentPoints(twitterId);
 
