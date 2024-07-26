@@ -917,6 +917,25 @@ export const checkWeeklyKOSRewards = async (): Promise<void> => {
         const bulkWriteOpsPromises = users.map(async user => {
             const updateOperations = [];
 
+            // ONLY FOR THIS SUNDAY (28 JULY 2024)
+            // PREVENT THESE 10 PEOPLE FROM EARNING ANY KOS REWARDS.
+            // PLEASE DELETE THIS AFTER SUNDAY 23:59 UTC!!!
+            if (
+                user.twitterUsername === 'zewaiuoe' ||
+                user.twitterUsername === 'clauren123' ||
+                user.twitterUsername === 'ARogrue' ||
+                user.twitterUsername === 'coffee_eth_me' ||
+                user.twitterUsername === 'MetaversonCouch' ||
+                user.twitterUsername === 'MANS0N_90' ||
+                user.twitterUsername === 'JoyMoonNFT' ||
+                user.twitterUsername === 'TJetpilo' ||
+                user.twitterUsername === 'LOL_Stuckiiii' ||
+                user.twitterUsername === 'ScarletteF1re'
+            ) {
+                console.log(`(checkWeeklyKOSRewards) user ${user.twitterUsername} is in the blacklist.`);
+                return [];
+            }
+
             // get all of the user's wallet addresses (main wallet + secondary wallets)
             const { status: walletStatus, message: walletMessage, data: walletData } = await getWallets(user.twitterId);
 
@@ -959,12 +978,19 @@ export const checkWeeklyKOSRewards = async (): Promise<void> => {
                 }
             }
 
-            // get the total keys owned by the user for at least 7 days
-            const validKeys = ownedKeys.filter(ownership => ownership.startTimestamp <= Math.floor(Date.now() / 1000) - 604800);
-            // get the total keychains owned by the user for at least 7 days
-            const validKeychains = ownedKeychains.filter(ownership => ownership.startTimestamp <= Math.floor(Date.now() / 1000) - 604800);
-            // get the total superior keychains owned by the user for at least 7 days
-            const validSuperiorKeychains = ownedSuperiorKeychains.filter(ownership => ownership.startTimestamp <= Math.floor(Date.now() / 1000) - 604800);
+            // // get the total keys owned by the user for at least 7 days
+            // const validKeys = ownedKeys.filter(ownership => ownership.startTimestamp <= Math.floor(Date.now() / 1000) - 604800);
+            // // get the total keychains owned by the user for at least 7 days
+            // const validKeychains = ownedKeychains.filter(ownership => ownership.startTimestamp <= Math.floor(Date.now() / 1000) - 604800);
+            // // get the total superior keychains owned by the user for at least 7 days
+            // const validSuperiorKeychains = ownedSuperiorKeychains.filter(ownership => ownership.startTimestamp <= Math.floor(Date.now() / 1000) - 604800);
+
+            // ONLY FOR THIS SUNDAY (28 JULY 2024)
+            // PREVENT THE REQUIREMENT FOR OWNING FOR AT LEAST 7 DAYS!!!
+            // PLEASE REMOVE THIS AFTER SUNDAY 23:59 UTC!!!
+            const validKeys = ownedKeys;
+            const validKeychains = ownedKeychains;
+            const validSuperiorKeychains = ownedSuperiorKeychains;
 
             // get the metadata for each valid key
             const validKeysMetadata: KOSMetadata[] = validKeys.map(key => {
