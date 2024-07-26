@@ -5,17 +5,17 @@ import { SquadReward, SquadRewardType } from '../../models/squadLeaderboard';
  * Gets a squad's new weekly ranking based on the points earned the previous week.
  */
 export const GET_SQUAD_WEEKLY_RANKING = (points: number): SquadRank => {
-    if (points >= 1 && points <= 99999) {
+    if (points >= 1 && points <= 1999) {
         return SquadRank.UNRANKED;
-    } else if (points >= 100000 && points <= 999999) {
+    } else if (points >= 2000 && points <= 4999) {
         return SquadRank.BRONZE;
-    } else if (points >= 1000000 && points <= 4999999) {
+    } else if (points >= 5000 && points <= 19999) {
         return SquadRank.SILVER;
-    } else if (points >= 5000000 && points <= 19999999) {
+    } else if (points >= 20000 && points <= 39999) {
         return SquadRank.GOLD;
-    } else if (points >= 20000000 && points <= 49999999) {
+    } else if (points >= 40000 && points <= 79999) {
         return SquadRank.PLATINUM;
-    } else if (points >= 50000000 && points <= 99999999) {
+    } else if (points >= 80000 && points <= 149999) {
         return SquadRank.DIAMOND;
     } else {
         return SquadRank.MASTER;
@@ -32,17 +32,17 @@ export const GET_LEADER_SQUAD_WEEKLY_RANKING_POI_POINTS_BOOST = (rank: SquadRank
         case SquadRank.UNRANKED:
             return 1;
         case SquadRank.BRONZE:
-            return 1.01;
+            return 1;
         case SquadRank.SILVER:
-            return 1.02;
+            return 1;
         case SquadRank.GOLD:
-            return 1.03;
+            return 1;
         case SquadRank.PLATINUM:
-            return 1.05;
+            return 1.01;
         case SquadRank.DIAMOND:
-            return 1.07;
+            return 1.015;
         case SquadRank.MASTER:
-            return 1.10;
+            return 1.02;
     }
 }
 
@@ -74,7 +74,7 @@ export const GET_SQUAD_WEEKLY_RANKING_REWARDS = (rank: SquadRank): {
                 member: [
                     {
                         type: SquadRewardType.BURGER,
-                        amount: 10
+                        amount: 3
                     },
                     {
                         type: SquadRewardType.BIT_ORB_I,
@@ -86,7 +86,7 @@ export const GET_SQUAD_WEEKLY_RANKING_REWARDS = (rank: SquadRank): {
                     },
                     {
                         type: SquadRewardType.GATHERING_PROGRESS_BOOSTER_50,
-                        amount: 10
+                        amount: 2
                     },
                     {
                         type: SquadRewardType.RAFT_SPEED_BOOSTER_3_MIN,
@@ -109,7 +109,7 @@ export const GET_SQUAD_WEEKLY_RANKING_REWARDS = (rank: SquadRank): {
                 member: [
                     {
                         type: SquadRewardType.BURGER,
-                        amount: 20
+                        amount: 6
                     },
                     {
                         type: SquadRewardType.BIT_ORB_I,
@@ -121,7 +121,7 @@ export const GET_SQUAD_WEEKLY_RANKING_REWARDS = (rank: SquadRank): {
                     },
                     {
                         type: SquadRewardType.GATHERING_PROGRESS_BOOSTER_50,
-                        amount: 20
+                        amount: 4
                     },
                     {
                         type: SquadRewardType.RAFT_SPEED_BOOSTER_3_MIN,
@@ -144,7 +144,7 @@ export const GET_SQUAD_WEEKLY_RANKING_REWARDS = (rank: SquadRank): {
                 member: [
                     {
                         type: SquadRewardType.BURGER,
-                        amount: 30
+                        amount: 9
                     },
                     {
                         type: SquadRewardType.BIT_ORB_I,
@@ -156,7 +156,7 @@ export const GET_SQUAD_WEEKLY_RANKING_REWARDS = (rank: SquadRank): {
                     },
                     {
                         type: SquadRewardType.GATHERING_PROGRESS_BOOSTER_50,
-                        amount: 30
+                        amount: 6
                     },
                     {
                         type: SquadRewardType.RAFT_SPEED_BOOSTER_3_MIN,
@@ -169,11 +169,11 @@ export const GET_SQUAD_WEEKLY_RANKING_REWARDS = (rank: SquadRank): {
                 leader: [
                     {
                         type: SquadRewardType.BIT_ORB_II,
-                        amount: 5
+                        amount: 4
                     },
                     {
                         type: SquadRewardType.TERRA_CAPSULATOR_II,
-                        amount: 5
+                        amount: 4
                     },
                     {
                         type: SquadRewardType.BIT_ORB_III,
@@ -183,23 +183,23 @@ export const GET_SQUAD_WEEKLY_RANKING_REWARDS = (rank: SquadRank): {
                 member: [
                     {
                         type: SquadRewardType.BURGER,
-                        amount: 50
+                        amount: 12
                     },
                     {
                         type: SquadRewardType.BIT_ORB_I,
-                        amount: 5
+                        amount: 4
                     },
                     {
                         type: SquadRewardType.TERRA_CAPSULATOR_I,
-                        amount: 5
+                        amount: 4
                     },
                     {
                         type: SquadRewardType.GATHERING_PROGRESS_BOOSTER_50,
-                        amount: 50
+                        amount: 8
                     },
                     {
                         type: SquadRewardType.RAFT_SPEED_BOOSTER_3_MIN,
-                        amount: 5
+                        amount: 4
                     }
                 ]
             }
@@ -208,11 +208,11 @@ export const GET_SQUAD_WEEKLY_RANKING_REWARDS = (rank: SquadRank): {
                 leader: [
                     {
                         type: SquadRewardType.BIT_ORB_II,
-                        amount: 7
+                        amount: 5
                     },
                     {
                         type: SquadRewardType.TERRA_CAPSULATOR_II,
-                        amount: 7
+                        amount: 5
                     },
                     {
                         type: SquadRewardType.BIT_ORB_III,
@@ -222,23 +222,23 @@ export const GET_SQUAD_WEEKLY_RANKING_REWARDS = (rank: SquadRank): {
                 member: [
                     {
                         type: SquadRewardType.BURGER,
-                        amount: 70
+                        amount: 15
                     },
                     {
                         type: SquadRewardType.BIT_ORB_I,
-                        amount: 7
+                        amount: 5
                     },
                     {
                         type: SquadRewardType.TERRA_CAPSULATOR_I,
-                        amount: 7
+                        amount: 5
                     },
                     {
                         type: SquadRewardType.GATHERING_PROGRESS_BOOSTER_50,
-                        amount: 70
+                        amount: 10
                     },
                     {
                         type: SquadRewardType.RAFT_SPEED_BOOSTER_3_MIN,
-                        amount: 7
+                        amount: 5
                     }
                 ]
             }
@@ -247,11 +247,11 @@ export const GET_SQUAD_WEEKLY_RANKING_REWARDS = (rank: SquadRank): {
                 leader: [
                     {
                         type: SquadRewardType.BIT_ORB_II,
-                        amount: 10
+                        amount: 6
                     },
                     {
                         type: SquadRewardType.TERRA_CAPSULATOR_II,
-                        amount: 10
+                        amount: 6
                     },
                     {
                         type: SquadRewardType.BIT_ORB_III,
@@ -261,23 +261,23 @@ export const GET_SQUAD_WEEKLY_RANKING_REWARDS = (rank: SquadRank): {
                 member: [
                     {
                         type: SquadRewardType.BURGER,
-                        amount: 100
+                        amount: 21
                     },
                     {
                         type: SquadRewardType.BIT_ORB_I,
-                        amount: 10
+                        amount: 6
                     },
                     {
                         type: SquadRewardType.TERRA_CAPSULATOR_I,
-                        amount: 10
+                        amount: 6
                     },
                     {
                         type: SquadRewardType.GATHERING_PROGRESS_BOOSTER_50,
-                        amount: 100
+                        amount: 12
                     },
                     {
                         type: SquadRewardType.RAFT_SPEED_BOOSTER_3_MIN,
-                        amount: 10
+                        amount: 6
                     }
                 ]
             }
