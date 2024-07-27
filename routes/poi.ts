@@ -84,7 +84,7 @@ router.post('/apply_travel_booster', async (req, res) => {
             });
         }
 
-        const { status, message } = await applyTravelBooster(validateData?.twitterId, booster);
+        const { status, message, data } = await applyTravelBooster(validateData?.twitterId, booster);
 
         if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Apply Travelling Booster', {
