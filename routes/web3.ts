@@ -1,12 +1,6 @@
 import express from 'express';
-import { checkInviteCodeLinked, claimBeginnerRewards, claimDailyRewards, consumeEnergyPotion, generateSignatureMessage, generateUnlinkSignatureMessage, getBeginnerRewardsData, getInGameData, getInventory, getMainWallet, getUserData, getWalletDetails, linkInviteCode, linkSecondaryWallet, removeResources, unlinkSecondaryWallet } from '../api/user';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
-import { ExtendedProfile } from '../utils/types';
-import { allowMixpanel, mixpanel } from '../utils/mixpanel';
-import { CLAIM_BEGINNER_REWARDS_MIXPANEL_EVENT_HASH, CLAIM_DAILY_REWARDS_MIXPANEL_EVENT_HASH, LINK_INVITE_CODE_MIXPANEL_EVENT_HASH, REMOVE_RESOURCES_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
-import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
-import { UserWallet } from '../models/user';
 import { incrementEventCounterInContract, updatePointsInContract } from '../api/web3';
 
 const router = express.Router();

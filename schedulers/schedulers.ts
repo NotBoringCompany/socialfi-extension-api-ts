@@ -6,6 +6,7 @@ import { checkDailyKOSRewardsScheduler, checkWeeklyKOSRewardsScheduler } from '.
 import { resetGlobalItemsDailyBuyableAndSellableAmountScheduler } from './poi';
 import { calculateWeeklySquadRankingAndAddSquadLeaderboardScheduler } from './squadLeaderboard';
 import { restoreUserCurrentEnergyAndResetRerollScheduler, updateBeginnerRewardsDataScheduler, updateDailyLoginRewardsDataScheduler, updateUserEnergyPotionScheduler } from './user';
+import { batchSendKICKScheduler } from './web3';
 import { distributeWeeklyMVPRewardsScheduler, updateCurrentWeeklyMVPRankingLeaderboardScheduler } from './weeklyMVPReward';
 
 export const schedulers = async (): Promise<void> => {
@@ -19,6 +20,8 @@ export const schedulers = async (): Promise<void> => {
         await updateSuccessfulIndirectReferralsScheduler();
         
         await updateCurrentWeeklyMVPRankingLeaderboardScheduler();
+
+        await batchSendKICKScheduler();
 
         await removeOpenedTweetIdsTodayScheduler();
         await updateDailyBonusResourcesGatheredScheduler();
