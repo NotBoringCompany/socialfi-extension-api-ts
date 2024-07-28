@@ -27,6 +27,9 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+// checks for maintenance
+app.use(checkMaintenance);
+
 /** ROUTE IMPORTS */
 import twitterAuth from './routes/auth/twitter';
 import discordAuth from './routes/auth/discord';
@@ -56,6 +59,7 @@ import collab from './routes/collab';
 import collabV2 from './routes/collab_v2';
 import web3 from './routes/web3';
 import { schedulers } from './schedulers/schedulers';
+import { checkMaintenance } from './middlewares/maintenance';
 
 app.use('/auth/twitter', twitterAuth);
 app.use('/auth/discord', discordAuth);
