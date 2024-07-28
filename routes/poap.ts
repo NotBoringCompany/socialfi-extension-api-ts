@@ -7,6 +7,7 @@ import { getMainWallet } from '../api/user';
 import { UserWallet } from '../models/user';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { REDEEM_POAP_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
+import { incrementEventCounterInContract } from '../api/web3';
 
 const router = express.Router();
 
@@ -96,6 +97,9 @@ router.post('/redeem_poap', async (req, res) => {
                 distinct_id: validateData?.twitterId,
                 '_code': code,
             });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, REDEEM_POAP_MIXPANEL_EVENT_HASH);
         }
 
         return res.status(status).json({

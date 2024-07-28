@@ -9,6 +9,7 @@ import { UserWallet } from '../models/user';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { getMainWallet } from '../api/user';
 import { EVOLVE_RAFT_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
+import { incrementEventCounterInContract } from '../api/web3';
 
 const router = express.Router();
 
@@ -91,6 +92,9 @@ router.post('/evolve_raft', async (req, res) => {
                 '_type': 'Evolve Raft',
                 '_data': data,
             });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, EVOLVE_RAFT_MIXPANEL_EVENT_HASH);
         }
 
         return res.status(status).json({

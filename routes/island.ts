@@ -14,6 +14,7 @@ import { getMainWallet } from '../api/user';
 import { APPLY_GATHERING_BOOSTER_MIXPANEL_EVENT_HASH, CLAIM_RESOURCES_MIXPANEL_EVENT_HASH, EVOLVE_ISLAND_MIXPANEL_EVENT_HASH, PLACE_BIT_MIXPANEL_EVENT_HASH, REMOVE_ISLAND_MIXPANEL_EVENT_HASH, UNPLACE_BIT_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { UserWallet } from '../models/user';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
+import { incrementEventCounterInContract } from '../api/web3';
 
 const router = express.Router();
 
@@ -55,6 +56,9 @@ router.post('/place_bit', async (req, res) => {
                 distinct_id: validateData?.twitterId,
                 '_data': data,
             });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, PLACE_BIT_MIXPANEL_EVENT_HASH);
         }
 
         return res.status(status).json({
@@ -90,6 +94,9 @@ router.post('/unplace_bit', async (req, res) => {
                 distinct_id: validateData?.twitterId,
                 '_data': data,
             });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, UNPLACE_BIT_MIXPANEL_EVENT_HASH);
         }
 
         return res.status(status).json({
@@ -125,6 +132,9 @@ router.post('/remove_island', async (req, res) => {
                 distinct_id: validateData?.twitterId,
                 '_islandId': islandId,
             });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, REMOVE_ISLAND_MIXPANEL_EVENT_HASH);
         }
 
         return res.status(status).json({
@@ -180,6 +190,9 @@ router.post('/evolve_island', async (req, res) => {
                 '_type': 'Evolve Island',
                 '_data': data,
             });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, EVOLVE_ISLAND_MIXPANEL_EVENT_HASH);
         }
 
         return res.status(status).json({
@@ -257,6 +270,9 @@ router.post('/claim_resources', async (req, res) => {
                 '_claimType': claimType,
                 '_claimedResources': data?.claimedResources,
             });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, CLAIM_RESOURCES_MIXPANEL_EVENT_HASH);
         }
 
         return res.status(status).json({
@@ -484,6 +500,9 @@ router.post('/apply_gathering_progress_booster', async (req, res) => {
                 '_isandId': islandId,
                 '_data': data,
             });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, APPLY_GATHERING_BOOSTER_MIXPANEL_EVENT_HASH);
         }
 
         return res.status(status).json({

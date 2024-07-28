@@ -8,6 +8,7 @@ import { getMainWallet } from '../api/user';
 import { UserWallet } from '../models/user';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { CREATE_SQUAD_MIXPANEL_EVENT_HASH, GET_CURRENT_USER_SQUAD_MIXPANEL_EVENT_HASH, JOIN_SQUAD_MIXPANEL_EVENT_HASH, KICK_SQUAD_MEMBER_MIXPANEL_EVENT_HASH, LEAVE_SQUAD_MIXPANEL_EVENT_HASH, RENAME_SQUAD_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
+import { incrementEventCounterInContract } from '../api/web3';
 
 const router = express.Router();
 
@@ -61,6 +62,9 @@ router.post('/accept_pending_squad_member', async (req, res) => {
                 '_type': 'Join',
                 '_data': data,
             });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, JOIN_SQUAD_MIXPANEL_EVENT_HASH);
         }
 
         return res.status(status).json({
@@ -97,6 +101,9 @@ router.post('/rename_squad', async (req, res) => {
                 '_type': 'Rename Squad',
                 '_data': data,
             });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, RENAME_SQUAD_MIXPANEL_EVENT_HASH);
         }
 
         return res.status(status).json({
@@ -134,6 +141,9 @@ router.post('/create_squad', async (req, res) => {
                 '_type': 'Create Squad',
                 '_data': data,
             });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, CREATE_SQUAD_MIXPANEL_EVENT_HASH);
         }
 
         return res.status(status).json({
@@ -168,6 +178,9 @@ router.post('/leave_squad', async (req, res) => {
                 '_type': 'Leave',
                 '_currentMembers': data.currentMembers,
             });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, LEAVE_SQUAD_MIXPANEL_EVENT_HASH);
         }
 
         return res.status(status).json({
@@ -259,6 +272,9 @@ router.post('/kick_member', async (req, res) => {
                 '_type': 'Kick',
                 '_data': data
             });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, KICK_SQUAD_MEMBER_MIXPANEL_EVENT_HASH);
         }
 
         return res.status(status).json({
@@ -285,6 +301,9 @@ router.get('/get_squad_data/:twitterId/:squadId', async (req, res) => {
                 '_data': data,
                 '_inSquad': status === Status.SUCCESS,
             });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(twitterId, GET_CURRENT_USER_SQUAD_MIXPANEL_EVENT_HASH);
         }
 
         return res.status(status).json({

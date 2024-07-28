@@ -7,6 +7,7 @@ import { UserWallet } from '../models/user';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { CONSUME_BIT_ORB_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { getMainWallet } from '../api/user';
+import { incrementEventCounterInContract } from '../api/web3';
 
 const router = express.Router();
 
@@ -36,6 +37,9 @@ router.post('/consume', async (req, res) => {
                 '_type': type,
                 '_bit': data?.bit,
             });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, CONSUME_BIT_ORB_MIXPANEL_EVENT_HASH);
         }
 
         return res.status(status).json({

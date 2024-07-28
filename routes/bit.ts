@@ -100,6 +100,9 @@ router.post('/release_bit', async (req, res) => {
                 distinct_id: validateData?.twitterId,
                 '_bitId': bitId,
             });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, RELEASE_BIT_MIXPANEL_EVENT_HASH);
         }
 
         return res.status(status).json({
@@ -136,6 +139,9 @@ router.post('/evolve_bit', async (req, res) => {
                 '_type': 'Evolve Bit',
                 '_data': data,
             });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, EVOLVE_BIT_MIXPANEL_EVENT_HASH);
         }
 
         return res.status(status).json({
@@ -172,6 +178,9 @@ router.post('/feed_bit', async (req, res) => {
                 '_bitId': bitId,
                 '_foodType': foodType,
             });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, FEED_BIT_MIXPANEL_EVENT_HASH);
         }
 
         return res.status(status).json({

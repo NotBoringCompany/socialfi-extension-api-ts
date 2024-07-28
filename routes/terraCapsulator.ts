@@ -7,6 +7,7 @@ import { getMainWallet } from '../api/user';
 import { UserWallet } from '../models/user';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { CONSUME_TERRA_CAPSULATOR_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
+import { incrementEventCounterInContract } from '../api/web3';
 
 const router = express.Router();
 
@@ -30,6 +31,9 @@ router.post('/consume', async (req, res) => {
                 '_type': type,
                 '_island': data?.island,
             });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, CONSUME_TERRA_CAPSULATOR_MIXPANEL_EVENT_HASH);
         }
 
         return res.status(status).json({

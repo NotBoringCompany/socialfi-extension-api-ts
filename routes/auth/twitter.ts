@@ -8,6 +8,7 @@ import { allowMixpanel, mixpanel } from '../../utils/mixpanel';
 import { UserWallet } from '../../models/user';
 import { WONDERBITS_CONTRACT } from '../../utils/constants/web3';
 import { TWITTER_LOGIN_CALLBACK_MIXPANEL_EVENT_HASH } from '../../utils/constants/mixpanelEvents';
+import { incrementEventCounterInContract } from '../../api/web3';
 
 const router = express.Router();
 
@@ -78,6 +79,9 @@ router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/',
                     '_version': version,
                     '_data': data,
                 });
+
+                // increment the event counter in the wonderbits contract.
+                incrementEventCounterInContract(twitterId, TWITTER_LOGIN_CALLBACK_MIXPANEL_EVENT_HASH);
             }
 
             return res.redirect(`${host}?jwt=${token}`);

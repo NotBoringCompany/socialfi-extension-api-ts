@@ -7,6 +7,7 @@ import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 import { CLAIM_BEGINNER_REWARDS_MIXPANEL_EVENT_HASH, CLAIM_DAILY_REWARDS_MIXPANEL_EVENT_HASH, LINK_INVITE_CODE_MIXPANEL_EVENT_HASH, REMOVE_RESOURCES_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { UserWallet } from '../models/user';
+import { incrementEventCounterInContract } from '../api/web3';
 
 const router = express.Router();
 
@@ -83,6 +84,9 @@ router.post('/remove_resources', async (req, res) => {
                 distinct_id: validateData?.twitterId,
                 '_removedResource': resourcesToRemove,
             });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, REMOVE_RESOURCES_MIXPANEL_EVENT_HASH);
         }
 
         return res.status(status).json({
@@ -170,6 +174,9 @@ router.post('/claim_daily_rewards', async (req, res) => {
                 distinct_id: validateData?.twitterId,
                 '_rewards': data?.dailyLoginRewards,
             });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, CLAIM_DAILY_REWARDS_MIXPANEL_EVENT_HASH);
         }
 
         return res.status(status).json({
@@ -206,6 +213,9 @@ router.post('/link_invite_code', async (req, res) => {
                 '_code': code,
                 '_data': data
             });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, LINK_INVITE_CODE_MIXPANEL_EVENT_HASH);
         }
 
         return res.status(status).json({
@@ -258,6 +268,9 @@ router.post('/claim_beginner_rewards', async (req, res) => {
                 distinct_id: validateData?.twitterId,
                 '_rewards': data?.rewards,
             });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, CLAIM_BEGINNER_REWARDS_MIXPANEL_EVENT_HASH);
         }
 
         return res.status(status).json({
