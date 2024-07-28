@@ -9,7 +9,10 @@ export const QuestSchema = new mongoose.Schema({
         type: String,
         default: generateObjectId(),
     },
-    questId: Number,
+    questId: {
+        type: Number,
+        index: true
+    },
     name: String,
     description: String,
     type: String,
