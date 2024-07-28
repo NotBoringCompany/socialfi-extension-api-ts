@@ -5,6 +5,7 @@ import passport from 'passport';
 import mongoose from 'mongoose';
 import session from 'express-session';
 import MongoStore from 'connect-mongo';
+import { checkMaintenance } from './middlewares/maintenance';
 
 dotenv.config();
 
@@ -59,7 +60,6 @@ import collab from './routes/collab';
 import collabV2 from './routes/collab_v2';
 import web3 from './routes/web3';
 import { schedulers } from './schedulers/schedulers';
-import { checkMaintenance } from './middlewares/maintenance';
 
 app.use('/auth/twitter', twitterAuth);
 app.use('/auth/discord', discordAuth);
