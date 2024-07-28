@@ -9,7 +9,10 @@ export const WeeklyMVPClaimableRewardSchema = new mongoose.Schema({
         type: String,
         default: generateObjectId()
     },
-    userId: String,
+    userId: {
+        type: String,
+        index: true
+    },
     username: String,
     twitterProfilePicture: String,
     claimableRewards: Array
@@ -23,7 +26,10 @@ export const WeeklyMVPRankingLeaderboardSchema = new mongoose.Schema({
         type: String,
         default: generateObjectId()
     },
-    week: Number,
+    week: {
+        type: Number,
+        index: true
+    },
     startTimestamp: Number,
     endTimestamp: Number,
     xCookiesSpentRankingData: [{
