@@ -9,7 +9,10 @@ export const KOSClaimableDailyRewardsSchema = new mongoose.Schema({
         type: String,
         default: generateObjectId()
     },
-    userId: String,
+    userId: {
+        type: String,
+        index: true
+    },
     username: String,
     twitterProfilePicture: String,
     claimableRewards: Array
@@ -23,7 +26,10 @@ export const KOSClaimableWeeklyRewardsSchema = new mongoose.Schema({
         type: String,
         default: generateObjectId()
     },
-    userId: String,
+    userId: {
+        type: String,
+        index: true
+    },
     username: String,
     twitterProfilePicture: String,
     claimableRewards: Array
