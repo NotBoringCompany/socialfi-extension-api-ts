@@ -12,7 +12,10 @@ export const checkMaintenance = async (req: Request, res: Response, next: NextFu
             return next();
         }
 
-        if (settings.value) {
+        console.log('settings value: ', settings.value);
+        console.log('type of settings value: ', typeof settings.value);
+
+        if (settings.value === true) {
             return res.status(503).json({
                 status: 503,
                 message: 'The server is currently undergoing maintenance. Please try again later.'
