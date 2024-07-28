@@ -9,7 +9,10 @@ export const RaftSchema = new mongoose.Schema({
         type: String,
         default: generateObjectId()
     },
-    raftId: Number,
+    raftId: {
+        type: Number,
+        index: true
+    },
     owner: String,
     currentLevel: Number,
     stats: Object
