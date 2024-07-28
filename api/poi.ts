@@ -1220,7 +1220,7 @@ export const sellItemsInPOIShop = async (
             }
         }
 
-        // no need to wait for this to finish.
+        // update the user's points in the wonderbits contract
         updatePointsInContract(twitterId);
 
         return {

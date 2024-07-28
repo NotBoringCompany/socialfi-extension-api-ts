@@ -9,6 +9,7 @@ import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS, GET_SEASO
 import { DEPLOYER_WALLET, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
 import { getUserCurrentPoints } from './leaderboard';
 import { ethers } from 'ethers';
+import { updatePointsInContract } from './web3';
 
 /**
  * Generates starter codes and stores them in the database.
@@ -219,6 +220,9 @@ export const claimReferralRewards = async (twitterId: string): Promise<ReturnVal
             UserModel.updateOne({ twitterId }, userUpdateOperations),
             LeaderboardModel.updateOne({ name: 'Season 0' }, leaderboardUpdateOperations)
         ]);
+
+        // update the user's points in the wonderbits contract
+        updatePointsInContract(twitterId);
 
         return {
             status: Status.SUCCESS,

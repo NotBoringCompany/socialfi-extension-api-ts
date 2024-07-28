@@ -18,6 +18,7 @@ import mongoose from 'mongoose';
 import * as dotenv from 'dotenv';
 import { BigNumber, ethers } from 'ethers';
 import { getUserCurrentPoints } from './leaderboard';
+import { updatePointsInContract } from './web3';
 
 dotenv.config();
 
@@ -538,6 +539,9 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
         });
 
         console.log(`(claimWeeklyKOSRewards) Successfully claimed weekly KOS rewards for user ${user.twitterUsername}.`);
+
+        // update the user's points in the wonderbits contract
+        updatePointsInContract(twitterId);
 
         return {
             status: Status.SUCCESS,
