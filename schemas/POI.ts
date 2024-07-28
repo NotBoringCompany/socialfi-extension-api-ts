@@ -9,7 +9,10 @@ export const POISchema = new mongoose.Schema({
         type: String,
         default: generateObjectId(),
     },
-    name: String,
+    name: {
+        type: String,
+        index: true
+    },
     distanceTo: {
         type: Map,
         of: Number,
