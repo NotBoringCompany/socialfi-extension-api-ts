@@ -9,7 +9,10 @@ export const IslandSchema = new mongoose.Schema({
         type: String,
         default: generateObjectId()
     },
-    islandId: Number,
+    islandId: {
+        type: Number,
+        index: true
+    },
     type: String,
     owner: String,
     purchaseDate: Number,
