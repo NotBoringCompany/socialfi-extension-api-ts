@@ -21,6 +21,7 @@ import { UserWallet } from '../models/user';
 import { DEPLOYER_WALLET, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
 import { generateHashSalt, generateWonderbitsDataHash } from '../utils/crypto';
 import { ethers } from 'ethers';
+import { updatePointsInContract } from './web3';
 
 /**
  * Resets the `currentBuyableAmount` and `currentSellableAmount` of all global items in all POI shops every day at 23:59 UTC.
@@ -1218,6 +1219,9 @@ export const sellItemsInPOIShop = async (
                 }
             }
         }
+
+        // no need to wait for this to finish.
+        updatePointsInContract(twitterId);
 
         return {
             status: Status.SUCCESS,

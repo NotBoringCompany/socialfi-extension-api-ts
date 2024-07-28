@@ -91,6 +91,8 @@ export const updatePointsInContract = async (twitterId: string): Promise<ReturnV
             [salt, signature]
         );
 
+        console.log(`(updatePointsInContract) tx hash: ${updatePointsTx.hash}`);
+
         return {
             status: Status.SUCCESS,
             message: `(updatePointsInContract) Points updated successfully.`,
