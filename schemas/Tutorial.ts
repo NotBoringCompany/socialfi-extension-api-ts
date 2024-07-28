@@ -9,7 +9,10 @@ export const TutorialSchema = new mongoose.Schema({
         type: String,
         default: generateObjectId(),
     },
-    id: Number,
+    id: {
+        type: Number,
+        index: true
+    },
     name: String,
     rewards: Array,
 });
