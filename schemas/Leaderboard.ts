@@ -9,7 +9,10 @@ export const LeaderboardSchema = new mongoose.Schema({
         type: String,
         default: generateObjectId()
     },
-    name: String,
+    name: {
+        type: String,
+        index: true
+    },
     startTimestamp: Number,
     userData: [{
         _id: false,
