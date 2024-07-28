@@ -8,19 +8,14 @@ export const checkMaintenance = async (req: Request, res: Response, next: NextFu
     try {
         const settings = await SettingModel.findOne({ name: 'Maintenance' });
 
-        if (!settings) {
-            return next();
-        }
-
-        console.log('settings value: ', settings.value);
-        console.log('type of settings value: ', typeof settings.value);
-
         if (settings.value === true) {
             return res.status(503).json({
                 status: 503,
                 message: 'The server is currently undergoing maintenance. Please try again later.'
             });
         }
+
+        next();
     } catch (err: any) {
         console.error(`(checkMaintenance) ${err.message}`);
         return res.status(500).json({
