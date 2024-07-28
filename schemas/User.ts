@@ -10,7 +10,10 @@ export const UserSchema = new mongoose.Schema({
         default: generateObjectId()
     },
     method: String,
-    twitterId: String,
+    twitterId: {
+        type: String,
+        index: true
+    },
     twitterProfilePicture: String,
     twitterUsername: String,
     twitterDisplayName: String,
