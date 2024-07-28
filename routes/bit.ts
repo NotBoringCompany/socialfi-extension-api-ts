@@ -17,6 +17,7 @@ import { UserWallet } from '../models/user';
 import { EVOLVE_BIT_MIXPANEL_EVENT_HASH, FEED_BIT_MIXPANEL_EVENT_HASH, RELEASE_BIT_MIXPANEL_EVENT_HASH, RENAME_BIT_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { generateHashSalt, generateWonderbitsDataHash } from '../utils/crypto';
 import { ethers } from 'ethers';
+import { incrementEventCounterInContract } from '../api/web3';
 
 const router = express.Router();
 
@@ -61,6 +62,9 @@ router.post('/rename_bit', async (req, res) => {
                 '_bitId': bitId,
                 '_newName': newName,
             });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, RENAME_BIT_MIXPANEL_EVENT_HASH);
         }
 
         return res.status(status).json({
