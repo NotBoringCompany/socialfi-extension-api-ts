@@ -79,7 +79,7 @@ export const getLatestWeeklyLeaderboard = async (): Promise<ReturnValue> => {
  */
 export const calculateWeeklySquadRankingAndGiveRewards = async (): Promise<void> => {
     try {
-        await mongoose.connect(process.env.MONGODB_URI);
+        // await mongoose.connect(process.env.MONGODB_URI);
         const latestSquadLeaderboard = await SquadLeaderboardModel.findOne().sort({ week: -1 });
 
         // if no leaderboard exists, return

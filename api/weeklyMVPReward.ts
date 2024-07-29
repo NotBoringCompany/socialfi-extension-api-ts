@@ -661,8 +661,6 @@ export const addNewWeeklyMVPRankingLeaderboard = async (): Promise<ReturnValue> 
  */
 export const updateCurrentWeeklyMVPRankingLeaderboard = async (): Promise<ReturnValue> => {
     try {
-        await mongoose.connect(process.env.MONGODB_URI);
-
         const users = await UserModel.find({ twitterId: { $ne: null, $exists: true } }).lean();
 
         if (!users || users.length === 0) {
