@@ -964,6 +964,7 @@ export const checkWeeklyKOSRewards = async (): Promise<void> => {
             // get the total superior keychains owned by the user for at least 7 days
             const validSuperiorKeychains = ownedSuperiorKeychains.filter(ownership => ownership.startTimestamp <= Math.floor(Date.now() / 1000) - 604800);
 
+
             // get the metadata for each valid key
             const validKeysMetadata: KOSMetadata[] = validKeys.map(key => {
                 return metadataFile.find(metadata => metadata.keyId === key.tokenId) as KOSMetadata;
