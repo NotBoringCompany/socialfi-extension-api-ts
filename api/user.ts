@@ -21,7 +21,7 @@ import {
     MAX_INVENTORY_WEIGHT,
     WEEKLY_MVP_REWARDS,
 } from '../utils/constants/user';
-import { ReferralData, ReferredUserData } from '../models/invite';
+import { ReferralData, ReferralReward, ReferredUserData } from '../models/invite';
 import { BitOrbType } from '../models/bitOrb';
 import { TerraCapsulatorType } from '../models/terraCapsulator';
 import { Item } from '../models/item';
@@ -1857,20 +1857,6 @@ export const updateReferredUsersData = async (referrerUserId: string, referredUs
         const totalReferredUsersReachedLevel5 =
             (referrer.referralData.referredUsersData as ReferredUserData[]).filter((data) => data.hasReachedLevel4).length + 1;
 
-        // get the referral rewards based on the total referred users that reached level 4
-        const referralRewards = GET_SEASON_0_REFERRAL_REWARDS(totalReferredUsersReachedLevel5);
-
-        // if any of the rewards aren't 0, update the referrer's `referralData.claimableReferralRewards`
-        if (referralRewards.leaderboardPoints !== 0) {
-            // NOTE: 250% MULTIPLIER FOR THE FIRST WEEK. THIS WILL BE CHANGED.
-            referrerUpdateOperations.$inc['referralData.claimableReferralRewards.leaderboardPoints'] = (referralRewards.leaderboardPoints * 2.5);
-        }
-
-        if (referralRewards.xCookies !== 0) {
-            // NOTE: 250% MULTIPLIER FOR THE FIRST WEEK. THIS WILL BE CHANGED.
-            referrerUpdateOperations.$inc['referralData.claimableReferralRewards.xCookies'] = (referralRewards.xCookies * 2.5);
-        }
-
         // get the milestones for the referral rewards
         const milestones = [0, 1, 3, 5, 10, 20, 50, 100, 200, 300, 500];
 
@@ -1878,8 +1864,25 @@ export const updateReferredUsersData = async (referrerUserId: string, referredUs
         // e.g. if referred users who reached level 5 is 190, then milestone will be 100.
         const milestone = milestones.reduce((prev, curr) => (curr <= totalReferredUsersReachedLevel5 ? curr : prev), milestones[0]);
 
+        let referralRewards: ReferralReward;
+
         // set the new milestone if it's greater than the current milestone
         if (milestone > (referrer.referralData as ReferralData).level5ReferredUsersLatestMilestone) {
+            // ONLY GET referral rewards if a new milestone is reached.
+            // get the referral rewards based on the total referred users that reached level 5.
+            referralRewards = GET_SEASON_0_REFERRAL_REWARDS(totalReferredUsersReachedLevel5);
+
+            // if any of the rewards aren't 0, update the referrer's `referralData.claimableReferralRewards`
+            if (referralRewards.leaderboardPoints !== 0) {
+                // NOTE: 250% MULTIPLIER FOR THE FIRST WEEK. THIS WILL BE CHANGED.
+                referrerUpdateOperations.$inc['referralData.claimableReferralRewards.leaderboardPoints'] = (referralRewards.leaderboardPoints * 2.5);
+            }
+
+            if (referralRewards.xCookies !== 0) {
+                // NOTE: 250% MULTIPLIER FOR THE FIRST WEEK. THIS WILL BE CHANGED.
+                referrerUpdateOperations.$inc['referralData.claimableReferralRewards.xCookies'] = (referralRewards.xCookies * 2.5);
+            }
+
             referrerUpdateOperations.$set['referralData.level5ReferredUsersLatestMilestone'] = milestone;
         }
 
