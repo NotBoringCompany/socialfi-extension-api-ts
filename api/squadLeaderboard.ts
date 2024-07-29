@@ -370,17 +370,23 @@ export const claimWeeklySquadMemberRewards = async (twitterId: string): Promise<
             ) {
                 // check if the user's inventory's `items` already has the reward type.
                 // if it does, add the amount to the existing reward. if not, add the reward to the user's inventory's `items`.
-                const itemIndex = (user.inventory?.items as Item[]).findIndex((item) => item.type === reward.type as string);
+                const itemIndex = (user.inventory?.items as Item[]).findIndex(item => item.type === reward.type as string);
 
-                if (itemIndex === -1) {
-                    userUpdateOperations.$push['inventory.items'] = {
+                if (itemIndex !== -1) {
+                    userUpdateOperations.$inc[`inventory.items.${itemIndex}.amount`] = reward.amount;
+                } else {
+                    if (!userUpdateOperations.$push['inventory.items']) {
+                        userUpdateOperations.$push['inventory.items'] = {
+                            $each: [],
+                        };
+                    }
+
+                    userUpdateOperations.$push['inventory.items'].$each.push({
                         type: reward.type,
                         amount: reward.amount,
                         totalAmountConsumed: 0,
-                        weeklyAmountConsumed: 0
-                    }
-                } else {
-                    userUpdateOperations.$inc[`inventory.items.${itemIndex}.amount`] = reward.amount;
+                        weeklyAmountConsumed: 0,
+                    });
                 }
             }
 
@@ -390,10 +396,16 @@ export const claimWeeklySquadMemberRewards = async (twitterId: string): Promise<
                 const foodIndex = (user.inventory?.foods as Food[]).findIndex((food) => food.type === reward.type as string);
 
                 if (foodIndex === -1) {
-                    userUpdateOperations.$push['inventory.food'] = {
+                    if (!userUpdateOperations.$push['inventory.food']) {
+                        userUpdateOperations.$push['inventory.food'] = {
+                            $each: [],
+                        };
+                    }
+
+                    userUpdateOperations.$push['inventory.food'].$each.push({
                         type: reward.type,
                         amount: reward.amount,
-                    }
+                    });
                 } else {
                     userUpdateOperations.$inc[`inventory.food.${foodIndex}.amount`] = reward.amount;
                 }
@@ -401,7 +413,7 @@ export const claimWeeklySquadMemberRewards = async (twitterId: string): Promise<
         })
 
         // add the rewards to the user's inventory
-        await UserModel.updateOne({ twitterId }, userUpdateOperations);
+        await UserModel.updateOne({ twitterId }, { $set: userUpdateOperations.$set, $inc: userUpdateOperations.$inc, $push: userUpdateOperations.$push, $pull: userUpdateOperations.$pull });
 
         // reset all the user's claimable rewards
         await SquadMemberClaimableWeeklyRewardModel.updateOne({ userId: user._id }, {
