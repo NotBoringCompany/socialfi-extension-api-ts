@@ -2443,6 +2443,9 @@ export const handleTelegramLogin = async (initData: string): Promise<ReturnValue
 
         const user = await UserModel.findOne({ twitterId: telegramData.user.id, method: 'telegram' }).lean();
 
+        console.log('initData', initData)
+        console.log('tele user', user)
+
         // if user doesn't exist, create a new user
         if (!user) {
             console.log(`creating new telegram user: ${telegramData.user.id}`)
