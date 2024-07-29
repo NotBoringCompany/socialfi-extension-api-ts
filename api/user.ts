@@ -2443,9 +2443,6 @@ export const handleTelegramLogin = async (initData: string): Promise<ReturnValue
 
         const user = await UserModel.findOne({ twitterId: telegramData.user.id, method: 'telegram' }).lean();
 
-        console.log('initData', initData)
-        console.log('tele user', user)
-
         // if user doesn't exist, create a new user
         if (!user) {
             console.log(`creating new telegram user: ${telegramData.user.id}`)
@@ -2540,7 +2537,7 @@ export const handleTelegramLogin = async (initData: string): Promise<ReturnValue
                 twitterId: telegramData.user.id,
                 method: 'telegram',
                 twitterProfilePicture: 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png',
-                twitterUsername: telegramData.user.username,
+                twitterUsername: telegramData.user.id,
                 twitterDisplayName: `${telegramData.user.first_name} ${telegramData.user.last_name}`.trim(),
                 createdTimestamp: Math.floor(Date.now() / 1000),
                 // invite code data will be null until users input their invite code.
