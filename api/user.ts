@@ -1722,39 +1722,53 @@ export const updateBeginnerRewardsData = async (): Promise<void> => {
                 continue;
             }
 
-            // for users that have `isClaimable` as false, it means they claimed the rewards already.
-            // simply convert `isClaimable` to true.
-            if (!beginnerRewardData.isClaimable) {
-                userUpdateOperations.push({
-                    userId: user._id,
-                    updateOperations: {
-                        $set: {
-                            'inGameData.beginnerRewardData.isClaimable': true,
-                        },
-                        $inc: {},
-                        $pull: {},
-                        $push: {},
+            //// TEMPORARILY ALLOW BEGINNERS WHO DIDN'T CLAIM REWARDS TODAY TO NOT GET PENALIZED (UNTIL 30 JULY 23:59 ONLY)
+            //// AFTER THIS, PLEASE REMOVE THIS LINE AND UNCOMMENT THE COMMENTED LINES BELOW.
+            userUpdateOperations.push({
+                userId: user._id,
+                updateOperations: {
+                    $set: {
+                        'inGameData.beginnerRewardData.isClaimable': true,
                     },
-                });
-            } else {
-                // if `isClaimable` is true, it means the user missed claiming the rewards for the day.
-                // add the current day to `daysMissed`.
-                const latestClaimedDay = beginnerRewardData.daysClaimed.length > 0 ? Math.max(...beginnerRewardData.daysClaimed) : 0;
-                const latestMissedDay = beginnerRewardData.daysMissed.length > 0 ? Math.max(...beginnerRewardData.daysMissed) : 0;
-                const latestDay = Math.max(latestClaimedDay, latestMissedDay);
+                    $inc: {},
+                    $pull: {},
+                    $push: {},
+                },
+            });
 
-                userUpdateOperations.push({
-                    userId: user._id,
-                    updateOperations: {
-                        $push: {
-                            'inGameData.beginnerRewardData.daysMissed': latestDay + 1,
-                        },
-                        $inc: {},
-                        $set: {},
-                        $pull: {},
-                    },
-                });
-            }
+            // // for users that have `isClaimable` as false, it means they claimed the rewards already.
+            // // simply convert `isClaimable` to true.
+            // if (!beginnerRewardData.isClaimable) {
+                // userUpdateOperations.push({
+                //     userId: user._id,
+                //     updateOperations: {
+                //         $set: {
+                //             'inGameData.beginnerRewardData.isClaimable': true,
+                //         },
+                //         $inc: {},
+                //         $pull: {},
+                //         $push: {},
+                //     },
+                // });
+            // } else {
+            //     // if `isClaimable` is true, it means the user missed claiming the rewards for the day.
+            //     // add the current day to `daysMissed`.
+            //     const latestClaimedDay = beginnerRewardData.daysClaimed.length > 0 ? Math.max(...beginnerRewardData.daysClaimed) : 0;
+            //     const latestMissedDay = beginnerRewardData.daysMissed.length > 0 ? Math.max(...beginnerRewardData.daysMissed) : 0;
+            //     const latestDay = Math.max(latestClaimedDay, latestMissedDay);
+
+            //     userUpdateOperations.push({
+            //         userId: user._id,
+            //         updateOperations: {
+            //             $push: {
+            //                 'inGameData.beginnerRewardData.daysMissed': latestDay + 1,
+            //             },
+            //             $inc: {},
+            //             $set: {},
+            //             $pull: {},
+            //         },
+            //     });
+            // }
         }
 
         // execute the update operations ($set and $inc, $push and $pull respectively)
