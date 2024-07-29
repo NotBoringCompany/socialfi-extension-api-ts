@@ -457,7 +457,7 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
                 const existingIndirectReferralData = successfulIndirectReferrals.find(data => data.userId === user._id)?.indirectReferralData.find(data => data.referredUserId === successfulReferredUserData.userId) as IndirectReferralData;
 
                 // hard-coded milestones for the referral rewards. may need to change this to be dynamic later.
-                const milestones = [1, 3, 5, 10, 20, 50, 100, 200, 300, 500];
+                const milestones = [0, 1, 3, 5, 10, 20, 50, 100, 200, 300, 500];
 
                 // if found, update the required parameters if necessary.
                 // this includes the `claimableRewardData` if the main user now has more indirect referrals because of the referred user.

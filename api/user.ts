@@ -21,7 +21,7 @@ import {
     MAX_INVENTORY_WEIGHT,
     WEEKLY_MVP_REWARDS,
 } from '../utils/constants/user';
-import { ReferredUserData } from '../models/invite';
+import { ReferralData, ReferredUserData } from '../models/invite';
 import { BitOrbType } from '../models/bitOrb';
 import { TerraCapsulatorType } from '../models/terraCapsulator';
 import { Item } from '../models/item';
@@ -1851,13 +1851,14 @@ export const updateReferredUsersData = async (referrerUserId: string, referredUs
         // NAMING IS `hasReachedLevel4`, but users ARE REQUIRED TO BE LEVEL 5. THIS IS TEMPORARY ONLY.
         referrerUpdateOperations.$set[`referralData.referredUsersData.${referredUserIndex}.hasReachedLevel4`] = true;
 
-        // now check the amount of referred users the referrer has that reached level 4.
+        // now check the amount of referred users the referrer has that reached level 5.
         // we add 1 because the set operation for the newest referred user hasn't been executed yet.
-        const totalReferredUsersReachedLevel3 =
+        /// NOTE: NAMING IS TEMPORARILY `hasReachedLevel4`, but users are required to be level 5. naming will be fixed later!!!!
+        const totalReferredUsersReachedLevel5 =
             (referrer.referralData.referredUsersData as ReferredUserData[]).filter((data) => data.hasReachedLevel4).length + 1;
 
-        // get the referral rewards based on the total referred users that reached level 3
-        const referralRewards = GET_SEASON_0_REFERRAL_REWARDS(totalReferredUsersReachedLevel3);
+        // get the referral rewards based on the total referred users that reached level 4
+        const referralRewards = GET_SEASON_0_REFERRAL_REWARDS(totalReferredUsersReachedLevel5);
 
         // if any of the rewards aren't 0, update the referrer's `referralData.claimableReferralRewards`
         if (referralRewards.leaderboardPoints !== 0) {
@@ -1868,6 +1869,18 @@ export const updateReferredUsersData = async (referrerUserId: string, referredUs
         if (referralRewards.xCookies !== 0) {
             // NOTE: 250% MULTIPLIER FOR THE FIRST WEEK. THIS WILL BE CHANGED.
             referrerUpdateOperations.$inc['referralData.claimableReferralRewards.xCookies'] = (referralRewards.xCookies * 2.5);
+        }
+
+        // get the milestones for the referral rewards
+        const milestones = [0, 1, 3, 5, 10, 20, 50, 100, 200, 300, 500];
+
+        // check the nearest (rounded down milestone) for the total referred users that reached level 5.
+        // e.g. if referred users who reached level 5 is 190, then milestone will be 100.
+        const milestone = milestones.reduce((prev, curr) => (curr <= totalReferredUsersReachedLevel5 ? curr : prev), milestones[0]);
+
+        // set the new milestone if it's greater than the current milestone
+        if (milestone > (referrer.referralData as ReferralData).level5ReferredUsersLatestMilestone) {
+            referrerUpdateOperations.$set['referralData.level5ReferredUsersLatestMilestone'] = milestone;
         }
 
         // execute the update operations
@@ -1887,6 +1900,116 @@ export const updateReferredUsersData = async (referrerUserId: string, referredUs
         };
     }
 };
+
+// /**
+//  * Updates the referral data of all users.
+//  */
+// export const updateReferralData = async (): Promise<void> => {
+//     try {
+//         const users = await UserModel.find({ twitterId: { $ne: null, $exists: true } }).lean();
+
+//         const userUpdateOperations: Array<{
+//             userId: string;
+//             updateOperations: {
+//                 $pull: {};
+//                 $inc: {};
+//                 $set: {};
+//                 $push: {};
+//             };
+//         }> = [];
+
+//         for (const user of users) {
+//             // get the referral data.
+//             const referralData = user?.referralData as ReferralData ?? null;
+
+//             if (!referralData) {
+//                 continue;
+//             }
+
+//             // get the referred users data.
+//             const referredUsersData = referralData.referredUsersData as ReferredUserData[] ?? [];
+
+//             // filter out referred users who have reached level 5.
+//             const referredUsersReachedLevel5 = referredUsersData.filter((data) => data.hasReachedLevel4);
+
+//             // milestones for the referral rewards
+//             const milestones = [0, 1, 3, 5, 10, 20, 50, 100, 200, 300, 500];
+
+//             // check the nearest (rounded down milestone) for the total referred users that reached level 5.
+//             // e.g. if referred users who reached level 5 is 190, then milestone will be 100.
+//             const milestone = milestones.reduce((prev, curr) => (curr <= referredUsersReachedLevel5.length ? curr : prev), milestones[0]);
+
+//             // get the referral rewards based on the milestone
+//             const referralRewards = GET_SEASON_0_REFERRAL_REWARDS(milestone);
+
+//             // if any of the rewards aren't 0, update the user's `referralData.claimableReferralRewards`
+//             if (referralRewards.leaderboardPoints !== 0) {
+//                 userUpdateOperations.push({
+//                     userId: user._id,
+//                     updateOperations: {
+//                         $inc: {
+//                             'referralData.claimableReferralRewards.leaderboardPoints': referralRewards.leaderboardPoints,
+//                         },
+//                         $set: {},
+//                         $pull: {},
+//                         $push: {},
+//                     },
+//                 });
+//             }
+
+//             if (referralRewards.xCookies !== 0) {
+//                 userUpdateOperations.push({
+//                     userId: user._id,
+//                     updateOperations: {
+//                         $inc: {
+//                             'referralData.claimableReferralRewards.xCookies': referralRewards.xCookies,
+//                         },
+//                         $set: {},
+//                         $pull: {},
+//                         $push: {},
+//                     },
+//                 });
+//             }
+
+
+//             // also set the `referralData.level5ReferredUsersLatestMilestone` to `milestone`.
+//             userUpdateOperations.push({
+//                 userId: user._id,
+//                 updateOperations: {
+//                     $set: {
+//                         'referralData.level5ReferredUsersLatestMilestone': milestone,
+//                     },
+//                     $inc: {},
+//                     $pull: {},
+//                     $push: {},
+//                 },
+//             });
+//         }
+
+//         // execute the update operations (divide into $set + $inc and $push + $pull)
+//         const userUpdatePromisesOne = userUpdateOperations.map(async (op) => {
+//             return UserModel.updateOne({ _id: op.userId }, {
+//                 $set: op.updateOperations.$set,
+//                 $inc: op.updateOperations.$inc,
+//             });
+//         });
+
+//         const userUpdatePromisesTwo = userUpdateOperations.map(async (op) => {
+//             return UserModel.updateOne({ _id: op.userId }, {
+//                 $push: op.updateOperations.$push,
+//                 $pull: op.updateOperations.$pull,
+//             });
+//         });
+
+//         await Promise.all(userUpdatePromisesOne);
+//         await Promise.all(userUpdatePromisesTwo);
+
+//         console.log('Referral data updated');
+//     } catch (err: any) {
+//         console.error('Error in updateReferralData:', err.message);
+    
+//     }
+// }
 
 /**
  * Connects a user to their Discord account.
@@ -2524,4 +2647,3 @@ export const handleTelegramLogin = async (initData: string): Promise<ReturnValue
         };
     }
 };
-
