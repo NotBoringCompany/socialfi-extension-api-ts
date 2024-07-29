@@ -7,6 +7,7 @@ import { SquadLeaderboardModel, SquadMemberClaimableWeeklyRewardModel, SquadMode
 import { GET_SQUAD_WEEKLY_RANKING, GET_SQUAD_WEEKLY_RANKING_REWARDS } from '../utils/constants/squadLeaderboard';
 import { ReturnValue, Status } from '../utils/retVal';
 import * as dotenv from 'dotenv';
+import { generateObjectId } from '../utils/crypto';
 
 dotenv.config();
 
@@ -87,7 +88,7 @@ export const calculateWeeklySquadRankingAndGiveRewards = async (): Promise<void>
             return;
         }
 
-        const squads = await SquadModel.find();
+        const squads = await SquadModel.find().lean();
 
         if (squads.length === 0 || !squads) {
             console.log('(calculateWeeklySquadRankingAndGiveRewards) No squads found.');
@@ -116,7 +117,6 @@ export const calculateWeeklySquadRankingAndGiveRewards = async (): Promise<void>
 
         // prepare bulk write operations to update all squads' ranks
         squads.map(async (squad) => {
-
             // find the squad in the latest squad leaderboard
             const squadInLeaderboard = latestSquadLeaderboard.pointsData.find((squadData) => squadData.squadId === squad._id);
 
@@ -167,7 +167,7 @@ export const calculateWeeklySquadRankingAndGiveRewards = async (): Promise<void>
                 console.log(`leader rewards: ${leaderRewards}, member rewards: ${memberRewards}`);
 
                 // fetch the leader and squad members from `SquadModel`
-                const squadData = await SquadModel.findOne({ _id: squad._id });
+                const squadData = await SquadModel.findOne({ _id: squad._id }).lean();
 
                 if (!squadData) {
                     console.log('(calculateWeeklySquadRankingAndGiveRewards) No squad data found.');
@@ -179,7 +179,10 @@ export const calculateWeeklySquadRankingAndGiveRewards = async (): Promise<void>
                 const members = squadData.members.filter((member) => member.role === SquadRole.MEMBER);
 
                 // get the squad member weekly rewards 
-                const squadMemberClaimableWeeklyRewards = await SquadMemberClaimableWeeklyRewardModel.find();
+                const squadMemberClaimableWeeklyRewards = await SquadMemberClaimableWeeklyRewardModel.find().lean();
+
+                console.log('leader rewards length: ', leaderRewards.length);
+                console.log('member rewards length: ', memberRewards.length);
 
                 // add the leader's rewards
                 if (leaderRewards.length > 0) {
@@ -188,16 +191,17 @@ export const calculateWeeklySquadRankingAndGiveRewards = async (): Promise<void>
                     // if they do, check, for each item, if the reward type already exists. If it does, add the amount to the existing reward.
                     const leaderIndex = squadMemberClaimableWeeklyRewards.findIndex((member) => member.userId === leader.userId);
 
-                    console.log('leader index: ', leaderIndex);
-
                     if (leaderIndex === -1) {
                         // create a new SquadMemberClaimableWeeklyReward instance for the leader
                         await SquadMemberClaimableWeeklyRewardModel.create({
+                            _id: generateObjectId(),
                             userId: leader.userId,
                             username: leader.username,
                             twitterProfilePicture: leader.twitterProfilePicture,
                             claimableRewards: leaderRewards
                         });
+
+                        console.log(`(calculateWeeklySquadRankingAndGiveRewards) Created a new SquadMemberClaimableWeeklyReward instance for ${leader.username}.`);
                     } else {
                         leaderRewards.forEach((leaderReward) => {
                             const rewardIndex = squadMemberClaimableWeeklyRewards[leaderIndex].claimableRewards.findIndex((reward: SquadReward) => reward.type === leaderReward.type);
@@ -237,16 +241,19 @@ export const calculateWeeklySquadRankingAndGiveRewards = async (): Promise<void>
                         // check if the member is already in the `squadMemberClaimableWeeklyRewards` array
                         // if not, add the member to the array
                         // if they do, check, for each item, if the reward type already exists. If it does, add the amount to the existing reward.
-                        const memberIndex = squadMemberClaimableWeeklyRewards.findIndex((member) => member.userId === member.userId);
+                        const memberIndex = squadMemberClaimableWeeklyRewards.findIndex((m) => m.userId === member.userId);
 
                         if (memberIndex === -1) {
                             // create a new SquadMemberClaimableWeeklyReward instance for the member
                             await SquadMemberClaimableWeeklyRewardModel.create({
+                                _id: generateObjectId(),
                                 userId: member.userId,
                                 username: member.username,
                                 twitterProfilePicture: member.twitterProfilePicture,
                                 claimableRewards: memberRewards
                             });
+
+                            console.log(`(calculateWeeklySquadRankingAndGiveRewards) Created a new SquadMemberClaimableWeeklyReward instance for ${member.username}.`);
                         } else {
                             memberRewards.forEach((memberReward) => {
                                 const rewardIndex = squadMemberClaimableWeeklyRewards[memberIndex].claimableRewards.findIndex((reward: SquadReward) => reward.type === memberReward.type);
