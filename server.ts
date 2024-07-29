@@ -28,9 +28,6 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// checks for maintenance
-app.use(checkMaintenance);
-
 /** ROUTE IMPORTS */
 import twitterAuth from './routes/auth/twitter';
 import discordAuth from './routes/auth/discord';
@@ -62,33 +59,33 @@ import collabV2 from './routes/collab_v2';
 import web3 from './routes/web3';
 import { schedulers } from './schedulers/schedulers';
 
-app.use('/auth/twitter', twitterAuth);
-app.use('/auth/discord', discordAuth);
-app.use('/auth/telegram', telegramAuth);
-app.use('/jwt', jwt);
-app.use('/shop', shop);
-app.use('/quest', quest);
-app.use('/terra_capsulator', terraCapsulator);
-app.use('/raft', raft);
-app.use('/island', island);
-app.use('/bit_orb', bitOrb);
-app.use('/bit', bit);
-app.use('/user', user);
-app.use('/chest', chest);
-app.use('/poi', poi);
-app.use('/cookie', cookie);
-app.use('/leaderboard', leaderboard);
-app.use('/kos', kos);
-app.use('/asset', asset);
-app.use('/tutorial', tutorial);
-app.use('/invite', invite);
-app.use('/squad', squad);
+app.use('/auth/twitter', checkMaintenance, twitterAuth);
+app.use('/auth/discord', checkMaintenance, discordAuth);
+app.use('/auth/telegram', checkMaintenance, telegramAuth);
+app.use('/jwt', checkMaintenance, jwt);
+app.use('/shop', checkMaintenance, shop);
+app.use('/quest', checkMaintenance, quest);
+app.use('/terra_capsulator', checkMaintenance, terraCapsulator);
+app.use('/raft', checkMaintenance, raft);
+app.use('/island', checkMaintenance, island);
+app.use('/bit_orb', checkMaintenance, bitOrb);
+app.use('/bit', checkMaintenance, bit);
+app.use('/user', checkMaintenance, user);
+app.use('/chest', checkMaintenance, chest);
+app.use('/poi', checkMaintenance, poi);
+app.use('/cookie', checkMaintenance, cookie);
+app.use('/leaderboard', checkMaintenance, leaderboard);
+app.use('/kos', checkMaintenance, kos);
+app.use('/asset', checkMaintenance, asset);
+app.use('/tutorial', checkMaintenance, tutorial);
+app.use('/invite', checkMaintenance, invite);
+app.use('/squad', checkMaintenance, squad);
 app.use('/setting', setting);
-app.use('/poap', poap);
-app.use('/squad_leaderboard', squadLeaderboard);
-app.use('/weekly_mvp_reward', weeklyMVPReward);
-app.use('/collab', collabV2);
-app.use('/web3', web3);
+app.use('/poap', checkMaintenance, poap);
+app.use('/squad_leaderboard', checkMaintenance, squadLeaderboard);
+app.use('/weekly_mvp_reward', checkMaintenance, weeklyMVPReward);
+app.use('/collab', checkMaintenance, collabV2);
+app.use('/web3', checkMaintenance, web3);
 
 app.listen(port, async () => {
     console.log(`Server running on port ${port}`);
