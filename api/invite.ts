@@ -385,8 +385,9 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
                 return;
             }
 
-            // if the user has no referred users OR all referred users have not reached level 4, skip this user.
-            // to check if the referred users have reached level 4, we filter the referred users by `hasReachedLevel4`.
+            // if the user has no referred users OR all referred users have not reached level 5, skip this user.
+            // to check if the referred users have reached level 5, we filter the referred users by `hasReachedLevel4`.
+            // NOTE: users NEED to be level 5, but the naming is currently still kept at `hasReachedLevel4`.
             const referredUsersReachedLevel4 = referredUsersData.filter(referredUserData => referredUserData.hasReachedLevel4);
 
             if (referredUsersReachedLevel4.length === 0) {
@@ -431,6 +432,7 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
                 }
 
                 // filter these indirect referred users by `hasReachedLevel4`
+                // NOTE: users NEED to be level 5, but the naming is currently still kept at `hasReachedLevel4`.
                 const indirectUsersReachedLevel4 = indirectReferredUserData.filter(data => data.hasReachedLevel4);
 
                 if (indirectUsersReachedLevel4.length === 0) {

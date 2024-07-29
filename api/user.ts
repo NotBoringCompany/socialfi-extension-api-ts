@@ -10,7 +10,7 @@ import { addIslandToDatabase, getLatestIslandId, randomizeBaseResourceCap } from
 import { POIName } from '../models/poi';
 import { ExtendedResource, SimplifiedResource } from '../models/resource';
 import { resources } from '../utils/constants/resource';
-import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, UserWallet, XCookieSource } from '../models/user';
+import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, InGameData, UserWallet, XCookieSource } from '../models/user';
 import {
     GET_BEGINNER_REWARDS,
     GET_DAILY_LOGIN_REWARDS,
@@ -1114,7 +1114,8 @@ export const claimDailyRewards = async (twitterId: string, leaderboardName: stri
         // if it included a level, check if it's set to 4.
         // if it is, check if the user has a referrer.
         // the referrer will then have this user's `hasReachedLevel4` set to true.
-        if (setUserLevel && setUserLevel === 4) {
+        // NOTE: naming is `hasReachedLevel4`, but users are required to be level 5 anyway. this is temporary.
+        if (setUserLevel && setUserLevel === 5) {
             // check if the user has a referrer
             const referrerId: string | null = user.inviteCodeData.referrerId;
 
@@ -1837,19 +1838,20 @@ export const updateReferredUsersData = async (referrerUserId: string, referredUs
             };
         }
 
-        // at this point, the level of the referred user should already be set to level 4 from the parent function.
+        // at this point, the level of the referred user should already be set to level 5 from the parent function.
         // we double check it here just in case.
-        if (referredUser.inGameData.level !== 4) {
+        if (referredUser.inGameData.level < 5) {
             return {
                 status: Status.BAD_REQUEST,
-                message: `(updateReferredUsersData) Referred user is not level 4.`,
+                message: `(updateReferredUsersData) Referred user is not level 5.`,
             };
         }
 
         // set `hasReachedLevel4` to true
+        // NAMING IS `hasReachedLevel4`, but users ARE REQUIRED TO BE LEVEL 5. THIS IS TEMPORARY ONLY.
         referrerUpdateOperations.$set[`referralData.referredUsersData.${referredUserIndex}.hasReachedLevel4`] = true;
 
-        // now check the amount of referred users the referrer has that reached level 3.
+        // now check the amount of referred users the referrer has that reached level 4.
         // we add 1 because the set operation for the newest referred user hasn't been executed yet.
         const totalReferredUsersReachedLevel3 =
             (referrer.referralData.referredUsersData as ReferredUserData[]).filter((data) => data.hasReachedLevel4).length + 1;
@@ -2522,3 +2524,4 @@ export const handleTelegramLogin = async (initData: string): Promise<ReturnValue
         };
     }
 };
+
