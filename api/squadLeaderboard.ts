@@ -355,7 +355,7 @@ export const claimWeeklySquadMemberRewards = async (twitterId: string): Promise<
         }
 
         // for each reward, add the reward to the user's inventory
-        rewards.filter(reward => reward.amount > 0).map(reward => {
+        rewards.filter(reward => reward.amount > 0).forEach(reward => {
             // if reward type is Bit Orb (I)/(II)/(III), Terra Capsulator (I)/(II), Gathering Progress Booster 50, or Raft Speed Booster 3 Min
             // we will add the reward to the user's inventory's `items`.
             // if reward type is Burger, we will add the reward to the user's inventory's `food`.
@@ -413,7 +413,8 @@ export const claimWeeklySquadMemberRewards = async (twitterId: string): Promise<
         })
 
         // add the rewards to the user's inventory
-        await UserModel.updateOne({ twitterId }, { $set: userUpdateOperations.$set, $inc: userUpdateOperations.$inc, $push: userUpdateOperations.$push, $pull: userUpdateOperations.$pull });
+        await UserModel.updateOne({ twitterId }, { $inc: userUpdateOperations.$inc });
+        await UserModel.updateOne({ twitterId }, { $push: userUpdateOperations.$push });
 
         // reset all the user's claimable rewards
         await SquadMemberClaimableWeeklyRewardModel.updateOne({ userId: user._id }, {
