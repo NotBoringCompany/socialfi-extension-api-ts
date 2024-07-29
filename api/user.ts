@@ -2519,6 +2519,22 @@ export const handleTelegramLogin = async (initData: string): Promise<ReturnValue
             // creates the wallet for the user
             const { privateKey, address } = createUserWallet();
 
+            // initialize PlayerEnergy for new user
+            const newEnergy: PlayerEnergy = {
+                currentEnergy: MAX_ENERGY_CAP,
+                maxEnergy: MAX_ENERGY_CAP,
+                dailyEnergyPotion: MAX_ENERGY_POTION_CAP,
+            };
+
+            // initialize PlayerMastery for new user
+            const newMastery: PlayerMastery = {
+                tapping: {
+                    level: 1,
+                    totalExp: 0,
+                    rerollCount: 6,
+                },
+            };
+
             const newUser = new UserModel({
                 _id: userObjectId,
                 twitterId: telegramData.user.id,
@@ -2574,6 +2590,8 @@ export const handleTelegramLogin = async (initData: string): Promise<ReturnValue
                 },
                 inGameData: {
                     level: 1,
+                    energy: newEnergy,
+                    mastery: newMastery,
                     completedTutorialIds: [],
                     beginnerRewardData: {
                         lastClaimedTimestamp: 0,
