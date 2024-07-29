@@ -121,30 +121,29 @@ router.post('/claim_daily_kos_rewards', async (req, res) => {
 
 router.post('/claim_weekly_kos_rewards', async (req, res) => {
     try {
-        throw new Error(`(╯°□°）╯︵ ┻━┻ Sorry! We've temporarily disabled this function.`);
-        // const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'claim_weekly_kos_rewards');
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'claim_weekly_kos_rewards');
 
-        // if (validateStatus !== Status.SUCCESS) {
-        //     return res.status(validateStatus).json({
-        //         status: validateStatus,
-        //         message: validateMessage
-        //     })
-        // }
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
 
-        // const { status, message, data } = await claimWeeklyKOSRewards(validateData?.twitterId);
+        const { status, message, data } = await claimWeeklyKOSRewards(validateData?.twitterId);
 
-        // if (status === Status.SUCCESS) {
-        //     mixpanel.track('Claim Weekly KOS', {
-        //         distinct_id: validateData?.twitterId,
-        //         '_data': data,
-        //     });
-        // }
+        if (status === Status.SUCCESS) {
+            mixpanel.track('Claim Weekly KOS', {
+                distinct_id: validateData?.twitterId,
+                '_data': data,
+            });
+        }
 
-        // return res.status(status).json({
-        //     status,
-        //     message,
-        //     data
-        // });
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
     } catch (err: any) {
         return res.status(500).json({
             status: 500,
