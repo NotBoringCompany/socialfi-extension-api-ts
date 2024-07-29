@@ -8,6 +8,9 @@ import { PURCHASE_SHOP_ASSET_MIXPANEL_EVENT_HASH } from '../utils/constants/mixp
 import { UserWallet } from '../models/user';
 import { getMainWallet } from '../api/user';
 import { incrementEventCounterInContract } from '../api/web3';
+import { BitOrbType } from '../models/bitOrb';
+import { incrementProgressionByType } from '../api/quest';
+import { QuestRequirementType } from '../models/quest';
 
 const router = express.Router();
 
@@ -53,6 +56,11 @@ router.post('/purchase_shop_asset', async (req, res) => {
             });
 
             incrementEventCounterInContract(validateData?.twitterId, PURCHASE_SHOP_ASSET_MIXPANEL_EVENT_HASH);
+
+            if (asset === BitOrbType.BIT_ORB_I || asset === BitOrbType.BIT_ORB_II || asset === BitOrbType.BIT_ORB_III) {
+                console.log('incrementing...');
+                incrementProgressionByType(QuestRequirementType.PURCHASE_ORB, validateData?.twitterId, Number(amount));
+            }
         }
 
         return res.status(status).json({

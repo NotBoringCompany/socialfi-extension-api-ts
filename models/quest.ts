@@ -18,6 +18,10 @@ export interface Quest {
     description: string;
     /** quest type */
     type: QuestType;
+    /** quest tier */
+    tier: QuestTier;
+    /** the status of the quest, the quest will be hidden when it set to false */
+    status: boolean;
     /** 
      * the limit of the amount of times the user can complete this quest 
      * 
@@ -35,9 +39,9 @@ export interface Quest {
      */
     poi: 'anywhere' | POIName;
     /** start timestamp of the quest */
-    start: number;
+    start?: number;
     /** end timestamp of the quest */
-    end: number;
+    end?: number;
     /** quest rewards */
     rewards: QuestReward[];
     /** completed by (database user IDs and the amount of times they completed this quest.) */
@@ -59,6 +63,19 @@ export enum QuestType {
     SINGLE = 'Single',
     /** refreshable means that the quest will be reset manually by admin and thus can be completed multiple times */
     REFRESHABLE = 'Refreshable',
+    /** this type of quest will have its progression tracked. */
+    PROGRESSION = 'Progression',
+}
+
+/**
+ * Represents the tier of a Quest.
+ */
+export enum QuestTier {
+    BEGINNER = 'Beginner',
+    INTERMEDIATE = 'Intermediate',
+    ADVANCED = 'Advanced',
+    EXPERT = 'Expert',
+    MASTER = 'Master'
 }
 
 /**
@@ -101,6 +118,7 @@ export enum QuestRewardType {
  * Represents a single requirement of a Quest.
  */
 export interface QuestRequirement {
+    _id?: string;
     /** type of the quest requirement */
     type: QuestRequirementType;
     /** quest requirement description */
@@ -124,6 +142,28 @@ export enum QuestRequirementType {
     RESOURCE_SUBMISSION = 'Resource Submission',
     // Connect discord into user account
     CONNECT_DISCORD = 'Connect Discord',
+    // Purchase an orb
+    PURCHASE_ORB = 'Purchase Orb',
+    // Use an orb
+    USE_ORB = 'Use Orb',
+    // Place a bit
+    PLACE_BIT = 'Place Bit',
+    // Feed a bit
+    FEED_BIT = 'Feed Bit',
+    // Purchase a capsule
+    PURCHASE_CAPSULE = 'Purchase Capsule',
+    // Consume a capsule
+    CONSUME_CAPSULE = 'Consume Capsule',
+    // Travel to a Point of Interest
+    TRAVEL_POI = 'Travel POI',
+    // Sell a certain amount of resources
+    SELL_RESOURCE_AMOUNT = 'Sell Resource Amount',
+    // Collect Points from resources
+    COLLECT_POINT_RESOURCE = 'Collect Point Resource',
+    // Join a squad
+    JOIN_SQUAD = 'Join Squad',
+    // Collect resource
+    COLLECT_RESOURCE = 'Collect Resource'
 }
 
 /**
@@ -140,6 +180,10 @@ export interface QuestRequirementParameters {
     tutorialId?: number;
     /** the resources required to submit */
     resources?: QuestRequirementResource[];
+    /** universal property for type */
+    type?: number;
+    /** universal property for countable value */
+    count?: number;
 }
 
 /**
@@ -150,4 +194,18 @@ export interface QuestRequirementResource {
     resourceType: ResourceType;
     /** the amount of the resource required */
     amount: number;
+}
+
+/**
+ * Represents user's quest progression.
+ */
+export interface QuestProgression {
+    _id?: string;
+    questId: string;
+    requirementId: string;
+    userId: string;
+    /** current progress of the quest */
+    progress: number;
+    /** the requirement of the quest */
+    requirement: number;
 }
