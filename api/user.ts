@@ -1218,31 +1218,46 @@ export const updateDailyLoginRewardsData = async (): Promise<void> => {
         for (const user of users) {
             const dailyLoginRewardData = user.inGameData.dailyLoginRewardData as DailyLoginRewardData;
 
-            if (!dailyLoginRewardData.isDailyClaimable) {
-                userUpdateOperations.push({
-                    userId: user._id,
-                    updateOperations: {
-                        $set: {
-                            'inGameData.dailyLoginRewardData.isDailyClaimable': true,
-                        },
-                        $inc: {},
-                        $pull: {},
-                        $push: {},
+            //// TEMPORARILY ALLOW USERS THAT DIDN'T CLAIM TO NOT GET PENALIZED (ONLY UNTIL 30 JULY 23:59!!!)
+            //// PLEASE REMOVE THIS AFTER 30 JULY 23:59 !!!!!!
+            //// UNCOMMENT THE COMMENTED LINES BELOW AFTERWARDS.
+            userUpdateOperations.push({
+                userId: user._id,
+                updateOperations: {
+                    $set: {
+                        'inGameData.dailyLoginRewardData.isDailyClaimable': true,
                     },
-                });
-            } else {
-                userUpdateOperations.push({
-                    userId: user._id,
-                    updateOperations: {
-                        $set: {
-                            'inGameData.dailyLoginRewardData.consecutiveDaysClaimed': 0,
-                        },
-                        $inc: {},
-                        $pull: {},
-                        $push: {},
-                    },
-                });
-            }
+                    $inc: {},
+                    $pull: {},
+                    $push: {},
+                },
+            });
+
+            // if (!dailyLoginRewardData.isDailyClaimable) {
+            //     userUpdateOperations.push({
+            //         userId: user._id,
+            //         updateOperations: {
+            //             $set: {
+            //                 'inGameData.dailyLoginRewardData.isDailyClaimable': true,
+            //             },
+            //             $inc: {},
+            //             $pull: {},
+            //             $push: {},
+            //         },
+            //     });
+            // } else {
+            //     userUpdateOperations.push({
+            //         userId: user._id,
+            //         updateOperations: {
+            //             $set: {
+            //                 'inGameData.dailyLoginRewardData.consecutiveDaysClaimed': 0,
+            //             },
+            //             $inc: {},
+            //             $pull: {},
+            //             $push: {},
+            //         },
+            //     });
+            // }
         }
 
         // execute the update operations
