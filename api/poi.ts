@@ -1218,48 +1218,48 @@ export const sellItemsInPOIShop = async (
             }
         }
 
-        // UPCOMING: `UPDATE POINTS` LOGIC TO WONDERBITS CONTRACT
-        // firstly, check if the user has an account registered in the contract.
-        const { status: wonderbitsAccStatus, message: wonderbitsAccMessage, data: wonderbitsAccData } = await checkWonderbitsAccountRegistrationRequired((user.wallet as UserWallet).address);
+        // // UPCOMING: `UPDATE POINTS` LOGIC TO WONDERBITS CONTRACT
+        // // firstly, check if the user has an account registered in the contract.
+        // const { status: wonderbitsAccStatus, message: wonderbitsAccMessage, data: wonderbitsAccData } = await checkWonderbitsAccountRegistrationRequired((user.wallet as UserWallet).address);
 
-        if (wonderbitsAccStatus !== Status.SUCCESS) {
-            // upon error, return success anyway (this is just an optional feature)
-            return {
-                status: Status.SUCCESS,
-                message: `(sellItemsInPOIShop) Items sold. Leaderboard points added.`,
-                data: {
-                    leaderboardPoints
-                }
-            }
-        }
+        // if (wonderbitsAccStatus !== Status.SUCCESS) {
+        //     // upon error, return success anyway (this is just an optional feature)
+        //     return {
+        //         status: Status.SUCCESS,
+        //         message: `(sellItemsInPOIShop) Items sold. Leaderboard points added.`,
+        //         data: {
+        //             leaderboardPoints
+        //         }
+        //     }
+        // }
 
-        // if the user has successfully registered their account, we update the user's points
-        // because the update operation for updating the leaderboard points is already done above, we call to check the newly updated points now.
-        const { status: currentPointsStatus, message: currentPointsMessage, data: currentPointsData } = await getUserCurrentPoints(twitterId);
+        // // if the user has successfully registered their account, we update the user's points
+        // // because the update operation for updating the leaderboard points is already done above, we call to check the newly updated points now.
+        // const { status: currentPointsStatus, message: currentPointsMessage, data: currentPointsData } = await getUserCurrentPoints(twitterId);
 
-        if (currentPointsStatus !== Status.SUCCESS) {
-            // upon error, return success anyway (this is just an optional feature)
-            return {
-                status: Status.SUCCESS,
-                message: `(sellItemsInPOIShop) Items sold. Leaderboard points added.`,
-                data: {
-                    leaderboardPoints
-                }
-            }
-        }
+        // if (currentPointsStatus !== Status.SUCCESS) {
+        //     // upon error, return success anyway (this is just an optional feature)
+        //     return {
+        //         status: Status.SUCCESS,
+        //         message: `(sellItemsInPOIShop) Items sold. Leaderboard points added.`,
+        //         data: {
+        //             leaderboardPoints
+        //         }
+        //     }
+        // }
 
-        // round it to the nearest integer because solidity doesn't accept floats
-        await WONDERBITS_CONTRACT.updatePoints((user.wallet as UserWallet).address, Math.round(currentPointsData.points)).catch((err: any) => {
-            console.error('(sellItemsInPOIShop) Error updating points:', err.message);
-            // upon error, return success anyway (this is just an optional feature)
-            return {
-                status: Status.SUCCESS,
-                message: `(sellItemsInPOIShop) Items sold. Leaderboard points added.`,
-                data: {
-                    leaderboardPoints
-                }
-            }
-        })
+        // // round it to the nearest integer because solidity doesn't accept floats
+        // await WONDERBITS_CONTRACT.updatePoints((user.wallet as UserWallet).address, Math.round(currentPointsData.points)).catch((err: any) => {
+        //     console.error('(sellItemsInPOIShop) Error updating points:', err.message);
+        //     // upon error, return success anyway (this is just an optional feature)
+        //     return {
+        //         status: Status.SUCCESS,
+        //         message: `(sellItemsInPOIShop) Items sold. Leaderboard points added.`,
+        //         data: {
+        //             leaderboardPoints
+        //         }
+        //     }
+        // })
 
         return {
             status: Status.SUCCESS,
