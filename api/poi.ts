@@ -28,7 +28,6 @@ import { getUserCurrentPoints } from './leaderboard';
  */
 export const resetGlobalItemsDailyBuyableAndSellableAmount = async (): Promise<void> => {
     try {
-        // await mongoose.connect(process.env.MONGODB_URI);
         const allPOIs = await POIModel.find().lean();
 
         const bulkWriteOperations = allPOIs.map(poi => {

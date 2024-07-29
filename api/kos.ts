@@ -637,8 +637,6 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
  */
 export const checkDailyKOSRewards = async (): Promise<void> => {
     try {
-        // await mongoose.connect(process.env.MONGODB_URI!);
-
         const errors: string[] = [];
         const users = await UserModel.find({ twitterId: { $ne: null, $exists: true } });
 
