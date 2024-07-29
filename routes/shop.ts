@@ -8,6 +8,9 @@ import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { getMainWallet } from '../api/user';
 import { PURCHASE_SHOP_ASSET_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { incrementEventCounterInContract } from '../api/web3';
+import { BitOrbType } from '../models/bitOrb';
+import { incrementProgressionByType } from '../api/quest';
+import { QuestRequirementType } from '../models/quest';
 
 const router = express.Router();
 
@@ -45,15 +48,23 @@ router.post('/purchase_shop_asset', async (req, res) => {
 
         const { status, message, data } = await purchaseShopAsset(validateData?.twitterId, amount, asset);
 
-        if (status === Status.SUCCESS && allowMixpanel) {
-            mixpanel.track('Currency Tracker', {
-                distinct_id: validateData?.twitterId,
-                '_type': 'Purchase Shop Asset',
-                '_data': data,
-            });
+        if (status === Status.SUCCESS) {
+            if (allowMixpanel) {
+                mixpanel.track('Currency Tracker', {
+                    distinct_id: validateData?.twitterId,
+                    '_type': 'Purchase Shop Asset',
+                    '_data': data,
+                });
 
-            // increment the event counter in the wonderbits contract.
-            incrementEventCounterInContract(validateData?.twitterId, PURCHASE_SHOP_ASSET_MIXPANEL_EVENT_HASH);
+                // increment the event counter in the wonderbits contract.
+                incrementEventCounterInContract(validateData?.twitterId, PURCHASE_SHOP_ASSET_MIXPANEL_EVENT_HASH);
+            }
+
+
+            if (asset === BitOrbType.BIT_ORB_I || asset === BitOrbType.BIT_ORB_II || asset === BitOrbType.BIT_ORB_III) {
+                console.log('incrementing...');
+                incrementProgressionByType(QuestRequirementType.PURCHASE_ORB, validateData?.twitterId, Number(amount));
+            }
         }
 
         return res.status(status).json({

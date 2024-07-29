@@ -1,5 +1,5 @@
 import express from 'express';
-import { addQuest, completeQuest, deleteQuest, getQuests, getUserClaimableQuest, getUserCompletedQuests, updateQuest } from '../api/quest';
+import { addQuest, completeQuest, deleteQuest, getQuestProgression, getQuests, getUserClaimableQuest, getUserCompletedQuests, updateQuest } from '../api/quest';
 import { Status } from '../utils/retVal';
 import { validateRequestAuth } from '../utils/auth';
 import { QuestCategory } from '../models/quest';
@@ -13,37 +13,11 @@ import { incrementEventCounterInContract } from '../api/web3';
 
 const router = express.Router();
 
-router.post('/add_quest', async (req, res) => {
-    const {
-        name,
-        description,
-        type,
-        limit,
-        category,
-        imageUrl,
-        poi,
-        start,
-        end,
-        rewards,
-        requirements,
-        adminKey
-    } = req.body;
+router.post('/add_quest', authMiddleware(3), async (req, res) => {
+    const quest = req.body;
 
     try {
-        const { status, message, data } = await addQuest(
-            name,
-            description,
-            type,
-            limit,
-            category,
-            imageUrl,
-            poi,
-            start,
-            end,
-            rewards,
-            requirements,
-            adminKey
-        );
+        const { status, message, data } = await addQuest(quest);
 
         return res.status(status).json({
             status,
@@ -102,6 +76,33 @@ router.get('/get_quests', async (req, res) => {
 
     try {
         const { status, message, data } = await getQuests(category?.toString() || QuestCategory.SOCIAL);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+});
+
+router.get('/get_quest_detail/:questId', async (req, res) => {
+    const { questId } = req.params;
+
+    try {
+        const { data: validateData, status: validateStatus, message: validateMessage } = await validateRequestAuth(req, res, 'get_quest_detail');
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
+        const { status, message, data } = await getQuestProgression(questId, validateData?.twitterId);
 
         return res.status(status).json({
             status,
@@ -181,11 +182,12 @@ router.get('/get_user_claimable_quests/:twitterId', async (req, res) => {
     }
 })
 
-router.post('/update_quest', authMiddleware(3), async (req, res) => {
-    const { questId, name, description, type, imageUrl, rewards, completedBy, requirements, category } = req.body;
+router.post('/update_quest/:questId', authMiddleware(3), async (req, res) => {
+    const { questId } = req.params;
+    const quest = req.body;
 
     try {
-        const { status, message, data } = await updateQuest(questId, name, description, type, imageUrl, rewards, completedBy, requirements, category);
+        const { status, message, data } = await updateQuest(questId, quest);
 
         return res.status(status).json({
             status,

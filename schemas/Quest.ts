@@ -1,9 +1,29 @@
-import mongoose from 'mongoose';
-import { generateObjectId } from '../utils/crypto';
+import mongoose from "mongoose";
+import { generateObjectId } from "../utils/crypto";
+import { QuestRequirement } from "../models/quest";
 
-/**
- * Quest schema. Represents closely to the `Quest` interface in `models/quest.ts`.
- */
+const QuestRequirementSchema = new mongoose.Schema<QuestRequirement & Document>({
+    _id: {
+        type: String,
+        default: generateObjectId(),
+    },
+    type: String,
+    description: String,
+    parameters: Object,
+});
+
+export const QuestProgressionSchema = new mongoose.Schema({
+    _id: {
+        type: String,
+        default: generateObjectId(),
+    },
+    questId: { type: String, index: true },
+    requirementId: { type: String, index: true },
+    userId: { type: String, index: true },
+    progress: { type: Number, default: 0 },
+    requirement: { type: Number, default: 0 },
+});
+
 export const QuestSchema = new mongoose.Schema({
     _id: {
         type: String,
@@ -13,6 +33,8 @@ export const QuestSchema = new mongoose.Schema({
     name: String,
     description: String,
     type: String,
+    tier: String,
+    status: { type: Boolean, default: true },
     limit: Number,
     category: String,
     imageUrl: String,
@@ -21,10 +43,12 @@ export const QuestSchema = new mongoose.Schema({
     start: Number,
     end: Number,
     rewards: Array,
-    completedBy: [{
-        twitterId: String,
-        timesCompleted: Number,
-        _id: false
-    }],
-    requirements: Array
-})
+    completedBy: [
+        {
+            _id: false,
+            twitterId: String,
+            timesCompleted: Number,
+        },
+    ],
+    requirements: [QuestRequirementSchema],
+});

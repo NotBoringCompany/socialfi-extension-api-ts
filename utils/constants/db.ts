@@ -8,7 +8,7 @@ import { BitSchema } from '../../schemas/Bit';
 import { IslandSchema } from '../../schemas/Island';
 import { RaftSchema } from '../../schemas/Raft';
 import { CookieDepositSchema, CookieWithdrawalSchema } from '../../schemas/Cookie';
-import { QuestSchema } from '../../schemas/Quest';
+import { QuestProgressionSchema, QuestSchema } from '../../schemas/Quest';
 import { POISchema } from '../../schemas/POI';
 import { LeaderboardSchema } from '../../schemas/Leaderboard';
 import { StarterCodeSchema, SuccessfulIndirectReferralSchema } from '../../schemas/Invite';
@@ -69,7 +69,8 @@ export const IslandModel = TEST_CONNECTION.model('Islands', IslandSchema, 'Islan
 export const RaftModel = TEST_CONNECTION.model('Rafts', RaftSchema, 'Rafts');
 export const CookieDepositModel = TEST_CONNECTION.model('CookieDeposits', CookieDepositSchema, 'CookieDeposits');
 export const CookieWithdrawalModel = TEST_CONNECTION.model('CookieWithdrawals', CookieWithdrawalSchema, 'CookieWithdrawals');
-export const QuestModel = TEST_CONNECTION.model('Quests', QuestSchema, 'Quests');
+export const QuestModel = TEST_CONNECTION.model('Quests', QuestSchema, 'Quests_V2');
+export const QuestProgressionModel = TEST_CONNECTION.model('QuestProgressions', QuestProgressionSchema, 'QuestProgressions');
 export const POIModel = TEST_CONNECTION.model('POI', POISchema, 'POI');
 export const LeaderboardModel = TEST_CONNECTION.model('Leaderboards', LeaderboardSchema, 'Leaderboards');
 export const StarterCodeModel = TEST_CONNECTION.model('StarterCodes', StarterCodeSchema, 'StarterCodes');
