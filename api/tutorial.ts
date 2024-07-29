@@ -304,7 +304,7 @@ export const completeTutorial = async (twitterId: string, tutorialId: number): P
 
                     tutorial.rewards[i] = {
                         ...tutorial.rewards[i],
-                        value: bitData.bit,
+                        value: islandData.island,
                     };
 
                     break;
