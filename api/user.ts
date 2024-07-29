@@ -1111,11 +1111,11 @@ export const claimDailyRewards = async (twitterId: string, leaderboardName: stri
         // check if the user update operations included a level up
         const setUserLevel = userUpdateOperations.$set['inGameData.level'];
 
-        // if it included a level, check if it's set to 4.
+        // if it included a level, check if it's set to 5.
         // if it is, check if the user has a referrer.
         // the referrer will then have this user's `hasReachedLevel4` set to true.
         // NOTE: naming is `hasReachedLevel4`, but users are required to be level 5 anyway. this is temporary.
-        if (setUserLevel && setUserLevel === 5) {
+        if (setUserLevel && setUserLevel >= 5) {
             // check if the user has a referrer
             const referrerId: string | null = user.inviteCodeData.referrerId;
 
@@ -1803,7 +1803,7 @@ export const updateBeginnerRewardsData = async (): Promise<void> => {
 };
 
 /**
- * (Season 0) Updates and sets the referred user's `hasReachedLevel4` of the referrer's `referredUsersData` to true.
+ * (Season 0) Updates and sets the referred user's `hasReachedLevel4` of the referrer's `referredUsersData` to true IF not already true.
  *
  * Additionally, give the referrer their referral rewards to claim if applicable.
  */
@@ -1845,6 +1845,13 @@ export const updateReferredUsersData = async (referrerUserId: string, referredUs
                 status: Status.BAD_REQUEST,
                 message: `(updateReferredUsersData) Referred user is not level 5.`,
             };
+        }
+
+        if ((referrer.referralData.referredUsersData as ReferredUserData[])[referredUserIndex].hasReachedLevel4) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(updateReferredUsersData) Referred user already reached level 5.`,
+            }
         }
 
         // set `hasReachedLevel4` to true
