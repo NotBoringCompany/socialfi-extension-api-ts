@@ -15,6 +15,11 @@ export const DEPLOYER_WALLET = (provider: ethers.providers.JsonRpcProvider) => {
     return new ethers.Wallet(process.env.DEPLOYER_PRIVATE_KEY!, provider);
 }
 
+/** Gets a user wallet instanec based on the provider the user wallet will operate in */
+export const USER_WALLET = (provider: ethers.providers.JsonRpcProvider, privateKey: string) => {
+    return new ethers.Wallet(privateKey, provider);
+}
+
 export const LOTTERY_CONTRACT_ADDRESS = process.env.LOTTERY_CONTRACT!;
 export const COOKIE_CONTRACT_ADDRESS = process.env.COOKIE_CONTRACT!;
 export const COOKIE_CONTRACT_DECIMALS = 8;
