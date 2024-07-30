@@ -3648,6 +3648,7 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
         const {caressEnergyMeter, currentMilestone, milestoneReward} = island.islandTappingData as IslandTappingData;
         const islandTappingLimit = ISLAND_TAPPING_MILESTONE_LIMIT(island.type as IslandType);
         const boosterPercentage = milestoneReward.boosterReward;
+        let resourcesDropped: number = 0;
 
         // if caressMeter passed from FE isn't equal than current caressEnergyMeter return error.
         if (caressMeter < caressEnergyMeter) {
@@ -3723,6 +3724,9 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
                         message: `(applyIslandTapping) Error: ${message}`
                     }
                 }
+
+                // Initialize Resource Dropped
+                resourcesDropped = 1;
             // if not, just increment the gathering progress by the booster percentage and deduct the booster from the user's inventory.
             } else {
                 islandUpdateOperations.$inc['islandResourceStats.gatheringProgress'] = boosterPercentage;
@@ -3766,6 +3770,9 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
                     console.log(`(applyIslandTapping) Error from dropResource in loop: ${message}`);
                 }
             }
+
+            // Initialize Resources Dropped
+            resourcesDropped = resourcesToDrop;
         }
 
         // Apply Bonus milestone reward
@@ -3977,7 +3984,10 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
 
             return {
                 status: Status.SUCCESS,
-                message: `(getIslandTappingData) Tapping milestone already reached the latest tier.`
+                message: `(getIslandTappingData) Tapping milestone already reached the latest tier.`,
+                data: {
+                    resourcesDropped,
+                }
             };
         }
     } catch (err: any) {
