@@ -6,6 +6,7 @@ import { checkDailyKOSRewardsScheduler, checkWeeklyKOSRewardsScheduler } from '.
 import { resetGlobalItemsDailyBuyableAndSellableAmountScheduler } from './poi';
 import { calculateWeeklySquadRankingAndAddSquadLeaderboardScheduler } from './squadLeaderboard';
 import { updateBeginnerRewardsDataScheduler, updateDailyLoginRewardsDataScheduler } from './user';
+import { batchSendKICKScheduler } from './web3';
 import { distributeWeeklyMVPRewardsScheduler, updateCurrentWeeklyMVPRankingLeaderboardScheduler } from './weeklyMVPReward';
 
 export const schedulers = async (): Promise<void> => {
