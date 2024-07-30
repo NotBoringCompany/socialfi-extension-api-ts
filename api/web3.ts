@@ -31,6 +31,32 @@ export const updatePointsInContract = async (twitterId: string): Promise<ReturnV
             }
         }
 
+        // check if the wallet has at least 0.01 KICK. if not, send them 1 KICK.
+        const balance = await XPROTOCOL_TESTNET_PROVIDER.getBalance(address).catch((err: any) => {
+            return ethers.BigNumber.from(0);
+        })
+
+        if (parseFloat(ethers.utils.formatEther(balance)) < 0.01) {
+            const response = await axios.post(
+                `https://staging.xprotocol.org/api/faucets-request`,
+                {
+                    addresses: [address]
+                },
+                {
+                    headers: {
+                        'x-api-key': process.env.X_PROTOCOL_TESTNET_FAUCET_KEY!,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            if (!response.data.ok) {
+                console.error(`(incrementEventCounterInContract) Failed to send KICK tokens and user's balance is < 0.01 KICK.`);
+            } else {
+                console.log(`(incrementEventCounterInContract) Sent 1 KICK to user successfully.`);
+            }
+        }
+
         // call the Wonderbits contract to update the user's points
         // get the user's current points
         const { status: currentPointsStatus, message: currentPointsMessage, data: currentPointsData } = await getUserCurrentPoints(twitterId);
@@ -92,6 +118,33 @@ export const incrementEventCounterInContract = async (twitterId: string, mixpane
                 message: `(incrementEventCounterInContract) Wallet address not found for user.`
             }
         }
+
+        // check if the wallet has at least 0.01 KICK. if not, send them 1 KICK.
+        const balance = await XPROTOCOL_TESTNET_PROVIDER.getBalance(address).catch((err: any) => {
+            return ethers.BigNumber.from(0);
+        })
+
+        if (parseFloat(ethers.utils.formatEther(balance)) < 0.01) {
+            const response = await axios.post(
+                `https://staging.xprotocol.org/api/faucets-request`,
+                {
+                    addresses: [address]
+                },
+                {
+                    headers: {
+                        'x-api-key': process.env.X_PROTOCOL_TESTNET_FAUCET_KEY!,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            if (!response.data.ok) {
+                console.error(`(incrementEventCounterInContract) Failed to send KICK tokens and user's balance is < 0.01 KICK.`);
+            } else {
+                console.log(`(incrementEventCounterInContract) Sent 1 KICK to user successfully.`);
+            }
+        }
+
 
         // call the Wonderbits contract to increment the event counter
         const salt = generateHashSalt();
@@ -226,5 +279,14 @@ export const batchSendKICK = async (): Promise<void> => {
         }
     } catch (err: any) {
         console.error(`(batchSendKICK) Error: ${err.message}`)
+    }
+}
+
+// get user from wallet address
+export const getUser = async (walletAddress: string): Promise<void> => {
+    try {
+
+    } catch (err: any) {
+        console.error(`(getUser) Error: ${err.message}`);
     }
 }
