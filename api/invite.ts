@@ -408,8 +408,6 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
                     }
                 }
 
-                console.log(`User ${user.twitterUsername} has ${indirectUsersReachedLevel4.length} indirect referred users that have reached level 4.`);
-
                 // get the indirect referred users' user IDs
                 const indirectReferredUserIds = indirectUsersReachedLevel4.map(data => data.userId);
 
@@ -450,8 +448,6 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
                     // for example, if the `indirectReferredUserIds` length is 8, return 5, which is the nearest milestone from 8 less than the length.
                     const userCountMilestone = milestones.slice().reverse().find(milestone => milestone <= indirectReferredUserIds.length) || 0;
 
-                    console.log('user count milestone from existing indirect referral data: ', userCountMilestone);
-
                     return {
                         // `obtainedRewardMilestone` will only be updated if the user has claimed the reward data for that milestone.
                         obtainedRewardMilestone: existingIndirectReferralData.obtainedRewardMilestone,
@@ -467,8 +463,6 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
                 } else {
                     const rewards = GET_SEASON_0_REFERRAL_REWARDS(indirectReferredUserIds.length);
                     const userCountMilestone = milestones.find(milestone => milestone >= indirectReferredUserIds.length) || 0;
-
-                    console.log('user count milestone from nonexisting indirect referral data: ', userCountMilestone);
 
                     return {
                         obtainedRewardMilestone: 0,
@@ -519,9 +513,6 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
         const updatePromises = successfulIndirectReferralsUpdateOperations.map(async op => {
             return SuccessfulIndirectReferralModel.updateOne({ userId: op.userId }, op.updateOperations);
         })
-
-        console.log('create entries: ', successfulIndirectReferralsNewEntries);
-        console.log('update entries: ', updatePromises);
 
         console.log(`(updateSuccessfulIndirectReferrals) Updating ${updatePromises.length} existing entries.`);
         console.log(`(updateSuccessfulIndirectReferrals) Creating ${successfulIndirectReferralsNewEntries.length} new entries.`);
@@ -693,9 +684,6 @@ export const claimSuccessfulIndirectReferralRewards = async (twitterId: string):
                 message: `(claimSuccessfulIndirectReferralRewards) Claiming leaderboard points is not supported for now.`
             }
         }
-
-        console.log('user ref update: ', userRefUpdateOperations);
-        console.log('indirect ref update: ', indirectRefUpdateOperations);
 
         // execute the update operations. to double check, we run the operation for the user first, then the indirect referral data.
         await UserModel.updateOne({ twitterId }, userRefUpdateOperations);
