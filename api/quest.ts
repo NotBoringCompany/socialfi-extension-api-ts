@@ -501,7 +501,7 @@ export const getQuestProgression = async (questId: string, twitterId: string) =>
             status: Status.SUCCESS,
             message: `(getQuestProgression) Quest detail fetched.`,
             data: {
-                quest: questDetail[0],
+                quest: questDetail,
             },
         };
     } catch (error) {
