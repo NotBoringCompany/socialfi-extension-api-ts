@@ -72,48 +72,25 @@ export const updatePointsInContract = async (twitterId: string): Promise<ReturnV
         const dataHash = generateWonderbitsDataHash((user.wallet as UserWallet).address, salt);
         const signature = await DEPLOYER_WALLET(XPROTOCOL_TESTNET_PROVIDER).signMessage(ethers.utils.arrayify(dataHash));
 
-        const wonderbitsContractUser = WONDERBITS_CONTRACT_USER(privateKey);
-
         const gasPrice = await XPROTOCOL_TESTNET_PROVIDER.getGasPrice();
-        const maxPriorityFeePerGas = ethers.utils.parseUnits('0.1', 'gwei');
-        const maxFeePerGas = gasPrice.add(maxPriorityFeePerGas.mul(2));
-
         const nonce = await XPROTOCOL_TESTNET_PROVIDER.getTransactionCount(address, 'latest');
 
-        const gasLimit = await wonderbitsContractUser.estimateGas.updatePoints(address, Math.round(currentPointsData.points), [salt, signature]).catch((err: any) => {
-            // return 200k gas
-            return ethers.BigNumber.from(200000);
-        })
-
-        const tx = {
-            to: wonderbitsContractUser.address,
-            // round it to the nearest integer because solidity doesn't accept floats
-            data: wonderbitsContractUser.interface.encodeFunctionData('updatePoints', [address, Math.round(currentPointsData.points), [salt, signature]]),
-            maxFeePerGas,
-            maxPriorityFeePerGas,
-            gasLimit,
-            nonce,
-            type: 2
-        }
-
-        const signedTx = await USER_WALLET(XPROTOCOL_TESTNET_PROVIDER, privateKey).signTransaction(tx);
-        const incrementTx = await XPROTOCOL_TESTNET_PROVIDER.sendTransaction(signedTx); 
-
-        console.log('signed tx: ', signedTx);
-        console.log('increment tx: ', incrementTx);
-
-        // const updatePointsTx = await WONDERBITS_CONTRACT_USER(privateKey).updatePoints(
-        //     (user.wallet as UserWallet).address, 
-        //     Math.round(currentPointsData.points), 
-        //     [salt, signature]
-        // );
+        const updatePointsTx = await WONDERBITS_CONTRACT_USER(privateKey).updatePoints(
+            (user.wallet as UserWallet).address, 
+            Math.round(currentPointsData.points), 
+            [salt, signature],
+            {
+                // just to be safe, we multiply gas by 2
+                gasPrice: gasPrice.mul(2),
+                nonce
+            }
+        );
 
         return {
             status: Status.SUCCESS,
             message: `(updatePointsInContract) Points updated successfully.`,
             data: {
-                // updatePointsTxHash: updatePointsTx.hash
-                updatePointsTxHash: incrementTx.hash
+                updatePointsTxHash: updatePointsTx.hash
             }
         }
     } catch (err: any) {
