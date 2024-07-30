@@ -487,7 +487,7 @@ export const getQuestProgression = async (questId: string, twitterId: string) =>
 
                 return {
                     ...req,
-                    progress: progression ? progression.progress : null,
+                    progress: progression ? progression : null,
                 };
             })
         );
