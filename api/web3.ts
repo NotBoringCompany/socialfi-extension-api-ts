@@ -61,13 +61,14 @@ export const batchSendKICK = async (): Promise<void> => {
         // loop through each user. get their wallet address. check if their KICK balance is < 0.15 KICK. if yes, add to addressesToTopUp
         const balancePromises = users.map(async user => {
             if (!user.wallet || !user.wallet.address) {
-                console.log(`(batchSendKICK) User ${user.twitterUsername} has no wallet address.`);
                 return null;
             }
 
             const { address } = user?.wallet as UserWallet;
 
-            const balance = await XPROTOCOL_TESTNET_PROVIDER.getBalance(address);
+            const balance = await XPROTOCOL_TESTNET_PROVIDER.getBalance(address).catch((err: any) => {
+                return ethers.BigNumber.from(0);
+            })
 
             return { 
                 address, 
@@ -89,23 +90,27 @@ export const batchSendKICK = async (): Promise<void> => {
             return;
         }
 
-        const response = await axios.post(
-            `https://staging.xprotocol.org/api/faucets-request`,
-            {
-                addresses: addressesToTopUp
-            },
-            {
-                headers: {
-                    'x-api-key': process.env.X_PROTOCOL_TESTNET_FAUCET_KEY!,
-                    'Content-Type': 'application/json'
+        // send 1 KICK to 250 addresses at a time to avoid rate limiting
+        for (let i = 0; i < addressesToTopUp.length; i += 250) {
+            const addrChunk = addressesToTopUp.slice(i, i + 250);
+            const response = await axios.post(
+                `https://staging.xprotocol.org/api/faucets-request`,
+                {
+                    addresses: addrChunk
+                },
+                {
+                    headers: {
+                        'x-api-key': process.env.X_PROTOCOL_TESTNET_FAUCET_KEY!,
+                        'Content-Type': 'application/json'
+                    }
                 }
-            }
-        );
+            );
 
-        if (response.data.ok) {
-            console.log(`(batchSendKICK) Sent 1 KICK to ${addressesToTopUp.length} addresses successfully.`);
-        } else {
-            console.error(`(batchSendKICK) Failed to top up addresses. Reason: ${response.data.message}`);
+            if (response.data.ok) {
+                console.log(`(batchSendKICK) Sent 1 KICK to ${addrChunk} addresses successfully.`);
+            } else {
+                console.error(`(batchSendKICK) Failed to top up addresses. Reason: ${response.data.message}`);
+            }
         }
     } catch (err: any) {
         console.error(`(batchSendKICK) Error: ${err.message}`)
