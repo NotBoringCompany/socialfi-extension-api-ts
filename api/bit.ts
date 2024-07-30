@@ -611,14 +611,6 @@ export const depleteEnergy = async (): Promise<void> => {
             // calculate the new energy (if currentEnergy - depletionRate is less than 0, set it to 0)
             const newEnergy = Math.max(currentEnergy - depletionRate, 0);
 
-            console.log(
-                `(depleteEnergy) Bit ${bit.bitId} - current energy is less than 0? ${currentEnergy <= 0
-                } - depletion rate: ${depletionRate}`
-            );
-            console.log(
-                `(depleteEnergy) Bit ${bit.bitId} - Current Energy: ${currentEnergy}, New Energy: ${newEnergy}`
-            );
-
             // check if the new energy goes below a certain threshold
             const { gatheringRateReduction, earningRateReduction } =
                 ENERGY_THRESHOLD_REDUCTIONS(newEnergy);
@@ -656,10 +648,6 @@ export const depleteEnergy = async (): Promise<void> => {
             if (gatheringRateModifierIndex !== -1) {
                 // if the new gathering rate modifier is 1, remove the modifier, else, update it
                 if (gatheringRateModifier.value === 1) {
-                    console.log(
-                        `Bit ID ${bit.bitId} - gathering rate modifier exists AND value is 1. updating energy and removing modifier`
-                    );
-
                     updateOperations.push({
                         updateOne: {
                             filter: { bitId: bit.bitId },
@@ -675,10 +663,6 @@ export const depleteEnergy = async (): Promise<void> => {
                     });
                     // if the new gathering rate modifier is not 1, update it
                 } else {
-                    console.log(
-                        `Bit ID ${bit.bitId} - gathering rate modifier exists AND value is not 1. updating energy and modifier`
-                    );
-
                     updateOperations.push({
                         updateOne: {
                             filter: { bitId: bit.bitId },
@@ -697,10 +681,6 @@ export const depleteEnergy = async (): Promise<void> => {
             } else {
                 // if the new gathering rate modifier is 1, only update the energy and don't push the modifier
                 if (gatheringRateModifier.value === 1) {
-                    console.log(
-                        `Bit ID ${bit.bitId} - gathering rate modifier does not exist AND value is 1. updating energy and NOT pushing modifier.`
-                    );
-
                     updateOperations.push({
                         updateOne: {
                             filter: { bitId: bit.bitId },
@@ -711,10 +691,6 @@ export const depleteEnergy = async (): Promise<void> => {
                     });
                     // if the new gathering rate modifier is not 1, push the modifier
                 } else {
-                    console.log(
-                        `Bit ID ${bit.bitId} - gathering rate modifier does not exist AND value is not 1. updating energy and pushing modifier.`
-                    );
-
                     updateOperations.push({
                         updateOne: {
                             filter: { bitId: bit.bitId },
@@ -734,10 +710,6 @@ export const depleteEnergy = async (): Promise<void> => {
             if (earningRateModifierIndex !== -1) {
                 // if the new earning rate modifier is 1, remove modifier
                 if (earningRateModifier.value === 1) {
-                    console.log(
-                        `Bit ID ${bit.bitId} - earning rate modifier exists AND value is 1. removing modifier`
-                    );
-
                     updateOperations.push({
                         updateOne: {
                             filter: { bitId: bit.bitId },
@@ -752,10 +724,6 @@ export const depleteEnergy = async (): Promise<void> => {
                     });
                     // if the new earning rate modifier is not 1, update it
                 } else {
-                    console.log(
-                        `Bit ID ${bit.bitId} - earning rate modifier exists AND value is not 1. updating modifier`
-                    );
-
                     updateOperations.push({
                         updateOne: {
                             filter: { bitId: bit.bitId },
@@ -774,10 +742,6 @@ export const depleteEnergy = async (): Promise<void> => {
             } else {
                 // if the new earning rate modifier is not 1, push the modifier, else, do nothing (since energy is already updated)
                 if (earningRateModifier.value !== 1) {
-                    console.log(
-                        `Bit ID ${bit.bitId} - earning rate modifier does not exist AND value is not 1. pushing modifier`
-                    );
-
                     updateOperations.push({
                         updateOne: {
                             filter: { bitId: bit.bitId },
@@ -789,10 +753,6 @@ export const depleteEnergy = async (): Promise<void> => {
                             },
                         },
                     });
-                } else {
-                    console.log(
-                        `Bit ID ${bit.bitId} - earning rate modifier does not exist AND value is 1. doing nothing.`
-                    );
                 }
             }
 
