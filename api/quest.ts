@@ -43,6 +43,10 @@ export const addQuest = async (quest: Quest): Promise<ReturnValue> => {
             _id: generateObjectId(),
             questId: questCount + 1,
             ...quest,
+            requirements: quest.requirements.map((item) => ({
+                ...item,
+                _id: generateObjectId()
+            }))
         });
 
         await newQuest.save();
