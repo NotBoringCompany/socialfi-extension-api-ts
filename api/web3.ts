@@ -31,32 +31,6 @@ export const updatePointsInContract = async (twitterId: string): Promise<ReturnV
             }
         }
 
-        // check if the wallet has at least 0.01 KICK. if not, send them 1 KICK.
-        const balance = await XPROTOCOL_TESTNET_PROVIDER.getBalance(address).catch((err: any) => {
-            return ethers.BigNumber.from(0);
-        })
-
-        if (parseFloat(ethers.utils.formatEther(balance)) < 0.01) {
-            const response = await axios.post(
-                `https://staging.xprotocol.org/api/faucets-request`,
-                {
-                    addresses: [address]
-                },
-                {
-                    headers: {
-                        'x-api-key': process.env.X_PROTOCOL_TESTNET_FAUCET_KEY!,
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
-
-            if (!response.data.ok) {
-                console.error(`(incrementEventCounterInContract) Failed to send KICK tokens and user's balance is < 0.01 KICK.`);
-            } else {
-                console.log(`(incrementEventCounterInContract) Sent 1 KICK to user successfully.`);
-            }
-        }
-
         // call the Wonderbits contract to update the user's points
         // get the user's current points
         const { status: currentPointsStatus, message: currentPointsMessage, data: currentPointsData } = await getUserCurrentPoints(twitterId);
@@ -72,19 +46,21 @@ export const updatePointsInContract = async (twitterId: string): Promise<ReturnV
         const dataHash = generateWonderbitsDataHash((user.wallet as UserWallet).address, salt);
         const signature = await DEPLOYER_WALLET(XPROTOCOL_TESTNET_PROVIDER).signMessage(ethers.utils.arrayify(dataHash));
 
-        const gasPrice = await XPROTOCOL_TESTNET_PROVIDER.getGasPrice();
-        const nonce = await XPROTOCOL_TESTNET_PROVIDER.getTransactionCount(address, 'latest');
+        // const gasPrice = await XPROTOCOL_TESTNET_PROVIDER.getGasPrice();
+        // const nonce = await XPROTOCOL_TESTNET_PROVIDER.getTransactionCount(address, 'latest');
 
         const updatePointsTx = await WONDERBITS_CONTRACT_USER(privateKey).updatePoints(
             (user.wallet as UserWallet).address, 
             Math.round(currentPointsData.points), 
             [salt, signature],
-            {
-                // just to be safe, we multiply gas by 2
-                gasPrice: gasPrice.mul(2),
-                nonce
-            }
+            // {
+            //     // just to be safe, we multiply gas by 2
+            //     gasPrice: gasPrice.mul(2),
+            //     nonce
+            // }
         );
+
+        await updatePointsTx.wait(3);
 
         return {
             status: Status.SUCCESS,
@@ -126,32 +102,6 @@ export const incrementEventCounterInContract = async (twitterId: string, mixpane
             }
         }
 
-        // check if the wallet has at least 0.01 KICK. if not, send them 1 KICK.
-        const balance = await XPROTOCOL_TESTNET_PROVIDER.getBalance(address).catch((err: any) => {
-            return ethers.BigNumber.from(0);
-        })
-
-        if (parseFloat(ethers.utils.formatEther(balance)) < 0.01) {
-            const response = await axios.post(
-                `https://staging.xprotocol.org/api/faucets-request`,
-                {
-                    addresses: [address]
-                },
-                {
-                    headers: {
-                        'x-api-key': process.env.X_PROTOCOL_TESTNET_FAUCET_KEY!,
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
-
-            if (!response.data.ok) {
-                console.error(`(incrementEventCounterInContract) Failed to send KICK tokens and user's balance is < 0.01 KICK.`);
-            } else {
-                console.log(`(incrementEventCounterInContract) Sent 1 KICK to user successfully.`);
-            }
-        }
-
 
         // call the Wonderbits contract to increment the event counter
         const salt = generateHashSalt();
@@ -160,6 +110,8 @@ export const incrementEventCounterInContract = async (twitterId: string, mixpane
 
         // increment the counter for this mixpanel event on the wonderbits contract
         const incrementTx = await WONDERBITS_CONTRACT_USER(privateKey).incrementEventCounter(address, mixpanelEventHash, [salt, signature]);
+
+        await incrementTx.wait(3);
 
         return {
             status: Status.SUCCESS,
