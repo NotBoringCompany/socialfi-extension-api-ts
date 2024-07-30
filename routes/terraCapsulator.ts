@@ -32,7 +32,7 @@ router.post('/consume', async (req, res) => {
                 '_island': data?.island,
             });
 
-            incrementEventCounterInContract(validateData?.twitterId, RENAME_BIT_MIXPANEL_EVENT_HASH);
+            incrementEventCounterInContract(validateData?.twitterId, CONSUME_TERRA_CAPSULATOR_MIXPANEL_EVENT_HASH);
         }
 
         return res.status(status).json({
