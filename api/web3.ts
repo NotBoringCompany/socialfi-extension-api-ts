@@ -61,6 +61,7 @@ export const updatePointsInContract = async (twitterId: string): Promise<ReturnV
             }
         }
     } catch (err: any) {
+        console.error(`(updatePointsInContract) Error: ${err.message}`);
         return {
             status: Status.ERROR,
             message: `(updatePointsInContract) ${err.message}`
@@ -108,6 +109,7 @@ export const incrementEventCounterInContract = async (twitterId: string, mixpane
             }
         }
     } catch (err: any) {
+        console.error(`(incrementEventCounterInContract) Error: ${err.message}`);
         return {
             status: Status.ERROR,
             message: `(incrementEventCounterInContract) ${err.message}`
