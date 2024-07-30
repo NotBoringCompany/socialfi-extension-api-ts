@@ -564,6 +564,7 @@ export const feedBit = async (twitterId: string, bitId: number, foodType: FoodTy
             }
         }
     } catch (err: any) {
+        console.log('(feedBit) Error: ', err.message);
         return {
             status: Status.ERROR,
             message: `(feedBit) Error: ${err.message}`
