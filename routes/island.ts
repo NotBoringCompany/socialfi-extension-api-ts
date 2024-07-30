@@ -15,6 +15,8 @@ import { APPLY_GATHERING_BOOSTER_MIXPANEL_EVENT_HASH, CLAIM_RESOURCES_MIXPANEL_E
 import { UserWallet } from '../models/user';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { incrementEventCounterInContract } from '../api/web3';
+import { QuestRequirementType } from '../models/quest';
+import { incrementProgressionByType } from '../api/quest';
 
 const router = express.Router();
 
@@ -51,14 +53,18 @@ router.post('/place_bit', async (req, res) => {
         }
         const { status, message, data } = await placeBit(validateData?.twitterId, islandId, bitId);
 
-        if (status === Status.SUCCESS && allowMixpanel) {
-            mixpanel.track('Place Bit', {
-                distinct_id: validateData?.twitterId,
-                '_data': data,
-            });
+        if (status === Status.SUCCESS) {
+            if (allowMixpanel) {
+                mixpanel.track('Place Bit', {
+                    distinct_id: validateData?.twitterId,
+                    '_data': data,
+                });
+    
+                // increment the event counter in the wonderbits contract.
+                incrementEventCounterInContract(validateData?.twitterId, PLACE_BIT_MIXPANEL_EVENT_HASH);
+            }
 
-            // increment the event counter in the wonderbits contract.
-            incrementEventCounterInContract(validateData?.twitterId, PLACE_BIT_MIXPANEL_EVENT_HASH);
+            incrementProgressionByType(QuestRequirementType.PLACE_BIT, validateData?.twitterId, 1);
         }
 
         return res.status(status).json({

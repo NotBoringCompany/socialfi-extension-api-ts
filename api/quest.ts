@@ -914,7 +914,6 @@ export const incrementProgressionByType = async (
         // Iterate through each quest and update the progression for matching requirements
         for (const quest of quests) {
             const requirements = quest.requirements.filter((req) => req.type === type);
-            console.log(requirements);
             for (const requirement of requirements) {
                 await QuestProgressionModel.updateOne(
                     {
@@ -923,7 +922,18 @@ export const incrementProgressionByType = async (
                         userId: user._id,
                         requirement: requirement.parameters.count ?? 1,
                     },
-                    { $inc: { progress: count }, $setOnInsert: { _id: generateObjectId() } },
+                    [
+                        {
+                            $setOnInsert: { _id: generateObjectId(), progress: 0 },
+                        },
+                        {
+                            $set: {
+                                progress: {
+                                    $min: [{ $add: ["$progress", count] }, requirement.parameters.count ?? 1],
+                                },
+                            },
+                        },
+                    ],
                     { upsert: true }
                 );
             }

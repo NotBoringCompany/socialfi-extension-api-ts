@@ -145,7 +145,7 @@ export enum QuestRequirementType {
     // Purchase an orb
     PURCHASE_ORB = 'Purchase Orb',
     // Use an orb
-    USE_ORB = 'Use Orb',
+    CONSUME_ORB = 'Consume Orb',
     // Place a bit
     PLACE_BIT = 'Place Bit',
     // Feed a bit

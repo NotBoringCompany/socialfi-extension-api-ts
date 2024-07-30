@@ -8,6 +8,8 @@ import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { CONSUME_BIT_ORB_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { getMainWallet } from '../api/user';
 import { incrementEventCounterInContract } from '../api/web3';
+import { incrementProgressionByType } from '../api/quest';
+import { QuestRequirementType } from '../models/quest';
 
 const router = express.Router();
 
@@ -31,15 +33,19 @@ router.post('/consume', async (req, res) => {
             type
         );
 
-        if (status === Status.SUCCESS && allowMixpanel) {
-            mixpanel.track('Consume Bit Orb', {
-                distinct_id: validateData?.twitterId,
-                '_type': type,
-                '_bit': data?.bit,
-            });
+        if (status === Status.SUCCESS) {
+            if (allowMixpanel) {
+                mixpanel.track('Consume Bit Orb', {
+                    distinct_id: validateData?.twitterId,
+                    '_type': type,
+                    '_bit': data?.bit,
+                });
+    
+                // increment the event counter in the wonderbits contract.
+                incrementEventCounterInContract(validateData?.twitterId, CONSUME_BIT_ORB_MIXPANEL_EVENT_HASH);
+            }
 
-            // increment the event counter in the wonderbits contract.
-            incrementEventCounterInContract(validateData?.twitterId, CONSUME_BIT_ORB_MIXPANEL_EVENT_HASH);
+            incrementProgressionByType(QuestRequirementType.CONSUME_ORB, validateData?.twitterId, 1);
         }
 
         return res.status(status).json({

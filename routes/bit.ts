@@ -18,6 +18,8 @@ import { EVOLVE_BIT_MIXPANEL_EVENT_HASH, FEED_BIT_MIXPANEL_EVENT_HASH, RELEASE_B
 import { generateHashSalt, generateWonderbitsDataHash } from '../utils/crypto';
 import { ethers } from 'ethers';
 import { incrementEventCounterInContract } from '../api/web3';
+import { incrementProgressionByType } from '../api/quest';
+import { QuestRequirementType } from '../models/quest';
 
 const router = express.Router();
 
@@ -172,15 +174,19 @@ router.post('/feed_bit', async (req, res) => {
 
         const { status, message, data } = await feedBit(validateData?.twitterId, bitId, <FoodType>foodType);
 
-        if (status === Status.SUCCESS && allowMixpanel) {
-            mixpanel.track('Feed Bit', {
-                distinct_id: validateData?.twitterId,
-                '_bitId': bitId,
-                '_foodType': foodType,
-            });
+        if (status === Status.SUCCESS) {
+            if (allowMixpanel) {
+                mixpanel.track('Feed Bit', {
+                    distinct_id: validateData?.twitterId,
+                    '_bitId': bitId,
+                    '_foodType': foodType,
+                });
+    
+                // increment the event counter in the wonderbits contract.
+                incrementEventCounterInContract(validateData?.twitterId, FEED_BIT_MIXPANEL_EVENT_HASH);
+            }
 
-            // increment the event counter in the wonderbits contract.
-            incrementEventCounterInContract(validateData?.twitterId, FEED_BIT_MIXPANEL_EVENT_HASH);
+            incrementProgressionByType(QuestRequirementType.FEED_BIT, validateData?.twitterId, 1);
         }
 
         return res.status(status).json({
