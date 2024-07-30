@@ -8,6 +8,7 @@ import { ExtendedXCookieData, UserWallet, XCookieSource } from '../models/user';
 import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS, GET_SEASON_0_REFERRAL_REWARDS } from '../utils/constants/user';
 import { getUserCurrentPoints } from './leaderboard';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
+import { updatePointsInContract } from './web3';
 
 /**
  * Generates starter codes and stores them in the database.
@@ -219,48 +220,8 @@ export const claimReferralRewards = async (twitterId: string): Promise<ReturnVal
             LeaderboardModel.updateOne({ name: 'Season 0' }, leaderboardUpdateOperations)
         ]);
 
-        // // UPCOMING: `UPDATE POINTS` LOGIC TO WONDERBITS CONTRACT
-        // // firstly, check if the user has an account registered in the contract.
-        // const { status: wonderbitsAccStatus, message: wonderbitsAccMessage, data: wonderbitsAccData } = await checkWonderbitsAccountRegistrationRequired((user.wallet as UserWallet).address);
-
-        // if (wonderbitsAccStatus !== Status.SUCCESS) {
-        //     // upon error, return success anyway (this is just an optional feature)
-        //     return {
-        //         status: Status.SUCCESS,
-        //         message: `(claimReferralRewards) Referral rewards claimed.`,
-        //         data: {
-        //             claimableReferralRewards
-        //         }
-        //     }
-        // }
-
-        // // if the user has successfully registered their account, we update the user's points
-        // // because the update operation for updating the leaderboard points is already done above, we call to check the newly updated points now.
-        // const { status: currentPointsStatus, message: currentPointsMessage, data: currentPointsData } = await getUserCurrentPoints(twitterId);
-
-        // if (currentPointsStatus !== Status.SUCCESS) {
-        //     // upon error, return success anyway (this is just an optional feature)
-        //     return {
-        //         status: Status.SUCCESS,
-        //         message: `(claimReferralRewards) Referral rewards claimed.`,
-        //         data: {
-        //             claimableReferralRewards
-        //         }
-        //     }
-        // }
-
-        // // round it to the nearest integer because solidity doesn't accept floats
-        // await WONDERBITS_CONTRACT.updatePoints((user.wallet as UserWallet).address, Math.round(currentPointsData.points)).catch((err: any) => {
-        //     console.error('(claimReferralRewards) Error updating points:', err.message);
-        //     // upon error, return success anyway (this is just an optional feature)
-        //     return {
-        //         status: Status.SUCCESS,
-        //         message: `(claimReferralRewards) Referral rewards claimed.`,
-        //         data: {
-        //             claimableReferralRewards
-        //         }
-        //     }
-        // })
+        // update the user's points in the wonderbits contract
+        updatePointsInContract(twitterId);
 
         return {
             status: Status.SUCCESS,

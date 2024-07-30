@@ -18,6 +18,7 @@ import mongoose from 'mongoose';
 import * as dotenv from 'dotenv';
 import { BigNumber } from 'ethers';
 import { getUserCurrentPoints } from './leaderboard';
+import { updatePointsInContract } from './web3';
 
 dotenv.config();
 
@@ -540,70 +541,8 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
 
         console.log(`(claimWeeklyKOSRewards) Successfully claimed weekly KOS rewards for user ${user.twitterUsername}.`);
         
-        // // UPCOMING: `UPDATE POINTS` LOGIC TO WONDERBITS CONTRACT
-        // // firstly, check if the user has an account registered in the contract.
-        // const { status: wonderbitsAccStatus, message: wonderbitsAccMessage, data: wonderbitsAccData } = await checkWonderbitsAccountRegistrationRequired((user.wallet as UserWallet).address);
-
-        // if (wonderbitsAccStatus !== Status.SUCCESS) {
-        //     // we want to return success anyway; this is just an optional feature.
-        //     return {
-        //         status: Status.SUCCESS,
-        //         message: `(claimWeeklyKOSRewards) Successfully claimed weekly KOS rewards for user ${user.twitterUsername}. Warning: Error optionally registering account to contract part 1.`,
-        //         data: {
-        //             rewards: {
-        //                 leaderboardPoints: rewards.find(reward => reward.type === KOSRewardType.LEADERBOARD_POINTS)?.amount || 0,
-        //                 bitOrbI: rewards.find(reward => reward.type === KOSRewardType.BIT_ORB_I)?.amount || 0,
-        //                 bitOrbII: rewards.find(reward => reward.type === KOSRewardType.BIT_ORB_II)?.amount || 0,
-        //                 terraCapsulatorI: rewards.find(reward => reward.type === KOSRewardType.TERRA_CAPSULATOR_I)?.amount || 0,
-        //                 terraCapsulatorII: rewards.find(reward => reward.type === KOSRewardType.TERRA_CAPSULATOR_II)?.amount || 0,
-        //                 raftSpeedBooster60Min: rewards.find(reward => reward.type === KOSRewardType.RAFT_SPEED_BOOSTER_60_MIN)?.amount || 0
-        //             }
-        //         }
-        //     }
-        // }
-
-        // // if the user has successfully registered their account, we update the user's points
-        // // because the update operation for updating the leaderboard points is already done above, we call to check the newly updated points now.
-        // const { status: currentPointsStatus, message: currentPointsMessage, data: currentPointsData } = await getUserCurrentPoints(twitterId);
-
-        // if (currentPointsStatus !== Status.SUCCESS) {
-        //     console.log('error here: ', currentPointsMessage);
-        //     // we want to return success anyway; this is just an optional feature.
-        //     return {
-        //         status: Status.SUCCESS,
-        //         message: `(claimWeeklyKOSRewards) Successfully claimed weekly KOS rewards for user ${user.twitterUsername}. Warning: Error optionally updating points to contract part 2.`,
-        //         data: {
-        //             rewards: {
-        //                 leaderboardPoints: rewards.find(reward => reward.type === KOSRewardType.LEADERBOARD_POINTS)?.amount || 0,
-        //                 bitOrbI: rewards.find(reward => reward.type === KOSRewardType.BIT_ORB_I)?.amount || 0,
-        //                 bitOrbII: rewards.find(reward => reward.type === KOSRewardType.BIT_ORB_II)?.amount || 0,
-        //                 terraCapsulatorI: rewards.find(reward => reward.type === KOSRewardType.TERRA_CAPSULATOR_I)?.amount || 0,
-        //                 terraCapsulatorII: rewards.find(reward => reward.type === KOSRewardType.TERRA_CAPSULATOR_II)?.amount || 0,
-        //                 raftSpeedBooster60Min: rewards.find(reward => reward.type === KOSRewardType.RAFT_SPEED_BOOSTER_60_MIN)?.amount || 0
-        //             }
-        //         }
-        //     }
-        // }
-
-        // // round it to the nearest integer because solidity doesn't accept floats
-        // await WONDERBITS_CONTRACT.updatePoints((user.wallet as UserWallet).address, Math.round(currentPointsData.points)).catch((err: any) => {
-        //     console.error(`(claimWeeklyKOSRewards) Error updating points to contract: ${err.message}`);
-        //     // we want to return success anyway; this is just an optional feature.
-        //     return {
-        //         status: Status.SUCCESS,
-        //         message: `(claimWeeklyKOSRewards) Successfully claimed weekly KOS rewards for user ${user.twitterUsername}. Warning: Error optionally updating points to contract part 3.`,
-        //         data: {
-        //             rewards: {
-        //                 leaderboardPoints: rewards.find(reward => reward.type === KOSRewardType.LEADERBOARD_POINTS)?.amount || 0,
-        //                 bitOrbI: rewards.find(reward => reward.type === KOSRewardType.BIT_ORB_I)?.amount || 0,
-        //                 bitOrbII: rewards.find(reward => reward.type === KOSRewardType.BIT_ORB_II)?.amount || 0,
-        //                 terraCapsulatorI: rewards.find(reward => reward.type === KOSRewardType.TERRA_CAPSULATOR_I)?.amount || 0,
-        //                 terraCapsulatorII: rewards.find(reward => reward.type === KOSRewardType.TERRA_CAPSULATOR_II)?.amount || 0,
-        //                 raftSpeedBooster60Min: rewards.find(reward => reward.type === KOSRewardType.RAFT_SPEED_BOOSTER_60_MIN)?.amount || 0
-        //             }
-        //         }
-        //     }
-        // })
+        // update the user's points in the wonderbits contract
+        updatePointsInContract(twitterId);
 
         return {
             status: Status.SUCCESS,

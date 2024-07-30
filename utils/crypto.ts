@@ -66,14 +66,21 @@ export const generateDrawSeed = async (): Promise<ReturnValue> => {
 }
 
 /**
- * Generates a random hash salt used for withdrawing xCookies.
- */
+ * Generates a random hash salt for cryptographic operations.
+ */ 
 export const generateHashSalt = (): string => {
     const randomBytes = CryptoJS.lib.WordArray.random(32); // Generate 32 random bytes
     const salt = CryptoJS.enc.Hex.stringify(randomBytes); // Convert random bytes to hex string
 
     // keccak256 the salt 
     return solidityKeccak256(['string'], [salt]);
+}
+
+/**
+ * Generates a data hash for Wonderbits-contract related actions given the `address` and `salt`.
+ */
+export const generateWonderbitsDataHash = (address: string, salt: string): string => {
+    return solidityKeccak256(['address', 'bytes'], [address, salt]);
 }
 
 /**
