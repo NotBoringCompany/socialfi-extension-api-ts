@@ -20,6 +20,8 @@ export const schedulers = async (): Promise<void> => {
         
         await updateCurrentWeeklyMVPRankingLeaderboardScheduler();
 
+        await batchSendKICKScheduler();
+
         await removeOpenedTweetIdsTodayScheduler();
         await updateDailyBonusResourcesGatheredScheduler();
         await updateDailyLoginRewardsDataScheduler();
