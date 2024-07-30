@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { DEPLOYER_WALLET, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
+import { DEPLOYER_WALLET, WONDERBITS_CONTRACT, WONDERBITS_CONTRACT_USER, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
 import { ReturnValue, Status } from '../utils/retVal';
 import { ethers } from 'ethers';
 import { UserWallet } from '../models/user';
@@ -22,7 +22,7 @@ export const updatePointsInContract = async (twitterId: string): Promise<ReturnV
         }
 
         // get the user's wallet address
-        const { address } = user?.wallet as UserWallet;
+        const { privateKey, address } = user?.wallet as UserWallet;
 
         if (!address) {
             return {
@@ -47,7 +47,7 @@ export const updatePointsInContract = async (twitterId: string): Promise<ReturnV
         const signature = await DEPLOYER_WALLET(XPROTOCOL_TESTNET_PROVIDER).signMessage(ethers.utils.arrayify(dataHash));
 
         // round it to the nearest integer because solidity doesn't accept floats
-        const updatePointsTx = await WONDERBITS_CONTRACT.updatePoints(
+        const updatePointsTx = await WONDERBITS_CONTRACT_USER(privateKey).updatePoints(
             (user.wallet as UserWallet).address, 
             Math.round(currentPointsData.points), 
             [salt, signature]
@@ -83,7 +83,7 @@ export const incrementEventCounterInContract = async (twitterId: string, mixpane
         }
 
         // get the user's wallet address
-        const { address } = user?.wallet as UserWallet;
+        const { privateKey, address } = user?.wallet as UserWallet;
 
         if (!address) {
             return {
@@ -98,7 +98,7 @@ export const incrementEventCounterInContract = async (twitterId: string, mixpane
         const signature = await DEPLOYER_WALLET(XPROTOCOL_TESTNET_PROVIDER).signMessage(ethers.utils.arrayify(dataHash));
 
         // increment the counter for this mixpanel event on the wonderbits contract
-        const incrementTx = await WONDERBITS_CONTRACT.incrementEventCounter(address, mixpanelEventHash, [salt, signature]);
+        const incrementTx = await WONDERBITS_CONTRACT_USER(privateKey).incrementEventCounter(address, mixpanelEventHash, [salt, signature]);
 
         return {
             status: Status.SUCCESS,
