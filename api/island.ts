@@ -3971,6 +3971,9 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
             return {
                 status: Status.SUCCESS,
                 message: `(getIslandTappingData) Applying tapping data for Island with ID ${islandId}. Increasing to tier ${nextTappingData.currentMilestone}`,
+                data: {
+                    resourcesDropped,
+                }
             }
         } else {
             // update database affected by ApplyTappingIsland
