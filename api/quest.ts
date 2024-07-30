@@ -45,8 +45,8 @@ export const addQuest = async (quest: Quest): Promise<ReturnValue> => {
             ...quest,
             requirements: quest.requirements.map((item) => ({
                 ...item,
-                _id: generateObjectId()
-            }))
+                _id: generateObjectId(),
+            })),
         });
 
         await newQuest.save();
@@ -477,76 +477,25 @@ export const getQuestProgression = async (questId: string, twitterId: string) =>
             };
         }
 
-        const questDetail = await QuestModel.aggregate([
-            {
-                $match: {
-                    _id: quest._id,
-                },
-            },
-            {
-                $lookup: {
-                    from: "QuestProgressions", // collection name in the database
-                    let: { questId: "$_id" },
-                    pipeline: [
-                        {
-                            $match: {
-                                $expr: {
-                                    $and: [{ $eq: ["$questId", quest._id] }, { $eq: ["$userId", user._id] }],
-                                },
-                            },
-                        },
-                        {
-                            $project: {
-                                _id: 0,
-                                requirementId: 1,
-                                progress: 1,
-                                requirement: 1,
-                            },
-                        },
-                    ],
-                    as: "progressions",
-                },
-            },
-            {
-                $addFields: {
-                    requirements: {
-                        $map: {
-                            input: "$requirements",
-                            as: "req",
-                            in: {
-                                $mergeObjects: [
-                                    "$$req",
-                                    {
-                                        progress: {
-                                            $arrayElemAt: [
-                                                {
-                                                    $filter: {
-                                                        input: "$progressions",
-                                                        as: "prog",
-                                                        cond: {
-                                                            $eq: ["$$prog.requirementId", "$$req._id"],
-                                                        },
-                                                    },
-                                                },
-                                                0,
-                                            ],
-                                        },
-                                    },
-                                ],
-                            },
-                        },
-                    },
-                },
-            },
-            { $project: { progressions: 0 } },
-        ]);
+        const requirementsWithProgress = await Promise.all(
+            quest.requirements.map(async (req) => {
+                const progression = await QuestProgressionModel.findOne({
+                    questId: quest._id,
+                    userId: user._id,
+                    requirementId: req._id,
+                }).lean();
 
-        if (!questDetail || !questDetail[0]) {
-            return {
-                status: Status.ERROR,
-                message: `(getQuestProgression) Quest not found`,
-            };
-        }
+                return {
+                    ...req,
+                    progress: progression ? progression.progress : null,
+                };
+            })
+        );
+
+        const questDetail = {
+            ...quest,
+            requirements: requirementsWithProgress,
+        };
 
         return {
             status: Status.SUCCESS,
