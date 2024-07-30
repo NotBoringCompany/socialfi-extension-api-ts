@@ -16,6 +16,8 @@ import { UserWallet } from '../models/user';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { getMainWallet } from '../api/user';
 import { incrementEventCounterInContract } from '../api/web3';
+import { incrementProgressionByType } from '../api/quest';
+import { QuestRequirementType } from '../models/quest';
 
 const router = express.Router();
 
@@ -174,7 +176,10 @@ router.post('/feed_bit', async (req, res) => {
                 '_foodType': foodType,
             });
 
+            // increment the event counter in the wonderbits contract.
             incrementEventCounterInContract(validateData?.twitterId, FEED_BIT_MIXPANEL_EVENT_HASH);
+
+            incrementProgressionByType(QuestRequirementType.FEED_BIT, validateData?.twitterId, 1);
         }
 
         return res.status(status).json({

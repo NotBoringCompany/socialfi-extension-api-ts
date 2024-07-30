@@ -9,6 +9,9 @@ import { getMainWallet } from '../api/user';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { APPLY_TRAVELLING_BOOSTER_MIXPANEL_EVENT_HASH, BUY_ITEMS_IN_POI_SHOP_MIXPANEL_EVENT_HASH, SELL_ITEMS_IN_POI_SHOP_MIXPANEL_EVENT_HASH, TRAVEL_TO_POI_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { incrementEventCounterInContract } from '../api/web3';
+import { incrementProgressionByType } from '../api/quest';
+import { QuestRequirementType } from '../models/quest';
+import { POIShopActionItemData } from '../models/poi';
 
 const router = express.Router();
 
@@ -55,7 +58,10 @@ router.post('/travel_to_poi', async (req, res) => {
                 '_destination': destination,
             });
 
+            // increment the event counter in the wonderbits contract.
             incrementEventCounterInContract(validateData?.twitterId, TRAVEL_TO_POI_MIXPANEL_EVENT_HASH);
+
+            incrementProgressionByType(QuestRequirementType.TRAVEL_POI, validateData?.twitterId, 1);
         }
 
         return res.status(status).json({
@@ -241,7 +247,10 @@ router.post('/sell_items_in_poi_shop', async (req, res) => {
                 '_earnedPoints': data.leaderboardPoints,
             });
 
+            // increment the event counter in the wonderbits contract.
             incrementEventCounterInContract(validateData?.twitterId, SELL_ITEMS_IN_POI_SHOP_MIXPANEL_EVENT_HASH);
+
+            incrementProgressionByType(QuestRequirementType.SELL_RESOURCE_AMOUNT, validateData?.twitterId, (items as POIShopActionItemData[]).reduce((total, currentItem) => total + currentItem?.amount ?? 0, 0));
         }
 
         return res.status(status).json({
