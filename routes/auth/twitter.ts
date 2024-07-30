@@ -8,6 +8,7 @@ import { mixpanel } from '../../utils/mixpanel';
 import { TWITTER_LOGIN_CALLBACK_MIXPANEL_EVENT_HASH } from '../../utils/constants/mixpanelEvents';
 import { WONDERBITS_CONTRACT } from '../../utils/constants/web3';
 import { UserWallet } from '../../models/user';
+import { incrementEventCounterInContract } from '../../api/web3';
 
 const router = express.Router();
 
@@ -79,24 +80,7 @@ router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/',
                     _data: data,
                 });
 
-                // get the wallet address of the twitter ID
-                // const { status: walletStatus, message: walletMessage, data: walletData } = await getMainWallet(twitterId);
-
-                // if (walletStatus !== Status.SUCCESS) {
-                //     // if there is an error somehow, ignore this and just return a success for the API endpoint
-                //     // as this is just an optional tracking feature.
-                //     return res.redirect(`${host}?jwt=${token}`);
-                // }
-
-                // const { address } = walletData.wallet as UserWallet;
-
-                // // increment the counter for this mixpanel event on the wonderbits contract
-                // await WONDERBITS_CONTRACT.incrementEventCounter(address, TWITTER_LOGIN_CALLBACK_MIXPANEL_EVENT_HASH).catch((err: any) => {
-                //     // if there is an error somehow, ignore this and just return a success for the API endpoint
-                //     // as this is just an optional tracking feature.
-                //     // return res.redirect(`${host}?jwt=${token}`);
-                //     console.error('Error incrementing event counter:', err);
-                // });
+                incrementEventCounterInContract(twitterId, TWITTER_LOGIN_CALLBACK_MIXPANEL_EVENT_HASH);
             }
 
             return res.redirect(`${host}?jwt=${token}`);
