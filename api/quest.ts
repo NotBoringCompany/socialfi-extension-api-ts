@@ -915,27 +915,32 @@ export const incrementProgressionByType = async (
         for (const quest of quests) {
             const requirements = quest.requirements.filter((req) => req.type === type);
             for (const requirement of requirements) {
-                await QuestProgressionModel.updateOne(
-                    {
+                if (!requirement.parameters.count) continue;
+
+                // Find the current progression document
+                let progression = await QuestProgressionModel.findOne({
+                    questId: quest._id,
+                    requirementId: requirement._id,
+                    userId: user._id,
+                });
+
+                if (!progression) {
+                    // Create a new progression document if it doesn't exist
+                    progression = new QuestProgressionModel({
+                        _id: generateObjectId(),
                         questId: quest._id,
                         requirementId: requirement._id,
                         userId: user._id,
+                        progress: 0,
                         requirement: requirement.parameters.count ?? 1,
-                    },
-                    [
-                        {
-                            $setOnInsert: { _id: generateObjectId(), progress: 0 },
-                        },
-                        {
-                            $set: {
-                                progress: {
-                                    $min: [{ $add: ["$progress", count] }, requirement.parameters.count ?? 1],
-                                },
-                            },
-                        },
-                    ],
-                    { upsert: true }
-                );
+                    });
+                }
+
+                // Increment the progress
+                progression.progress = Math.min(progression.progress + count, requirement.parameters.count ?? 1);
+
+                // Save the updated progression document
+                await progression.save();
             }
         }
     } catch (error) {
