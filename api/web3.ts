@@ -46,18 +46,18 @@ export const updatePointsInContract = async (twitterId: string): Promise<ReturnV
         const dataHash = generateWonderbitsDataHash((user.wallet as UserWallet).address, salt);
         const signature = await DEPLOYER_WALLET(XPROTOCOL_TESTNET_PROVIDER).signMessage(ethers.utils.arrayify(dataHash));
 
-        // const gasPrice = await XPROTOCOL_TESTNET_PROVIDER.getGasPrice();
-        // const nonce = await XPROTOCOL_TESTNET_PROVIDER.getTransactionCount(address, 'latest');
+        const gasPrice = await XPROTOCOL_TESTNET_PROVIDER.getGasPrice();
+        const nonce = await XPROTOCOL_TESTNET_PROVIDER.getTransactionCount(address, 'latest');
 
         const updatePointsTx = await WONDERBITS_CONTRACT_USER(privateKey).updatePoints(
             (user.wallet as UserWallet).address, 
             Math.round(currentPointsData.points), 
             [salt, signature],
-            // {
-            //     // just to be safe, we multiply gas by 2
-            //     gasPrice: gasPrice.mul(2),
-            //     nonce
-            // }
+            {
+                // just to be safe, we multiply gas by 2
+                gasPrice: gasPrice.mul(2),
+                nonce
+            }
         );
 
         await updatePointsTx.wait(3);
@@ -108,8 +108,15 @@ export const incrementEventCounterInContract = async (twitterId: string, mixpane
         const dataHash = generateWonderbitsDataHash(address, salt);
         const signature = await DEPLOYER_WALLET(XPROTOCOL_TESTNET_PROVIDER).signMessage(ethers.utils.arrayify(dataHash));
 
+        const gasPrice = await XPROTOCOL_TESTNET_PROVIDER.getGasPrice();
+        const nonce = await XPROTOCOL_TESTNET_PROVIDER.getTransactionCount(address, 'latest');
+
         // increment the counter for this mixpanel event on the wonderbits contract
-        const incrementTx = await WONDERBITS_CONTRACT_USER(privateKey).incrementEventCounter(address, mixpanelEventHash, [salt, signature]);
+        const incrementTx = await WONDERBITS_CONTRACT_USER(privateKey).incrementEventCounter(address, mixpanelEventHash, [salt, signature], {
+            // just to be safe, we multiply gas by 2
+            gasPrice: gasPrice.mul(2),
+            nonce
+        });
 
         await incrementTx.wait(3);
 
