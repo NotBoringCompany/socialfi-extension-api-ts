@@ -7,7 +7,6 @@ import { UserWallet } from '../models/user';
 import { getMainWallet } from '../api/user';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { REDEEM_POAP_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
-import { checkWonderbitsAccountRegistrationRequired } from '../api/web3';
 
 const router = express.Router();
 

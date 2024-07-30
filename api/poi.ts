@@ -16,7 +16,6 @@ import { ReturnValue, Status } from '../utils/retVal';
 import { getLatestSquadWeeklyRanking, squadKOSData } from './squad';
 import { updateReferredUsersData } from './user';
 import * as dotenv from 'dotenv';
-import { checkWonderbitsAccountRegistrationRequired } from './web3';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { UserWallet } from '../models/user';
 import { getUserCurrentPoints } from './leaderboard';

@@ -8,7 +8,6 @@ import { UserWallet } from '../models/user';
 import { getMainWallet } from '../api/user';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { APPLY_TRAVELLING_BOOSTER_MIXPANEL_EVENT_HASH, BUY_ITEMS_IN_POI_SHOP_MIXPANEL_EVENT_HASH, SELL_ITEMS_IN_POI_SHOP_MIXPANEL_EVENT_HASH, TRAVEL_TO_POI_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
-import { checkWonderbitsAccountRegistrationRequired } from '../api/web3';
 
 const router = express.Router();
 

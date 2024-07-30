@@ -14,7 +14,6 @@ import { WeeklyMVPRanking, WeeklyMVPRankingData, WeeklyMVPReward, WeeklyMVPRewar
 import { UserWallet, XCookieData } from '../models/user';
 import mongoose from 'mongoose';
 import * as dotenv from 'dotenv';
-import { checkWonderbitsAccountRegistrationRequired } from './web3';
 import { getUserCurrentPoints } from './leaderboard';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 

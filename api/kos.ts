@@ -18,7 +18,6 @@ import mongoose from 'mongoose';
 import * as dotenv from 'dotenv';
 import { BigNumber } from 'ethers';
 import { getUserCurrentPoints } from './leaderboard';
-import { checkWonderbitsAccountRegistrationRequired } from './web3';
 
 dotenv.config();
 
