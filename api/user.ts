@@ -38,7 +38,7 @@ import { ExtendedDiscordProfile, ExtendedProfile } from '../utils/types';
 import { WeeklyMVPRewardType } from '../models/weeklyMVPReward';
 import mongoose from 'mongoose';
 import * as dotenv from 'dotenv';
-import { checkWonderbitsAccountRegistrationRequired } from './web3';
+import { sendKICKUponRegistration } from './web3';
 import { getUserCurrentPoints } from './leaderboard';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { parseTelegramData, validateTelegramData } from '../utils/telegram';
@@ -249,13 +249,16 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
 
             await newUser.save();
 
+            // give the user some KICK tokens
+            sendKICKUponRegistration(address);
+
             return {
                 status: Status.SUCCESS,
                 message: `(handleTwitterLogin) New user created.`,
                 data: {
                     userId: newUser._id,
                     twitterId,
-                    loginType: loginType,
+                    loginType: loginType
                 },
             };
         } else {
@@ -2377,6 +2380,9 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
             },
         });
 
+        // give the user some KICK tokens
+        sendKICKUponRegistration(address);
+
         return {
             status: Status.SUCCESS,
             message: `(handlePreRegister) New user created and free Rafting Bit added to raft.`,
@@ -2627,13 +2633,16 @@ export const handleTelegramLogin = async (initData: string): Promise<ReturnValue
 
             await newUser.save();
 
+            // give the user some KICK tokens
+            sendKICKUponRegistration(address);
+
             return {
                 status: Status.SUCCESS,
-                message: `(handleTwitterLogin) New user created.`,
+                message: `(handleTelegramLogin) New user created.`,
                 data: {
                     userId: newUser._id,
                     twitterId: telegramData.user.id,
-                    loginType: loginType,
+                    loginType: loginType
                 },
             };
         } else {
@@ -2642,7 +2651,7 @@ export const handleTelegramLogin = async (initData: string): Promise<ReturnValue
             // user exists, return
             return {
                 status: Status.SUCCESS,
-                message: `(handleTwitterLogin) User found. Logging in.`,
+                message: `(handleTelegramLogin) User found. Logging in.`,
                 data: {
                     userId: user._id,
                     twitterId: telegramData.user.id,
@@ -2653,7 +2662,7 @@ export const handleTelegramLogin = async (initData: string): Promise<ReturnValue
     } catch (err: any) {
         return {
             status: Status.ERROR,
-            message: `(handleTwitterLogin) ${err.message}`,
+            message: `(handleTelegramLogin) ${err.message}`,
         };
     }
 };
