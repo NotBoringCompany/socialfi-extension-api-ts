@@ -2,7 +2,7 @@ import express from 'express';
 import { ExtendedDiscordProfile } from '../../utils/types';
 import { Status } from '../../utils/retVal';
 import passport from '../../configs/passport';
-import { connectToDiscord, disconnectFromDiscord, getMainWallet } from '../../api/user';
+import { connectToDiscord, disconnectFromDiscord } from '../../api/user';
 import { validateJWT } from '../../utils/jwt';
 import { validateRequestAuth } from '../../utils/auth';
 import { mixpanel } from '../../utils/mixpanel';

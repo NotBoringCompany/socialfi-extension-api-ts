@@ -1,5 +1,5 @@
 import express from 'express';
-import { checkInviteCodeLinked, claimBeginnerRewards, claimDailyRewards, consumeEnergyPotion, generateSignatureMessage, generateUnlinkSignatureMessage, getBeginnerRewardsData, getInGameData, getInventory, getMainWallet, getUserData, getWalletDetails, linkInviteCode, linkSecondaryWallet, removeResources, unlinkSecondaryWallet } from '../api/user';
+import { checkInviteCodeLinked, claimBeginnerRewards, claimDailyRewards, consumeEnergyPotion, generateSignatureMessage, generateUnlinkSignatureMessage, getBeginnerRewardsData, getInGameData, getInventory, getUserData, getWalletDetails, linkInviteCode, linkSecondaryWallet, removeResources, unlinkSecondaryWallet } from '../api/user';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { ExtendedProfile } from '../utils/types';
