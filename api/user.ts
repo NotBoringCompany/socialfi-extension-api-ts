@@ -1343,46 +1343,31 @@ export const updateDailyLoginRewardsData = async (): Promise<void> => {
         for (const user of users) {
             const dailyLoginRewardData = user.inGameData.dailyLoginRewardData as DailyLoginRewardData;
 
-            //// TEMPORARILY ALLOW USERS THAT DIDN'T CLAIM TO NOT GET PENALIZED (ONLY UNTIL 30 JULY 23:59!!!)
-            //// PLEASE REMOVE THIS AFTER 30 JULY 23:59 !!!!!!
-            //// UNCOMMENT THE COMMENTED LINES BELOW AFTERWARDS.
-            userUpdateOperations.push({
-                userId: user._id,
-                updateOperations: {
-                    $set: {
-                        'inGameData.dailyLoginRewardData.isDailyClaimable': true,
+            if (!dailyLoginRewardData.isDailyClaimable) {
+                userUpdateOperations.push({
+                    userId: user._id,
+                    updateOperations: {
+                        $set: {
+                            'inGameData.dailyLoginRewardData.isDailyClaimable': true,
+                        },
+                        $inc: {},
+                        $pull: {},
+                        $push: {},
                     },
-                    $inc: {},
-                    $pull: {},
-                    $push: {},
-                },
-            });
-
-            // if (!dailyLoginRewardData.isDailyClaimable) {
-            //     userUpdateOperations.push({
-            //         userId: user._id,
-            //         updateOperations: {
-            //             $set: {
-            //                 'inGameData.dailyLoginRewardData.isDailyClaimable': true,
-            //             },
-            //             $inc: {},
-            //             $pull: {},
-            //             $push: {},
-            //         },
-            //     });
-            // } else {
-            //     userUpdateOperations.push({
-            //         userId: user._id,
-            //         updateOperations: {
-            //             $set: {
-            //                 'inGameData.dailyLoginRewardData.consecutiveDaysClaimed': 0,
-            //             },
-            //             $inc: {},
-            //             $pull: {},
-            //             $push: {},
-            //         },
-            //     });
-            // }
+                });
+            } else {
+                userUpdateOperations.push({
+                    userId: user._id,
+                    updateOperations: {
+                        $set: {
+                            'inGameData.dailyLoginRewardData.consecutiveDaysClaimed': 0,
+                        },
+                        $inc: {},
+                        $pull: {},
+                        $push: {},
+                    },
+                });
+            }
         }
 
         // execute the update operations
@@ -1847,53 +1832,39 @@ export const updateBeginnerRewardsData = async (): Promise<void> => {
                 continue;
             }
 
-            //// TEMPORARILY ALLOW BEGINNERS WHO DIDN'T CLAIM REWARDS TODAY TO NOT GET PENALIZED (UNTIL 30 JULY 23:59 ONLY)
-            //// AFTER THIS, PLEASE REMOVE THIS LINE AND UNCOMMENT THE COMMENTED LINES BELOW.
-            userUpdateOperations.push({
-                userId: user._id,
-                updateOperations: {
-                    $set: {
-                        'inGameData.beginnerRewardData.isClaimable': true,
+            // for users that have `isClaimable` as false, it means they claimed the rewards already.
+            // simply convert `isClaimable` to true.
+            if (!beginnerRewardData.isClaimable) {
+                userUpdateOperations.push({
+                    userId: user._id,
+                    updateOperations: {
+                        $set: {
+                            'inGameData.beginnerRewardData.isClaimable': true,
+                        },
+                        $inc: {},
+                        $pull: {},
+                        $push: {},
                     },
-                    $inc: {},
-                    $pull: {},
-                    $push: {},
-                },
-            });
+                });
+            } else {
+                // if `isClaimable` is true, it means the user missed claiming the rewards for the day.
+                // add the current day to `daysMissed`.
+                const latestClaimedDay = beginnerRewardData.daysClaimed.length > 0 ? Math.max(...beginnerRewardData.daysClaimed) : 0;
+                const latestMissedDay = beginnerRewardData.daysMissed.length > 0 ? Math.max(...beginnerRewardData.daysMissed) : 0;
+                const latestDay = Math.max(latestClaimedDay, latestMissedDay);
 
-            // // for users that have `isClaimable` as false, it means they claimed the rewards already.
-            // // simply convert `isClaimable` to true.
-            // if (!beginnerRewardData.isClaimable) {
-                // userUpdateOperations.push({
-                //     userId: user._id,
-                //     updateOperations: {
-                //         $set: {
-                //             'inGameData.beginnerRewardData.isClaimable': true,
-                //         },
-                //         $inc: {},
-                //         $pull: {},
-                //         $push: {},
-                //     },
-                // });
-            // } else {
-            //     // if `isClaimable` is true, it means the user missed claiming the rewards for the day.
-            //     // add the current day to `daysMissed`.
-            //     const latestClaimedDay = beginnerRewardData.daysClaimed.length > 0 ? Math.max(...beginnerRewardData.daysClaimed) : 0;
-            //     const latestMissedDay = beginnerRewardData.daysMissed.length > 0 ? Math.max(...beginnerRewardData.daysMissed) : 0;
-            //     const latestDay = Math.max(latestClaimedDay, latestMissedDay);
-
-            //     userUpdateOperations.push({
-            //         userId: user._id,
-            //         updateOperations: {
-            //             $push: {
-            //                 'inGameData.beginnerRewardData.daysMissed': latestDay + 1,
-            //             },
-            //             $inc: {},
-            //             $set: {},
-            //             $pull: {},
-            //         },
-            //     });
-            // }
+                userUpdateOperations.push({
+                    userId: user._id,
+                    updateOperations: {
+                        $push: {
+                            'inGameData.beginnerRewardData.daysMissed': latestDay + 1,
+                        },
+                        $inc: {},
+                        $set: {},
+                        $pull: {},
+                    },
+                });
+            }
         }
 
         // execute the update operations ($set and $inc, $push and $pull respectively)
