@@ -1,3 +1,4 @@
+import { LeaderboardPointsSource } from '../models/leaderboard';
 import { LeaderboardModel, UserModel } from '../utils/constants/db';
 import { ReturnValue, Status } from '../utils/retVal';
 
@@ -115,13 +116,41 @@ export const getOwnLeaderboardRanking = async (
             };
         }
 
-        const leaderboard = await LeaderboardModel.findOne({ name: leaderboardName }).lean();
+        let leaderboard = await LeaderboardModel.findOne({ name: leaderboardName }).lean();
 
         if (!leaderboard) {
             return {
                 status: Status.ERROR,
                 message: `(getOwnLeaderboardRanking) Leaderboard not found.`
             };
+        }
+
+        // check if user exists in leaderboard. if not, we create a new user data.
+        const userExistsInLeaderboard = leaderboard.userData.find(userData => userData.userId === user._id);
+
+        if (!userExistsInLeaderboard) {
+            await LeaderboardModel.updateOne({ _id: leaderboard._id }, {
+                $push: {
+                    'userData': {
+                        userId: user._id,
+                        username: user.twitterUsername,
+                        twitterProfilePicture: user.twitterProfilePicture,
+                        pointsData: [
+                            {
+                                points: 0,
+                                source: LeaderboardPointsSource.RESOURCE_SELLING
+                            },
+                            {
+                                points: 0,
+                                source: LeaderboardPointsSource.LEVELLING_UP
+                            }
+                        ],
+                    }
+                },
+            });
+
+            // refetch the leaderboard
+            leaderboard = await LeaderboardModel.findOne({ name: leaderboardName }).lean();
         }
 
         // Sort the user data by points in descending order
