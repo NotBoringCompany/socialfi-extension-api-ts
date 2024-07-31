@@ -5,6 +5,7 @@ import { ExtendedResource } from './resource';
 import { InviteCodeData, ReferralData } from './invite';
 import { TerraCapsulatorType } from './terraCapsulator';
 import { BitOrbType } from './bitOrb';
+import { TappingMastery } from './mastery';
 
 /****************
  * USER-RELATED MODELS
@@ -135,6 +136,7 @@ export enum XCookieSource {
     LEVELLING_UP = 'Levelling Up',
     QUEST_REWARDS = 'Quest Rewards',
     ISLAND_CLAIMING = 'Island Claiming',
+    ISLAND_TAPPING = 'Island Tapping',
     KOS_BENEFITS = 'KOS Benefits',
     TUTORIAL_REWARDS = 'Tutorial Rewards',
     DISCORD_ENGAGEMENT = 'Discord Engagement',
@@ -146,6 +148,10 @@ export enum XCookieSource {
 export interface InGameData {
     /** the user's level */
     level: number;
+    /** the user PlayerEnergy data */
+    energy: PlayerEnergy;
+    /** the user PlayerMastery level data */
+    mastery: PlayerMastery;
     /** the list of tutorial IDs the user has completed at the start */
     completedTutorialIds: number[];
     /** 
@@ -269,4 +275,17 @@ export interface DiscordProfile {
     username: string;
     /** discord oauth refresh token, lasts for 365 days */
     token: string;
+}
+
+/**
+ * Represents user Energy data.
+ */
+export interface PlayerEnergy {
+    maxEnergy: number;
+    currentEnergy: number;
+    dailyEnergyPotion: number;
+}
+
+export interface PlayerMastery {
+    tapping: TappingMastery;
 }

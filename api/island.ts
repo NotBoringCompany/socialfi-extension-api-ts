@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
 import { IslandSchema } from '../schemas/Island';
-import { Island, IslandStatsModifiers, IslandTrait, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
-import { BARREN_ISLE_COMMON_DROP_CHANCE, BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DAILY_BONUS_RESOURCES_GATHERABLE, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLUTION_COST, ISLAND_RARITY_DEVIATION_MODIFIERS, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN, X_COOKIE_TAX, randomizeIslandTraits } from '../utils/constants/island';
+import { Island, IslandStatsModifiers, IslandTappingData, IslandTrait, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
+import { BARREN_ISLE_COMMON_DROP_CHANCE, BASE_CARESS_PER_TAPPING, BASE_ENERGY_PER_TAPPING, BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DAILY_BONUS_RESOURCES_GATHERABLE, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLUTION_COST, ISLAND_RARITY_DEVIATION_MODIFIERS, ISLAND_TAPPING_MILESTONE_BONUS_REWARD, ISLAND_TAPPING_MILESTONE_LIMIT, ISLAND_TAPPING_REQUIREMENT, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN, X_COOKIE_TAX, randomizeIslandTraits } from '../utils/constants/island';
 import { calcBitCurrentRate, getBits } from './bit';
 import { BarrenResource, ExtendedResource, ExtendedResourceOrigin, Resource, ResourceLine, ResourceRarity, ResourceRarityNumeric, ResourceType, SimplifiedResource } from '../models/resource';
 import { UserSchema } from '../schemas/User';
@@ -10,13 +10,17 @@ import { Modifier } from '../models/modifier';
 import { BitSchema } from '../schemas/Bit';
 import { Bit, BitRarity, BitRarityNumeric, BitStatsModifiers, BitTrait, BitTraitData, BitType } from '../models/bit';
 import { generateObjectId } from '../utils/crypto';
-import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
+import { BitModel, IslandModel, LeaderboardModel, SquadLeaderboardModel, SquadModel, UserModel } from '../utils/constants/db';
 import { ObtainMethod } from '../models/obtainMethod';
 import { RELOCATION_COOLDOWN } from '../utils/constants/bit';
-import { ExtendedXCookieData, User, XCookieSource } from '../models/user';
+import { ExtendedXCookieData, PlayerEnergy, PlayerMastery, User, XCookieSource } from '../models/user';
 import { getResource, resources } from '../utils/constants/resource';
 import { Item } from '../models/item';
 import { BoosterItem } from '../models/booster';
+import { TAPPING_MASTERY_LEVEL } from '../utils/constants/mastery';
+import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
+import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
+import { TappingMastery } from '../models/mastery';
 
 /**
  * Gifts an Xterio user an Xterio island.
@@ -1612,6 +1616,8 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
             // calculate the gathering progress increment
             const gatheringProgressIncrement = gatheringProgressIncrementPerHour / 3600 * timePassed;
 
+            console.log(`(updateGatheringProgressAndDropResource) Island ID ${island.islandId} has a current gathering rate of ${gatheringRate} %/hour and a gathering progress increment of ${gatheringProgressIncrement}%/${timePassed} seconds.`)
+
             if (gatheringProgress + gatheringProgressIncrement < 100) {
                 // add to the update operations
                 updateOperations.push({
@@ -1628,6 +1634,7 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
                         }
                     }
                 });
+                console.log(`(updateGatheringProgressAndDropResource) Island ID ${island.islandId} has updated its gathering progress to ${gatheringProgress + gatheringProgressIncrement}.`);
             } else {
                 // if >= 100, drop a resource and reset the gathering progress back to 0 + the remaining overflow of %
                 const { status, message } = await dropResource(island.islandId);
@@ -1651,6 +1658,8 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
                         }
                     }
                 });
+
+                console.log(`(updateGatheringProgressAndDropResource) Island ID ${island.islandId} has dropped a resource and reset its gathering progress to ${finalGatheringProgress}.`);
             }
 
             return updateOperations;
@@ -3491,3 +3500,642 @@ export const calcResourceDropChanceDiff = (type: IslandType, level: number): Res
         legendary: resourceDiff.legendary * (level - 1)
     }
 }
+
+/**
+ * Gets the island's tapping data. If the island has no tapping data in the database, 
+ * it'll add a new islandTappingData instance starting from the 1st milestone
+ */
+export const getIslandTappingData = async (islandId: number): Promise<ReturnValue> => {
+    try {
+        const islandUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const island = await IslandModel.findOne({ islandId: islandId }).lean();
+
+        if (!island) {
+            return {
+                status: Status.ERROR,
+                message: `(getIslandTappingData) Island with ID ${islandId} not found.`
+            };
+        }
+
+        const owner = await UserModel.findOne({ _id: island.owner }).lean();
+
+        if (!owner) {
+            return {
+                status: Status.ERROR,
+                message: `(getIslandTappingData) Owner of the island with ID ${islandId} not found.`
+            };
+        }
+
+        const { tapping } = owner.inGameData.mastery as PlayerMastery;
+
+        // Check if islandTappingData is defined.
+        // 1. If undefined, create new islandTappingData starting from the first tier & return the data
+        // 2. else, return the data
+        if (!island.islandTappingData) {
+            const newTappingData: IslandTappingData = ISLAND_TAPPING_REQUIREMENT(1, tapping.level);
+
+            // Saved the newTappingData to this Island database
+            islandUpdateOperations.$set['islandTappingData'] = newTappingData;
+            IslandModel.updateOne({ islandId: island.islandId }, islandUpdateOperations)
+
+            return {
+                status: Status.SUCCESS,
+                message: `(getIslandTappingData) Returning tapping data for Island with ID ${islandId}.`,
+                data: {
+                    tappingData: newTappingData,
+                }
+            }
+        } else {
+            const tappingData: IslandTappingData = island.islandTappingData;
+
+            return {
+                status: Status.SUCCESS,
+                message: `(getIslandTappingData) Returning tapping data for Island with ID ${islandId}.`,
+                data: {
+                    tappingData,
+                }
+            }
+        }
+
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getIslandTappingData) Error: ${err.message}`
+        }
+    }
+}
+
+/**
+ * Applies tapping action to an island and updates relevant user and island data.
+ */
+export const applyIslandTapping = async (twitterId: string, islandId: number, caressMeter: number, bonus: 'First' | 'Second'): Promise<ReturnValue> => {
+  try {
+        const userUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const islandUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const leaderboardUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const squadUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const squadLeaderboardUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const user = await UserModel.findOne({ twitterId }).lean();
+        const island = await IslandModel.findOne({ islandId: islandId }).lean();
+        const leaderboard = await LeaderboardModel.findOne().sort({ startTimestamp: -1 });
+        const latestSquadLeaderboard = await SquadLeaderboardModel.findOne().sort({ week: -1 }).lean();
+
+        if (!island) {
+            return {
+                status: Status.ERROR,
+                message: `(getIslandTappingData) Island with ID ${islandId} not found.`
+            };
+        }
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(getIslandTappingData) User not found.`
+            };
+        }
+
+        if (!leaderboard) {
+            return {
+                status: Status.ERROR,
+                message: `(getIslandTappingData) Leaderboard not found.`
+            }
+        }
+
+        if (!latestSquadLeaderboard) {
+            return {
+                status: Status.ERROR,
+                message: `(getIslandTappingData) Squad leaderboard not found.`
+            }
+        }
+
+        // Initialize currentTappingData information
+        const {caressEnergyMeter, currentMilestone, milestoneReward} = island.islandTappingData as IslandTappingData;
+        const islandTappingLimit = ISLAND_TAPPING_MILESTONE_LIMIT(island.type as IslandType);
+        const boosterPercentage = milestoneReward.boosterReward;
+        let resourcesDropped: number = 0;
+
+        // if caressMeter passed from FE isn't equal than current caressEnergyMeter return error.
+        if (caressMeter < caressEnergyMeter) {
+            console.log(
+                `(applyIslandTapping) cannot apply island id ${islandId} tapping. caressMeter isn't valid.`
+            );
+
+            return {
+                status: Status.ERROR,
+                message: `(applyIslandTapping) cannot apply island id ${islandId} tapping. caressMeter isn't valid.`,
+            };
+        }
+
+        // Deduct User Energy after applying IslandTapping
+        // initialize user current energy & calculate energy required to apply island tapping
+        const { currentEnergy } = user.inGameData.energy as PlayerEnergy;
+        const energyRequired = Math.ceil(caressEnergyMeter / BASE_CARESS_PER_TAPPING) * BASE_ENERGY_PER_TAPPING;
+
+        // Check user currentEnergy is >= energyRequired
+        if ( currentEnergy >= energyRequired) {
+            const newCurrentEnergy = Math.max(currentEnergy - energyRequired, 0);
+            // Save newCurrentEnergy to userUpdateOperations
+            userUpdateOperations.$set['inGameData.energy.currentEnergy'] = newCurrentEnergy;
+            console.log(`(applyIslandTapping) deduct ${user.twitterUsername} energy to ${newCurrentEnergy} energy`);
+        } else {
+            return {
+                status: Status.ERROR,
+                message: `(getIslandTappingData) User doens't have enough energy to continue this action.`
+            };
+        }
+
+        // Apply current milestone reward as gathering booster to the island.
+        // get only resources that have an origin of `ExtendedResourceOrigin.NORMAL`
+        const normalResourcesGathered = (island.islandResourceStats?.resourcesGathered as ExtendedResource[]).filter(resource => resource.origin === ExtendedResourceOrigin.NORMAL);
+        // add the amount of resources per `normalResourcesGathered` instance
+        const normalResourcesGatheredAmount = normalResourcesGathered.reduce((acc, resource) => acc + resource.amount, 0);
+        const resourcesLeft = island.islandResourceStats?.baseResourceCap - normalResourcesGatheredAmount;
+
+        console.log(`(applyIslandTapping), resources left for island ${island.islandId}: `, resourcesLeft);
+        
+        // if the booster is less than 100, get the current `gatheringProgress` of the island.
+        if (boosterPercentage < 100) {
+            const gatheringProgress = island.islandResourceStats?.gatheringProgress;
+
+            // if the gathering progress + booster percentage is greater than 100:
+            // 1. drop a resource
+            // 2. reset the gathering progress to the remaining overflow of %
+            if (gatheringProgress + boosterPercentage > 100) {
+                // check if a single resource can be dropped
+                if (resourcesLeft === 0) {
+                    console.log(`(applyIslandTapping) Island ID ${islandId} has no resources left to drop. Cannot apply booster.`);
+
+                    return {
+                        status: Status.ERROR,
+                        message: `(applyIslandTapping) Island ID ${islandId} has no resources left to drop. Cannot apply booster.`
+                    }
+                }
+
+                // calculate the remaining overflow of %
+                const finalGatheringProgress = (gatheringProgress + boosterPercentage) - 100;
+
+                // reset the gathering progress back to 0 + the remaining overflow of %
+                islandUpdateOperations.$set['islandResourceStats.gatheringProgress'] = finalGatheringProgress;
+
+                // drop a resource
+                const { status, message } = await dropResource(islandId);
+
+                if (status !== Status.SUCCESS) {
+                    console.log(`(applyIslandTapping) Error from dropResource: ${message}`);
+
+                    return {
+                        status: Status.ERROR,
+                        message: `(applyIslandTapping) Error: ${message}`
+                    }
+                }
+
+                // Initialize Resource Dropped
+                resourcesDropped = 1;
+            // if not, just increment the gathering progress by the booster percentage and deduct the booster from the user's inventory.
+            } else {
+                islandUpdateOperations.$inc['islandResourceStats.gatheringProgress'] = boosterPercentage;
+            }
+        // if the booster is greater than 100,
+        // 1. check the final non-modulo gathering progress. e.g. if the current gathering progress is 70 and a 500% booster is applied, the non-modulo progress will be 570%.
+        // 2. this means that Math.floor(570/100) = 5 resources will be dropped, and the final gathering progress will be 70.
+        } else {
+            const gatheringProgress = island.islandResourceStats?.gatheringProgress;
+            const finalNonModuloGatheringProgress = gatheringProgress + boosterPercentage;
+            const resourcesToDrop = Math.floor(finalNonModuloGatheringProgress / 100);
+
+            console.log(`(applyIslandTapping), gathering progress of island ${island.islandId}: `, gatheringProgress);
+            console.log(`(applyIslandTapping), final non-modulo gathering progress of island ${island.islandId}: `, finalNonModuloGatheringProgress);
+            console.log(`(applyIslandTapping), resources to drop: `, resourcesToDrop);
+
+            // check if the resources to drop is greater than the resources left
+            if (resourcesToDrop > resourcesLeft) {
+                console.log(`(applyIslandTapping) Island ID ${islandId} does not have enough resources left to drop. Cannot apply booster.`);
+
+                return {
+                    status: Status.ERROR,
+                    message: `(applyIslandTapping) Island ID ${islandId} does not have enough resources left to drop. Cannot apply booster.`
+                }
+            }
+
+            // update the island's final gathering progress after moduloing it by 100
+            islandUpdateOperations.$set['islandResourceStats.gatheringProgress'] = finalNonModuloGatheringProgress % 100;
+            // update the island's `lastUpdatedGatheringProgress` to the current time
+            islandUpdateOperations.$set['islandResourceStats.lastUpdatedGatheringProgress'] = Math.floor(Date.now() / 1000);
+
+            // we cannot use Promise.all to drop all resources at once as it will cause race issues with existing resource types.
+            // we will need to loop through the resources to drop and drop them one by one
+            for (let i = 0; i < resourcesToDrop; i++) {
+                // drop a resource
+                const { status, message, data } = await dropResource(islandId);
+
+                console.log(`dropped a resource for Island ${islandId} x${i+1}. resource: ${data.resource}`);
+
+                if (status !== Status.SUCCESS) {
+                    console.log(`(applyIslandTapping) Error from dropResource in loop: ${message}`);
+                }
+            }
+
+            // Initialize Resources Dropped
+            resourcesDropped = resourcesToDrop;
+        }
+
+        // Apply Bonus milestone reward
+        let bonusExp = 0;
+        
+        if (bonus === 'First') {
+            bonusExp = milestoneReward.bonusReward.firstOptionReward;
+        } else {
+            const secondOptionReward = milestoneReward.bonusReward.secondOptionReward;
+            
+            if (secondOptionReward.additionalExp) {
+                bonusExp = secondOptionReward.additionalExp;
+            } else if (secondOptionReward.berryDrop) {
+                const extendedXCookieData = user.inventory?.extendedXCookieData || [] as ExtendedXCookieData[];
+
+                const cookieIndex = extendedXCookieData.findIndex(data => data.source === XCookieSource.ISLAND_TAPPING);
+
+                const berryDropAmount = secondOptionReward.berryDrop;
+
+                // Update operations
+                if (cookieIndex !== -1) {
+                    // Increment existing cookie data
+                    userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${cookieIndex}.xCookies`] = berryDropAmount;
+                } else {
+                    // Push new cookie data to the array
+                    userUpdateOperations.$push[`inventory.xCookieData.extendedXCookieData`] = {
+                        source: XCookieSource.ISLAND_TAPPING,
+                        xCookies: berryDropAmount
+                    };
+                }
+
+                // Always increment currentXCookies
+                userUpdateOperations.$inc[`inventory.xCookieData.currentXCookies`] = berryDropAmount;
+            } else if (secondOptionReward.pointDrop) {
+                const userIndex = (leaderboard.userData as LeaderboardUserData[]).findIndex(userData => userData.userId === user._id);
+
+                let additionalPoints = 0;
+
+                const currentLevel = user.inGameData.level;
+                
+                // if not found, create a new entry
+                if (userIndex === -1) {
+                    // check if the user is eligible to level up to the next level
+                    const newLevel = GET_SEASON_0_PLAYER_LEVEL(secondOptionReward.pointDrop);
+
+                    if (newLevel > currentLevel) {
+                        // set the user's `inGameData.level` to the new level
+                        userUpdateOperations.$set['inGameData.level'] = newLevel;
+
+                        // add the additional points based on the rewards obtainable
+                        additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
+                    }
+
+                    leaderboardUpdateOperations.$push['userData'] = {
+                        userId: user._id,
+                        username: user.twitterUsername,
+                        twitterProfilePicture: user.twitterProfilePicture,
+                        pointsData: [
+                            {
+                                points: secondOptionReward.pointDrop,
+                                source: LeaderboardPointsSource.ISLAND_TAPPING
+                            },
+                            {
+                                points: additionalPoints,
+                                source: LeaderboardPointsSource.LEVELLING_UP
+                            }
+                        ]
+                    }
+                // if the user is found, increment the points
+                } else {
+                    // get the user's total leaderboard points
+                    // this is done by summing up all the points from the `pointsData` array, BUT EXCLUDING SOURCES FROM:
+                    // 1. LeaderboardPointsSource.LEVELLING_UP
+                    const totalLeaderboardPoints = leaderboard.userData[userIndex].pointsData.reduce((acc, pointsData) => {
+                        if (pointsData.source !== LeaderboardPointsSource.LEVELLING_UP) {
+                            return acc + pointsData.points;
+                        }
+
+                        return acc;
+                    }, 0);
+
+                    const newLevel = GET_SEASON_0_PLAYER_LEVEL(totalLeaderboardPoints + secondOptionReward.pointDrop);
+
+                    if (newLevel > currentLevel) {
+                        userUpdateOperations.$set['inGameData.level'] = newLevel;
+                        additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
+                    }
+
+                    // get the source index for ISLAND_TAPPING
+                    const sourceIndex = leaderboard.userData[userIndex].pointsData.findIndex(pointsData => pointsData.source === LeaderboardPointsSource.ISLAND_TAPPING);
+
+                    if (sourceIndex !== -1) {
+                        leaderboardUpdateOperations.$inc[`userData.${userIndex}.pointsData.${sourceIndex}.points`] = secondOptionReward.pointDrop;
+                    } else {
+                        leaderboardUpdateOperations.$push[`userData.${userIndex}.pointsData`] = {
+                            points: secondOptionReward.pointDrop,
+                            source: LeaderboardPointsSource.ISLAND_TAPPING
+                        }
+                    }
+
+                    if (additionalPoints > 0) {
+                        const levellingUpIndex = leaderboard.userData[userIndex].pointsData.findIndex(pointsData => pointsData.source === LeaderboardPointsSource.LEVELLING_UP);
+
+                        if (levellingUpIndex !== -1) {
+                            leaderboardUpdateOperations.$inc[`userData.${userIndex}.pointsData.${levellingUpIndex}.points`] = additionalPoints;
+                        } else {
+                            leaderboardUpdateOperations.$push[`userData.${userIndex}.pointsData`] = {
+                                points: additionalPoints,
+                                source: LeaderboardPointsSource.LEVELLING_UP
+                            }
+                        }
+                    }
+                }
+
+                // if the user also has a squad, add the points to the squad's total points
+                if (user.inGameData.squadId !== null) {
+                    // get the squad
+                    const squad = await SquadModel.findOne({ _id: user.inGameData.squadId }).lean();
+
+                    if (!squad) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(getIslandTappingData) Squad not found.`
+                        }
+                    }
+
+                    // add only the reward.amount (i.e. points) to the squad's total points
+                    squadUpdateOperations.$inc['totalSquadPoints'] = secondOptionReward.pointDrop;
+
+                    // check if the squad exists in the squad leaderboard's `pointsData`. if not, we create a new instance.
+                    const squadIndex = latestSquadLeaderboard.pointsData.findIndex(data => data.squadId === squad._id);
+
+                    if (squadIndex === -1) {
+                        squadLeaderboardUpdateOperations.$push['pointsData'] = {
+                            squadId: squad._id,
+                            squadName: squad.name,
+                            memberPoints: [
+                                {
+                                    userId: user._id,
+                                    username: user.twitterUsername,
+                                    points: secondOptionReward.pointDrop
+                                }
+                            ]
+                        }
+                    } else {
+                        // otherwise, we increment the points for the user in the squad
+                        const userIndex = latestSquadLeaderboard.pointsData[squadIndex].memberPoints.findIndex(member => member.userId === user._id);
+
+                        if (userIndex !== -1) {
+                            squadLeaderboardUpdateOperations.$inc[`pointsData.${squadIndex}.memberPoints.${userIndex}.points`] = secondOptionReward.pointDrop;
+                        } else {
+                            squadLeaderboardUpdateOperations.$push[`pointsData.${squadIndex}.memberPoints`] = {
+                                userId: user._id,
+                                username: user.twitterUsername,
+                                points: secondOptionReward.pointDrop
+                            }
+                        }
+                    }
+                }
+            } else {
+                return {
+                    status: Status.ERROR,
+                    message: `(getIslandTappingData) second option milestone reward is undefined.`
+                };
+            }
+        }
+
+        // Add user tapping exp mastery
+        const { tapping } = user.inGameData.mastery as PlayerMastery;
+        const newTotalExp = tapping.totalExp + milestoneReward.masteryExpReward + bonusExp;
+        userUpdateOperations.$set['inGameData.mastery.tapping.totalExp'] = newTotalExp;
+
+        // Compare currentTappingLevel with newTappingLevel
+        const currentTappingLevel = tapping.level;
+        const newTappingLevel = TAPPING_MASTERY_LEVEL(newTotalExp);
+        if (newTappingLevel > currentTappingLevel) {
+            userUpdateOperations.$set['inGameData.mastery.tapping.level'] = newTappingLevel;
+        }
+
+        // Increase the tier Milestone to the next tier/rank. If milestone reaching the max tier, return error.
+        if (currentMilestone <= islandTappingLimit) {
+            const nextTappingData: IslandTappingData = ISLAND_TAPPING_REQUIREMENT(currentMilestone + 1, tapping.level);
+
+            // saves the nextTappingData to this island database
+            islandUpdateOperations.$set['islandTappingData'] = nextTappingData;
+
+            // update database affected by ApplyTappingIsland
+            await Promise.all([
+                UserModel.updateOne({ _id: user._id }, userUpdateOperations),
+                IslandModel.updateOne({ islandId: island.islandId }, islandUpdateOperations),
+                LeaderboardModel.updateOne({ _id: leaderboard._id }, leaderboardUpdateOperations),
+                SquadModel.updateOne({ _id: user.inGameData.squadId }, squadUpdateOperations),
+                SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, squadLeaderboardUpdateOperations),
+            ])
+
+            return {
+                status: Status.SUCCESS,
+                message: `(getIslandTappingData) Applying tapping data for Island with ID ${islandId}. Increasing to tier ${nextTappingData.currentMilestone}`,
+                data: {
+                    currentMilestone: currentMilestone,
+                    currentReward: milestoneReward,
+                    chosenBonus: bonus === 'First' ? 
+                        milestoneReward.bonusReward.firstOptionReward : 
+                        milestoneReward.bonusReward.secondOptionReward,
+                    resourcesDropped,
+                }
+            }
+        } else {
+            // update database affected by ApplyTappingIsland
+            await Promise.all([
+                UserModel.updateOne({ _id: user._id }, userUpdateOperations),
+                IslandModel.updateOne({ islandId: island.islandId }, islandUpdateOperations),
+                LeaderboardModel.updateOne({ _id: leaderboard._id }, leaderboardUpdateOperations),
+                SquadModel.updateOne({ _id: user.inGameData.squadId }, squadUpdateOperations),
+                SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, squadLeaderboardUpdateOperations),
+            ])
+
+            return {
+                status: Status.SUCCESS,
+                message: `(getIslandTappingData) Tapping milestone already reached the latest tier.`,
+                data: {
+                    currentMilestone: currentMilestone,
+                    currentReward: milestoneReward,
+                    chosenBonus: bonus === 'First' ? 
+                        milestoneReward.bonusReward.firstOptionReward : 
+                        milestoneReward.bonusReward.secondOptionReward,
+                    resourcesDropped,
+                }
+            };
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getIslandTappingData) Error: ${err.message}`
+        }
+    }  
+};
+
+export const rerollBonusMilestoneReward = async (twitterId: string, islandId: number): Promise<ReturnValue> => {
+    try {
+        const userUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const islandUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const user = await UserModel.findOne({ twitterId }).lean();
+        const island = await IslandModel.findOne({ islandId: islandId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(rerollBonusMilestoneReward) User not found.`
+            };
+        }
+
+        if (!island) {
+            return {
+                status: Status.ERROR,
+                message: `(rerollBonusMilestoneReward) Island with ID ${islandId} not found.`
+            };
+        }
+        
+        // Destructure necessary data
+        const { tapping } = user.inGameData.mastery as PlayerMastery;
+        const { currentMilestone } = island.islandTappingData as IslandTappingData;
+        
+        // Check if user reroll count is > 0
+        if (tapping.rerollCount <= 0) {
+            return {
+                status: Status.ERROR,
+                message: `(rerollBonusMilestoneReward) The user's reroll count has been used up.`
+            };
+        }
+
+        const newMilestoneBonusReward = ISLAND_TAPPING_MILESTONE_BONUS_REWARD(currentMilestone, tapping.level);
+        const newRerollCount = Math.max(tapping.rerollCount - 1, 0);
+
+        // Set the newMilestoneBonusReward & newRerollCount
+        userUpdateOperations.$set['inGameData.mastery.tapping.rerollCount'] = newRerollCount;
+        islandUpdateOperations.$set['islandTappingData.milestoneReward.bonusReward'] = newMilestoneBonusReward;
+
+        // update database for UserModel & IslandModel data
+        await Promise.all([
+            UserModel.updateOne({ twitterId }, userUpdateOperations),
+            IslandModel.updateOne({ islandId }, islandUpdateOperations),
+        ]);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(rerollBonusMilestoneReward) Successfully updated bonus milestone reward.`,
+            data: {
+                islandId: islandId,
+                currentMilestone: currentMilestone,
+                tappingLevel: tapping.level,
+                newMilestoneBonusReward: newMilestoneBonusReward,
+            }
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getIslandTappingData) Error: ${err.message}`
+        }
+    }
+}
+
+/**
+ * Resets the `currentMilestone` field of all islands with a milestone greater than 1
+ * to the value associated with milestoneTier 1.
+ * Also resets the `rerollCount` field for all users with tapping mastery data.
+ * Called by a scheduler every day at 23:59 UTC.
+ */
+export const resetDailyIslandTappingMilestone = async (): Promise<void> => {
+    try {
+        // Find all available islands with currentMilestone greater than 1.
+        const islands = await IslandModel.find({ 'islandTappingData.currentMilestone': { $gt: 1 } }).lean();
+        
+        if (islands.length === 0) {
+            console.error(`(resetDailyIslandTappingMilestone) No islands found.`);
+            return;
+        }
+
+        // Retrieve the owner and owner's tapping level for each island
+        const bulkWriteOps = await Promise.all(islands.map(async (island) => {
+            // Find the user who owns the island
+            const owner = await UserModel.findOne({ _id: island.owner }).lean();
+            
+            if (!owner) {
+                console.error(`(resetDailyIslandTappingMilestone) Owner not found for island ${island.islandId}`);
+                return null; // Skip this operation if the owner is not found
+            }
+
+            const { tapping } = owner.inGameData.mastery as PlayerMastery; // Assuming owner's tapping level is stored in 'tappingLevel'
+
+            return {
+                updateOne: {
+                    filter: { islandId: island.islandId },
+                    update: {
+                        $set: {
+                            'islandTappingData': ISLAND_TAPPING_REQUIREMENT(1, tapping.level) // Use the owner's tapping level
+                        }
+                    }
+                }
+            };
+        }));
+
+        // Remove null entries from the bulkWriteOps array
+        const validBulkWriteOps = bulkWriteOps.filter(op => op !== null);
+
+        if (validBulkWriteOps.length > 0) {
+            await IslandModel.bulkWrite(validBulkWriteOps);
+        } else {
+            console.error(`(resetDailyIslandTappingMilestone) No valid operations to execute.`);
+        }
+    } catch (err: any) {
+        console.error(`(resetDailyIslandTappingMilestone) Error: ${err.message}`);
+    }
+};

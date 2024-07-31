@@ -23,5 +23,6 @@ export const IslandSchema = new mongoose.Schema({
     traits: Array,
     islandResourceStats: Object,
     islandEarningStats: Object,
-    islandStatsModifiers: Object
+    islandStatsModifiers: Object,
+    islandTappingData: Object
 })

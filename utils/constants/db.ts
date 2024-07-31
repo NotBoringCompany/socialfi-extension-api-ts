@@ -4,7 +4,7 @@ import { BitSchema } from '../../schemas/Bit';
 import { IslandSchema } from '../../schemas/Island';
 import { RaftSchema } from '../../schemas/Raft';
 import { CookieDepositSchema, CookieWithdrawalSchema } from '../../schemas/Cookie';
-import { QuestSchema } from '../../schemas/Quest';
+import { QuestProgressionSchema, QuestSchema } from '../../schemas/Quest';
 import { POISchema } from '../../schemas/POI';
 import { LeaderboardSchema } from '../../schemas/Leaderboard';
 import { StarterCodeSchema, SuccessfulIndirectReferralSchema } from '../../schemas/Invite';
@@ -33,7 +33,8 @@ export const IslandModel = WONDERBITS_CONNECTION.model('Islands', IslandSchema, 
 export const RaftModel = WONDERBITS_CONNECTION.model('Rafts', RaftSchema, 'Rafts');
 export const CookieDepositModel = WONDERBITS_CONNECTION.model('CookieDeposits', CookieDepositSchema, 'CookieDeposits');
 export const CookieWithdrawalModel = WONDERBITS_CONNECTION.model('CookieWithdrawals', CookieWithdrawalSchema, 'CookieWithdrawals');
-export const QuestModel = WONDERBITS_CONNECTION.model('Quests', QuestSchema, 'Quests');
+export const QuestModel = WONDERBITS_CONNECTION.model('Quests', QuestSchema, 'Quests_V2');
+export const QuestProgressionModel = WONDERBITS_CONNECTION.model('QuestProgressions', QuestProgressionSchema, 'QuestProgressions');
 export const POIModel = WONDERBITS_CONNECTION.model('POI', POISchema, 'POI');
 export const LeaderboardModel = WONDERBITS_CONNECTION.model('Leaderboards', LeaderboardSchema, 'Leaderboards');
 export const StarterCodeModel = WONDERBITS_CONNECTION.model('StarterCodes', StarterCodeSchema, 'StarterCodes');

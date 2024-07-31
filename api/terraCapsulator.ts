@@ -4,12 +4,12 @@ import { randomizeTypeFromCapsulator } from '../utils/constants/terraCapsulator'
 import { Island, IslandStatsModifiers, IslandType } from '../models/island';
 import { ObtainMethod } from '../models/obtainMethod';
 import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
-import { DEFAULT_ISLAND_TYPE, GET_TOTAL_COOKIE_CRUMBS_EARNABLE, GET_TOTAL_X_COOKIES_EARNABLE, randomizeIslandTraits } from '../utils/constants/island';
+import { DEFAULT_ISLAND_TYPE, GET_TOTAL_COOKIE_CRUMBS_EARNABLE, GET_TOTAL_X_COOKIES_EARNABLE, ISLAND_TAPPING_REQUIREMENT, randomizeIslandTraits } from '../utils/constants/island';
 import { BitTrait, BitTraitData } from '../models/bit';
 import { Modifier } from '../models/modifier';
 import { TerraCapsulatorType } from '../models/terraCapsulator';
 import { Item } from '../models/item';
-import { User } from '../models/user';
+import { PlayerMastery, User } from '../models/user';
 
 /**
  * (User) Consumes a Terra Capsulator to obtain an island.
@@ -96,10 +96,12 @@ export const consumeTerraCapsulator = async (type: TerraCapsulatorType, twitterI
  * Summons an island obtained from a Terra Capsulator.
  */
 export const summonIsland = async (
-    terraCapsulatorType: TerraCapsulatorType,
+    terraCapsulatorType: TerraCapsulatorType | IslandType,
     owner: string,
-): Promise<ReturnValue> => {
+): Promise<ReturnValue<{ island: Island }>> => {
     try {
+        const isIsland = Object.values(IslandType).includes(terraCapsulatorType as IslandType);
+
         // get the latest island id from the database
         const { status, message, data } = await getLatestIslandId();
 
@@ -120,14 +122,11 @@ export const summonIsland = async (
             }
         }
 
+        const { tapping } = user.inGameData.mastery as PlayerMastery;
+
         const latestIslandId = data?.latestIslandId as number;
 
-        // check if the owner already completed the 2nd tutorial
-        // if already completed, get the island type based on the probability of obtaining it
-        // otherwise, give the owner a primal island for the completion reward
-        const islandType = !user.inGameData.completedTutorialIds.includes(3)
-            ? DEFAULT_ISLAND_TYPE
-            : randomizeTypeFromCapsulator(terraCapsulatorType);
+        const islandType = isIsland ? (terraCapsulatorType as IslandType) : randomizeTypeFromCapsulator(terraCapsulatorType as TerraCapsulatorType);
 
         // randomize the base resource cap
         const baseResourceCap = randomizeBaseResourceCap(islandType);
@@ -136,7 +135,7 @@ export const summonIsland = async (
         const traits = randomizeIslandTraits();
 
         // get total xCookies earnable based on rarity
-        const totalXCookiesEarnable = GET_TOTAL_X_COOKIES_EARNABLE(terraCapsulatorType, islandType);
+        const totalXCookiesEarnable = GET_TOTAL_X_COOKIES_EARNABLE(isIsland ? TerraCapsulatorType.TERRA_CAPSULATOR_I : (terraCapsulatorType as TerraCapsulatorType), islandType);
 
         // get total cookie crumbs earnable based on rarity
         const totalCookieCrumbsEarnable = GET_TOTAL_COOKIE_CRUMBS_EARNABLE(islandType);
@@ -237,7 +236,8 @@ export const summonIsland = async (
                 crumbsEarningEnd: 0,
                 lastClaimed: 0,
             },
-            islandStatsModifiers
+            islandStatsModifiers,
+            islandTappingData: ISLAND_TAPPING_REQUIREMENT(1, tapping.level),
         }
 
         console.log(`island stats modifiers for island #${island.islandId}: `, islandStatsModifiers);

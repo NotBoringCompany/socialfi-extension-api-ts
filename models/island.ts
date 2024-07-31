@@ -43,6 +43,8 @@ export interface Island {
     islandEarningStats: IslandEarningStats;
     /** modifiers for both resource and earning stats (incl. boost and reduction) */
     islandStatsModifiers: IslandStatsModifiers;
+    /** island tapping related data */
+    islandTappingData: IslandTappingData;
 }
 
 /**
@@ -192,4 +194,35 @@ export enum RateType {
 export interface RarityDeviationReduction {
     /** the reduction in gathering rate (by a fixed %)  */
     gatheringRateReduction: number;
+}
+
+/**
+ * Used for Island Tapping mechanic
+ */
+export interface IslandTappingData {
+    /** current tapping milestone progress */
+    currentMilestone: number;
+    /** booster reward when reaching current tapping milestone */
+    milestoneReward: TappingMilestoneReward;
+    /** caress energy meter required to apply current tapping milestone effect */
+    caressEnergyMeter: number;
+    /** current caress energy meter data */
+    currentCaressEnergyMeter: number;
+}
+
+export interface TappingMilestoneReward {
+    boosterReward: number;
+    masteryExpReward: number;
+    bonusReward: TappingMilestoneBonusReward;
+}
+
+export interface TappingMilestoneBonusReward {
+    // First option reward will be Tapping Mastery Exp
+    firstOptionReward: number;
+    // Second option reward will be either Additional Exp, Currency Drop, or Point Drop
+    secondOptionReward: {
+        additionalExp?: number;
+        berryDrop?: number;
+        pointDrop?: number;
+    }
 }

@@ -1,11 +1,11 @@
 import { depleteEnergyScheduler } from './bit';
 import { removeOpenedTweetIdsTodayScheduler } from './chest';
 import { updateSuccessfulIndirectReferralsScheduler } from './invite';
-import { updateClaimableCrumbsScheduler, updateClaimableXCookiesScheduler, updateDailyBonusResourcesGatheredScheduler, updateGatheringProgressAndDropResourceScheduler } from './island';
+import { resetDailyIslandTappingMilestoneScheduler, updateClaimableCrumbsScheduler, updateClaimableXCookiesScheduler, updateDailyBonusResourcesGatheredScheduler, updateGatheringProgressAndDropResourceScheduler } from './island';
 import { checkDailyKOSRewardsScheduler, checkWeeklyKOSRewardsScheduler } from './kos';
 import { resetGlobalItemsDailyBuyableAndSellableAmountScheduler } from './poi';
 import { calculateWeeklySquadRankingAndAddSquadLeaderboardScheduler } from './squadLeaderboard';
-import { updateBeginnerRewardsDataScheduler, updateDailyLoginRewardsDataScheduler } from './user';
+import { restoreUserCurrentEnergyAndResetRerollScheduler, updateBeginnerRewardsDataScheduler, updateDailyLoginRewardsDataScheduler, updateUserEnergyPotionScheduler } from './user';
 import { batchSendKICKScheduler } from './web3';
 import { distributeWeeklyMVPRewardsScheduler, updateCurrentWeeklyMVPRankingLeaderboardScheduler } from './weeklyMVPReward';
 
@@ -27,7 +27,10 @@ export const schedulers = async (): Promise<void> => {
         await updateDailyBonusResourcesGatheredScheduler();
         await updateDailyLoginRewardsDataScheduler();
         await updateBeginnerRewardsDataScheduler();
+        await updateUserEnergyPotionScheduler();
+        await restoreUserCurrentEnergyAndResetRerollScheduler();
         await resetGlobalItemsDailyBuyableAndSellableAmountScheduler();
+        await resetDailyIslandTappingMilestoneScheduler();
 
         await calculateWeeklySquadRankingAndAddSquadLeaderboardScheduler();
 

@@ -1,4 +1,5 @@
 import { Bit, BitRarity } from '../models/bit';
+import { IslandType } from '../models/island';
 import { Modifier } from '../models/modifier';
 import { ObtainMethod } from '../models/obtainMethod';
 import { Tutorial, TutorialReward, TutorialRewardType } from '../models/tutorial';
@@ -9,6 +10,8 @@ import { generateObjectId } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
 import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
 import { claimCollabReward } from './collab_v2';
+import { addIslandToDatabase } from './island';
+import { summonIsland } from './terraCapsulator';
 
 /**
  * Adds a tutorial to the database.
@@ -284,6 +287,24 @@ export const completeTutorial = async (twitterId: string, tutorialId: number): P
                     tutorial.rewards[i] = {
                         ...tutorial.rewards[i],
                         value: bitData.bit,
+                    };
+
+                    break;
+                case TutorialRewardType.ISLAND:
+                    const { data: islandData, status } = await summonIsland(IslandType.PRIMAL_ISLES, user._id);
+                    if (!islandData || status !== Status.SUCCESS) break;
+
+                    // save the Island to the database
+                    const { status: addIslandStatus } = await addIslandToDatabase(islandData.island);
+
+                    if (addIslandStatus !== Status.SUCCESS) break;
+
+                    // add the island ID to the user's inventory
+                    userUpdateOperations.$push['inventory.islandIds'] = islandData.island.islandId;
+
+                    tutorial.rewards[i] = {
+                        ...tutorial.rewards[i],
+                        value: islandData.island,
                     };
 
                     break;

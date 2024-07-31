@@ -18,6 +18,7 @@ export interface TutorialReward {
 export enum TutorialRewardType {
     X_COOKIES = 'xCookies',
     BIT = 'Bit',
+    ISLAND = 'Island'
 }
 
 
