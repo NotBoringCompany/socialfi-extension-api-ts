@@ -71,6 +71,7 @@ export enum QuestType {
  * Represents the tier of a Quest.
  */
 export enum QuestTier {
+    TUTORIAL = 'Tutorial',
     BEGINNER = 'Beginner',
     INTERMEDIATE = 'Intermediate',
     ADVANCED = 'Advanced',
