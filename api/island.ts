@@ -3973,6 +3973,11 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
                 status: Status.SUCCESS,
                 message: `(getIslandTappingData) Applying tapping data for Island with ID ${islandId}. Increasing to tier ${nextTappingData.currentMilestone}`,
                 data: {
+                    currentMilestone: currentMilestone,
+                    currentReward: milestoneReward,
+                    chosenBonus: bonus === 'First' ? 
+                        milestoneReward.bonusReward.firstOptionReward : 
+                        milestoneReward.bonusReward.secondOptionReward,
                     resourcesDropped,
                 }
             }
@@ -3990,6 +3995,11 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
                 status: Status.SUCCESS,
                 message: `(getIslandTappingData) Tapping milestone already reached the latest tier.`,
                 data: {
+                    currentMilestone: currentMilestone,
+                    currentReward: milestoneReward,
+                    chosenBonus: bonus === 'First' ? 
+                        milestoneReward.bonusReward.firstOptionReward : 
+                        milestoneReward.bonusReward.secondOptionReward,
                     resourcesDropped,
                 }
             };
@@ -4062,7 +4072,13 @@ export const rerollBonusMilestoneReward = async (twitterId: string, islandId: nu
 
         return {
             status: Status.SUCCESS,
-            message: `(rerollBonusMilestoneReward) Successfully updated bonus milestone reward.`
+            message: `(rerollBonusMilestoneReward) Successfully updated bonus milestone reward.`,
+            data: {
+                islandId: islandId,
+                currentMilestone: currentMilestone,
+                tappingLevel: tapping.level,
+                newMilestoneBonusReward: newMilestoneBonusReward,
+            }
         };
     } catch (err: any) {
         return {
