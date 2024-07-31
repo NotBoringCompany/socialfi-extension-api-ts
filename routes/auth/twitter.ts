@@ -69,6 +69,10 @@ router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/',
             const host = (req.session as any).redirectHost || 'https://x.com';
             const version = (req.session as any).version || '-';
 
+            if (version !== '2.0' && data.loginType === 'Register') {
+                res.send(`Sorry, we're currently disabling register through the extension. Please register at our web version https://wonderbits.vercel.app`)
+            }
+
             if (status === Status.SUCCESS) {
                 mixpanel.track('Login Callback', {
                     distinct_id: twitterId,
