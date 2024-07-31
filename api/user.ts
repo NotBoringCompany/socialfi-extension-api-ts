@@ -2866,17 +2866,27 @@ export const handleTelegramLogin = async (initData: string): Promise<ReturnValue
     try {
         let loginType: 'Register' | 'Login';
 
+        console.log('telegram: login')
+
         // validate the init data
         const isValid = validateTelegramData(initData);
-        if (!isValid)
-            return {
+        if (!isValid) return {
                 status: Status.UNAUTHORIZED,
                 message: `(handleTelegramLogin) Unauthorized`,
-            };
+        };
+
+        console.log('telegram: valid')
+        
 
         const telegramData = parseTelegramData(initData);
 
+        console.log('telegram: parsing')
+
+
         const user = await UserModel.findOne({ twitterId: telegramData.user.id, method: 'telegram' }).lean();
+
+        console.log('telegram: user', user)
+
 
         // if user doesn't exist, create a new user
         if (!user) {
