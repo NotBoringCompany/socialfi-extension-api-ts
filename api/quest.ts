@@ -631,20 +631,20 @@ export const checkQuestRequirements = async (twitterId: string, questId: number)
             };
         }
 
-        const relationshipPromises: Promise<any>[] = [];
+        // const relationshipPromises: Promise<any>[] = [];
 
-        for (const requirement of quest.requirements as QuestRequirement[]) {
-            if (requirement.type === QuestRequirementType.FOLLOW_USER) {
-                const source = user.twitterUsername;
-                const target = requirement.parameters.twitterUsername;
+        // for (const requirement of quest.requirements as QuestRequirement[]) {
+        //     if (requirement.type === QuestRequirementType.FOLLOW_USER) {
+        //         const source = user.twitterUsername;
+        //         const target = requirement.parameters.twitterUsername;
 
-                relationshipPromises.push(
-                    TwitterHelper.getRelationship({ source_screen_name: source, target_screen_name: target })
-                );
-            }
-        }
+        //         relationshipPromises.push(
+        //             TwitterHelper.getRelationship({ source_screen_name: source, target_screen_name: target })
+        //         );
+        //     }
+        // }
 
-        const relationships = await Promise.all(relationshipPromises);
+        // const relationships = await Promise.all(relationshipPromises);
 
         for (const [index, requirement] of (quest.requirements as QuestRequirement[]).entries()) {
             switch (requirement.type) {
@@ -665,22 +665,22 @@ export const checkQuestRequirements = async (twitterId: string, questId: number)
                     }
                     break;
                 case QuestRequirementType.FOLLOW_USER:
-                    const relationship = relationships.shift();
+                    // const relationship = relationships.shift();
 
-                    if (relationship.status !== Status.SUCCESS || !relationship.data) {
-                        return {
-                            status: Status.ERROR,
-                            message: `(checkQuestRequirement) Failed to check the quest requirements, try again later.`,
-                        };
-                    }
+                    // if (relationship.status !== Status.SUCCESS || !relationship.data) {
+                    //     return {
+                    //         status: Status.ERROR,
+                    //         message: `(checkQuestRequirement) Failed to check the quest requirements, try again later.`,
+                    //     };
+                    // }
 
-                    // check if the user already followed the targeted account
-                    if (!relationship.data.source.following) {
-                        return {
-                            status: Status.ERROR,
-                            message: `(checkQuestRequirement) User has not fulfilled the quest requirements.`,
-                        };
-                    }
+                    // // check if the user already followed the targeted account
+                    // if (!relationship.data.source.following) {
+                    //     return {
+                    //         status: Status.ERROR,
+                    //         message: `(checkQuestRequirement) User has not fulfilled the quest requirements.`,
+                    //     };
+                    // }
                     break;
                 default:
                     if (quest.type !== QuestType.PROGRESSION) break;
