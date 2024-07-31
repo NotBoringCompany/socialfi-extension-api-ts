@@ -3,7 +3,7 @@ import { ExtendedProfile } from '../../utils/types';
 import { generateJWT, validateJWT } from '../../utils/jwt';
 import { Status } from '../../utils/retVal';
 import passport from '../../configs/passport';
-import { getMainWallet, handleTwitterLogin } from '../../api/user';
+import { handleTwitterLogin } from '../../api/user';
 import { mixpanel } from '../../utils/mixpanel';
 import { TWITTER_LOGIN_CALLBACK_MIXPANEL_EVENT_HASH } from '../../utils/constants/mixpanelEvents';
 import { WONDERBITS_CONTRACT } from '../../utils/constants/web3';

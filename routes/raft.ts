@@ -7,7 +7,7 @@ import { RAFT_EVOLUTION_COST } from '../utils/constants/raft';
 import { mixpanel } from '../utils/mixpanel';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { UserWallet } from '../models/user';
-import { getMainWallet } from '../api/user';
+
 import { EVOLVE_RAFT_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { incrementEventCounterInContract } from '../api/web3';
 

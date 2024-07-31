@@ -4,7 +4,7 @@ import { validateRequestAuth } from '../utils/auth';
 import { addPOAP, getAllPOAP, getUserPOAP, redeemCode } from '../api/poap';
 import { mixpanel } from '../utils/mixpanel';
 import { UserWallet } from '../models/user';
-import { getMainWallet } from '../api/user';
+
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { REDEEM_POAP_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { incrementEventCounterInContract } from '../api/web3';

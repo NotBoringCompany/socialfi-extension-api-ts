@@ -14,7 +14,6 @@ import { authMiddleware } from '../middlewares/auth';
 import { EVOLVE_BIT_MIXPANEL_EVENT_HASH, FEED_BIT_MIXPANEL_EVENT_HASH, RELEASE_BIT_MIXPANEL_EVENT_HASH, RENAME_BIT_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { UserWallet } from '../models/user';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
-import { getMainWallet } from '../api/user';
 import { incrementEventCounterInContract } from '../api/web3';
 import { incrementProgressionByType } from '../api/quest';
 import { QuestRequirementType } from '../models/quest';

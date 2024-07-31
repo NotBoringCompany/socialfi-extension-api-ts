@@ -6,7 +6,7 @@ import { mixpanel } from '../utils/mixpanel';
 import { authMiddleware } from '../middlewares/auth';
 import { CREATE_SQUAD_MIXPANEL_EVENT_HASH, GET_CURRENT_USER_SQUAD_MIXPANEL_EVENT_HASH, JOIN_SQUAD_MIXPANEL_EVENT_HASH, KICK_SQUAD_MEMBER_MIXPANEL_EVENT_HASH, LEAVE_SQUAD_MIXPANEL_EVENT_HASH, RENAME_SQUAD_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { UserWallet } from '../models/user';
-import { getMainWallet } from '../api/user';
+
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { incrementEventCounterInContract } from '../api/web3';
 

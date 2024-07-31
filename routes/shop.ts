@@ -6,7 +6,7 @@ import { mixpanel } from '../utils/mixpanel';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { PURCHASE_SHOP_ASSET_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { UserWallet } from '../models/user';
-import { getMainWallet } from '../api/user';
+
 import { incrementEventCounterInContract } from '../api/web3';
 import { BitOrbType } from '../models/bitOrb';
 import { incrementProgressionByType } from '../api/quest';
