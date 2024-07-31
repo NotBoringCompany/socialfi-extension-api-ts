@@ -125,6 +125,8 @@ export interface QuestRequirement {
     description?: string;
     /** parameters of the quest requirement (such as having to follow this user, retweet this post and so on) */
     parameters: QuestRequirementParameters;
+    /** this field only help for fetching the quest detail */
+    progress?: QuestProgression;
 }
 
 /**
