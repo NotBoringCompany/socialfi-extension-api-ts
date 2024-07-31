@@ -1,6 +1,6 @@
 import { ReturnValue, Status } from '../utils/retVal'
 import { BLAST_TESTNET_PROVIDER, COOKIE_CONTRACT_DECIMALS, COOKIE_CONTRACT_USER, DEPLOYER_WALLET } from '../utils/constants/web3';
-import { generateHashSalt, generateObjectId } from '../utils/crypto';
+import { decryptPrivateKey, generateHashSalt, generateObjectId } from '../utils/crypto';
 import { ethers } from 'ethers';
 import { CookieDepositModel, CookieWithdrawalModel, UserModel } from '../utils/constants/db';
 import { ExtendedXCookieData, XCookieSource } from '../models/user';
@@ -20,7 +20,8 @@ export const depositCookies = async (twitterId: string, amount: number): Promise
         }
 
         // get the user's private key
-        const privateKey = user.wallet.privateKey;
+        const encryptedPrivateKey = user.wallet.encryptedPrivateKey;
+        const privateKey = decryptPrivateKey(encryptedPrivateKey);
 
         // get the cookie contract instance (with user's private key)
         const cookieContract = COOKIE_CONTRACT_USER(privateKey);
@@ -112,7 +113,8 @@ export const withdrawCookies = async (twitterId: string, amount: number): Promis
         }
 
         // get the user's private key
-        const privateKey = user.wallet.privateKey;
+        const encryptedPrivateKey = user.wallet.encryptedPrivateKey;
+        const privateKey = decryptPrivateKey(encryptedPrivateKey);
 
         const hashSalt = generateHashSalt();
         const timestamp = Math.floor(Date.now() / 1000);

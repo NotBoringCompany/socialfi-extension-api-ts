@@ -1,7 +1,7 @@
 import { ReturnValue, Status } from '../utils/retVal';
 import { createUserWallet } from '../utils/wallet';
 import { createRaft } from './raft';
-import { generateHashSalt, generateObjectId, generateReferralCode, generateWonderbitsDataHash } from '../utils/crypto';
+import { decryptPrivateKey, generateHashSalt, generateObjectId, generateReferralCode, generateWonderbitsDataHash } from '../utils/crypto';
 import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
 import { RANDOMIZE_GENDER, getBitStatsModifiersFromTraits, randomizeBitTraits, randomizeBitType } from '../utils/constants/bit';
 import { ObtainMethod } from '../models/obtainMethod';
@@ -175,7 +175,7 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
             }
 
             // creates the wallet for the user
-            const { privateKey, address } = createUserWallet();
+            const { encryptedPrivateKey, address } = createUserWallet();
 
             // initialize PlayerEnergy fot user
             const newEnergy: PlayerEnergy = {
@@ -215,7 +215,7 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
                     },
                 },
                 wallet: {
-                    privateKey,
+                    encryptedPrivateKey,
                     address,
                 },
                 secondaryWallets: [],
@@ -369,7 +369,7 @@ export const getWalletDetails = async (twitterId: string): Promise<ReturnValue> 
             message: `(getWalletDetails) Wallet details fetched.`,
             data: {
                 address: user.wallet.address,
-                privateKey: user.wallet.privateKey,
+                privateKey: decryptPrivateKey(user.wallet.privateKey),
             },
         };
     } catch (err: any) {
@@ -2156,7 +2156,7 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
         }
 
         // creates the wallet for the user
-        const { privateKey, address } = createUserWallet();
+        const { encryptedPrivateKey, address } = createUserWallet();
 
         // initialize PlayerEnergy for new user
         const newEnergy: PlayerEnergy = {
@@ -2194,7 +2194,7 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
                 },
             },
             wallet: {
-                privateKey,
+                encryptedPrivateKey,
                 address,
             },
             secondaryWallets: [],
@@ -2573,7 +2573,7 @@ export const handleTelegramLogin = async (initData: string): Promise<ReturnValue
             }
 
             // creates the wallet for the user
-            const { privateKey, address } = createUserWallet();
+            const { encryptedPrivateKey, address } = createUserWallet();
 
             // initialize PlayerEnergy for new user
             const newEnergy: PlayerEnergy = {
@@ -2614,7 +2614,7 @@ export const handleTelegramLogin = async (initData: string): Promise<ReturnValue
                     },
                 },
                 wallet: {
-                    privateKey,
+                    encryptedPrivateKey,
                     address,
                 },
                 secondaryWallets: [],

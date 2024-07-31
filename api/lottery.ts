@@ -3,7 +3,7 @@ import { areSetsEqual, calcWinnerLeafNodes, calcWinnerMerkleRoot, calcWinnerMerk
 import { ReturnValue, Status } from '../utils/retVal';
 import mongoose from 'mongoose';
 import { LotterySchema } from '../schemas/Lottery';
-import { generateDrawSeed, generateObjectId, generateServerSeed, hashServerSeed } from '../utils/crypto';
+import { decryptPrivateKey, generateDrawSeed, generateObjectId, generateServerSeed, hashServerSeed } from '../utils/crypto';
 import { Prize, Ticket, Winner } from '../models/lottery';
 import { lotteryPrizeTier, lotteryTicketCost } from '../utils/constants/lottery';
 import { UserSchema } from '../schemas/User';
@@ -219,7 +219,7 @@ export const claimWinnings = async (twitterId: string, drawId?: number): Promise
         }
 
         // call the `claimWinnings` function in the lottery contract using the user's pvt key and the `finalPrize` amount
-        const lotteryContract = LOTTERY_CONTRACT_USER(user.wallet?.privateKey);
+        const lotteryContract = LOTTERY_CONTRACT_USER(decryptPrivateKey(user.wallet.encryptedPrivateKey));
 
         // since prize is in ETH format, we need to convert it to wei
         const claimWinningsTx = await lotteryContract.claimWinnings(

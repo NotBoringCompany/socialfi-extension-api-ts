@@ -1,9 +1,11 @@
 import { ethers } from 'ethers';
+import { encryptPrivateKey } from './crypto';
+import { UserWallet } from '../models/user';
 
 /**
  * Creates a wallet for a user, returning both private and public keys.
  */
-export const createUserWallet = (): {address: string, privateKey: string} => {
+export const createUserWallet = (): UserWallet => {
     const wallet = ethers.Wallet.createRandom();
 
     const privateKey = wallet.privateKey;
@@ -11,6 +13,6 @@ export const createUserWallet = (): {address: string, privateKey: string} => {
 
     return {
         address,
-        privateKey
+        encryptedPrivateKey: encryptPrivateKey(privateKey)
     }
 }

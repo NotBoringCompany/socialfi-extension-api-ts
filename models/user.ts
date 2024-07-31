@@ -57,8 +57,8 @@ export interface User {
 export interface UserWallet {
     /** the wallet's address */
     address: string;
-    /** the wallet's private key used to export the wallet */
-    privateKey: string;
+    /** the wallet's private key encrypted via AES-256; used to export the wallet */
+    encryptedPrivateKey: string;
 }
 
 /**
