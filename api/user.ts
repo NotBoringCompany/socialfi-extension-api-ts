@@ -2404,7 +2404,7 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
  */
 export const consumeEnergyPotion = async (
     twitterId: string, 
-    tappingProgress?: {islandId: number, currentCaressMeter: number}[],
+    tappingProgress?: {islandId: number, currentCaressEnergyMeter: number}[],
 ): Promise<ReturnValue> => {
     try {
         const userUpdateOperations = {
@@ -2464,7 +2464,7 @@ export const consumeEnergyPotion = async (
                     return {
                         updateOne: {
                             filter: { islandId: progress.islandId, owner: user._id },
-                            update: { $set: { 'islandTappingData.currentCaressMeter': progress.currentCaressMeter } }
+                            update: { $set: { 'islandTappingData.currentCaressEnergyMeter': progress.currentCaressEnergyMeter } }
                         }
                     };
                 } else {
