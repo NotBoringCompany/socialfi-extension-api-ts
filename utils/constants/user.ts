@@ -169,14 +169,9 @@ export const GET_SEASON_0_PLAYER_LEVEL = (points: number): number => {
     const levels = [
         { min: 0, max: 149, level: 1 },
         { min: 150, max: 499, level: 2 },
-        { min: 500, max: 999, level: 3 },
-        { min: 1000, max: 2999, level: 4 },
-        { min: 3000, max: 5499, level: 5 },
-        { min: 5500, max: 8499, level: 6 },
-        { min: 8500, max: 11999, level: 7 },
-        { min: 12000, max: 15999, level: 8 },
-        { min: 16000, max: 20499, level: 9 },
-        { min: 20500, max: 25499, level: 10 }
+        { min: 500, max: 799, level: 3 },
+        { min: 800, max: 1499, level: 4 },
+        { min: 1500, max: 4499, level: 5 }
     ];
     
     for (let i = 0; i < levels.length; i++) {
@@ -185,9 +180,9 @@ export const GET_SEASON_0_PLAYER_LEVEL = (points: number): number => {
         }
     }
 
-    // for every 5000 points obtained after 20500, the player level increases by 1
-    return Math.floor((points - 20500) / 5000) + 11;
-};
+    // for levels beyond 5, use the formula P = 500 * (L/2)^2
+    return Math.floor(Math.sqrt(points / 500) * 2);
+}
 
 /**
  * Gets the `additionalPoints` to give to the user for Season 0 based on their player level.
@@ -195,12 +190,13 @@ export const GET_SEASON_0_PLAYER_LEVEL = (points: number): number => {
  * Will be given once the user reaches that level.
  */
 export const GET_SEASON_0_PLAYER_LEVEL_REWARDS = (level: number): number => {
-    const rewards = [0, 15, 50, 100, 300, 550, 850, 1200, 1600, 2050];
+    const rewards = [0, 15, 50, 80, 150, 450, 612.5, 800, 1012.5, 1250];
     
     if (level >= 1 && level <= 10) {
         return rewards[level - 1];
     } else if (level > 10) {
-        return 2050 + (500 * (level - 10));
+        // level 11 onwards, rewards are fixed at 1500 points.
+        return 1500;
     } else {
         return 0;
     }
