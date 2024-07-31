@@ -5,7 +5,7 @@ import { generateHashSalt, generateObjectId, generateReferralCode } from '../uti
 import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
 import { RANDOMIZE_GENDER, getBitStatsModifiersFromTraits, randomizeBitTraits, randomizeBitType } from '../utils/constants/bit';
 import { ObtainMethod } from '../models/obtainMethod';
-import { LeaderboardModel, SquadLeaderboardModel, SquadModel, StarterCodeModel, UserModel, WeeklyMVPClaimableRewardsModel } from '../utils/constants/db';
+import { IslandModel, LeaderboardModel, SquadLeaderboardModel, SquadModel, StarterCodeModel, UserModel, WeeklyMVPClaimableRewardsModel } from '../utils/constants/db';
 import { addIslandToDatabase, getLatestIslandId, randomizeBaseResourceCap } from './island';
 import { POIName } from '../models/poi';
 import { ExtendedResource, SimplifiedResource } from '../models/resource';
@@ -36,7 +36,7 @@ import { FoodType } from '../models/food';
 import { BoosterItem } from '../models/booster';
 import { randomizeIslandTraits } from '../utils/constants/island';
 import { Signature, recoverMessageAddress } from 'viem';
-import { joinReferrerSquad } from './squad';
+import { joinReferrerSquad, requestToJoinSquad } from './squad';
 import { ExtendedDiscordProfile, ExtendedProfile } from '../utils/types';
 import { WeeklyMVPRewardType } from '../models/weeklyMVPReward';
 import mongoose from 'mongoose';
@@ -2399,7 +2399,13 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
     }
 };
 
-export const consumeEnergyPotion = async (twitterId: string): Promise<ReturnValue> => {
+/**
+ * Consumes an energy potion for a user and updates their energy and optionally islands tapping progress.
+ */
+export const consumeEnergyPotion = async (
+    twitterId: string, 
+    tappingProgress?: {islandId: number, currentCaressMeter: number}[],
+): Promise<ReturnValue> => {
     try {
         const userUpdateOperations = {
             $pull: {},
@@ -2407,6 +2413,8 @@ export const consumeEnergyPotion = async (twitterId: string): Promise<ReturnValu
             $set: {},
             $push: {},
         };
+
+        let bulkWriteIslandOps: any[] = [];
 
         const user = await UserModel.findOne({ twitterId }).lean();
 
@@ -2416,7 +2424,8 @@ export const consumeEnergyPotion = async (twitterId: string): Promise<ReturnValu
                 message: `(consumeEnergyPotion) User not found.`
             }
         }
-
+        
+        // Destructure user's energy variables
         const { currentEnergy, maxEnergy, dailyEnergyPotion } = user.inGameData.energy as PlayerEnergy;
 
         if (dailyEnergyPotion <= 0) {
@@ -2441,8 +2450,37 @@ export const consumeEnergyPotion = async (twitterId: string): Promise<ReturnValu
         userUpdateOperations.$set['inGameData.energy.currentEnergy'] = newCurrentEnergy;
         userUpdateOperations.$set['inGameData.energy.dailyEnergyPotion'] = newEnergyPotionCount;
 
-        // Update the user document in the database
-        await UserModel.updateOne({ twitterId }, userUpdateOperations);
+        // If tappingProgress is passed, update islands' current tapping progress
+        if (tappingProgress) {
+            const islandIds = tappingProgress.map(progress => progress.islandId);
+            // Get all islands that need to be udpated
+            const islands = await IslandModel.find({ islandId: { $in: islandIds }, owner: user._id });
+
+            // Prepare bulk write operations for the islands
+            bulkWriteIslandOps = tappingProgress.map(progress => {
+                const island = islands.find(island => island.islandId === progress.islandId);
+
+                if (island) {
+                    return {
+                        updateOne: {
+                            filter: { islandId: progress.islandId, owner: user._id },
+                            update: { $set: { 'islandTappingData.currentCaressMeter': progress.currentCaressMeter } }
+                        }
+                    };
+                } else {
+                    return null;
+                }
+            }).filter(op => op !== null);
+        }
+
+        // Update the user document in the database and islands if there are operations
+        const operations: Promise<any>[] = [UserModel.updateOne({ twitterId }, userUpdateOperations)];
+
+        if (bulkWriteIslandOps.length > 0) {
+            operations.push(IslandModel.bulkWrite(bulkWriteIslandOps));
+        }
+
+        await Promise.all(operations);
 
         // Return success status and message
         return {
