@@ -11,7 +11,7 @@ import { Bit } from '../models/bit';
 import { mixpanel } from '../utils/mixpanel';
 import { authMiddleware } from '../middlewares/auth';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
-import { APPLY_GATHERING_BOOSTER_MIXPANEL_EVENT_HASH, CLAIM_RESOURCES_MIXPANEL_EVENT_HASH, EVOLVE_ISLAND_MIXPANEL_EVENT_HASH, PLACE_BIT_MIXPANEL_EVENT_HASH, REMOVE_ISLAND_MIXPANEL_EVENT_HASH, UNPLACE_BIT_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
+import { APPLY_GATHERING_BOOSTER_MIXPANEL_EVENT_HASH, APPLY_ISLAND_MILESTONE, CLAIM_RESOURCES_MIXPANEL_EVENT_HASH, EVOLVE_ISLAND_MIXPANEL_EVENT_HASH, PLACE_BIT_MIXPANEL_EVENT_HASH, REMOVE_ISLAND_MIXPANEL_EVENT_HASH, REROLL_ISLAND_MILESTONE_BONUS, UNPLACE_BIT_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { getMainWallet } from '../api/user';
 import { UserWallet } from '../models/user';
 import { incrementEventCounterInContract } from '../api/web3';
@@ -637,6 +637,16 @@ router.post('/reroll_bonus_milestone_reward', async (req, res) => {
         }
 
         const { status, message, data } = await rerollBonusMilestoneReward(validateData?.twitterId, parseInt(islandId));
+
+        if (status === Status.SUCCESS && allowMixpanel) {
+            mixpanel.track('Reroll Milestone Bonus', {
+                distinct_id: validateData?.twitterId,
+                '_data': data,
+            });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, REROLL_ISLAND_MILESTONE_BONUS);
+        }
         
         return res.status(status).json({
             status,
@@ -662,6 +672,16 @@ router.post('/apply_island_tapping_data', async (req, res) => {
         }
 
         const { status, message, data } = await applyIslandTapping(validateData?.twitterId, parseInt(islandId), parseInt(caressMeter), bonus);
+
+        if (status === Status.SUCCESS && allowMixpanel) {
+            mixpanel.track('Apply Island Milestone', {
+                distinct_id: validateData?.twitterId,
+                '_data': data,
+            });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, APPLY_ISLAND_MILESTONE);
+        }
         
         return res.status(status).json({
             status,
