@@ -393,6 +393,8 @@ router.post('/unlink_secondary_wallet', async (req, res) => {
 })
 
 router.post('/consume_energy_potion', async (req, res) => {
+    const { tappingProgress } = req.body;
+
     try {
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'consume_energy_potion');
 
@@ -403,7 +405,7 @@ router.post('/consume_energy_potion', async (req, res) => {
             });
         }
 
-        const { status, message, data } = await consumeEnergyPotion(validateData?.twitterId);
+        const { status, message, data } = await consumeEnergyPotion(validateData?.twitterId, tappingProgress);
         
         return res.status(status).json({
             status,
