@@ -3163,6 +3163,7 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                     userId: newUser._id,
                     twitterId: telegramUser.id,
                     loginType: loginType,
+                    referralCode: newUser.referralData.referralCode
                 },
             };
         } else {
@@ -3176,6 +3177,7 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                     userId: user._id,
                     twitterId: telegramUser.id,
                     loginType: loginType,
+                    referralCode: user.referralData.referralCode
                 },
             };
         }
