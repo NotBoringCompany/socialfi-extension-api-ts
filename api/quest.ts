@@ -944,7 +944,8 @@ export const setProgression = async (
 export const incrementProgressionByType = async (
     type: QuestRequirementType,
     twitterId: string,
-    count: number
+    count: number,
+    params?: string
 ): Promise<void> => {
     try {
         // Find all quests that have requirements of the specified type
@@ -959,6 +960,7 @@ export const incrementProgressionByType = async (
             const requirements = quest.requirements.filter((req) => req.type === type);
             for (const requirement of requirements) {
                 if (!requirement.parameters.count) continue;
+                if (params && requirement.parameters.type !== params) continue;
 
                 // Find the current progression document
                 let progression = await QuestProgressionModel.findOne({
