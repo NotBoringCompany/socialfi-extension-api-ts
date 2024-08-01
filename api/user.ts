@@ -1959,6 +1959,15 @@ export const connectToDiscord = async (twitterId: string, profile: ExtendedDisco
             };
         }
 
+        // check if the same discord account already connected
+        const existedDiscord = await UserModel.findOne({ 'discordProfile.discordId': profile.id, 'twitterId': { $ne: null } });
+        if (existedDiscord) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(connectToDiscord) User is already connected.`,
+            };
+        }
+
         // prevent user to connect to another discord account
         if (!!user.discordProfile?.discordId && user.discordProfile?.discordId !== profile.id) {
             return {
@@ -1967,8 +1976,8 @@ export const connectToDiscord = async (twitterId: string, profile: ExtendedDisco
             };
         }
 
-        // merge the account if the user's already registered via BerryBot
-        const discordUser = await UserModel.findOne({ 'discordProfile.discordId': profile.id });
+        // merge the account if the user's already registered via BerryBot, if it's existed
+        const discordUser = await UserModel.findOne({ 'discordProfile.discordId': profile.id, 'twitterId': null });
         if (discordUser) {
             // get the current xCookies amount from the BerryBot account
             const amount = discordUser.inventory.xCookieData.currentXCookies;
