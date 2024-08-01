@@ -86,7 +86,7 @@ router.post('/register', async (req, res) => {
 
         return res.status(Status.SUCCESS).json({
             status: Status.SUCCESS,
-            data: null,
+            data,
         });
     } catch (err: any) {
         return res.status(500).json({
