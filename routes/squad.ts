@@ -347,6 +347,24 @@ router.get('/get_squad_data/:twitterId/:squadId', async (req, res) => {
     }
 });
 
+router.get('/get_pending_squad_member_data/:userId', async (req, res) => {
+    const { userId } = req.params;
+    try {        
+        const { status, message, data } = await getSquadMemberData(userId);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
+
 router.post('/decline_pending_squad_member', async (req, res) => {
     const { memberTwitterId, memberUserId } = req.body;
 
