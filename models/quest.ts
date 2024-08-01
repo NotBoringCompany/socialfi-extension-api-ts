@@ -72,6 +72,7 @@ export enum QuestType {
  */
 export enum QuestTier {
     TUTORIAL = 'Tutorial',
+    RESOURCE = 'Resource Gathering',
     BEGINNER = 'Beginner',
     INTERMEDIATE = 'Intermediate',
     ADVANCED = 'Advanced',
