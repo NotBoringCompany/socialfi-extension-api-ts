@@ -761,7 +761,7 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
                 // find the member with the longest tenure in the squad.
                 // we will promote this member to leader.
                 // if the member with the longest tenure is the leader (i.e. the user), then promote the next member with the longest tenure.
-                let memberWithLongestTenure = squad.members.filter(member => member.userId !== user._id).reduce((prev, current) => (prev.joinedTimestamp > current.joinedTimestamp) ? prev : current);
+                let memberWithLongestTenure = squad.members.filter(member => member.userId !== user._id).reduce((prev, current) => (prev.joinedTimestamp < current.joinedTimestamp) ? prev : current);
 
                 // promote the member with the longest tenure to leader.
                 // remove the user-to-leave from the squad.
