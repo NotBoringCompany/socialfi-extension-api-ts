@@ -1666,3 +1666,141 @@ export const getPendingSquadMemberData = async (userId: string): Promise<ReturnV
         }
     }
 }
+
+/**
+ * Gets all squads and fetch their data. Used for players searching for squads.
+ * 
+ * The following data will be fetched:
+ * 1. the squad's name
+ * 2. the total keys owned by EVERY squad member (excluding pending ones)
+ * 3. the total points earned by EVERY squad member
+ * 4. the current members of the squad
+ * 5. if its still joinable (i.e. current members excluding pending members < max members)
+ */
+export const getAllSquadData = async (): Promise<ReturnValue> => {
+    try {
+        const squads = await SquadModel.find().lean();
+
+        if (squads.length === 0) {
+            return {
+                status: Status.SUCCESS,
+                message: `(getAllSquadData) No squads found.`,
+                data: {
+                    squads: []
+                }
+            }
+        }
+
+        const squadData: Array<{
+            name: string;
+            totalKOSCount: number;
+            totalPointsEarned: number;
+            totalMembers: number;
+            joinable: boolean;
+        }> = [];
+
+        // fetch all explicit ownerships of keys
+        // ID from 1 to 5000
+        const { status, message, data } = await explicitOwnershipsOfKOS(Array.from({ length: 5000 }, (_, i) => i + 1));
+
+        if (status !== Status.SUCCESS) {
+            return {
+                status,
+                message: `(getPendingSquadMemberData) Error from explicitOwnershipsOfKOS: ${message}`
+            }
+        }
+
+        const explicitOwnerships: KOSExplicitOwnership[] = data?.keyOwnerships ?? [];
+
+        const leaderboards: Leaderboard[] = await LeaderboardModel.find().lean();
+
+        for (const squad of squads) {
+            // get the squad name
+            const squadName = squad.name;
+
+            // get the total KOS count of all the members
+            let totalKOSCount = 0;
+            let totalLeaderboardPoints = 0;
+            for (const member of squad.members) {
+                // get the user's wallet addresses (both main and secondary)
+                const { status: walletStatus, message: walletMessage, data: walletData } = await getWallets('', member.userId);
+
+                if (walletStatus !== Status.SUCCESS) {
+                    continue;
+                }
+
+                const validAddresses = (walletData.walletAddresses as string[]).filter((address: string) => address !== '').map((address: string) => address.toLowerCase());
+
+                if (validAddresses.length === 0) {
+                    continue;
+                }
+
+                // get the KOS count of the user.
+                let kosCount = 0;
+
+                for (const keyOwnership of explicitOwnerships) {
+                    if (validAddresses.includes(keyOwnership.owner.toLowerCase())) {
+                        kosCount++;
+                    }
+                }
+
+                totalKOSCount += kosCount;
+
+                // get the user's total leaderboard points (excluding additional points)
+                let userTotalLeaderboardPoints = 0;
+
+                // right now, there is only season 0 (i.e. one leaderboard)
+                // but this helps in case there are multiple leaderboards in the future to make it more future-proof.
+                for (const leaderboard of leaderboards) {
+                    // sort the users by their total points in descending order.
+                    // to get the total points, each userData contains an array of `pointsData` which contains the points for each source.
+                    // we sum all the points from each source to get the total points (excluding the leaderboard points source for LEVELLING_UP (for now, may be more in the future)).
+                    // firstly, we get the user data from this leaderboard.
+                    const userData = leaderboard.userData;
+
+                    // sort the user data by their total points in descending order.
+                    // to do this, the points for each `pointsData` must be summed up (excluding LeaderboardPointsSource.LEVELLING_UP)
+                    const sortedUserData = userData.sort((a, b) => {
+                        const aTotalPoints = a.pointsData.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0);
+                        const bTotalPoints = b.pointsData.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0);
+
+                        return bTotalPoints - aTotalPoints;
+                    });
+
+                    // get the user's leaderboard points. its index + 1 is the rank.
+                    const userIndex = sortedUserData.findIndex(data => data.userId === member.userId);
+                    userTotalLeaderboardPoints = sortedUserData[userIndex].pointsData.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0);
+                }
+
+                totalLeaderboardPoints += userTotalLeaderboardPoints;
+            }
+
+            // get the total members of the squad
+            const totalMembers = squad.members.length;
+
+            // check if the squad is joinable
+            const joinable = totalMembers < squad.maxMembers;
+
+            squadData.push({
+                name: squadName,
+                totalKOSCount,
+                totalPointsEarned: totalLeaderboardPoints,
+                totalMembers,
+                joinable
+            });
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getAllSquadData) Fetched all squad data successfully.`,
+            data: {
+                squads: squadData
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getAllSquadData) ${err.message}`
+        }
+    }
+}

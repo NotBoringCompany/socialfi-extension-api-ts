@@ -631,9 +631,9 @@ export const unlinkSecondaryWallet = async (
 /**
  * Gets a user's main and secondary wallets linked to their account.
  */
-export const getWallets = async (twitterId: string): Promise<ReturnValue> => {
+export const getWallets = async (twitterId: string, userId?: string): Promise<ReturnValue> => {
     try {
-        const user = await UserModel.findOne({ twitterId }).lean();
+        const user = await UserModel.findOne({ $or: [{ twitterId }, { _id: userId }] }).lean();
 
         if (!user) {
             return {
