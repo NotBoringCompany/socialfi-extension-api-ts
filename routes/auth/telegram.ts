@@ -52,6 +52,7 @@ router.post('/login', async (req, res, next) => {
 });
 
 router.post('/register', async (req, res) => {
+    console.log('telegram', req.body)
     const { token, user, referral } = req.body;
 
     try {
