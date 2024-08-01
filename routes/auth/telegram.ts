@@ -55,7 +55,7 @@ router.post('/login', async (req, res, next) => {
 });
 
 router.post('/register', async (req, res) => {
-    const { token, user, referral } = req.body;
+    const { token, user, referralCode } = req.body;
 
     try {
         if (!token || token !== process.env.TELEGRAM_BOT_TOKEN) {
@@ -80,8 +80,8 @@ router.post('/register', async (req, res) => {
             });
         }
 
-        if (referral && data.loginType === 'Register') {
-            await linkInviteCode(data.twitterId, referral);
+        if (referralCode && data.loginType === 'Register') {
+            await linkInviteCode(data.twitterId, referralCode);
         }
 
         return res.status(Status.SUCCESS).json({
