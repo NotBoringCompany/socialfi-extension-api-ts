@@ -67,7 +67,7 @@ export const RANDOMIZE_CHEST_ITEM = (): {
             }
         // 5% chance for xCookies (Season 0)
         case rand <= 10000:
-            return { item: 'xCookies', amount: 1 }
+            return { item: 'xCookies', amount: 15 }
         // 0% chance for Terra Capsulator (Season 0)
         case rand <= 0:
             return { item: TerraCapsulatorType.TERRA_CAPSULATOR_I, amount: 1 }
