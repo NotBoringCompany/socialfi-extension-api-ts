@@ -72,6 +72,7 @@ export enum QuestType {
  */
 export enum QuestTier {
     TUTORIAL = 'Tutorial',
+    RESOURCE = 'Resource Gathering',
     BEGINNER = 'Beginner',
     INTERMEDIATE = 'Intermediate',
     ADVANCED = 'Advanced',
@@ -184,7 +185,7 @@ export interface QuestRequirementParameters {
     /** the resources required to submit */
     resources?: QuestRequirementResource[];
     /** universal property for type */
-    type?: number;
+    type?: string;
     /** universal property for countable value */
     count?: number;
 }
