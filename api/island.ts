@@ -17,7 +17,7 @@ import { ExtendedXCookieData, PlayerEnergy, PlayerMastery, User, XCookieSource }
 import { getResource, resources } from '../utils/constants/resource';
 import { Item } from '../models/item';
 import { BoosterItem } from '../models/booster';
-import { TAPPING_MASTERY_LEVEL } from '../utils/constants/mastery';
+import { TAPPING_EXP_CAP, TAPPING_LEVEL_CAP, TAPPING_MASTERY_LEVEL } from '../utils/constants/mastery';
 import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
 import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
 import { TappingMastery } from '../models/mastery';
@@ -3940,16 +3940,21 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
             }
         }
 
-        // Add user tapping exp mastery
+        // Add user tapping exp mastery if tapping level hasn't reach max cap
         const { tapping } = user.inGameData.mastery as PlayerMastery;
-        const newTotalExp = tapping.totalExp + milestoneReward.masteryExpReward + bonusExp;
-        userUpdateOperations.$set['inGameData.mastery.tapping.totalExp'] = newTotalExp;
+        if (tapping.level < TAPPING_LEVEL_CAP) {
+            // Calculate the new total experience points (XP)
+            const newTotalExp = Math.min(
+                tapping.totalExp + milestoneReward.masteryExpReward + bonusExp, 
+                TAPPING_EXP_CAP // Ensure XP does not exceed the cap
+            );
+            userUpdateOperations.$set['inGameData.mastery.tapping.totalExp'] = newTotalExp;
 
-        // Compare currentTappingLevel with newTappingLevel
-        const currentTappingLevel = tapping.level;
-        const newTappingLevel = TAPPING_MASTERY_LEVEL(newTotalExp);
-        if (newTappingLevel > currentTappingLevel) {
-            userUpdateOperations.$set['inGameData.mastery.tapping.level'] = newTappingLevel;
+            // Compare currentTappingLevel with newTappingLevel
+            const newTappingLevel = TAPPING_MASTERY_LEVEL(newTotalExp);
+            if (newTappingLevel > tapping.level) {
+                userUpdateOperations.$set['inGameData.mastery.tapping.level'] = newTappingLevel;
+            }
         }
 
         // Increase the tier Milestone to the next tier/rank. If milestone reaching the max tier, return error.
