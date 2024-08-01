@@ -549,18 +549,64 @@ export const feedBit = async (twitterId: string, bitId: number, foodType: FoodTy
             bitUpdateOptions = { arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }] };
         }
 
-        // execute the update operations
+        // execute the update operations (divide into $set and $inc, then $push and $pull)
         await Promise.all([
-            BitModel.updateOne({ bitId }, bitUpdateOperations, bitUpdateOptions).catch((err: any) => {
-                console.error(`(feedBit) Error from bit update operations: ${err.message}`);
+            BitModel.updateOne({ bitId }, {
+                $inc: bitUpdateOperations.$inc,
+                $set: bitUpdateOperations.$set,
+            }, bitUpdateOptions).catch((err: any) => {
+                console.error(`(feedBit) Error from bit update operations $inc and $set: ${err.message}`);
             }),
-            UserModel.updateOne({ twitterId, 'inventory.foods.type': foodType }, userUpdateOperations).catch((err: any) => {
-                console.error(`(feedBit) Error from user update operations: ${err.message}`);
+
+            UserModel.updateOne({ twitterId, 'inventory.foods.type': foodType }, {
+                $inc: userUpdateOperations.$inc,
+                $set: userUpdateOperations.$set,
+            }).catch((err: any) => {
+                console.error(`(feedBit) Error from user update operations $inc and $set: ${err.message}`);
             }),
-            IslandModel.updateOne({ islandId: bit.placedIslandId }, islandUpdateOperations).catch((err: any) => {
-                console.error(`(feedBit) Error from island update operations: ${err.message}`);
+
+            IslandModel.updateOne({ islandId: bit.placedIslandId }, {
+                $inc: islandUpdateOperations.$inc,
+                $set: islandUpdateOperations.$set,
+            }).catch((err: any) => {
+                console.error(`(feedBit) Error from island update operations $inc and $set: ${err.message}`);
+            })
+        ])
+
+        await Promise.all([
+            BitModel.updateOne({ bitId }, {
+                $push: bitUpdateOperations.$push,
+                $pull: bitUpdateOperations.$pull,
+            }, bitUpdateOptions).catch((err: any) => {
+                console.error(`(feedBit) Error from bit update operations $push and $pull: ${err.message}`);
+            }),
+
+            UserModel.updateOne({ twitterId, 'inventory.foods.type': foodType }, {
+                $push: userUpdateOperations.$push,
+                $pull: userUpdateOperations.$pull,
+            }).catch((err: any) => {
+                console.error(`(feedBit) Error from user update operations $push and $pull: ${err.message}`);
+            }),
+
+            IslandModel.updateOne({ islandId: bit.placedIslandId }, {
+                $push: islandUpdateOperations.$push,
+                $pull: islandUpdateOperations.$pull,
+            }).catch((err: any) => {
+                console.error(`(feedBit) Error from island update operations $push and $pull: ${err.message}`);
             })
         ]);
+        
+        // await Promise.all([
+        //     BitModel.updateOne({ bitId }, bitUpdateOperations, bitUpdateOptions).catch((err: any) => {
+        //         console.error(`(feedBit) Error from bit update operations: ${err.message}`);
+        //     }),
+        //     UserModel.updateOne({ twitterId, 'inventory.foods.type': foodType }, userUpdateOperations).catch((err: any) => {
+        //         console.error(`(feedBit) Error from user update operations: ${err.message}`);
+        //     }),
+        //     IslandModel.updateOne({ islandId: bit.placedIslandId }, islandUpdateOperations).catch((err: any) => {
+        //         console.error(`(feedBit) Error from island update operations: ${err.message}`);
+        //     })
+        // ]);
 
         return {
             status: Status.SUCCESS,
