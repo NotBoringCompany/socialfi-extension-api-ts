@@ -70,7 +70,8 @@ router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/',
             const version = (req.session as any).version || '-';
 
             if (version !== '2.0' && data.loginType === 'Register') {
-                res.send(`Sorry, we're currently disabling register through the extension. Please register at our web version https://wonderbits.vercel.app`)
+                res.send(`Sorry, we're currently disabling register through the extension. Please register at our web version https://wonderbits.vercel.app`);
+                return;
             }
 
             if (status === Status.SUCCESS) {
