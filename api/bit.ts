@@ -468,7 +468,7 @@ export const feedBit = async (twitterId: string, bitId: number, foodType: FoodTy
         }
 
         // check if the bit's energy is already at max (100)
-        if (bit.farmingStats?.currentEnergy === 100) {
+        if (bit.farmingStats?.currentEnergy >= 100) {
             return {
                 status: Status.ERROR,
                 message: `(feedBit) Bit's energy is already at max.`
