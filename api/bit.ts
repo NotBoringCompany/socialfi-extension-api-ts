@@ -551,9 +551,15 @@ export const feedBit = async (twitterId: string, bitId: number, foodType: FoodTy
 
         // execute the update operations
         await Promise.all([
-            BitModel.updateOne({ bitId }, bitUpdateOperations, bitUpdateOptions),
-            UserModel.updateOne({ twitterId, 'inventory.foods.type': foodType }, userUpdateOperations),
-            IslandModel.updateOne({ islandId: bit.placedIslandId }, islandUpdateOperations)
+            BitModel.updateOne({ bitId }, bitUpdateOperations, bitUpdateOptions).catch((err: any) => {
+                console.error(`(feedBit) Error from bit update operations: ${err.message}`);
+            }),
+            UserModel.updateOne({ twitterId, 'inventory.foods.type': foodType }, userUpdateOperations).catch((err: any) => {
+                console.error(`(feedBit) Error from user update operations: ${err.message}`);
+            }),
+            IslandModel.updateOne({ islandId: bit.placedIslandId }, islandUpdateOperations).catch((err: any) => {
+                console.error(`(feedBit) Error from island update operations: ${err.message}`);
+            })
         ]);
 
         return {
@@ -564,7 +570,7 @@ export const feedBit = async (twitterId: string, bitId: number, foodType: FoodTy
             }
         }
     } catch (err: any) {
-        console.log('(feedBit) Error: ', err.message);
+        console.error('(feedBit) Error: ', err.message);
         return {
             status: Status.ERROR,
             message: `(feedBit) Error: ${err.message}`
