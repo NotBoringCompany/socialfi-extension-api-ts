@@ -9,7 +9,7 @@ type TelegramCreds = {
     allows_write_to_pm: boolean;
 };
 
-type TelegramAuthData = {
+export type TelegramAuthData = {
     query_id: string;
     user: TelegramCreds;
     auth_date: string;
