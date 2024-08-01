@@ -250,7 +250,11 @@ router.post('/sell_items_in_poi_shop', async (req, res) => {
             // increment the event counter in the wonderbits contract.
             incrementEventCounterInContract(validateData?.twitterId, SELL_ITEMS_IN_POI_SHOP_MIXPANEL_EVENT_HASH);
 
-            incrementProgressionByType(QuestRequirementType.SELL_RESOURCE_AMOUNT, validateData?.twitterId, (items as POIShopActionItemData[]).reduce((total, currentItem) => total + currentItem?.amount ?? 0, 0));
+            const amount = (items as POIShopActionItemData[]).reduce((total, currentItem) => total + currentItem?.amount ?? 0, 0);
+            const item = (items as POIShopActionItemData[])[0].item;
+
+            incrementProgressionByType(QuestRequirementType.SELL_RESOURCE_AMOUNT, validateData?.twitterId, amount);
+            incrementProgressionByType(QuestRequirementType.SELL_RESOURCE_AMOUNT, validateData?.twitterId, amount, item);
         }
 
         return res.status(status).json({

@@ -185,7 +185,7 @@ export interface QuestRequirementParameters {
     /** the resources required to submit */
     resources?: QuestRequirementResource[];
     /** universal property for type */
-    type?: number;
+    type?: string;
     /** universal property for countable value */
     count?: number;
 }
