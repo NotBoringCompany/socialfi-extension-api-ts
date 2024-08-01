@@ -43,7 +43,7 @@ import mongoose from 'mongoose';
 import * as dotenv from 'dotenv';
 import { getUserCurrentPoints } from './leaderboard';
 import { DEPLOYER_WALLET, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
-import { parseTelegramData, validateTelegramData } from '../utils/telegram';
+import { parseTelegramData, TelegramAuthData, validateTelegramData } from '../utils/telegram';
 import { sendKICKUponRegistration, updatePointsInContract } from './web3';
 import { ethers } from 'ethers';
 
@@ -2590,25 +2590,15 @@ export const updatePlayerLevels = async () => {
  * Twitter login logic. Creates a new user or simply log them in if they already exist.
  *
  */
-export const handleTelegramLogin = async (initData: string): Promise<ReturnValue> => {
+export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']): Promise<ReturnValue> => {
     try {
         let loginType: 'Register' | 'Login';
 
-        // validate the init data
-        const isValid = validateTelegramData(initData);
-        if (!isValid)
-            return {
-                status: Status.UNAUTHORIZED,
-                message: `(handleTelegramLogin) Unauthorized`,
-            };
-
-        const telegramData = parseTelegramData(initData);
-
-        const user = await UserModel.findOne({ twitterId: telegramData.user.id, method: 'telegram' }).lean();
+        const user = await UserModel.findOne({ twitterId: telegramUser.id, method: 'telegram' }).lean();
 
         // if user doesn't exist, create a new user
         if (!user) {
-            console.log(`creating new telegram user: ${telegramData.user.id}`)
+            console.log(`creating new telegram user: ${telegramUser.id}`)
             // generates a new object id for the user
             const userObjectId = generateObjectId();
             loginType = 'Register';
@@ -2721,11 +2711,11 @@ export const handleTelegramLogin = async (initData: string): Promise<ReturnValue
 
             const newUser = new UserModel({
                 _id: userObjectId,
-                twitterId: telegramData.user.id,
+                twitterId: telegramUser.id,
                 method: 'telegram',
                 twitterProfilePicture: 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png',
-                twitterUsername: telegramData.user.id,
-                twitterDisplayName: `${telegramData.user.first_name} ${telegramData.user.last_name}`.trim(),
+                twitterUsername: telegramUser.id,
+                twitterDisplayName: `${telegramUser.first_name} ${telegramUser.last_name}`.trim(),
                 createdTimestamp: Math.floor(Date.now() / 1000),
                 // invite code data will be null until users input their invite code.
                 inviteCodeData: {
@@ -2803,7 +2793,7 @@ export const handleTelegramLogin = async (initData: string): Promise<ReturnValue
                 message: `(handleTwitterLogin) New user created.`,
                 data: {
                     userId: newUser._id,
-                    twitterId: telegramData.user.id,
+                    twitterId: telegramUser.id,
                     loginType: loginType,
                 },
             };
@@ -2816,7 +2806,7 @@ export const handleTelegramLogin = async (initData: string): Promise<ReturnValue
                 message: `(handleTwitterLogin) User found. Logging in.`,
                 data: {
                     userId: user._id,
-                    twitterId: telegramData.user.id,
+                    twitterId: telegramUser.id,
                     loginType: loginType,
                 },
             };
