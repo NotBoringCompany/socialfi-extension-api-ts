@@ -710,15 +710,17 @@ export const ISLAND_TAPPING_MILESTONE_BONUS_REWARD = (milestoneTier: number, tap
     bonus.secondOptionReward.additionalExp = bonus.firstOptionReward * (BASE_ADDITIONAL_EXP_MULTIPLIER + (0.05 * (tappingLevel - 1)));
   } else if (rand <= 6666) {
     // Berry Bonus
-    const berryBonus = milestoneTier >= 21 ? 3 : 
-                       milestoneTier >= 16 ? 2 :
-                       milestoneTier >= 11 ? 1.5 : 1;
+    const berryBonus = milestoneTier >= 21 ? 5 : 
+                       milestoneTier >= 16 ? 4 :
+                       milestoneTier >= 11 ? 3 :
+                       milestoneTier >= 6 ? 2 : 1;
     bonus.secondOptionReward.berryDrop = berryBonus;
   } else {
     // Calculate Point Bonus based on milestone tier and tapping level
-    const pointBonus = milestoneTier >= 21 ? 3 : 
-                       milestoneTier >= 16 ? 2 :
-                       milestoneTier >= 11 ? 1.5 : 1;
+    const pointBonus = milestoneTier >= 21 ? 5 : 
+                       milestoneTier >= 16 ? 4 :
+                       milestoneTier >= 11 ? 3 :
+                       milestoneTier >= 6 ? 2 : 1;
     bonus.secondOptionReward.pointDrop = pointBonus * (BASE_BERRY_TO_POINT_MULTIPLIER + (tappingLevel - 1));
   }
 
