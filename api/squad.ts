@@ -793,7 +793,10 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
 
                 return {
                     status: Status.SUCCESS,
-                    message: `(leaveSquad) Left squad. Promoted member ${memberWithLongestTenure._id} to leader successfully.`
+                    message: `(leaveSquad) Left squad. Promoted member ${memberWithLongestTenure._id} to leader successfully.`,
+                    data: {
+                        currentMembers: squad.members.length - 1
+                    }
                 }
             }
         } else {
@@ -821,7 +824,7 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
                 status: Status.SUCCESS,
                 message: `(leaveSquad) Left squad successfully.`,
                 data: {
-                    currentMembers: squad.members.length,
+                    currentMembers: squad.members.length - 1
                 }
             }
         }
