@@ -1,5 +1,5 @@
 import { KOSExplicitOwnership } from '../models/kos';
-import { Leaderboard, LeaderboardPointsSource } from '../models/leaderboard';
+import { Leaderboard, LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
 import { SquadCreationMethod, SquadMember, SquadRank, SquadRole } from '../models/squad';
 import { LeaderboardModel, SquadModel, UserModel } from '../utils/constants/db';
 import { CREATE_SQUAD_COST, INITIAL_MAX_MEMBERS, MAX_LEADERS_LIMIT, MAX_MEMBERS_INCREASE_UPON_UPGRADE, MAX_MEMBERS_LIMIT, RENAME_SQUAD_COOLDOWN, RENAME_SQUAD_COST, SQUAD_LEAVE_COOLDOWN, UPGRADE_SQUAD_MAX_MEMBERS_COST } from '../utils/constants/squad';
@@ -1439,6 +1439,27 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
 
         const userData = await UserModel.find({ _id: { $in: userIds } }).lean();
 
+        let sortedLeaderboardUserData: LeaderboardUserData[];
+
+        // right now, there is only season 0 (i.e. one leaderboard)
+        // but this helps in case there are multiple leaderboards in the future to make it more future-proof.
+        for (const leaderboard of leaderboards) {
+            // sort the users by their total points in descending order.
+            // to get the total points, each userData contains an array of `pointsData` which contains the points for each source.
+            // we sum all the points from each source to get the total points (excluding the leaderboard points source for LEVELLING_UP (for now, may be more in the future)).
+            // firstly, we get the user data from this leaderboard.
+            const userData = leaderboard.userData;
+
+            // sort the user data by their total points in descending order.
+            // to do this, the points for each `pointsData` must be summed up (excluding LeaderboardPointsSource.LEVELLING_UP)
+            sortedLeaderboardUserData = userData.sort((a, b) => {
+                const aTotalPoints = a.pointsData.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0);
+                const bTotalPoints = b.pointsData.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0);
+
+                return bTotalPoints - aTotalPoints;
+            });
+        }
+
         squad.members.map(async member => {
             // find the userData that has the member's user id
             const memberData = userData.find(user => user._id === member.userId);
@@ -1451,48 +1472,16 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
 
             // get the user's leaderboard points (excl. additional points)
             let totalLeaderboardPoints = 0;
-            const seasonRanks: Array<{
-                season: string,
-                rank: number
-            }> = [];
 
             // get the user's season rank
             let currentSeasonRank: number = 0;
 
-            // right now, there is only season 0 (i.e. one leaderboard)
-            // but this helps in case there are multiple leaderboards in the future to make it more future-proof.
-            for (const leaderboard of leaderboards) {
-                // sort the users by their total points in descending order.
-                // to get the total points, each userData contains an array of `pointsData` which contains the points for each source.
-                // we sum all the points from each source to get the total points (excluding the leaderboard points source for LEVELLING_UP (for now, may be more in the future)).
-                // firstly, we get the user data from this leaderboard.
-                const userData = leaderboard.userData;
+            // get the user's leaderboard points. its index + 1 is the rank.
+            const userIndex = sortedLeaderboardUserData.findIndex(data => data.userId === member.userId);
+            totalLeaderboardPoints = sortedLeaderboardUserData[userIndex].pointsData.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0);
 
-                // sort the user data by their total points in descending order.
-                // to do this, the points for each `pointsData` must be summed up (excluding LeaderboardPointsSource.LEVELLING_UP)
-                const sortedUserData = userData.sort((a, b) => {
-                    const aTotalPoints = a.pointsData.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0);
-                    const bTotalPoints = b.pointsData.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0);
-
-                    return bTotalPoints - aTotalPoints;
-                });
-
-                // get the user's leaderboard points. its index + 1 is the rank.
-                const userIndex = sortedUserData.findIndex(data => data.userId === member.userId);
-                totalLeaderboardPoints = sortedUserData[userIndex].pointsData.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0);
-
-                // get the user's season rank.
-                seasonRanks.push({
-                    season: leaderboard.name,
-                    rank: userIndex + 1
-                });
-            }
-
-            // get the latest season rank. seasons are named "Season 0", "Season 1"... so on.
-            // we sort the season ranks by the season number in descending order and fetch the highest number.
-            const sortedSeasonRanks = seasonRanks.sort((a, b) => parseInt(b.season.split(' ')[1]) - parseInt(a.season.split(' ')[1]));
-
-            currentSeasonRank = sortedSeasonRanks[0].rank;
+            // get the user's latest season rank (which is the user's index + 1).
+            currentSeasonRank = userIndex + 1;
 
             // get the user's KOS count
             // get the user's KOS count. loop through `explicitOwnerships` and count the number of KOS they own.
@@ -1539,7 +1528,9 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
                 totalPoints: totalLeaderboardPoints,
                 currentSeasonRank,
                 kosCount
-            })
+            });
+
+            console.log(`(getSquadMemberData) Pushing member ${memberData.twitterUsername}`);
         })
 
         squad.pendingMembers.map(async pendingMember => {
