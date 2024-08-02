@@ -1465,6 +1465,7 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
             const memberData = userData.find(user => user._id === member.userId);
 
             if (!memberData) {
+                console.log(`(getSquadMemberData) Member data not found for user ID: ${member.userId}`);
                 return;
             }
 
@@ -1521,6 +1522,18 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
                 }
             }
 
+            console.log(`(getSquadMemberData) Member data: ${
+                memberData.twitterUsername
+            } - Level: ${
+                inGameLevel
+            } - Total Points: ${
+                totalLeaderboardPoints
+            } - Season Rank: ${
+                currentSeasonRank
+            } - KOS Count: ${
+                kosCount
+            }`);
+
             currentMemberData.push({
                 username: memberData.twitterUsername,
                 profilePicture: memberData.twitterProfilePicture,
@@ -1529,8 +1542,6 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
                 currentSeasonRank,
                 kosCount
             });
-
-            console.log(`(getSquadMemberData) Pushing member ${memberData.twitterUsername}`);
         })
 
         squad.pendingMembers.map(async pendingMember => {
@@ -1538,6 +1549,7 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
             const memberData = userData.find(user => user._id === pendingMember.userId);
 
             if (!memberData) {
+                console.log(`(getSquadMemberData) Member data not found for pending user ID: ${pendingMember.userId}`);
                 return;
             }
 
