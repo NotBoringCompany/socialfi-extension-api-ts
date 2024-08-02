@@ -3688,6 +3688,13 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
         const resourcesLeft = island.islandResourceStats?.baseResourceCap - normalResourcesGatheredAmount;
 
         console.log(`(applyIslandTapping), resources left for island ${island.islandId}: `, resourcesLeft);
+
+        if (resourcesLeft <= 0) {
+            return {
+                status: Status.ERROR,
+                message: `(applyIslandTapping) Island Id ${islandId} has no resources left to drop.`
+            }
+        }
         
         // if the booster is less than 100, get the current `gatheringProgress` of the island.
         if (boosterPercentage < 100) {
