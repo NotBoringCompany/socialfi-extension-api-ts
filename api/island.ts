@@ -998,14 +998,9 @@ export const unplaceBit = async (twitterId: string, bitId: number): Promise<Retu
                 trait.trait === BitTrait.SLOW ||
                 trait.trait === BitTrait.QUICK
             ) {
-                console.log(`unplaceBit ID ${bit.bitId}'s trait is ${trait}`);
-
                 // find the index of the modifier in the island's `gatheringRateModifiers` and `earningRateModifiers`
                 const gatheringRateModifierIndex = (island.islandStatsModifiers?.gatheringRateModifiers as Modifier[]).findIndex(modifier => modifier.origin.includes(`Bit ID #${bit.bitId}`));
                 const earningRateModifierIndex = (island.islandStatsModifiers?.earningRateModifiers as Modifier[]).findIndex(modifier => modifier.origin.includes(`Bit ID #${bit.bitId}`));
-
-                console.log('gathering rate modifier index: ', gatheringRateModifierIndex);
-                console.log('earning rate modifier index: ', earningRateModifierIndex);
 
                 // if the modifier is found, remove it from the island's `gatheringRateModifiers` and `earningRateModifiers`
                 if (gatheringRateModifierIndex !== -1) {
@@ -1616,8 +1611,6 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
             // calculate the gathering progress increment
             const gatheringProgressIncrement = gatheringProgressIncrementPerHour / 3600 * timePassed;
 
-            console.log(`(updateGatheringProgressAndDropResource) Island ID ${island.islandId} has a current gathering rate of ${gatheringRate} %/hour and a gathering progress increment of ${gatheringProgressIncrement}%/${timePassed} seconds.`)
-
             if (gatheringProgress + gatheringProgressIncrement < 100) {
                 // add to the update operations
                 updateOperations.push({
@@ -1634,7 +1627,6 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
                         }
                     }
                 });
-                console.log(`(updateGatheringProgressAndDropResource) Island ID ${island.islandId} has updated its gathering progress to ${gatheringProgress + gatheringProgressIncrement}.`);
             } else {
                 // if >= 100, drop a resource and reset the gathering progress back to 0 + the remaining overflow of %
                 const { status, message } = await dropResource(island.islandId);
@@ -1658,8 +1650,6 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
                         }
                     }
                 });
-
-                console.log(`(updateGatheringProgressAndDropResource) Island ID ${island.islandId} has dropped a resource and reset its gathering progress to ${finalGatheringProgress}.`);
             }
 
             return updateOperations;
@@ -1878,8 +1868,6 @@ export const updateClaimableXCookies = async (): Promise<void> => {
             const tenMinEarningRate = currentEarningRate / 6;
             const claimableXCookies = tenMinEarningRate / 100 * island.islandEarningStats?.totalXCookiesEarnable;
 
-            console.log(`claimable xCookies for Island ${island.islandId} is ${claimableXCookies}.`);
-
             // get the current amount of cookies earned already
             const xCookiesEarned = island.islandEarningStats?.totalXCookiesEarned;
 
@@ -1897,10 +1885,6 @@ export const updateClaimableXCookies = async (): Promise<void> => {
             // if `xCookiesEarned` + `claimableXCookies` is greater than totalXCookiesEarnable, set `claimableXCookies` to totalXCookiesEarnable - xCookiesEarned
             // this is to prevent the user from claiming more xCookies than they have spent
             if (claimableXCookies + xCookiesEarned > island.islandEarningStats?.totalXCookiesEarnable) {
-                console.log(`(updateClaimableXCookies) Island ID ${island.islandId}'s claimableXCookies exceeds cookies spent.
-                 adjusting... totalXCookiesEarnable: ${island.islandEarningStats?.totalXCookiesEarnable} - xCookiesEarned: ${xCookiesEarned} = ${island.islandEarningStats?.totalXCookiesEarnable - xCookiesEarned}.`
-                );
-
                 updateOperations.push({
                     updateOne: {
                         filter: { islandId: island.islandId },
@@ -1914,8 +1898,6 @@ export const updateClaimableXCookies = async (): Promise<void> => {
                     }
                 });
             } else {
-                console.log(`(updateClaimableXCookies) Island ID ${island.islandId} has updated its claimable xCookies to ${island.islandEarningStats?.claimableXCookies + claimableXCookies}.`);
-
                 updateOperations.push({
                     updateOne: {
                         filter: { islandId: island.islandId },
@@ -2077,8 +2059,6 @@ export const applyGatheringProgressBooster = async (
         const normalResourcesGatheredAmount = normalResourcesGathered.reduce((acc, resource) => acc + resource.amount, 0);
         const resourcesLeft = island.islandResourceStats?.baseResourceCap - normalResourcesGatheredAmount;
 
-        console.log(`resources left for island ${island.islandId}: `, resourcesLeft);
-
         // boosters will be something like 'Gathering Progress Booster 200%', so we need to get the base percentage (of the first booster, because all boosters are the same)
         const baseBoosterPercentage = parseFloat(firstBooster.split(' ')[3]);
 
@@ -2124,7 +2104,7 @@ export const applyGatheringProgressBooster = async (
                 const { status, message } = await dropResource(islandId);
 
                 if (status !== Status.SUCCESS) {
-                    console.log(`(applyGatheringProgressBooster) Error from dropResource: ${message}`);
+                    console.error(`(applyGatheringProgressBooster) Error from dropResource: ${message}`);
 
                     return {
                         status: Status.ERROR,
@@ -2179,10 +2159,6 @@ export const applyGatheringProgressBooster = async (
             const finalNonModuloGatheringProgress = gatheringProgress + boosterPercentage;
             const resourcesToDrop = Math.floor(finalNonModuloGatheringProgress / 100);
 
-            console.log(`gathering progress of island ${island.islandId}: `, gatheringProgress);
-            console.log(`final non-modulo gathering progress of island ${island.islandId}: `, finalNonModuloGatheringProgress);
-            console.log(`resources to drop: `, resourcesToDrop);
-
             // check if the resources to drop is greater than the resources left
             if (resourcesToDrop > resourcesLeft) {
                 console.log(`(applyGatheringProgressBooster) Island ID ${islandId} does not have enough resources left to drop. Cannot apply booster.`);
@@ -2216,10 +2192,8 @@ export const applyGatheringProgressBooster = async (
                 // drop a resource
                 const { status, message, data } = await dropResource(islandId);
 
-                console.log(`dropped a resource for Island ${islandId} x${i+1}. resource: ${data.resource}`);
-
                 if (status !== Status.SUCCESS) {
-                    console.log(`(applyGatheringProgressBooster) Error from dropResource in loop: ${message}`);
+                    console.error(`(applyGatheringProgressBooster) Error from dropResource in loop for Island ${islandId}: ${message}`);
                 }
             }
 
@@ -2293,8 +2267,6 @@ export const updateClaimableCrumbs = async (): Promise<void> => {
             const tenMinEarningRate = currentEarningRate / 6;
             const claimableCookieCrumbs = tenMinEarningRate / 100 * island.islandEarningStats?.totalCookieCrumbsEarnable;
 
-            console.log(`claimable Cookie Crumbs for Island ${island.islandId} is ${claimableCookieCrumbs}.`);
-
             // get the current amount of cookie crumbs earned already
             const cookieCrumbsEarned = island.islandEarningStats?.totalCookieCrumbsEarned;
 
@@ -2312,10 +2284,6 @@ export const updateClaimableCrumbs = async (): Promise<void> => {
             // if `cookieCrumbsEarned` + `claimableCookieCrumbs` is greater than totalCookieCrumbsEarnable, set `claimableCookieCrumbs` to totalCookieCrumbsEarnable - cookieCrumbsEarned
             // this is to prevent the user from claiming more cookie crumbs than they have spent
             if (claimableCookieCrumbs + cookieCrumbsEarned > island.islandEarningStats?.totalCookieCrumbsEarnable) {
-                console.log(`(updateClaimableCrumbs) Island ID ${island.islandId}'s claimableCookieCrumbs exceeds cookie crumbs spent.
-                 adjusting... totalCookieCrumbsEarnable: ${island.islandEarningStats?.totalCookieCrumbsEarnable} - cookieCrumbsEarned: ${cookieCrumbsEarned} = ${island.islandEarningStats?.totalCookieCrumbsEarnable - cookieCrumbsEarned}.`
-                );
-
                 updateOperations.push({
                     updateOne: {
                         filter: { islandId: island.islandId },
@@ -2329,8 +2297,6 @@ export const updateClaimableCrumbs = async (): Promise<void> => {
                     }
                 });
             } else {
-                console.log(`(updateClaimableCrumbs) Island ID ${island.islandId} has updated its claimable Cookie Crumbs to ${island.islandEarningStats?.claimableCookieCrumbs + claimableCookieCrumbs}.`);
-
                 updateOperations.push({
                     updateOne: {
                         filter: { islandId: island.islandId },
@@ -2634,8 +2600,6 @@ export const claimResources = async (
 
                         // if the current weight + the total weight of this resource exceeds the max allowed weight, we will only claim a portion of this resource.
                         if (currentWeight + totalWeight > maxAllowedWeight) {
-                            console.log('current weight + total weight of resources exceeds max allowed weight!');
-
                             // calculate the amount of this resource we can claim based on the max allowed weight
                             const amountToClaim = Math.floor((maxAllowedWeight - currentWeight) / resourceWeight);
 
@@ -2648,8 +2612,6 @@ export const claimResources = async (
                             const existingResourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(r => r.type === resource.type);
 
                             if (existingResourceIndex !== -1) {
-                                console.log('existing resource index #2: ', existingResourceIndex);
-
                                 userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = amountToClaim;
                             } else {
                                 userUpdateOperations.$push['inventory.resources'].$each.push({ ...resource, amount: amountToClaim, origin: ExtendedResourceOrigin.NORMAL });
@@ -2672,13 +2634,10 @@ export const claimResources = async (
                             // break out of the loop since we can't claim more resources based on the user's max inventory weight
                             break;
                         } else {
-                            console.log('current weight + total weight of resources does not exceed max allowed weight!');
-
                             // check if this resource exists on the user's inventory or not. if not, we push a new resource; if yes, we increment the amount.
                             const existingResourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(r => r.type === resource.type);
 
                             if (existingResourceIndex !== -1) {
-                                console.log('existing resource index #3: ', existingResourceIndex);
                                 userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = resource.amount;
                             } else {
                                 userUpdateOperations.$push['inventory.resources'].$each.push({ ...resource, origin: ExtendedResourceOrigin.NORMAL });
@@ -2713,9 +2672,6 @@ export const claimResources = async (
 
         // set the island's `lastClaimed` to the current time
         islandUpdateOperations.$set['islandResourceStats.lastClaimed'] = currentTime;
-
-        console.log(`Island ${island.islandId} userUpdateOperations: `, userUpdateOperations);
-        console.log(`Island ${island.islandId} islandUpdateOperations: `, islandUpdateOperations);
 
         await UserModel.updateOne({ twitterId }, {
             $set: Object.keys(userUpdateOperations.$set).length > 0 ? userUpdateOperations.$set : {},
@@ -2881,8 +2837,6 @@ export const claimXCookiesAndCrumbs = async (twitterId: string, islandId: number
 
             // reduce the xCookies by the tax amount
             const xCookiesAfterTax = xCookies - (tax / 100 * xCookies);
-
-            console.log(`claiming tax for island ID ${islandId}: ${tax}%`);
 
             // add the xCookies to the user's inventory
             userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = xCookiesAfterTax;
@@ -3264,7 +3218,7 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
         islandUpdateOperations.$push['islandResourceStats.claimableResources'].$each.push(...claimableResourcesToAdd);
         islandUpdateOperations.$push['islandResourceStats.resourcesGathered'].$each.push(...gatheredResourcesToAdd);
 
-        console.log(`(dropResource) Island ${islandId} update opeartions: `, islandUpdateOperations);
+        console.log(`(dropResource) Island ${islandId} update operations: `, islandUpdateOperations);
 
         // execute the update operations
         await IslandModel.updateOne({ islandId }, {
@@ -3344,7 +3298,7 @@ export const randomizeResourceFromChances = (
                 }
             });
 
-            console.log(`(randomizeResourceFromChances) resource is undefined: `, resource === undefined);
+            console.log(`(randomizeResourceFromChances) resource is undefined or null: `, resource === undefined || resource === null);
             return resource;
         }
     }
@@ -3649,7 +3603,7 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
 
         // if caressMeter passed from FE isn't equal than current caressEnergyMeter return error.
         if (caressMeter < caressEnergyMeter) {
-            console.log(
+            console.error(
                 `(applyIslandTapping) cannot apply island id ${islandId} tapping. caressMeter isn't valid.`
             );
 
@@ -3669,11 +3623,10 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
             const newCurrentEnergy = Math.max(currentEnergy - energyRequired, 0);
             // Save newCurrentEnergy to userUpdateOperations
             userUpdateOperations.$set['inGameData.energy.currentEnergy'] = newCurrentEnergy;
-            console.log(`(applyIslandTapping) deduct ${user.twitterUsername} energy to ${newCurrentEnergy} energy`);
         } else {
             return {
                 status: Status.ERROR,
-                message: `(getIslandTappingData) User doens't have enough energy to continue this action.`
+                message: `(getIslandTappingData) User doesn't have enough energy to continue this action.`
             };
         }
 
@@ -3683,8 +3636,6 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
         // add the amount of resources per `normalResourcesGathered` instance
         const normalResourcesGatheredAmount = normalResourcesGathered.reduce((acc, resource) => acc + resource.amount, 0);
         const resourcesLeft = island.islandResourceStats?.baseResourceCap - normalResourcesGatheredAmount;
-
-        console.log(`(applyIslandTapping), resources left for island ${island.islandId}: `, resourcesLeft);
 
         if (resourcesLeft <= 0) {
             return {
@@ -3721,7 +3672,7 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
                 const { status, message } = await dropResource(islandId);
 
                 if (status !== Status.SUCCESS) {
-                    console.log(`(applyIslandTapping) Error from dropResource: ${message}`);
+                    console.error(`(applyIslandTapping) Error from dropResource: ${message}`);
 
                     return {
                         status: Status.ERROR,
@@ -3742,10 +3693,6 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
             const gatheringProgress = island.islandResourceStats?.gatheringProgress;
             const finalNonModuloGatheringProgress = gatheringProgress + boosterPercentage;
             const resourcesToDrop = Math.floor(finalNonModuloGatheringProgress / 100);
-
-            console.log(`(applyIslandTapping), gathering progress of island ${island.islandId}: `, gatheringProgress);
-            console.log(`(applyIslandTapping), final non-modulo gathering progress of island ${island.islandId}: `, finalNonModuloGatheringProgress);
-            console.log(`(applyIslandTapping), resources to drop: `, resourcesToDrop);
 
             // check if the resources to drop is greater than the resources left
             if (resourcesToDrop > resourcesLeft) {
@@ -3768,10 +3715,8 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
                 // drop a resource
                 const { status, message, data } = await dropResource(islandId);
 
-                console.log(`dropped a resource for Island ${islandId} x${i+1}. resource: ${data.resource}`);
-
                 if (status !== Status.SUCCESS) {
-                    console.log(`(applyIslandTapping) Error from dropResource in loop: ${message}`);
+                    console.error(`(applyIslandTapping) Error from dropResource in loop: ${message}`);
                 }
             }
 

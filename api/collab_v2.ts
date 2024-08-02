@@ -370,8 +370,6 @@ export const getCollabReward = async (twitterId: string): Promise<ReturnValue> =
             };
         }
 
-        console.log('claiming: ', user.twitterUsername);
-
         const participant = await CollabParticipantModel.findOne({ twitterUsername: { $regex: new RegExp(`^${user.twitterUsername}$`, 'i') } })
             .populate('basket')
             .lean();
@@ -411,8 +409,6 @@ export const claimCollabReward = async (twitterId: string): Promise<ReturnValue>
                 message: `(claimCollabReward) User not found.`,
             };
         }
-
-        console.log('claiming: ', user.twitterUsername);
 
         // update this to findAll
         const participants = await CollabParticipantModel.find({ twitterUsername: { $regex: new RegExp(user.twitterUsername, 'i') } }).populate('basket');

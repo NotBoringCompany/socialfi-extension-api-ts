@@ -60,7 +60,7 @@ export const generateStarterCodes = async (
             }
         }
     } catch (err: any) {
-        console.log('(generateStarterCodes)', err.message);
+        console.error('(generateStarterCodes)', err.message);
         return {
             status: Status.ERROR,
             message: `(generateStarterCodes) ${err.message}`
@@ -521,7 +521,7 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
         await Promise.all(successfulIndirectReferralsNewEntries);
         await Promise.all(updatePromises);
     } catch (err: any) {
-        console.log('(updateSuccessfulIndirectReferrals)', err.message);
+        console.error('(updateSuccessfulIndirectReferrals)', err.message);
     }
 }
 
