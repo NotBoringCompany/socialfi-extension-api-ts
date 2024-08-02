@@ -1543,6 +1543,8 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
             });
         })
 
+        console.log(`Member data now: `, currentMemberData);
+
         squad.pendingMembers.map(async pendingMember => {
             // find the userData that has the member's user id
             const memberData = userData.find(user => user._id === pendingMember.userId);
