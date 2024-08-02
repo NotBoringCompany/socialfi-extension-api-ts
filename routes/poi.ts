@@ -244,7 +244,7 @@ router.post('/sell_items_in_poi_shop', async (req, res) => {
                 distinct_id: validateData?.twitterId,
                 '_items': items,
                 '_leaderboardName': leaderboardName,
-                '_earnedPoints': data.leaderboardPoints,
+                '_earnedPoints': data?.leaderboardPoints,
             });
 
             // increment the event counter in the wonderbits contract.
