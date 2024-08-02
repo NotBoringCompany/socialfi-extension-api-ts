@@ -3,7 +3,9 @@ export const INITIAL_MAX_MEMBERS = 10;
 /** the max amount of max members a squad can have */
 export const MAX_MEMBERS_LIMIT = 100;
 /** the max number of leaders a squad can have */
-export const MAX_LEADERS_LIMIT = 5;
+export const MAX_LEADERS_LIMIT = 1;
+/** the max number of co-leaders a squad can have */
+export const MAX_CO_LEADERS_LIMIT = 2;
 
 /** the increase in max members count upon upgrading once */
 export const MAX_MEMBERS_INCREASE_UPON_UPGRADE = 5;

@@ -1,7 +1,7 @@
 import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
-import { acceptPendingSquadMember, addLeader, checkSquadCreationMethodAndCost, createSquad, declinePendingSquadMember, delegateLeadership, getAllSquadData, getLatestSquadWeeklyRanking, getSquadData, getSquadMemberData, kickMember, leaveSquad, renameSquad, requestToJoinSquad, squadKOSData, upgradeSquadLimit } from '../api/squad';
+import { acceptPendingSquadMember, addCoLeader, addLeader, checkSquadCreationMethodAndCost, createSquad, declinePendingSquadMember, delegateLeadership, getAllSquadData, getLatestSquadWeeklyRanking, getSquadData, getSquadMemberData, kickMember, leaveSquad, renameSquad, requestToJoinSquad, squadKOSData, upgradeSquadLimit } from '../api/squad';
 import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 import { authMiddleware } from '../middlewares/auth';
 import { getMainWallet } from '../api/user';
@@ -250,8 +250,8 @@ router.post('/delegate_leadership', async (req, res) => {
     }
 })
 
-router.post('/add_leader', async (req, res) => {
-    const { newLeaderTwitterId, newLeaderUserId } = req.body;
+router.post('/add_co_leader', async (req, res) => {
+    const { newCoLeaderTwitterId, newCoLeaderUserId } = req.body;
 
     try {
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'add_leader');
@@ -263,7 +263,7 @@ router.post('/add_leader', async (req, res) => {
             })
         }
 
-        const { status, message, data } = await addLeader(validateData?.twitterId, newLeaderTwitterId, newLeaderUserId);
+        const { status, message, data } = await addCoLeader(validateData?.twitterId, newCoLeaderTwitterId, newCoLeaderUserId);
 
         return res.status(status).json({
             status,
