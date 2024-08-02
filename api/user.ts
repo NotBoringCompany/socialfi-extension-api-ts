@@ -29,7 +29,7 @@ import { BitOrbType } from '../models/bitOrb';
 import { TerraCapsulatorType } from '../models/terraCapsulator';
 import { Item } from '../models/item';
 import { BitRarity, BitTrait } from '../models/bit';
-import { IslandStatsModifiers, IslandType } from '../models/island';
+import { IslandStatsModifiers, IslandTappingData, IslandType } from '../models/island';
 import { Modifier } from '../models/modifier';
 import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
 import { FoodType } from '../models/food';
@@ -2719,12 +2719,15 @@ export const consumeEnergyPotion = async (
             // Prepare bulk write operations for the islands
             bulkWriteIslandOps = tappingProgress.map(progress => {
                 const island = islands.find(island => island.islandId === progress.islandId);
+                const { caressEnergyMeter, currentCaressEnergyMeter } = island.islandTappingData as IslandTappingData;
 
+                const newCurrentCaressEnergyMeter = Math.min(currentCaressEnergyMeter + progress.currentCaressEnergyMeter, caressEnergyMeter);
+                
                 if (island) {
                     return {
                         updateOne: {
                             filter: { islandId: progress.islandId, owner: user._id },
-                            update: { $set: { 'islandTappingData.currentCaressEnergyMeter': progress.currentCaressEnergyMeter } }
+                            update: { $set: { 'islandTappingData.currentCaressEnergyMeter': newCurrentCaressEnergyMeter } }
                         }
                     };
                 } else {
