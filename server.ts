@@ -88,7 +88,7 @@ app.use('/collab', checkMaintenance, collabV2);
 app.use('/web3', checkMaintenance, web3);
 
 app.listen(port, async () => {
-    console.log(`Server running on port ${port}`);
+    console.log(`Server running on port: ${port}`);
 
     // await schedulers();
 });
