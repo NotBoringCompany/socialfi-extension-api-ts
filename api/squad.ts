@@ -733,7 +733,9 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
         // if the user is a squad leader, do the following:
         // 1. check if the user is the only member in the squad. if so, disband the squad.
         // 2. if there are other members in the squad and there are also other leaders, then just leave as is.
-        // 3. if there are other members in the squad and the user is the only leader, promote the member with the longest tenure to leader.
+        // 3. if there are other members in the squad and the user is the only leader, check the following:
+        // 4a. if there are co-leaders, select the co-leader with the longest tenure to be the new leader.
+        // 4b. if there are no co-leaders, assign the member with the longest tenure to be the new leader.
         if (squad.members.find(member => member.userId === user._id)?.role === SquadRole.LEADER) {
             if (squad.members.length === 1) {
                 // disband the squad by removing the member from the squad (leaving the squad memberless)
@@ -766,12 +768,16 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
                 const leaderCount = squad.members.filter(member => member.role === SquadRole.LEADER && member.userId !== user._id).length;
 
                 if (leaderCount === 0) {
-                    // if no other leaders, find the member with the longest tenure in the squad.
+                    // if no other leaders, firstly:
+                    // check if there are co-leaders. if there are, find the co-leader with the longest tenure.
                     // we will promote this member to leader.
+                    // if there are no co-leaders, promote the member with the longest tenure to leader.
                     // if the member with the longest tenure is the leader (i.e. the user), then promote the next member with the longest tenure.
-                    let memberWithLongestTenure = squad.members.filter(member => member.userId !== user._id).reduce((prev, current) => (prev.joinedTimestamp < current.joinedTimestamp) ? prev : current);
+                    let memberWithLongestTenure = squad.members.filter(member => member.userId !== user._id && member.role === SquadRole.CO_LEADER).length > 0 ? 
+                        squad.members.filter(member => member.userId !== user._id && member.role === SquadRole.CO_LEADER).reduce((prev, current) => (prev.joinedTimestamp < current.joinedTimestamp) ? prev : current) : 
+                        squad.members.filter(member => member.userId !== user._id).reduce((prev, current) => (prev.joinedTimestamp < current.joinedTimestamp) ? prev : current);
 
-                    // promote the member with the longest tenure to leader.
+                    // promote the co-leader/member found in `memberWithLongestTenure` to leader.
                     // remove the user-to-leave from the squad.
                     const memberWithLongestTenureIndex = squad.members.findIndex(member => member.userId === memberWithLongestTenure.userId);
 
@@ -866,7 +872,7 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
 }
 
 /**
- * Upgrades the max members limit for a squad. Only callable by a squad leader.
+ * Upgrades the max members limit for a squad. Only callable by a squad leader OR co-leader.
  */
 export const upgradeSquadLimit = async (twitterId: string): Promise<ReturnValue> => {
     try {
@@ -897,10 +903,13 @@ export const upgradeSquadLimit = async (twitterId: string): Promise<ReturnValue>
             }
         }
 
-        if (squad.members.find(member => member.userId === user._id)?.role !== SquadRole.LEADER) {
+        if (
+            squad.members.find(member => member.userId === user._id)?.role !== SquadRole.LEADER &&
+            squad.members.find(member => member.userId === user._id)?.role !== SquadRole.CO_LEADER
+        ) {
             return {
                 status: Status.ERROR,
-                message: `(upgradeSquadLimit) User is not a squad leader for the given squad.`
+                message: `(upgradeSquadLimit) User is not a squad leader or co-leader for the given squad.`
             }
         }
 
@@ -1154,6 +1163,12 @@ export const addCoLeader = async (leaderTwitterId: string, newCoLeaderTwitterId:
     }
 }
 
+/**
+ * Kicks a member from the squad.
+ * 
+ * Leaders can kick co-leaders and members.
+ * Co-leaders can only kick members.
+ */
 export const kickMember = async (leaderTwitterId: string, memberTwitterId: string = '', memberUserId: string = ''): Promise<ReturnValue> => {
     try {
         const [leader, member] = await Promise.all([
@@ -1193,10 +1208,14 @@ export const kickMember = async (leaderTwitterId: string, memberTwitterId: strin
             }
         }
 
-        if (squad.members.find(member => member.userId === leader._id)?.role !== SquadRole.LEADER) {
+        // must be either leader or co-leader
+        if (
+            squad.members.find(member => member.userId === leader._id)?.role !== SquadRole.LEADER &&
+            squad.members.find(member => member.userId === leader._id)?.role !== SquadRole.CO_LEADER
+        ) {
             return {
                 status: Status.ERROR,
-                message: `(kickMember) User is not a squad leader for the given squad.`
+                message: `(kickMember) User is not a squad leader or co-leader for the given squad.`
             }
         }
 
@@ -1212,7 +1231,20 @@ export const kickMember = async (leaderTwitterId: string, memberTwitterId: strin
         if (leader._id === member._id) {
             return {
                 status: Status.ERROR,
-                message: `(kickMember) Leader cannot kick themself.`
+                message: `(kickMember) Cannot kick self.`
+            }
+        }
+
+        // if user is a co-leader, they can only kick members. if they try to kick the leader or another co-leader, return an error.
+        if (squad.members.find(m => m.userId === leader._id)?.role === SquadRole.CO_LEADER) {
+            if (
+                squad.members.find(m => m.userId === member._id)?.role === SquadRole.LEADER ||
+                squad.members.find(m => m.userId === member._id)?.role === SquadRole.CO_LEADER
+            ) {
+                return {
+                    status: Status.ERROR,
+                    message: `(kickMember) Co-leaders cannot kick leaders or other co-leaders.`
+                }
             }
         }
 
@@ -1236,7 +1268,7 @@ export const kickMember = async (leaderTwitterId: string, memberTwitterId: strin
             data: {
                 memberTwitterId,
                 memberUserId,
-                currentMember: squad.members.length,
+                currentMember: squad.members.length - 1,
             }
         }
     } catch (err: any) {
