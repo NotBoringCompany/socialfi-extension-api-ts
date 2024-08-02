@@ -1,7 +1,7 @@
 import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
-import { acceptPendingSquadMember, addLeader, checkSquadCreationMethodAndCost, createSquad, declinePendingSquadMember, delegateLeadership, getAllSquadData, getLatestSquadWeeklyRanking, getSquadData, getSquadMemberData, kickMember, leaveSquad, renameSquad, requestToJoinSquad, squadKOSData, upgradeSquadLimit } from '../api/squad';
+import { acceptPendingSquadMember, addLeader, checkSquadCreationMethodAndCost, createSquad, declinePendingSquadMember, delegateLeadership, getAllSquadData, getLatestSquadWeeklyRanking, getPendingSquadMemberData, getSquadData, getSquadMemberData, kickMember, leaveSquad, renameSquad, requestToJoinSquad, squadKOSData, upgradeSquadLimit } from '../api/squad';
 import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 import { authMiddleware } from '../middlewares/auth';
 import { getMainWallet } from '../api/user';
@@ -350,7 +350,7 @@ router.get('/get_squad_data/:twitterId/:squadId', async (req, res) => {
 router.get('/get_pending_squad_member_data/:userId', async (req, res) => {
     const { userId } = req.params;
     try {        
-        const { status, message, data } = await getSquadMemberData(userId);
+        const { status, message, data } = await getPendingSquadMemberData(userId);
 
         return res.status(status).json({
             status,

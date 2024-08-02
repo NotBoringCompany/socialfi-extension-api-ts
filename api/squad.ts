@@ -1553,6 +1553,7 @@ export const getPendingSquadMemberData = async (userId: string): Promise<ReturnV
             if (!user) {
                 return {
                     username: 'N/A',
+                    profilePicture: 'N/A',
                     totalPoints: 0,
                     kosCount: 0,
                     inGameLevel: 1
@@ -1615,6 +1616,7 @@ export const getPendingSquadMemberData = async (userId: string): Promise<ReturnV
             if (walletStatus !== Status.SUCCESS) {
                 return {
                     username: user.twitterUsername,
+                    profilePicture: user.twitterProfilePicture,
                     totalPoints: totalLeaderboardPoints,
                     kosCount: 0,
                     inGameLevel
@@ -1626,6 +1628,7 @@ export const getPendingSquadMemberData = async (userId: string): Promise<ReturnV
             if (validAddresses.length === 0) {
                 return {
                     username: user.twitterUsername,
+                    profilePicture: user.twitterProfilePicture,
                     totalPoints: totalLeaderboardPoints,
                     kosCount: 0,
                     inGameLevel
