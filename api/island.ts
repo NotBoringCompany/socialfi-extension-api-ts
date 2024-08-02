@@ -3123,8 +3123,6 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
                 // check if the common resource already exists in `claimableResources`
                 const existingResourceIndex = claimableResources.findIndex(r => r.type === commonResourceToDrop.type);
 
-                console.log(`(dropResource) works #4`);
-
                 // if the resource already exists, increment its amount
                 if (existingResourceIndex !== -1) {
                     islandUpdateOperations.$inc[`islandResourceStats.claimableResources.${existingResourceIndex}.amount`] = 1;
@@ -3194,15 +3192,12 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
                 }
             }
 
-            console.log(`Island ${island.islandId} bonusResourceChance: ${bonusResourceChance}%`);
-
             // only if bonus resource chance is above 0 will we proceed to check if we can drop a bonus resource.
             if (bonusResourceChance > 0) {
                 // roll a dice between 1-100
                 const rand = Math.random() * 100 + 1;
 
                 if (rand <= bonusResourceChance) {
-                    console.log(`(dropResource) rand is below bonusResourceChance. dropping bonus resource!`);
                     // randomize a resource based on the island's resource drop chances
                     let bonusResource: Resource | undefined | null = null;
 
@@ -3269,6 +3264,8 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
         islandUpdateOperations.$push['islandResourceStats.claimableResources'].$each.push(...claimableResourcesToAdd);
         islandUpdateOperations.$push['islandResourceStats.resourcesGathered'].$each.push(...gatheredResourcesToAdd);
 
+        console.log(`(dropResource) Island ${islandId} update opeartions: `, islandUpdateOperations);
+
         // execute the update operations
         await IslandModel.updateOne({ islandId }, {
             $set: Object.keys(islandUpdateOperations.$set).length > 0 ? islandUpdateOperations.$set : {},
@@ -3288,7 +3285,7 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
             }
         }
     } catch (err: any) {
-        console.log(`(dropResource) Error: ${err.message}`);
+        console.error(`(dropResource) Error: ${err.message}`);
 
         return {
             status: Status.ERROR,
