@@ -1,7 +1,7 @@
 import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
-import { acceptPendingSquadMember, addLeader, checkSquadCreationMethodAndCost, createSquad, declinePendingSquadMember, delegateLeadership, getAllSquadData, getLatestSquadWeeklyRanking, getPendingSquadMemberData, getSquadData, getSquadMemberData, kickMember, leaveSquad, renameSquad, requestToJoinSquad, squadKOSData, upgradeSquadLimit } from '../api/squad';
+import { acceptPendingSquadMember, addLeader, checkSquadCreationMethodAndCost, createSquad, declinePendingSquadMember, delegateLeadership, getAllSquadData, getLatestSquadWeeklyRanking, getSquadData, getSquadMemberData, kickMember, leaveSquad, renameSquad, requestToJoinSquad, squadKOSData, upgradeSquadLimit } from '../api/squad';
 import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 import { authMiddleware } from '../middlewares/auth';
 import { getMainWallet } from '../api/user';
@@ -347,24 +347,6 @@ router.get('/get_squad_data/:twitterId/:squadId', async (req, res) => {
     }
 });
 
-router.get('/get_pending_squad_member_data/:userId', async (req, res) => {
-    const { userId } = req.params;
-    try {        
-        const { status, message, data } = await getPendingSquadMemberData(userId);
-
-        return res.status(status).json({
-            status,
-            message,
-            data
-        });
-    } catch (err: any) {
-        return res.status(500).json({
-            status: 500,
-            message: err.message
-        })
-    }
-})
-
 router.post('/decline_pending_squad_member', async (req, res) => {
     const { memberTwitterId, memberUserId } = req.body;
 
@@ -463,10 +445,10 @@ router.get('/get_latest_squad_weekly_ranking/:squadId', async (req, res) => {
     }
 });
 
-router.get('/get_squad_member_data/:userId', async (req, res) => {
-    const { userId } = req.params;
+router.get('/get_squad_member_data/:squadId', async (req, res) => {
+    const { squadId } = req.params;
     try {
-        const { status, message, data } = await getSquadMemberData(userId);
+        const { status, message, data } = await getSquadMemberData(squadId);
 
         return res.status(status).json({
             status,
