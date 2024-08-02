@@ -1460,7 +1460,7 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
             });
         }
 
-        squad.members.map(async member => {
+        for (const member of squad.members) {
             // find the userData that has the member's user id
             const memberData = userData.find(user => user._id === member.userId);
 
@@ -1541,11 +1541,11 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
                 currentSeasonRank,
                 kosCount
             });
-        })
+        }
 
         console.log(`Member data now: `, currentMemberData);
 
-        squad.pendingMembers.map(async pendingMember => {
+        for (const pendingMember of squad.pendingMembers) {
             // find the userData that has the member's user id
             const memberData = userData.find(user => user._id === pendingMember.userId);
 
@@ -1614,7 +1614,7 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
                 currentSeasonRank,
                 kosCount
             });
-        })
+        }
         
         return {
             status: Status.SUCCESS,
