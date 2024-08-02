@@ -1484,7 +1484,6 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
             // get the user's latest season rank (which is the user's index + 1).
             currentSeasonRank = userIndex + 1;
 
-            // get the user's KOS count
             // get the user's KOS count. loop through `explicitOwnerships` and count the number of KOS they own.
             // first, get the user's wallet addresses (both main and secondary)
             const { status: walletStatus, message: walletMessage, data: walletData } = await getWallets(memberData.twitterId);
@@ -1557,94 +1556,62 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
 
             // get the user's leaderboard points (excl. additional points)
             let totalLeaderboardPoints = 0;
-            const seasonRanks: Array<{
-                season: string,
-                rank: number
-            }> = [];
 
             // get the user's season rank
             let currentSeasonRank: number = 0;
 
-            // right now, there is only season 0 (i.e. one leaderboard)
-            // but this helps in case there are multiple leaderboards in the future to make it more future-proof.
-            for (const leaderboard of leaderboards) {
-                // sort the users by their total points in descending order.
-                // to get the total points, each userData contains an array of `pointsData` which contains the points for each source.
-                // we sum all the points from each source to get the total points (excluding the leaderboard points source for LEVELLING_UP (for now, may be more in the future)).
-                // firstly, we get the user data from this leaderboard.
-                const userData = leaderboard.userData;
+            // get the user's leaderboard points. its index + 1 is the rank.
+            const userIndex = sortedLeaderboardUserData.findIndex(data => data.userId === pendingMember.userId);
+            totalLeaderboardPoints = sortedLeaderboardUserData[userIndex].pointsData.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0);
 
-                // sort the user data by their total points in descending order.
-                // to do this, the points for each `pointsData` must be summed up (excluding LeaderboardPointsSource.LEVELLING_UP)
-                const sortedUserData = userData.sort((a, b) => {
-                    const aTotalPoints = a.pointsData.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0);
-                    const bTotalPoints = b.pointsData.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0);
+            // get the user's latest season rank (which is the user's index + 1).
+            currentSeasonRank = userIndex + 1;
 
-                    return bTotalPoints - aTotalPoints;
-                });
+            // get the user's KOS count. loop through `explicitOwnerships` and count the number of KOS they own.
+            // first, get the user's wallet addresses (both main and secondary)
+            const { status: walletStatus, message: walletMessage, data: walletData } = await getWallets(memberData.twitterId);
 
-                // get the user's leaderboard points. its index + 1 is the rank.
-                const userIndex = sortedUserData.findIndex(data => data.userId === pendingMember.userId);
-                totalLeaderboardPoints = sortedUserData[userIndex].pointsData.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0);
-
-                // get the user's season rank.
-                seasonRanks.push({
-                    season: leaderboard.name,
-                    rank: userIndex + 1
-                });
-
-                // get the latest season rank. seasons are named "Season 0", "Season 1"... so on.
-                // we sort the season ranks by the season number in descending order and fetch the highest number.
-                const sortedSeasonRanks = seasonRanks.sort((a, b) => parseInt(b.season.split(' ')[1]) - parseInt(a.season.split(' ')[1]));
-
-                currentSeasonRank = sortedSeasonRanks[0].rank;
-                
-                // get the user's KOS count. loop through `explicitOwnerships` and count the number of KOS they own.
-                // first, get the user's wallet addresses (both main and secondary)
-                const { status: walletStatus, message: walletMessage, data: walletData } = await getWallets(memberData.twitterId);
-
-                if (walletStatus !== Status.SUCCESS) {
-                    pendingMemberData.push({
-                        username: memberData.twitterUsername,
-                        profilePicture: memberData.twitterProfilePicture,
-                        inGameLevel,
-                        totalPoints: totalLeaderboardPoints,
-                        currentSeasonRank,
-                        kosCount: 0
-                    })
-                }
-
-                const validAddresses = (walletData.walletAddresses as string[]).filter((address: string) => address !== '').map((address: string) => address.toLowerCase());
-
-                if (validAddresses.length === 0) {
-                    pendingMemberData.push({
-                        username: memberData.twitterUsername,
-                        profilePicture: memberData.twitterProfilePicture,
-                        inGameLevel,
-                        totalPoints: totalLeaderboardPoints,
-                        currentSeasonRank,
-                        kosCount: 0,
-                    })
-                }
-
-                // get the KOS count of the user.
-                let kosCount = 0;
-
-                for (const keyOwnership of explicitOwnerships) {
-                    if (validAddresses.includes(keyOwnership.owner.toLowerCase())) {
-                        kosCount++;
-                    }
-                }
-
+            if (walletStatus !== Status.SUCCESS) {
                 pendingMemberData.push({
                     username: memberData.twitterUsername,
                     profilePicture: memberData.twitterProfilePicture,
                     inGameLevel,
                     totalPoints: totalLeaderboardPoints,
                     currentSeasonRank,
-                    kosCount
-                });
+                    kosCount: 0
+                })
             }
+
+            const validAddresses = (walletData.walletAddresses as string[]).filter((address: string) => address !== '').map((address: string) => address.toLowerCase());
+
+            if (validAddresses.length === 0) {
+                pendingMemberData.push({
+                    username: memberData.twitterUsername,
+                    profilePicture: memberData.twitterProfilePicture,
+                    inGameLevel,
+                    totalPoints: totalLeaderboardPoints,
+                    currentSeasonRank,
+                    kosCount: 0,
+                })
+            }
+
+            // get the KOS count of the user.
+            let kosCount = 0;
+
+            for (const keyOwnership of explicitOwnerships) {
+                if (validAddresses.includes(keyOwnership.owner.toLowerCase())) {
+                    kosCount++;
+                }
+            }
+
+            pendingMemberData.push({
+                username: memberData.twitterUsername,
+                profilePicture: memberData.twitterProfilePicture,
+                inGameLevel,
+                totalPoints: totalLeaderboardPoints,
+                currentSeasonRank,
+                kosCount
+            });
         })
         
         return {
