@@ -12,32 +12,32 @@ import { distributeWeeklyMVPRewardsScheduler, updateCurrentWeeklyMVPRankingLeade
 export const schedulers = async (): Promise<void> => {
     try {
         // update gathering progress first because bits' energies will deplete afterwards
-        await updateGatheringProgressAndDropResourceScheduler();
-        await updateClaimableXCookiesScheduler();
-        await updateClaimableCrumbsScheduler();
+        // await updateGatheringProgressAndDropResourceScheduler();
+        // await updateClaimableXCookiesScheduler();
+        // await updateClaimableCrumbsScheduler();
         await depleteEnergyScheduler();
 
-        await updateSuccessfulIndirectReferralsScheduler();
+        // await updateSuccessfulIndirectReferralsScheduler();
         
-        await updateCurrentWeeklyMVPRankingLeaderboardScheduler();
+        // await updateCurrentWeeklyMVPRankingLeaderboardScheduler();
 
-        await batchSendKICKScheduler();
+        // await batchSendKICKScheduler();
 
-        await removeOpenedTweetIdsTodayScheduler();
-        await updateDailyBonusResourcesGatheredScheduler();
-        await updateDailyLoginRewardsDataScheduler();
-        await updateBeginnerRewardsDataScheduler();
-        await updateUserEnergyPotionScheduler();
-        await restoreUserCurrentEnergyAndResetRerollScheduler();
-        await resetGlobalItemsDailyBuyableAndSellableAmountScheduler();
-        await resetDailyIslandTappingMilestoneScheduler();
+        // await removeOpenedTweetIdsTodayScheduler();
+        // await updateDailyBonusResourcesGatheredScheduler();
+        // await updateDailyLoginRewardsDataScheduler();
+        // await updateBeginnerRewardsDataScheduler();
+        // await updateUserEnergyPotionScheduler();
+        // await restoreUserCurrentEnergyAndResetRerollScheduler();
+        // await resetGlobalItemsDailyBuyableAndSellableAmountScheduler();
+        // await resetDailyIslandTappingMilestoneScheduler();
 
-        await calculateWeeklySquadRankingAndAddSquadLeaderboardScheduler();
+        // await calculateWeeklySquadRankingAndAddSquadLeaderboardScheduler();
 
-        await distributeWeeklyMVPRewardsScheduler();
+        // await distributeWeeklyMVPRewardsScheduler();
 
-        await checkDailyKOSRewardsScheduler();
-        await checkWeeklyKOSRewardsScheduler();
+        // await checkDailyKOSRewardsScheduler();
+        // await checkWeeklyKOSRewardsScheduler();
     } catch (err: any) {
         console.error('Error in schedulers:', err.message);
     }
