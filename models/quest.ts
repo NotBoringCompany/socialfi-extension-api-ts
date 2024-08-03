@@ -51,6 +51,9 @@ export interface Quest {
     }>
     /** requirements to complete the quest */
     requirements: QuestRequirement[];
+    qualification: QuestQualification;
+    qualifiedUsers: string[];
+    unlockable: boolean;
 }
 
 /**
@@ -212,4 +215,12 @@ export interface QuestProgression {
     progress: number;
     /** the requirement of the quest */
     requirement: number;
+}
+
+/**
+ * Represents user's quest qualification.
+ */
+export interface QuestQualification {
+    questId?: string | number;
+    level?: number;
 }

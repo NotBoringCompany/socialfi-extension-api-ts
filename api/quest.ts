@@ -447,6 +447,30 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
             ...islandUpdatePromises,
         ]);
 
+        // Fetch quests that are unlockable and where the qualification.questId matches the completed questId
+        const potentialQuests = await QuestModel.find({
+            unlockable: true,
+            'qualification.questId': questId,
+            status: true,
+        }).lean();
+
+        // Check qualifications and update qualified quests
+        await Promise.all(
+            potentialQuests.map(async (quest) => {
+                let isQualified = true;
+
+                // Check if the user meets the level requirement
+                if (quest.qualification.level) {
+                    isQualified = user.inGameData.level >= quest.qualification.level;
+                }
+
+                // If qualified, add the user to the quest's qualifiedUsers
+                if (isQualified && !quest.qualifiedUsers.includes(user._id)) {
+                    await QuestModel.updateOne({ _id: quest._id }, { $addToSet: { qualifiedUsers: user._id } });
+                }
+            })
+        );
+
         return {
             status: Status.SUCCESS,
             message: `(completeQuest) Quest completed. Rewards received and added to user's inventory.`,
@@ -535,6 +559,54 @@ export const getQuests = async (category?: string): Promise<ReturnValue> => {
             message: `(getQuests) Quests fetched.`,
             data: {
                 quests,
+            },
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getQuests) ${err.message}`,
+        };
+    }
+};
+
+/**
+ * Fetches all quests from the database.
+ */
+export const getUserQuests = async (twitterId: string, category?: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId });
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(getUserQuests) User not found. Twitter ID: ${twitterId}`,
+            };
+        }
+
+        const query: any = {};
+        query['status'] = true;
+        if (category) query['category'] = category;
+
+        const quests = await QuestModel.find(query).lean();
+
+        if (quests.length === 0) {
+            return {
+                status: Status.ERROR,
+                message: `(getQuests) No quests found.`,
+            };
+        }
+
+        const filteredQuests = quests.filter((quest) => {
+            if (quest.unlockable) {
+                return quest.qualifiedUsers.includes(user._id.toString());
+            }
+            return true;
+        });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getQuests) Quests fetched.`,
+            data: {
+                quests: filteredQuests,
             },
         };
     } catch (err: any) {
