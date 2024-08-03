@@ -1444,15 +1444,18 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
         }
 
         const currentMemberData: Array<{
+            userId: string
             username: string;
             profilePicture: string;
             inGameLevel: number;
             totalPoints: number;
             currentSeasonRank: number;
             kosCount: number;
+            role: SquadRole;
         }> = [];
 
         const pendingMemberData: Array<{
+            userId: string
             username: string;
             profilePicture: string;
             inGameLevel: number;
@@ -1532,12 +1535,14 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
 
             if (walletStatus !== Status.SUCCESS) {
                 currentMemberData.push({
+                    userId: member.userId,
                     username: memberData.twitterUsername,
                     profilePicture: memberData.twitterProfilePicture,
                     inGameLevel,
                     totalPoints: totalLeaderboardPoints,
                     currentSeasonRank,
-                    kosCount: 0
+                    kosCount: 0,
+                    role: member.role as SquadRole
                 })
             }
 
@@ -1545,12 +1550,14 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
 
             if (validAddresses.length === 0) {
                 currentMemberData.push({
+                    userId: member.userId,
                     username: memberData.twitterUsername,
                     profilePicture: memberData.twitterProfilePicture,
                     inGameLevel,
                     totalPoints: totalLeaderboardPoints,
                     currentSeasonRank,
                     kosCount: 0,
+                    role: member.role as SquadRole
                 })
             }
 
@@ -1576,12 +1583,14 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
             }`);
 
             currentMemberData.push({
+                userId: member.userId,
                 username: memberData.twitterUsername,
                 profilePicture: memberData.twitterProfilePicture,
                 inGameLevel,
                 totalPoints: totalLeaderboardPoints,
                 currentSeasonRank,
-                kosCount
+                kosCount,
+                role: member.role as SquadRole
             });
         }
 
@@ -1617,12 +1626,13 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
 
             if (walletStatus !== Status.SUCCESS) {
                 pendingMemberData.push({
+                    userId: pendingMember.userId,
                     username: memberData.twitterUsername,
                     profilePicture: memberData.twitterProfilePicture,
                     inGameLevel,
                     totalPoints: totalLeaderboardPoints,
                     currentSeasonRank,
-                    kosCount: 0
+                    kosCount: 0,
                 })
             }
 
@@ -1630,6 +1640,7 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
 
             if (validAddresses.length === 0) {
                 pendingMemberData.push({
+                    userId: pendingMember.userId,
                     username: memberData.twitterUsername,
                     profilePicture: memberData.twitterProfilePicture,
                     inGameLevel,
@@ -1649,6 +1660,7 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
             }
 
             pendingMemberData.push({
+                userId: pendingMember.userId,
                 username: memberData.twitterUsername,
                 profilePicture: memberData.twitterProfilePicture,
                 inGameLevel,
@@ -1703,6 +1715,7 @@ export const getAllSquadData = async (): Promise<ReturnValue> => {
             totalKOSCount: number;
             totalPointsEarned: number;
             totalMembers: number;
+            maxMembers: number;
             joinable: boolean;
         }> = [];
 
@@ -1793,6 +1806,7 @@ export const getAllSquadData = async (): Promise<ReturnValue> => {
                 totalKOSCount,
                 totalPointsEarned: totalLeaderboardPoints,
                 totalMembers,
+                maxMembers: squad.maxMembers,
                 joinable
             });
         }

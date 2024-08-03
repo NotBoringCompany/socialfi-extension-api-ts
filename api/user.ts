@@ -191,6 +191,29 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
                     totalExp: 0,
                     rerollCount: 6,
                 },
+                smelting:
+                {
+                    level: 1,
+                    totalExp: 0,
+                },
+
+                cooking:
+                {
+                    level: 1,
+                    totalExp: 0,
+                },
+
+                carpenting:
+                {
+                    level: 1,
+                    totalExp: 0,
+                },
+
+                tailoring:
+                {
+                    level: 1,
+                    totalExp: 0,
+                }
             };
 
             const newUser = new UserModel({
@@ -2172,6 +2195,29 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
                 totalExp: 0,
                 rerollCount: 6,
             },
+            smelting:
+            {
+                level: 1,
+                totalExp: 0,
+            },
+
+            cooking:
+            {
+                level: 1,
+                totalExp: 0,
+            },
+
+            carpenting:
+            {
+                level: 1,
+                totalExp: 0,
+            },
+
+            tailoring:
+            {
+                level: 1,
+                totalExp: 0,
+            }
         };
 
         await user.updateOne({
@@ -2589,6 +2635,30 @@ export const handleTelegramLogin = async (initData: string): Promise<ReturnValue
                     totalExp: 0,
                     rerollCount: 6,
                 },
+
+                smelting:
+                {
+                    level: 1,
+                    totalExp: 0,
+                },
+
+                cooking:
+                {
+                    level: 1,
+                    totalExp: 0,
+                },
+
+                carpenting:
+                {
+                    level: 1,
+                    totalExp: 0,
+                },
+
+                tailoring:
+                {
+                    level: 1,
+                    totalExp: 0,
+                }
             };
 
             const newUser = new UserModel({

@@ -254,7 +254,7 @@ router.post('/add_co_leader', async (req, res) => {
     const { newCoLeaderTwitterId, newCoLeaderUserId } = req.body;
 
     try {
-        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'add_leader');
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'add_co_leader');
 
         if (validateStatus !== Status.SUCCESS) {
             return res.status(validateStatus).json({
