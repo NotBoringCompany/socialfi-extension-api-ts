@@ -1512,7 +1512,7 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
 
                 if (!memberData) {
                     console.log(`(getSquadMemberData) Member data not found for user ID: ${member.userId}`);
-                    return;
+                    continue;
                 }
 
                 const inGameLevel = memberData.inGameData?.level as number ?? 1;
@@ -1600,7 +1600,7 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
 
                 if (!memberData) {
                     console.log(`(getSquadMemberData) Member data not found for pending user ID: ${pendingMember.userId}`);
-                    return;
+                    continue;
                 }
 
                 const inGameLevel = memberData.inGameData?.level as number ?? 1;
