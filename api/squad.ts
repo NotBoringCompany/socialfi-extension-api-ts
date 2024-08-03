@@ -1574,13 +1574,6 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
                     }
                 }
 
-                console.log(`(getSquadMemberData) Member data: ${memberData.twitterUsername
-                    } - Level: ${inGameLevel
-                    } - Total Points: ${totalLeaderboardPoints
-                    } - Season Rank: ${currentSeasonRank
-                    } - KOS Count: ${kosCount
-                    }`);
-
                 currentMemberData.push({
                     userId: member.userId,
                     username: memberData.twitterUsername,
@@ -1593,8 +1586,6 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
                 });
             }
         }
-
-        console.log(`Member data now: `, currentMemberData);
 
         if (squad.pendingMembers.length > 0) {
             for (const pendingMember of squad.pendingMembers) {
