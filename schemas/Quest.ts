@@ -1,6 +1,6 @@
-import mongoose from "mongoose";
-import { generateObjectId } from "../utils/crypto";
-import { QuestRequirement } from "../models/quest";
+import mongoose from 'mongoose';
+import { generateObjectId } from '../utils/crypto';
+import { QuestRequirement } from '../models/quest';
 
 const QuestRequirementSchema = new mongoose.Schema<QuestRequirement & Document>({
     _id: {
@@ -34,6 +34,7 @@ export const QuestSchema = new mongoose.Schema({
     description: String,
     type: String,
     tier: String,
+    unlockable: Boolean,
     status: { type: Boolean, default: true },
     limit: Number,
     category: String,
@@ -51,4 +52,9 @@ export const QuestSchema = new mongoose.Schema({
         },
     ],
     requirements: [QuestRequirementSchema],
+    qualifiedUsers: [String],
+    qualification: {
+        questId: Number,
+        level: Number,
+    },
 });
