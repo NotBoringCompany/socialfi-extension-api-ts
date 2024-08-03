@@ -80,7 +80,7 @@ router.post('/register', async (req, res) => {
             });
         }
 
-        if (referralCode && data.loginType === 'Register') {
+        if (referralCode) {
             await linkInviteCode(data.twitterId, referralCode);
         }
 
