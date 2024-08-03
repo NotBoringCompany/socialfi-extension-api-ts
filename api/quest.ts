@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 import {
     Quest,
     QuestCategory,
@@ -7,29 +7,29 @@ import {
     QuestReward,
     QuestRewardType,
     QuestType,
-} from "../models/quest";
-import { ReturnValue, Status } from "../utils/retVal";
-import { QuestSchema } from "../schemas/Quest";
-import { generateObjectId } from "../utils/crypto";
-import { ExtendedXCookieData, User, UserInventory, XCookieSource } from "../models/user";
-import { UserSchema } from "../schemas/User";
-import { Food } from "../models/food";
-import { RANDOMIZE_FOOD_FROM_QUEST } from "../utils/constants/quest";
-import { IslandModel, QuestModel, QuestProgressionModel, UserModel } from "../utils/constants/db";
-import { Bit, BitRarity } from "../models/bit";
+} from '../models/quest';
+import { ReturnValue, Status } from '../utils/retVal';
+import { QuestSchema } from '../schemas/Quest';
+import { generateObjectId } from '../utils/crypto';
+import { ExtendedXCookieData, User, UserInventory, XCookieSource } from '../models/user';
+import { UserSchema } from '../schemas/User';
+import { Food } from '../models/food';
+import { RANDOMIZE_FOOD_FROM_QUEST } from '../utils/constants/quest';
+import { IslandModel, QuestModel, QuestProgressionModel, UserModel } from '../utils/constants/db';
+import { Bit, BitRarity } from '../models/bit';
 import {
     RANDOMIZE_GENDER,
     getBitStatsModifiersFromTraits,
     randomizeBitTraits,
     randomizeBitType,
-} from "../utils/constants/bit";
-import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from "./bit";
-import { ObtainMethod } from "../models/obtainMethod";
-import { Modifier } from "../models/modifier";
-import { BoosterItem } from "../models/booster";
-import { ExtendedResource } from "../models/resource";
-import { POIName } from "../models/poi";
-import { TwitterHelper } from "../utils/twitterHelper";
+} from '../utils/constants/bit';
+import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
+import { ObtainMethod } from '../models/obtainMethod';
+import { Modifier } from '../models/modifier';
+import { BoosterItem } from '../models/booster';
+import { ExtendedResource } from '../models/resource';
+import { POIName } from '../models/poi';
+import { TwitterHelper } from '../utils/twitterHelper';
 
 /**
  * Adds a quest to the database.
@@ -118,7 +118,7 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
 
         // check the POI allowance for the quest. if 'anywhere', then continue.
         // else, check if the user is in the correct POI to complete the quest. if not, return an error.
-        if (quest.poi && quest.poi !== "anywhere" && (user.inGameData?.location as POIName) !== quest.poi) {
+        if (quest.poi && quest.poi !== 'anywhere' && (user.inGameData?.location as POIName) !== quest.poi) {
             return {
                 status: Status.ERROR,
                 message: `(completeQuest) User is not in the correct POI to complete the quest. Quest ID: ${questId}`,
@@ -191,11 +191,11 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                         (user.inventory.resources as ExtendedResource[])[userResourceIndex].weight * resource.amount;
                 }
 
-                console.log("user current weight: ", user.inventory.weight);
-                console.log("(completeQuest) Inventory weight to reduce:", inventoryWeightToReduce);
+                console.log('user current weight: ', user.inventory.weight);
+                console.log('(completeQuest) Inventory weight to reduce:', inventoryWeightToReduce);
 
                 // reduce the user's inventory weight
-                userUpdateOperations.$inc["inventory.weight"] = -inventoryWeightToReduce;
+                userUpdateOperations.$inc['inventory.weight'] = -inventoryWeightToReduce;
             }
         }
 
@@ -221,7 +221,7 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
         // if user doesn't exist in the `completedBy` array, add the user to the array and set `timesCompleted` to 1
         // else, increment the `timesCompleted` by 1
         if (!userHasCompletedQuestAtLeastOnce) {
-            questUpdateOperations.$push["completedBy"] = { twitterId, timesCompleted: 1 };
+            questUpdateOperations.$push['completedBy'] = { twitterId, timesCompleted: 1 };
         } else {
             const userIndex = quest.completedBy.findIndex((user) => user.twitterId === twitterId);
 
@@ -247,7 +247,7 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
             switch (rewardType) {
                 // add the cookie count into the user's inventory
                 case QuestRewardType.X_COOKIES:
-                    userUpdateOperations.$inc["inventory.xCookieData.currentXCookies"] = amount;
+                    userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = amount;
 
                     // check if the user's `xCookieData.extendedXCookieData` contains a source called QUEST_REWARDS.
                     // if yes, we increment the amount, if not, we create a new entry for the source
@@ -260,7 +260,7 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                             `inventory.xCookieData.extendedXCookieData.${questRewardsIndex}.xCookies`
                         ] = amount;
                     } else {
-                        userUpdateOperations.$push["inventory.xCookieData.extendedXCookieData"] = {
+                        userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = {
                             xCookies: amount,
                             source: XCookieSource.QUEST_REWARDS,
                         };
@@ -278,7 +278,7 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                     if (foodIndex !== -1) {
                         userUpdateOperations.$inc[`inventory.foods.${foodIndex}.amount`] = amount;
                     } else {
-                        userUpdateOperations.$push["inventory.foods"] = { type: food, amount };
+                        userUpdateOperations.$push['inventory.foods'] = { type: food, amount };
                     }
 
                     obtainedRewards.push({ type: food, amount });
@@ -337,10 +337,10 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                     const islands = user.inventory?.islandIds as number[];
 
                     // check if the bit has the infuential, antagonistic, famous or mannerless traits
-                    const hasInfluentialTrait = newBit.traits.some((trait) => trait.trait === "Influential");
-                    const hasAntagonisticTrait = newBit.traits.some((trait) => trait.trait === "Antagonistic");
-                    const hasFamousTrait = newBit.traits.some((trait) => trait.trait === "Famous");
-                    const hasMannerlessTrait = newBit.traits.some((trait) => trait.trait === "Mannerless");
+                    const hasInfluentialTrait = newBit.traits.some((trait) => trait.trait === 'Influential');
+                    const hasAntagonisticTrait = newBit.traits.some((trait) => trait.trait === 'Antagonistic');
+                    const hasFamousTrait = newBit.traits.some((trait) => trait.trait === 'Famous');
+                    const hasMannerlessTrait = newBit.traits.some((trait) => trait.trait === 'Mannerless');
 
                     // if bit has influential trait, add 1% working rate to all islands owned by the user
                     // if bit has antagonistic trait, reduce 1% working rate to all islands owned by the user
@@ -350,12 +350,12 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                         const gatheringRateModifier: Modifier = {
                             origin: `Bit ID #${newBit.bitId}'s Trait: ${
                                 hasInfluentialTrait
-                                    ? "Influential"
+                                    ? 'Influential'
                                     : hasAntagonisticTrait
-                                    ? "Antagonistic"
+                                    ? 'Antagonistic'
                                     : hasFamousTrait
-                                    ? "Famous"
-                                    : "Mannerless"
+                                    ? 'Famous'
+                                    : 'Mannerless'
                             }`,
                             value: hasInfluentialTrait
                                 ? 1.01
@@ -368,12 +368,12 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                         const earningRateModifier: Modifier = {
                             origin: `Bit ID #${newBit.bitId}'s Trait: ${
                                 hasInfluentialTrait
-                                    ? "Influential"
+                                    ? 'Influential'
                                     : hasAntagonisticTrait
-                                    ? "Antagonistic"
+                                    ? 'Antagonistic'
                                     : hasFamousTrait
-                                    ? "Famous"
-                                    : "Mannerless"
+                                    ? 'Famous'
+                                    : 'Mannerless'
                             }`,
                             value: hasInfluentialTrait
                                 ? 1.01
@@ -389,8 +389,8 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                                 islandId,
                                 updateOperations: {
                                     $push: {
-                                        "islandStatsModifiers.gatheringRateModifiers": gatheringRateModifier,
-                                        "islandStatsModifiers.earningRateModifiers": earningRateModifier,
+                                        'islandStatsModifiers.gatheringRateModifiers': gatheringRateModifier,
+                                        'islandStatsModifiers.earningRateModifiers': earningRateModifier,
                                     },
                                     $set: {},
                                     $pull: {},
@@ -400,7 +400,7 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                         }
                     }
 
-                    userUpdateOperations.$push["inventory.bitIds"] = newBit.bitId;
+                    userUpdateOperations.$push['inventory.bitIds'] = newBit.bitId;
 
                     obtainedRewards.push({ type: rewardType, amount, data: bitData });
 
@@ -415,7 +415,7 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                     if (boosterIndex !== -1) {
                         userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = amount;
                     } else {
-                        userUpdateOperations.$push["inventory.items"] = {
+                        userUpdateOperations.$push['inventory.items'] = {
                             type: BoosterItem.GATHERING_PROGRESS_BOOSTER_25,
                             amount,
                             totalAmountConsumed: 0,
@@ -519,7 +519,7 @@ export const getQuests = async (category?: string): Promise<ReturnValue> => {
     try {
         const query = {};
 
-        if (category) query["category"] = category;
+        if (category) query['category'] = category;
 
         const quests = await QuestModel.find(query).lean();
 
@@ -588,7 +588,7 @@ export const deleteQuest = async (questId: number, adminKey: string): Promise<Re
  */
 export const getUserCompletedQuests = async (twitterId: string): Promise<ReturnValue> => {
     try {
-        const completedQuests = await QuestModel.find({ "completedBy.twitterId": twitterId }).lean();
+        const completedQuests = await QuestModel.find({ 'completedBy.twitterId': twitterId }).lean();
 
         return {
             status: Status.SUCCESS,
@@ -631,21 +631,6 @@ export const checkQuestRequirements = async (twitterId: string, questId: number)
             };
         }
 
-        const relationshipPromises: Promise<any>[] = [];
-
-        for (const requirement of quest.requirements as QuestRequirement[]) {
-            if (requirement.type === QuestRequirementType.FOLLOW_USER) {
-                const source = user.twitterUsername;
-                const target = requirement.parameters.twitterUsername;
-
-                relationshipPromises.push(
-                    TwitterHelper.getRelationship({ source_screen_name: source, target_screen_name: target })
-                );
-            }
-        }
-
-        const relationships = await Promise.all(relationshipPromises);
-
         for (const [index, requirement] of (quest.requirements as QuestRequirement[]).entries()) {
             switch (requirement.type) {
                 case QuestRequirementType.CONNECT_DISCORD:
@@ -665,7 +650,20 @@ export const checkQuestRequirements = async (twitterId: string, questId: number)
                     }
                     break;
                 case QuestRequirementType.FOLLOW_USER:
-                    const relationship = relationships.shift();
+                    if (user.method === 'telegram') {
+                        return {
+                            status: Status.ERROR,
+                            message: `(checkQuestRequirement) Failed to check the quest requirements, try again later.`,
+                        };
+                    }
+
+                    const source = user.twitterUsername;
+                    const target = requirement.parameters.twitterUsername;
+
+                    const relationship = await TwitterHelper.getRelationship({
+                        source_screen_name: source,
+                        target_screen_name: target,
+                    });
 
                     if (relationship.status !== Status.SUCCESS || !relationship.data) {
                         return {
@@ -719,7 +717,7 @@ export const checkQuestRequirements = async (twitterId: string, questId: number)
  */
 export const getUserClaimableQuest = async (twitterId: string): Promise<ReturnValue> => {
     try {
-        const uncompletedQuest = await QuestModel.find({ "completedBy.twitterId": { $ne: twitterId } }).lean();
+        const uncompletedQuest = await QuestModel.find({ 'completedBy.twitterId': { $ne: twitterId } }).lean();
 
         // check each quest requirements
         const claimableQuestPromises = uncompletedQuest.map(async (quest) => {
@@ -860,7 +858,7 @@ export const incrementProgressionByType = async (
 ): Promise<void> => {
     try {
         // Find all quests that have requirements of the specified type
-        const quests = await QuestModel.find({ "requirements.type": type });
+        const quests = await QuestModel.find({ 'requirements.type': type });
 
         const user = await UserModel.findOne({ twitterId });
 
