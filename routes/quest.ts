@@ -75,7 +75,16 @@ router.get('/get_quests', async (req, res) => {
     const { category } = req.query;
 
     try {
-        const { status, message, data } = await getQuests(category?.toString() || QuestCategory.SOCIAL);
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'get_user_quests');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
+        const { status, message, data } = await getUserQuests(validateData?.twitterId, category?.toString() || QuestCategory.SOCIAL);
 
         return res.status(status).json({
             status,
