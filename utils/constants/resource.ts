@@ -26,6 +26,11 @@ export const resources: Resource[] = [
 /**
  * Gets a resource's details based on its type.
  */
+export const getResourceWeight = (type: ResourceType): number =>{
+    var result = resources.find(resource => resource.type === type);
+    return result.weight;
+}
+
 export const getResource = (type: ResourceType): Resource => {
     return resources.find(resource => resource.type === type);
 }
