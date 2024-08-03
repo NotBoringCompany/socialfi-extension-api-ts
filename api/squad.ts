@@ -1715,6 +1715,7 @@ export const getAllSquadData = async (): Promise<ReturnValue> => {
             totalKOSCount: number;
             totalPointsEarned: number;
             totalMembers: number;
+            maxMembers: number;
             joinable: boolean;
         }> = [];
 
@@ -1805,6 +1806,7 @@ export const getAllSquadData = async (): Promise<ReturnValue> => {
                 totalKOSCount,
                 totalPointsEarned: totalLeaderboardPoints,
                 totalMembers,
+                maxMembers: squad.maxMembers,
                 joinable
             });
         }
