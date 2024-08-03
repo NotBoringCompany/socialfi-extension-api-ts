@@ -126,6 +126,34 @@ router.get('/get_user_quests', async (req, res) => {
     }
 });
 
+router.get('/get_user_quests', async (req, res) => {
+    const { category } = req.query;
+
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'get_user_quests');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
+        const { status, message, data } = await getUserQuests(validateData?.twitterId, category?.toString() || QuestCategory.SOCIAL);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+});
+
 router.get('/get_quest_detail/:questId', async (req, res) => {
     const { questId } = req.params;
 
