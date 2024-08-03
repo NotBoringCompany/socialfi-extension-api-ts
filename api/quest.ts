@@ -940,7 +940,7 @@ export const incrementProgressionByType = async (
         // Iterate through each quest and update the progression for matching requirements
         for (const quest of quests) {
             // check if the user qualify
-            if (quest.unlockable && quest.qualifiedUsers.includes(user._id)) continue;
+            if (quest.unlockable && !quest.qualifiedUsers.includes(user._id)) continue;
             const requirements = quest.requirements.filter((req) => req.type === type);
             for (const requirement of requirements) {
                 if (!requirement.parameters.count) continue;
