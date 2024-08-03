@@ -1,6 +1,7 @@
 import { KOSExplicitOwnership } from '../models/kos';
 import { Leaderboard, LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
 import { SquadCreationMethod, SquadMember, SquadRank, SquadRole } from '../models/squad';
+import { UserWallet } from '../models/user';
 import { LeaderboardModel, SquadModel, UserModel } from '../utils/constants/db';
 import { CREATE_SQUAD_COST, INITIAL_MAX_MEMBERS, MAX_CO_LEADERS_LIMIT, MAX_LEADERS_LIMIT, MAX_MEMBERS_INCREASE_UPON_UPGRADE, MAX_MEMBERS_LIMIT, RENAME_SQUAD_COOLDOWN, RENAME_SQUAD_COST, SQUAD_LEAVE_COOLDOWN, UPGRADE_SQUAD_MAX_MEMBERS_COST } from '../utils/constants/squad';
 import { generateObjectId } from '../utils/crypto';
@@ -1478,11 +1479,16 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
         }
 
         const explicitOwnerships: KOSExplicitOwnership[] = data?.keyOwnerships ?? [];
+
+        // get both member and pending member data via their user ids; query via user model.
         const userIds = squad.members.map(member => {
             return member.userId;
         })
+        const pendingUserIds = squad.pendingMembers.map(member => {
+            return member.userId;
+        })
 
-        const userData = await UserModel.find({ _id: { $in: userIds } }).lean();
+        const userData = await UserModel.find({ _id: { $in: userIds.concat(pendingUserIds) } }).lean();
 
         let sortedLeaderboardUserData: LeaderboardUserData[];
 
@@ -1532,22 +1538,19 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
 
                 // get the user's KOS count. loop through `explicitOwnerships` and count the number of KOS they own.
                 // first, get the user's wallet addresses (both main and secondary)
-                const { status: walletStatus, message: walletMessage, data: walletData } = await getWallets(memberData.twitterId);
+                const walletAddresses: string[] = [];
 
-                if (walletStatus !== Status.SUCCESS) {
-                    currentMemberData.push({
-                        userId: member.userId,
-                        username: memberData.twitterUsername,
-                        profilePicture: memberData.twitterProfilePicture,
-                        inGameLevel,
-                        totalPoints: totalLeaderboardPoints,
-                        currentSeasonRank,
-                        kosCount: 0,
-                        role: member.role as SquadRole
-                    })
+                // add the main wallet
+                walletAddresses.push(memberData.wallet?.address ?? '');
+
+                // loop through `secondaryWallets` assuming length is not 0 and add each wallet.
+                if (memberData.secondaryWallets && memberData.secondaryWallets.length > 0) {
+                    for (const secondaryWallet of memberData.secondaryWallets) {
+                        walletAddresses.push(secondaryWallet.address);
+                    }
                 }
 
-                const validAddresses = (walletData.walletAddresses as string[]).filter((address: string) => address !== '').map((address: string) => address.toLowerCase());
+                const validAddresses = walletAddresses.filter((address: string) => address !== '').map((address: string) => address.toLowerCase());
 
                 if (validAddresses.length === 0) {
                     currentMemberData.push({
@@ -1571,13 +1574,6 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
                     }
                 }
 
-                console.log(`(getSquadMemberData) Member data: ${memberData.twitterUsername
-                    } - Level: ${inGameLevel
-                    } - Total Points: ${totalLeaderboardPoints
-                    } - Season Rank: ${currentSeasonRank
-                    } - KOS Count: ${kosCount
-                    }`);
-
                 currentMemberData.push({
                     userId: member.userId,
                     username: memberData.twitterUsername,
@@ -1590,8 +1586,6 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
                 });
             }
         }
-
-        console.log(`Member data now: `, currentMemberData);
 
         if (squad.pendingMembers.length > 0) {
             for (const pendingMember of squad.pendingMembers) {
@@ -1620,21 +1614,19 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
 
                 // get the user's KOS count. loop through `explicitOwnerships` and count the number of KOS they own.
                 // first, get the user's wallet addresses (both main and secondary)
-                const { status: walletStatus, message: walletMessage, data: walletData } = await getWallets(memberData.twitterId);
+                const walletAddresses: string[] = [];
 
-                if (walletStatus !== Status.SUCCESS) {
-                    pendingMemberData.push({
-                        userId: pendingMember.userId,
-                        username: memberData.twitterUsername,
-                        profilePicture: memberData.twitterProfilePicture,
-                        inGameLevel,
-                        totalPoints: totalLeaderboardPoints,
-                        currentSeasonRank,
-                        kosCount: 0,
-                    })
+                // add the main wallet
+                walletAddresses.push(memberData.wallet?.address ?? '');
+
+                // loop through `secondaryWallets` assuming length is not 0 and add each wallet.
+                if (memberData.secondaryWallets && memberData.secondaryWallets.length > 0) {
+                    for (const secondaryWallet of memberData.secondaryWallets) {
+                        walletAddresses.push(secondaryWallet.address);
+                    }
                 }
 
-                const validAddresses = (walletData.walletAddresses as string[]).filter((address: string) => address !== '').map((address: string) => address.toLowerCase());
+                const validAddresses = walletAddresses.filter((address: string) => address !== '').map((address: string) => address.toLowerCase());
 
                 if (validAddresses.length === 0) {
                     pendingMemberData.push({
