@@ -47,6 +47,10 @@ export const getCraftItemCriteria = (line: CraftItemLine) : CraftItem[] =>{
     return result;
 }
 
+export const getAllCraftItemRecipes = (): CraftItem[] =>{
+    return craftItems;
+}
+
 
 export const craftItems : CraftItem[] = 
 [

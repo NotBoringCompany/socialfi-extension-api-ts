@@ -1,7 +1,7 @@
 import { CookingCraft, CraftItemLine, CraftRecipes, CraftType, SmeltingCraft } from "../models/craft";
 import { CarpentingMastery, CookingMastery, SmeltingMastery, TailoringMastery } from "../models/mastery";
 import { BarrenResource, ExtendedResource, LiquidResource, OreResource, ResourceType, SimplifiedResource } from "../models/resource";
-import { GET_CRAFT_RECIPE, getAllCraftItems, getCraftItem, getCraftItemCriteria } from "../utils/constants/craft";
+import { GET_CRAFT_RECIPE, getAllCraftItemRecipes, getAllCraftItems, getCraftItem, getCraftItemCriteria } from "../utils/constants/craft";
 import { UserModel } from "../utils/constants/db";
 import { CARPENTING_MASTERY_LEVEL, COOKING_MASTERY_LEVEL, SMELTING_MASTERY_LEVEL, TAILORING_MASTERY_LEVEL } from "../utils/constants/mastery";
 import { getResource, getResourceWeight } from "../utils/constants/resource";
@@ -103,6 +103,8 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
         const craftingLine = craftItem.line;
         const reqCraftLevel = craftItem.reqCraftLevel;
         const craftAddExp = craftItem.craftExp;
+        var newTotalExp = 0;
+        var newLevel = user.inGameData?.tapping.level;
         
 
         if(craftingLine === CraftItemLine.SMELTING)
@@ -119,8 +121,9 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
             }
             else
             {
-                const newTotalExp = userMasteries.smelting.totalExp; + ( craftAddExp * amount );
+                newTotalExp = userMasteries.smelting.totalExp; + ( craftAddExp * amount );
                 const newSmeltingLevel = SMELTING_MASTERY_LEVEL(newTotalExp);
+                newLevel = newSmeltingLevel;
                 if(newSmeltingLevel > smeltingMastery)
                 {
                     console.log(`You Leveled Up !! your Smelting level Before : ${smeltingMastery} ==> ${newSmeltingLevel}`);
@@ -144,8 +147,9 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
             }
             else
             {
-                const newTotalExp = userMasteries.cooking.totalExp; + ( craftAddExp * amount );
+                newTotalExp = userMasteries.cooking.totalExp; + ( craftAddExp * amount );
                 const newCookingLevel = COOKING_MASTERY_LEVEL(newTotalExp);
+                newLevel = newCookingLevel;
                 if(newCookingLevel > cookingMastery)
                 {
                     console.log(`You Leveled Up !! your Cooking level Before : ${cookingMastery} ==> ${newCookingLevel}`);
@@ -169,8 +173,9 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
             }
             else
             {
-                const newTotalExp = userMasteries.carpenting.totalExp; + ( craftAddExp * amount );
+                newTotalExp = userMasteries.carpenting.totalExp; + ( craftAddExp * amount );
                 const newCarpetingLevel = CARPENTING_MASTERY_LEVEL(newTotalExp);
+                newLevel = newCarpetingLevel;
                 if(newCarpetingLevel > carpentingMastery)
                 {
                     console.log(`You Leveled Up !! your Carpenting level Before : ${carpentingMastery} ==> ${newCarpetingLevel}`);
@@ -194,8 +199,9 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
             }
             else
             {
-                const newTotalExp = userMasteries.tailoring.totalExp; + ( craftAddExp * amount );
+                newTotalExp = userMasteries.tailoring.totalExp; + ( craftAddExp * amount );
                 const newTailoringLevel = TAILORING_MASTERY_LEVEL(newTotalExp);
+                newLevel = newTailoringLevel;
                 if(newTailoringLevel > tailoringMastery)
                 {
                     console.log(`You Leveled Up !! your Tailoring level Before : ${tailoringMastery} ==> ${newTailoringLevel}`);
@@ -319,6 +325,17 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
         
         await UserModel.updateOne({ _id: user._id }, userUpdateOperations);
         
+        return {
+            status: Status.SUCCESS,
+            message: `(doCraft) Craft Item Success!!`,
+            data: {
+                "craftItem": craftItem,
+                "amount": amount,
+                "newLevel": newLevel,
+                "newTotalExp": newTotalExp
+            }
+        }
+
         //#endregion
 
         // Dont Forget to Return CRAFT TYPE | AND EXP GAINED
@@ -481,7 +498,8 @@ export const getAllCraftingRecipes = async (): Promise<ReturnValue> => {
 
         
 
-        var allRecipes = getCraftItemCriteria(CraftItemLine.COOKING);
+        //var allRecipes = getCraftItemCriteria(CraftItemLine.COOKING);
+        var allRecipes = getAllCraftItemRecipes();
         console.log(`All ${CraftItemLine.COOKING} Recipes : `);
         for(let i = 0 ; i < allRecipes.length ; i++)
         {
@@ -495,6 +513,14 @@ export const getAllCraftingRecipes = async (): Promise<ReturnValue> => {
                 console.log(`${catalystName} | ${catalystAmount} pcs`);
             }
         }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getCraftable) All Craftables Fetched.`,
+            data: {
+                recipes: allRecipes
+            },
+        };
     } catch (err: any) {
         return {
             status: Status.ERROR,
@@ -567,7 +593,7 @@ export const UpdateUserMastery = async (twitterId: string) => {
 };
 //CheckUserMastery("1929832297");
 //UpdateUserMastery("1929832297");
-doCraft("1929832297", OreResource.SILVER);
+//doCraft("1929832297", OreResource.SILVER);
 //getCraftableRecipesByResources("1929832297");
-//getAllCraftingRecipes();
+getAllCraftingRecipes();
 //getCraftingRecipe(LiquidResource.MAPLE_SYRUP);
