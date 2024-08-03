@@ -1491,7 +1491,7 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
         const userData = await UserModel.find({ _id: { $in: userIds.concat(pendingUserIds) } }).lean();
 
         // to get the latest leaderboard data, fetch the last index leaderboard. this will be used to get the current season rank (i.e. the rank from the current season leaderboard)
-        const sortedLeaderboardUserData = leaderboards[length - 1].userData.sort((a, b) => {
+        const sortedLeaderboardUserData = leaderboards[leaderboards.length - 1].userData.sort((a, b) => {
             const aTotalPoints = a.pointsData?.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0);
             const bTotalPoints = b.pointsData?.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0);
 
