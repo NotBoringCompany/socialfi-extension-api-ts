@@ -35,7 +35,7 @@ router.post('/do_craft', async (req, res) => {
     }
 });
 
-router.post('/get_all_craft', async (req, res) => {
+router.get('/get_all_craft', async (req, res) => {
     
 
     try {
