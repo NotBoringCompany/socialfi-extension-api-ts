@@ -1490,26 +1490,13 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
 
         const userData = await UserModel.find({ _id: { $in: userIds.concat(pendingUserIds) } }).lean();
 
-        let sortedLeaderboardUserData: LeaderboardUserData[];
+        // to get the latest leaderboard data, fetch the last index leaderboard. this will be used to get the current season rank (i.e. the rank from the current season leaderboard)
+        const sortedLeaderboardUserData = leaderboards[length - 1].userData.sort((a, b) => {
+            const aTotalPoints = a.pointsData?.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0);
+            const bTotalPoints = b.pointsData?.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0);
 
-        // right now, there is only season 0 (i.e. one leaderboard)
-        // but this helps in case there are multiple leaderboards in the future to make it more future-proof.
-        for (const leaderboard of leaderboards) {
-            // sort the users by their total points in descending order.
-            // to get the total points, each userData contains an array of `pointsData` which contains the points for each source.
-            // we sum all the points from each source to get the total points (excluding the leaderboard points source for LEVELLING_UP (for now, may be more in the future)).
-            // firstly, we get the user data from this leaderboard.
-            const userData = leaderboard.userData;
-
-            // sort the user data by their total points in descending order.
-            // to do this, the points for each `pointsData` must be summed up (excluding LeaderboardPointsSource.LEVELLING_UP)
-            sortedLeaderboardUserData = userData.sort((a, b) => {
-                const aTotalPoints = a.pointsData?.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0);
-                const bTotalPoints = b.pointsData?.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0);
-
-                return bTotalPoints - aTotalPoints;
-            });
-        }
+            return bTotalPoints - aTotalPoints;
+        })
 
         if (squad.members.length > 0) {
             for (const member of squad.members) {
