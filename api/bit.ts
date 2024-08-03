@@ -609,16 +609,8 @@ export const depleteEnergy = async (): Promise<void> => {
 
             const depletionRate = baseDepletionRate * energyRateMultiplier;
 
-            // calculate the new energy (if currentEnergy - depletionRate is less than 0, set it to 0)
+            // get the new energy
             const newEnergy = Math.max(currentEnergy - depletionRate, 0);
-
-            console.log(
-                `(depleteEnergy) Bit ${bit.bitId} - current energy is less than 0? ${currentEnergy <= 0
-                } - depletion rate: ${depletionRate}`
-            );
-            console.log(
-                `(depleteEnergy) Bit ${bit.bitId} - Current Energy: ${currentEnergy}, New Energy: ${newEnergy}`
-            );
 
             // check if the new energy goes below a certain threshold
             const { gatheringRateReduction, earningRateReduction } =
@@ -665,7 +657,8 @@ export const depleteEnergy = async (): Promise<void> => {
                         updateOne: {
                             filter: { bitId: bit.bitId },
                             update: {
-                                $set: { 'farmingStats.currentEnergy': newEnergy },
+                                // decrement current energy by current energy - new energy (i.e. actual depletion rate)
+                                $inc: { 'farmingStats.currentEnergy': -(currentEnergy - newEnergy) },
                                 $pull: {
                                     'bitStatsModifiers.gatheringRateModifiers': {
                                         origin: 'Energy Threshold Reduction',
@@ -685,10 +678,11 @@ export const depleteEnergy = async (): Promise<void> => {
                             filter: { bitId: bit.bitId },
                             update: {
                                 $set: {
-                                    'farmingStats.currentEnergy': newEnergy,
                                     'bitStatsModifiers.gatheringRateModifiers.$[elem].value':
                                         gatheringRateModifier.value,
                                 },
+                                // decrement current energy by current energy - new energy (i.e. actual depletion rate)
+                                $inc: { 'farmingStats.currentEnergy': -(currentEnergy - newEnergy) },
                             },
                             arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }],
                         },
@@ -706,7 +700,8 @@ export const depleteEnergy = async (): Promise<void> => {
                         updateOne: {
                             filter: { bitId: bit.bitId },
                             update: {
-                                $set: { 'farmingStats.currentEnergy': newEnergy },
+                                // decrement current energy by current energy - new energy (i.e. actual depletion rate)
+                                $inc: { 'farmingStats.currentEnergy': -(currentEnergy - newEnergy) },
                             },
                         },
                     });
@@ -720,7 +715,8 @@ export const depleteEnergy = async (): Promise<void> => {
                         updateOne: {
                             filter: { bitId: bit.bitId },
                             update: {
-                                $set: { 'farmingStats.currentEnergy': newEnergy },
+                                // decrement current energy by current energy - new energy (i.e. actual depletion rate)
+                                $inc: { 'farmingStats.currentEnergy': -(currentEnergy - newEnergy) },
                                 $push: {
                                     'bitStatsModifiers.gatheringRateModifiers':
                                         gatheringRateModifier,
@@ -762,10 +758,11 @@ export const depleteEnergy = async (): Promise<void> => {
                             filter: { bitId: bit.bitId },
                             update: {
                                 $set: {
-                                    'farmingStats.currentEnergy': newEnergy,
                                     'bitStatsModifiers.earningRateModifiers.$[elem].value':
                                         earningRateModifier.value,
                                 },
+                                // decrement current energy by current energy - new energy (i.e. actual depletion rate)
+                                $inc: { 'farmingStats.currentEnergy': -(currentEnergy - newEnergy) },
                             },
                             arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }],
                         },
