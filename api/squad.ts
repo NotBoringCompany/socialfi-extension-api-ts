@@ -1482,7 +1482,11 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
             return member.userId;
         })
 
-        const userData = await UserModel.find({ _id: { $in: userIds } }).lean();
+        const pendingUserIds = squad.pendingMembers.map(member => {
+            return member.userId;
+        })
+
+        const userData = await UserModel.find({ _id: { $in: userIds.concat(pendingUserIds) } }).lean();
 
         let sortedLeaderboardUserData: LeaderboardUserData[];
 
