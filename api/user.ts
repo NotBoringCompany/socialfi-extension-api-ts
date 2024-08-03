@@ -10,7 +10,7 @@ import { addIslandToDatabase, getLatestIslandId, placeBit, randomizeBaseResource
 import { POIName } from '../models/poi';
 import { ExtendedResource, SimplifiedResource } from '../models/resource';
 import { resources } from '../utils/constants/resource';
-import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, PlayerEnergy, InGameData, PlayerMastery, UserWallet, XCookieSource } from '../models/user';
+import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, PlayerEnergy, InGameData, PlayerMastery, UserWallet, XCookieSource, User } from '../models/user';
 import {
     DAILY_REROLL_BONUS_MILESTONE,
     GET_BEGINNER_REWARDS,
@@ -1396,6 +1396,14 @@ export const linkInviteCode = async (twitterId: string, code: string): Promise<R
             return {
                 status: Status.ERROR,
                 message: `(linkInviteCode) User not found.`,
+            };
+        }
+
+        // Check if the user has already used a referral code
+        if (user.inviteCodeData.usedStarterCode || user.inviteCodeData.usedStarterCode) {
+            return {
+                status: Status.ERROR,
+                message: `(linkInviteCode) User already used a referral code.`,
             };
         }
 
