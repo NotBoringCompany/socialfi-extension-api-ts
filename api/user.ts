@@ -3091,7 +3091,7 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                 twitterId: telegramUser.id,
                 method: 'telegram',
                 twitterProfilePicture: 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png',
-                twitterUsername: telegramUser.id,
+                twitterUsername: telegramUser.username,
                 twitterDisplayName: `${telegramUser.first_name} ${telegramUser.last_name}`.trim(),
                 createdTimestamp: Math.floor(Date.now() / 1000),
                 // invite code data will be null until users input their invite code.
