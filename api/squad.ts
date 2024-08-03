@@ -1138,9 +1138,9 @@ export const addCoLeader = async (leaderTwitterId: string, newCoLeaderTwitterId:
         }
 
         // check if there are already the max amount of leaders allowed in the squad.
-        const leaderCount = squad.members.filter(member => member.role === SquadRole.LEADER).length;
+        const coLeaderCount = squad.members.filter(member => member.role === SquadRole.CO_LEADER).length;
 
-        if (leaderCount >= MAX_CO_LEADERS_LIMIT) {
+        if (coLeaderCount >= MAX_CO_LEADERS_LIMIT) {
             return {
                 status: Status.ERROR,
                 message: `(addCoLeader) Squad has reached the max leaders limit.`
