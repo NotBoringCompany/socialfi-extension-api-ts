@@ -661,7 +661,7 @@ export const depleteEnergy = async (): Promise<void> => {
 
             const depletionRate = baseDepletionRate * energyRateMultiplier;
 
-            // calculate the new energy (if currentEnergy - depletionRate is less than 0, set it to 0)
+            // get the new energy
             const newEnergy = Math.max(currentEnergy - depletionRate, 0);
 
             // check if the new energy goes below a certain threshold
@@ -701,11 +701,16 @@ export const depleteEnergy = async (): Promise<void> => {
             if (gatheringRateModifierIndex !== -1) {
                 // if the new gathering rate modifier is 1, remove the modifier, else, update it
                 if (gatheringRateModifier.value === 1) {
+                    console.log(
+                        `Bit ID ${bit.bitId} - gathering rate modifier exists AND value is 1. updating energy and removing modifier`
+                    );
+
                     updateOperations.push({
                         updateOne: {
                             filter: { bitId: bit.bitId },
                             update: {
-                                $set: { 'farmingStats.currentEnergy': newEnergy },
+                                // decrement current energy by current energy - new energy (i.e. actual depletion rate)
+                                $inc: { 'farmingStats.currentEnergy': -(currentEnergy - newEnergy) },
                                 $pull: {
                                     'bitStatsModifiers.gatheringRateModifiers': {
                                         origin: 'Energy Threshold Reduction',
@@ -716,15 +721,20 @@ export const depleteEnergy = async (): Promise<void> => {
                     });
                     // if the new gathering rate modifier is not 1, update it
                 } else {
+                    console.log(
+                        `Bit ID ${bit.bitId} - gathering rate modifier exists AND value is not 1. updating energy and modifier`
+                    );
+
                     updateOperations.push({
                         updateOne: {
                             filter: { bitId: bit.bitId },
                             update: {
                                 $set: {
-                                    'farmingStats.currentEnergy': newEnergy,
                                     'bitStatsModifiers.gatheringRateModifiers.$[elem].value':
                                         gatheringRateModifier.value,
                                 },
+                                // decrement current energy by current energy - new energy (i.e. actual depletion rate)
+                                $inc: { 'farmingStats.currentEnergy': -(currentEnergy - newEnergy) },
                             },
                             arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }],
                         },
@@ -734,21 +744,31 @@ export const depleteEnergy = async (): Promise<void> => {
             } else {
                 // if the new gathering rate modifier is 1, only update the energy and don't push the modifier
                 if (gatheringRateModifier.value === 1) {
+                    console.log(
+                        `Bit ID ${bit.bitId} - gathering rate modifier does not exist AND value is 1. updating energy and NOT pushing modifier.`
+                    );
+
                     updateOperations.push({
                         updateOne: {
                             filter: { bitId: bit.bitId },
                             update: {
-                                $set: { 'farmingStats.currentEnergy': newEnergy },
+                                // decrement current energy by current energy - new energy (i.e. actual depletion rate)
+                                $inc: { 'farmingStats.currentEnergy': -(currentEnergy - newEnergy) },
                             },
                         },
                     });
                     // if the new gathering rate modifier is not 1, push the modifier
                 } else {
+                    console.log(
+                        `Bit ID ${bit.bitId} - gathering rate modifier does not exist AND value is not 1. updating energy and pushing modifier.`
+                    );
+
                     updateOperations.push({
                         updateOne: {
                             filter: { bitId: bit.bitId },
                             update: {
-                                $set: { 'farmingStats.currentEnergy': newEnergy },
+                                // decrement current energy by current energy - new energy (i.e. actual depletion rate)
+                                $inc: { 'farmingStats.currentEnergy': -(currentEnergy - newEnergy) },
                                 $push: {
                                     'bitStatsModifiers.gatheringRateModifiers':
                                         gatheringRateModifier,
@@ -763,6 +783,10 @@ export const depleteEnergy = async (): Promise<void> => {
             if (earningRateModifierIndex !== -1) {
                 // if the new earning rate modifier is 1, remove modifier
                 if (earningRateModifier.value === 1) {
+                    console.log(
+                        `Bit ID ${bit.bitId} - earning rate modifier exists AND value is 1. removing modifier`
+                    );
+
                     updateOperations.push({
                         updateOne: {
                             filter: { bitId: bit.bitId },
@@ -777,15 +801,20 @@ export const depleteEnergy = async (): Promise<void> => {
                     });
                     // if the new earning rate modifier is not 1, update it
                 } else {
+                    console.log(
+                        `Bit ID ${bit.bitId} - earning rate modifier exists AND value is not 1. updating modifier`
+                    );
+
                     updateOperations.push({
                         updateOne: {
                             filter: { bitId: bit.bitId },
                             update: {
                                 $set: {
-                                    'farmingStats.currentEnergy': newEnergy,
                                     'bitStatsModifiers.earningRateModifiers.$[elem].value':
                                         earningRateModifier.value,
                                 },
+                                // decrement current energy by current energy - new energy (i.e. actual depletion rate)
+                                $inc: { 'farmingStats.currentEnergy': -(currentEnergy - newEnergy) },
                             },
                             arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }],
                         },
@@ -795,6 +824,10 @@ export const depleteEnergy = async (): Promise<void> => {
             } else {
                 // if the new earning rate modifier is not 1, push the modifier, else, do nothing (since energy is already updated)
                 if (earningRateModifier.value !== 1) {
+                    console.log(
+                        `Bit ID ${bit.bitId} - earning rate modifier does not exist AND value is not 1. pushing modifier`
+                    );
+
                     updateOperations.push({
                         updateOne: {
                             filter: { bitId: bit.bitId },
@@ -806,6 +839,10 @@ export const depleteEnergy = async (): Promise<void> => {
                             },
                         },
                     });
+                } else {
+                    console.log(
+                        `Bit ID ${bit.bitId} - earning rate modifier does not exist AND value is 1. doing nothing.`
+                    );
                 }
             }
 
