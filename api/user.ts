@@ -2675,6 +2675,8 @@ export const consumeEnergyPotion = async (
     tappingProgress?: {islandId: number, currentCaressEnergyMeter: number}[],
 ): Promise<ReturnValue> => {
     try {
+        console.log('(consumeEnergyPotion), tappingProgress: ', tappingProgress);
+
         const userUpdateOperations = {
             $pull: {},
             $inc: {},
