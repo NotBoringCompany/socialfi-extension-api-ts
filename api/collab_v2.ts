@@ -67,7 +67,11 @@ export const getAllParticipant = async (): Promise<ReturnValue> => {
  */
 export const updateParticipant = async (id: string, data: Partial<CollabParticipant>): Promise<ReturnValue> => {
     try {
-        const updatedParticipant = await CollabParticipantModel.findByIdAndUpdate(id, { $set: data }, { new: true }).lean();
+        const updatedParticipant = await CollabParticipantModel.findByIdAndUpdate(
+            id,
+            { $set: data },
+            { new: true }
+        ).lean();
 
         if (!updatedParticipant) {
             return {
@@ -252,7 +256,10 @@ export const importParticipants = async (spreadsheetId: string, range: string): 
                 await basket.save();
             }
 
-            const existingParticipant = await CollabParticipantModel.findOne({ twitterUsername: item['Twitter Handle'], community: item['Community Name'] });
+            const existingParticipant = await CollabParticipantModel.findOne({
+                twitterUsername: item['Twitter Handle'],
+                community: item['Community Name'],
+            });
 
             if (existingParticipant) {
                 await CollabParticipantModel.updateOne(
@@ -295,6 +302,7 @@ export const importParticipants = async (spreadsheetId: string, range: string): 
 
         const registeredUsers = await UserModel.find({
             $or: orConditions,
+            method: { $ne: 'telegram' },
         }).lean();
 
         // Create a Set of registered Twitter usernames for fast lookup
@@ -307,9 +315,9 @@ export const importParticipants = async (spreadsheetId: string, range: string): 
         });
 
         // Ensure unique unregistered users based on Twitter Handle
-        const uniqueUnregisteredUsers = Array.from(new Set(unregisteredUsers.map((user) => user['Twitter Handle']))).map((handle) =>
-            unregisteredUsers.find((user) => user['Twitter Handle'] === handle)
-        );
+        const uniqueUnregisteredUsers = Array.from(
+            new Set(unregisteredUsers.map((user) => user['Twitter Handle']))
+        ).map((handle) => unregisteredUsers.find((user) => user['Twitter Handle'] === handle));
 
         // Handle pre-register user
         await UserModel.insertMany(
@@ -339,7 +347,8 @@ export const importParticipants = async (spreadsheetId: string, range: string): 
 
         // get registered user who already completed the tutorial
         const completedTutorialUsers = registeredUsers.filter(
-            ({ twitterId, inGameData }) => !!twitterId && (inGameData as InGameData).completedTutorialIds.length === tutorialCount
+            ({ twitterId, inGameData }) =>
+                !!twitterId && (inGameData as InGameData).completedTutorialIds.length === tutorialCount
         );
 
         // auto-claim the reward
@@ -370,7 +379,9 @@ export const getCollabReward = async (twitterId: string): Promise<ReturnValue> =
             };
         }
 
-        const participant = await CollabParticipantModel.findOne({ twitterUsername: { $regex: new RegExp(`^${user.twitterUsername}$`, 'i') } })
+        const participant = await CollabParticipantModel.findOne({
+            twitterUsername: { $regex: new RegExp(`^${user.twitterUsername}$`, 'i') },
+        })
             .populate('basket')
             .lean();
         if (!participant) {
@@ -411,7 +422,9 @@ export const claimCollabReward = async (twitterId: string): Promise<ReturnValue>
         }
 
         // update this to findAll
-        const participants = await CollabParticipantModel.find({ twitterUsername: { $regex: new RegExp(user.twitterUsername, 'i') } }).populate('basket');
+        const participants = await CollabParticipantModel.find({
+            twitterUsername: { $regex: new RegExp(user.twitterUsername, 'i') },
+        }).populate('basket');
         if (participants.length === 0) {
             return {
                 status: Status.ERROR,
@@ -443,7 +456,9 @@ export const claimCollabReward = async (twitterId: string): Promise<ReturnValue>
                     case CollabRewardType.TERRA_CAPSULATOR_I:
                     case CollabRewardType.TERRA_CAPSULATOR_II:
                         // add the item to the user's inventory
-                        const existingItemIndex = (user.inventory?.items as Item[]).findIndex((i) => i.type === (reward.type as any));
+                        const existingItemIndex = (user.inventory?.items as Item[]).findIndex(
+                            (i) => i.type === (reward.type as any)
+                        );
 
                         if (existingItemIndex !== -1) {
                             userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = reward.amount;
@@ -467,12 +482,14 @@ export const claimCollabReward = async (twitterId: string): Promise<ReturnValue>
 
                         // check if the user's `xCookieData.extendedXCookieData` contains a source called QUEST_REWARDS.
                         // if yes, we increment the amount, if not, we create a new entry for the source
-                        const questRewardsIndex = (user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(
-                            (data) => data.source === XCookieSource.COLLAB_REWARDS
-                        );
+                        const questRewardsIndex = (
+                            user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]
+                        ).findIndex((data) => data.source === XCookieSource.COLLAB_REWARDS);
 
                         if (questRewardsIndex !== -1) {
-                            userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${questRewardsIndex}.xCookies`] = reward.amount;
+                            userUpdateOperations.$inc[
+                                `inventory.xCookieData.extendedXCookieData.${questRewardsIndex}.xCookies`
+                            ] = reward.amount;
                         } else {
                             userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = {
                                 xCookies: reward.amount,
@@ -502,14 +519,21 @@ export const claimCollabReward = async (twitterId: string): Promise<ReturnValue>
 /**
  * Get collab request status from google spreadsheet
  */
-export const getCollabStatus = async (spreadsheetId: string, range: string, link: string, messages: { [key: string]: string } = {}): Promise<ReturnValue> => {
+export const getCollabStatus = async (
+    spreadsheetId: string,
+    range: string,
+    link: string,
+    messages: { [key: string]: string } = {}
+): Promise<ReturnValue> => {
     try {
         const data = (await readSheet(spreadsheetId, range)) as any[][];
 
         if (!data || data.length === 0) {
             return {
                 status: Status.SUCCESS,
-                message: `(getCollabStatus) ${messages['NOT_REGISTERED'] ?? `You're not registered to our collab program`}`,
+                message: `(getCollabStatus) ${
+                    messages['NOT_REGISTERED'] ?? `You're not registered to our collab program`
+                }`,
                 data: {
                     status: messages['NOT_REGISTERED'] ?? `You're not registered to our collab program`,
                 },
