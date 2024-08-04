@@ -539,14 +539,14 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
             claimableRewards: []
         });
 
-        console.log(`(claimWeeklyKOSRewards) Successfully claimed weekly KOS rewards for user ${user.twitterUsername}.`);
+        console.log(`(claimWeeklyKOSRewards) Successfully claimed weekly KOS rewards for user ID ${user._id}.`);
         
         // update the user's points in the wonderbits contract
         updatePointsInContract(twitterId);
 
         return {
             status: Status.SUCCESS,
-            message: `(claimWeeklyKOSRewards) Successfully claimed weekly KOS rewards for user ${user.twitterUsername}.`,
+            message: `(claimWeeklyKOSRewards) Successfully claimed weekly KOS rewards for user ID ${user._id}.`,
             data: {
                 rewards: {
                     xCookies: rewards.find(reward => reward.type === KOSRewardType.X_COOKIES)?.amount || 0,
@@ -853,6 +853,28 @@ export const checkWeeklyKOSRewards = async (): Promise<void> => {
 
         const bulkWriteOpsPromises = users.map(async user => {
             const updateOperations = [];
+
+
+            /// REMOVE AFTER 4 AUGUST.
+            /// THESE ARE PEOPLE THAT ARE BLACKLISTED FROM EARNING THIS WEEK'S REWARDS.
+            if (
+                user.twitterUsername === 'DropSenpaiKohai' ||
+                user.twitterUsername === 'j03y_m1cks' ||
+                user.twitterUsername === 'Fairu_90' ||
+                user.twitterUsername === 'yikexiaojiucai1' ||
+                user.twitterUsername === 'PartyShotZ86' ||
+                user.twitterUsername === 'Poker0G' ||
+                user.twitterUsername === 'kxlad3' ||
+                user.twitterUsername === 'FoolishCarp' ||
+                user.twitterUsername === 'StevenF1450' ||
+                user.twitterUsername === 'yogi_sur' ||
+                user.twitterUsername === 'herbrightsky' ||
+                user.twitterUsername === 'tothemoon_x2y2' ||
+                user.twitterUsername === 'TheArchitekt_'
+            ) {
+                console.log(`(checkWeeklyKOSRewards) User ${user.twitterUsername}, ID ${user._id} is blacklisted from earning this week's rewards.`);
+                return [];
+            }
 
             // get all of the user's wallet addresses (main wallet + secondary wallets)
             const { status: walletStatus, message: walletMessage, data: walletData } = await getWallets(user.twitterId);
