@@ -896,13 +896,18 @@ export const checkWeeklyKOSRewards = async (): Promise<void> => {
                 }
             }
 
-            // get the total keys owned by the user for at least 7 days
-            const validKeys = ownedKeys.filter(ownership => ownership.startTimestamp <= Math.floor(Date.now() / 1000) - 604800);
-            // get the total keychains owned by the user for at least 7 days
-            const validKeychains = ownedKeychains.filter(ownership => ownership.startTimestamp <= Math.floor(Date.now() / 1000) - 604800);
-            // get the total superior keychains owned by the user for at least 7 days
-            const validSuperiorKeychains = ownedSuperiorKeychains.filter(ownership => ownership.startTimestamp <= Math.floor(Date.now() / 1000) - 604800);
+            // // get the total keys owned by the user for at least 7 days
+            // const validKeys = ownedKeys.filter(ownership => ownership.startTimestamp <= Math.floor(Date.now() / 1000) - 604800);
+            // // get the total keychains owned by the user for at least 7 days
+            // const validKeychains = ownedKeychains.filter(ownership => ownership.startTimestamp <= Math.floor(Date.now() / 1000) - 604800);
+            // // get the total superior keychains owned by the user for at least 7 days
+            // const validSuperiorKeychains = ownedSuperiorKeychains.filter(ownership => ownership.startTimestamp <= Math.floor(Date.now() / 1000) - 604800);
 
+            /// ONLY FOR TODAY (4 AUGUST 2024). REMOVE AFTERWARDS.
+            /// PREVENT THE REQUIREMENT FOR OWNING FOR AT LEAST 7 DAYS!!!
+            const validKeys = ownedKeys;
+            const validKeychains = ownedKeychains;
+            const validSuperiorKeychains = ownedSuperiorKeychains;
 
             // get the metadata for each valid key
             const validKeysMetadata: KOSMetadata[] = validKeys.map(key => {
