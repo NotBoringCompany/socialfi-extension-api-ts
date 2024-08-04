@@ -549,6 +549,7 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
             message: `(claimWeeklyKOSRewards) Successfully claimed weekly KOS rewards for user ${user.twitterUsername}.`,
             data: {
                 rewards: {
+                    xCookies: rewards.find(reward => reward.type === KOSRewardType.X_COOKIES)?.amount || 0,
                     leaderboardPoints: rewards.find(reward => reward.type === KOSRewardType.LEADERBOARD_POINTS)?.amount || 0,
                     bitOrbI: rewards.find(reward => reward.type === KOSRewardType.BIT_ORB_I)?.amount || 0,
                     bitOrbII: rewards.find(reward => reward.type === KOSRewardType.BIT_ORB_II)?.amount || 0,
