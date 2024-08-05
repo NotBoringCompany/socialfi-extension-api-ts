@@ -355,7 +355,9 @@ export const claimWeeklySquadMemberRewards = async (twitterId: string): Promise<
         }
 
         // for each reward, add the reward to the user's inventory
-        rewards.filter(reward => reward.amount > 0).map(reward => {
+        const filteredRewards = rewards.filter(reward => reward.amount > 0);
+
+        for (const reward of filteredRewards) {
             // if reward type is Bit Orb (I)/(II)/(III), Terra Capsulator (I)/(II), Gathering Progress Booster 50, or Raft Speed Booster 3 Min
             // we will add the reward to the user's inventory's `items`.
             // if reward type is Burger, we will add the reward to the user's inventory's `food`.
@@ -402,7 +404,7 @@ export const claimWeeklySquadMemberRewards = async (twitterId: string): Promise<
                     userUpdateOperations.$inc[`inventory.food.${foodIndex}.amount`] = reward.amount;
                 }
             }
-        })
+        }
 
         console.log(`(claimWeeklySquadMemberRewards) user update operations: ${JSON.stringify(userUpdateOperations)}`);
 
