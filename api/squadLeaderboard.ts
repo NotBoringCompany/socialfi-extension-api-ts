@@ -314,8 +314,6 @@ export const calculateWeeklySquadRankingAndGiveRewards = async (): Promise<void>
     }
 }
 
-calculateWeeklySquadRankingAndGiveRewards();
-
 /**
  * Claims the squad member rewards each week if they are eligible.
  */
