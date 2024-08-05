@@ -88,6 +88,8 @@ export const calculateWeeklySquadRankingAndGiveRewards = async (): Promise<void>
             return;
         }
 
+        console.log(`(calculateWeeklySquadRankingAndGiveRewards) Calculating weekly squad rankings and giving rewards for week ${latestSquadLeaderboard.week}.`);
+
         const squads = await SquadModel.find().lean();
 
         if (squads.length === 0 || !squads) {
@@ -115,8 +117,7 @@ export const calculateWeeklySquadRankingAndGiveRewards = async (): Promise<void>
             }
         }> = [];
 
-        // prepare bulk write operations to update all squads' ranks
-        squads.map(async (squad) => {
+        for (const squad of squads) {
             // find the squad in the latest squad leaderboard
             const squadInLeaderboard = latestSquadLeaderboard.pointsData.find((squadData) => squadData.squadId === squad._id);
 
@@ -141,6 +142,8 @@ export const calculateWeeklySquadRankingAndGiveRewards = async (): Promise<void>
                 // loop through the squad's `pointsData.memberPoints.points` in the leaderboard and sum them up
                 const totalPoints = squadInLeaderboard.memberPoints.reduce((acc, memberPoints) => acc + memberPoints.points, 0);
 
+                console.log(`total points of squad ${squad.name} is ${totalPoints}.`);
+
                 // assign a rank based on the total points
                 const rank = GET_SQUAD_WEEKLY_RANKING(totalPoints);
 
@@ -164,8 +167,6 @@ export const calculateWeeklySquadRankingAndGiveRewards = async (): Promise<void>
                 // if the squad is eligible for rewards, add the rewards to each squad member (also the leader)
                 const { leader: leaderRewards, member: memberRewards } = GET_SQUAD_WEEKLY_RANKING_REWARDS(rank);
 
-                console.log(`leader rewards: ${leaderRewards}, member rewards: ${memberRewards}`);
-
                 // fetch the leader and squad members from `SquadModel`
                 const squadData = await SquadModel.findOne({ _id: squad._id }).lean();
 
@@ -180,9 +181,6 @@ export const calculateWeeklySquadRankingAndGiveRewards = async (): Promise<void>
 
                 // get the squad member weekly rewards 
                 const squadMemberClaimableWeeklyRewards = await SquadMemberClaimableWeeklyRewardModel.find().lean();
-
-                console.log('leader rewards length: ', leaderRewards.length);
-                console.log('member rewards length: ', memberRewards.length);
 
                 // add the leader's rewards
                 if (leaderRewards.length > 0) {
@@ -203,7 +201,7 @@ export const calculateWeeklySquadRankingAndGiveRewards = async (): Promise<void>
 
                         console.log(`(calculateWeeklySquadRankingAndGiveRewards) Created a new SquadMemberClaimableWeeklyReward instance for ${leader.username}.`);
                     } else {
-                        leaderRewards.forEach((leaderReward) => {
+                        for (const leaderReward of leaderRewards) {
                             const rewardIndex = squadMemberClaimableWeeklyRewards[leaderIndex].claimableRewards.findIndex((reward: SquadReward) => reward.type === leaderReward.type);
 
                             if (rewardIndex === -1) {
@@ -231,13 +229,15 @@ export const calculateWeeklySquadRankingAndGiveRewards = async (): Promise<void>
                                     }
                                 });
                             }
-                        });
+                        }
                     }
                 }
 
                 // add the members' rewards
                 if (memberRewards.length > 0) {
-                    members.forEach(async (member) => {
+                    console.log(`member rewards GREATER THAN 0!: ${JSON.stringify(memberRewards)}`);
+
+                    for (const member of members) {
                         // check if the member is already in the `squadMemberClaimableWeeklyRewards` array
                         // if not, add the member to the array
                         // if they do, check, for each item, if the reward type already exists. If it does, add the amount to the existing reward.
@@ -285,10 +285,10 @@ export const calculateWeeklySquadRankingAndGiveRewards = async (): Promise<void>
                                 }
                             });
                         }
-                    });
+                    }
                 }
             }
-        });
+        }
 
         console.log('squad member claimable weekly rewards update operations:', squadMemberClaimableWeeklyRewardsUpdateOperations);
         console.log('squad update operations:', squadUpdateOperations[0]);
@@ -332,7 +332,10 @@ export const claimWeeklySquadMemberRewards = async (twitterId: string): Promise<
             $pull: {},
             $inc: {},
             $set: {},
-            $push: {}
+            $push: {
+                'inventory.items': { $each: [] },
+                'inventory.foods': { $each: [] }
+            }
         }
 
         const squadMemberClaimableWeeklyRewards = await SquadMemberClaimableWeeklyRewardModel.findOne({ userId: user._id });
@@ -347,6 +350,8 @@ export const claimWeeklySquadMemberRewards = async (twitterId: string): Promise<
         // claim the rewards
         const rewards = squadMemberClaimableWeeklyRewards.claimableRewards as SquadReward[];
 
+        console.log(`rewards: ${JSON.stringify(rewards)}`);
+
         if (rewards.length === 0) {
             return {
                 status: Status.ERROR,
@@ -355,7 +360,9 @@ export const claimWeeklySquadMemberRewards = async (twitterId: string): Promise<
         }
 
         // for each reward, add the reward to the user's inventory
-        rewards.filter(reward => reward.amount > 0).forEach(reward => {
+        const filteredRewards = rewards.filter(reward => reward.amount > 0);
+
+        for (const reward of filteredRewards) {
             // if reward type is Bit Orb (I)/(II)/(III), Terra Capsulator (I)/(II), Gathering Progress Booster 50, or Raft Speed Booster 3 Min
             // we will add the reward to the user's inventory's `items`.
             // if reward type is Burger, we will add the reward to the user's inventory's `food`.
@@ -370,51 +377,46 @@ export const claimWeeklySquadMemberRewards = async (twitterId: string): Promise<
             ) {
                 // check if the user's inventory's `items` already has the reward type.
                 // if it does, add the amount to the existing reward. if not, add the reward to the user's inventory's `items`.
-                const itemIndex = (user.inventory?.items as Item[]).findIndex(item => item.type === reward.type as string);
+                const itemIndex = (user.inventory?.items as Item[]).findIndex((item) => item.type === reward.type as string);
 
-                if (itemIndex !== -1) {
-                    userUpdateOperations.$inc[`inventory.items.${itemIndex}.amount`] = reward.amount;
-                } else {
-                    if (!userUpdateOperations.$push['inventory.items']) {
-                        userUpdateOperations.$push['inventory.items'] = {
-                            $each: [],
-                        };
-                    }
-
+                if (itemIndex === -1) {
                     userUpdateOperations.$push['inventory.items'].$each.push({
                         type: reward.type,
                         amount: reward.amount,
                         totalAmountConsumed: 0,
-                        weeklyAmountConsumed: 0,
+                        weeklyAmountConsumed: 0
                     });
+                } else {
+                    userUpdateOperations.$inc[`inventory.items.${itemIndex}.amount`] = reward.amount;
                 }
-            }
-
-            if (reward.type === SquadRewardType.BURGER) {
+            } else if (reward.type === SquadRewardType.BURGER) {
                 // check if the user's inventory's `food` already has the reward type.
                 // if it does, add the amount to the existing reward. if not, add the reward to the user's inventory's `food`.
                 const foodIndex = (user.inventory?.foods as Food[]).findIndex((food) => food.type === reward.type as string);
 
                 if (foodIndex === -1) {
-                    if (!userUpdateOperations.$push['inventory.food']) {
-                        userUpdateOperations.$push['inventory.food'] = {
-                            $each: [],
-                        };
-                    }
-
-                    userUpdateOperations.$push['inventory.food'].$each.push({
+                    userUpdateOperations.$push['inventory.foods'].$each.push({
                         type: reward.type,
                         amount: reward.amount,
                     });
                 } else {
-                    userUpdateOperations.$inc[`inventory.food.${foodIndex}.amount`] = reward.amount;
+                    userUpdateOperations.$inc[`inventory.foods.${foodIndex}.amount`] = reward.amount;
                 }
             }
-        })
+        }
 
-        // add the rewards to the user's inventory
-        await UserModel.updateOne({ twitterId }, { $inc: userUpdateOperations.$inc });
-        await UserModel.updateOne({ twitterId }, { $push: userUpdateOperations.$push });
+        console.log(`(claimWeeklySquadMemberRewards) user update operations: ${JSON.stringify(userUpdateOperations)}`);
+
+        // add the rewards to the user's inventory (divide to $set and $inc, $push and $pull)
+        await UserModel.updateOne({ twitterId }, {
+            $set: userUpdateOperations.$set,
+            $inc: userUpdateOperations.$inc,
+        });
+
+        await UserModel.updateOne({ twitterId }, {
+            $push: userUpdateOperations.$push,
+            $pull: userUpdateOperations.$pull
+        });
 
         // reset all the user's claimable rewards
         await SquadMemberClaimableWeeklyRewardModel.updateOne({ userId: user._id }, {
