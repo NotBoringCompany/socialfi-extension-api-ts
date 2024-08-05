@@ -1184,9 +1184,9 @@ export const addCoLeader = async (leaderTwitterId: string, newCoLeaderTwitterId:
 }
 
 /**
- * Remove a co-leader from the squad. Only callable by a squad leader.
+ * Demotes a co-leader from the squad. Only callable by a squad leader.
  */
-export const removeCoLeader = async (leaderTwitterId: string, coLeaderTwitterId: string, coLeaderUserId: string = ''): Promise<ReturnValue> => {
+export const demoteCoLeader = async (leaderTwitterId: string, coLeaderTwitterId: string, coLeaderUserId: string = ''): Promise<ReturnValue> => {
     try {
         const [leader, coLeader] = await Promise.all([
             UserModel.findOne({ twitterId: leaderTwitterId }).lean(),
@@ -1196,14 +1196,14 @@ export const removeCoLeader = async (leaderTwitterId: string, coLeaderTwitterId:
         if (!leader) {
             return {
                 status: Status.ERROR,
-                message: `(removeCoLeader) Leader not found.`
+                message: `(demoteCoLeader) Leader not found.`
             }
         }
 
         if (!coLeader) {
             return {
                 status: Status.ERROR,
-                message: `(removeCoLeader) Co-leader not found.`
+                message: `(demoteCoLeader) Co-leader not found.`
             }
         }
 
@@ -1211,7 +1211,7 @@ export const removeCoLeader = async (leaderTwitterId: string, coLeaderTwitterId:
         if (leader.inGameData.squadId === null) {
             return {
                 status: Status.ERROR,
-                message: `(removeCoLeader) Leader is not in a squad.`
+                message: `(demoteCoLeader) Leader is not in a squad.`
             }
         }
 
@@ -1221,14 +1221,14 @@ export const removeCoLeader = async (leaderTwitterId: string, coLeaderTwitterId:
         if (!squad) {
             return {
                 status: Status.ERROR,
-                message: `(removeCoLeader) Squad not found.`
+                message: `(demoteCoLeader) Squad not found.`
             }
         }
 
         if (squad.members.find(member => member.userId === leader._id)?.role !== SquadRole.LEADER) {
             return {
                 status: Status.ERROR,
-                message: `(removeCoLeader) User is not a squad leader for the given squad.`
+                message: `(demoteCoLeader) User is not a squad leader for the given squad.`
             }
         }
 
@@ -1236,7 +1236,7 @@ export const removeCoLeader = async (leaderTwitterId: string, coLeaderTwitterId:
         if (!squad.members.find(member => member.userId === coLeader._id)) {
             return {
                 status: Status.ERROR,
-                message: `(removeCoLeader) New co-leader is not in the squad.`
+                message: `(demoteCoLeader) New co-leader is not in the squad.`
             }
         }
 
@@ -1244,7 +1244,7 @@ export const removeCoLeader = async (leaderTwitterId: string, coLeaderTwitterId:
         if (squad.members.find(member => member.userId === coLeader._id)?.role !== SquadRole.CO_LEADER) {
             return {
                 status: Status.ERROR,
-                message: `(removeCoLeader) member ID: ${coLeader._id} is not a squad co-leader.`
+                message: `(demoteCoLeader) member ID: ${coLeader._id} is not a squad co-leader.`
             }
         }
 
@@ -1260,16 +1260,16 @@ export const removeCoLeader = async (leaderTwitterId: string, coLeaderTwitterId:
 
         return {
             status: Status.SUCCESS,
-            message: `(removeCoLeader) remove co-leader successfully.`,
+            message: `(demoteCoLeader) Demoted co-leader successfully.`,
             data: {
                 squadId: squad._id,
-                newCoLeaderId: coLeader._id
+                demotedCoLeader: coLeader._id
             }
         }
     } catch (err: any) {
         return {
             status: Status.ERROR,
-            message: `(removeCoLeader) ${err.message}`
+            message: `(demoteCoLeader) ${err.message}`
         }
     }
 }
