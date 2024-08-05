@@ -37,33 +37,29 @@ export const SQUAD_KOS_BENEFITS = (totalKeys: number): {
     // boost in points when selling assets in POI (in ratio. 1 means no boost, 1.05 means 5% boost, etc.)
     sellAssetPointsBoost: number
 } => {
-    if (totalKeys < 5) {
+    if (totalKeys < 10) {
         return {
             sellAssetPointsBoost: 1
         }
-    } else if (totalKeys < 10) {
+    } else if (totalKeys < 20) {
         return {
             sellAssetPointsBoost: 1.01
         }
-    } else if (totalKeys < 20) {
+    } else if (totalKeys < 35) {
         return {
             sellAssetPointsBoost: 1.02
         }
-    } else if (totalKeys < 35) {
+    } else if (totalKeys < 60) {
         return {
             sellAssetPointsBoost: 1.03
         }
-    } else if (totalKeys < 50) {
+    } else if (totalKeys < 100) {
         return {
             sellAssetPointsBoost: 1.04
         }
-    } else if (totalKeys < 100) {
-        return {
-            sellAssetPointsBoost: 1.05
-        }
     } else {
         return {
-            sellAssetPointsBoost: 1.07
+            sellAssetPointsBoost: 1.05
         }
     }
 }
