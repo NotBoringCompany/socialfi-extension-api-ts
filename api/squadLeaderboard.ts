@@ -290,9 +290,6 @@ export const calculateWeeklySquadRankingAndGiveRewards = async (): Promise<void>
             }
         }
 
-        console.log('squad member claimable weekly rewards update operations:', squadMemberClaimableWeeklyRewardsUpdateOperations);
-        console.log('squad update operations:', squadUpdateOperations[0]);
-
         const squadMemberClaimableWeeklyRewardsUpdatePromises = 
             squadMemberClaimableWeeklyRewardsUpdateOperations.length > 0 && squadMemberClaimableWeeklyRewardsUpdateOperations.map(async op => {
                 return SquadMemberClaimableWeeklyRewardModel.updateOne({ userId: op.userId }, op.updateOperations);
