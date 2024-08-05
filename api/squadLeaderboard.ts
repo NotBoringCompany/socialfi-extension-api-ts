@@ -314,6 +314,8 @@ export const calculateWeeklySquadRankingAndGiveRewards = async (): Promise<void>
     }
 }
 
+calculateWeeklySquadRankingAndGiveRewards();
+
 /**
  * Claims the squad member rewards each week if they are eligible.
  */
@@ -332,7 +334,10 @@ export const claimWeeklySquadMemberRewards = async (twitterId: string): Promise<
             $pull: {},
             $inc: {},
             $set: {},
-            $push: {}
+            $push: {
+                'inventory.items': { $each: [] },
+                'inventory.foods': { $each: [] }
+            }
         }
 
         const squadMemberClaimableWeeklyRewards = await SquadMemberClaimableWeeklyRewardModel.findOne({ userId: user._id });
@@ -376,15 +381,13 @@ export const claimWeeklySquadMemberRewards = async (twitterId: string): Promise<
                 // if it does, add the amount to the existing reward. if not, add the reward to the user's inventory's `items`.
                 const itemIndex = (user.inventory?.items as Item[]).findIndex((item) => item.type === reward.type as string);
 
-                console.log(`item index: ${itemIndex}`);
-
                 if (itemIndex === -1) {
-                    userUpdateOperations.$push['inventory.items'] = {
+                    userUpdateOperations.$push['inventory.items'].$each.push({
                         type: reward.type,
                         amount: reward.amount,
                         totalAmountConsumed: 0,
                         weeklyAmountConsumed: 0
-                    }
+                    });
                 } else {
                     userUpdateOperations.$inc[`inventory.items.${itemIndex}.amount`] = reward.amount;
                 }
@@ -393,13 +396,11 @@ export const claimWeeklySquadMemberRewards = async (twitterId: string): Promise<
                 // if it does, add the amount to the existing reward. if not, add the reward to the user's inventory's `food`.
                 const foodIndex = (user.inventory?.foods as Food[]).findIndex((food) => food.type === reward.type as string);
 
-                console.log(`food index: ${foodIndex}`);
-
                 if (foodIndex === -1) {
-                    userUpdateOperations.$push['inventory.foods'] = {
+                    userUpdateOperations.$push['inventory.foods'].$each.push({
                         type: reward.type,
                         amount: reward.amount,
-                    }
+                    });
                 } else {
                     userUpdateOperations.$inc[`inventory.foods.${foodIndex}.amount`] = reward.amount;
                 }
