@@ -6,6 +6,7 @@ import { InviteCodeData, ReferralData } from './invite';
 import { TerraCapsulatorType } from './terraCapsulator';
 import { BitOrbType } from './bitOrb';
 import { CarpentingMastery, CookingMastery, SmeltingMastery, TailoringMastery, TappingMastery } from './mastery';
+import { CraftItem, CraftResultItem } from './craft';
 
 /****************
  * USER-RELATED MODELS
@@ -96,7 +97,10 @@ export interface UserInventory {
     /** a list of owned island IDs */
     islandIds: number[];
     /** a list of owned bit IDs */
-    bitIds: number[];    
+    bitIds: number[];
+    /** a list of crafted item / tradable items */
+    /** waiting for validation if crafting item is different from resources */
+    //craftItems: CraftResultItem[];
 }
 
 /**

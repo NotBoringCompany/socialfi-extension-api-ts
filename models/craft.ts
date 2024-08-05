@@ -36,6 +36,38 @@ export interface CraftItem {
     weight: number
 }
 
+export interface CraftResultItem {
+    /** the type of crafting */
+    //type: CraftType;
+    type: CraftType;
+    /** the craft item line */
+    line: CraftItemLine;
+    /** the rarity of the craft item */
+    rarity: CraftItemRarity;
+    /** the energy required to create 1 of this resource (singular weight) */
+    baseEnergy: number;
+    /** Berry required to create 1 of this resource */
+    berries:number,
+    /** resource required to create 1 of this resource */
+    catalyst: SimplifiedResource[],
+    /** Success Rate to create 1 of this item */
+    baseSuccessChance: number,
+    /** Crit chance to create more of this item */
+    baseCritChance: number,
+    /** Points generated  */
+    points: number,
+    /** Craft points given after creating 1 of this item */
+    craftPoints: number,
+    /** Required level to create 1 of this item */
+    reqLevel: number,
+    /** Required Craft level to create 1 of this item */
+    reqCraftLevel: number,
+    /** Craft exp given after creating 1 of this item */
+    craftExp: number,
+    /** weight of the resulted item (but i think we can search from the resourceDB) */
+    weight: number
+}
+
 export enum CraftRecipes
 {
     MAPLE_SYRUP = "HIGH QUALITY MAPLE SYRUP",
