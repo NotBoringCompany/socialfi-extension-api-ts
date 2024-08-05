@@ -371,6 +371,8 @@ export const claimWeeklySquadMemberRewards = async (twitterId: string): Promise<
                 // if it does, add the amount to the existing reward. if not, add the reward to the user's inventory's `items`.
                 const itemIndex = (user.inventory?.items as Item[]).findIndex((item) => item.type === reward.type as string);
 
+                console.log(`(claimWeeklySquadMemberRewards) item index: ${itemIndex}`);
+
                 if (itemIndex === -1) {
                     userUpdateOperations.$push['inventory.items'] = {
                         type: reward.type,
@@ -388,6 +390,8 @@ export const claimWeeklySquadMemberRewards = async (twitterId: string): Promise<
                 // if it does, add the amount to the existing reward. if not, add the reward to the user's inventory's `food`.
                 const foodIndex = (user.inventory?.foods as Food[]).findIndex((food) => food.type === reward.type as string);
 
+                console.log(`(claimWeeklySquadMemberRewards) food index: ${foodIndex}`);
+
                 if (foodIndex === -1) {
                     userUpdateOperations.$push['inventory.food'] = {
                         type: reward.type,
@@ -398,6 +402,8 @@ export const claimWeeklySquadMemberRewards = async (twitterId: string): Promise<
                 }
             }
         })
+
+        console.log(`(claimWeeklySquadMemberRewards) user update operations: ${JSON.stringify(userUpdateOperations)}`);
 
         // add the rewards to the user's inventory
         await UserModel.updateOne({ twitterId }, userUpdateOperations);
