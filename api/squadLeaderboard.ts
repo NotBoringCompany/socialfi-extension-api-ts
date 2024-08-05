@@ -314,6 +314,8 @@ export const calculateWeeklySquadRankingAndGiveRewards = async (): Promise<void>
     }
 }
 
+calculateWeeklySquadRankingAndGiveRewards();
+
 /**
  * Claims the squad member rewards each week if they are eligible.
  */
@@ -406,7 +408,7 @@ export const claimWeeklySquadMemberRewards = async (twitterId: string): Promise<
             }
         }
 
-        console.log(`(claimWeeklySquadMemberRewards) user update operations: ${userUpdateOperations}`);
+        console.log(`(claimWeeklySquadMemberRewards) user update operations: ${JSON.stringify(userUpdateOperations)}`);
 
         // add the rewards to the user's inventory (divide to $set and $inc, $push and $pull)
         await UserModel.updateOne({ twitterId }, {
