@@ -1,182 +1,28 @@
-import { ReturnValue, Status } from '../utils/retVal';
-import { generateObjectId } from '../utils/crypto';
-import { CollabModel, UserModel } from '../utils/constants/db';
-import { Collab, CollabReward, CollabRewardType, Group, Participant } from '../models/collab';
-import { readSheetObject } from '../utils/sheet';
+import { CollabBasket, CollabParticipant, CollabReward, CollabRewardType } from '../models/collab';
 import { Item } from '../models/item';
-import { BitOrbType } from '../models/bitOrb';
-import { ExtendedXCookieData, XCookieSource } from '../models/user';
+import { ExtendedXCookieData, InGameData, XCookieSource } from '../models/user';
+import { CollabBasketModel, CollabParticipantModel, TutorialModel, UserModel } from '../utils/constants/db';
+import { generateObjectId } from '../utils/crypto';
+import { ReturnValue, Status } from '../utils/retVal';
+import { appendData, readSheet, readSheetObject } from '../utils/sheet';
 
 /**
- * Adds a collab to the database.
+ * Adds a participant to the database.
  */
-export const addCollab = async (data: Partial<Collab>): Promise<ReturnValue> => {
+export const addParticipant = async (participant: Partial<CollabParticipant>): Promise<ReturnValue> => {
     try {
-        const newCollab = new CollabModel({
+        const newParticipant = new CollabParticipantModel({
             _id: generateObjectId(),
-            ...data,
-        });
-
-        await newCollab.save();
-
-        return {
-            status: Status.SUCCESS,
-            message: `(addCollab) collab added.`,
-            data: {
-                collab: newCollab,
-            },
-        };
-    } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(addCollab) ${err.message}`,
-        };
-    }
-};
-
-/**
- * Fetches all collabs from the database.
- */
-export const getCollabs = async (type: 'kol' | 'group'): Promise<ReturnValue> => {
-    try {
-        const collabs = await CollabModel.find({ type }).lean();
-
-        if (collabs.length === 0 || !collabs) {
-            return {
-                status: Status.ERROR,
-                message: `(getCollabs) No ${type} collabs found.`,
-            };
-        }
-
-        return {
-            status: Status.SUCCESS,
-            message: `(getCollabs) ${type} collabs fetched.`,
-            data: {
-                collabs,
-            },
-        };
-    } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(getCollabs) ${err.message}`,
-        };
-    }
-};
-
-/**
- * Deletes a collab from the database.
- */
-export const deleteCollab = async (id: string): Promise<ReturnValue> => {
-    try {
-        const collab = await CollabModel.findOne({ _id: id }).lean();
-
-        if (!collab) {
-            return {
-                status: Status.ERROR,
-                message: `(deleteCollab) collab not found. Collab ID: ${id}`,
-            };
-        }
-
-        await CollabModel.deleteOne({ _id: id });
-
-        return {
-            status: Status.SUCCESS,
-            message: `(deleteCollab) collab deleted.`,
-            data: {
-                id,
-            },
-        };
-    } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(deleteCollab) ${err.message}`,
-        };
-    }
-};
-
-/**
- * Fetches a collab by ID from the database.
- */
-export const getCollabById = async (id: string): Promise<ReturnValue> => {
-    try {
-        const collab = await CollabModel.findOne({ _id: id }).lean();
-
-        if (!collab) {
-            return {
-                status: Status.ERROR,
-                message: `(getCollabById) collab not found. Collab ID: ${id}`,
-            };
-        }
-
-        return {
-            status: Status.SUCCESS,
-            message: `(getCollabById) collab fetched.`,
-            data: {
-                collab,
-            },
-        };
-    } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(getCollabById) ${err.message}`,
-        };
-    }
-};
-
-/**
- * Updates a collab in the database.
- */
-export const updateCollab = async (id: string, data: Partial<Collab>): Promise<ReturnValue> => {
-    try {
-        const updatedCollab = await CollabModel.findByIdAndUpdate(id, { $set: data }, { new: true }).lean();
-
-        if (!updatedCollab) {
-            return {
-                status: Status.ERROR,
-                message: `(updateCollab) collab not found. Collab ID: ${id}`,
-            };
-        }
-
-        return {
-            status: Status.SUCCESS,
-            message: `(updateCollab) collab updated.`,
-            data: {
-                collab: updatedCollab,
-            },
-        };
-    } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(updateCollab) ${err.message}`,
-        };
-    }
-};
-
-/**
- * Adds a participant to a collab.
- */
-export const addParticipant = async (collabId: string, participant: Partial<Participant>): Promise<ReturnValue> => {
-    try {
-        const collab = await CollabModel.findById(collabId);
-
-        if (!collab) {
-            return {
-                status: Status.ERROR,
-                message: `(addParticipant) collab not found. Collab ID: ${collabId}`,
-            };
-        }
-
-        collab.participants.push({
             ...participant,
-            _id: generateObjectId(),
         });
-        await collab.save();
+
+        await newParticipant.save();
 
         return {
             status: Status.SUCCESS,
-            message: `(addParticipant) Participant added to collab.`,
+            message: `(addParticipant) Participant added.`,
             data: {
-                collab,
+                participant: newParticipant,
             },
         };
     } catch (err: any) {
@@ -188,68 +34,57 @@ export const addParticipant = async (collabId: string, participant: Partial<Part
 };
 
 /**
- * Removes a participant from a collab.
+ * Fetches all participants from the database.
  */
-export const removeParticipant = async (collabId: string, participantId: string): Promise<ReturnValue> => {
+export const getAllParticipant = async (): Promise<ReturnValue> => {
     try {
-        const collab = await CollabModel.findById(collabId);
+        const participants = await CollabParticipantModel.find().lean();
 
-        if (!collab) {
+        if (participants.length === 0) {
             return {
                 status: Status.ERROR,
-                message: `(removeParticipant) collab not found. Collab ID: ${collabId}`,
+                message: `(getAllParticipant) No participants found.`,
             };
         }
 
-        collab.participants.id(participantId).deleteOne();
-        await collab.save();
-
         return {
             status: Status.SUCCESS,
-            message: `(removeParticipant) Participant removed from collab.`,
+            message: `(getAllParticipant) Participants fetched.`,
             data: {
-                collab,
+                participants,
             },
         };
     } catch (err: any) {
         return {
             status: Status.ERROR,
-            message: `(removeParticipant) ${err.message}`,
+            message: `(getAllParticipant) ${err.message}`,
         };
     }
 };
 
 /**
- * Updates a participant in a collab.
+ * Updates a participant in the database.
  */
-export const updateParticipant = async (collabId: string, participantId: string, updatedParticipant: Partial<Participant>): Promise<ReturnValue> => {
+export const updateParticipant = async (id: string, data: Partial<CollabParticipant>): Promise<ReturnValue> => {
     try {
-        const collab = await CollabModel.findById(collabId);
+        const updatedParticipant = await CollabParticipantModel.findByIdAndUpdate(
+            id,
+            { $set: data },
+            { new: true }
+        ).lean();
 
-        if (!collab) {
+        if (!updatedParticipant) {
             return {
                 status: Status.ERROR,
-                message: `(updateParticipant) collab not found. Collab ID: ${collabId}`,
+                message: `(updateParticipant) Participant not found. Participant ID: ${id}`,
             };
         }
-
-        const participant = collab.participants.id(participantId);
-
-        if (!participant) {
-            return {
-                status: Status.ERROR,
-                message: `(updateParticipant) Participant not found. Participant ID: ${participantId}`,
-            };
-        }
-
-        Object.assign(participant, updatedParticipant);
-        await collab.save();
 
         return {
             status: Status.SUCCESS,
-            message: `(updateParticipant) Participant updated in collab.`,
+            message: `(updateParticipant) Participant updated.`,
             data: {
-                collab,
+                participant: updatedParticipant,
             },
         };
     } catch (err: any) {
@@ -261,165 +96,119 @@ export const updateParticipant = async (collabId: string, participantId: string,
 };
 
 /**
- * Adds a Group to a specific GroupCollab.
+ * Deletes a participant from the database.
  */
-export const addGroup = async (collabId: string, group: Group): Promise<ReturnValue> => {
+export const deleteParticipant = async (id: string): Promise<ReturnValue> => {
     try {
-        const collab = await CollabModel.findById(collabId);
-
-        if (!collab) {
-            return {
-                status: Status.ERROR,
-                message: `(addGroup) GroupCollab not found. Collab ID: ${collabId}`,
-            };
-        }
-
-        collab.groups.push(group);
-        await collab.save();
-
-        return {
-            status: Status.SUCCESS,
-            message: `(addGroup) Group added to GroupCollab.`,
-            data: {
-                collab,
-            },
-        };
-    } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(addGroup) ${err.message}`,
-        };
-    }
-};
-
-/**
- * Removes a Group from a specific GroupCollab.
- */
-export const removeGroup = async (collabId: string, groupId: string): Promise<ReturnValue> => {
-    try {
-        const collab = await CollabModel.findById(collabId);
-
-        if (!collab) {
-            return {
-                status: Status.ERROR,
-                message: `(removeGroup) GroupCollab not found. Collab ID: ${collabId}`,
-            };
-        }
-
-        const group = collab.groups.id(groupId);
-
-        if (!group) {
-            return {
-                status: Status.ERROR,
-                message: `(removeGroup) Group not found. Group ID: ${groupId}`,
-            };
-        }
-
-        group.deleteOne();
-        await collab.save();
-
-        return {
-            status: Status.SUCCESS,
-            message: `(removeGroup) Group removed from GroupCollab.`,
-            data: {
-                collab,
-            },
-        };
-    } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(removeGroup) ${err.message}`,
-        };
-    }
-};
-
-/**
- * Adds a Participant to a specific Group within a GroupCollab.
- */
-export const addGroupParticipant = async (collabId: string, groupId: string, participant: Participant): Promise<ReturnValue> => {
-    try {
-        const collab = await CollabModel.findById(collabId);
-
-        if (!collab) {
-            return {
-                status: Status.ERROR,
-                message: `(addGroupParticipant) GroupCollab not found. Collab ID: ${collabId}`,
-            };
-        }
-
-        const group = collab.groups.id(groupId);
-
-        if (!group) {
-            return {
-                status: Status.ERROR,
-                message: `(addGroupParticipant) Group not found. Group ID: ${groupId}`,
-            };
-        }
-
-        group.participants.push(participant);
-        await collab.save();
-
-        return {
-            status: Status.SUCCESS,
-            message: `(addGroupParticipant) Participant added to group in GroupCollab.`,
-            data: {
-                collab,
-            },
-        };
-    } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(addGroupParticipant) ${err.message}`,
-        };
-    }
-};
-
-/**
- * Removes a Participant from a specific Group within a GroupCollab.
- */
-export const removeGroupParticipant = async (collabId: string, groupId: string, participantId: string): Promise<ReturnValue> => {
-    try {
-        const collab = await CollabModel.findById(collabId);
-
-        if (!collab) {
-            return {
-                status: Status.ERROR,
-                message: `(removeGroupParticipant) GroupCollab not found. Collab ID: ${collabId}`,
-            };
-        }
-
-        const group = collab.groups.id(groupId);
-
-        if (!group) {
-            return {
-                status: Status.ERROR,
-                message: `(removeGroupParticipant) Group not found. Group ID: ${groupId}`,
-            };
-        }
-
-        const participant = group.participants.id(participantId);
+        const participant = await CollabParticipantModel.findOne({ _id: id }).lean();
 
         if (!participant) {
             return {
                 status: Status.ERROR,
-                message: `(removeGroupParticipant) Participant not found. Participant ID: ${participantId}`,
+                message: `(deleteParticipant) Participant not found. Participant ID: ${id}`,
             };
         }
 
-        participant.deleteOne();
-        await collab.save();
+        await CollabParticipantModel.deleteOne({ _id: id });
 
         return {
             status: Status.SUCCESS,
-            message: `(removeGroupParticipant) Participant removed from group in GroupCollab.`,
+            message: `(deleteParticipant) Participant deleted.`,
             data: {
-                collab,
+                id,
             },
         };
     } catch (err: any) {
         return {
             status: Status.ERROR,
-            message: `(removeGroupParticipant) ${err.message}`,
+            message: `(deleteParticipant) ${err.message}`,
+        };
+    }
+};
+
+/**
+ * Adds a basket to the database.
+ */
+export const addBasket = async (basket: Partial<CollabBasket>): Promise<ReturnValue> => {
+    try {
+        const newBasket = new CollabBasketModel({
+            _id: generateObjectId(),
+            ...basket,
+        });
+
+        await newBasket.save();
+
+        return {
+            status: Status.SUCCESS,
+            message: `(addBasket) Basket added.`,
+            data: {
+                basket: newBasket,
+            },
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(addBasket) ${err.message}`,
+        };
+    }
+};
+
+/**
+ * Updates a basket in the database.
+ */
+export const updateBasket = async (id: string, data: Partial<CollabBasket>): Promise<ReturnValue> => {
+    try {
+        const updatedBasket = await CollabBasketModel.findByIdAndUpdate(id, { $set: data }, { new: true }).lean();
+
+        if (!updatedBasket) {
+            return {
+                status: Status.ERROR,
+                message: `(updateBasket) Basket not found. Basket ID: ${id}`,
+            };
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(updateBasket) Basket updated.`,
+            data: {
+                basket: updatedBasket,
+            },
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(updateBasket) ${err.message}`,
+        };
+    }
+};
+
+/**
+ * Deletes a basket from the database.
+ */
+export const deleteBasket = async (id: string): Promise<ReturnValue> => {
+    try {
+        const basket = await CollabBasketModel.findOne({ _id: id }).lean();
+
+        if (!basket) {
+            return {
+                status: Status.ERROR,
+                message: `(deleteBasket) Basket not found. Basket ID: ${id}`,
+            };
+        }
+
+        await CollabBasketModel.deleteOne({ _id: id });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(deleteBasket) Basket deleted.`,
+            data: {
+                id,
+            },
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(deleteBasket) ${err.message}`,
         };
     }
 };
@@ -429,70 +218,145 @@ export const removeGroupParticipant = async (collabId: string, groupId: string, 
  */
 export const importParticipants = async (spreadsheetId: string, range: string): Promise<ReturnValue> => {
     try {
-        const data = (await readSheetObject(spreadsheetId, range)) as Array<{
-            Tier: string | null;
-            Name: string | null;
-            'Twitter ID': string | null;
+        const rows = (await readSheetObject(spreadsheetId, range)) as Array<{
+            'Community Name': string | null;
+            'Discord Name': string | null;
             'Discord ID': string | null;
-            'Invite Code': string | null;
-            Approved: string | 'TRUE' | 'FALSE' | null;
+            'Twitter Handle': string | null;
+            Basket: string | null;
         }>;
 
-        // check if the data is empty
-        if (data.length == 0) {
+        // Check if the data is empty
+        if (rows.length === 0) {
             return {
                 status: Status.ERROR,
                 message: `(importParticipants) Sheet empty`,
             };
         }
 
-        const collabs = await CollabModel.find({ tier: { $in: [...new Set(data.map(({ Tier }) => Tier))] } });
+        // sanitize the data
+        const data = rows
+            .filter((row) => {
+                return !!row['Twitter Handle'] && new RegExp(/^@\w+$/).exec(row['Twitter Handle'] || '') !== null;
+            })
+            .map((row) => ({
+                ...row,
+                'Twitter Handle': row['Twitter Handle'].trim().match(/^@(\w+)/)[1],
+            }));
 
-        for (const collab of collabs) {
-            const participants = data
-                .filter((item) => item.Tier === collab.tier)
-                .map((item) => {
-                    const participant = collab.participants.find(({ twitterUsername }) => twitterUsername === item['Twitter ID']);
+        for (const item of data) {
+            let basket = await CollabBasketModel.findOne({ name: item.Basket });
 
-                    return {
-                        _id: participant?._id ?? generateObjectId(),
-                        name: participant?.name ?? item.Name,
-                        approved: item.Approved === 'TRUE',
-                        claimable: participant?.claimable ?? true,
-                        code: participant?.code ?? item['Invite Code'],
-                        discordId: participant?.discordId ?? item['Discord ID'],
-                        role: 'Leader',
-                        twitterUsername: participant?.twitterUsername ?? item['Twitter ID'],
-                    } as Participant;
+            if (!basket) {
+                basket = new CollabBasketModel({
+                    _id: generateObjectId(),
+                    name: item.Basket,
+                    rewards: [],
+                });
+                await basket.save();
+            }
+
+            const existingParticipant = await CollabParticipantModel.findOne({
+                twitterUsername: item['Twitter Handle'],
+                community: item['Community Name'],
+            });
+
+            if (existingParticipant) {
+                await CollabParticipantModel.updateOne(
+                    { twitterUsername: item['Twitter Handle'] },
+                    {
+                        $set: {
+                            name: item['Discord Name'],
+                            discordId: item['Discord ID'],
+                            community: item['Community Name'],
+                            basket: basket,
+                            approved: true,
+                            claimable: true,
+                        },
+                    }
+                );
+            } else {
+                const newParticipant = new CollabParticipantModel({
+                    _id: generateObjectId(),
+                    name: item['Discord Name'],
+                    code: item['Community Name'],
+                    role: 'Member',
+                    community: item['Community Name'],
+                    twitterUsername: item['Twitter Handle'],
+                    discordId: item['Discord ID'],
+                    basket,
+                    claimable: true,
+                    approved: true,
                 });
 
-            await collab.updateOne({
-                $set: {
-                    participants,
-                },
-            });
+                await newParticipant.save();
+            }
         }
 
-        const registeredUser = await UserModel.find({ twitterUsername: data.map((item) => item['Twitter ID']) }).lean();
-        const unregisteredUser = data.filter((item) => !registeredUser.find((user) => user.twitterUsername === item['Twitter ID']));
+        const twitterHandles = data.map((item) => item['Twitter Handle']);
+        const uniqueTwitterHandles = Array.from(new Set(twitterHandles));
 
-        // handle pre-register user
-        await UserModel.create(
-            unregisteredUser.map((user) => ({
+        const orConditions = uniqueTwitterHandles.map((handle) => ({
+            twitterUsername: { $regex: new RegExp(`^${handle}$`, 'i') },
+        }));
+
+        const registeredUsers = await UserModel.find({
+            $or: orConditions,
+            method: { $ne: 'telegram' },
+        }).lean();
+
+        // Create a Set of registered Twitter usernames for fast lookup
+        const registeredUsernames = new Set(registeredUsers.map((user) => user.twitterUsername.toLowerCase()));
+
+        // Filter out unregistered users and ensure uniqueness
+        const unregisteredUsers = data.filter((item) => {
+            const twitterHandle = item['Twitter Handle'];
+            return twitterHandle && !registeredUsernames.has(twitterHandle.toLowerCase());
+        });
+
+        // Ensure unique unregistered users based on Twitter Handle
+        const uniqueUnregisteredUsers = Array.from(
+            new Set(unregisteredUsers.map((user) => user['Twitter Handle']))
+        ).map((handle) => unregisteredUsers.find((user) => user['Twitter Handle'] === handle));
+
+        // Handle pre-register user
+        await UserModel.insertMany(
+            uniqueUnregisteredUsers.map((user) => ({
                 _id: generateObjectId(),
                 twitterId: null,
-                twitterUsername: user['Twitter ID'],
+                twitterUsername: user['Twitter Handle'],
                 inviteCodeData: {
-                    usedStarterCode: user['Invite Code'],
+                    usedStarterCode: user['Community Name'],
                     usedReferralCode: null,
                     referrerId: null,
                 },
+                discordProfile: {
+                    discordId: user['Discord ID'],
+                    name: user['Discord Name'],
+                },
+                inventory: {
+                    xCookieData: {
+                        currentXCookies: 0,
+                        extendedXCookieData: [],
+                    },
+                },
             }))
         );
+        // handle auto-claim when registered user already completed the tutorial
+        const tutorialCount = await TutorialModel.countDocuments();
+
+        // get registered user who already completed the tutorial
+        const completedTutorialUsers = registeredUsers.filter(
+            ({ twitterId, inGameData }) =>
+                !!twitterId && (inGameData as InGameData).completedTutorialIds.length === tutorialCount
+        );
+
+        // auto-claim the reward
+        await Promise.all(completedTutorialUsers.map((user) => claimCollabReward(user.twitterId)));
 
         return {
             status: Status.SUCCESS,
-            message: `(importParticipants) Participants imported in the collab`,
+            message: `(importParticipants) Participants imported`,
         };
     } catch (err: any) {
         return {
@@ -503,166 +367,37 @@ export const importParticipants = async (spreadsheetId: string, range: string): 
 };
 
 /**
- * Import group participants using Google Sheet
+ * Get collab reward by Twitter ID.
  */
-export const importGroupParticipants = async (spreadsheetId: string, range: string): Promise<ReturnValue> => {
-    try {
-        const data = (await readSheetObject(spreadsheetId, range)) as Array<{
-            Name: string | null;
-            Role: string | null;
-            'Group Name': string | null;
-            'Twitter ID': string | null;
-            'Discord ID': string | null;
-            'Invite Code': string | null;
-            Approved: string | 'TRUE' | 'FALSE' | null;
-        }>;
-
-        // check if the data is empty
-        if (data.length == 0) {
-            return {
-                status: Status.ERROR,
-                message: `(importGroupParticipants) Sheet empty`,
-            };
-        }
-
-        const collabs = await CollabModel.find({
-            'groups.name': { $in: [...new Set(data.map((item) => item['Group Name']))] },
-        });
-
-        for (const collab of collabs) {
-            const groups = collab.groups.map((group) => {
-                const participants = data
-                    .filter((item) => group['name'] === item['Group Name'])
-                    .map((item) => {
-                        const participant = group.participants.find(({ twitterUsername }) => twitterUsername === item['Twitter ID']);
-
-                        return {
-                            _id: participant?._id ?? generateObjectId(),
-                            name: participant?.name ?? item.Name,
-                            approved: item.Approved === 'TRUE',
-                            claimable: participant?.claimable ?? true,
-                            code: participant?.code ?? item['Invite Code'],
-                            discordId: participant?.discordId ?? item['Discord ID'],
-                            role: participant?.role ?? item['Role'],
-                            twitterUsername: participant?.twitterUsername ?? item['Twitter ID'],
-                        } as Participant;
-                    });
-
-                return {
-                    ...group.toObject(),
-                    participants,
-                };
-            });
-
-            await collab.updateOne({
-                $set: { groups },
-            });
-        }
-
-        const registeredUser = await UserModel.find({ twitterUsername: data.map((item) => item['Twitter ID']) }).lean();
-        const unregisteredUser = data.filter((item) => !registeredUser.find((user) => user.twitterUsername === item['Twitter ID']));
-
-        // handle pre-register user
-        await UserModel.create(
-            unregisteredUser.map((user) => ({
-                _id: generateObjectId(),
-                twitterId: null,
-                twitterUsername: user['Twitter ID'],
-                inviteCodeData: {
-                    usedStarterCode: user['Invite Code'],
-                    usedReferralCode: null,
-                    referrerId: null,
-                },
-            }))
-        );
-
-        return {
-            status: Status.SUCCESS,
-            message: `(importGroupParticipants) Group Participants imported in the collab`,
-        };
-    } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(importGroupParticipants) ${err.message}`,
-        };
-    }
-};
-
-export const getCollabRewards = async (twitterId: string): Promise<ReturnValue> => {
+export const getCollabReward = async (twitterId: string): Promise<ReturnValue> => {
     try {
         const user = await UserModel.findOne({ twitterId }).lean();
         if (!user) {
             return {
                 status: Status.ERROR,
-                message: `(claimCollabRewards) User not found.`,
+                message: `(getCollabReward) User not found.`,
             };
         }
 
-        const collab = await CollabModel.findOne({
-            $or: [{ 'participants.twitterUsername': user.twitterUsername }, { 'groups.participants.twitterUsername': user.twitterUsername }],
-        }).lean();
-
-        if (!collab) {
+        const participant = await CollabParticipantModel.findOne({
+            twitterUsername: { $regex: new RegExp(`^${user.twitterUsername}$`, 'i') },
+        })
+            .populate('basket')
+            .lean();
+        if (!participant) {
             return {
                 status: Status.ERROR,
-                message: `(getCollabReward) You don't registered to any collab program`,
-            };
-        }
-
-        let isLeader = false;
-        let rewards: any | null = null;
-        let isClaimable = false;
-        let isApproved = false;
-
-        // Check if the user is the Leader in KOL collab
-        if (collab.type === 'kol' && collab.participants) {
-            const participant = collab.participants.find((p) => p.twitterUsername === user.twitterUsername);
-            if (participant) {
-                isApproved = participant.approved;
-                isClaimable = participant.approved && participant.claimable;
-
-                if (participant.role === 'Leader') {
-                    isLeader = true;
-                    rewards = collab.leaderRewards;
-                } else {
-                    rewards = collab.memberRewards;
-                }
-            }
-        }
-
-        // Check if the user is the Leader or Member in Group collab
-        if (collab.type === 'group' && collab.groups) {
-            for (const group of collab.groups) {
-                const participant = group.participants.find((p) => p.twitterUsername === user.twitterUsername);
-                if (participant) {
-                    isApproved = participant.approved;
-                    isClaimable = participant.approved && participant.claimable;
-
-                    if (participant.role === 'Leader') {
-                        isLeader = true;
-                        rewards = collab.leaderRewards;
-                    } else {
-                        rewards = collab.memberRewards;
-                    }
-                    break;
-                }
-            }
-        }
-
-        if (!rewards) {
-            return {
-                status: Status.ERROR,
-                message: `(getCollabReward) Could not determine your role in the collab program`,
+                message: `(getCollabReward) Participant not found.`,
             };
         }
 
         return {
             status: Status.SUCCESS,
-            message: `(getCollabReward) Collab reward fetched`,
+            message: `(getCollabReward) Collab reward fetched.`,
             data: {
-                rewards,
-                isClaimable,
-                isApproved,
+                reward: participant.basket.rewards,
+                claimable: participant.claimable,
+                approved: participant.approved,
             },
         };
     } catch (err: any) {
@@ -673,145 +408,222 @@ export const getCollabRewards = async (twitterId: string): Promise<ReturnValue> 
     }
 };
 
-export const claimCollabRewards = async (twitterId: string): Promise<ReturnValue> => {
+/**
+ * Claim collab reward by Twitter ID.
+ */
+export const claimCollabReward = async (twitterId: string): Promise<ReturnValue> => {
     try {
         const user = await UserModel.findOne({ twitterId }).lean();
         if (!user) {
             return {
                 status: Status.ERROR,
-                message: `(claimCollabRewards) User not found.`,
+                message: `(claimCollabReward) User not found.`,
             };
         }
 
-        const { data, status, message } = await getCollabRewards(user.twitterUsername);
-        if (status !== Status.SUCCESS) {
-            return {
-                status,
-                message: `(claimCollabRewards) Error for getCollabRewards: ${message}`,
-            };
-        }
-
-        if (!data.isApproved) {
-            return {
-                status,
-                message: `(claimCollabRewards) You're not fulfilled the requirement`,
-            };
-        }
-
-        if (!data.isClaimable) {
-            return {
-                status,
-                message: `(claimCollabRewards) You already claim the reward`,
-            };
-        }
-
-        const collab = await CollabModel.findOne({
-            $or: [{ 'participants.twitterUsername': user.twitterUsername }, { 'groups.participants.twitterUsername': user.twitterUsername }],
-        });
-
-        if (!collab) {
+        // update this to findAll
+        const participants = await CollabParticipantModel.find({
+            twitterUsername: { $regex: new RegExp(user.twitterUsername, 'i') },
+        }).populate('basket');
+        if (participants.length === 0) {
             return {
                 status: Status.ERROR,
-                message: `(claimCollabRewards) You don't registered to any collab program`,
+                message: `(claimCollabReward) Participant not found.`,
             };
         }
 
-        let participantUpdated = false;
+        for (const participant of participants) {
+            if (!participant.claimable) continue;
 
-        if (collab.type === 'kol' && collab.participants) {
-            const participant = collab.participants.find((p) => p.twitterUsername === user.twitterUsername);
-            if (participant && participant.claimable) {
-                participant.claimable = false;
-                participantUpdated = true;
-            }
-        }
+            participant.claimable = false;
+            participant.claimedAt = new Date();
+            await participant.save();
 
-        if (collab.type === 'group' && collab.groups) {
-            for (const group of collab.groups) {
-                const participant = group.participants.find((p: Participant) => p.twitterUsername === user.twitterUsername);
-                if (participant && participant.claimable) {
-                    participant.claimable = false;
-                    participantUpdated = true;
-                    break;
-                }
-            }
-        }
-
-        if (!participantUpdated) {
-            return {
-                status: Status.ERROR,
-                message: `(claimCollabRewards) Participant not found or already claimed the reward`,
+            const userUpdateOperations = {
+                $pull: {},
+                $inc: {},
+                $set: {},
+                $push: {},
             };
-        }
 
-        await collab.save();
+            const rewards = participant.basket.rewards as CollabReward[];
 
-        const userUpdateOperations = {
-            $pull: {},
-            $inc: {},
-            $set: {},
-            $push: {},
-        };
+            for (const reward of rewards) {
+                switch (reward.type) {
+                    case CollabRewardType.BIT_ORB_I:
+                    case CollabRewardType.BIT_ORB_II:
+                    case CollabRewardType.BIT_ORB_III:
+                    case CollabRewardType.TERRA_CAPSULATOR_I:
+                    case CollabRewardType.TERRA_CAPSULATOR_II:
+                        // add the item to the user's inventory
+                        const existingItemIndex = (user.inventory?.items as Item[]).findIndex(
+                            (i) => i.type === (reward.type as any)
+                        );
 
-        for (const reward of data.rewards as CollabReward[]) {
-            switch (reward.type) {
-                case CollabRewardType.BIT_ORB_I:
-                case CollabRewardType.BIT_ORB_II:
-                case CollabRewardType.BIT_ORB_III:
-                case CollabRewardType.TERRA_CAPSULATOR_I:
-                case CollabRewardType.TERRA_CAPSULATOR_II:
-                    // add the item to the user's inventory
-                    const existingItemIndex = (user.inventory?.items as Item[]).findIndex((i) => i.type === (reward.type as any));
+                        if (existingItemIndex !== -1) {
+                            userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = reward.amount;
+                        } else {
+                            if (!userUpdateOperations.$push['inventory.items']) {
+                                userUpdateOperations.$push['inventory.items'] = {
+                                    $each: [],
+                                };
+                            }
 
-                    if (existingItemIndex !== -1) {
-                        userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = reward.amount;
-                    } else {
-                        if (!userUpdateOperations.$push['inventory.items']) {
-                            userUpdateOperations.$push['inventory.items'] = {
-                                $each: [],
+                            userUpdateOperations.$push['inventory.items'].$each.push({
+                                type: reward.type,
+                                amount: reward.amount,
+                                totalAmountConsumed: 0,
+                                weeklyAmountConsumed: 0,
+                            });
+                        }
+                        break;
+                    case CollabRewardType.X_BIT_BERRY:
+                        userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = reward.amount;
+
+                        // check if the user's `xCookieData.extendedXCookieData` contains a source called QUEST_REWARDS.
+                        // if yes, we increment the amount, if not, we create a new entry for the source
+                        const questRewardsIndex = (
+                            user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]
+                        ).findIndex((data) => data.source === XCookieSource.COLLAB_REWARDS);
+
+                        if (questRewardsIndex !== -1) {
+                            userUpdateOperations.$inc[
+                                `inventory.xCookieData.extendedXCookieData.${questRewardsIndex}.xCookies`
+                            ] = reward.amount;
+                        } else {
+                            userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = {
+                                xCookies: reward.amount,
+                                source: XCookieSource.COLLAB_REWARDS,
                             };
                         }
-
-                        userUpdateOperations.$push['inventory.items'].$each.push({
-                            type: reward.type,
-                            amount: reward.amount,
-                            totalAmountConsumed: 0,
-                            weeklyAmountConsumed: 0,
-                        });
-                    }
-                    break;
-                case CollabRewardType.X_BIT_BERRY:
-                    userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = reward.amount;
-
-                    // check if the user's `xCookieData.extendedXCookieData` contains a source called QUEST_REWARDS.
-                    // if yes, we increment the amount, if not, we create a new entry for the source
-                    const questRewardsIndex = (user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(
-                        (data) => data.source === XCookieSource.COLLAB_REWARDS
-                    );
-
-                    if (questRewardsIndex !== -1) {
-                        userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${questRewardsIndex}.xCookies`] = reward.amount;
-                    } else {
-                        userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = {
-                            xCookies: reward.amount,
-                            source: XCookieSource.COLLAB_REWARDS,
-                        };
-                    }
-                    break;
+                        break;
+                }
             }
-        }
 
-        await UserModel.updateOne({ twitterId }, { $inc: userUpdateOperations.$inc });
-        await UserModel.updateOne({ twitterId }, { $push: userUpdateOperations.$push });
+            await UserModel.updateOne({ twitterId }, { $inc: userUpdateOperations.$inc });
+            await UserModel.updateOne({ twitterId }, { $push: userUpdateOperations.$push });
+        }
 
         return {
             status: Status.SUCCESS,
-            message: `(claimCollabRewards) Collab awarded`,
+            message: `(claimCollabReward) Reward claimed successfully.`,
         };
     } catch (err: any) {
         return {
             status: Status.ERROR,
-            message: `(claimCollabRewards) ${err.message}`,
+            message: `(claimCollabReward) ${err.message}`,
+        };
+    }
+};
+
+/**
+ * Get collab request status from google spreadsheet
+ */
+export const getCollabStatus = async (
+    spreadsheetId: string,
+    range: string,
+    link: string,
+    messages: { [key: string]: string } = {}
+): Promise<ReturnValue> => {
+    try {
+        const data = (await readSheet(spreadsheetId, range)) as any[][];
+
+        if (!data || data.length === 0) {
+            return {
+                status: Status.SUCCESS,
+                message: `(getCollabStatus) ${
+                    messages['NOT_REGISTERED'] ?? `You're not registered to our collab program`
+                }`,
+                data: {
+                    status: messages['NOT_REGISTERED'] ?? `You're not registered to our collab program`,
+                },
+            };
+        }
+
+        // Iterate through the sheet data to find the link
+        for (let i = 0; i < data.length; i++) {
+            const row = data[i];
+            const name = row[0];
+            const collabLink = row[1];
+            const collabStatus = row[2];
+
+            // Check if the provided link matches the link in the sheet
+            if (collabLink && collabLink.includes(link)) {
+                let customMessage = '';
+                switch (collabStatus) {
+                    case 'Collab Cancelled':
+                        customMessage = messages['CANCELED'] ?? 'Collab Cancelled';
+                        break;
+                    case 'Collab Complete':
+                        customMessage = messages['COMPLETE'] ?? 'Collab Complete';
+                        break;
+                    case 'Application Received, Pending Review':
+                        customMessage = messages['PENDING'] ?? 'Application Received, Pending Review';
+                        break;
+                    case 'Collab Pre-Accepted, Open GC':
+                        customMessage = messages['PRE_ACCEPTED'] ?? 'Collab Pre-Accepted, Open GC';
+                        break;
+                    case 'Collab Declined':
+                        customMessage = messages['DECLINED'] ?? 'Collab Declined';
+                        break;
+                    default:
+                        customMessage = collabStatus;
+                }
+
+                return {
+                    status: Status.SUCCESS,
+                    message: `(getCollabStatus) Collab status found: ${customMessage}`,
+                    data: {
+                        name: name,
+                        link: collabLink,
+                        status: customMessage,
+                    },
+                };
+            }
+        }
+
+        // If no matching link is found
+        return {
+            status: Status.SUCCESS,
+            message: `(getCollabStatus) ${messages['NOT_REGISTERED'] ?? `You're not registered to our collab program`}`,
+            data: {
+                status: messages['NOT_REGISTERED'] ?? `You're not registered to our collab program`,
+            },
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getCollabStatus) ${err.message}`,
+        };
+    }
+};
+
+/**
+ * Append collab winner change request
+ */
+export const collabWinnerChange = async (
+    spreadsheetId: string,
+    range: string,
+    projectLink: string,
+    winnerId: string,
+    changeId: string
+): Promise<ReturnValue> => {
+    try {
+        // Prepare new data
+        const newRow = [projectLink, winnerId, changeId];
+
+        // Append new data
+        await appendData(spreadsheetId, range, [newRow]);
+
+        return {
+            status: Status.SUCCESS,
+            message: `Successfully appended the winner change request.`,
+            data: { projectLink, winnerId, changeId },
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(collabWinnerChange) ${err.message}`,
         };
     }
 };

@@ -15,8 +15,7 @@ import { SettingSchema } from '../../schemas/Setting';
 import { POAPSchema } from '../../schemas/POAP';
 import { KOSClaimableDailyRewardsSchema, KOSClaimableWeeklyRewardsSchema } from '../../schemas/KOSRewards';
 import { WeeklyMVPClaimableRewardSchema, WeeklyMVPRankingLeaderboardSchema } from '../../schemas/WeeklyMVPReward';
-import { CollabSchema } from '../../schemas/Collab';
-import { CollabBasketSchema, CollabParticipantSchema } from '../../schemas/CollabV2';
+import { CollabBasketSchema, CollabParticipantSchema } from '../../schemas/Collab';
 
 export const WONDERBITS_DATABASE = process.env.WONDERBITS_MONGODB_URI!;
 // create a connection to the wonderbits database
@@ -47,7 +46,6 @@ export const KOSClaimableDailyRewardsModel = WONDERBITS_CONNECTION.model('KOSCla
 export const KOSClaimableWeeklyRewardsModel = WONDERBITS_CONNECTION.model('KOSClaimableWeeklyRewards', KOSClaimableWeeklyRewardsSchema, 'KOSClaimableWeeklyRewards');
 export const WeeklyMVPClaimableRewardsModel = WONDERBITS_CONNECTION.model('WeeklyMVPClaimableRewards', WeeklyMVPClaimableRewardSchema, 'WeeklyMVPClaimableRewards');
 export const SquadMemberClaimableWeeklyRewardModel = WONDERBITS_CONNECTION.model('SquadMemberClaimableWeeklyRewards', SquadMemberClaimableWeeklyRewardSchema, 'SquadMemberClaimableWeeklyRewards');
-export const CollabModel = WONDERBITS_CONNECTION.model('Collabs', CollabSchema, 'Collabs');
 export const CollabParticipantModel = WONDERBITS_CONNECTION.model('CollabParticipants', CollabParticipantSchema, 'CollabParticipants');
 export const CollabBasketModel = WONDERBITS_CONNECTION.model('CollabBaskets', CollabBasketSchema, 'CollabBaskets');
 export const WeeklyMVPRankingLeaderboardModel = WONDERBITS_CONNECTION.model('WeeklyMVPRankingData', WeeklyMVPRankingLeaderboardSchema, 'WeeklyMVPRankingData');
