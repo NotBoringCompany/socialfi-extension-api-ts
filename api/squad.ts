@@ -1789,31 +1789,13 @@ export const getAllSquadData = async (): Promise<ReturnValue> => {
             }
         }
 
-        const squadData: Array<{
-            name: string;
-            totalKOSCount: number;
-            totalPointsEarned: number;
-            totalMembers: number;
-            maxMembers: number;
-            joinable: boolean;
-        }> = [];
-
-        // fetch all explicit ownerships of keys
-        // ID from 1 to 5000
-        const { status, message, data } = await explicitOwnershipsOfKOS(Array.from({ length: 5000 }, (_, i) => i + 1));
-
-        if (status !== Status.SUCCESS) {
-            return {
-                status,
-                message: `(getPendingSquadMemberData) Error from explicitOwnershipsOfKOS: ${message}`
-            }
-        }
-
-        const explicitOwnerships: KOSExplicitOwnership[] = data?.keyOwnerships ?? [];
-
-        const leaderboards: Leaderboard[] = await LeaderboardModel.find().lean();
-
-        const users = await UserModel.find().lean();
+        const [explicitOwnerships, leaderboards, users] = await Promise.all([
+            // fetch all explicit ownerships of keys
+            // ID from 1 to 5000
+            explicitOwnershipsOfKOS(Array.from({ length: 5000 }, (_, i) => i + 1)).then(res => res.data.keyOwnerships ?? []),
+            LeaderboardModel.find().lean(),
+            UserModel.find().lean()
+        ]);
 
         if (!users || users.length === 0) {
             return {
@@ -1822,89 +1804,141 @@ export const getAllSquadData = async (): Promise<ReturnValue> => {
             }
         }
 
-        for (const squad of squads) {
-            // get the squad name
-            const squadName = squad.name;
+        // create maps for faster lookups
+        const userMap = new Map(users.map(user => [user._id, user]));
 
-            // get the total KOS count of all the members
+        const explicitOwnershipMap = new Map();
+        explicitOwnerships.forEach((ownership: KOSExplicitOwnership) => {
+            explicitOwnershipMap.set(ownership.owner.toLowerCase(), (explicitOwnershipMap.get(ownership.owner.toLowerCase()) || 0) + 1);
+        });
+
+        const leaderboardPointsMap = new Map();
+        for (const leaderboard of leaderboards) {
+            for (const userData of leaderboard.userData) {
+                const totalPoints = userData.pointsData
+                    .filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP)
+                    .reduce((prev, current) => prev + current.points, 0);
+
+                leaderboardPointsMap.set(userData.userId, (leaderboardPointsMap.get(userData.userId) || 0) + totalPoints);
+            }
+        }
+
+        const squadData = squads.map(squad => {
             let totalKOSCount = 0;
             let totalLeaderboardPoints = 0;
+
             for (const member of squad.members) {
-                // get the user's wallet addresses (both main and secondary)
-                const mainWallet = users.find(user => user._id === member.userId)?.wallet as UserWallet;
-                const secondaryWallets = users.find(user => user._id === member.userId)?.secondaryWallets as UserSecondaryWallet[];
+                const user = userMap.get(member.userId);
+                if (!user) continue;
 
-                if (!mainWallet) {
-                    continue;
-                }
+                const validAddresses = [user.wallet.address.toLowerCase()]
+                    .concat(user.secondaryWallets?.map(wallet => wallet.address.toLowerCase()) || []);
 
-                const validAddresses = [mainWallet.address.toLowerCase()]
-                    .concat(
-                        secondaryWallets.map(wallet => wallet.address))
-                        .filter((address: string) => address !== '')
-                        .map((address: string) => address.toLowerCase()
-                    );
+                // sum up KOS count of all the user's valid addresses
+                validAddresses.forEach(address => {
+                    totalKOSCount += explicitOwnershipMap.get(address) || 0;
+                });
 
-
-                if (validAddresses.length === 0) {
-                    continue;
-                }
-
-                // get the KOS count of the user.
-                let kosCount = 0;
-
-                for (const keyOwnership of explicitOwnerships) {
-                    if (validAddresses.includes(keyOwnership.owner.toLowerCase())) {
-                        kosCount++;
-                    }
-                }
-
-                totalKOSCount += kosCount;
-
-                // get the user's total leaderboard points (excluding additional points)
-                let userTotalLeaderboardPoints = 0;
-
-                // right now, there is only season 0 (i.e. one leaderboard)
-                // but this helps in case there are multiple leaderboards in the future to make it more future-proof.
-                for (const leaderboard of leaderboards) {
-                    // sort the users by their total points in descending order.
-                    // to get the total points, each userData contains an array of `pointsData` which contains the points for each source.
-                    // we sum all the points from each source to get the total points (excluding the leaderboard points source for LEVELLING_UP (for now, may be more in the future)).
-                    // firstly, we get the user data from this leaderboard.
-                    const userData = leaderboard.userData;
-
-                    // sort the user data by their total points in descending order.
-                    // to do this, the points for each `pointsData` must be summed up (excluding LeaderboardPointsSource.LEVELLING_UP)
-                    const sortedUserData = userData.sort((a, b) => {
-                        const aTotalPoints = a.pointsData.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0);
-                        const bTotalPoints = b.pointsData.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0);
-
-                        return bTotalPoints - aTotalPoints;
-                    });
-
-                    // get the user's leaderboard points. its index + 1 is the rank.
-                    const userIndex = sortedUserData.findIndex(data => data.userId === member.userId);
-                    userTotalLeaderboardPoints = sortedUserData[userIndex].pointsData.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0);
-                }
-
-                totalLeaderboardPoints += userTotalLeaderboardPoints;
+                // sum up the total points earned
+                totalLeaderboardPoints += leaderboardPointsMap.get(member.userId) || 0;
             }
 
-            // get the total members of the squad
             const totalMembers = squad.members.length;
-
-            // check if the squad is joinable
             const joinable = totalMembers < squad.maxMembers;
 
-            squadData.push({
-                name: squadName,
+            return {
+                name: squad.name,
                 totalKOSCount,
                 totalPointsEarned: totalLeaderboardPoints,
                 totalMembers,
                 maxMembers: squad.maxMembers,
                 joinable
-            });
-        }
+            };
+        });
+
+        // for (const squad of squads) {
+        //     // get the squad name
+        //     const squadName = squad.name;
+
+        //     // get the total KOS count of all the members
+        //     let totalKOSCount = 0;
+        //     let totalLeaderboardPoints = 0;
+        //     for (const member of squad.members) {
+        //         // get the user's wallet addresses (both main and secondary)
+        //         const mainWallet = users.find(user => user._id === member.userId)?.wallet as UserWallet;
+        //         const secondaryWallets = users.find(user => user._id === member.userId)?.secondaryWallets as UserSecondaryWallet[];
+
+        //         if (!mainWallet) {
+        //             continue;
+        //         }
+
+        //         const validAddresses = [mainWallet.address.toLowerCase()]
+        //             .concat(
+        //                 secondaryWallets.map(wallet => wallet.address))
+        //                 .filter((address: string) => address !== '')
+        //                 .map((address: string) => address.toLowerCase()
+        //             );
+
+
+        //         if (validAddresses.length === 0) {
+        //             continue;
+        //         }
+
+        //         // get the KOS count of the user.
+        //         let kosCount = 0;
+
+        //         for (const keyOwnership of explicitOwnerships) {
+        //             if (validAddresses.includes(keyOwnership.owner.toLowerCase())) {
+        //                 kosCount++;
+        //             }
+        //         }
+
+        //         totalKOSCount += kosCount;
+
+        //         // get the user's total leaderboard points (excluding additional points)
+        //         let userTotalLeaderboardPoints = 0;
+
+        //         // right now, there is only season 0 (i.e. one leaderboard)
+        //         // but this helps in case there are multiple leaderboards in the future to make it more future-proof.
+        //         for (const leaderboard of leaderboards) {
+        //             // sort the users by their total points in descending order.
+        //             // to get the total points, each userData contains an array of `pointsData` which contains the points for each source.
+        //             // we sum all the points from each source to get the total points (excluding the leaderboard points source for LEVELLING_UP (for now, may be more in the future)).
+        //             // firstly, we get the user data from this leaderboard.
+        //             const userData = leaderboard.userData;
+
+        //             // sort the user data by their total points in descending order.
+        //             // to do this, the points for each `pointsData` must be summed up (excluding LeaderboardPointsSource.LEVELLING_UP)
+        //             const sortedUserData = userData.sort((a, b) => {
+        //                 const aTotalPoints = a.pointsData.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0);
+        //                 const bTotalPoints = b.pointsData.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0);
+
+        //                 return bTotalPoints - aTotalPoints;
+        //             });
+
+        //             // get the user's leaderboard points. its index + 1 is the rank.
+        //             const userIndex = sortedUserData.findIndex(data => data.userId === member.userId);
+        //             userTotalLeaderboardPoints = sortedUserData[userIndex].pointsData.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0);
+        //         }
+
+        //         totalLeaderboardPoints += userTotalLeaderboardPoints;
+        //     }
+
+        //     // get the total members of the squad
+        //     const totalMembers = squad.members.length;
+
+        //     // check if the squad is joinable
+        //     const joinable = totalMembers < squad.maxMembers;
+
+        //     squadData.push({
+        //         name: squadName,
+        //         totalKOSCount,
+        //         totalPointsEarned: totalLeaderboardPoints,
+        //         totalMembers,
+        //         maxMembers: squad.maxMembers,
+        //         joinable
+        //     });
+        // }
 
         return {
             status: Status.SUCCESS,
