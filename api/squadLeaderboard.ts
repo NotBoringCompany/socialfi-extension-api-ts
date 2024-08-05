@@ -347,6 +347,8 @@ export const claimWeeklySquadMemberRewards = async (twitterId: string): Promise<
         // claim the rewards
         const rewards = squadMemberClaimableWeeklyRewards.claimableRewards as SquadReward[];
 
+        console.log(`rewards: ${JSON.stringify(rewards)}`);
+
         if (rewards.length === 0) {
             return {
                 status: Status.ERROR,
