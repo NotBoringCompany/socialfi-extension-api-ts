@@ -607,6 +607,16 @@ export const createSquad = async (twitterId: string, squadName: string): Promise
             }
         }
 
+        // check if the squad name already exists.
+        const existingSquad = await SquadModel.findOne({ name: squadName });
+
+        if (existingSquad) {
+            return {
+                status: Status.ERROR,
+                message: `(createSquad) Squad name already exists.`
+            }
+        }
+
         // check if the squadName meets the following:
         // 1. squad name can only be up to 20 characters long.
         // 2. squad name cannot be empty.
