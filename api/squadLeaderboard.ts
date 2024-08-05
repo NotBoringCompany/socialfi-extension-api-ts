@@ -376,6 +376,8 @@ export const claimWeeklySquadMemberRewards = async (twitterId: string): Promise<
                 // if it does, add the amount to the existing reward. if not, add the reward to the user's inventory's `items`.
                 const itemIndex = (user.inventory?.items as Item[]).findIndex((item) => item.type === reward.type as string);
 
+                console.log(`item index: ${itemIndex}`);
+
                 if (itemIndex === -1) {
                     userUpdateOperations.$push['inventory.items'] = {
                         type: reward.type,
@@ -386,12 +388,12 @@ export const claimWeeklySquadMemberRewards = async (twitterId: string): Promise<
                 } else {
                     userUpdateOperations.$inc[`inventory.items.${itemIndex}.amount`] = reward.amount;
                 }
-            }
-
-            if (reward.type === SquadRewardType.BURGER) {
+            } else if (reward.type === SquadRewardType.BURGER) {
                 // check if the user's inventory's `food` already has the reward type.
                 // if it does, add the amount to the existing reward. if not, add the reward to the user's inventory's `food`.
                 const foodIndex = (user.inventory?.foods as Food[]).findIndex((food) => food.type === reward.type as string);
+
+                console.log(`food index: ${foodIndex}`);
 
                 if (foodIndex === -1) {
                     userUpdateOperations.$push['inventory.foods'] = {
