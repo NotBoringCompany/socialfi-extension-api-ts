@@ -1,7 +1,7 @@
 import { KOSExplicitOwnership } from '../models/kos';
 import { Leaderboard, LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
 import { SquadCreationMethod, SquadMember, SquadRank, SquadRole } from '../models/squad';
-import { UserWallet } from '../models/user';
+import { UserSecondaryWallet, UserWallet } from '../models/user';
 import { LeaderboardModel, SquadModel, UserModel } from '../utils/constants/db';
 import { CREATE_SQUAD_COST, INITIAL_MAX_MEMBERS, MAX_CO_LEADERS_LIMIT, MAX_LEADERS_LIMIT, MAX_MEMBERS_INCREASE_UPON_UPGRADE, MAX_MEMBERS_LIMIT, RENAME_SQUAD_COOLDOWN, RENAME_SQUAD_COST, SQUAD_LEAVE_COOLDOWN, UPGRADE_SQUAD_MAX_MEMBERS_COST } from '../utils/constants/squad';
 import { generateObjectId } from '../utils/crypto';
@@ -1813,6 +1813,15 @@ export const getAllSquadData = async (): Promise<ReturnValue> => {
 
         const leaderboards: Leaderboard[] = await LeaderboardModel.find().lean();
 
+        const users = await UserModel.find().lean();
+
+        if (!users || users.length === 0) {
+            return {
+                status: Status.ERROR,
+                message: `(getAllSquadData) No users found.`
+            }
+        }
+
         for (const squad of squads) {
             // get the squad name
             const squadName = squad.name;
@@ -1822,13 +1831,20 @@ export const getAllSquadData = async (): Promise<ReturnValue> => {
             let totalLeaderboardPoints = 0;
             for (const member of squad.members) {
                 // get the user's wallet addresses (both main and secondary)
-                const { status: walletStatus, message: walletMessage, data: walletData } = await getWallets('', member.userId);
+                const mainWallet = users.find(user => user._id === member.userId)?.wallet as UserWallet;
+                const secondaryWallets = users.find(user => user._id === member.userId)?.secondaryWallets as UserSecondaryWallet[];
 
-                if (walletStatus !== Status.SUCCESS) {
+                if (!mainWallet) {
                     continue;
                 }
 
-                const validAddresses = (walletData.walletAddresses as string[]).filter((address: string) => address !== '').map((address: string) => address.toLowerCase());
+                const validAddresses = [mainWallet.address.toLowerCase()]
+                    .concat(
+                        secondaryWallets.map(wallet => wallet.address))
+                        .filter((address: string) => address !== '')
+                        .map((address: string) => address.toLowerCase()
+                    );
+
 
                 if (validAddresses.length === 0) {
                     continue;

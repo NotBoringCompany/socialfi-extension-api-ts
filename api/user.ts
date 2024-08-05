@@ -1,7 +1,7 @@
 import { ReturnValue, Status } from '../utils/retVal';
 import { createUserWallet } from '../utils/wallet';
 import { createRaft } from './raft';
-import { decryptPrivateKey, generateHashSalt, generateObjectId, generateReferralCode, generateWonderbitsDataHash } from '../utils/crypto';
+import { decryptPrivateKey, encryptPrivateKey, generateHashSalt, generateObjectId, generateReferralCode, generateWonderbitsDataHash } from '../utils/crypto';
 import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
 import { RANDOMIZE_GENDER, getBitStatsModifiersFromTraits, randomizeBitTraits, randomizeBitType } from '../utils/constants/bit';
 import { ObtainMethod } from '../models/obtainMethod';
