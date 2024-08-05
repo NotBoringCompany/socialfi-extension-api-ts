@@ -406,8 +406,16 @@ export const claimWeeklySquadMemberRewards = async (twitterId: string): Promise<
 
         console.log(`(claimWeeklySquadMemberRewards) user update operations: ${JSON.stringify(userUpdateOperations)}`);
 
-        // add the rewards to the user's inventory
-        await UserModel.updateOne({ twitterId }, userUpdateOperations);
+        // add the rewards to the user's inventory (divide to $set and $inc, $push and $pull)
+        await UserModel.updateOne({ twitterId }, {
+            $set: userUpdateOperations.$set,
+            $inc: userUpdateOperations.$inc,
+        });
+
+        await UserModel.updateOne({ twitterId }, {
+            $push: userUpdateOperations.$push,
+            $pull: userUpdateOperations.$pull
+        });
 
         // reset all the user's claimable rewards
         await SquadMemberClaimableWeeklyRewardModel.updateOne({ userId: user._id }, {
