@@ -49,8 +49,83 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
 
         const user = await UserModel.findOne({ twitterId }).lean();
         const craftItem  = getCraftItem(craftType);
-
+        var successAmount = amount;
         console.log(`You want to craft ${craftItem.type} x ${amount}`);
+
+        
+
+        //#region SuccessRate Wall
+        /** I think there should be success chances, but based on current requirement all crafting will be guaranteed success */
+
+        var baseSuccessRate = craftItem.baseSuccessChance;
+
+        /** Success Rate Should Be Affected by your crafting level i think, it will give incentives to player to increase it's crafting level more */
+        /**Comment below if you want to apply actual success chances based on the crafting item data */
+        baseSuccessRate = 100;
+
+        //baseSuccessRate = baseSuccessRate + (CraftLevel ( this should require conditional to know which crafting line are we in ) * ... * ...);
+        //baseSuccessRate = (baseSuccessRate > 100 ? 100 : baseSuccessRate);
+
+        console.log(`-----------------------====-------------------`);
+        console.log(`Try to craft ${amount}pcs of ${craftItem.type} with ${baseSuccessRate}% of success rate ..`);
+        
+        for(let i = 0 ; i < amount ; i++)
+        {
+            const rollResult = Math.floor(Math.random() * (100 + 1));
+            console.log(`Craft Success Rate : ${baseSuccessRate}%, current roll : ${rollResult}`);
+            if(rollResult <= baseSuccessRate)
+            {
+                console.log(`The craft resulting in a success`);
+            }
+            else
+            {
+                successAmount--;
+                console.log(`The craft resulting in a Failure`);
+            }
+        }
+
+        console.log(`From ${amount} of pcs you desire to craft, you success ${successAmount} times..`);
+
+        if(successAmount <= 0)
+        {
+            return {
+                status: Status.ERROR,
+                message: `(doCraft) You failed to craft ${craftItem.type}`,
+            };
+        }
+        console.log(`-----------------------====-------------------`);
+
+        //#endregion
+
+        //#region Critical Section
+        //Currently ALL ITEM'S CRITICAL CHANCE IS 0
+        var criticalRate = craftItem.baseCritChance;
+
+
+        //criticalRate = criticalRate + (craftLevel * ... * ... *... formula here)
+
+        var producedAmount = 0;
+        console.log(`-----------------------====-------------------`);
+        console.log(`Calculating Critical Production for ${successAmount}Pcs of ${craftItem.type} with ...`);
+        for(let i = 0 ; i < successAmount ; i++)
+        {
+            producedAmount++;
+            const criticalRoll = Math.floor(Math.random() * 101);
+            console.log(`Craft #${i+1} rolled in ${criticalRoll} from ${criticalRate}% Critical Rate`);
+            if(criticalRoll < criticalRate)
+            {
+                console.log(`Craft #${i+1} resulted in critical, and yielded extra result !!`);
+                producedAmount++;
+            }
+            else
+            {
+                console.log(`Craft #${i+1} does not resulted in critical, and yielded no extra result`);
+            }
+        }
+        console.log(`After Critical Procession You will get ${producedAmount}Pcs of ${craftItem.type} in final craft production !!`);
+        console.log(`-----------------------====-------------------`);
+
+        //#endregion
 
         //#region LEVEL WALL
 
@@ -78,7 +153,7 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
 
         const energyReq = craftItem.baseEnergy;
         const userEnergy = user.inGameData.energy.currentEnergy;
-        
+        console.log(`-----------------------====-------------------`);
         console.log(`${craftItem.type} requires ${energyReq} energy, You have ${userEnergy} energy`);
         if(userEnergy < energyReq)
         {
@@ -94,8 +169,34 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
         }
         const leftEnergy = userEnergy - energyReq;
         console.log(`You Have enough energy, deducting ${energyReq} now you have ${leftEnergy} left`);
-        
+        console.log(`-----------------------====-------------------`);
         //#endregion
+
+        //#region BERRY WALL
+
+        const berryReq = craftItem.berries;
+        const userBerry = user.inventory?.xCookieData.currentXCookies;
+
+        console.log(`Crafting ${craftItem.type} requires ${berryReq} berries, You have ${userBerry} berries`);
+        var berryLeft = userBerry - berryReq;
+        if(berryLeft < 0)
+        {
+            var sortBerries = berryReq - userBerry;
+            console.log(`You don't have enough berry to craft ${craftItem.type}, you have ${userBerry} in your account but you need ${berryReq}, you sort ${sortBerries}.`);
+            return {
+                status: Status.ERROR,
+                message: `(doCraft) Your Berry is not enough to Craft ${craftType}`,
+            };
+        }
+        else
+        {
+            console.log(`You have enough berry to craft ${craftItem.type} !!, deducting ${berryReq} from your ${userBerry} berries, you have ${berryLeft} berries left`);
+            userUpdateOperations.$inc[`inventory.xCookieData.currentXCookies`] = -berryReq;
+        }
+
+        console.log(`Next-->`);
+        //#endregion
+
 
         //#region Proficiency Wall
 
@@ -104,9 +205,9 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
         const reqCraftLevel = craftItem.reqCraftLevel;
         const craftAddExp = craftItem.craftExp;
         var newTotalExp = 0;
-        var newLevel = user.inGameData?.tapping.level;
+        var newLevel = user.inGameData.mastery.tapping.level;
         
-
+        console.log(`-----------------------====-------------------`);
         if(craftingLine === CraftItemLine.SMELTING)
         {
             const smeltingMastery = userMasteries.smelting.level;
@@ -121,7 +222,7 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
             }
             else
             {
-                newTotalExp = userMasteries.smelting.totalExp; + ( craftAddExp * amount );
+                newTotalExp = userMasteries.smelting.totalExp; + ( craftAddExp * producedAmount );
                 const newSmeltingLevel = SMELTING_MASTERY_LEVEL(newTotalExp);
                 newLevel = newSmeltingLevel;
                 if(newSmeltingLevel > smeltingMastery)
@@ -129,8 +230,8 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
                     console.log(`You Leveled Up !! your Smelting level Before : ${smeltingMastery} ==> ${newSmeltingLevel}`);
                     userUpdateOperations.$set[`inGameData.mastery.smelting.level`] = newSmeltingLevel;
                 }
-                console.log(`You increase your Smelting Exp by ${craftAddExp}, which makes your exp : ${newTotalExp}`);
-                userUpdateOperations.$inc[`inGameData.mastery.smelting.totalExp`] = craftAddExp;
+                console.log(`You increase your Smelting Exp by ${craftAddExp * producedAmount}, which makes your exp : ${newTotalExp}`);
+                userUpdateOperations.$inc[`inGameData.mastery.smelting.totalExp`] = craftAddExp * producedAmount;
             }
         }
         else if(craftingLine === CraftItemLine.COOKING)
@@ -147,7 +248,7 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
             }
             else
             {
-                newTotalExp = userMasteries.cooking.totalExp; + ( craftAddExp * amount );
+                newTotalExp = userMasteries.cooking.totalExp; + ( craftAddExp * producedAmount );
                 const newCookingLevel = COOKING_MASTERY_LEVEL(newTotalExp);
                 newLevel = newCookingLevel;
                 if(newCookingLevel > cookingMastery)
@@ -155,8 +256,8 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
                     console.log(`You Leveled Up !! your Cooking level Before : ${cookingMastery} ==> ${newCookingLevel}`);
                     userUpdateOperations.$set[`inGameData.mastery.cooking.level`] = newCookingLevel;
                 }
-                console.log(`You increase your Cooking Exp by ${craftAddExp}, which makes your exp : ${newTotalExp}`);
-                userUpdateOperations.$inc[`inGameData.mastery.cooking.totalExp`] = craftAddExp;
+                console.log(`You increase your Cooking Exp by ${craftAddExp * producedAmount}, which makes your exp : ${newTotalExp}`);
+                userUpdateOperations.$inc[`inGameData.mastery.cooking.totalExp`] = craftAddExp * producedAmount;
             }
         }
         else if(craftingLine === CraftItemLine.CARPENTING)
@@ -173,7 +274,7 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
             }
             else
             {
-                newTotalExp = userMasteries.carpenting.totalExp; + ( craftAddExp * amount );
+                newTotalExp = userMasteries.carpenting.totalExp; + ( craftAddExp * producedAmount );
                 const newCarpetingLevel = CARPENTING_MASTERY_LEVEL(newTotalExp);
                 newLevel = newCarpetingLevel;
                 if(newCarpetingLevel > carpentingMastery)
@@ -181,8 +282,8 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
                     console.log(`You Leveled Up !! your Carpenting level Before : ${carpentingMastery} ==> ${newCarpetingLevel}`);
                     userUpdateOperations.$set[`inGameData.mastery.carpenting.level`] = newCarpetingLevel;
                 }
-                console.log(`You increase your Carpenting Exp by ${craftAddExp}, which makes your exp : ${newTotalExp}`);
-                userUpdateOperations.$inc[`inGameData.mastery.carpenting.totalExp`] = craftAddExp;
+                console.log(`You increase your Carpenting Exp by ${craftAddExp * producedAmount}, which makes your exp : ${newTotalExp}`);
+                userUpdateOperations.$inc[`inGameData.mastery.carpenting.totalExp`] = craftAddExp * producedAmount;
             }
         }
         else
@@ -199,35 +300,35 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
             }
             else
             {
-                newTotalExp = userMasteries.tailoring.totalExp; + ( craftAddExp * amount );
+                newTotalExp = userMasteries.tailoring.totalExp; + ( craftAddExp * producedAmount );
                 const newTailoringLevel = TAILORING_MASTERY_LEVEL(newTotalExp);
                 newLevel = newTailoringLevel;
                 if(newTailoringLevel > tailoringMastery)
                 {
                     console.log(`You Leveled Up !! your Tailoring level Before : ${tailoringMastery} ==> ${newTailoringLevel}`);
-                    userUpdateOperations.$set[`inGameData.mastery.carpenting.level`] = newTailoringLevel;
+                    userUpdateOperations.$set[`inGameData.mastery.tailoring.level`] = newTailoringLevel;
                 }
-                console.log(`You increase your Tailoring Exp by ${craftAddExp}, which makes your exp : ${newTotalExp}`);
-                userUpdateOperations.$inc[`inGameData.mastery.tailoring.totalExp`] = craftAddExp;
+                console.log(`You increase your Tailoring Exp by ${craftAddExp * producedAmount}, which makes your exp : ${newTotalExp} from ${userMasteries.tailoring.totalExp}`);
+                userUpdateOperations.$inc[`inGameData.mastery.tailoring.totalExp`] = craftAddExp * producedAmount;
             }
         }
             
         console.log(`Your are proficient enough to craft ${craftItem.type} !`);
-
+        console.log(`-----------------------====-------------------`);
         //#endregion
 
         //#region Catalyst Wall
 
         const userResources = user.inventory.resources;
         const requiredResources = craftItem.catalyst;
-
+        console.log(`-----------------------====-------------------`);
         console.log(`You have ${userResources.length} Resources : `);
         for(let i = 0 ; i < userResources.length ; i++)
         {
             
             console.log(`${i+1}. ${userResources[i].type} x ${userResources[i].amount}`);
         }
-
+        console.log(`-----------------------====-------------------`);
         var updatedResourceCount = new Array();
         for(let i = 0 ; i < requiredResources.length; i++)
         {
@@ -238,10 +339,10 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
             if(searchResult !== undefined)
             {
                 console.log(`${res} Found ! you have x${searchResult.amount}pcs of them`);
-                if(searchResult.amount >= (requiredResources[i].amount * amount))
+                if(searchResult.amount >= (requiredResources[i].amount * producedAmount))
                 {
-                    var updatedResourceAmount = searchResult.amount - requiredResources[i].amount;
-                    updatedResourceCount.push({type:searchResult.type, amount: updatedResourceAmount, before: searchResult.amount, required: requiredResources[i].amount});
+                    var updatedResourceAmount = searchResult.amount - (requiredResources[i].amount * producedAmount);
+                    updatedResourceCount.push({type:searchResult.type, amount: updatedResourceAmount, before: searchResult.amount, required: requiredResources[i].amount * producedAmount});
                 }
                 else
                 {
@@ -261,7 +362,7 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
                 };
             }
         }
-
+        console.log(`-----------------------====-------------------`);
         
         const craftResourceResult = getResource(craftItem.type);
         const craftResultWeight = craftResourceResult.weight;
@@ -269,19 +370,23 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
         const uWeight = user.inventory.weight;
         const maxWeight = user.inventory.maxWeight;
 
+        //#endregion
+
         //#region Weight Wall
 
         for(let i = 0 ; i < updatedResourceCount.length ; i++)
         {
             var uResWeight = getResourceWeight(updatedResourceCount[i].type);
-            uResWeight *= updatedResourceCount[i].amount;
-            requiredResourceTotalWeight += uResWeight;
+            
+            //uResWeight *= updatedResourceCount[i].amount;
+            requiredResourceTotalWeight += (uResWeight * updatedResourceCount[i].required);
+            console.log(`UresWeight : ${uResWeight} x ${updatedResourceCount[i].required } totaling in : ${uResWeight * updatedResourceCount[i].required}`);
         }
 
-        console.log(`Your Current Weight : ${uWeight}, Required Resource for This Craft's Weight : ${requiredResourceTotalWeight}, Crafted Item's Weight : ${(craftResultWeight * amount)}`);
+        console.log(`Your Current Weight : ${uWeight}, Required Resource for This Craft's Weight : ${requiredResourceTotalWeight}, Crafted Item's Weight : ${(craftResultWeight * producedAmount)}`);
 
 
-        const resultWeight = uWeight - requiredResourceTotalWeight + (craftResultWeight * amount);
+        const resultWeight = uWeight - requiredResourceTotalWeight + (craftResultWeight * producedAmount);
         if(resultWeight > maxWeight)
         {
             console.log(`(doCraft) Weight Limit Exceeded (${resultWeight})`);
@@ -293,25 +398,7 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
 
         //#endregion
 
-        const iResIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(resource => resource.type === craftItem.type);
-        var finalCraftResultWeight = craftResultWeight * amount;
-        var finalCostWeight = - requiredResourceTotalWeight + (finalCraftResultWeight);
         
-
-        
-
-        console.log(`Crafting Successful ! Resulting in : ${craftItem.type} adding ${craftResultWeight} kg of weight, Consuming : `);
-        for(let i = 0 ; i < updatedResourceCount.length ; i++)
-        {
-            const uResIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(resource => resource.type === updatedResourceCount[i].type);
-            var uResWeight = getResourceWeight(updatedResourceCount[i].type);
-            userUpdateOperations.$inc[`inventory.resources.${uResIndex}.amount`] = -updatedResourceCount[i].required;
-            // userUpdateOperations.$inc[`inventory.weight`] = -(uResWeight * amount);
-            console.log(`${updatedResourceCount[i].type} x ${updatedResourceCount[i].required}, reducing from before : ${updatedResourceCount[i].before}, You have ${updatedResourceCount[i].amount} left`);
-        }
-        
-        userUpdateOperations.$inc[`inventory.resources.${iResIndex}.amount`] = amount;
-        userUpdateOperations.$inc[`inventory.weight`] = finalCostWeight;
         
         // for(let i = 0 ; i < requiredResources.length ; i++)
         // {
@@ -321,8 +408,46 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
         // }
 
 
+        //#region RESULT AND CRIT buff
+
+
+        const iResIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(resource => resource.type === craftItem.type);
+        var finalCraftResultWeight = craftResultWeight * producedAmount;
+        var finalCostWeight = - requiredResourceTotalWeight + (finalCraftResultWeight);
+        
+
+        
+        console.log(`-----------------------====-------------------`);
+        console.log(`Crafting Successful ! Resulting in : ${producedAmount} x ${craftItem.type} adding ${craftResultWeight * producedAmount} kg of weight, Consuming : `);
+        for(let i = 0 ; i < updatedResourceCount.length ; i++)
+        {
+            const uResIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(resource => resource.type === updatedResourceCount[i].type);
+            var uResWeight = getResourceWeight(updatedResourceCount[i].type);
+            userUpdateOperations.$inc[`inventory.resources.${uResIndex}.amount`] = -updatedResourceCount[i].required;
+            // userUpdateOperations.$inc[`inventory.weight`] = -(uResWeight * amount);
+            console.log(`${updatedResourceCount[i].type} x ${updatedResourceCount[i].required}, reducing from before : ${updatedResourceCount[i].before}, You have ${updatedResourceCount[i].amount} left`);
+        }
+        
+        console.log(`Final Cost Weight : ${finalCostWeight}`);
+
+        userUpdateOperations.$inc[`inventory.resources.${iResIndex}.amount`] = producedAmount;
+        userUpdateOperations.$inc[`inventory.weight`] = finalCostWeight;
+        console.log(`-----------------------====-------------------`);
+        //#endregion
         
         
+
+        //#endregion
+
+
+        
+
+        //#region Critical Buff
+
+        //#endregion
+
+        // Dont Forget to Return CRAFT TYPE | AND EXP GAINED
+
         await UserModel.updateOne({ _id: user._id }, userUpdateOperations);
         
         return {
@@ -330,15 +455,11 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
             message: `(doCraft) Craft Item Success!!`,
             data: {
                 "craftItem": craftItem,
-                "amount": amount,
+                "amount": producedAmount,
                 "newLevel": newLevel,
                 "newTotalExp": newTotalExp
             }
         }
-
-        //#endregion
-
-        // Dont Forget to Return CRAFT TYPE | AND EXP GAINED
     } catch (err: any) {
         return {
             status: Status.ERROR,
@@ -593,7 +714,7 @@ export const UpdateUserMastery = async (twitterId: string) => {
 };
 //CheckUserMastery("1929832297");
 //UpdateUserMastery("1929832297");
-//doCraft("1929832297", OreResource.SILVER);
+doCraft("1929832297", OreResource.SILVER, 5);
 //getCraftableRecipesByResources("1929832297");
-getAllCraftingRecipes();
+//getAllCraftingRecipes();
 //getCraftingRecipe(LiquidResource.MAPLE_SYRUP);
