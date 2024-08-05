@@ -53,7 +53,7 @@ import setting from './routes/setting';
 import poap from './routes/poap';
 import squadLeaderboard from './routes/squadLeaderboard';
 import weeklyMVPReward from './routes/weeklyMVPReward';
-import collabV2 from './routes/collab_v2';
+import collab from './routes/collab';
 import { schedulers } from './schedulers/schedulers';
 import { checkMaintenance } from './middlewares/maintenance';
 
@@ -82,7 +82,7 @@ app.use('/setting', setting);
 app.use('/poap', checkMaintenance, poap);
 app.use('/squad_leaderboard', checkMaintenance, squadLeaderboard);
 app.use('/weekly_mvp_reward', checkMaintenance, weeklyMVPReward);
-app.use('/collab', checkMaintenance, collabV2);
+app.use('/collab', checkMaintenance, collab);
 
 app.listen(port, async () => {
     console.log(`Server running on port ${port}`);
