@@ -117,8 +117,7 @@ export const calculateWeeklySquadRankingAndGiveRewards = async (): Promise<void>
             }
         }> = [];
 
-        // prepare bulk write operations to update all squads' ranks
-        squads.map(async (squad) => {
+        for (const squad of squads) {
             // find the squad in the latest squad leaderboard
             const squadInLeaderboard = latestSquadLeaderboard.pointsData.find((squadData) => squadData.squadId === squad._id);
 
@@ -202,7 +201,7 @@ export const calculateWeeklySquadRankingAndGiveRewards = async (): Promise<void>
 
                         console.log(`(calculateWeeklySquadRankingAndGiveRewards) Created a new SquadMemberClaimableWeeklyReward instance for ${leader.username}.`);
                     } else {
-                        leaderRewards.forEach((leaderReward) => {
+                        for (const leaderReward of leaderRewards) {
                             const rewardIndex = squadMemberClaimableWeeklyRewards[leaderIndex].claimableRewards.findIndex((reward: SquadReward) => reward.type === leaderReward.type);
 
                             if (rewardIndex === -1) {
@@ -230,13 +229,15 @@ export const calculateWeeklySquadRankingAndGiveRewards = async (): Promise<void>
                                     }
                                 });
                             }
-                        });
+                        }
                     }
                 }
 
                 // add the members' rewards
                 if (memberRewards.length > 0) {
-                    members.forEach(async (member) => {
+                    console.log(`member rewards GREATER THAN 0!: ${JSON.stringify(memberRewards)}`);
+
+                    for (const member of members) {
                         // check if the member is already in the `squadMemberClaimableWeeklyRewards` array
                         // if not, add the member to the array
                         // if they do, check, for each item, if the reward type already exists. If it does, add the amount to the existing reward.
@@ -284,13 +285,13 @@ export const calculateWeeklySquadRankingAndGiveRewards = async (): Promise<void>
                                 }
                             });
                         }
-                    });
+                    }
                 }
             }
-        });
+        }
 
-        // console.log('squad member claimable weekly rewards update operations:', squadMemberClaimableWeeklyRewardsUpdateOperations);
-        // console.log('squad update operations:', squadUpdateOperations[0]);
+        console.log('squad member claimable weekly rewards update operations:', squadMemberClaimableWeeklyRewardsUpdateOperations);
+        console.log('squad update operations:', squadUpdateOperations[0]);
 
         const squadMemberClaimableWeeklyRewardsUpdatePromises = 
             squadMemberClaimableWeeklyRewardsUpdateOperations.length > 0 && squadMemberClaimableWeeklyRewardsUpdateOperations.map(async op => {
