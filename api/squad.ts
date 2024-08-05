@@ -1070,7 +1070,7 @@ export const delegateLeadership = async (currentLeaderTwitterId: string, newLead
 }
 
 /**
- * Adds a co-leader leader into the squad. Only callable by a squad leader.
+ * Adds a co-leader into the squad. Only callable by a squad leader.
  */
 export const addCoLeader = async (leaderTwitterId: string, newCoLeaderTwitterId: string, newCoLeaderUserId: string = ''): Promise<ReturnValue> => {
     try {
@@ -1169,6 +1169,97 @@ export const addCoLeader = async (leaderTwitterId: string, newCoLeaderTwitterId:
         return {
             status: Status.ERROR,
             message: `(addCoLeader) ${err.message}`
+        }
+    }
+}
+
+/**
+ * Remove a co-leader from the squad. Only callable by a squad leader.
+ */
+export const removeCoLeader = async (leaderTwitterId: string, coLeaderTwitterId: string, coLeaderUserId: string = ''): Promise<ReturnValue> => {
+    try {
+        const [leader, coLeader] = await Promise.all([
+            UserModel.findOne({ twitterId: leaderTwitterId }).lean(),
+            UserModel.findOne({ $or: [{ twitterId: coLeaderTwitterId }, { _id: coLeaderUserId }] }).lean()
+        ]);
+
+        if (!leader) {
+            return {
+                status: Status.ERROR,
+                message: `(removeCoLeader) Leader not found.`
+            }
+        }
+
+        if (!coLeader) {
+            return {
+                status: Status.ERROR,
+                message: `(removeCoLeader) Co-leader not found.`
+            }
+        }
+
+        // check if the leader is in a squad.
+        if (leader.inGameData.squadId === null) {
+            return {
+                status: Status.ERROR,
+                message: `(removeCoLeader) Leader is not in a squad.`
+            }
+        }
+
+        // check if the leader is a squad leader.
+        const squad = await SquadModel.findOne({ _id: leader.inGameData.squadId });
+
+        if (!squad) {
+            return {
+                status: Status.ERROR,
+                message: `(removeCoLeader) Squad not found.`
+            }
+        }
+
+        if (squad.members.find(member => member.userId === leader._id)?.role !== SquadRole.LEADER) {
+            return {
+                status: Status.ERROR,
+                message: `(removeCoLeader) User is not a squad leader for the given squad.`
+            }
+        }
+
+        // check if the co-leader is in the squad.
+        if (!squad.members.find(member => member.userId === coLeader._id)) {
+            return {
+                status: Status.ERROR,
+                message: `(removeCoLeader) New co-leader is not in the squad.`
+            }
+        }
+
+        // check if the co-leader is leader or member in current squad.
+        if (squad.members.find(member => member.userId === coLeader._id)?.role !== SquadRole.CO_LEADER) {
+            return {
+                status: Status.ERROR,
+                message: `(removeCoLeader) member ID: ${coLeader._id} is not a squad co-leader.`
+            }
+        }
+
+        // Demote this co-leader role into member.
+        const coLeaderIndex = squad.members.findIndex(member => member.userId === coLeader._id);
+
+        await SquadModel.updateOne({ _id: squad._id }, {
+            $set: {
+                [`members.${coLeaderIndex}.role`]: SquadRole.MEMBER,
+                [`members.${coLeaderIndex}.roleUpdatedTimestamp`]: Math.floor(Date.now() / 1000)
+            }
+        });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(removeCoLeader) remove co-leader successfully.`,
+            data: {
+                squadId: squad._id,
+                newCoLeaderId: coLeader._id
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(removeCoLeader) ${err.message}`
         }
     }
 }

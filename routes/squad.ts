@@ -1,7 +1,7 @@
 import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
-import { acceptPendingSquadMember, addCoLeader, checkSquadCreationMethodAndCost, createSquad, declinePendingSquadMember, delegateLeadership, getAllSquadData, getLatestSquadWeeklyRanking, getSquadData, getSquadMemberData, kickMember, leaveSquad, renameSquad, requestToJoinSquad, squadKOSData, upgradeSquadLimit } from '../api/squad';
+import { acceptPendingSquadMember, addCoLeader, checkSquadCreationMethodAndCost, createSquad, declinePendingSquadMember, delegateLeadership, getAllSquadData, getLatestSquadWeeklyRanking, getSquadData, getSquadMemberData, kickMember, leaveSquad, removeCoLeader, renameSquad, requestToJoinSquad, squadKOSData, upgradeSquadLimit } from '../api/squad';
 import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 import { authMiddleware } from '../middlewares/auth';
 import { getMainWallet } from '../api/user';
@@ -264,6 +264,34 @@ router.post('/add_co_leader', async (req, res) => {
         }
 
         const { status, message, data } = await addCoLeader(validateData?.twitterId, newCoLeaderTwitterId, newCoLeaderUserId);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
+
+router.post('/remove_co_leader', async (req, res) => {
+    const { newCoLeaderTwitterId, newCoLeaderUserId } = req.body;
+
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'remove_co_leader');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
+        const { status, message, data } = await removeCoLeader(validateData?.twitterId, newCoLeaderTwitterId, newCoLeaderUserId);
 
         return res.status(status).json({
             status,
