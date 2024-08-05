@@ -314,8 +314,6 @@ export const calculateWeeklySquadRankingAndGiveRewards = async (): Promise<void>
     }
 }
 
-calculateWeeklySquadRankingAndGiveRewards();
-
 /**
  * Claims the squad member rewards each week if they are eligible.
  */
@@ -376,8 +374,6 @@ export const claimWeeklySquadMemberRewards = async (twitterId: string): Promise<
                 // if it does, add the amount to the existing reward. if not, add the reward to the user's inventory's `items`.
                 const itemIndex = (user.inventory?.items as Item[]).findIndex((item) => item.type === reward.type as string);
 
-                console.log(`(claimWeeklySquadMemberRewards) item index: ${itemIndex}`);
-
                 if (itemIndex === -1) {
                     userUpdateOperations.$push['inventory.items'] = {
                         type: reward.type,
@@ -395,15 +391,13 @@ export const claimWeeklySquadMemberRewards = async (twitterId: string): Promise<
                 // if it does, add the amount to the existing reward. if not, add the reward to the user's inventory's `food`.
                 const foodIndex = (user.inventory?.foods as Food[]).findIndex((food) => food.type === reward.type as string);
 
-                console.log(`(claimWeeklySquadMemberRewards) food index: ${foodIndex}`);
-
                 if (foodIndex === -1) {
-                    userUpdateOperations.$push['inventory.food'] = {
+                    userUpdateOperations.$push['inventory.foods'] = {
                         type: reward.type,
                         amount: reward.amount,
                     }
                 } else {
-                    userUpdateOperations.$inc[`inventory.food.${foodIndex}.amount`] = reward.amount;
+                    userUpdateOperations.$inc[`inventory.foods.${foodIndex}.amount`] = reward.amount;
                 }
             }
         }
