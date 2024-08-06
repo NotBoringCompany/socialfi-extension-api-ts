@@ -8,10 +8,11 @@ import { UserWallet } from '../models/user';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { REDEEM_POAP_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { incrementEventCounterInContract } from '../api/web3';
+import { authMiddleware } from '../middlewares/auth';
 
 const router = express.Router();
 
-router.post('/add_poap', async (req, res) => {
+router.post('/add_poap', authMiddleware(3), async (req, res) => {
     try {
         const { status, message, data } = await addPOAP(req.body);
 
