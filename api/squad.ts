@@ -1546,14 +1546,20 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
             }
         }
 
+        // fetch all leaderboards
         const leaderboards = await LeaderboardModel.find().lean();
+        // get the latest leaderboard
         const latestLeaderboard = leaderboards[leaderboards.length - 1];
+        // sort the latest leaderboard based on points.
+        // this will be used to determine the current season rank of each member.
         const sortedLeaderboardUserData = latestLeaderboard.userData.sort((a, b) => {
             const aTotalPoints = a.pointsData?.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0);
             const bTotalPoints = b.pointsData?.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0);
             return bTotalPoints - aTotalPoints;
         });
 
+        // fetch all explicit ownerships of KOS.
+        // ID from 1 to 5000
         const { status, message, data } = await explicitOwnershipsOfKOS(Array.from({ length: 5000 }, (_, i) => i + 1));
 
         if (status !== Status.SUCCESS) {
@@ -1564,6 +1570,7 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
         }
 
         const explicitOwnerships = data?.keyOwnerships ?? [];
+        // map all user IDs of the squad members and pending members.
         const userIds = [...squad.members, ...squad.pendingMembers].map(member => member.userId);
         const userData = await UserModel.find({ _id: { $in: userIds } }).lean();
 
@@ -1571,7 +1578,7 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
             return userData.find(user => user._id === userId);
         }
 
-        const getMemberData = (member, isPending: boolean) => {
+        const getMemberData = (member: any, isPending: boolean) => {
             const memberData = getUserData(member.userId);
 
             if (!memberData) {
@@ -1581,11 +1588,12 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
 
             const inGameLevel = memberData.inGameData?.level ?? 1;
             const userIndex = sortedLeaderboardUserData.findIndex(data => data.userId === member.userId);
+            // fetch the total points of the user from the leaderboard APART FROM the points earned from levelling up.
             const totalLeaderboardPoints = sortedLeaderboardUserData[userIndex]?.pointsData.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0) ?? 0;
             const currentSeasonRank = userIndex + 1;
             const walletAddresses = [memberData.wallet?.address, ...(memberData.secondaryWallets?.map(wallet => wallet.address) || [])].filter(Boolean).map(address => address.toLowerCase());
 
-            const kosCount = explicitOwnerships.filter(ownership => walletAddresses.includes(ownership.owner.toLowerCase())).length;
+            const kosCount = explicitOwnerships.filter((ownership: KOSExplicitOwnership) => walletAddresses.includes(ownership.owner.toLowerCase())).length;
 
             const baseData = {
                 userId: member.userId,
@@ -1600,8 +1608,8 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
             return isPending ? baseData : { ...baseData, role: member.role };
         }
 
-        const currentMemberData = squad.members.map(member => getMemberData(member, false)).filter(Boolean);
-        const pendingMemberData = squad.pendingMembers.map(member => getMemberData(member, true)).filter(Boolean);
+        const currentMemberData = (squad.members as SquadMember[]).map(member => getMemberData(member, false)).filter(Boolean);
+        const pendingMemberData = (squad.pendingMembers as PendingSquadMember[]).map(member => getMemberData(member, true)).filter(Boolean);
 
         return {
             status: Status.SUCCESS,
@@ -1611,219 +1619,6 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
                 pendingMembers: pendingMemberData
             }
         }
-
-        // const currentMemberData: Array<{
-        //     userId: string
-        //     username: string;
-        //     profilePicture: string;
-        //     inGameLevel: number;
-        //     totalPoints: number;
-        //     currentSeasonRank: number;
-        //     kosCount: number;
-        //     role: SquadRole;
-        // }> = [];
-
-        // const pendingMemberData: Array<{
-        //     userId: string
-        //     username: string;
-        //     profilePicture: string;
-        //     inGameLevel: number;
-        //     totalPoints: number;
-        //     currentSeasonRank: number;
-        //     kosCount: number;
-        // }> = [];
-
-        // const leaderboards: Leaderboard[] = await LeaderboardModel.find().lean();
-
-        // // fetch all explicit ownerships of keys
-        // // ID from 1 to 5000
-        // const { status, message, data } = await explicitOwnershipsOfKOS(Array.from({ length: 5000 }, (_, i) => i + 1));
-
-        // if (status !== Status.SUCCESS) {
-        //     return {
-        //         status,
-        //         message: `(getPendingSquadMemberData) Error from explicitOwnershipsOfKOS: ${message}`
-        //     }
-        // }
-
-        // const explicitOwnerships: KOSExplicitOwnership[] = data?.keyOwnerships ?? [];
-
-        // // get both member and pending member data via their user ids; query via user model.
-        // const userIds = squad.members.map(member => {
-        //     return member.userId;
-        // })
-        // const pendingUserIds = squad.pendingMembers.map(member => {
-        //     return member.userId;
-        // })
-
-        // const userData = await UserModel.find({ _id: { $in: userIds.concat(pendingUserIds) } }).lean();
-
-        // // to get the latest leaderboard data, fetch the last index leaderboard. this will be used to get the current season rank (i.e. the rank from the current season leaderboard)
-        // const sortedLeaderboardUserData = leaderboards[leaderboards.length - 1].userData.sort((a, b) => {
-        //     const aTotalPoints = a.pointsData?.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0);
-        //     const bTotalPoints = b.pointsData?.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0);
-
-        //     return bTotalPoints - aTotalPoints;
-        // })
-
-        // if (squad.members.length > 0) {
-        //     for (const member of squad.members) {
-        //         // find the userData that has the member's user id
-        //         const memberData = userData.find(user => user._id === member.userId);
-
-        //         if (!memberData) {
-        //             console.log(`(getSquadMemberData) Member data not found for user ID: ${member.userId}`);
-        //             continue;
-        //         }
-
-        //         const inGameLevel = memberData.inGameData?.level as number ?? 1;
-
-        //         // get the user's leaderboard points (excl. additional points)
-        //         let totalLeaderboardPoints = 0;
-
-        //         // get the user's season rank
-        //         let currentSeasonRank: number = 0;
-
-        //         // get the user's leaderboard points. its index + 1 is the rank.
-        //         const userIndex = sortedLeaderboardUserData.findIndex(data => data.userId === member.userId);
-        //         totalLeaderboardPoints = sortedLeaderboardUserData[userIndex].pointsData?.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0);
-
-        //         // get the user's latest season rank (which is the user's index + 1).
-        //         currentSeasonRank = userIndex + 1;
-
-        //         // get the user's KOS count. loop through `explicitOwnerships` and count the number of KOS they own.
-        //         // first, get the user's wallet addresses (both main and secondary)
-        //         const walletAddresses: string[] = [];
-
-        //         // add the main wallet
-        //         walletAddresses.push(memberData.wallet?.address ?? '');
-
-        //         // loop through `secondaryWallets` assuming length is not 0 and add each wallet.
-        //         if (memberData.secondaryWallets && memberData.secondaryWallets.length > 0) {
-        //             for (const secondaryWallet of memberData.secondaryWallets) {
-        //                 walletAddresses.push(secondaryWallet.address);
-        //             }
-        //         }
-
-        //         const validAddresses = walletAddresses.filter((address: string) => address !== '').map((address: string) => address.toLowerCase());
-
-        //         if (validAddresses.length === 0) {
-        //             currentMemberData.push({
-        //                 userId: member.userId,
-        //                 username: memberData.twitterUsername,
-        //                 profilePicture: memberData.twitterProfilePicture,
-        //                 inGameLevel,
-        //                 totalPoints: totalLeaderboardPoints,
-        //                 currentSeasonRank,
-        //                 kosCount: 0,
-        //                 role: member.role as SquadRole
-        //             })
-        //         }
-
-        //         // get the KOS count of the user.
-        //         let kosCount = 0;
-
-        //         for (const keyOwnership of explicitOwnerships) {
-        //             if (validAddresses.includes(keyOwnership.owner.toLowerCase())) {
-        //                 kosCount++;
-        //             }
-        //         }
-
-        //         currentMemberData.push({
-        //             userId: member.userId,
-        //             username: memberData.twitterUsername,
-        //             profilePicture: memberData.twitterProfilePicture,
-        //             inGameLevel,
-        //             totalPoints: totalLeaderboardPoints,
-        //             currentSeasonRank,
-        //             kosCount,
-        //             role: member.role as SquadRole
-        //         });
-        //     }
-        // }
-
-        // if (squad.pendingMembers.length > 0) {
-        //     for (const pendingMember of squad.pendingMembers) {
-        //         // find the userData that has the member's user id
-        //         const memberData = userData.find(user => user._id === pendingMember.userId);
-
-        //         if (!memberData) {
-        //             console.log(`(getSquadMemberData) Member data not found for pending user ID: ${pendingMember.userId}`);
-        //             continue;
-        //         }
-
-        //         const inGameLevel = memberData.inGameData?.level as number ?? 1;
-
-        //         // get the user's leaderboard points (excl. additional points)
-        //         let totalLeaderboardPoints = 0;
-
-        //         // get the user's season rank
-        //         let currentSeasonRank: number = 0;
-
-        //         // get the user's leaderboard points. its index + 1 is the rank.
-        //         const userIndex = sortedLeaderboardUserData.findIndex(data => data.userId === pendingMember.userId);
-        //         totalLeaderboardPoints = sortedLeaderboardUserData[userIndex].pointsData.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0);
-
-        //         // get the user's latest season rank (which is the user's index + 1).
-        //         currentSeasonRank = userIndex + 1;
-
-        //         // get the user's KOS count. loop through `explicitOwnerships` and count the number of KOS they own.
-        //         // first, get the user's wallet addresses (both main and secondary)
-        //         const walletAddresses: string[] = [];
-
-        //         // add the main wallet
-        //         walletAddresses.push(memberData.wallet?.address ?? '');
-
-        //         // loop through `secondaryWallets` assuming length is not 0 and add each wallet.
-        //         if (memberData.secondaryWallets && memberData.secondaryWallets.length > 0) {
-        //             for (const secondaryWallet of memberData.secondaryWallets) {
-        //                 walletAddresses.push(secondaryWallet.address);
-        //             }
-        //         }
-
-        //         const validAddresses = walletAddresses.filter((address: string) => address !== '').map((address: string) => address.toLowerCase());
-
-        //         if (validAddresses.length === 0) {
-        //             pendingMemberData.push({
-        //                 userId: pendingMember.userId,
-        //                 username: memberData.twitterUsername,
-        //                 profilePicture: memberData.twitterProfilePicture,
-        //                 inGameLevel,
-        //                 totalPoints: totalLeaderboardPoints,
-        //                 currentSeasonRank,
-        //                 kosCount: 0,
-        //             })
-        //         }
-
-        //         // get the KOS count of the user.
-        //         let kosCount = 0;
-
-        //         for (const keyOwnership of explicitOwnerships) {
-        //             if (validAddresses.includes(keyOwnership.owner.toLowerCase())) {
-        //                 kosCount++;
-        //             }
-        //         }
-
-        //         pendingMemberData.push({
-        //             userId: pendingMember.userId,
-        //             username: memberData.twitterUsername,
-        //             profilePicture: memberData.twitterProfilePicture,
-        //             inGameLevel,
-        //             totalPoints: totalLeaderboardPoints,
-        //             currentSeasonRank,
-        //             kosCount
-        //         });
-        //     }
-        // }
-
-        // return {
-        //     status: Status.SUCCESS,
-        //     message: `(getSquadMemberData) Got squad member data successfully.`,
-        //     data: {
-        //         currentMembers: currentMemberData,
-        //         pendingMembers: pendingMemberData
-        //     }
-        // }
     } catch (err: any) {
         return {
             status: Status.ERROR,
