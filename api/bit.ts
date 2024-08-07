@@ -575,7 +575,7 @@ export const feedBit = async (twitterId: string, bitId: number, foodType: FoodTy
 /**
  * Depletes all bits' energies by calculating their energy depletion rate.
  *
- * Called by a scheduler every 5 minutes.
+ * Called by a scheduler every 15 minutes.
  */
 export const depleteEnergy = async (): Promise<void> => {
     try {
@@ -600,8 +600,8 @@ export const depleteEnergy = async (): Promise<void> => {
             // get bit's current energy
             const currentEnergy = bit.farmingStats?.currentEnergy;
 
-            // get the bit's energy depletion rate and divide it by 12 to get the depletion rate every 5 minutes
-            const baseDepletionRate = bit.farmingStats?.currentEnergyDepletionRate / 12;
+            // get the bit's energy depletion rate and divide it by 4 to get the depletion rate every 15 minutes
+            const baseDepletionRate = bit.farmingStats?.currentEnergyDepletionRate / 4;
 
             // get (if applicable) the bit's energy rate modifiers. multiply the value to get the final depletion rate
             const energyRateModifiers = bit.bitStatsModifiers?.energyRateModifiers as Modifier[];
