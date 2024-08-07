@@ -421,6 +421,13 @@ export const claimCollabReward = async (twitterId: string): Promise<ReturnValue>
             };
         }
 
+        if (!user.twitterUsername) {
+            return {
+                status: Status.ERROR,
+                message: `(claimCollabReward) Participant not found.`,
+            };
+        }
+
         // update this to findAll
         const participants = await CollabParticipantModel.find({
             twitterUsername: { $regex: new RegExp(user.twitterUsername, 'i') },
