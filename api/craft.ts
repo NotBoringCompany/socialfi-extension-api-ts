@@ -419,14 +419,10 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
         if(iResIndex === -1)
         {
             console.log(`${craftItem.type} is not in your inventory, creating one right now...`);
-            userUpdateOperations.$push[`inventory.resources`] = { 
-                
-                type: newResourceData.type,
-                line: newResourceData.line,
-                rarity: newResourceData.rarity,
-                weight: newResourceData.weight, 
+            userUpdateOperations.$push[`inventory.resources`] = {
+                ...newResourceData,
+                origin: ExtendedResourceOrigin.NORMAL,
                 amount: producedAmount, 
-                origin: ExtendedResourceOrigin.NORMAL 
             };
             console.log(`${craftItem.type} is not in your inventory, creating one right now in the DB`);
         }
