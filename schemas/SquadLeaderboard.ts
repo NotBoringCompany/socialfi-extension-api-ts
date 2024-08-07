@@ -9,7 +9,10 @@ export const SquadLeaderboardSchema = new mongoose.Schema({
         type: String,
         default: generateObjectId()
     },
-    week: Number,
+    week: {
+        type: Number,
+        index: true
+    },
     pointsData: [{
         squadId: String,
         squadName: String,
