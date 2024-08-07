@@ -381,6 +381,7 @@ export const getWalletDetails = async (twitterId: string): Promise<ReturnValue> 
         const user = await UserModel.findOne({ twitterId }).lean();
 
         if (!user) {
+            console.log(`nah`);
             return {
                 status: Status.ERROR,
                 message: `(getWalletDetails) User not found.`,
@@ -392,16 +393,19 @@ export const getWalletDetails = async (twitterId: string): Promise<ReturnValue> 
             message: `(getWalletDetails) Wallet details fetched.`,
             data: {
                 address: user.wallet.address,
-                privateKey: decryptPrivateKey(user.wallet.privateKey),
+                privateKey: decryptPrivateKey(user.wallet.encryptedPrivateKey),
             },
         };
     } catch (err: any) {
+        console.log(`error here: ${err}`);
         return {
             status: Status.ERROR,
             message: `(getWalletDetails) ${err.message}`,
         };
     }
 };
+
+getWalletDetails('1462755469102137357');
 
 /**
  * Gets the user's in-game data.
