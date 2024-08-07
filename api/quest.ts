@@ -752,6 +752,15 @@ export const checkQuestRequirements = async (twitterId: string, questId: number)
                         };
                     }
                     break;
+                case QuestRequirementType.JOIN_SQUAD:
+                    if (!user.inGameData.squadId) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(checkQuestRequirement) User has not fulfilled the quest requirements.`,
+                        };
+                    }
+
+                    break;
                 default:
                     if (quest.type !== QuestType.PROGRESSION) break;
 
