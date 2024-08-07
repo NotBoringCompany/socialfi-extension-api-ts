@@ -176,7 +176,7 @@ export const sendKICKUponRegistration = async (walletAddress: string): Promise<R
 /**
  * Gives users some KICK when their KICK is running low (i.e. < 0.15 KICK).
  * 
- * Runs every 10 minutes.
+ * Runs every hour.
  */
 export const batchSendKICK = async (): Promise<void> => {
     try {
