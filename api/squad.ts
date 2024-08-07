@@ -1427,29 +1427,12 @@ export const getSquadData = async (squadId?: string): Promise<ReturnValue> => {
  */
 export const squadKOSData = async (twitterId: string): Promise<ReturnValue> => {
     try {
-        const [users, ownershipResponse] = await Promise.all([
-            UserModel.find().lean(),
-            // fetch all explicit ownerships of KOS.
-            // ID from 1 to 5000
-            explicitOwnershipsOfKOS(Array.from({ length: 5000 }, (_, i) => i + 1))
-        ]);
-
-        const explicitOwnerships = ownershipResponse.data?.keyOwnerships ?? [];
-
-        if (!users || users.length === 0) {
-            return {
-                status: Status.ERROR,
-                message: `(squadKOSData) Users not found.`
-            }
-        }
-
-        // find the user data with the `twitterId` given
-        const user = users.find(user => user.twitterId === twitterId);
+        const user = await UserModel.findOne({ twitterId }).lean();
 
         if (!user) {
             return {
                 status: Status.ERROR,
-                message: `(squadKOSData) User not found.`
+                message: `(squadKOSCount) User not found.`
             }
         }
 
@@ -1457,7 +1440,7 @@ export const squadKOSData = async (twitterId: string): Promise<ReturnValue> => {
         if (user.inGameData.squadId === null) {
             return {
                 status: Status.SUCCESS,
-                message: `(squadKOSData) User is not in a squad.`,
+                message: `(squadKOSCount) User is not in a squad.`,
                 data: {
                     totalSquadKOSCount: 0,
                     individualKOSCounts: []
@@ -1471,36 +1454,42 @@ export const squadKOSData = async (twitterId: string): Promise<ReturnValue> => {
         if (!squad) {
             return {
                 status: Status.ERROR,
-                message: `(squadKOSData) Squad not found.`
+                message: `(squadKOSCount) Squad not found.`
             }
         }
 
-        let totalKOSCount = 0;
-        const individualKOSCounts: Array<{ userId: string, username: string, kosCount: number }> = [];
+        // get the user id of each member and call `getOwnedKeyIDs` for each member.
+        const memberUserIds = squad.members.map(member => member.userId);
 
-        // loop through each member of the squad and fetch their wallet addresses.
-        // this will be used to get the KOS count of each member by checking the explicit ownerships.
-        for (const member of squad.members) {
-            const userData = users.find(u => u._id === member.userId);
-            const walletAddresses = [userData?.wallet?.address, ...(userData.secondaryWallets?.map(wallet => wallet.address) || [])].filter(Boolean).map(address => address.toLowerCase());
+        const ownedKeyIDs = await Promise.all(memberUserIds.map(async (memberUserId) => {
+            const member = await UserModel.findOne({ _id: memberUserId }).lean();
 
-            const kosCount = explicitOwnerships.filter((ownership: KOSExplicitOwnership) => walletAddresses.includes(ownership.owner.toLowerCase())).length;
+            if (!member) {
+                return [];
+            }
 
-            totalKOSCount += kosCount;
+            const ownedKeyIds = await getOwnedKeyIDs(member.twitterId);
 
-            individualKOSCounts.push({
-                userId: member.userId,
-                username: member.username,
-                kosCount
-            });
-        }
-        
+            if (ownedKeyIds.status !== Status.SUCCESS) {
+                return [];
+            }
+
+            return (ownedKeyIds.data?.ownedKeyIDs as (string | number)[]);
+        }));
+
+        // flatten the array of owned key IDs.
+        const flattenedOwnedKeyIDs = ownedKeyIDs.flat().filter(keyId => keyId !== undefined && keyId !== null);
+
         return {
             status: Status.SUCCESS,
-            message: `(squadKOSData) Got squad KOS data successfully.`,
+            message: `(squadKOSCount) Got squad KOS count successfully.`,
             data: {
-                totalSquadKOSCount: totalKOSCount,
-                individualKOSCounts
+                totalSquadKOSCount: flattenedOwnedKeyIDs.length,
+                individualKOSCounts: ownedKeyIDs.map((ownedKeyIDs, index) => ({
+                    userId: squad.members[index].userId,
+                    username: squad.members[index].username,
+                    kosCount: ownedKeyIDs.length
+                }))
             }
         }
     } catch (err: any) {
