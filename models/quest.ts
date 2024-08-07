@@ -20,6 +20,8 @@ export interface Quest {
     type: QuestType;
     /** quest tier */
     tier: QuestTier;
+    /** quest progression */
+    progression: boolean;
     /** the status of the quest, the quest will be hidden when it set to false */
     status: boolean;
     /** 

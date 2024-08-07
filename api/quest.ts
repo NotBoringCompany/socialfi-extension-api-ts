@@ -786,7 +786,7 @@ export const checkQuestRequirements = async (twitterId: string, questId: number)
 
                     break;
                 default:
-                    if (quest.type !== QuestType.PROGRESSION) break;
+                    if (!quest.progression) break;
 
                     const progression = await QuestProgressionModel.findOne({
                         questId: quest._id,
