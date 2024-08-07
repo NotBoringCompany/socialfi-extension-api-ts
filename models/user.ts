@@ -156,8 +156,6 @@ export interface InGameData {
     energy: PlayerEnergy;
     /** the user PlayerMastery level data */
     mastery: PlayerMastery;
-    /** the user CraftinMastery level data */
-    //craftingMastery: CraftingMastery;
     /** the list of tutorial IDs the user has completed at the start */
     completedTutorialIds: number[];
     /** 
@@ -294,14 +292,6 @@ export interface PlayerEnergy {
 
 export interface PlayerMastery {
     tapping: TappingMastery;
-    smelting: SmeltingMastery;
-    cooking: CookingMastery;
-    carpenting: CarpentingMastery;
-    tailoring: TailoringMastery;
-}
-
-export interface CraftingMastery
-{
     smelting: SmeltingMastery;
     cooking: CookingMastery;
     carpenting: CarpentingMastery;
