@@ -1529,7 +1529,7 @@ export const checkCurrentTax = async (twitterId: string, islandId: number): Prom
 }
 
 /**
- * (Called by scheduler, EVERY 3 MINUTES) Loops through all islands and updates the gathering progress for each island.
+ * (Called by scheduler, EVERY 15 MINUTES) Loops through all islands and updates the gathering progress for each island.
  * 
  * For islands that have reached >= 100% gathering progress, it should drop a resource and reset the gathering progress back to 0% + the remaining overflow of %.
  */
