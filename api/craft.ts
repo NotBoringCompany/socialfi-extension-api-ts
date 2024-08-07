@@ -38,28 +38,20 @@ export const getCraftingRecipe = async (resultItem: ResourceType): Promise<Retur
 
 export const doCraft = async(twitterId: string, craftType: ResourceType, amount: number = 1) : Promise<ReturnValue> =>{
     try {
-
         const userUpdateOperations = {
             $pull: {},
             $inc: {},
             $set: {},
             $push: {}
         }
-        let userPushOperation = {
-            $push:{}
-        }
-
 
         const user = await UserModel.findOne({ twitterId }).lean();
         const craftItem  = getCraftItem(craftType);
         var successAmount = amount;
         console.log(`You want to craft ${craftItem.type} x ${amount}`);
 
-        
-
         //#region SuccessRate Wall
         /** I think there should be success chances, but based on current requirement all crafting will be guaranteed success */
-
         var baseSuccessRate = craftItem.baseSuccessChance;
 
         /** Success Rate Should Be Affected by your crafting level i think, it will give incentives to player to increase it's crafting level more */
@@ -132,7 +124,6 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
         //#endregion
 
         //#region LEVEL WALL
-
         //Level Data---
         const levelReq = craftItem.reqLevel;
         const userLevel = user.inGameData.level;
@@ -152,9 +143,7 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
         console.log(`You are ${levelAbove} above the requirement level, which means you're eligible !`);
         //#endregion
 
-
         //#region ENERGY WALL
-
         const energyReq = craftItem.baseEnergy;
         const userEnergy = user.inGameData.energy.currentEnergy;
         console.log(`-----------------------====-------------------`);
@@ -177,7 +166,6 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
         //#endregion
 
         //#region BERRY WALL
-
         const berryReq = craftItem.berries;
         const userBerry = user.inventory?.xCookieData.currentXCookies;
 
@@ -201,9 +189,7 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
         console.log(`Next-->`);
         //#endregion
 
-
         //#region Proficiency Wall
-
         const userMasteries = user.inGameData.mastery;
         const craftingLine = craftItem.line;
         const reqCraftLevel = craftItem.reqCraftLevel;
@@ -322,7 +308,6 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
         //#endregion
 
         //#region Catalyst Wall
-
         const userResources = user.inventory.resources;
         const requiredResources = craftItem.catalyst;
         console.log(`-----------------------====-------------------`);
@@ -377,7 +362,6 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
         //#endregion
 
         //#region Weight Wall
-
         for(let i = 0 ; i < updatedResourceCount.length ; i++)
         {
             var uResWeight = getResourceWeight(updatedResourceCount[i].type);
@@ -402,8 +386,6 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
 
         //#endregion
 
-        
-        
         // for(let i = 0 ; i < requiredResources.length ; i++)
         // {
         //     var resIndexes = (user.inventory?.resources as ExtendedResource[]).findIndex(resource => resource.type === requiredResources[i].type);
@@ -413,13 +395,9 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
 
 
         //#region RESULT
-
-
         const iResIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(resource => resource.type === craftItem.type);
         var finalCraftResultWeight = craftResultWeight * amount;
         var finalCostWeight = - requiredResourceTotalWeight + (finalCraftResultWeight);
-        
-
         
         console.log(`-----------------------====-------------------`);
         console.log(`Crafting Successful ! Resulting in : ${producedAmount} x ${craftItem.type} adding ${craftResultWeight * amount} kg of weight, Consuming : `);
@@ -441,7 +419,7 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
         if(iResIndex === -1)
         {
             console.log(`${craftItem.type} is not in your inventory, creating one right now...`);
-            userPushOperation.$push[`inventory.resources`] = { 
+            userUpdateOperations.$push[`inventory.resources`] = { 
                 
                 type: newResourceData.type,
                 line: newResourceData.line,
@@ -451,36 +429,29 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
                 origin: ExtendedResourceOrigin.NORMAL 
             };
             console.log(`${craftItem.type} is not in your inventory, creating one right now in the DB`);
-            await UserModel.updateOne({ _id: user._id }, userUpdateOperations);
-            await UserModel.updateOne({ _id: user._id }, userPushOperation);
         }
         else
         {
             console.log(`Adding ${producedAmount}Pcs of ${craftItem.type} into your inventory..`);
             userUpdateOperations.$inc[`inventory.resources.${iResIndex}.amount`] = producedAmount;
-            await UserModel.updateOne({ _id: user._id }, userUpdateOperations);
         }
-        
-        
-        
         //#endregion
-        
-        //await UserModel.updateOne({ _id: user._id }, userUpdateOperations);
-
-        //#endregion
-
-
-        
 
         //#region Critical Buff
 
-        //#endregion
+        //#endregion        
+        
+        await UserModel.updateOne({ _id: user._id }, {
+            $set: Object.keys(userUpdateOperations.$set).length > 0 ? userUpdateOperations.$set : {},
+            $inc: Object.keys(userUpdateOperations.$inc).length > 0 ? userUpdateOperations.$inc : {},
+        });
 
-        // Dont Forget to Return CRAFT TYPE | AND EXP GAINED
-        console.log(`${userUpdateOperations.$push}`);
-        
-        
-        console.log(`Crafting Operation Successfully Done !`); //<-
+        await UserModel.updateOne({ _id: user._id }, {
+            $pull: Object.keys(userUpdateOperations.$pull).length > 0 ? userUpdateOperations.$pull : {},
+            $push: Object.keys(userUpdateOperations.$push).length > 0 ? userUpdateOperations.$push : {},
+        });
+
+        console.log(`Crafting Operation Successfully Done !`);
         return {
             status: Status.SUCCESS,
             message: `(doCraft) Craft Item Success!!`,
