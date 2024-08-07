@@ -2774,3 +2774,60 @@ export const handleTelegramLogin = async (initData: string): Promise<ReturnValue
         };
     }
 };
+
+export const updateLoginStreak = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(updateLoginStreak) User not found.`,
+            };
+        }
+
+        const currentTimestamp = Date.now();
+
+        let streak = user.inGameData.loginStreak ?? 0;
+        const lastLoginTimestamp = user.inGameData.lastLoginTimestamp ?? 0;
+
+        const now = new Date();
+        const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+        const estTime = new Date(utcTime + (3600000 * -5)); // EST is UTC-5
+
+        const currentDate = estTime.toDateString();
+        estTime.setHours(7, 0, 0, 0); // set the time to 7 AM EST
+        const resetTimestamp = estTime.getTime();
+
+        const lastLoginDate = new Date(lastLoginTimestamp).toDateString();
+
+        if (currentDate !== lastLoginDate && currentTimestamp >= resetTimestamp) {
+            streak = 0; // Reset streak if the login is after 7 AM EST and it's a new day
+        } else {
+            streak += 1; // Increment streak
+        }
+
+        // Update user in database
+        await UserModel.updateOne({ twitterId }, {
+            $set: {
+                inGameData: {
+                    lastLoginTimestamp: currentTimestamp,
+                    loginStreak: streak,
+                }
+            }
+        });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(updateLoginStreak) Login streak updated.`,
+            data: {
+                inGameData: user.inGameData,
+            },
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(updateLoginStreak) ${err.message}`,
+        };
+    }
+}
