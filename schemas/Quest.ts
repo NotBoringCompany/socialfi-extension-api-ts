@@ -36,6 +36,7 @@ export const QuestSchema = new mongoose.Schema({
     tier: String,
     unlockable: Boolean,
     status: { type: Boolean, default: true },
+    progression: { type: Boolean, default: false },
     limit: Number,
     category: String,
     imageUrl: String,
