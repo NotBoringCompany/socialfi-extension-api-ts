@@ -1,10 +1,10 @@
 import { CookingCraft, CraftItemLine, CraftRecipes, CraftType, SmeltingCraft } from "../models/craft";
 import { CarpentingMastery, CookingMastery, SmeltingMastery, TailoringMastery } from "../models/mastery";
-import { BarrenResource, ExtendedResource, LiquidResource, OreResource, ResourceType, SimplifiedResource } from "../models/resource";
+import { BarrenResource, ExtendedResource, ExtendedResourceOrigin, FruitResource, LiquidResource, OreResource, ResourceType, SimplifiedResource } from "../models/resource";
 import { GET_CRAFT_RECIPE, getAllCraftItemRecipes, getAllCraftItems, getCraftItem, getCraftItemCriteria } from "../utils/constants/craft";
 import { UserModel } from "../utils/constants/db";
 import { CARPENTING_MASTERY_LEVEL, COOKING_MASTERY_LEVEL, SMELTING_MASTERY_LEVEL, TAILORING_MASTERY_LEVEL } from "../utils/constants/mastery";
-import { getResource, getResourceWeight } from "../utils/constants/resource";
+import { getResource, getResourceWeight, resources } from "../utils/constants/resource";
 import { ReturnValue, Status } from "../utils/retVal";
 
 export const getCraftingRecipe = async (resultItem: ResourceType): Promise<ReturnValue> => {
@@ -39,7 +39,7 @@ export const getCraftingRecipe = async (resultItem: ResourceType): Promise<Retur
 export const doCraft = async(twitterId: string, craftType: ResourceType, amount: number = 1) : Promise<ReturnValue> =>{
     try {
 
-        let userUpdateOperations = {
+        const userUpdateOperations = {
             $pull: {},
             $inc: {},
             $set: {},
@@ -84,7 +84,7 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
             }
         }
 
-        console.log(`From ${amount} of pcs you desire to craft, you success ${successAmount} times..`);
+        console.log(`From ${amount} of pcs you desire to craft, you succeeded ${successAmount} times..`);
 
         if(successAmount <= 0)
         {
@@ -339,10 +339,10 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
             if(searchResult !== undefined)
             {
                 console.log(`${res} Found ! you have x${searchResult.amount}pcs of them`);
-                if(searchResult.amount >= (requiredResources[i].amount * producedAmount))
+                if(searchResult.amount >= (requiredResources[i].amount * amount))
                 {
-                    var updatedResourceAmount = searchResult.amount - (requiredResources[i].amount * producedAmount);
-                    updatedResourceCount.push({type:searchResult.type, amount: updatedResourceAmount, before: searchResult.amount, required: requiredResources[i].amount * producedAmount});
+                    var updatedResourceAmount = searchResult.amount - (requiredResources[i].amount * amount);
+                    updatedResourceCount.push({type:searchResult.type, amount: updatedResourceAmount, before: searchResult.amount, required: requiredResources[i].amount * amount});
                 }
                 else
                 {
@@ -383,10 +383,10 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
             console.log(`UresWeight : ${uResWeight} x ${updatedResourceCount[i].required } totaling in : ${uResWeight * updatedResourceCount[i].required}`);
         }
 
-        console.log(`Your Current Weight : ${uWeight}, Required Resource for This Craft's Weight : ${requiredResourceTotalWeight}, Crafted Item's Weight : ${(craftResultWeight * producedAmount)}`);
+        console.log(`Your Current Weight : ${uWeight}, Required Resource for This Craft's Weight : ${requiredResourceTotalWeight}, Crafted Item's Weight : ${(craftResultWeight * amount)}`);
 
 
-        const resultWeight = uWeight - requiredResourceTotalWeight + (craftResultWeight * producedAmount);
+        const resultWeight = uWeight - requiredResourceTotalWeight + (craftResultWeight * amount);
         if(resultWeight > maxWeight)
         {
             console.log(`(doCraft) Weight Limit Exceeded (${resultWeight})`);
@@ -408,17 +408,17 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
         // }
 
 
-        //#region RESULT AND CRIT buff
+        //#region RESULT
 
 
         const iResIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(resource => resource.type === craftItem.type);
-        var finalCraftResultWeight = craftResultWeight * producedAmount;
+        var finalCraftResultWeight = craftResultWeight * amount;
         var finalCostWeight = - requiredResourceTotalWeight + (finalCraftResultWeight);
         
 
         
         console.log(`-----------------------====-------------------`);
-        console.log(`Crafting Successful ! Resulting in : ${producedAmount} x ${craftItem.type} adding ${craftResultWeight * producedAmount} kg of weight, Consuming : `);
+        console.log(`Crafting Successful ! Resulting in : ${producedAmount} x ${craftItem.type} adding ${craftResultWeight * amount} kg of weight, Consuming : `);
         for(let i = 0 ; i < updatedResourceCount.length ; i++)
         {
             const uResIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(resource => resource.type === updatedResourceCount[i].type);
@@ -430,7 +430,29 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
         
         console.log(`Final Cost Weight : ${finalCostWeight}`);
 
-        userUpdateOperations.$inc[`inventory.resources.${iResIndex}.amount`] = producedAmount;
+        const newResourceData = resources.find(r => r.type === craftItem.type);
+        console.log(`Resource Data : ${newResourceData.type}`);
+        if(iResIndex === -1)
+        {
+            console.log(`${craftItem.type} is not in your inventory, creating one right now...`);
+            userUpdateOperations.$push[`inventory.resources`] = { 
+                
+                type: newResourceData.type,
+                line: newResourceData.line,
+                rarity: newResourceData.rarity,
+                weight: newResourceData.weight, 
+                amount: producedAmount, 
+                origin: ExtendedResourceOrigin.NORMAL 
+            };
+            console.log(`${craftItem.type} is not in your inventory, creating one right now in the DB`);
+        }
+        else
+        {
+            console.log(`Adding ${producedAmount}Pcs of ${craftItem.type} into your inventory..`);
+            userUpdateOperations.$inc[`inventory.resources.${iResIndex}.amount`] = producedAmount;
+        }
+        
+        
         userUpdateOperations.$inc[`inventory.weight`] = finalCostWeight;
         console.log(`-----------------------====-------------------`);
         //#endregion
@@ -447,9 +469,10 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
         //#endregion
 
         // Dont Forget to Return CRAFT TYPE | AND EXP GAINED
-
+        console.log(`${userUpdateOperations.$push}`);
         await UserModel.updateOne({ _id: user._id }, userUpdateOperations);
         
+        console.log(`Crafting Operation Successfully Done !`); //<-
         return {
             status: Status.SUCCESS,
             message: `(doCraft) Craft Item Success!!`,
@@ -714,7 +737,7 @@ export const UpdateUserMastery = async (twitterId: string) => {
 };
 //CheckUserMastery("1929832297");
 //UpdateUserMastery("1929832297");
-doCraft("1929832297", OreResource.SILVER, 5);
+doCraft("1929832297", FruitResource.STAR_FRUIT, 1);
 //getCraftableRecipesByResources("1929832297");
 //getAllCraftingRecipes();
 //getCraftingRecipe(LiquidResource.MAPLE_SYRUP);

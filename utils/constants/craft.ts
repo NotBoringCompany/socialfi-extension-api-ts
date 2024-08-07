@@ -186,7 +186,6 @@ export const craftItems : CraftItem[] =
         catalyst:
         [
             {type: FruitResource.TOMATO, amount:1}, 
-            {type: FruitResource.STAR_FRUIT, amount:1},
             {type: FruitResource.APPLE, amount:1} 
         ], 
         baseSuccessChance: 70, baseCritChance: 0, points: 25, craftPoints: 15, berries: 0.01
