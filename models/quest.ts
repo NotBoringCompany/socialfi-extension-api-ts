@@ -139,6 +139,8 @@ export interface QuestRequirement {
  */
 export enum QuestRequirementType {
     FOLLOW_USER = 'Follow User',
+    // invite another user through referral
+    INVITE_USER = 'Invite User',
     // requires the tweet ID
     LIKE_AND_RETWEET = 'Like and Retweet',
     // requires the tweet ID
