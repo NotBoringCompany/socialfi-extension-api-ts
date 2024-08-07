@@ -15,7 +15,7 @@ export const schedulers = async (): Promise<void> => {
         // await updateGatheringProgressAndDropResourceScheduler();
         // await updateClaimableXCookiesScheduler();
         // await updateClaimableCrumbsScheduler();
-        await depleteEnergyScheduler();
+        // await depleteEnergyScheduler();
 
         // await updateSuccessfulIndirectReferralsScheduler();
         
