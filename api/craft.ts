@@ -144,7 +144,7 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
         //#endregion
 
         //#region ENERGY WALL
-        const energyReq = craftItem.baseEnergy;
+        const energyReq = craftItem.baseEnergy * amount;
         const userEnergy = user.inGameData.energy.currentEnergy;
         console.log(`-----------------------====-------------------`);
         console.log(`${craftItem.type} requires ${energyReq} energy, You have ${userEnergy} energy`);
@@ -166,7 +166,7 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
         //#endregion
 
         //#region BERRY WALL
-        const berryReq = craftItem.berries;
+        const berryReq = craftItem.berries * amount;
         const userBerry = user.inventory?.xCookieData.currentXCookies;
 
         console.log(`Crafting ${craftItem.type} requires ${berryReq} berries, You have ${userBerry} berries`);
@@ -413,7 +413,6 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
         console.log(`Final Cost Weight : ${finalCostWeight}`);
 
         const newResourceData = resources.find(r => r.type === craftItem.type);
-        //console.log(`Resource Data : ${newResourceData.type}`);
         userUpdateOperations.$inc[`inventory.weight`] = finalCostWeight;
         console.log(`-----------------------====-------------------`);
         if(iResIndex === -1)
@@ -431,11 +430,7 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
             console.log(`Adding ${producedAmount}Pcs of ${craftItem.type} into your inventory..`);
             userUpdateOperations.$inc[`inventory.resources.${iResIndex}.amount`] = producedAmount;
         }
-        //#endregion
-
-        //#region Critical Buff
-
-        //#endregion        
+        //#endregion    
         
         await UserModel.updateOne({ _id: user._id }, {
             $set: Object.keys(userUpdateOperations.$set).length > 0 ? userUpdateOperations.$set : {},
