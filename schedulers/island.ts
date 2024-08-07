@@ -2,11 +2,11 @@ import cron from 'node-cron';
 import { resetDailyIslandTappingMilestone, updateClaimableCrumbs, updateClaimableXCookies, updateDailyBonusResourcesGathered, updateGatheringProgressAndDropResource } from '../api/island';
 
 /**
- * Calls `updateGatheringProgressAndDropResource` every 3 minutes to update all islands' gathering progress and drop a resource for any eligible islands.
+ * Calls `updateGatheringProgressAndDropResource` every 15 minutes to update all islands' gathering progress and drop a resource for any eligible islands.
  */
 export const updateGatheringProgressAndDropResourceScheduler = async (): Promise<void> => {
     try {
-        cron.schedule('*/3 * * * *', async () => {
+        cron.schedule('*/15 * * * *', async () => {
             console.log('Running updateGatheringProgressAndDropResourceScheduler...');
             await updateGatheringProgressAndDropResource();
         });
