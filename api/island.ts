@@ -3792,7 +3792,8 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
                 const cookieIndex = extendedXCookieData.findIndex(data => data.source === XCookieSource.ISLAND_TAPPING);
 
                 const berryDropAmount = secondOptionReward.berryDrop;
-
+                
+                console.log('Cookies Index: ', cookieIndex);
                 // Update operations
                 if (cookieIndex !== -1) {
                     // Increment existing cookie data
@@ -3864,7 +3865,7 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
 
                     // get the source index for ISLAND_TAPPING
                     const sourceIndex = leaderboard.userData[userIndex].pointsData.findIndex(pointsData => pointsData.source === LeaderboardPointsSource.ISLAND_TAPPING);
-
+                    console.log('Points Index: ', sourceIndex);
                     if (sourceIndex !== -1) {
                         leaderboardUpdateOperations.$inc[`userData.${userIndex}.pointsData.${sourceIndex}.points`] = secondOptionReward.pointDrop;
                     } else {
