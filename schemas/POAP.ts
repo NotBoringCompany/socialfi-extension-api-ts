@@ -14,7 +14,10 @@ export const POAPSchema = new mongoose.Schema({
     codes: [
         {
             _id: false,
-            keyword: String,
+            keyword: {
+                type: String,
+                index: true
+            },
             expirationTimestamp: Number,
             limit: Number,
         },

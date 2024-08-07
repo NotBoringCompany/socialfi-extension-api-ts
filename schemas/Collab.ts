@@ -19,6 +19,7 @@ export const CollabBasketSchema = new mongoose.Schema({
     name: {
         type: String,
         required: true,
+        index: true,
     },
     rewards: [CollabRewardSchema],
 });
@@ -44,10 +45,12 @@ export const CollabParticipantSchema = new mongoose.Schema({
     community: {
         type: String,
         required: true,
+        index: true,
     },
     twitterUsername: {
         type: String,
         required: true,
+        index: true,
     },
     discordId: {
         type: String,

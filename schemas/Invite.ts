@@ -22,7 +22,10 @@ export const SuccessfulIndirectReferralSchema = new mongoose.Schema({
         type: String,
         default: generateObjectId()
     },
-    userId: String,
+    userId: {
+        type: String,
+        index: true
+    },
     indirectReferralData: [{
         obtainedRewardMilestone: Number,
         claimableRewardData: {
