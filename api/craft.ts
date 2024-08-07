@@ -45,6 +45,9 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
             $set: {},
             $push: {}
         }
+        let userPushOperation = {
+            $push:{}
+        }
 
 
         const user = await UserModel.findOne({ twitterId }).lean();
@@ -105,6 +108,7 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
         //criticalRate = criticalRate + (craftLevel * ... * ... *... formula here)
 
         var producedAmount = 0;
+        producedAmount = Number(producedAmount);
         console.log(`-----------------------====-------------------`);
         console.log(`Calculating Critical Production for ${successAmount}Pcs of ${craftItem.type} with ...`);
         for(let i = 0 ; i < successAmount ; i++)
@@ -431,11 +435,13 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
         console.log(`Final Cost Weight : ${finalCostWeight}`);
 
         const newResourceData = resources.find(r => r.type === craftItem.type);
-        console.log(`Resource Data : ${newResourceData.type}`);
+        //console.log(`Resource Data : ${newResourceData.type}`);
+        userUpdateOperations.$inc[`inventory.weight`] = finalCostWeight;
+        console.log(`-----------------------====-------------------`);
         if(iResIndex === -1)
         {
             console.log(`${craftItem.type} is not in your inventory, creating one right now...`);
-            userUpdateOperations.$push[`inventory.resources`] = { 
+            userPushOperation.$push[`inventory.resources`] = { 
                 
                 type: newResourceData.type,
                 line: newResourceData.line,
@@ -445,19 +451,21 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
                 origin: ExtendedResourceOrigin.NORMAL 
             };
             console.log(`${craftItem.type} is not in your inventory, creating one right now in the DB`);
+            await UserModel.updateOne({ _id: user._id }, userUpdateOperations);
+            await UserModel.updateOne({ _id: user._id }, userPushOperation);
         }
         else
         {
             console.log(`Adding ${producedAmount}Pcs of ${craftItem.type} into your inventory..`);
             userUpdateOperations.$inc[`inventory.resources.${iResIndex}.amount`] = producedAmount;
+            await UserModel.updateOne({ _id: user._id }, userUpdateOperations);
         }
         
         
-        userUpdateOperations.$inc[`inventory.weight`] = finalCostWeight;
-        console.log(`-----------------------====-------------------`);
+        
         //#endregion
         
-        
+        //await UserModel.updateOne({ _id: user._id }, userUpdateOperations);
 
         //#endregion
 
@@ -470,7 +478,7 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
 
         // Dont Forget to Return CRAFT TYPE | AND EXP GAINED
         console.log(`${userUpdateOperations.$push}`);
-        await UserModel.updateOne({ _id: user._id }, userUpdateOperations);
+        
         
         console.log(`Crafting Operation Successfully Done !`); //<-
         return {
@@ -484,6 +492,7 @@ export const doCraft = async(twitterId: string, craftType: ResourceType, amount:
             }
         }
     } catch (err: any) {
+        console.log(`ERROR : ${err.message}`);
         return {
             status: Status.ERROR,
             message: `(doCraft) ${err.message}`,
