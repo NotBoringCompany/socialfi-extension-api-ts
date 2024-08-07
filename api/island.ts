@@ -3792,7 +3792,7 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
                 const cookieIndex = extendedXCookieData.findIndex(data => data.source === XCookieSource.ISLAND_TAPPING);
 
                 const berryDropAmount = secondOptionReward.berryDrop;
-                
+                console.log('extendedXCookieData: ', extendedXCookieData);
                 console.log('Cookies Index: ', cookieIndex);
                 // Update operations
                 if (cookieIndex !== -1) {
