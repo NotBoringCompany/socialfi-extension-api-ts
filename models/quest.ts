@@ -175,7 +175,8 @@ export enum QuestRequirementType {
     COLLECT_RESOURCE = 'Collect Resource',
     LOGIN_STREAK = 'Login Streak',
     ISLAND_OWNED = 'Island Owned',
-    USE_GATHERING_BOOSTER = 'Use Gathering Booster'
+    USE_GATHERING_BOOSTER = 'Use Gathering Booster',
+    USE_TRAVEL_BOOSTER = 'Use Travel Booster',
 }
 
 /**
