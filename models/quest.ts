@@ -175,7 +175,8 @@ export enum QuestRequirementType {
     JOIN_SQUAD = 'Join Squad',
     // Collect resource
     COLLECT_RESOURCE = 'Collect Resource',
-    LOGIN_STREAK = 'Login Streak'
+    LOGIN_STREAK = 'Login Streak',
+    ISLAND_OWNED = 'Island Owned'
 }
 
 /**

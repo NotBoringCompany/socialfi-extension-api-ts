@@ -794,6 +794,15 @@ export const checkQuestRequirements = async (twitterId: string, questId: number)
                     }
 
                     break;
+                case QuestRequirementType.ISLAND_OWNED:
+                    if ((user.inventory.islandIds.length ?? 0) < (requirement.parameters.count ?? 0)) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(checkQuestRequirement) User has not fulfilled the quest requirements.`,
+                        };
+                    }
+
+                    break;
                 default:
                     if (!quest.progression) break;
 
