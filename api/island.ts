@@ -3220,7 +3220,8 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
         islandUpdateOperations.$push['islandResourceStats.claimableResources'].$each.push(...claimableResourcesToAdd);
         islandUpdateOperations.$push['islandResourceStats.resourcesGathered'].$each.push(...gatheredResourcesToAdd);
 
-        console.log(`(dropResource) Island ${islandId} update operations: `, islandUpdateOperations);
+        console.log(`(dropResource) Island ${islandId} dropped resources (claimableResources): `, claimableResourcesToAdd);
+        console.log(`(dropResource) Island ${islandId} dropped resources (gatheredResources): `, gatheredResourcesToAdd);
 
         // execute the update operations
         await IslandModel.updateOne({ islandId }, {
