@@ -178,6 +178,7 @@ export enum QuestRequirementType {
     USE_GATHERING_BOOSTER = 'Use Gathering Booster',
     USE_TRAVEL_BOOSTER = 'Use Travel Booster',
     HATCH_BIT = 'Hatch Bit',
+    SUMMON_ISLAND = 'Summon Island',
 }
 
 /**
