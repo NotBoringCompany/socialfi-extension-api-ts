@@ -3238,6 +3238,7 @@ export const updateLoginStreak = async (twitterId: string): Promise<ReturnValue>
         await UserModel.updateOne({ twitterId }, {
             $set: {
                 inGameData: {
+                    ...user.inGameData,
                     lastLoginTimestamp: currentTimestamp,
                     loginStreak: streak,
                 }
