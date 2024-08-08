@@ -31,11 +31,12 @@ export const distributeWeeklyMVPRewardsScheduler = async (): Promise<void> => {
 }
 
 /**
- * Calls `updateCurrentWeeklyMVPRankingLeaderboard` to update the current weekly MVP ranking leaderboard every 5th minute (:05, :15, :25...)
+ * Calls `updateCurrentWeeklyMVPRankingLeaderboard` to update the current weekly MVP ranking leaderboard every hour.
  */
 export const updateCurrentWeeklyMVPRankingLeaderboardScheduler = async (): Promise<void> => {
     try {
-        cron.schedule('5,15,25,35,45,55 * * * *', async () => {
+        // run every hour
+        cron.schedule('0 * * * *', async () => {
             console.log('Running updateCurrentWeeklyMVPRankingLeaderboard...');
 
             await updateCurrentWeeklyMVPRankingLeaderboard();
