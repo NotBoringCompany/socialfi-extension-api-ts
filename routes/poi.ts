@@ -102,6 +102,7 @@ router.post('/apply_travel_booster', async (req, res) => {
             });
 
             incrementEventCounterInContract(validateData?.twitterId, APPLY_TRAVELLING_BOOSTER_MIXPANEL_EVENT_HASH);
+            incrementProgressionByType(QuestRequirementType.USE_TRAVEL_BOOSTER, validateData?.twitterId, 1);
         }
 
         return res.status(status).json({
