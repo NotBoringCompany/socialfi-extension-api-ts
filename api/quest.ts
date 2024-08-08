@@ -958,12 +958,14 @@ export const incrementProgressionByType = async (
 ): Promise<void> => {
     try {
         // Find all quests that have requirements of the specified type
-        const quests = await QuestModel.find({ 'requirements.type': type });
+        const quests = await QuestModel.find({ 'requirements.type': type }).lean();
 
         const user = await UserModel.findOne({ twitterId });
 
         // Iterate through each quest and update the progression for matching requirements
         for (const quest of quests) {
+            if (quest.completedBy.find(({ twitterId }) => twitterId === user.id)) continue;
+
             // check if the user qualify
             if (quest.unlockable && !quest.qualifiedUsers.includes(user._id)) continue;
             const requirements = quest.requirements.filter((req) => req.type === type);
