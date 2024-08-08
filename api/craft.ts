@@ -708,7 +708,7 @@ export const UpdateUserMastery = async (twitterId: string) => {
 };
 //CheckUserMastery("1929832297");
 //UpdateUserMastery("1929832297");
-doCraft("1929832297", FruitResource.STAR_FRUIT, 1);
+// doCraft("1929832297", FruitResource.STAR_FRUIT, 1);
 //getCraftableRecipesByResources("1929832297");
 //getAllCraftingRecipes();
 //getCraftingRecipe(LiquidResource.MAPLE_SYRUP);
