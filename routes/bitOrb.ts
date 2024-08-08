@@ -43,6 +43,7 @@ router.post('/consume', async (req, res) => {
             incrementEventCounterInContract(validateData?.twitterId, CONSUME_BIT_ORB_MIXPANEL_EVENT_HASH);
 
             incrementProgressionByType(QuestRequirementType.CONSUME_ORB, validateData?.twitterId, 1);
+            incrementProgressionByType(QuestRequirementType.HATCH_BIT, validateData?.twitterId, 1, data.bit.rarity);
         }
 
         return res.status(status).json({
