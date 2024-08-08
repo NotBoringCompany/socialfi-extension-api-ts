@@ -1,6 +1,6 @@
 import express from 'express';
 import { Status } from '../../utils/retVal';
-import { handleTelegramLogin, linkInviteCode } from '../../api/user';
+import { handleTelegramLogin, updateLoginStreak, linkInviteCode } from '../../api/user';
 import { generateJWT } from '../../utils/jwt';
 import { parseTelegramData, validateTelegramData } from '../../utils/telegram';
 
@@ -35,6 +35,9 @@ router.post('/login', async (req, res, next) => {
         }
 
         const token = generateJWT(data.twitterId, telegramData.hash, telegramData.hash, Date.now() * 2);
+
+        // update user's login streak ingame data
+        updateLoginStreak(data.twitterId);
 
         return res.status(Status.SUCCESS).json({
             status: Status.SUCCESS,

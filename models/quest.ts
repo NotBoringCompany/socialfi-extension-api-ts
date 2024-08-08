@@ -20,6 +20,8 @@ export interface Quest {
     type: QuestType;
     /** quest tier */
     tier: QuestTier;
+    /** quest progression */
+    progression: boolean;
     /** the status of the quest, the quest will be hidden when it set to false */
     status: boolean;
     /** 
@@ -139,6 +141,8 @@ export interface QuestRequirement {
  */
 export enum QuestRequirementType {
     FOLLOW_USER = 'Follow User',
+    // invite another user through referral
+    INVITE_USER = 'Invite User',
     // requires the tweet ID
     LIKE_AND_RETWEET = 'Like and Retweet',
     // requires the tweet ID
@@ -170,7 +174,14 @@ export enum QuestRequirementType {
     // Join a squad
     JOIN_SQUAD = 'Join Squad',
     // Collect resource
-    COLLECT_RESOURCE = 'Collect Resource'
+    COLLECT_RESOURCE = 'Collect Resource',
+    LOGIN_STREAK = 'Login Streak',
+    ISLAND_OWNED = 'Island Owned',
+    USE_GATHERING_BOOSTER = 'Use Gathering Booster',
+    USE_TRAVEL_BOOSTER = 'Use Travel Booster',
+    HATCH_BIT = 'Hatch Bit',
+    SUMMON_ISLAND = 'Summon Island',
+    LEVEL_UP = 'Level Up'
 }
 
 /**

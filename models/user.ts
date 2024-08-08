@@ -180,6 +180,10 @@ export interface InGameData {
      * value will be 0 if not travelling (i.e. if travellingTo is null)
      */
     destinationArrival: number;
+    /** last login timestamp */
+    lastLoginTimestamp?: number;
+    /** login streak count */
+    loginStreak?: number;
 }
 
 /**

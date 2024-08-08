@@ -767,8 +767,53 @@ export const checkQuestRequirements = async (twitterId: string, questId: number)
                         };
                     }
                     break;
+                case QuestRequirementType.JOIN_SQUAD:
+                    if (!user.inGameData.squadId) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(checkQuestRequirement) User has not fulfilled the quest requirements.`,
+                        };
+                    }
+
+                    break;
+                case QuestRequirementType.INVITE_USER:
+                    if ((user.referralData?.referredUsersData ?? []).length < (requirement.parameters.count ?? 0)) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(checkQuestRequirement) User has not fulfilled the quest requirements.`,
+                        };
+                    }
+
+                    break;
+                case QuestRequirementType.LOGIN_STREAK:
+                    if ((user.inGameData.loginStreak ?? 0) < (requirement.parameters.count ?? 0)) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(checkQuestRequirement) User has not fulfilled the quest requirements.`,
+                        };
+                    }
+
+                    break;
+                case QuestRequirementType.ISLAND_OWNED:
+                    if ((user.inventory.islandIds.length ?? 0) < (requirement.parameters.count ?? 0)) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(checkQuestRequirement) User has not fulfilled the quest requirements.`,
+                        };
+                    }
+
+                    break;
+                case QuestRequirementType.LEVEL_UP:
+                    if ((user.inGameData.level ?? 0) < (requirement.parameters.count ?? 0)) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(checkQuestRequirement) User has not fulfilled the quest requirements.`,
+                        };
+                    }
+
+                    break;
                 default:
-                    if (quest.type !== QuestType.PROGRESSION) break;
+                    if (!quest.progression) break;
 
                     const progression = await QuestProgressionModel.findOne({
                         questId: quest._id,
@@ -946,18 +991,21 @@ export const incrementProgressionByType = async (
 ): Promise<void> => {
     try {
         // Find all quests that have requirements of the specified type
-        const quests = await QuestModel.find({ 'requirements.type': type });
+        const quests = await QuestModel.find({ 'requirements.type': type }).lean();
 
         const user = await UserModel.findOne({ twitterId });
 
         // Iterate through each quest and update the progression for matching requirements
         for (const quest of quests) {
+            if (quest.completedBy.find(({ twitterId }) => twitterId === user.id)) continue;
+
             // check if the user qualify
             if (quest.unlockable && !quest.qualifiedUsers.includes(user._id)) continue;
             const requirements = quest.requirements.filter((req) => req.type === type);
             for (const requirement of requirements) {
                 if (!requirement.parameters.count) continue;
-                if (params && requirement.parameters.type !== params) continue;
+                if (typeof requirement.parameters.type != typeof params) continue;
+                if (!requirement.parameters.type.includes(params)) continue;
 
                 // Find the current progression document
                 let progression = await QuestProgressionModel.findOne({
