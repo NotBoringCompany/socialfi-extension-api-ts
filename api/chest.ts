@@ -132,38 +132,15 @@ export const openChest = async (twitterId: string, tweetId: string): Promise<Ret
                 })
             }
             
-        // increment the user's bit orb count
-        } else if (isBitOrbI) {
-            // check if the user already has the bit orb, if yes, increment the amount, if not, add it to the user's inventory
-            const existingBitOrbIndex = (user.inventory?.items as Item[]).findIndex(i => i.type === item);
+        // increment the user's bit orb or terra capsulator count
+        } else if (isBitOrbI || isTerraCapsulatorI) {
+            // check if the user already has the bit orb or terra cap, if yes, increment the amount, if not, add it to the user's inventory
+            const existingItemIndex = (user.inventory?.items as Item[]).findIndex(i => i.type === item);
 
-            if (existingBitOrbIndex !== -1) {
+            if (existingItemIndex !== -1) {
                 await UserModel.updateOne({ twitterId }, {
                     $inc: {
-                        [`inventory.items.${existingBitOrbIndex}.amount`]: amount
-                    }
-                })
-            } else {
-                await UserModel.updateOne({ twitterId }, {
-                    $push: {
-                        'inventory.items': {
-                            type: item,
-                            amount,
-                            totalAmountConsumed: 0,
-                            weeklyAmountConsumed: 0
-                        }
-                    }
-                })
-            }
-        // increment the user's terra capsulator count
-        } else if (isTerraCapsulatorI) {
-            // check if the user already has the terra capsulator, if yes, increment the amount, if not, add it to the user's inventory
-            const existingTerraCapsulatorIndex = (user.inventory?.items as Item[]).findIndex(i => i.type === item);
-
-            if (existingTerraCapsulatorIndex !== -1) {
-                await UserModel.updateOne({ twitterId }, {
-                    $inc: {
-                        [`inventory.items.${existingTerraCapsulatorIndex}.amount`]: amount
+                        [`inventory.items.${existingItemIndex}.amount`]: amount
                     }
                 })
             } else {
