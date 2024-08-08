@@ -46,6 +46,7 @@ router.post('/consume', async (req, res) => {
             }
 
             incrementProgressionByType(QuestRequirementType.CONSUME_ORB, validateData?.twitterId, 1);
+            incrementProgressionByType(QuestRequirementType.HATCH_BIT, validateData?.twitterId, 1, data.bit.rarity);
         }
 
         return res.status(status).json({
