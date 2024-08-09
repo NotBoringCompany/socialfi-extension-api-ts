@@ -689,6 +689,8 @@ export const claimSuccessfulIndirectReferralRewards = async (twitterId: string):
         await UserModel.updateOne({ twitterId }, userRefUpdateOperations);
         await SuccessfulIndirectReferralModel.updateOne({ userId }, indirectRefUpdateOperations);
 
+        console.log(`(claimSuccessfulIndirectReferralRewards) Rewards claimed for User ${user._id}.`);
+
         return {
             status: Status.SUCCESS,
             message: `(claimSuccessfulIndirectReferralRewards) Rewards claimed.`,
