@@ -2521,7 +2521,7 @@ export const claimResources = async (
             // 2. set the island's `lastClaimed` to the current time
             userUpdateOperations.$inc['inventory.weight'] = totalWeightToClaim
 
-            returnMessage = `Manually claimed resources for Island ID ${islandId}.`;
+            returnMessage = `(claimResources) Manually claimed resources for Island ID ${islandId}.`;
             // if auto, we will do the following:
             // 1. firstly, check if all resources can be claimed based on the user's max inventory weight. if yes, skip the next steps.
             // 2. if not, we will sort the resources from highest to lowest rarity.
@@ -2666,12 +2666,15 @@ export const claimResources = async (
                 // add the weight to the user's inventory
                 userUpdateOperations.$inc['inventory.weight'] = currentWeight;
 
-                returnMessage = `Unable to claim all resources due to max inventory weight. Automatically claimed partial resources for Island ID ${islandId}.`;
+                returnMessage = `(claimResources) Unable to claim all resources due to max inventory weight. Automatically claimed partial resources for Island ID ${islandId}.`;
             }
         }
 
         // set the island's `lastClaimed` to the current time
         islandUpdateOperations.$set['islandResourceStats.lastClaimed'] = currentTime;
+
+        console.log(returnMessage);
+        console.log(`(claimResources) ${claimType} claim Island ${islandId}: ${claimType === 'manual' ? chosenResources : claimedResources}` );
 
         await UserModel.updateOne({ twitterId }, {
             $set: Object.keys(userUpdateOperations.$set).length > 0 ? userUpdateOperations.$set : {},
@@ -2682,8 +2685,6 @@ export const claimResources = async (
             $pull: Object.keys(userUpdateOperations.$pull).length > 0 ? userUpdateOperations.$pull : {},
             $push: Object.keys(userUpdateOperations.$push).length > 0 ? userUpdateOperations.$push : {},
         });
-
-
 
         await IslandModel.updateOne({ islandId }, {
             $set: Object.keys(islandUpdateOperations.$set).length > 0 ? islandUpdateOperations.$set : {},
