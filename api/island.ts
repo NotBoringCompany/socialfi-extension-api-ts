@@ -2726,36 +2726,62 @@ export const claimResources = async (
     
             // set the island's `lastClaimed` to the current time
             islandUpdateOperations.$set['islandResourceStats.lastClaimed'] = currentTime;
-
-            // increment the version field in the island document
-            islandUpdateOperations.$inc['islandResourceStats.version'] = 1;
     
             console.log(`Island ${island.islandId} userUpdateOperations: `, userUpdateOperations);
             console.log(`Island ${island.islandId} islandUpdateOperations: `, islandUpdateOperations);
 
-            const [userUpdateResult, islandUpdateResult] = await Promise.all([
-                UserModel.updateOne(
-                    { twitterId },
-                    {
-                        $set: Object.keys(userUpdateOperations.$set).length > 0 ? userUpdateOperations.$set : {},
-                        $inc: Object.keys(userUpdateOperations.$inc).length > 0 ? userUpdateOperations.$inc : {},
-                        $pull: Object.keys(userUpdateOperations.$pull).length > 0 ? userUpdateOperations.$pull : {},
-                        $push: Object.keys(userUpdateOperations.$push).length > 0 ? userUpdateOperations.$push : {},
-                    }
-                ),
-                IslandModel.updateOne(
-                    { islandId, 'islandResourceStats.version': island.islandResourceStats.version },
-                    {
-                        $set: Object.keys(islandUpdateOperations.$set).length > 0 ? islandUpdateOperations.$set : {},
-                        $inc: Object.keys(islandUpdateOperations.$inc).length > 0 ? islandUpdateOperations.$inc : {},
-                        $pull: Object.keys(islandUpdateOperations.$pull).length > 0 ? islandUpdateOperations.$pull : {},
-                        $push: Object.keys(islandUpdateOperations.$push).length > 0 ? islandUpdateOperations.$push : {},
-                    }
-                )
-            ]);
+            // const [userUpdateResult, islandUpdateResult] = await Promise.all([
+            //     UserModel.updateOne(
+            //         { twitterId },
+            //         {
+            //             $set: Object.keys(userUpdateOperations.$set).length > 0 ? userUpdateOperations.$set : {},
+            //             $inc: Object.keys(userUpdateOperations.$inc).length > 0 ? userUpdateOperations.$inc : {},
+            //             $pull: Object.keys(userUpdateOperations.$pull).length > 0 ? userUpdateOperations.$pull : {},
+            //             $push: Object.keys(userUpdateOperations.$push).length > 0 ? userUpdateOperations.$push : {},
+            //         }
+            //     ),
+            //     IslandModel.updateOne(
+            //         { islandId, 'islandResourceStats.version': island.islandResourceStats.version },
+            //         {
+            //             $set: Object.keys(islandUpdateOperations.$set).length > 0 ? islandUpdateOperations.$set : {},
+            //             $inc: Object.keys(islandUpdateOperations.$inc).length > 0 ? islandUpdateOperations.$inc : {},
+            //             $pull: Object.keys(islandUpdateOperations.$pull).length > 0 ? islandUpdateOperations.$pull : {},
+            //             $push: Object.keys(islandUpdateOperations.$push).length > 0 ? islandUpdateOperations.$push : {},
+            //         }
+            //     )
+            // ]);
 
-            if (islandUpdateResult.modifiedCount === 1) {
+            // do set and inc first to prevent conflicting issues
+            const userResultOne = await UserModel.updateOne({ twitterId }, { 
+                $set: Object.keys(userUpdateOperations.$set).length > 0 ? userUpdateOperations.$set : {},
+                $inc: Object.keys(userUpdateOperations.$inc).length > 0 ? userUpdateOperations.$inc : {}
+            });
+
+            const userResultTwo = await UserModel.updateOne({ twitterId }, {
+                $push: Object.keys(userUpdateOperations.$push).length > 0 ? userUpdateOperations.$push : {},
+                $pull: Object.keys(userUpdateOperations.$pull).length > 0 ? userUpdateOperations.$pull : {}
+            });
+
+            const islandResultOne = await IslandModel.updateOne({ islandId, 'islandResourceStats.version': island.islandResourceStats.version }, {
+                $set: Object.keys(islandUpdateOperations.$set).length > 0 ? islandUpdateOperations.$set : {},
+                $inc: Object.keys(islandUpdateOperations.$inc).length > 0 ? islandUpdateOperations.$inc : {}
+            });
+
+            const islandResultTwo = await IslandModel.updateOne({ islandId, 'islandResourceStats.version': island.islandResourceStats.version }, {
+                $push: Object.keys(islandUpdateOperations.$push).length > 0 ? islandUpdateOperations.$push : {},
+                $pull: Object.keys(islandUpdateOperations.$pull).length > 0 ? islandUpdateOperations.$pull : {}
+            });
+
+            if (
+                userResultOne.modifiedCount === 1 || 
+                userResultTwo.modifiedCount === 1 || 
+                islandResultOne.modifiedCount === 1 || 
+                islandResultTwo.modifiedCount === 1
+            ) {
                 success = true;
+
+                // increment the island's version number
+                await IslandModel.updateOne({ islandId }, { $inc: { 'islandResourceStats.version': 1 } });
 
                 console.log(`(claimResources) Successfully claimed resources for Island ID ${islandId} after ${attempt} attempts.`);
 
@@ -3313,21 +3339,29 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
             islandUpdateOperations.$push['islandResourceStats.claimableResources'].$each.push(...claimableResourcesToAdd);
             islandUpdateOperations.$push['islandResourceStats.resourcesGathered'].$each.push(...gatheredResourcesToAdd);
 
-            // increment the version field in the island document, indicating an update
-            islandUpdateOperations.$inc['islandResourceStats.version'] = 1;
-
-            const result = await IslandModel.updateOne(
+            // set and inc combined first to prevent conflicting issues
+            const resultOne = await IslandModel.updateOne(
                 { islandId, 'islandResourceStats.version': island.islandResourceStats.version },
                 {
                     $set: Object.keys(islandUpdateOperations.$set).length > 0 ? islandUpdateOperations.$set : {},
-                    $inc: Object.keys(islandUpdateOperations.$inc).length > 0 ? islandUpdateOperations.$inc : {},
-                    $pull: Object.keys(islandUpdateOperations.$pull).length > 0 ? islandUpdateOperations.$pull : {},
-                    $push: Object.keys(islandUpdateOperations.$push).length > 0 ? islandUpdateOperations.$push : {},
+                    $inc: Object.keys(islandUpdateOperations.$inc).length > 0 ? islandUpdateOperations.$inc : {}
                 }
             );
 
-            if (result.modifiedCount === 1) {
+            // do push and pull
+            const resultTwo = await IslandModel.updateOne(
+                { islandId, 'islandResourceStats.version': island.islandResourceStats.version },
+                {
+                    $pull: Object.keys(islandUpdateOperations.$pull).length > 0 ? islandUpdateOperations.$pull : {},
+                    $push: Object.keys(islandUpdateOperations.$push).length > 0 ? islandUpdateOperations.$push : {}
+                }
+            )
+
+            if (resultOne.modifiedCount === 1 || resultTwo.modifiedCount === 1) {
                 success = true;
+
+                // increment the version field in the island document, indicating an update
+                await IslandModel.updateOne({ islandId }, { $inc: { 'islandResourceStats.version': 1 } });
 
                 return {
                     status: Status.SUCCESS,
