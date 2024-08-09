@@ -94,29 +94,27 @@ export const giftXterioIsland = async (
                 })
             ) {
                 const gatheringRateModifier: Modifier = {
-                    origin: `Bit ID #${bit.bitId}'s Trait: ${
-                        bitTraits.some(traitData => traitData.trait === BitTrait.INFLUENTIAL) ? 'Influential' :
+                    origin: `Bit ID #${bit.bitId}'s Trait: ${bitTraits.some(traitData => traitData.trait === BitTrait.INFLUENTIAL) ? 'Influential' :
                         bitTraits.some(traitData => traitData.trait === BitTrait.FAMOUS) ? 'Famous' :
-                        bitTraits.some(traitData => traitData.trait === BitTrait.MANNERLESS) ? 'Mannerless' :
-                        'Antagonistic'
-                    }`,
+                            bitTraits.some(traitData => traitData.trait === BitTrait.MANNERLESS) ? 'Mannerless' :
+                                'Antagonistic'
+                        }`,
                     value: bitTraits.some(traitData => traitData.trait === BitTrait.INFLUENTIAL) ? 1.01 :
                         bitTraits.some(traitData => traitData.trait === BitTrait.FAMOUS) ? 1.005 :
-                        bitTraits.some(traitData => traitData.trait === BitTrait.MANNERLESS) ? 0.995 :
-                        0.99
+                            bitTraits.some(traitData => traitData.trait === BitTrait.MANNERLESS) ? 0.995 :
+                                0.99
                 };
-            
+
                 const earningRateModifier: Modifier = {
-                    origin: `Bit ID #${bit.bitId}'s Trait: ${
-                        bitTraits.some(traitData => traitData.trait === BitTrait.INFLUENTIAL) ? 'Influential' :
+                    origin: `Bit ID #${bit.bitId}'s Trait: ${bitTraits.some(traitData => traitData.trait === BitTrait.INFLUENTIAL) ? 'Influential' :
                         bitTraits.some(traitData => traitData.trait === BitTrait.FAMOUS) ? 'Famous' :
-                        bitTraits.some(traitData => traitData.trait === BitTrait.MANNERLESS) ? 'Mannerless' :
-                        'Antagonistic'
-                    }`,
+                            bitTraits.some(traitData => traitData.trait === BitTrait.MANNERLESS) ? 'Mannerless' :
+                                'Antagonistic'
+                        }`,
                     value: bitTraits.some(traitData => traitData.trait === BitTrait.INFLUENTIAL) ? 1.01 :
                         bitTraits.some(traitData => traitData.trait === BitTrait.FAMOUS) ? 1.005 :
-                        bitTraits.some(traitData => traitData.trait === BitTrait.MANNERLESS) ? 0.995 :
-                        0.99
+                            bitTraits.some(traitData => traitData.trait === BitTrait.MANNERLESS) ? 0.995 :
+                                0.99
                 };
 
                 islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
@@ -814,7 +812,7 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
 
         // check for any limitations/negative modifiers from rarity deviation (if bit rarity is lower than the island's type)
         // NOTE: if the bit is an xterio bit, there won't be any rarity deviation reductions.
-        const rarityDeviationReductions = 
+        const rarityDeviationReductions =
             bit.bitType === BitType.XTERIO ? {
                 gatheringRateReduction: 0,
                 earningRateReduction: 0
@@ -1285,7 +1283,7 @@ export const updateExtendedTraitEffects = async (
                     }
                 });
             }
-        // if bit trait is slow, reduce 1% of the island's gathering and earning rate
+            // if bit trait is slow, reduce 1% of the island's gathering and earning rate
         } else if (trait.trait === BitTrait.SLOW) {
             // add the new modifier to the island's `gatheringRateModifiers` and `earningRateModifiers`
             const newGatheringRateModifier: Modifier = {
@@ -1301,8 +1299,8 @@ export const updateExtendedTraitEffects = async (
             // add the new modifier to the island's `gatheringRateModifiers` and `earningRateModifiers`
             islandUpdateOperations.$push['islandStatsModifiers.gatheringRateModifiers'] = newGatheringRateModifier;
             islandUpdateOperations.$push['islandStatsModifiers.earningRateModifiers'] = newEarningRateModifier;
-        // if bit trait is quick, increase 1% of the island's gathering and earning rate
-        }  else if (trait.trait === BitTrait.QUICK) {
+            // if bit trait is quick, increase 1% of the island's gathering and earning rate
+        } else if (trait.trait === BitTrait.QUICK) {
             // add the new modifier to the island's `gatheringRateModifiers` and `earningRateModifiers`
             const newGatheringRateModifier: Modifier = {
                 origin: `Bit ID #${bit.bitId}'s Trait: Quick`,
@@ -1317,7 +1315,7 @@ export const updateExtendedTraitEffects = async (
             // add the new modifier to the island's `gatheringRateModifiers` and `earningRateModifiers`
             islandUpdateOperations.$push['islandStatsModifiers.gatheringRateModifiers'] = newGatheringRateModifier;
             islandUpdateOperations.$push['islandStatsModifiers.earningRateModifiers'] = newEarningRateModifier;
-        // if bit trait is none of the above, skip this trait
+            // if bit trait is none of the above, skip this trait
         } else {
             continue;
         }
@@ -1361,8 +1359,8 @@ export const updateExtendedTraitEffects = async (
                                 $set: {}
                             }
                         });
-                    } 
-                } 
+                    }
+                }
 
                 // if the other bit's trait is leader, add 10% gathering and earning rate to the to-be-placed bit
                 if (trait.trait === BitTrait.LEADER) {
@@ -2144,7 +2142,7 @@ export const applyGatheringProgressBooster = async (
                         firstBooster
                     }
                 }
-            // if not, just increment the gathering progress by the booster percentage and deduct the booster from the user's inventory.
+                // if not, just increment the gathering progress by the booster percentage and deduct the booster from the user's inventory.
             } else {
                 islandUpdateOperations.$inc['islandResourceStats.gatheringProgress'] = boosterPercentage;
 
@@ -2171,9 +2169,9 @@ export const applyGatheringProgressBooster = async (
                     }
                 }
             }
-        // if the booster is greater than 100,
-        // 1. check the final non-modulo gathering progress. e.g. if the current gathering progress is 70 and a 500% booster is applied, the non-modulo progress will be 570%.
-        // 2. this means that Math.floor(570/100) = 5 resources will be dropped, and the final gathering progress will be 70.
+            // if the booster is greater than 100,
+            // 1. check the final non-modulo gathering progress. e.g. if the current gathering progress is 70 and a 500% booster is applied, the non-modulo progress will be 570%.
+            // 2. this means that Math.floor(570/100) = 5 resources will be dropped, and the final gathering progress will be 70.
         } else {
             const gatheringProgress = island.islandResourceStats?.gatheringProgress;
             const finalNonModuloGatheringProgress = gatheringProgress + boosterPercentage;
@@ -2216,7 +2214,7 @@ export const applyGatheringProgressBooster = async (
                 // drop a resource
                 const { status, message, data } = await dropResource(islandId);
 
-                console.log(`dropped a resource for Island ${islandId} x${i+1}. resource: ${data.resource}`);
+                console.log(`dropped a resource for Island ${islandId} x${i + 1}. resource: ${data.resource}`);
 
                 if (status !== Status.SUCCESS) {
                     console.log(`(applyGatheringProgressBooster) Error from dropResource in loop: ${message}`);
@@ -2380,377 +2378,408 @@ export const claimResources = async (
     // this essentially allows the user to choose which resources to claim
     chosenResources?: SimplifiedResource[]
 ): Promise<ReturnValue> => {
-    try {
-        // the return message (just in case not all resources can be claimed). only for successful claims.
-        let returnMessage: string = `(claimResources) Claimed all resources from island ID ${islandId}.`;
-        // only for automatic claiming if not all resources can be claimed
-        const claimedResources: ExtendedResource[] = [];
+    const maxRetries = 3;
+    let attempt = 0;
+    let success = false;
 
-        const [user, island] = await Promise.all([
-            UserModel.findOne({ twitterId }).lean(),
-            IslandModel.findOne({ islandId }).lean()
-        ]);
-
-        const userUpdateOperations = {
-            $pull: {},
-            $inc: {},
-            $set: {},
-            $push: {}
-        }
-
-        const islandUpdateOperations = {
-            $pull: {},
-            $inc: {},
-            $set: {},
-            $push: {}
-        }
-
-        // initialize `$each` on the user's inventory resources if it doesn't exist so that we can push multiple resources at once
-        if (!userUpdateOperations.$push['inventory.resources']) {
-            userUpdateOperations.$push['inventory.resources'] = { $each: [] }
-        }
-
-        if (!user) {
-            return {
-                status: Status.ERROR,
-                message: `(claimResources) User not found.`
+    while (attempt < maxRetries && !success) {
+        try {
+            // the return message (just in case not all resources can be claimed). only for successful claims.
+            let returnMessage: string = `(claimResources) Claimed all resources from island ID ${islandId}.`;
+            // only for automatic claiming if not all resources can be claimed
+            const claimedResources: ExtendedResource[] = [];
+    
+            const [user, island] = await Promise.all([
+                UserModel.findOne({ twitterId }).lean(),
+                IslandModel.findOne({ islandId }).lean()
+            ]);
+    
+            const userUpdateOperations = {
+                $pull: {},
+                $inc: {},
+                $set: {},
+                $push: {}
             }
-        }
-
-        if (!island) {
-            return {
-                status: Status.ERROR,
-                message: `(claimResources) Island not found.`
+    
+            const islandUpdateOperations = {
+                $pull: {},
+                $inc: {},
+                $set: {},
+                $push: {}
             }
-        }
-
-        // check if the user owns the island
-        if (!(user.inventory?.islandIds as number[]).includes(islandId)) {
-            return {
-                status: Status.UNAUTHORIZED,
-                message: `(claimResources) User does not own the island.`
+    
+            // initialize `$each` on the user's inventory resources if it doesn't exist so that we can push multiple resources at once
+            if (!userUpdateOperations.$push['inventory.resources']) {
+                userUpdateOperations.$push['inventory.resources'] = { $each: [] }
             }
-        }
-
-        // if the user is currently travelling, disable claiming resources
-        if (user.inGameData.travellingTo !== null) {
-            return {
-                status: Status.ERROR,
-                message: `(claimResources) User is currently travelling.`
-            }
-        }
-
-        // check if the `RESOURCES_CLAIM_COOLDOWN` has passed from the last claimed time
-        const currentTime = Math.floor(Date.now() / 1000);
-        const lastClaimedTime = island.islandResourceStats?.lastClaimed as number;
-
-        if (currentTime - lastClaimedTime < RESOURCES_CLAIM_COOLDOWN) {
-            return {
-                status: Status.ERROR,
-                message: `(claimResources) Cooldown not yet passed.`
-            }
-        }
-
-        // check all claimable resources 
-        const claimableResources = island.islandResourceStats?.claimableResources as ExtendedResource[];
-
-        if (claimableResources.length === 0 || !claimableResources) {
-            return {
-                status: Status.ERROR,
-                message: `(claimResources) No claimable resources found.`
-            }
-        }
-
-        // get the user's current inventory weight
-        const currentInventoryWeight: number = user.inventory.weight;
-
-        // if manual, check:
-        // 1. if the user has chosen resources to claim
-        // 2. if the chosen resources exist in the island's claimable resources and if the amount is above 0 for each resource AND if the amount to claim is less than or equal to the claimable amount for each resource.
-        // 3. if all chosen resources don't exceed the player's max inventory weight.
-        if (claimType === 'manual') {
-            if (!chosenResources || chosenResources.length === 0) {
+    
+            if (!user) {
                 return {
                     status: Status.ERROR,
-                    message: `(claimResources) No chosen resources found. This is required for manual claiming.`
+                    message: `(claimResources) User not found.`
                 }
             }
-
-            // initialize total weight of resources to claim for calculation
-            let totalWeightToClaim = 0;
-
-            // `chosenResources` will essentially consist of the resource types and the equivalent amounts of that resource the user wants to claim.
-            // we check, for each chosenResource, if the resource exists in the island's claimable resources, if the amount the user wants to claim is above 0 for each resource 
-            // and if the amount to claim is less than or equal to the claimable amount for each resource.
-            // then, we also check if the total weight of the chosen resources doesn't exceed the player's max inventory weight.
-            for (let chosenResource of chosenResources) {
-                // get the full data of the chosen resource (so that it can be added to the user's inventory)
-                const chosenResourceData = resources.find(r => r.type === chosenResource.type);
-
-                const claimableResourceIndex = claimableResources.findIndex(r => r.type === chosenResource.type);
-
-                if (claimableResourceIndex === -1) {
-                    return {
-                        status: Status.ERROR,
-                        message: `(claimResources) Chosen resource ${chosenResource.type} not found in island's claimable resources.`
-                    }
-                }
-
-                if (chosenResource.amount <= 0) {
-                    return {
-                        status: Status.ERROR,
-                        message: `(claimResources) Chosen resource ${chosenResource.type} amount is 0.`
-                    }
-                }
-
-                if (chosenResource.amount > claimableResources[claimableResourceIndex].amount) {
-                    return {
-                        status: Status.ERROR,
-                        message: `(claimResources) Chosen resource ${chosenResource.type} amount exceeds claimable amount.`
-                    }
-                }
-
-                // get the total weight of this resource
-                const resourceWeight: number = resources.find(r => r.type === chosenResource.type)?.weight;
-                const totalWeight = resourceWeight * chosenResource.amount;
-
-                // add to the total weight to claim
-                totalWeightToClaim += totalWeight;
-
-                // just in case all checks pass later, we will do the following update operations.
-                // 1. if the resource already exists in the user's inventory, increment the amount; if not, push a new resource.
-                // 2. pull the resource (if amount to claim = max claimable amount of this resource) or decrement the amount (if amount to claim < max claimable amount of this resource) from the island's claimable resources.
-                // !!! NOTE: if the checks don't pass, this function will return and the update operations will not be executed anyway. !!!
-
-                // we check if this resource exists on the user's inventory or not. if not, we push a new resource; if yes, we increment the amount.
-                const existingResourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(r => r.type === chosenResource.type);
-
-                if (existingResourceIndex !== -1) {
-                    userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = chosenResource.amount;
-                } else {
-                    userUpdateOperations.$push['inventory.resources'].$each.push({ ...chosenResourceData, amount: chosenResource.amount, origin: ExtendedResourceOrigin.NORMAL });
-                }
-
-                // now, check if the amount to claim for this resource equals the max claimable amount for this resource.
-                // if yes, we will pull this resource from the island's claimable resources. otherwise, we will only deduct the amount by the amount to claim.
-                if (chosenResource.amount === claimableResources[claimableResourceIndex].amount) {
-                    islandUpdateOperations.$pull[`islandResourceStats.claimableResources`] = { type: chosenResource.type };
-                } else {
-                    islandUpdateOperations.$inc[`islandResourceStats.claimableResources.${claimableResourceIndex}.amount`] = -chosenResource.amount;
-                }
-            }
-
-            // check if the total weight to claim exceeds the player's max inventory weight
-            if (currentInventoryWeight + totalWeightToClaim > user.inventory.maxWeight) {
+    
+            if (!island) {
                 return {
                     status: Status.ERROR,
-                    message: `(claimResources) Total weight of chosen resources exceeds player's max inventory weight.`
+                    message: `(claimResources) Island not found.`
                 }
             }
 
-            // if all checks pass, we can proceed to claim the resources
-            // since we already have the update operations to add the resources to the user's inventory and to reduce the resource amount/pull the resource from the island's claimable resources,
-            // we just have a few more things to do:
-            // 1. increment the user's inventory weight by the total weight to claim
-            // 2. set the island's `lastClaimed` to the current time
-            userUpdateOperations.$inc['inventory.weight'] = totalWeightToClaim
-
-            returnMessage = `Manually claimed resources for Island ID ${islandId}.`;
-            // if auto, we will do the following:
-            // 1. firstly, check if all resources can be claimed based on the user's max inventory weight. if yes, skip the next steps.
-            // 2. if not, we will sort the resources from highest to lowest rarity.
-            // 3. then, for each rarity, sort the resources from highest to lowest weight.
-            // 4. then, for each resource, we will claim the max amount of that resource that the user can claim based on their max inventory weight.
-        } else {
-            // initialize the total weight to claim
-            let totalWeightToClaim = 0;
-
-            // loop through each resource and calculate the total weight to claim
-            for (const resource of claimableResources) {
-                const resourceWeight: number = resources.find(r => r.type === resource.type)?.weight;
-                const totalWeight = resourceWeight * resource.amount;
-
-                totalWeightToClaim += totalWeight;
+            // check for versioning system. initialize the version field if undefined.
+            // used to prevent race conditioning between `claimResources` and `dropResource`.
+            if (typeof island.islandResourceStats?.version === 'undefined') {
+                island.islandResourceStats.version = 0;
+                await IslandModel.updateOne(
+                    { islandId },
+                    { $set: { 'islandResourceStats.version': 0 } }
+                );
             }
-
-            // if the total weight to claim doesn't exceed the user's max inventory weight, we can claim all resources.
-            if (currentInventoryWeight + totalWeightToClaim <= user.inventory.maxWeight) {
-                // loop through each resource and add it to the user's inventory
-                for (const resource of claimableResources) {
-                    // check if this resource exists on the user's inventory or not. if not, we push a new resource; if yes, we increment the amount.
-                    const existingResourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(r => r.type === resource.type);
-
-                    if (existingResourceIndex !== -1) {
-                        userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = resource.amount;
-                    } else {
-                        userUpdateOperations.$push['inventory.resources'].$each.push({ ...resource, origin: ExtendedResourceOrigin.NORMAL });
+    
+            // check if the user owns the island
+            if (!(user.inventory?.islandIds as number[]).includes(islandId)) {
+                return {
+                    status: Status.UNAUTHORIZED,
+                    message: `(claimResources) User does not own the island.`
+                }
+            }
+    
+            // if the user is currently travelling, disable claiming resources
+            if (user.inGameData.travellingTo !== null) {
+                return {
+                    status: Status.ERROR,
+                    message: `(claimResources) User is currently travelling.`
+                }
+            }
+    
+            // check if the `RESOURCES_CLAIM_COOLDOWN` has passed from the last claimed time
+            const currentTime = Math.floor(Date.now() / 1000);
+            const lastClaimedTime = island.islandResourceStats?.lastClaimed as number;
+    
+            if (currentTime - lastClaimedTime < RESOURCES_CLAIM_COOLDOWN) {
+                return {
+                    status: Status.ERROR,
+                    message: `(claimResources) Cooldown not yet passed.`
+                }
+            }
+    
+            // check all claimable resources 
+            const claimableResources = island.islandResourceStats?.claimableResources as ExtendedResource[];
+    
+            if (claimableResources.length === 0 || !claimableResources) {
+                return {
+                    status: Status.ERROR,
+                    message: `(claimResources) No claimable resources found.`
+                }
+            }
+    
+            // get the user's current inventory weight
+            const currentInventoryWeight: number = user.inventory.weight;
+    
+            // if manual, check:
+            // 1. if the user has chosen resources to claim
+            // 2. if the chosen resources exist in the island's claimable resources and if the amount is above 0 for each resource AND if the amount to claim is less than or equal to the claimable amount for each resource.
+            // 3. if all chosen resources don't exceed the player's max inventory weight.
+            if (claimType === 'manual') {
+                if (!chosenResources || chosenResources.length === 0) {
+                    return {
+                        status: Status.ERROR,
+                        message: `(claimResources) No chosen resources found. This is required for manual claiming.`
                     }
                 }
-
-                // add the weight to the user's inventory
-                userUpdateOperations.$inc['inventory.weight'] = totalWeightToClaim;
-
-                // remove all claimable resources from the island
-                islandUpdateOperations.$set['islandResourceStats.claimableResources'] = [];
-
-                // add the claimed resources to the claimedResources array
-                claimedResources.push(...claimableResources);
-
-                // otherwise, we will need to proceed with sorting.
-            } else {
-                // sort resources from highest to lowest rarity
-                const sortedResources = claimableResources.sort((a, b) => ResourceRarityNumeric[b.rarity] - ResourceRarityNumeric[a.rarity]);
-
-                // group resources by rarity
-                const groupedResources = sortedResources.reduce((acc, resource) => {
-                    if (!acc[resource.rarity]) {
-                        acc[resource.rarity] = [];
-                    }
-
-                    acc[resource.rarity].push(resource);
-
-                    return acc;
-                }, {} as { [key in ResourceRarity]: ExtendedResource[] });
-
-                // get the max allowed weight
-                const maxAllowedWeight = user.inventory.maxWeight - currentInventoryWeight;
-
-                // initialize the current weight of resources. this is used to know how many resources we can claim based on the user's max inventory weight.
-                let currentWeight: number = 0;
-
-                // only used for scenarios where the user can't claim all resources due to max inventory weight
-                // since mongodb doesn't support $pull with $each, we will just push the resources to be pulled into this array and pull them all at once after the loop.
-                const islandResourcesPulled = [];
-
-                // loop through each rarity group
-                for (const rarityGroup of Object.values(groupedResources)) {
-                    // sort the resources from highest to lowest weight
-                    const sortedByWeight = rarityGroup.sort((a, b) => resources.find(r => r.type === b.type)?.weight - resources.find(r => r.type === a.type)?.weight);
-
-                    // for each resource, check if we can claim all of it or just a portion of it based on the user's max inventory weight.
-                    for (const resource of sortedByWeight) {
-                        const resourceWeight: number = resources.find(r => r.type === resource.type)?.weight;
-                        const totalWeight = resourceWeight * resource.amount;
-
-                        // if the current weight + the total weight of this resource exceeds the max allowed weight, we will only claim a portion of this resource.
-                        if (currentWeight + totalWeight > maxAllowedWeight) {
-                            console.log('current weight + total weight of resources exceeds max allowed weight!');
-
-                            // calculate the amount of this resource we can claim based on the max allowed weight
-                            const amountToClaim = Math.floor((maxAllowedWeight - currentWeight) / resourceWeight);
-
-                            // if amount to claim is 0, we can't claim this resource anymore. break out of the loop.
-                            if (amountToClaim <= 0) {
-                                break;
-                            }
-
-                            // check if this resource exists on the user's inventory or not. if not, we push a new resource; if yes, we increment the amount.
-                            const existingResourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(r => r.type === resource.type);
-
-                            if (existingResourceIndex !== -1) {
-                                console.log('existing resource index #2: ', existingResourceIndex);
-
-                                userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = amountToClaim;
-                            } else {
-                                userUpdateOperations.$push['inventory.resources'].$each.push({ ...resource, amount: amountToClaim, origin: ExtendedResourceOrigin.NORMAL });
-                            }
-
-                            // increment the current weight by the total weight of this resource
-                            currentWeight += resourceWeight * amountToClaim;
-
-                            // deduce the amount from the island's claimable resources
-                            const claimableResourceIndex = claimableResources.findIndex(r => r.type === resource.type);
-                            islandUpdateOperations.$inc[`islandResourceStats.claimableResources.${claimableResourceIndex}.amount`] = -amountToClaim;
-
-                            // add the claimed resource to the claimedResources array
-                            claimedResources.push({
-                                ...resource,
-                                amount: amountToClaim,
-                                origin: ExtendedResourceOrigin.NORMAL
-                            });
-
-                            // break out of the loop since we can't claim more resources based on the user's max inventory weight
-                            break;
-                        } else {
-                            console.log('current weight + total weight of resources does not exceed max allowed weight!');
-
-                            // check if this resource exists on the user's inventory or not. if not, we push a new resource; if yes, we increment the amount.
-                            const existingResourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(r => r.type === resource.type);
-
-                            if (existingResourceIndex !== -1) {
-                                console.log('existing resource index #3: ', existingResourceIndex);
-                                userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = resource.amount;
-                            } else {
-                                userUpdateOperations.$push['inventory.resources'].$each.push({ ...resource, origin: ExtendedResourceOrigin.NORMAL });
-                            }
-
-                            // increment the current weight by the total weight of this resource
-                            currentWeight += totalWeight;
-
-                            // since this essentially means we can claim all of this resource, we will pull this resource from the island's claimable resources.
-                            islandResourcesPulled.push(resource.type);
-
-                            // add the claimed resource to the claimedResources array
-                            claimedResources.push({
-                                ...resource,
-                                origin: ExtendedResourceOrigin.NORMAL
-                            });
+    
+                // initialize total weight of resources to claim for calculation
+                let totalWeightToClaim = 0;
+    
+                // `chosenResources` will essentially consist of the resource types and the equivalent amounts of that resource the user wants to claim.
+                // we check, for each chosenResource, if the resource exists in the island's claimable resources, if the amount the user wants to claim is above 0 for each resource 
+                // and if the amount to claim is less than or equal to the claimable amount for each resource.
+                // then, we also check if the total weight of the chosen resources doesn't exceed the player's max inventory weight.
+                for (let chosenResource of chosenResources) {
+                    // get the full data of the chosen resource (so that it can be added to the user's inventory)
+                    const chosenResourceData = resources.find(r => r.type === chosenResource.type);
+    
+                    const claimableResourceIndex = claimableResources.findIndex(r => r.type === chosenResource.type);
+    
+                    if (claimableResourceIndex === -1) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(claimResources) Chosen resource ${chosenResource.type} not found in island's claimable resources.`
                         }
                     }
+    
+                    if (chosenResource.amount <= 0) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(claimResources) Chosen resource ${chosenResource.type} amount is 0.`
+                        }
+                    }
+    
+                    if (chosenResource.amount > claimableResources[claimableResourceIndex].amount) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(claimResources) Chosen resource ${chosenResource.type} amount exceeds claimable amount.`
+                        }
+                    }
+    
+                    // get the total weight of this resource
+                    const resourceWeight: number = resources.find(r => r.type === chosenResource.type)?.weight;
+                    const totalWeight = resourceWeight * chosenResource.amount;
+    
+                    // add to the total weight to claim
+                    totalWeightToClaim += totalWeight;
+    
+                    // just in case all checks pass later, we will do the following update operations.
+                    // 1. if the resource already exists in the user's inventory, increment the amount; if not, push a new resource.
+                    // 2. pull the resource (if amount to claim = max claimable amount of this resource) or decrement the amount (if amount to claim < max claimable amount of this resource) from the island's claimable resources.
+                    // !!! NOTE: if the checks don't pass, this function will return and the update operations will not be executed anyway. !!!
+    
+                    // we check if this resource exists on the user's inventory or not. if not, we push a new resource; if yes, we increment the amount.
+                    const existingResourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(r => r.type === chosenResource.type);
+    
+                    if (existingResourceIndex !== -1) {
+                        userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = chosenResource.amount;
+                    } else {
+                        userUpdateOperations.$push['inventory.resources'].$each.push({ ...chosenResourceData, amount: chosenResource.amount, origin: ExtendedResourceOrigin.NORMAL });
+                    }
+    
+                    // now, check if the amount to claim for this resource equals the max claimable amount for this resource.
+                    // if yes, we will pull this resource from the island's claimable resources. otherwise, we will only deduct the amount by the amount to claim.
+                    if (chosenResource.amount === claimableResources[claimableResourceIndex].amount) {
+                        islandUpdateOperations.$pull[`islandResourceStats.claimableResources`] = { type: chosenResource.type };
+                    } else {
+                        islandUpdateOperations.$inc[`islandResourceStats.claimableResources.${claimableResourceIndex}.amount`] = -chosenResource.amount;
+                    }
                 }
-
-                // if islandResourcesPulled has any resources, we will pull them all at once.
-                if (islandResourcesPulled.length > 0) {
-                    islandUpdateOperations.$pull[`islandResourceStats.claimableResources`] = { type: { $in: islandResourcesPulled } };
+    
+                // check if the total weight to claim exceeds the player's max inventory weight
+                if (currentInventoryWeight + totalWeightToClaim > user.inventory.maxWeight) {
+                    return {
+                        status: Status.ERROR,
+                        message: `(claimResources) Total weight of chosen resources exceeds player's max inventory weight.`
+                    }
                 }
+    
+                // if all checks pass, we can proceed to claim the resources
+                // since we already have the update operations to add the resources to the user's inventory and to reduce the resource amount/pull the resource from the island's claimable resources,
+                // we just have a few more things to do:
+                // 1. increment the user's inventory weight by the total weight to claim
+                // 2. set the island's `lastClaimed` to the current time
+                userUpdateOperations.$inc['inventory.weight'] = totalWeightToClaim
+    
+                returnMessage = `Manually claimed resources for Island ID ${islandId}.`;
+                // if auto, we will do the following:
+                // 1. firstly, check if all resources can be claimed based on the user's max inventory weight. if yes, skip the next steps.
+                // 2. if not, we will sort the resources from highest to lowest rarity.
+                // 3. then, for each rarity, sort the resources from highest to lowest weight.
+                // 4. then, for each resource, we will claim the max amount of that resource that the user can claim based on their max inventory weight.
+            } else {
+                // initialize the total weight to claim
+                let totalWeightToClaim = 0;
+    
+                // loop through each resource and calculate the total weight to claim
+                for (const resource of claimableResources) {
+                    const resourceWeight: number = resources.find(r => r.type === resource.type)?.weight;
+                    const totalWeight = resourceWeight * resource.amount;
+    
+                    totalWeightToClaim += totalWeight;
+                }
+    
+                // if the total weight to claim doesn't exceed the user's max inventory weight, we can claim all resources.
+                if (currentInventoryWeight + totalWeightToClaim <= user.inventory.maxWeight) {
+                    // loop through each resource and add it to the user's inventory
+                    for (const resource of claimableResources) {
+                        // check if this resource exists on the user's inventory or not. if not, we push a new resource; if yes, we increment the amount.
+                        const existingResourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(r => r.type === resource.type);
+    
+                        if (existingResourceIndex !== -1) {
+                            userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = resource.amount;
+                        } else {
+                            userUpdateOperations.$push['inventory.resources'].$each.push({ ...resource, origin: ExtendedResourceOrigin.NORMAL });
+                        }
+                    }
+    
+                    // add the weight to the user's inventory
+                    userUpdateOperations.$inc['inventory.weight'] = totalWeightToClaim;
+    
+                    // remove all claimable resources from the island
+                    islandUpdateOperations.$set['islandResourceStats.claimableResources'] = [];
+    
+                    // add the claimed resources to the claimedResources array
+                    claimedResources.push(...claimableResources);
+    
+                    // otherwise, we will need to proceed with sorting.
+                } else {
+                    // sort resources from highest to lowest rarity
+                    const sortedResources = claimableResources.sort((a, b) => ResourceRarityNumeric[b.rarity] - ResourceRarityNumeric[a.rarity]);
+    
+                    // group resources by rarity
+                    const groupedResources = sortedResources.reduce((acc, resource) => {
+                        if (!acc[resource.rarity]) {
+                            acc[resource.rarity] = [];
+                        }
+    
+                        acc[resource.rarity].push(resource);
+    
+                        return acc;
+                    }, {} as { [key in ResourceRarity]: ExtendedResource[] });
+    
+                    // get the max allowed weight
+                    const maxAllowedWeight = user.inventory.maxWeight - currentInventoryWeight;
+    
+                    // initialize the current weight of resources. this is used to know how many resources we can claim based on the user's max inventory weight.
+                    let currentWeight: number = 0;
+    
+                    // only used for scenarios where the user can't claim all resources due to max inventory weight
+                    // since mongodb doesn't support $pull with $each, we will just push the resources to be pulled into this array and pull them all at once after the loop.
+                    const islandResourcesPulled = [];
+    
+                    // loop through each rarity group
+                    for (const rarityGroup of Object.values(groupedResources)) {
+                        // sort the resources from highest to lowest weight
+                        const sortedByWeight = rarityGroup.sort((a, b) => resources.find(r => r.type === b.type)?.weight - resources.find(r => r.type === a.type)?.weight);
+    
+                        // for each resource, check if we can claim all of it or just a portion of it based on the user's max inventory weight.
+                        for (const resource of sortedByWeight) {
+                            const resourceWeight: number = resources.find(r => r.type === resource.type)?.weight;
+                            const totalWeight = resourceWeight * resource.amount;
+    
+                            // if the current weight + the total weight of this resource exceeds the max allowed weight, we will only claim a portion of this resource.
+                            if (currentWeight + totalWeight > maxAllowedWeight) {
+                                console.log('current weight + total weight of resources exceeds max allowed weight!');
+    
+                                // calculate the amount of this resource we can claim based on the max allowed weight
+                                const amountToClaim = Math.floor((maxAllowedWeight - currentWeight) / resourceWeight);
+    
+                                // if amount to claim is 0, we can't claim this resource anymore. break out of the loop.
+                                if (amountToClaim <= 0) {
+                                    break;
+                                }
+    
+                                // check if this resource exists on the user's inventory or not. if not, we push a new resource; if yes, we increment the amount.
+                                const existingResourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(r => r.type === resource.type);
+    
+                                if (existingResourceIndex !== -1) {
+                                    console.log('existing resource index #2: ', existingResourceIndex);
+    
+                                    userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = amountToClaim;
+                                } else {
+                                    userUpdateOperations.$push['inventory.resources'].$each.push({ ...resource, amount: amountToClaim, origin: ExtendedResourceOrigin.NORMAL });
+                                }
+    
+                                // increment the current weight by the total weight of this resource
+                                currentWeight += resourceWeight * amountToClaim;
+    
+                                // deduce the amount from the island's claimable resources
+                                const claimableResourceIndex = claimableResources.findIndex(r => r.type === resource.type);
+                                islandUpdateOperations.$inc[`islandResourceStats.claimableResources.${claimableResourceIndex}.amount`] = -amountToClaim;
+    
+                                // add the claimed resource to the claimedResources array
+                                claimedResources.push({
+                                    ...resource,
+                                    amount: amountToClaim,
+                                    origin: ExtendedResourceOrigin.NORMAL
+                                });
+    
+                                // break out of the loop since we can't claim more resources based on the user's max inventory weight
+                                break;
+                            } else {
+                                console.log('current weight + total weight of resources does not exceed max allowed weight!');
+    
+                                // check if this resource exists on the user's inventory or not. if not, we push a new resource; if yes, we increment the amount.
+                                const existingResourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(r => r.type === resource.type);
+    
+                                if (existingResourceIndex !== -1) {
+                                    console.log('existing resource index #3: ', existingResourceIndex);
+                                    userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = resource.amount;
+                                } else {
+                                    userUpdateOperations.$push['inventory.resources'].$each.push({ ...resource, origin: ExtendedResourceOrigin.NORMAL });
+                                }
+    
+                                // increment the current weight by the total weight of this resource
+                                currentWeight += totalWeight;
+    
+                                // since this essentially means we can claim all of this resource, we will pull this resource from the island's claimable resources.
+                                islandResourcesPulled.push(resource.type);
+    
+                                // add the claimed resource to the claimedResources array
+                                claimedResources.push({
+                                    ...resource,
+                                    origin: ExtendedResourceOrigin.NORMAL
+                                });
+                            }
+                        }
+                    }
+    
+                    // if islandResourcesPulled has any resources, we will pull them all at once.
+                    if (islandResourcesPulled.length > 0) {
+                        islandUpdateOperations.$pull[`islandResourceStats.claimableResources`] = { type: { $in: islandResourcesPulled } };
+                    }
+    
+                    // add the weight to the user's inventory
+                    userUpdateOperations.$inc['inventory.weight'] = currentWeight;
+    
+                    returnMessage = `Unable to claim all resources due to max inventory weight. Automatically claimed partial resources for Island ID ${islandId}.`;
+                }
+            }
+    
+            // set the island's `lastClaimed` to the current time
+            islandUpdateOperations.$set['islandResourceStats.lastClaimed'] = currentTime;
 
-                // add the weight to the user's inventory
-                userUpdateOperations.$inc['inventory.weight'] = currentWeight;
+            // increment the version field in the island document
+            islandUpdateOperations.$inc['islandResourceStats.version'] = 1;
+    
+            console.log(`Island ${island.islandId} userUpdateOperations: `, userUpdateOperations);
+            console.log(`Island ${island.islandId} islandUpdateOperations: `, islandUpdateOperations);
 
-                returnMessage = `Unable to claim all resources due to max inventory weight. Automatically claimed partial resources for Island ID ${islandId}.`;
+            const [userUpdateResult, islandUpdateResult] = await Promise.all([
+                UserModel.updateOne(
+                    { twitterId },
+                    {
+                        $set: Object.keys(userUpdateOperations.$set).length > 0 ? userUpdateOperations.$set : {},
+                        $inc: Object.keys(userUpdateOperations.$inc).length > 0 ? userUpdateOperations.$inc : {},
+                        $pull: Object.keys(userUpdateOperations.$pull).length > 0 ? userUpdateOperations.$pull : {},
+                        $push: Object.keys(userUpdateOperations.$push).length > 0 ? userUpdateOperations.$push : {},
+                    }
+                ),
+                IslandModel.updateOne(
+                    { islandId, 'islandResourceStats.version': island.islandResourceStats.version },
+                    {
+                        $set: Object.keys(islandUpdateOperations.$set).length > 0 ? islandUpdateOperations.$set : {},
+                        $inc: Object.keys(islandUpdateOperations.$inc).length > 0 ? islandUpdateOperations.$inc : {},
+                        $pull: Object.keys(islandUpdateOperations.$pull).length > 0 ? islandUpdateOperations.$pull : {},
+                        $push: Object.keys(islandUpdateOperations.$push).length > 0 ? islandUpdateOperations.$push : {},
+                    }
+                )
+            ]);
+
+            if (islandUpdateResult.modifiedCount === 1) {
+                success = true;
+
+                console.log(`(claimResources) Successfully claimed resources for Island ID ${islandId} after ${attempt} attempts.`);
+
+                return {
+                    status: Status.SUCCESS,
+                    message: returnMessage,
+                    data: {
+                        claimedResources: claimType === 'manual' ? chosenResources : claimedResources,
+                    }
+                }
+            } else {
+                attempt++;
+            }
+        } catch (err: any) {
+            return {
+                status: Status.ERROR,
+                message: `(claimResources) Error: ${err.message}`
             }
         }
+    }
 
-        // set the island's `lastClaimed` to the current time
-        islandUpdateOperations.$set['islandResourceStats.lastClaimed'] = currentTime;
-
-        console.log(`Island ${island.islandId} userUpdateOperations: `, userUpdateOperations);
-        console.log(`Island ${island.islandId} islandUpdateOperations: `, islandUpdateOperations);
-
-        await UserModel.updateOne({ twitterId }, {
-            $set: Object.keys(userUpdateOperations.$set).length > 0 ? userUpdateOperations.$set : {},
-            $inc: Object.keys(userUpdateOperations.$inc).length > 0 ? userUpdateOperations.$inc : {},
-        });
-        
-        await UserModel.updateOne({ twitterId }, {
-            $pull: Object.keys(userUpdateOperations.$pull).length > 0 ? userUpdateOperations.$pull : {},
-            $push: Object.keys(userUpdateOperations.$push).length > 0 ? userUpdateOperations.$push : {},
-        });
-
-
-
-        await IslandModel.updateOne({ islandId }, {
-            $set: Object.keys(islandUpdateOperations.$set).length > 0 ? islandUpdateOperations.$set : {},
-            $inc: Object.keys(islandUpdateOperations.$inc).length > 0 ? islandUpdateOperations.$inc : {},
-        });
-
-        await IslandModel.updateOne({ islandId }, {
-            $pull: Object.keys(islandUpdateOperations.$pull).length > 0 ? islandUpdateOperations.$pull : {},
-            $push: Object.keys(islandUpdateOperations.$push).length > 0 ? islandUpdateOperations.$push : {},
-        });
-
-        return {
-            status: Status.SUCCESS,
-            message: returnMessage,
-            data: {
-                claimedResources: claimType === 'manual' ? chosenResources : claimedResources,
-            }
-        }
-    } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(claimResources) Error: ${err.message}`
-        }
+    return {
+        status: Status.ERROR,
+        message: `(claimResources) Unable to claim resources after ${maxRetries} attempts.`
     }
 }
 
@@ -2947,40 +2976,80 @@ export const claimXCookiesAndCrumbs = async (twitterId: string, islandId: number
  * Should only be called when gathering progress has reached >= 100% (and then reset back to 0%). Scheduler/parent function will check this.
  */
 export const dropResource = async (islandId: number): Promise<ReturnValue> => {
-    try {
-        const island = await IslandModel.findOne({ islandId }).lean();
+    const maxRetries = 3;
+    let attempt = 0;
+    let success = false;
 
-        const islandUpdateOperations = {
-            $pull: {},
-            $inc: {},
-            $set: {},
-            $push: {}
-        }
+    while (attempt < maxRetries && !success) {
+        try {
+            const island = await IslandModel.findOne({ islandId }).lean();
 
-        if (!island) {
-            return {
-                status: Status.ERROR,
-                message: `(dropResource) Island not found.`
+            const islandUpdateOperations = {
+                $pull: {},
+                $inc: {},
+                $set: {},
+                $push: {}
             }
-        }
 
-        // a list of resources to be added to the island's `claimableResources`.
-        const claimableResourcesToAdd: ExtendedResource[] = [];
-        // a list of resources to be added to the island's `resourcesGathered`.
-        const gatheredResourcesToAdd: ExtendedResource[] = [];
+            if (!island) {
+                return {
+                    status: Status.ERROR,
+                    message: `(dropResource) Island not found.`
+                }
+            }
 
-        // check if the `resourcesLeft` is at least 1, if not, return an error.
-        const baseResourceCap = island.islandResourceStats?.baseResourceCap as number;
-        // check resourcesGathered (which only counts resources gathered with a 'NORMAL' origin. bonus resources are not counted towards the base resource cap.)
-        const resourcesGathered: ExtendedResource[] = island.islandResourceStats?.resourcesGathered.filter((r: ExtendedResource) => r.origin === ExtendedResourceOrigin.NORMAL);
-        // get the amount per `resourcesGathered` instance
-        const resourcesGatheredAmount = resourcesGathered.reduce((acc, r) => acc + r.amount, 0);
+            // initialize version field if undefined.
+            // this is to prevent race conditioning between `claimResources` and `dropResource`.
+            if (typeof island.islandResourceStats?.version === 'undefined') {
+                island.islandResourceStats.version = 0;
+                await IslandModel.updateOne(
+                    { islandId },
+                    { $set: { 'islandResourceStats.version': 0 } }
+                );
+            }
 
-        // for barren isles, check only for resources gathered that are seaweed instead of the entire length.
-        // this is because for barren isles, there is a small chance to drop common resources that won't be counted towards the base resource cap.
-        if (<IslandType>island.type === IslandType.BARREN) {
-            const seaweedGathered = resourcesGathered.filter(r => r.type === BarrenResource.SEAWEED);
-            if (baseResourceCap - seaweedGathered.length <= 0) {
+            // a list of resources to be added to the island's `claimableResources`.
+            const claimableResourcesToAdd: ExtendedResource[] = [];
+            // a list of resources to be added to the island's `resourcesGathered`.
+            const gatheredResourcesToAdd: ExtendedResource[] = [];
+
+            // check if the `resourcesLeft` is at least 1, if not, return an error.
+            const baseResourceCap = island.islandResourceStats?.baseResourceCap as number;
+            // check resourcesGathered (which only counts resources gathered with a 'NORMAL' origin. bonus resources are not counted towards the base resource cap.)
+            const resourcesGathered: ExtendedResource[] = island.islandResourceStats?.resourcesGathered.filter((r: ExtendedResource) => r.origin === ExtendedResourceOrigin.NORMAL);
+            // get the amount per `resourcesGathered` instance
+            const resourcesGatheredAmount = resourcesGathered.reduce((acc, r) => acc + r.amount, 0);
+
+            // for barren isles, check only for resources gathered that are seaweed instead of the entire length.
+            // this is because for barren isles, there is a small chance to drop common resources that won't be counted towards the base resource cap.
+            if (<IslandType>island.type === IslandType.BARREN) {
+                const seaweedGathered = resourcesGathered.filter(r => r.type === BarrenResource.SEAWEED);
+                if (baseResourceCap - seaweedGathered.length <= 0) {
+                    console.log(`(dropResource) No resources left to drop for Island ${islandId}.`);
+
+                    // if the island's `gatheringEnd` is still equal to 0 at this point, update it to the current time.
+                    if (island.islandResourceStats?.gatheringEnd === 0) {
+                        await IslandModel.updateOne({ islandId }, {
+                            $set: {
+                                'islandResourceStats.gatheringEnd': Math.floor(Date.now() / 1000)
+                            }
+                        });
+
+                        return {
+                            status: Status.ERROR,
+                            message: `(dropResource) No resources left to drop. Updated gatheringEnd to current time.`
+                        }
+                    }
+
+                    return {
+                        status: Status.ERROR,
+                        message: `(dropResource) No resources left to drop.`
+                    }
+                }
+            }
+
+            // for any other isles, check the entire length of resources gathered.
+            if (baseResourceCap - resourcesGatheredAmount <= 0) {
                 console.log(`(dropResource) No resources left to drop for Island ${islandId}.`);
 
                 // if the island's `gatheringEnd` is still equal to 0 at this point, update it to the current time.
@@ -3002,72 +3071,29 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
                     message: `(dropResource) No resources left to drop.`
                 }
             }
-        }
 
-        // for any other isles, check the entire length of resources gathered.
-        if (baseResourceCap - resourcesGatheredAmount <= 0) {
-            console.log(`(dropResource) No resources left to drop for Island ${islandId}.`);
-
-            // if the island's `gatheringEnd` is still equal to 0 at this point, update it to the current time.
-            if (island.islandResourceStats?.gatheringEnd === 0) {
-                await IslandModel.updateOne({ islandId }, {
-                    $set: {
-                        'islandResourceStats.gatheringEnd': Math.floor(Date.now() / 1000)
-                    }
-                });
-
-                return {
-                    status: Status.ERROR,
-                    message: `(dropResource) No resources left to drop. Updated gatheringEnd to current time.`
-                }
+            // initialize $each on the $push operators for claimableResources and resourcesGathered
+            if (!islandUpdateOperations.$push['islandResourceStats.claimableResources']) {
+                islandUpdateOperations.$push['islandResourceStats.claimableResources'] = { $each: [] }
             }
 
-            return {
-                status: Status.ERROR,
-                message: `(dropResource) No resources left to drop.`
-            }
-        }
-
-        // initialize $each on the $push operators for claimableResources and resourcesGathered
-        if (!islandUpdateOperations.$push['islandResourceStats.claimableResources']) {
-            islandUpdateOperations.$push['islandResourceStats.claimableResources'] = { $each: [] }
-        }
-
-        if (!islandUpdateOperations.$push['islandResourceStats.resourcesGathered']) {
-            islandUpdateOperations.$push['islandResourceStats.resourcesGathered'] = { $each: [] }
-        }
-
-        // randomize the resource from the effective drop chances based on the island's type and level
-        let resourceToDrop: Resource | undefined | null = null;
-
-        // keep fetching a resource until it's not undefined (just in case it returns undefined at times)
-        while (!resourceToDrop) {
-            resourceToDrop = randomizeResourceFromChances(<IslandType>island.type, island.traits, island.currentLevel);
-        }
-
-        // firstly check if `claimableResources` is empty.
-        const claimableResources: ExtendedResource[] = island.islandResourceStats?.claimableResources;
-
-        if (!claimableResources || claimableResources.length === 0) {
-            // if empty, create a new resource and add it to the island's `claimableResources`
-            const newResource: ExtendedResource = {
-                ...resourceToDrop,
-                origin: ExtendedResourceOrigin.NORMAL,
-                amount: 1
+            if (!islandUpdateOperations.$push['islandResourceStats.resourcesGathered']) {
+                islandUpdateOperations.$push['islandResourceStats.resourcesGathered'] = { $each: [] }
             }
 
-            // add the new resource to the island's `claimableResources`
-            // islandUpdateOperations.$push['islandResourceStats.claimableResources'] = newResource;
-            claimableResourcesToAdd.push(newResource);
-        } else {
-            // if not empty, check if the resource already exists in `claimableResources`
-            const existingResourceIndex = claimableResources.findIndex(r => r.type === resourceToDrop.type);
+            // randomize the resource from the effective drop chances based on the island's type and level
+            let resourceToDrop: Resource | undefined | null = null;
 
-            // if the resource already exists, increment its amount
-            if (existingResourceIndex !== -1) {
-                islandUpdateOperations.$inc[`islandResourceStats.claimableResources.${existingResourceIndex}.amount`] = 1;
-            } else {
-                // if the resource doesn't exist, push a new resource
+            // keep fetching a resource until it's not undefined (just in case it returns undefined at times)
+            while (!resourceToDrop) {
+                resourceToDrop = randomizeResourceFromChances(<IslandType>island.type, island.traits, island.currentLevel);
+            }
+
+            // firstly check if `claimableResources` is empty.
+            const claimableResources: ExtendedResource[] = island.islandResourceStats?.claimableResources;
+
+            if (!claimableResources || claimableResources.length === 0) {
+                // if empty, create a new resource and add it to the island's `claimableResources`
                 const newResource: ExtendedResource = {
                     ...resourceToDrop,
                     origin: ExtendedResourceOrigin.NORMAL,
@@ -3075,29 +3101,30 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
                 }
 
                 // add the new resource to the island's `claimableResources`
+                // islandUpdateOperations.$push['islandResourceStats.claimableResources'] = newResource;
                 claimableResourcesToAdd.push(newResource);
-            }
-        }
-
-        if (!resourcesGathered || resourcesGathered.length === 0) {
-            // if empty, create a new resource and add it to the island's `resourcesGathered`
-            const newResource: ExtendedResource = {
-                ...resourceToDrop,
-                origin: ExtendedResourceOrigin.NORMAL,
-                amount: 1
-            }
-
-            // add the new resource to the island's `resourcesGathered`
-            gatheredResourcesToAdd.push(newResource);
-        } else {
-            // if not empty, check if the resource already exists in `resourcesGathered`
-            const existingResourceIndex = resourcesGathered.findIndex(r => r.type === resourceToDrop.type);
-
-            // if the resource already exists, increment its amount
-            if (existingResourceIndex !== -1) {
-                islandUpdateOperations.$inc[`islandResourceStats.resourcesGathered.${existingResourceIndex}.amount`] = 1;
             } else {
-                // if the resource doesn't exist, push a new resource
+                // if not empty, check if the resource already exists in `claimableResources`
+                const existingResourceIndex = claimableResources.findIndex(r => r.type === resourceToDrop.type);
+
+                // if the resource already exists, increment its amount
+                if (existingResourceIndex !== -1) {
+                    islandUpdateOperations.$inc[`islandResourceStats.claimableResources.${existingResourceIndex}.amount`] = 1;
+                } else {
+                    // if the resource doesn't exist, push a new resource
+                    const newResource: ExtendedResource = {
+                        ...resourceToDrop,
+                        origin: ExtendedResourceOrigin.NORMAL,
+                        amount: 1
+                    }
+
+                    // add the new resource to the island's `claimableResources`
+                    claimableResourcesToAdd.push(newResource);
+                }
+            }
+
+            if (!resourcesGathered || resourcesGathered.length === 0) {
+                // if empty, create a new resource and add it to the island's `resourcesGathered`
                 const newResource: ExtendedResource = {
                     ...resourceToDrop,
                     origin: ExtendedResourceOrigin.NORMAL,
@@ -3106,51 +3133,17 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
 
                 // add the new resource to the island's `resourcesGathered`
                 gatheredResourcesToAdd.push(newResource);
-            }
-        }
-
-        // lastly, check if island is barren. if it is, they have an additional small chance to drop a common resource of any line.
-        if (<IslandType>island.type === IslandType.BARREN) {
-            // roll a dice between 1-100
-            const rand = Math.random() * 100 + 1;
-
-            // if dice lands under `BARREN_ISLE_COMMON_DROP_CHANCE`, drop a random common resource alongside the seaweed they're getting.
-            if (rand <= BARREN_ISLE_COMMON_DROP_CHANCE) {
-                // randomize any common resource from `resources`
-                const commonResources = resources.filter(r => r.rarity === ResourceRarity.COMMON);
-                const commonResourceToDrop = commonResources[Math.floor(Math.random() * commonResources.length)];
-
-                // check if the common resource already exists in `claimableResources`
-                const existingResourceIndex = claimableResources.findIndex(r => r.type === commonResourceToDrop.type);
-
-                console.log(`(dropResource) works #4`);
+            } else {
+                // if not empty, check if the resource already exists in `resourcesGathered`
+                const existingResourceIndex = resourcesGathered.findIndex(r => r.type === resourceToDrop.type);
 
                 // if the resource already exists, increment its amount
                 if (existingResourceIndex !== -1) {
-                    islandUpdateOperations.$inc[`islandResourceStats.claimableResources.${existingResourceIndex}.amount`] = 1;
+                    islandUpdateOperations.$inc[`islandResourceStats.resourcesGathered.${existingResourceIndex}.amount`] = 1;
                 } else {
                     // if the resource doesn't exist, push a new resource
                     const newResource: ExtendedResource = {
-                        ...commonResourceToDrop,
-                        origin: ExtendedResourceOrigin.NORMAL,
-                        amount: 1
-                    }
-
-                    // add the new resource to the island's `claimableResources`
-                    claimableResourcesToAdd.push(newResource);
-                }
-
-                // add to the island's `resourcesGathered` as well
-                // check if the common resource already exists in `resourcesGathered`
-                const existingGatheredResourceIndex = resourcesGathered.findIndex(r => r.type === commonResourceToDrop.type);
-
-                // if the resource already exists, increment its amount
-                if (existingGatheredResourceIndex !== -1) {
-                    islandUpdateOperations.$inc[`islandResourceStats.resourcesGathered.${existingGatheredResourceIndex}.amount`] = 1;
-                } else {
-                    // if the resource doesn't exist, push a new resource
-                    const newResource: ExtendedResource = {
-                        ...commonResourceToDrop,
+                        ...resourceToDrop,
                         origin: ExtendedResourceOrigin.NORMAL,
                         amount: 1
                     }
@@ -3158,142 +3151,206 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
                     // add the new resource to the island's `resourcesGathered`
                     gatheredResourcesToAdd.push(newResource);
                 }
-
-
-            }
-        }
-
-        // only run the next logic if `dailyBonusResourcesGathered` hasn't exceeded the limit yet.
-        if ((island.islandResourceStats?.dailyBonusResourcesGathered as number) < DAILY_BONUS_RESOURCES_GATHERABLE(<IslandType>island.type)) {
-            // finally, if the island has bits that have either the lucky, unlucky, trickster or hapless trait, they have a chance to drop a bonus resource.
-            // there is a 5% base chance to drop a bonus resource everytime a resource is dropped.
-            // each bit with a lucky trait gives a 2.5% chance to drop a bonus resource (stacks)
-            // each bit with an unlucky trait reduces the chance to drop a bonus resource by 2.5% (stacks)
-            // each bit with a trickster trait gives a 5% chance to drop a bonus resource (stacks)
-            // each bit with a hapless trait reduces the chance to drop a bonus resource by 5% (stacks)
-            let bonusResourceChance = 5;
-
-            const placedBitIds = island.placedBitIds as number[];
-            const bits = await BitModel.find({ bitId: { $in: placedBitIds } }).lean();
-
-            for (const bit of bits) {
-                if ((bit.traits as BitTraitData[]).some(trait => trait.trait === BitTrait.LUCKY)) {
-                    bonusResourceChance += 2.5;
-                }
-
-                if ((bit.traits as BitTraitData[]).some(trait => trait.trait === BitTrait.UNLUCKY)) {
-                    bonusResourceChance -= 2.5;
-                }
-
-                if ((bit.traits as BitTraitData[]).some(trait => trait.trait === BitTrait.TRICKSTER)) {
-                    bonusResourceChance += 5;
-                }
-
-                if ((bit.traits as BitTraitData[]).some(trait => trait.trait === BitTrait.HAPLESS)) {
-                    bonusResourceChance -= 5;
-                }
             }
 
-            console.log(`Island ${island.islandId} bonusResourceChance: ${bonusResourceChance}%`);
-
-            // only if bonus resource chance is above 0 will we proceed to check if we can drop a bonus resource.
-            if (bonusResourceChance > 0) {
+            // lastly, check if island is barren. if it is, they have an additional small chance to drop a common resource of any line.
+            if (<IslandType>island.type === IslandType.BARREN) {
                 // roll a dice between 1-100
                 const rand = Math.random() * 100 + 1;
 
-                if (rand <= bonusResourceChance) {
-                    console.log(`(dropResource) rand is below bonusResourceChance. dropping bonus resource!`);
-                    // randomize a resource based on the island's resource drop chances
-                    let bonusResource: Resource | undefined | null = null;
+                // if dice lands under `BARREN_ISLE_COMMON_DROP_CHANCE`, drop a random common resource alongside the seaweed they're getting.
+                if (rand <= BARREN_ISLE_COMMON_DROP_CHANCE) {
+                    // randomize any common resource from `resources`
+                    const commonResources = resources.filter(r => r.rarity === ResourceRarity.COMMON);
+                    const commonResourceToDrop = commonResources[Math.floor(Math.random() * commonResources.length)];
 
-                    // keep fetching a resource until it's not undefined (just in case it returns undefined at times)
-                    while (!bonusResource) {
-                        bonusResource = randomizeResourceFromChances(<IslandType>island.type, island.traits, island.currentLevel);
-                    }
+                    // check if the common resource already exists in `claimableResources`
+                    const existingResourceIndex = claimableResources.findIndex(r => r.type === commonResourceToDrop.type);
 
-                    console.log(`(dropResource) Island ${island.islandId} has dropped a bonus resource: ${bonusResource}`);
+                    console.log(`(dropResource) works #4`);
 
-                    // if the resource inside the `claimableResources` is the same as the bonus resource, increment its amount.
-                    // if not, push a new resource.
-                    // check if the resource exists in the island's `claimableResources` OR the new `claimableResourcesToAdd`.
-                    // `claimableResources` means that the resource is already in the island's claimable resources.
-                    // `claimableResourcesToAdd` means that the resource isn't in the island's claimable resources, but the user has obtained it from the resource to drop.
-                    const existingClaimableResourceToAddIndex = claimableResourcesToAdd.findIndex(r => r.type === bonusResource.type);
-                    const existingClaimableResourceIndex = claimableResources.findIndex(r => r.type === bonusResource.type);
-
-                    // if the resource exists in `claimableResources`, increment its amount via the $inc operator.
-                    // if not, check if the resource exists in `claimableResourcesToAdd`. if it does, increment its amount directly in the array.
-                    // if not, push a new resource to `claimableResourcesToAdd`.
-                    if (existingClaimableResourceIndex !== -1) {
-                        islandUpdateOperations.$inc[`islandResourceStats.claimableResources.${existingClaimableResourceIndex}.amount`] = 1;
-                    } else if (existingClaimableResourceToAddIndex !== -1) {
-                        claimableResourcesToAdd[existingClaimableResourceToAddIndex].amount += 1;
+                    // if the resource already exists, increment its amount
+                    if (existingResourceIndex !== -1) {
+                        islandUpdateOperations.$inc[`islandResourceStats.claimableResources.${existingResourceIndex}.amount`] = 1;
                     } else {
+                        // if the resource doesn't exist, push a new resource
                         const newResource: ExtendedResource = {
-                            ...bonusResource,
-                            origin: ExtendedResourceOrigin.BONUS,
+                            ...commonResourceToDrop,
+                            origin: ExtendedResourceOrigin.NORMAL,
                             amount: 1
                         }
 
+                        // add the new resource to the island's `claimableResources`
                         claimableResourcesToAdd.push(newResource);
                     }
 
-                    // increment the island's `islandResourceStats.dailyBonusResourcesGathered` by 1.
-                    islandUpdateOperations.$inc['islandResourceStats.dailyBonusResourcesGathered'] = 1;
+                    // add to the island's `resourcesGathered` as well
+                    // check if the common resource already exists in `resourcesGathered`
+                    const existingGatheredResourceIndex = resourcesGathered.findIndex(r => r.type === commonResourceToDrop.type);
 
-                    // check if the bonus resource already exists in `resourcesGathered` or `gatheredResourcesToAdd`.
-                    const existingGatheredResourceIndex = resourcesGathered.findIndex(r => r.type === bonusResource.type);
-                    const existingGatheredResourceToAddIndex = gatheredResourcesToAdd.findIndex(r => r.type === bonusResource.type);
-
-                    // if the bonus resource exists in `resourcesGathered`, increment its amount via the $inc operator.
-                    // if not, check if the bonus resource exists in `gatheredResourcesToAdd`. if it does, increment its amount directly in the array.
-                    // if not, push a new resource to `gatheredResourcesToAdd`.
+                    // if the resource already exists, increment its amount
                     if (existingGatheredResourceIndex !== -1) {
                         islandUpdateOperations.$inc[`islandResourceStats.resourcesGathered.${existingGatheredResourceIndex}.amount`] = 1;
-                    } else if (existingGatheredResourceToAddIndex !== -1) {
-                        gatheredResourcesToAdd[existingGatheredResourceToAddIndex].amount += 1;
                     } else {
+                        // if the resource doesn't exist, push a new resource
                         const newResource: ExtendedResource = {
-                            ...bonusResource,
-                            origin: ExtendedResourceOrigin.BONUS,
+                            ...commonResourceToDrop,
+                            origin: ExtendedResourceOrigin.NORMAL,
                             amount: 1
                         }
 
+                        // add the new resource to the island's `resourcesGathered`
                         gatheredResourcesToAdd.push(newResource);
+                    }
+
+
+                }
+            }
+
+            // only run the next logic if `dailyBonusResourcesGathered` hasn't exceeded the limit yet.
+            if ((island.islandResourceStats?.dailyBonusResourcesGathered as number) < DAILY_BONUS_RESOURCES_GATHERABLE(<IslandType>island.type)) {
+                // finally, if the island has bits that have either the lucky, unlucky, trickster or hapless trait, they have a chance to drop a bonus resource.
+                // there is a 5% base chance to drop a bonus resource everytime a resource is dropped.
+                // each bit with a lucky trait gives a 2.5% chance to drop a bonus resource (stacks)
+                // each bit with an unlucky trait reduces the chance to drop a bonus resource by 2.5% (stacks)
+                // each bit with a trickster trait gives a 5% chance to drop a bonus resource (stacks)
+                // each bit with a hapless trait reduces the chance to drop a bonus resource by 5% (stacks)
+                let bonusResourceChance = 5;
+
+                const placedBitIds = island.placedBitIds as number[];
+                const bits = await BitModel.find({ bitId: { $in: placedBitIds } }).lean();
+
+                for (const bit of bits) {
+                    if ((bit.traits as BitTraitData[]).some(trait => trait.trait === BitTrait.LUCKY)) {
+                        bonusResourceChance += 2.5;
+                    }
+
+                    if ((bit.traits as BitTraitData[]).some(trait => trait.trait === BitTrait.UNLUCKY)) {
+                        bonusResourceChance -= 2.5;
+                    }
+
+                    if ((bit.traits as BitTraitData[]).some(trait => trait.trait === BitTrait.TRICKSTER)) {
+                        bonusResourceChance += 5;
+                    }
+
+                    if ((bit.traits as BitTraitData[]).some(trait => trait.trait === BitTrait.HAPLESS)) {
+                        bonusResourceChance -= 5;
+                    }
+                }
+
+                console.log(`Island ${island.islandId} bonusResourceChance: ${bonusResourceChance}%`);
+
+                // only if bonus resource chance is above 0 will we proceed to check if we can drop a bonus resource.
+                if (bonusResourceChance > 0) {
+                    // roll a dice between 1-100
+                    const rand = Math.random() * 100 + 1;
+
+                    if (rand <= bonusResourceChance) {
+                        console.log(`(dropResource) rand is below bonusResourceChance. dropping bonus resource!`);
+                        // randomize a resource based on the island's resource drop chances
+                        let bonusResource: Resource | undefined | null = null;
+
+                        // keep fetching a resource until it's not undefined (just in case it returns undefined at times)
+                        while (!bonusResource) {
+                            bonusResource = randomizeResourceFromChances(<IslandType>island.type, island.traits, island.currentLevel);
+                        }
+
+                        console.log(`(dropResource) Island ${island.islandId} has dropped a bonus resource: ${bonusResource}`);
+
+                        // if the resource inside the `claimableResources` is the same as the bonus resource, increment its amount.
+                        // if not, push a new resource.
+                        // check if the resource exists in the island's `claimableResources` OR the new `claimableResourcesToAdd`.
+                        // `claimableResources` means that the resource is already in the island's claimable resources.
+                        // `claimableResourcesToAdd` means that the resource isn't in the island's claimable resources, but the user has obtained it from the resource to drop.
+                        const existingClaimableResourceToAddIndex = claimableResourcesToAdd.findIndex(r => r.type === bonusResource.type);
+                        const existingClaimableResourceIndex = claimableResources.findIndex(r => r.type === bonusResource.type);
+
+                        // if the resource exists in `claimableResources`, increment its amount via the $inc operator.
+                        // if not, check if the resource exists in `claimableResourcesToAdd`. if it does, increment its amount directly in the array.
+                        // if not, push a new resource to `claimableResourcesToAdd`.
+                        if (existingClaimableResourceIndex !== -1) {
+                            islandUpdateOperations.$inc[`islandResourceStats.claimableResources.${existingClaimableResourceIndex}.amount`] = 1;
+                        } else if (existingClaimableResourceToAddIndex !== -1) {
+                            claimableResourcesToAdd[existingClaimableResourceToAddIndex].amount += 1;
+                        } else {
+                            const newResource: ExtendedResource = {
+                                ...bonusResource,
+                                origin: ExtendedResourceOrigin.BONUS,
+                                amount: 1
+                            }
+
+                            claimableResourcesToAdd.push(newResource);
+                        }
+
+                        // increment the island's `islandResourceStats.dailyBonusResourcesGathered` by 1.
+                        islandUpdateOperations.$inc['islandResourceStats.dailyBonusResourcesGathered'] = 1;
+
+                        // check if the bonus resource already exists in `resourcesGathered` or `gatheredResourcesToAdd`.
+                        const existingGatheredResourceIndex = resourcesGathered.findIndex(r => r.type === bonusResource.type);
+                        const existingGatheredResourceToAddIndex = gatheredResourcesToAdd.findIndex(r => r.type === bonusResource.type);
+
+                        // if the bonus resource exists in `resourcesGathered`, increment its amount via the $inc operator.
+                        // if not, check if the bonus resource exists in `gatheredResourcesToAdd`. if it does, increment its amount directly in the array.
+                        // if not, push a new resource to `gatheredResourcesToAdd`.
+                        if (existingGatheredResourceIndex !== -1) {
+                            islandUpdateOperations.$inc[`islandResourceStats.resourcesGathered.${existingGatheredResourceIndex}.amount`] = 1;
+                        } else if (existingGatheredResourceToAddIndex !== -1) {
+                            gatheredResourcesToAdd[existingGatheredResourceToAddIndex].amount += 1;
+                        } else {
+                            const newResource: ExtendedResource = {
+                                ...bonusResource,
+                                origin: ExtendedResourceOrigin.BONUS,
+                                amount: 1
+                            }
+
+                            gatheredResourcesToAdd.push(newResource);
+                        }
                     }
                 }
             }
-        }
 
-        // add the resources to the island's `claimableResources` and `resourcesGathered`
-        islandUpdateOperations.$push['islandResourceStats.claimableResources'].$each.push(...claimableResourcesToAdd);
-        islandUpdateOperations.$push['islandResourceStats.resourcesGathered'].$each.push(...gatheredResourcesToAdd);
+            // add the resources to the island's `claimableResources` and `resourcesGathered`
+            islandUpdateOperations.$push['islandResourceStats.claimableResources'].$each.push(...claimableResourcesToAdd);
+            islandUpdateOperations.$push['islandResourceStats.resourcesGathered'].$each.push(...gatheredResourcesToAdd);
 
-        // execute the update operations
-        await IslandModel.updateOne({ islandId }, {
-            $set: Object.keys(islandUpdateOperations.$set).length > 0 ? islandUpdateOperations.$set : {},
-            $inc: Object.keys(islandUpdateOperations.$inc).length > 0 ? islandUpdateOperations.$inc : {},
-        });
+            // increment the version field in the island document, indicating an update
+            islandUpdateOperations.$inc['islandResourceStats.version'] = 1;
 
-        await IslandModel.updateOne({ islandId }, {
-            $pull: Object.keys(islandUpdateOperations.$pull).length > 0 ? islandUpdateOperations.$pull : {},
-            $push: Object.keys(islandUpdateOperations.$push).length > 0 ? islandUpdateOperations.$push : {},
-        });
+            const result = await IslandModel.updateOne(
+                { islandId, 'islandResourceStats.version': island.islandResourceStats.version },
+                {
+                    $set: Object.keys(islandUpdateOperations.$set).length > 0 ? islandUpdateOperations.$set : {},
+                    $inc: Object.keys(islandUpdateOperations.$inc).length > 0 ? islandUpdateOperations.$inc : {},
+                    $pull: Object.keys(islandUpdateOperations.$pull).length > 0 ? islandUpdateOperations.$pull : {},
+                    $push: Object.keys(islandUpdateOperations.$push).length > 0 ? islandUpdateOperations.$push : {},
+                }
+            );
 
-        return {
-            status: Status.SUCCESS,
-            message: `(dropResource) Island ID ${islandId} has dropped a resource: ${resourceToDrop}.`,
-            data: {
-                resource: resourceToDrop
+            if (result.modifiedCount === 1) {
+                success = true;
+
+                return {
+                    status: Status.SUCCESS,
+                    message: `(dropResource) Island ID ${islandId} has dropped a resource: ${resourceToDrop}.`,
+                    data: {
+                        resource: resourceToDrop
+                    }
+                }
+            } else {
+                attempt++;
             }
+        } catch (err: any) {
+            console.error(`(dropResource) Error: ${err.message}`);
+            return {
+                status: Status.ERROR,
+                message: `(dropResource) Error: ${err.message}`
+            };
         }
-    } catch (err: any) {
-        console.log(`(dropResource) Error: ${err.message}`);
+    }
 
-        return {
-            status: Status.ERROR,
-            message: `(dropResource) Error: ${err.message}`
-        }
+    return {
+        status: Status.ERROR,
+        message: `(dropResource) Failed to drop resource after ${maxRetries} attempts.`
     }
 }
 
@@ -3576,7 +3633,7 @@ export const getIslandTappingData = async (islandId: number): Promise<ReturnValu
  * Applies tapping action to an island and updates relevant user and island data.
  */
 export const applyIslandTapping = async (twitterId: string, islandId: number, caressMeter: number, bonus: 'First' | 'Second'): Promise<ReturnValue> => {
-  try {
+    try {
         const userUpdateOperations = {
             $pull: {},
             $inc: {},
@@ -3646,7 +3703,7 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
         }
 
         // Initialize currentTappingData information
-        const {caressEnergyMeter, currentMilestone, milestoneReward} = island.islandTappingData as IslandTappingData;
+        const { caressEnergyMeter, currentMilestone, milestoneReward } = island.islandTappingData as IslandTappingData;
         const islandTappingLimit = ISLAND_TAPPING_MILESTONE_LIMIT(island.type as IslandType);
         const boosterPercentage = milestoneReward.boosterReward;
         let resourcesDropped: number = 0;
@@ -3669,7 +3726,7 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
         const energyRequired = Math.ceil(caressEnergyMeter / BASE_CARESS_PER_TAPPING) * BASE_ENERGY_PER_TAPPING;
 
         // Check user currentEnergy is >= energyRequired
-        if ( currentEnergy >= energyRequired) {
+        if (currentEnergy >= energyRequired) {
             const newCurrentEnergy = Math.max(currentEnergy - energyRequired, 0);
             // Save newCurrentEnergy to userUpdateOperations
             userUpdateOperations.$set['inGameData.energy.currentEnergy'] = newCurrentEnergy;
@@ -3689,7 +3746,7 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
         const resourcesLeft = island.islandResourceStats?.baseResourceCap - normalResourcesGatheredAmount;
 
         console.log(`(applyIslandTapping), resources left for island ${island.islandId}: `, resourcesLeft);
-        
+
         // if the booster is less than 100, get the current `gatheringProgress` of the island.
         if (boosterPercentage < 100) {
             const gatheringProgress = island.islandResourceStats?.gatheringProgress;
@@ -3728,13 +3785,13 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
 
                 // Initialize Resource Dropped
                 resourcesDropped = 1;
-            // if not, just increment the gathering progress by the booster percentage and deduct the booster from the user's inventory.
+                // if not, just increment the gathering progress by the booster percentage and deduct the booster from the user's inventory.
             } else {
                 islandUpdateOperations.$inc['islandResourceStats.gatheringProgress'] = boosterPercentage;
             }
-        // if the booster is greater than 100,
-        // 1. check the final non-modulo gathering progress. e.g. if the current gathering progress is 70 and a 500% booster is applied, the non-modulo progress will be 570%.
-        // 2. this means that Math.floor(570/100) = 5 resources will be dropped, and the final gathering progress will be 70.
+            // if the booster is greater than 100,
+            // 1. check the final non-modulo gathering progress. e.g. if the current gathering progress is 70 and a 500% booster is applied, the non-modulo progress will be 570%.
+            // 2. this means that Math.floor(570/100) = 5 resources will be dropped, and the final gathering progress will be 70.
         } else {
             const gatheringProgress = island.islandResourceStats?.gatheringProgress;
             const finalNonModuloGatheringProgress = gatheringProgress + boosterPercentage;
@@ -3765,7 +3822,7 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
                 // drop a resource
                 const { status, message, data } = await dropResource(islandId);
 
-                console.log(`dropped a resource for Island ${islandId} x${i+1}. resource: ${data.resource}`);
+                console.log(`dropped a resource for Island ${islandId} x${i + 1}. resource: ${data.resource}`);
 
                 if (status !== Status.SUCCESS) {
                     console.log(`(applyIslandTapping) Error from dropResource in loop: ${message}`);
@@ -3778,12 +3835,12 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
 
         // Apply Bonus milestone reward
         let bonusExp = 0;
-        
+
         if (bonus === 'First') {
             bonusExp = milestoneReward.bonusReward.firstOptionReward;
         } else {
             const secondOptionReward = milestoneReward.bonusReward.secondOptionReward;
-            
+
             if (secondOptionReward.additionalExp) {
                 bonusExp = secondOptionReward.additionalExp;
             } else if (secondOptionReward.berryDrop) {
@@ -3812,7 +3869,7 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
                 let additionalPoints = 0;
 
                 const currentLevel = user.inGameData.level;
-                
+
                 // if not found, create a new entry
                 if (userIndex === -1) {
                     // check if the user is eligible to level up to the next level
@@ -3841,7 +3898,7 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
                             }
                         ]
                     }
-                // if the user is found, increment the points
+                    // if the user is found, increment the points
                 } else {
                     // get the user's total leaderboard points
                     // this is done by summing up all the points from the `pointsData` array, BUT EXCLUDING SOURCES FROM:
@@ -3974,8 +4031,8 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
                 data: {
                     currentMilestone: currentMilestone,
                     currentReward: milestoneReward,
-                    chosenBonus: bonus === 'First' ? 
-                        milestoneReward.bonusReward.firstOptionReward : 
+                    chosenBonus: bonus === 'First' ?
+                        milestoneReward.bonusReward.firstOptionReward :
                         milestoneReward.bonusReward.secondOptionReward,
                     resourcesDropped,
                 }
@@ -3996,8 +4053,8 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
                 data: {
                     currentMilestone: currentMilestone,
                     currentReward: milestoneReward,
-                    chosenBonus: bonus === 'First' ? 
-                        milestoneReward.bonusReward.firstOptionReward : 
+                    chosenBonus: bonus === 'First' ?
+                        milestoneReward.bonusReward.firstOptionReward :
                         milestoneReward.bonusReward.secondOptionReward,
                     resourcesDropped,
                 }
@@ -4008,7 +4065,7 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
             status: Status.ERROR,
             message: `(getIslandTappingData) Error: ${err.message}`
         }
-    }  
+    }
 };
 
 export const rerollBonusMilestoneReward = async (twitterId: string, islandId: number): Promise<ReturnValue> => {
@@ -4043,11 +4100,11 @@ export const rerollBonusMilestoneReward = async (twitterId: string, islandId: nu
                 message: `(rerollBonusMilestoneReward) Island with ID ${islandId} not found.`
             };
         }
-        
+
         // Destructure necessary data
         const { tapping } = user.inGameData.mastery as PlayerMastery;
         const { currentMilestone } = island.islandTappingData as IslandTappingData;
-        
+
         // Check if user reroll count is > 0
         if (tapping.rerollCount <= 0) {
             return {
@@ -4097,7 +4154,7 @@ export const resetDailyIslandTappingMilestone = async (): Promise<void> => {
     try {
         // Find all available islands with currentMilestone greater than 1.
         const islands = await IslandModel.find({ 'islandTappingData.currentMilestone': { $gt: 1 } }).lean();
-        
+
         if (islands.length === 0) {
             console.error(`(resetDailyIslandTappingMilestone) No islands found.`);
             return;
@@ -4107,7 +4164,7 @@ export const resetDailyIslandTappingMilestone = async (): Promise<void> => {
         const bulkWriteOps = await Promise.all(islands.map(async (island) => {
             // Find the user who owns the island
             const owner = await UserModel.findOne({ _id: island.owner }).lean();
-            
+
             if (!owner) {
                 console.error(`(resetDailyIslandTappingMilestone) Owner not found for island ${island.islandId}`);
                 return null; // Skip this operation if the owner is not found
