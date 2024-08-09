@@ -428,10 +428,14 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
                     // check if there are any milestones skipped. if so, accumulate the rewards.
                     // for example, let's say, previously, the referred user has successfully referred 3 users. the main user gets 25% of the rewards for 3 indirect referrals.
                     // now, the referred user has successfully referred 10 users. that means that the user will get the rewards for 5 and 10 indirect referrals.
-                    // we check the `userCountMilestone`, because `obtainedRewardMilestone` only gets updated once the user has claimed the rewards for a specific milestone.
-                    // this means that obtainedRewardMilestone can be 0 when `claimableRewardData.userCountMilestone` can be 5, for example.
-                    // if we check `obtainedRewardMilestone`, then the rewards for 1, 3 and 5 will be recounted again, which is what we don't want.
-                    const skippedAndNewMilestones = milestones.filter(milestone => milestone > claimableRewardData.userCountMilestone && milestone <= indirectReferredUserIds.length);
+                    // we now check for the highest milestone (between userCountMilestone and obtainedRewardMilestone).
+                    // the reason for this is because if we only check for `obtainedRewardMilestone`, it only gets updated once the user has claimed the rewards from a specific milestone, which is set as `userCountMilestone`.
+                    // however, after claiming, `userCountMilestone` will be set back to 0 again, meaning that if we only check `userCountMilestone`, then it will essentially act as if the prev milestone is 0 and give the users all the rewards again.
+                    // there can be a time where the user just earned rewards for a new milestone and haven't claimed it yet.
+                    // there can be also a time when the user just claimed the rewards for a milestone and the `obtainedRewardMilestone` is updated, but the `userCountMilestone` is updated to 0 again.
+                    // hence, we check the highest milestone between the two.
+                    const highestMilestone = Math.max(existingIndirectReferralData.claimableRewardData.userCountMilestone, existingIndirectReferralData.obtainedRewardMilestone);
+                    const skippedAndNewMilestones = milestones.filter(milestone => milestone > highestMilestone && milestone <= indirectReferredUserIds.length);
 
                     let skippedAndNewXCookies = 0;
                     let skippedAndNewLeaderboardPoints = 0;
