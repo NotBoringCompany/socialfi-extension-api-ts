@@ -21,7 +21,23 @@ export const IslandSchema = new mongoose.Schema({
     currentTax: Number,
     placedBitIds: Array,
     traits: Array,
-    islandResourceStats: Object,
+    islandResourceStats: {
+        baseResourceCap: Number,
+        resourcesGathered: Array,
+        dailyBonusResourcesGathered: Number,
+        claimableResources: Array,
+        gatheringStart: Number,
+        gatheringEnd: Number,
+        lastClaimed: Number,
+        gatheringProgress: Number,
+        lastUpdatedGatheringProgress: Number,
+        // added versioning system to prevent race conditions 
+        // when users claim resources while `dropResource` is called.
+        version: {
+            type: Number,
+            default: 0
+        }
+    },
     islandEarningStats: Object,
     islandStatsModifiers: Object,
     islandTappingData: Object
