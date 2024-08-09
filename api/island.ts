@@ -2744,8 +2744,8 @@ export const claimResources = async (
                     // increment the version number as the last step
                     await IslandModel.updateOne({ islandId }, { $inc: { 'islandResourceStats.version': 1 } });
 
-                    console.log(`(claimResources) Successfully claimed resources for Island ID ${islandId} after ${attempt} attempts.`);
-
+                    console.log(`(claimResources) Successfully claimed resources for Island ID ${islandId} after ${attempt} attempts. Claimed: ${JSON.stringify(claimType === 'manual' ? chosenResources : claimedResources)}`);
+                    
                     return {
                         status: Status.SUCCESS,
                         message: returnMessage,
