@@ -2758,7 +2758,7 @@ export const claimResources = async (
                 }
 
                 // check push/pull
-                if (Object.keys(islandUpdateOperations.$push).length > 0 || Object.keys(islandUpdateOperations.$pull).length > 0) {
+                if (!success && (Object.keys(islandUpdateOperations.$push).length > 0 || Object.keys(islandUpdateOperations.$pull).length > 0)) {
                     const islandResultTwo = await IslandModel.updateOne(
                         { islandId, 'islandResourceStats.version': island.islandResourceStats.version },
                         {
