@@ -2673,7 +2673,6 @@ export const claimResources = async (
         // set the island's `lastClaimed` to the current time
         islandUpdateOperations.$set['islandResourceStats.lastClaimed'] = currentTime;
 
-        console.log(returnMessage);
         console.log(`(claimResources) ${claimType} claim Island ${islandId}: ${JSON.stringify(claimType === 'manual' ? chosenResources : claimedResources)}` );
 
         await UserModel.updateOne({ twitterId }, {
