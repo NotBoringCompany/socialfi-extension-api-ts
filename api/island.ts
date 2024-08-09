@@ -2382,7 +2382,6 @@ export const claimResources = async (
     let attempt = 0;
     let success = false;
 
-    while (attempt < maxRetries && !success) {
         try {
             // the return message (just in case not all resources can be claimed). only for successful claims.
             let returnMessage: string = `(claimResources) Claimed all resources from island ID ${islandId}.`;
@@ -2730,69 +2729,63 @@ export const claimResources = async (
             console.log(`Island ${island.islandId} userUpdateOperations: `, userUpdateOperations);
             console.log(`Island ${island.islandId} islandUpdateOperations: `, islandUpdateOperations);
 
-            // const [userUpdateResult, islandUpdateResult] = await Promise.all([
-            //     UserModel.updateOne(
-            //         { twitterId },
-            //         {
-            //             $set: Object.keys(userUpdateOperations.$set).length > 0 ? userUpdateOperations.$set : {},
-            //             $inc: Object.keys(userUpdateOperations.$inc).length > 0 ? userUpdateOperations.$inc : {},
-            //             $pull: Object.keys(userUpdateOperations.$pull).length > 0 ? userUpdateOperations.$pull : {},
-            //             $push: Object.keys(userUpdateOperations.$push).length > 0 ? userUpdateOperations.$push : {},
-            //         }
-            //     ),
-            //     IslandModel.updateOne(
-            //         { islandId, 'islandResourceStats.version': island.islandResourceStats.version },
-            //         {
-            //             $set: Object.keys(islandUpdateOperations.$set).length > 0 ? islandUpdateOperations.$set : {},
-            //             $inc: Object.keys(islandUpdateOperations.$inc).length > 0 ? islandUpdateOperations.$inc : {},
-            //             $pull: Object.keys(islandUpdateOperations.$pull).length > 0 ? islandUpdateOperations.$pull : {},
-            //             $push: Object.keys(islandUpdateOperations.$push).length > 0 ? islandUpdateOperations.$push : {},
-            //         }
-            //     )
-            // ]);
-
             // do set and inc first to prevent conflicting issues
-            const userResultOne = await UserModel.updateOne({ twitterId }, { 
+            await UserModel.updateOne({ twitterId }, { 
                 $set: Object.keys(userUpdateOperations.$set).length > 0 ? userUpdateOperations.$set : {},
                 $inc: Object.keys(userUpdateOperations.$inc).length > 0 ? userUpdateOperations.$inc : {}
             });
 
-            const userResultTwo = await UserModel.updateOne({ twitterId }, {
+            await UserModel.updateOne({ twitterId }, {
                 $push: Object.keys(userUpdateOperations.$push).length > 0 ? userUpdateOperations.$push : {},
                 $pull: Object.keys(userUpdateOperations.$pull).length > 0 ? userUpdateOperations.$pull : {}
             });
 
-            const islandResultOne = await IslandModel.updateOne({ islandId, 'islandResourceStats.version': island.islandResourceStats.version }, {
-                $set: Object.keys(islandUpdateOperations.$set).length > 0 ? islandUpdateOperations.$set : {},
-                $inc: Object.keys(islandUpdateOperations.$inc).length > 0 ? islandUpdateOperations.$inc : {}
-            });
+            // retry when island operations aren't successful
+            while (attempt < maxRetries && !success) {
+                // first check if we have any set/inc operations to perform
+                if (Object.keys(islandUpdateOperations.$set).length > 0 || Object.keys(islandUpdateOperations.$inc).length > 0) {
+                    const islandResultOne = await IslandModel.updateOne(
+                        { islandId, 'islandResourceStats.version': island.islandResourceStats.version },
+                        {
+                            $set: Object.keys(islandUpdateOperations.$set).length > 0 ? islandUpdateOperations.$set : {},
+                            $inc: Object.keys(islandUpdateOperations.$inc).length > 0 ? islandUpdateOperations.$inc : {}
+                        }
+                    );
 
-            const islandResultTwo = await IslandModel.updateOne({ islandId, 'islandResourceStats.version': island.islandResourceStats.version }, {
-                $push: Object.keys(islandUpdateOperations.$push).length > 0 ? islandUpdateOperations.$push : {},
-                $pull: Object.keys(islandUpdateOperations.$pull).length > 0 ? islandUpdateOperations.$pull : {}
-            });
-
-            if (
-                userResultOne.modifiedCount === 1 || 
-                userResultTwo.modifiedCount === 1 || 
-                islandResultOne.modifiedCount === 1 || 
-                islandResultTwo.modifiedCount === 1
-            ) {
-                success = true;
-
-                // increment the island's version number
-                await IslandModel.updateOne({ islandId }, { $inc: { 'islandResourceStats.version': 1 } });
-
-                console.log(`(claimResources) Successfully claimed resources for Island ID ${islandId} after ${attempt} attempts.`);
-
-                return {
-                    status: Status.SUCCESS,
-                    message: returnMessage,
-                    data: {
-                        claimedResources: claimType === 'manual' ? chosenResources : claimedResources,
+                    if (islandResultOne.modifiedCount === 1) {
+                        success = true;
                     }
                 }
-            } else {
+
+                // if set/inc was not successful or not needed, check push/pull
+                if (!success && (Object.keys(islandUpdateOperations.$push).length > 0 || Object.keys(islandUpdateOperations.$pull).length > 0)) {
+                    const islandResultTwo = await IslandModel.updateOne(
+                        { islandId, 'islandResourceStats.version': island.islandResourceStats.version },
+                        {
+                            $push: Object.keys(islandUpdateOperations.$push).length > 0 ? islandUpdateOperations.$push : {},
+                            $pull: Object.keys(islandUpdateOperations.$pull).length > 0 ? islandUpdateOperations.$pull : {}
+                        }
+                    );
+
+                    if (islandResultTwo.modifiedCount === 1) {
+                        success = true;
+                    }
+                }
+
+                if (success) {
+                    // increment the version number as the last step
+                    await IslandModel.updateOne({ islandId }, { $inc: { 'islandResourceStats.version': 1 } });
+
+                    console.log(`(claimResources) Successfully claimed resources for Island ID ${islandId} after ${attempt} attempts.`);
+
+                    return {
+                        status: Status.SUCCESS,
+                        message: returnMessage,
+                        data: {
+                            claimedResources: claimType === 'manual' ? chosenResources : claimedResources,
+                        }
+                    };
+                }
                 attempt++;
             }
         } catch (err: any) {
@@ -2801,7 +2794,6 @@ export const claimResources = async (
                 message: `(claimResources) Error: ${err.message}`
             }
         }
-    }
 
     return {
         status: Status.ERROR,
