@@ -85,6 +85,8 @@ router.get('/get_successful_indirect_referral_rewards', async (req, res) => {
 
 router.post('/claim_successful_indirect_referral_rewards', async (req, res) => {
     try {
+        throw new Error(`(╯°□°）╯︵ ┻━┻ Sorry! We've temporarily disabled this function.`);
+
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'claim_successful_indirect_referral_rewards');
 
         if (validateStatus !== Status.SUCCESS) {
