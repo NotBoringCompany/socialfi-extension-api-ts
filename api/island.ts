@@ -2674,7 +2674,7 @@ export const claimResources = async (
         islandUpdateOperations.$set['islandResourceStats.lastClaimed'] = currentTime;
 
         console.log(returnMessage);
-        console.log(`(claimResources) ${claimType} claim Island ${islandId}: ${claimType === 'manual' ? chosenResources : claimedResources}` );
+        console.log(`(claimResources) ${claimType} claim Island ${islandId}: ${JSON.stringify(claimType === 'manual' ? chosenResources : claimedResources)}` );
 
         await UserModel.updateOne({ twitterId }, {
             $set: Object.keys(userUpdateOperations.$set).length > 0 ? userUpdateOperations.$set : {},
