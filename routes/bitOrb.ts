@@ -2,7 +2,7 @@ import express from 'express';
 import { consumeBitOrb } from '../api/bitOrb';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
-import { mixpanel } from '../utils/mixpanel';
+import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 import { CONSUME_BIT_ORB_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { UserWallet } from '../models/user';
@@ -32,7 +32,7 @@ router.post('/consume', async (req, res) => {
             type
         );
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Consume Bit Orb', {
                 distinct_id: validateData?.twitterId,
                 '_type': type,

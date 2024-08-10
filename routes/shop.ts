@@ -2,7 +2,7 @@ import express from 'express';
 import { getShop, purchaseShopAsset } from '../api/shop';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
-import { mixpanel } from '../utils/mixpanel';
+import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { PURCHASE_SHOP_ASSET_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { UserWallet } from '../models/user';
@@ -49,7 +49,7 @@ router.post('/purchase_shop_asset', async (req, res) => {
 
         const { status, message, data } = await purchaseShopAsset(validateData?.twitterId, amount, asset);
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Currency Tracker', {
                 distinct_id: validateData?.twitterId,
                 '_type': 'Purchase Shop Asset',

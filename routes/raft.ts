@@ -4,7 +4,7 @@ import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { UserModel } from '../utils/constants/db';
 import { RAFT_EVOLUTION_COST } from '../utils/constants/raft';
-import { mixpanel } from '../utils/mixpanel';
+import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { UserWallet } from '../models/user';
 
@@ -86,7 +86,7 @@ router.post('/evolve_raft', async (req, res) => {
 
         const { status, message, data } = await evolveRaft(validateData?.twitterId);
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Currency Tracker', {
                 distinct_id: validateData?.twitterId,
                 '_type': 'Evolve Raft',

@@ -2,6 +2,10 @@ import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { claimReferralRewards, claimSuccessfulIndirectReferralRewards, fetchSuccessfulIndirectReferralRewards, getReferredUsersKOSCount } from '../api/invite';
+import mixpanel from 'mixpanel';
+import { incrementEventCounterInContract } from '../api/web3';
+import { allowMixpanel } from '../utils/mixpanel';
+import { CLAIM_INDIRECT_REFERRAL_REWARDS_MIXPANEL_EVENT_HASH, CLAIM_REFERRAL_REWARDS_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 
 const router = express.Router();
 
@@ -17,6 +21,16 @@ router.post('/claim_referral_rewards', async (req, res) => {
         }
 
         const { status, message, data } = await claimReferralRewards(validateData?.twitterId);
+
+        if (status === Status.SUCCESS && allowMixpanel) {
+            mixpanel.track('Claim Referral Rewards', {
+                distinct_id: validateData?.twitterId,
+                '_data': data,
+            });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, CLAIM_REFERRAL_REWARDS_MIXPANEL_EVENT_HASH);
+        }
 
         return res.status(status).json({
             status,
@@ -97,6 +111,16 @@ router.post('/claim_successful_indirect_referral_rewards', async (req, res) => {
         }
 
         const { status, message, data } = await claimSuccessfulIndirectReferralRewards(validateData?.twitterId);
+
+        if (status === Status.SUCCESS && allowMixpanel) {
+            mixpanel.track('Claim Indirect Referral Rewards', {
+                distinct_id: validateData?.twitterId,
+                '_data': data,
+            });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, CLAIM_INDIRECT_REFERRAL_REWARDS_MIXPANEL_EVENT_HASH);
+        }
 
         return res.status(status).json({
             status,

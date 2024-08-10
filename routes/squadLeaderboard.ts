@@ -2,6 +2,10 @@ import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { claimWeeklySquadMemberRewards, getClaimableWeeklySquadMemberRewards, getLatestWeeklyLeaderboard } from '../api/squadLeaderboard';
+import mixpanel from 'mixpanel';
+import { incrementEventCounterInContract } from '../api/web3';
+import { allowMixpanel } from '../utils/mixpanel';
+import { CLAIM_SQUAD_REWARDS_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 
 const router = express.Router();
 
@@ -43,6 +47,16 @@ router.post('/claim_weekly_squad_member_rewards', async (req, res) => {
         }
 
         const { status, message, data } = await claimWeeklySquadMemberRewards(validateData?.twitterId);
+
+        if (status === Status.SUCCESS && allowMixpanel) {
+            mixpanel.track('Claim Squad Rewards', {
+                distinct_id: validateData?.twitterId,
+                '_data': data,
+            });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, CLAIM_SQUAD_REWARDS_MIXPANEL_EVENT_HASH);
+        }
 
         return res.status(status).json({
             status,

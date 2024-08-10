@@ -2,7 +2,7 @@ import express from 'express';
 import { consumeTerraCapsulator } from '../api/terraCapsulator';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
-import { mixpanel } from '../utils/mixpanel';
+import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 import { CONSUME_TERRA_CAPSULATOR_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 
 import { UserWallet } from '../models/user';
@@ -27,7 +27,7 @@ router.post('/consume', async (req, res) => {
 
         const { status, message, data } = await consumeTerraCapsulator(type, validateData?.twitterId);
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Consume Terra Capsulator', {
                 distinct_id: validateData?.twitterId,
                 '_type': type,

@@ -3,7 +3,7 @@ import { checkInviteCodeLinked, claimBeginnerRewards, claimDailyRewards, consume
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { ExtendedProfile } from '../utils/types';
-import { mixpanel } from '../utils/mixpanel';
+import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 import { CLAIM_BEGINNER_REWARDS_MIXPANEL_EVENT_HASH, CLAIM_DAILY_REWARDS_MIXPANEL_EVENT_HASH, LINK_INVITE_CODE_MIXPANEL_EVENT_HASH, REMOVE_RESOURCES_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { UserWallet } from '../models/user';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
@@ -79,7 +79,7 @@ router.post('/remove_resources', async (req, res) => {
 
         const { status, message, data } = await removeResources(validateData?.twitterId, resourcesToRemove);
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Remove Resources', {
                 distinct_id: validateData?.twitterId,
                 '_removedResource': resourcesToRemove,
@@ -168,7 +168,7 @@ router.post('/claim_daily_rewards', async (req, res) => {
 
         const { status, message, data } = await claimDailyRewards(validateData?.twitterId, leaderboardName);
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Claim Daily Rewards', {
                 distinct_id: validateData?.twitterId,
                 '_rewards': data?.dailyLoginRewards,
@@ -205,7 +205,7 @@ router.post('/link_invite_code', async (req, res) => {
 
         const { status, message, data } = await linkInviteCode(validateData?.twitterId, code);
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Link Invite Code', {
                 distinct_id: validateData?.twitterId,
                 '_code': code,
@@ -260,7 +260,7 @@ router.post('/claim_beginner_rewards', async (req, res) => {
 
         const { status, message, data } = await claimBeginnerRewards(validateData?.twitterId);
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Claim Beginner Rewards', {
                 distinct_id: validateData?.twitterId,
                 '_rewards': data?.rewards,

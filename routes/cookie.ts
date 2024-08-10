@@ -2,7 +2,7 @@ import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { depositCookies, withdrawCookies } from '../api/cookie';
-import { mixpanel } from '../utils/mixpanel';
+import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 
 const router = express.Router();
 
@@ -21,7 +21,7 @@ router.post('/deposit', async (req, res) => {
 
         const { status, message, data } = await depositCookies(validateData?.twitterId, amount);
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Deposit Cookies', {
                 distinct_id: validateData?.twitterId,
                 '_data': data,
@@ -56,7 +56,7 @@ router.post('/withdraw', async (req, res) => {
 
         const { status, message, data } = await withdrawCookies(validateData?.twitterId, amount);
 
-        if (status === Status.SUCCESS) { 
+        if (status === Status.SUCCESS && allowMixpanel) { 
             mixpanel.track('Withdraw Cookies', {
                 distinct_id: validateData?.twitterId,
                 '_data': data,

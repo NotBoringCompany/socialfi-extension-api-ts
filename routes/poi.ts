@@ -3,7 +3,7 @@ import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { addOrReplacePOIShop, addPOI, applyTravelBooster, buyItemsInPOIShop, getAvailablePOIDestinations, getCurrentLocation, getCurrentPOI, getSellItemsInPOIPointsBoost, getUserTransactionData, sellItemsInPOIShop, travelToPOI, updateArrival } from '../api/poi';
 import { ExtendedProfile } from '../utils/types';
-import { mixpanel } from '../utils/mixpanel';
+import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 import { UserWallet } from '../models/user';
 
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
@@ -52,7 +52,7 @@ router.post('/travel_to_poi', async (req, res) => {
 
         const { status, message } = await travelToPOI(validateData?.twitterId, destination);
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Travel to Poi', {
                 distinct_id: validateData?.twitterId,
                 '_destination': destination,
@@ -95,7 +95,7 @@ router.post('/apply_travel_booster', async (req, res) => {
 
         const { status, message, data } = await applyTravelBooster(validateData?.twitterId, booster);
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Apply Travelling Booster', {
                 distinct_id: validateData?.twitterId,
                 '_booster': booster,
@@ -240,7 +240,7 @@ router.post('/sell_items_in_poi_shop', async (req, res) => {
 
         const { status, message, data } = await sellItemsInPOIShop(validateData?.twitterId, items, leaderboardName);
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Points Earned (POI Shop)', {
                 distinct_id: validateData?.twitterId,
                 '_items': items,
@@ -286,7 +286,7 @@ router.post('/buy_items_in_poi_shop', async (req, res) => {
 
         const { status, message, data } = await buyItemsInPOIShop(validateData?.twitterId, items, paymentChoice);
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Currency Tracker', {
                 distinct_id: validateData?.twitterId,
                 '_type': 'Buy Item In POI Shop',

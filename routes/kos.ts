@@ -2,7 +2,7 @@ import express from 'express';
 import { claimDailyKOSRewards, claimWeeklyKOSRewards, getClaimableDailyKOSRewards, getClaimableWeeklyKOSRewards, getOwnedKeyIDs, getOwnedKeychainIDs, getOwnedSuperiorKeychainIDs } from '../api/kos';
 import { Status } from '../utils/retVal';
 import { validateRequestAuth } from '../utils/auth';
-import { mixpanel } from '../utils/mixpanel';
+import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 import { validate } from 'node-cron';
 
 const router = express.Router();
@@ -12,7 +12,7 @@ router.get('/get_owned_key_ids/:twitterId', async (req, res) => {
     try {
         const { status, message, data } = await getOwnedKeyIDs(twitterId);
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('User Owned Key', {
                 distinct_id: twitterId,
                 '_ownedKey': data?.ownedKeyIDs.length,
@@ -38,7 +38,7 @@ router.get('/get_owned_keychain_ids/:twitterId', async (req, res) => {
     try {
         const { status, message, data } = await getOwnedKeychainIDs(twitterId);
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('User Owned Keychain', {
                 distinct_id: twitterId,
                 '_ownedKeychain': data?.ownedKeychainIDs.length,
@@ -64,7 +64,7 @@ router.get('/get_owned_superior_keychain_ids/:twitterId', async (req, res) => {
     try {
         const { status, message, data } = await getOwnedSuperiorKeychainIDs(twitterId);
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('User Owned Superior Keychain', {
                 distinct_id: twitterId,
                 '_data': data,
@@ -99,7 +99,7 @@ router.post('/claim_daily_kos_rewards', async (req, res) => {
 
         const { status, message, data } = await claimDailyKOSRewards(validateData?.twitterId);
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Claim Daily KOS', {
                 distinct_id: validateData?.twitterId,
                 '_data': data,
@@ -132,7 +132,7 @@ router.post('/claim_weekly_kos_rewards', async (req, res) => {
 
         const { status, message, data } = await claimWeeklyKOSRewards(validateData?.twitterId);
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Claim Weekly KOS', {
                 distinct_id: validateData?.twitterId,
                 '_data': data,

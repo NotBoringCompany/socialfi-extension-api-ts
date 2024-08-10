@@ -2,7 +2,7 @@ import express from 'express';
 import { Status } from '../utils/retVal';
 import { validateRequestAuth } from '../utils/auth';
 import { addPOAP, getAllPOAP, getUserPOAP, redeemCode } from '../api/poap';
-import { mixpanel } from '../utils/mixpanel';
+import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 import { UserWallet } from '../models/user';
 
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
@@ -93,7 +93,7 @@ router.post('/redeem_poap', async (req, res) => {
 
         const { status, message, data } = await redeemCode(validateData.twitterId, code);
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Redeem POAP', {
                 distinct_id: validateData?.twitterId,
                 '_code': code,

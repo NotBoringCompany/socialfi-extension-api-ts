@@ -2,7 +2,7 @@ import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { openChest } from '../api/chest';
-import { mixpanel } from '../utils/mixpanel';
+import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 import { OPEN_CHEST_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { UserWallet } from '../models/user';
@@ -26,7 +26,7 @@ router.post('/open_chest', async (req, res) => {
 
         const { status, message, data } = await openChest(validateData?.twitterId, tweetId);
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Open Chest', {
                 distinct_id: validateData?.twitterId,
                 '_tweetId': tweetId,

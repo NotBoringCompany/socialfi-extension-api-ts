@@ -5,7 +5,7 @@ import passport from '../../configs/passport';
 import { connectToDiscord, disconnectFromDiscord } from '../../api/user';
 import { validateJWT } from '../../utils/jwt';
 import { validateRequestAuth } from '../../utils/auth';
-import { mixpanel } from '../../utils/mixpanel';
+import { allowMixpanel, mixpanel } from '../../utils/mixpanel';
 import { UserWallet } from '../../models/user';
 import { CONNECT_DISCORD_CALLBACK_MIXPANEL_EVENT_HASH, DISCONNECT_DISCORD_MIXPANEL_EVENT_HASH } from '../../utils/constants/mixpanelEvents';
 import { WONDERBITS_CONTRACT } from '../../utils/constants/web3';
@@ -104,7 +104,7 @@ router.get('/callback', passport.authenticate('discord', { failureRedirect: '/',
             })
         );
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Connect Discord Callback', {
                 distinct_id: validateData?.twitterId,
                 '_profile': profile,
@@ -135,7 +135,7 @@ router.post('/disconnect', async (req, res) => {
 
         const { status, message, data } = await disconnectFromDiscord(validateData?.twitterId);
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Disconnect Discord', {
                 distinct_id: validateData?.twitterId,
                 '_data': data
