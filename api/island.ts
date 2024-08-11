@@ -2561,8 +2561,10 @@ export const claimResources = async (
                         const existingResourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(r => r.type === resource.type);
     
                         if (existingResourceIndex !== -1) {
+                            console.log(`(claimResource) Existing resource ${resource.type} at index ${existingResourceIndex} found for user ${user._id}. Incrementing amount by ${resource.amount}.`);
                             userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = resource.amount;
                         } else {
+                            console.log(`(claimResource) New resource ${JSON.stringify(resource, null, 2)} found for user ${user._id}. Pushing to inventory.`);
                             userUpdateOperations.$push['inventory.resources'].$each.push({ ...resource, origin: ExtendedResourceOrigin.NORMAL });
                         }
                     }
