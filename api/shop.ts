@@ -26,6 +26,13 @@ export const purchaseShopAsset = async (
     amount: number,
     asset: ShopAsset
 ): Promise<ReturnValue> => {
+    if (amount < 1) {
+        return {
+            status: Status.BAD_REQUEST,
+            message: `(purchaseShopAsset) At least 1 item must be bought.`
+        }
+    }
+
     if (!twitterId) {
         return {
             status: Status.UNAUTHORIZED,
