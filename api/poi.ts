@@ -549,6 +549,13 @@ export const sellItemsInPOIShop = async (
     leaderboardName: string | null,
 ): Promise<ReturnValue> => {
     try {
+        if (items.some(item => item.amount < 1)) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(sellItemsInPOIShop) At least 1 item must be sold.`
+            }
+        }
+
         const user = await UserModel.findOne({ twitterId }).lean();
 
         const userUpdateOperations = {
@@ -1246,6 +1253,13 @@ export const buyItemsInPOIShop = async (
     paymentChoice: 'xCookies' | 'cookieCrumbs'
 ): Promise<ReturnValue> => {
     try {
+        if (items.some(item => item.amount < 1)) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(buyItemsInPOIShop) At least 1 item must be bought.`
+            }
+        }
+
         const user = await UserModel.findOne({ twitterId }).lean();
 
         const userUpdateOperations = {
