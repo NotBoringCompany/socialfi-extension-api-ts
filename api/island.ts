@@ -2595,6 +2595,8 @@ export const claimResources = async (
                         if (existingResourceIndex !== -1) {
                             userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = resource.amount;
                         } else {
+                            console.log(`(claimResources) New user found. Adding resource to inventory... Resource: ${resource}`);
+                            /// CHECK THIS!!!!!
                             userUpdateOperations.$push['inventory.resources'].$each.push({ ...resource, origin: ExtendedResourceOrigin.NORMAL });
                         }
                     }
