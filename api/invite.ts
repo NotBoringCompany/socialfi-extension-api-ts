@@ -443,9 +443,8 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
                     skippedAndNewMilestones.forEach(milestone => {
                         const milestoneRewards = GET_SEASON_0_REFERRAL_REWARDS(milestone);
 
-                        // NOTE: 150% MULTIPLIER FOR THE FIRST WEEK. WILL BE UPDATED.
-                        skippedAndNewXCookies += (milestoneRewards.xCookies * 1.5);
-                        skippedAndNewLeaderboardPoints += (milestoneRewards.leaderboardPoints * 1.5);
+                        skippedAndNewXCookies += milestoneRewards.xCookies;
+                        skippedAndNewLeaderboardPoints += milestoneRewards.leaderboardPoints;
                     });
 
                     // reverse the milestones and check the first milestone that is less than or equal to the indirect referred user count.
@@ -476,9 +475,8 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
                         obtainedRewardMilestone: 0,
                         claimableRewardData: {
                             userCountMilestone,
-                            // NOTE: 150% MULTIPLIER FOR THE FIRST WEEK. WILL BE UPDATED.
-                            xCookies: 1.5 * rewards.xCookies,
-                            leaderboardPoints: 1.5 * rewards.leaderboardPoints
+                            xCookies: rewards.xCookies,
+                            leaderboardPoints: rewards.leaderboardPoints
                         },
                         referredUserId: successfulReferredUserData.userId,
                         indirectReferredUserIds

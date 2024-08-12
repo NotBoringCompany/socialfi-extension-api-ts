@@ -1985,12 +1985,12 @@ export const updateReferredUsersData = async (referrerUserId: string, referredUs
             // if any of the rewards aren't 0, update the referrer's `referralData.claimableReferralRewards`
             if (referralRewards.leaderboardPoints !== 0) {
                 // NOTE: 250% MULTIPLIER FOR THE FIRST WEEK. THIS WILL BE CHANGED.
-                referrerUpdateOperations.$inc['referralData.claimableReferralRewards.leaderboardPoints'] = (referralRewards.leaderboardPoints * 2.5);
+                referrerUpdateOperations.$inc['referralData.claimableReferralRewards.leaderboardPoints'] = referralRewards.leaderboardPoints;
             }
 
             if (referralRewards.xCookies !== 0) {
                 // NOTE: 250% MULTIPLIER FOR THE FIRST WEEK. THIS WILL BE CHANGED.
-                referrerUpdateOperations.$inc['referralData.claimableReferralRewards.xCookies'] = (referralRewards.xCookies * 2.5);
+                referrerUpdateOperations.$inc['referralData.claimableReferralRewards.xCookies'] = referralRewards.xCookies;
             }
 
             referrerUpdateOperations.$set['referralData.level5ReferredUsersLatestMilestone'] = milestone;
