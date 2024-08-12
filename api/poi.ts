@@ -710,17 +710,15 @@ export const sellItemsInPOIShop = async (
 
                 return !food || food.amount < item.amount;
                 // if terra cap or bit orb (which at this point is 'else')
-            } else if (item.item === POIShopItemName.TERRA_CAPSULATOR_I) {
-                // check if the user owns this terra capsulator type. if they do, check if the amount they want to sell is less than the amount they own.
-                const terraCapsulator = (user.inventory.items as Item[]).find(i => i.type === item.item as string);
+            } else if (
+                item.item.includes('Terra Capsulator') ||
+                item.item.includes('Bit Orb')
+            ) {
+                // check if the user owns this terra capsulator or bit orb type. 
+                // if they do, check if the amount they want to sell is less than the amount they own.
+                const itemToCheck = (user.inventory.items as Item[]).find(i => i.type === item.item as string);
 
-                return !terraCapsulator || terraCapsulator.amount < item.amount;
-            } else if (item.item === POIShopItemName.BIT_ORB_I) {
-                // check if the user owns this bit orb type. if they do, check if the amount they want to sell is less than the amount they own.
-                const bitOrb = (user.inventory.items as Item[]).find(i => i.type === item.item as string);
-
-                return !bitOrb || bitOrb.amount < item.amount;
-                // right now, we don't have any other items in the POI shop, so we just return true since it's invalid.
+                return !itemToCheck || itemToCheck.amount < item.amount;
             } else {
                 return true;
             }
@@ -732,8 +730,6 @@ export const sellItemsInPOIShop = async (
                 message: `(sellItemsInPOIShop) One ore more checks failed. Please try again.`
             }
         }
-
-        console.log('items are valid.');
 
         // calculate the base leaderboard points to give to the user per item.
         // if a leaderboard is not specified, we give the points to the most recent leaderboard.
@@ -759,7 +755,6 @@ export const sellItemsInPOIShop = async (
                 message: `(sellItemsInPOIShop) Error from getSellitemsInPOIPointsBoost: ${itemsPOIPointsBoostMessage}`,
             }
         }
-
 
         // calculate the total leaderboard points based on the sell asset point boost, squad weekly ranking point boost and the base leaderboard points.
         // if no boost is present, `ownedKOSPointsBoost` and/or `squadWeeklyRankingPointsBoost` remains at 1.
@@ -791,10 +786,10 @@ export const sellItemsInPOIShop = async (
             // meaning that they prev had no points.
             const newLevel = GET_SEASON_0_PLAYER_LEVEL(leaderboardPoints);
 
-            // if new level is greater than the current level, we update the user's data
+            // if new level is greater than (or different, just in case) the current level, we update the user's data
             // 1. set the new level
             // 2. add the `additionalPoints` to give the user in the leaderboard with the source `LeaderboardPointsSource.LEVELLING_UP`
-            if (newLevel > currentLevel) {
+            if (newLevel !== currentLevel) {
                 userUpdateOperations.$set[`inGameData.level`] = newLevel;
                 additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
             }
@@ -872,8 +867,6 @@ export const sellItemsInPOIShop = async (
                 }
             }
         } else {
-            console.log('user exists in leaderboard. logic running here.');
-
             let additionalPoints = 0;
 
             // check if this is enough to level the user up to the next player level.
@@ -890,23 +883,15 @@ export const sellItemsInPOIShop = async (
                 return acc;
             }, 0);
 
-            console.log('leaderboard points: ', leaderboardPoints);
-            console.log('total leaderboard points: ', totalLeaderboardPoints);
-
             const newLevel = GET_SEASON_0_PLAYER_LEVEL(leaderboardPoints + totalLeaderboardPoints);
 
-            console.log('new level :', newLevel);
-            console.log('old level: ', currentLevel);
-
-            // if new level is greater than the current level, we update the user's data
+            // if new level is greater than (or different, just in case) the current level, we update the user's data
             // 1. set the new level
             // 2. increment the `additionalPoints` to give the user in the leaderboard
-            if (newLevel > currentLevel) {
+            if (newLevel !== currentLevel) {
                 userUpdateOperations.$set[`inGameData.level`] = newLevel;
                 additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
             }
-
-            console.log('additional points earned: ', additionalPoints);
 
             // get the index of the user in the leaderboard
             const userIndex = leaderboard.userData.findIndex(userData => userData.userId === user._id);
@@ -1068,34 +1053,23 @@ export const sellItemsInPOIShop = async (
                         }
                     }
                 }
-            } else if (item.item === POIShopItemName.TERRA_CAPSULATOR_I) {
-                // get the index of the terra capsulator in the user's inventory
-                const terraCapsulatorIndex = (user.inventory.items as Item[]).findIndex(i => i.type === item.item as string);
+            } else if (
+                item.item.includes('Terra Capsulator') ||
+                item.item.includes('Bit Orb')
+            ) {
+                // get the index of the terra capsulator/bit orb in the user's inventory
+                const itemIndex = (user.inventory.items as Item[]).findIndex(i => i.type === item.item as string);
 
                 // if not found, return an error.
-                if (terraCapsulatorIndex === -1) {
+                if (itemIndex === -1) {
                     return {
                         status: Status.BAD_REQUEST,
-                        message: `(sellItemsInPOIShop) Terra capsulator type not found in user's inventory.`
+                        message: `(sellItemsInPOIShop) Terra capsulator/bit orb not found in user's inventory.`
                     }
                 }
 
                 // deduct the amount of the terra capsulator
-                userUpdateOperations.$inc[`inventory.items.${terraCapsulatorIndex}.amount`] = -item.amount;
-            } else if (item.item === POIShopItemName.BIT_ORB_I) {
-                // get the index of the bit orb in the user's inventory
-                const bitOrbIndex = (user.inventory.items as Item[]).findIndex(i => i.type === item.item as string);
-
-                // if not found, return an error.
-                if (bitOrbIndex === -1) {
-                    return {
-                        status: Status.BAD_REQUEST,
-                        message: `(sellItemsInPOIShop) Bit orb type not found in user's inventory.`
-                    }
-                }
-
-                // deduct the amount of the bit orb
-                userUpdateOperations.$inc[`inventory.items.${bitOrbIndex}.amount`] = -item.amount;
+                userUpdateOperations.$inc[`inventory.items.${itemIndex}.amount`] = -item.amount;
             }
 
             // now, we update the shop's data.
@@ -1133,39 +1107,45 @@ export const sellItemsInPOIShop = async (
             }
         });
 
-        // lastly, reduce the user inventory's weight by `totalWeightToReduce`
-        userUpdateOperations.$inc[`inventory.weight`] = -totalWeightToReduce;
+        if (totalWeightToReduce > 0) {
+            // lastly, reduce the user inventory's weight by `totalWeightToReduce`
+            userUpdateOperations.$inc[`inventory.weight`] = -totalWeightToReduce;
+        }
 
         // divide update operations into two; $set and $inc on one, and $push and $pull on the other to prevent conflicts.
-        await UserModel.updateOne({ twitterId }, {
-            $set: userUpdateOperations.$set,
-            $inc: userUpdateOperations.$inc
-        });
+        await Promise.all([
+            UserModel.updateOne({ twitterId }, {
+                $set: userUpdateOperations.$set,
+                $inc: userUpdateOperations.$inc
+            }),
 
-        await UserModel.updateOne({ twitterId }, {
-            $push: userUpdateOperations.$push,
-            $pull: userUpdateOperations.$pull
-        });
+            await LeaderboardModel.updateOne({ _id: leaderboard._id }, {
+                $set: leaderboardUpdateOperations.$set,
+                $inc: leaderboardUpdateOperations.$inc
+            }),
 
-        await LeaderboardModel.updateOne({ _id: leaderboard._id }, {
-            $set: leaderboardUpdateOperations.$set,
-            $inc: leaderboardUpdateOperations.$inc
-        });
+            await POIModel.updateOne({ name: user.inGameData.location }, {
+                $set: poiUpdateOperations.$set,
+                $inc: poiUpdateOperations.$inc
+            })
+        ]);
 
-        await LeaderboardModel.updateOne({ _id: leaderboard._id }, {
-            $push: leaderboardUpdateOperations.$push,
-            $pull: leaderboardUpdateOperations.$pull
-        });
-
-        await POIModel.updateOne({ name: user.inGameData.location }, {
-            $set: poiUpdateOperations.$set,
-            $inc: poiUpdateOperations.$inc
-        });
-
-        await POIModel.updateOne({ name: user.inGameData.location }, {
-            $push: poiUpdateOperations.$push,
-            $pull: poiUpdateOperations.$pull
-        })
+        await Promise.all([
+            await UserModel.updateOne({ twitterId }, {
+                $push: userUpdateOperations.$push,
+                $pull: userUpdateOperations.$pull
+            }),
+    
+            await LeaderboardModel.updateOne({ _id: leaderboard._id }, {
+                $push: leaderboardUpdateOperations.$push,
+                $pull: leaderboardUpdateOperations.$pull
+            }),
+    
+            await POIModel.updateOne({ name: user.inGameData.location }, {
+                $push: poiUpdateOperations.$push,
+                $pull: poiUpdateOperations.$pull
+            })
+        ]);
 
         // if the user is in a squad, update the squad's total points.
         if (squadId) {
