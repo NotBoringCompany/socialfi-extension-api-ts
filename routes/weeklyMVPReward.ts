@@ -3,9 +3,8 @@ import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { claimWeeklyMVPRewards, fetchWeeklyMVPRankingData, getClaimableWeeklyMVPRewards } from '../api/weeklyMVPReward';
 import { authMiddleware } from '../middlewares/auth';
-import mixpanel from 'mixpanel';
 import { incrementEventCounterInContract } from '../api/web3';
-import { allowMixpanel } from '../utils/mixpanel';
+import { mixpanel, allowMixpanel } from '../utils/mixpanel';
 import { CLAIM_WEEKLY_MVP_REWARDS_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 
 const router = express.Router();

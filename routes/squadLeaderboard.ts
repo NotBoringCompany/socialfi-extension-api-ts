@@ -2,9 +2,8 @@ import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { claimWeeklySquadMemberRewards, getClaimableWeeklySquadMemberRewards, getLatestWeeklyLeaderboard } from '../api/squadLeaderboard';
-import mixpanel from 'mixpanel';
 import { incrementEventCounterInContract } from '../api/web3';
-import { allowMixpanel } from '../utils/mixpanel';
+import { mixpanel, allowMixpanel } from '../utils/mixpanel';
 import { CLAIM_SQUAD_REWARDS_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 
 const router = express.Router();
