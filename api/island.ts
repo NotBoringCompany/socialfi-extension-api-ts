@@ -21,6 +21,7 @@ import { TAPPING_EXP_CAP, TAPPING_LEVEL_CAP, TAPPING_MASTERY_LEVEL } from '../ut
 import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
 import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
 import { TappingMastery } from '../models/mastery';
+import { updateReferredUsersData } from './user';
 
 /**
  * Gifts an Xterio user an Xterio island.
@@ -4004,6 +4005,8 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
             }
         }
 
+        let returnMessage = '';
+
         // Increase the tier Milestone to the next tier/rank. If milestone reaching the max tier, return error.
         if (currentMilestone <= islandTappingLimit) {
             const nextTappingData: IslandTappingData = ISLAND_TAPPING_REQUIREMENT(currentMilestone + 1, tapping.level);
@@ -4011,50 +4014,56 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
             // saves the nextTappingData to this island database
             islandUpdateOperations.$set['islandTappingData'] = nextTappingData;
 
-            // update database affected by ApplyTappingIsland
-            await Promise.all([
-                UserModel.updateOne({ _id: user._id }, userUpdateOperations),
-                IslandModel.updateOne({ islandId: island.islandId }, islandUpdateOperations),
-                LeaderboardModel.updateOne({ _id: leaderboard._id }, leaderboardUpdateOperations),
-                SquadModel.updateOne({ _id: user.inGameData.squadId }, squadUpdateOperations),
-                SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, squadLeaderboardUpdateOperations),
-            ])
+            returnMessage = `(getIslandTappingData) Applying tapping data for Island with ID ${islandId}. Increasing to tier ${nextTappingData.currentMilestone}`;
+        } else {
+            returnMessage = `(getIslandTappingData) Tapping milestone already reached the latest tier.`;
+        }
 
-            return {
-                status: Status.SUCCESS,
-                message: `(getIslandTappingData) Applying tapping data for Island with ID ${islandId}. Increasing to tier ${nextTappingData.currentMilestone}`,
-                data: {
-                    currentMilestone: currentMilestone,
-                    currentReward: milestoneReward,
-                    chosenBonus: bonus === 'First' ? 
-                        milestoneReward.bonusReward.firstOptionReward : 
-                        milestoneReward.bonusReward.secondOptionReward,
-                    resourcesDropped,
+        // update database affected by ApplyTappingIsland
+        await Promise.all([
+            UserModel.updateOne({ _id: user._id }, userUpdateOperations),
+            IslandModel.updateOne({ islandId: island.islandId }, islandUpdateOperations),
+            LeaderboardModel.updateOne({ _id: leaderboard._id }, leaderboardUpdateOperations),
+            SquadModel.updateOne({ _id: user.inGameData.squadId }, squadUpdateOperations),
+            SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, squadLeaderboardUpdateOperations),
+        ]);
+
+        // check if the user update operations included a level up
+        const setUserLevel = userUpdateOperations.$set['inGameData.level'];
+
+        // if it included a level, check if it's set to 5.
+        // if it is, check if the user has a referrer.
+        // the referrer will then have this user's `hasReachedLevel4` set to true.
+        // NOTE: naming is `hasReachedLevel4`, but users are required to be level 5 anyway. this is temporary.
+        if (setUserLevel && setUserLevel === 5) {
+            // check if the user has a referrer
+            const referrerId: string | null = user.inviteCodeData.referrerId;
+
+            if (referrerId) {
+                // update the referrer's referred users data where applicable
+                const { status, message } = await updateReferredUsersData(referrerId, user._id);
+
+                if (status === Status.ERROR) {
+                    return {
+                        status,
+                        message: `(claimDailyRewards) Err from updateReferredUsersData: ${message}`,
+                    };
                 }
             }
-        } else {
-            // update database affected by ApplyTappingIsland
-            await Promise.all([
-                UserModel.updateOne({ _id: user._id }, userUpdateOperations),
-                IslandModel.updateOne({ islandId: island.islandId }, islandUpdateOperations),
-                LeaderboardModel.updateOne({ _id: leaderboard._id }, leaderboardUpdateOperations),
-                SquadModel.updateOne({ _id: user.inGameData.squadId }, squadUpdateOperations),
-                SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, squadLeaderboardUpdateOperations),
-            ])
-
-            return {
-                status: Status.SUCCESS,
-                message: `(getIslandTappingData) Tapping milestone already reached the latest tier.`,
-                data: {
-                    currentMilestone: currentMilestone,
-                    currentReward: milestoneReward,
-                    chosenBonus: bonus === 'First' ? 
-                        milestoneReward.bonusReward.firstOptionReward : 
-                        milestoneReward.bonusReward.secondOptionReward,
-                    resourcesDropped,
-                }
-            };
         }
+
+        return {
+            status: Status.SUCCESS,
+            message: returnMessage,
+            data: {
+                currentMilestone: currentMilestone,
+                currentReward: milestoneReward,
+                chosenBonus: bonus === 'First' ? 
+                    milestoneReward.bonusReward.firstOptionReward : 
+                    milestoneReward.bonusReward.secondOptionReward,
+                resourcesDropped,
+            }
+        };
     } catch (err: any) {
         return {
             status: Status.ERROR,
