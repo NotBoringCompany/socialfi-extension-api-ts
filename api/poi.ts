@@ -17,7 +17,7 @@ import { getLatestSquadWeeklyRanking, squadKOSData } from './squad';
 import { updateReferredUsersData } from './user';
 import * as dotenv from 'dotenv';
 import { getUserCurrentPoints } from './leaderboard';
-import { UserWallet } from '../models/user';
+import { ExtendedXCookieData, UserWallet, XCookieSource } from '../models/user';
 import { DEPLOYER_WALLET, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
 import { generateHashSalt, generateWonderbitsDataHash } from '../utils/crypto';
 import { ethers } from 'ethers';
@@ -1110,11 +1110,48 @@ export const sellItemsInPOIShop = async (
         // check if the user update operations included a level up
         const setUserLevel = userUpdateOperations.$set['inGameData.level'];
 
+         // if the user just reached level 3 or 4, give 5 xCookies to the referrer
+         if (setUserLevel && (setUserLevel === 3 || setUserLevel === 4)) {
+            const referrerId: string | null = user.inviteCodeData.referrerId;
+
+            if (referrerId) {
+                // 1. give 5 xCookies to the referrer's `inventory.xCookieData.currentXCookies`
+                // 2. add a new entry to the referrer's `inventory.xCookieData.extendedXCookieData` with the source as LOWER_ENTRY_REFERRAL_REWARDS
+                
+                // check if the referrer has the entry in `inventory.xCookieData.extendedXCookieData`
+                const referrer = await UserModel.findOne({ _id: referrerId }).lean();
+
+                if (referrer) {
+                    const referrerUpdateOperations = {
+                        $inc: {},
+                        $push: {}
+                    }
+    
+                    // 1. give 5 xCookies to the referrer's `inventory.xCookieData.currentXCookies`
+                    referrerUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = 5;
+    
+                    // 2. add a new entry to the referrer's `inventory.xCookieData.extendedXCookieData` with the source as LOWER_ENTRY_REFERRAL_REWARDS
+                    const referrerReferralRewardsIndex = (referrer.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(data => data.source === XCookieSource.LOWER_ENTRY_REFERRAL_REWARDS);
+    
+                    if (referrerReferralRewardsIndex !== -1) {
+                        referrerUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${referrerReferralRewardsIndex}.xCookies`] = 5;
+                    } else {
+                        referrerUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = {
+                            xCookies: 5,
+                            source: XCookieSource.LOWER_ENTRY_REFERRAL_REWARDS
+                        }
+                    }
+    
+                    await UserModel.updateOne({ _id: referrerId }, referrerUpdateOperations);   
+                }
+            }
+        }
+
         // if it included a level, check if it's set to 5.
         // if it is, check if the user has a referrer.
         // the referrer will then have this user's `hasReachedLevel4` set to true.
         // NOTE: naming is currently `hasReachedLevel4`, but the requirement is that they need to be level 5.
-        if (setUserLevel && setUserLevel >= 5) {
+        if (setUserLevel && setUserLevel === 5) {
             // check if the user has a referrer
             const referrerId: string | null = user.inviteCodeData.referrerId;
 

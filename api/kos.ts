@@ -146,9 +146,9 @@ export const claimDailyKOSRewards = async (twitterId: string): Promise<ReturnVal
 
         for (const reward of rewards) {
             switch (reward.type) {
-                    case KOSRewardType.GATHERING_PROGRESS_BOOSTER_25:
-                    case KOSRewardType.GATHERING_PROGRESS_BOOSTER_50:
-                    case KOSRewardType.GATHERING_PROGRESS_BOOSTER_100:
+                case KOSRewardType.GATHERING_PROGRESS_BOOSTER_25:
+                case KOSRewardType.GATHERING_PROGRESS_BOOSTER_50:
+                case KOSRewardType.GATHERING_PROGRESS_BOOSTER_100:
                     // add the item to the user's inventory
                     const existingItemIndex = (user.inventory?.items as Item[]).findIndex((i) => i.type === (reward.type as any));
 
@@ -341,7 +341,7 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
                             }
                         ]
                     }
-                // if the user is found, increment the points
+                    // if the user is found, increment the points
                 } else {
                     // get the user's total leaderboard points
                     // this is done by summing up all the points from the `pointsData` array, BUT EXCLUDING SOURCES FROM:
@@ -432,7 +432,7 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
                         }
                     }
                 }
-            // if reward is bit orb I or II
+                // if reward is bit orb I or II
             } else if (reward.type === KOSRewardType.BIT_ORB_I || reward.type === KOSRewardType.BIT_ORB_II) {
                 // check if the user's `inventory.items` contain the bit orb type
                 // if not, create a new entry, else increment the amount.
@@ -454,7 +454,7 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
                         weeklyAmountConsumed: 0,
                     });
                 }
-            // if reward is terra capsulator I or II
+                // if reward is terra capsulator I or II
             } else if (reward.type === KOSRewardType.TERRA_CAPSULATOR_I || reward.type === KOSRewardType.TERRA_CAPSULATOR_II) {
                 // check if the user's `inventory.items` contain the terra capsulator type
                 // if not, create a new entry, else increment the amount.
@@ -476,7 +476,7 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
                         weeklyAmountConsumed: 0,
                     });
                 }
-            // if reward type is raft speed booster 60 min
+                // if reward type is raft speed booster 60 min
             } else if (reward.type === KOSRewardType.RAFT_SPEED_BOOSTER_60_MIN) {
                 // check if the user's `inventory.items` contain the raft speed booster type
                 // if not, create a new entry, else increment the amount.
@@ -498,7 +498,7 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
                         weeklyAmountConsumed: 0,
                     });
                 }
-            // if reward type is xCookies
+                // if reward type is xCookies
             } else if (reward.type === KOSRewardType.X_COOKIES) {
                 // increase the user's xCookies
                 userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = reward.amount;
@@ -543,11 +543,48 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
         // check if the user update operations included a level up
         const setUserLevel = userUpdateOperations.$set['inGameData.level'];
 
+        // if the user just reached level 3 or 4, give 5 xCookies to the referrer
+        if (setUserLevel && (setUserLevel === 3 || setUserLevel === 4)) {
+            const referrerId: string | null = user.inviteCodeData.referrerId;
+
+            if (referrerId) {
+                // 1. give 5 xCookies to the referrer's `inventory.xCookieData.currentXCookies`
+                // 2. add a new entry to the referrer's `inventory.xCookieData.extendedXCookieData` with the source as LOWER_ENTRY_REFERRAL_REWARDS
+
+                // check if the referrer has the entry in `inventory.xCookieData.extendedXCookieData`
+                const referrer = await UserModel.findOne({ _id: referrerId }).lean();
+
+                if (referrer) {
+                    const referrerUpdateOperations = {
+                        $inc: {},
+                        $push: {}
+                    }
+
+                    // 1. give 5 xCookies to the referrer's `inventory.xCookieData.currentXCookies`
+                    referrerUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = 5;
+
+                    // 2. add a new entry to the referrer's `inventory.xCookieData.extendedXCookieData` with the source as LOWER_ENTRY_REFERRAL_REWARDS
+                    const referrerReferralRewardsIndex = (referrer.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(data => data.source === XCookieSource.LOWER_ENTRY_REFERRAL_REWARDS);
+
+                    if (referrerReferralRewardsIndex !== -1) {
+                        referrerUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${referrerReferralRewardsIndex}.xCookies`] = 5;
+                    } else {
+                        referrerUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = {
+                            xCookies: 5,
+                            source: XCookieSource.LOWER_ENTRY_REFERRAL_REWARDS
+                        }
+                    }
+
+                    await UserModel.updateOne({ _id: referrerId }, referrerUpdateOperations);
+                }
+            }
+        }
+
         // if it included a level, check if it's set to 5.
         // if it is, check if the user has a referrer.
         // the referrer will then have this user's `hasReachedLevel4` set to true.
         // NOTE: naming is `hasReachedLevel4`, but users are required to be level 5 anyway. this is temporary.
-        if (setUserLevel && setUserLevel >= 5) {
+        if (setUserLevel && setUserLevel === 5) {
             // check if the user has a referrer
             const referrerId: string | null = user.inviteCodeData.referrerId;
 

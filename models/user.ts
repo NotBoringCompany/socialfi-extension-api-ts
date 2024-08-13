@@ -132,6 +132,8 @@ export enum XCookieSource {
     COOKIE_DEPOSIT = 'Cookie Deposit',
     RESOURCE_SELLING = 'Resource Selling',
     DAILY_LOGIN_REWARDS = 'Daily Login Rewards',
+    // when the referred user reaches level 3/4, the referrer gets xCookies which is logged here as lower entry ref rewards.
+    LOWER_ENTRY_REFERRAL_REWARDS = 'Lower Entry Referral Rewards',
     REFERRAL_REWARDS = 'Referral Rewards',
     INDIRECT_REFERRAL_REWARDS = 'Indirect Referral Rewards',
     BEGINNER_REWARDS = 'Beginner Rewards',
