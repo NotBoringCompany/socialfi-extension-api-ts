@@ -4053,7 +4053,6 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
         }
 
         // divide into $set, $inc and then $push $pull
-
         await Promise.all([
             UserModel.updateOne({ _id: user._id }, {
                 $set: userUpdateOperations.$set,
@@ -4066,17 +4065,18 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
             }),
 
             LeaderboardModel.updateOne({ _id: leaderboard._id }, {
-                $push: leaderboardUpdateOperations.$push,
+                $set: leaderboardUpdateOperations.$push,
                 $inc: leaderboardUpdateOperations.$inc,
             }),
 
             SquadModel.updateOne({ _id: user.inGameData.squadId }, {
+                $set: squadUpdateOperations.$set,
                 $inc: squadUpdateOperations.$inc,
             }),
 
             SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, {
-                $push: squadLeaderboardUpdateOperations.$push,
-                $inc: squadLeaderboardUpdateOperations.$inc,
+                $set: squadLeaderboardUpdateOperations.$set,
+                $inc: squadLeaderboardUpdateOperations.$inc
             })
         ]);
 
