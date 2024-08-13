@@ -4065,7 +4065,7 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
             }),
 
             LeaderboardModel.updateOne({ _id: leaderboard._id }, {
-                $set: leaderboardUpdateOperations.$push,
+                $set: leaderboardUpdateOperations.$set,
                 $inc: leaderboardUpdateOperations.$inc,
             }),
 
