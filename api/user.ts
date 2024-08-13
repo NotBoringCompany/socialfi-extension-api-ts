@@ -1275,6 +1275,25 @@ export const claimDailyRewards = async (twitterId: string, leaderboardName: stri
         // check if the user update operations included a level up
         const setUserLevel = userUpdateOperations.$set['inGameData.level'];
 
+        // if the user just reached level 3 or 4, give 5 xCookies to the referrer
+        if (setUserLevel && (setUserLevel === 3 || setUserLevel === 4)) {
+            const referrerId: string | null = user.inviteCodeData.referrerId;
+
+            if (referrerId) {
+                // add the rewards to the referrer's `referralData.claimableReferralRewards.xCookies`.
+                const referrer = await UserModel.findOne({ _id: referrerId }).lean();
+
+                // only continue if the referrer exists
+                if (referrer) {
+                    await UserModel.updateOne({ _id: referrerId }, {
+                        $inc: {
+                            'referralData.claimableReferralRewards.xCookies': 5
+                        }
+                    })
+                }
+            }
+        }
+
         // if it included a level, check if it's set to 5.
         // if it is, check if the user has a referrer.
         // the referrer will then have this user's `hasReachedLevel4` set to true.

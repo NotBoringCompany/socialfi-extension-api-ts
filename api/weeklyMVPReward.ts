@@ -17,6 +17,7 @@ import * as dotenv from 'dotenv';
 import { getUserCurrentPoints } from './leaderboard';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { updatePointsInContract } from './web3';
+import { updateReferredUsersData } from './user';
 
 dotenv.config();
 
@@ -506,6 +507,49 @@ export const claimWeeklyMVPRewards = async (twitterId: string): Promise<ReturnVa
 
         // set the claimableRewards back to an empty array.
         await WeeklyMVPClaimableRewardsModel.updateOne({ userId: user._id }, { $set: { claimableRewards: [] } });
+
+        // check if the user update operations included a level up
+        const setUserLevel = userUpdateOperations.$set['inGameData.level'];
+
+        // if the user just reached level 3 or 4, give 5 xCookies to the referrer
+        if (setUserLevel && (setUserLevel === 3 || setUserLevel === 4)) {
+            const referrerId: string | null = user.inviteCodeData.referrerId;
+
+            if (referrerId) {
+                // add the rewards to the referrer's `referralData.claimableReferralRewards.xCookies`.
+                const referrer = await UserModel.findOne({ _id: referrerId }).lean();
+
+                // only continue if the referrer exists
+                if (referrer) {
+                    await UserModel.updateOne({ _id: referrerId }, {
+                        $inc: {
+                            'referralData.claimableReferralRewards.xCookies': 5
+                        }
+                    })
+                }
+            }
+        }
+
+        // if it included a level, check if it's set to 5.
+        // if it is, check if the user has a referrer.
+        // the referrer will then have this user's `hasReachedLevel4` set to true.
+        // NOTE: naming is `hasReachedLevel4`, but users are required to be level 5 anyway. this is temporary.
+        if (setUserLevel && setUserLevel === 5) {
+            // check if the user has a referrer
+            const referrerId: string | null = user.inviteCodeData.referrerId;
+
+            if (referrerId) {
+                // update the referrer's referred users data where applicable
+                const { status, message } = await updateReferredUsersData(referrerId, user._id);
+
+                if (status === Status.ERROR) {
+                    return {
+                        status,
+                        message: `(claimDailyRewards) Err from updateReferredUsersData: ${message}`,
+                    };
+                }
+            }
+        }
 
         // update the user's points in the wonderbits contract
         updatePointsInContract(twitterId);
