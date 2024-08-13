@@ -1,14 +1,13 @@
 import mongoose from 'mongoose';
 import { IndirectReferralData, ReferralData, ReferralReward, ReferredUserData, StarterCodeData } from '../models/invite';
 import { LeaderboardModel, StarterCodeModel, SuccessfulIndirectReferralModel, UserModel } from '../utils/constants/db';
-import { generateHashSalt, generateObjectId, generateStarterCode, generateWonderbitsDataHash } from '../utils/crypto';
+import { generateObjectId, generateStarterCode } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
 import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
 import { ExtendedXCookieData, UserWallet, XCookieSource } from '../models/user';
 import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS, GET_SEASON_0_REFERRAL_REWARDS } from '../utils/constants/user';
-import { DEPLOYER_WALLET, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
 import { getUserCurrentPoints } from './leaderboard';
-import { ethers } from 'ethers';
+import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { updatePointsInContract } from './web3';
 
 /**
@@ -61,7 +60,7 @@ export const generateStarterCodes = async (
             }
         }
     } catch (err: any) {
-        console.log('(generateStarterCodes)', err.message);
+        console.error('(generateStarterCodes)', err.message);
         return {
             status: Status.ERROR,
             message: `(generateStarterCodes) ${err.message}`
@@ -444,9 +443,8 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
                     skippedAndNewMilestones.forEach(milestone => {
                         const milestoneRewards = GET_SEASON_0_REFERRAL_REWARDS(milestone);
 
-                        // NOTE: 150% MULTIPLIER FOR THE FIRST WEEK. WILL BE UPDATED.
-                        skippedAndNewXCookies += (milestoneRewards.xCookies * 1.5);
-                        skippedAndNewLeaderboardPoints += (milestoneRewards.leaderboardPoints * 1.5);
+                        skippedAndNewXCookies += (0.2 * milestoneRewards.xCookies);
+                        skippedAndNewLeaderboardPoints += (0.2 * milestoneRewards.leaderboardPoints);
                     });
 
                     // reverse the milestones and check the first milestone that is less than or equal to the indirect referred user count.
@@ -477,9 +475,8 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
                         obtainedRewardMilestone: 0,
                         claimableRewardData: {
                             userCountMilestone,
-                            // NOTE: 150% MULTIPLIER FOR THE FIRST WEEK. WILL BE UPDATED.
-                            xCookies: 1.5 * rewards.xCookies,
-                            leaderboardPoints: 1.5 * rewards.leaderboardPoints
+                            xCookies: (0.2 * rewards.xCookies),
+                            leaderboardPoints: (0.2 * rewards.leaderboardPoints)
                         },
                         referredUserId: successfulReferredUserData.userId,
                         indirectReferredUserIds
@@ -536,6 +533,7 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
         console.log('(updateSuccessfulIndirectReferrals)', err.message);
     }
 }
+
 
 /**
  * Fetches the rewards that are claimable from indirect referrals.
@@ -696,9 +694,6 @@ export const claimSuccessfulIndirectReferralRewards = async (twitterId: string):
                 message: `(claimSuccessfulIndirectReferralRewards) Claiming leaderboard points is not supported for now.`
             }
         }
-
-        console.log('user ref update: ', userRefUpdateOperations);
-        console.log('indirect ref update: ', indirectRefUpdateOperations);
 
         // execute the update operations. to double check, we run the operation for the user first, then the indirect referral data.
         await UserModel.updateOne({ twitterId }, userRefUpdateOperations);
