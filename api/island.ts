@@ -4047,28 +4047,65 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
             // saves the nextTappingData to this island database
             islandUpdateOperations.$set['islandTappingData'] = nextTappingData;
 
-            // update database affected by ApplyTappingIsland
-            await Promise.all([
-                UserModel.updateOne({ _id: user._id }, userUpdateOperations),
-                IslandModel.updateOne({ islandId: island.islandId }, islandUpdateOperations),
-                LeaderboardModel.updateOne({ _id: leaderboard._id }, leaderboardUpdateOperations),
-                SquadModel.updateOne({ _id: user.inGameData.squadId }, squadUpdateOperations),
-                SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, squadLeaderboardUpdateOperations),
-            ])
-
             returnMessage = `(getIslandTappingData) Applying tapping data for Island with ID ${islandId}. Increasing to tier ${nextTappingData.currentMilestone}`;
         } else {
-            // update database affected by ApplyTappingIsland
-            await Promise.all([
-                UserModel.updateOne({ _id: user._id }, userUpdateOperations),
-                IslandModel.updateOne({ islandId: island.islandId }, islandUpdateOperations),
-                LeaderboardModel.updateOne({ _id: leaderboard._id }, leaderboardUpdateOperations),
-                SquadModel.updateOne({ _id: user.inGameData.squadId }, squadUpdateOperations),
-                SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, squadLeaderboardUpdateOperations),
-            ])
-
             returnMessage = `(getIslandTappingData) Tapping milestone already reached the latest tier.`;
         }
+
+        // divide into $set, $inc and then $push $pull
+
+        await Promise.all([
+            UserModel.updateOne({ _id: user._id }, {
+                $set: userUpdateOperations.$set,
+                $inc: userUpdateOperations.$inc,
+            }),
+
+            IslandModel.updateOne({ islandId: island.islandId }, {
+                $set: islandUpdateOperations.$set,
+                $inc: islandUpdateOperations.$inc,
+            }),
+
+            LeaderboardModel.updateOne({ _id: leaderboard._id }, {
+                $push: leaderboardUpdateOperations.$push,
+                $inc: leaderboardUpdateOperations.$inc,
+            }),
+
+            SquadModel.updateOne({ _id: user.inGameData.squadId }, {
+                $inc: squadUpdateOperations.$inc,
+            }),
+
+            SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, {
+                $push: squadLeaderboardUpdateOperations.$push,
+                $inc: squadLeaderboardUpdateOperations.$inc,
+            })
+        ]);
+
+        await Promise.all([
+            UserModel.updateOne({ _id: user._id }, {
+                $push: userUpdateOperations.$push,
+                $pull: userUpdateOperations.$pull,
+            }),
+
+            IslandModel.updateOne({ islandId: island.islandId }, {
+                $push: islandUpdateOperations.$push,
+                $pull: islandUpdateOperations.$pull,
+            }),
+
+            LeaderboardModel.updateOne({ _id: leaderboard._id }, {
+                $push: leaderboardUpdateOperations.$push,
+                $pull: leaderboardUpdateOperations.$pull,
+            }),
+
+            SquadModel.updateOne({ _id: user.inGameData.squadId }, {
+                $push: squadUpdateOperations.$push,
+                $pull: squadUpdateOperations.$pull,
+            }),
+
+            SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, {
+                $push: squadLeaderboardUpdateOperations.$push,
+                $pull: squadLeaderboardUpdateOperations.$pull,
+            })
+        ]);
 
         // check if the user update operations included a level up
         const setUserLevel = userUpdateOperations.$set['inGameData.level'];
