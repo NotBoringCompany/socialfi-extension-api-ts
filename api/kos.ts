@@ -1,6 +1,6 @@
 import { DEPLOYER_WALLET, KEYCHAIN_CONTRACT, KOS_CONTRACT, SUPERIOR_KEYCHAIN_CONTRACT, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
 import { ReturnValue, Status } from '../utils/retVal';
-import { getWallets } from './user';
+import { getWallets, updateReferredUsersData } from './user';
 import { KOSExplicitOwnership, KOSMetadata, KOSReward, KOSRewardType } from '../models/kos';
 import fs from 'fs';
 import path from 'path';
@@ -539,6 +539,30 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
         });
 
         console.log(`(claimWeeklyKOSRewards) Successfully claimed weekly KOS rewards for user ${user.twitterUsername}.`);
+
+        // check if the user update operations included a level up
+        const setUserLevel = userUpdateOperations.$set['inGameData.level'];
+
+        // if it included a level, check if it's set to 5.
+        // if it is, check if the user has a referrer.
+        // the referrer will then have this user's `hasReachedLevel4` set to true.
+        // NOTE: naming is `hasReachedLevel4`, but users are required to be level 5 anyway. this is temporary.
+        if (setUserLevel && setUserLevel >= 5) {
+            // check if the user has a referrer
+            const referrerId: string | null = user.inviteCodeData.referrerId;
+
+            if (referrerId) {
+                // update the referrer's referred users data where applicable
+                const { status, message } = await updateReferredUsersData(referrerId, user._id);
+
+                if (status === Status.ERROR) {
+                    return {
+                        status,
+                        message: `(claimDailyRewards) Err from updateReferredUsersData: ${message}`,
+                    };
+                }
+            }
+        }
 
         // update the user's points in the wonderbits contract
         updatePointsInContract(twitterId);
