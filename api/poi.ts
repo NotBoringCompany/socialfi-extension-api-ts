@@ -1205,7 +1205,7 @@ export const sellItemsInPOIShop = async (
         // if it is, check if the user has a referrer.
         // the referrer will then have this user's `hasReachedLevel4` set to true.
         // NOTE: naming is currently `hasReachedLevel4`, but the requirement is that they need to be level 5.
-        if (setUserLevel && setUserLevel >= 5) {
+        if (setUserLevel && setUserLevel === 5) {
             // check if the user has a referrer
             const referrerId: string | null = user.inviteCodeData.referrerId;
 

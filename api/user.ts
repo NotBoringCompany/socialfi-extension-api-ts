@@ -1279,7 +1279,7 @@ export const claimDailyRewards = async (twitterId: string, leaderboardName: stri
         // if it is, check if the user has a referrer.
         // the referrer will then have this user's `hasReachedLevel4` set to true.
         // NOTE: naming is `hasReachedLevel4`, but users are required to be level 5 anyway. this is temporary.
-        if (setUserLevel && setUserLevel >= 5) {
+        if (setUserLevel && setUserLevel === 5) {
             // check if the user has a referrer
             const referrerId: string | null = user.inviteCodeData.referrerId;
 
