@@ -1195,39 +1195,21 @@ export const claimDailyRewards = async (twitterId: string, leaderboardName: stri
         // check if the user update operations included a level up
         const setUserLevel = userUpdateOperations.$set['inGameData.level'];
 
-         // if the user just reached level 3 or 4, give 5 xCookies to the referrer
-         if (setUserLevel && (setUserLevel === 3 || setUserLevel === 4)) {
+        // if the user just reached level 3 or 4, give 5 xCookies to the referrer
+        if (setUserLevel && (setUserLevel === 3 || setUserLevel === 4)) {
             const referrerId: string | null = user.inviteCodeData.referrerId;
 
             if (referrerId) {
-                // 1. give 5 xCookies to the referrer's `inventory.xCookieData.currentXCookies`
-                // 2. add a new entry to the referrer's `inventory.xCookieData.extendedXCookieData` with the source as LOWER_ENTRY_REFERRAL_REWARDS
-                
-                // check if the referrer has the entry in `inventory.xCookieData.extendedXCookieData`
+                // add the rewards to the referrer's `referralData.claimableReferralRewards.xCookies`.
                 const referrer = await UserModel.findOne({ _id: referrerId }).lean();
 
+                // only continue if the referrer exists
                 if (referrer) {
-                    const referrerUpdateOperations = {
-                        $inc: {},
-                        $push: {}
-                    }
-    
-                    // 1. give 5 xCookies to the referrer's `inventory.xCookieData.currentXCookies`
-                    referrerUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = 5;
-    
-                    // 2. add a new entry to the referrer's `inventory.xCookieData.extendedXCookieData` with the source as LOWER_ENTRY_REFERRAL_REWARDS
-                    const referrerReferralRewardsIndex = (referrer.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(data => data.source === XCookieSource.LOWER_ENTRY_REFERRAL_REWARDS);
-    
-                    if (referrerReferralRewardsIndex !== -1) {
-                        referrerUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${referrerReferralRewardsIndex}.xCookies`] = 5;
-                    } else {
-                        referrerUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = {
-                            xCookies: 5,
-                            source: XCookieSource.LOWER_ENTRY_REFERRAL_REWARDS
+                    await UserModel.updateOne({ _id: referrerId }, {
+                        $inc: {
+                            'referralData.claimableReferralRewards.xCookies': 5
                         }
-                    }
-    
-                    await UserModel.updateOne({ _id: referrerId }, referrerUpdateOperations);   
+                    })
                 }
             }
         }
