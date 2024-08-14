@@ -3362,7 +3362,7 @@ export const randomizeResourceFromChances = (
     const effectiveDropChances: ResourceDropChance = calcEffectiveResourceDropChances(type, level);
 
     // rand between 1 to 100 to determine which resource to drop
-    const rand = Math.random() * 100 + 1;
+    const rand = Math.floor(Math.random() * 100 + 1);
 
     // calculate the cumulative probability for each resource and see if the rand falls within the range
     let cumulativeProbability = 0;
