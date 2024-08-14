@@ -3143,7 +3143,7 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
             // lastly, check if island is barren. if it is, they have an additional small chance to drop a common resource of any line.
             if (<IslandType>island.type === IslandType.BARREN) {
                 // roll a dice between 1-100
-                const rand = Math.random() * 100 + 1;
+                const rand = Math.floor(Math.random() * 100 + 1);
 
                 // if dice lands under `BARREN_ISLE_COMMON_DROP_CHANCE`, drop a random common resource alongside the seaweed they're getting.
                 if (rand <= BARREN_ISLE_COMMON_DROP_CHANCE) {
@@ -3230,7 +3230,7 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
                 // only if bonus resource chance is above 0 will we proceed to check if we can drop a bonus resource.
                 if (bonusResourceChance > 0) {
                     // roll a dice between 1-100
-                    const rand = Math.random() * 100 + 1;
+                    const rand = Math.floor(Math.random() * 100 + 1);
 
                     if (rand <= bonusResourceChance) {
                         console.log(`(dropResource) rand is below bonusResourceChance. dropping bonus resource!`);
