@@ -1005,7 +1005,7 @@ export const incrementProgressionByType = async (
             for (const requirement of requirements) {
                 if (!requirement.parameters.count) continue;
                 if (typeof requirement.parameters.type != typeof params) continue;
-                if (!requirement.parameters.type.includes(params)) continue;
+                if (requirement.parameters.type && !requirement.parameters.type.includes(params)) continue;
 
                 // Find the current progression document
                 let progression = await QuestProgressionModel.findOne({
