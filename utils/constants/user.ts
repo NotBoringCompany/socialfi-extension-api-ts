@@ -171,7 +171,7 @@ export const GET_SEASON_0_PLAYER_LEVEL = (points: number): number => {
     }
 
     // for every 5000 points obtained after 20500, the player level increases by 1
-    return Math.floor((points - 20500) / 5000) + 11;
+    return Math.floor((points - 20500) / 5000) + 10;
 };
 
 /**
