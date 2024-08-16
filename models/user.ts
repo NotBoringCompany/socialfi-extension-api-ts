@@ -141,6 +141,7 @@ export enum XCookieSource {
     TUTORIAL_REWARDS = 'Tutorial Rewards',
     DISCORD_ENGAGEMENT = 'Discord Engagement',
     BUG_BOUNTY = 'Bug Bounty',
+    SIGN_UP_BONUS = 'Sign Up Bonus'
 }
 
 /**

@@ -53,4 +53,5 @@ export enum LeaderboardPointsSource {
     DISCORD_ENGAGEMENT = 'Discord Engagement',
     WEEKLY_MVP_REWARDS = 'Weekly MVP Rewards',
     BUG_BOUNTY = 'Bug Bounty',
+    SIGN_UP_BONUS = 'Sign Up Bonus'
 }
