@@ -1166,9 +1166,16 @@ export const squadKOSData = async (twitterId: string): Promise<ReturnValue> => {
         const user = users.find(user => user.twitterId === twitterId);
 
         if (!user) {
+            console.error(`(squadKOSCount) User not found. twid: ${twitterId}`);
+
+            // Temporary solution for 'User not found' issue even though user twitterId exist in mongodb
             return {
-                status: Status.ERROR,
-                message: `(squadKOSCount) User not found. ${twitterId}`
+                status: Status.SUCCESS,
+                message: `(squadKOSCount) User not found. ${twitterId}`,
+                data: {
+                    totalSquadKOSCount: 0,
+                    individualKOSCounts: []
+                }
             }
         }
 
