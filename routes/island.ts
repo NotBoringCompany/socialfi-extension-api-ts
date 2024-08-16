@@ -502,7 +502,7 @@ router.post('/apply_gathering_progress_booster', async (req, res) => {
             });
 
             incrementEventCounterInContract(validateData?.twitterId, APPLY_GATHERING_BOOSTER_MIXPANEL_EVENT_HASH);
-            incrementProgressionByType(QuestRequirementType.USE_GATHERING_BOOSTER, validateData?.twitterId, 1);
+            incrementProgressionByType(QuestRequirementType.USE_GATHERING_BOOSTER, validateData?.twitterId, boosters?.length ?? 1);
         }
 
         return res.status(status).json({
