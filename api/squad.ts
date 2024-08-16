@@ -1168,7 +1168,7 @@ export const squadKOSData = async (twitterId: string): Promise<ReturnValue> => {
         if (!user) {
             return {
                 status: Status.ERROR,
-                message: `(squadKOSCount) User not found.`
+                message: `(squadKOSCount) User not found. ${twitterId}`
             }
         }
 
