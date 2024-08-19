@@ -1,5 +1,5 @@
-import { Food } from '../models/food';
-import { ShopAsset } from '../models/shop';
+import { Food, FoodType } from '../models/food';
+import { ShopAsset, ShopPackageType } from '../models/shop';
 import { ReturnValue, Status } from '../utils/retVal';
 import { shop } from '../utils/shop';
 import { ShopAssetModel, UserModel } from '../utils/constants/db';
@@ -7,14 +7,48 @@ import { Item, ItemType } from '../models/item';
 import { generateObjectId } from '../utils/crypto';
 
 /**
- * Fetches the shop.
+ * Fetches all shop assets from the database and return them as a shop instance.
  */
-export const getShop = (): ReturnValue => {
-    return {
-        status: Status.SUCCESS,
-        message: `(getShop) Shop fetched.`,
-        data: {
-            shop
+export const getShop = async (): Promise<ReturnValue> => {
+    try {
+        const shopAssets = await ShopAssetModel.find({}).lean();
+
+        if (!shopAssets || shopAssets.length === 0) {
+            return {
+                status: Status.ERROR,
+                message: `(getShop) Shop not found.`
+            }
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getShop) Shop fetched.`,
+            data: {
+                shop: {
+                    // exclude `__v` and `_id` from the response
+                    assets: shopAssets.map(asset => {
+                        return {
+                            assetName: asset.assetName,
+                            assetType: asset.assetType,
+                            price: {
+                                xCookies: asset.price.xCookies,
+                                usd: asset.price.usd
+                            },
+                            expirationDate: asset.expirationDate,
+                            purchaseLimit: asset.purchaseLimit,
+                            effectDuration: asset.effectDuration,
+                            refreshIntervalData: asset.refreshIntervalData,
+                            levelRequirement: asset.levelRequirement,
+                            givenContent: asset.givenContent
+                        }
+                    })
+                }
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getShop) ${err.message}`
         }
     }
 }

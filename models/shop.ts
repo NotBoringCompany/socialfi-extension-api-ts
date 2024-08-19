@@ -6,20 +6,13 @@ import { FoodType } from './food';
 import { ItemType } from './item';
 
 /**
- * Represents the in-game shop.
- */
-export interface Shop<T> {
-    assets: ShopAsset<T>[];
-}
-
-/**
  * Represents an asset in the shop.
  */
-export interface ShopAsset<T> {
+export interface ShopAsset {
     // the name of the asset
     assetName: string;
     // the type of asset (e.g. food, item, etc.)
-    assetType: T;
+    assetType: ItemType | FoodType | ShopPackageType;
     // the price of the asset
     price: ShopPrice;
     // when the asset will be purchasable until (in unix timestamp)
@@ -131,11 +124,3 @@ export interface ShopAssetPurchase {
     // the data of the content the player receives after this asset was purchased
     givenContent: ShopAssetGivenContentData;
 }
-
-
-/** Represents an item in the shop */
-export type ShopItem = ShopAsset<ItemType>;
-/** Represents a food in the shop */
-export type ShopFood = ShopAsset<FoodType>;
-/** Represents a package in the shop */
-export type ShopPackage = ShopAsset<ShopPackageType>;
