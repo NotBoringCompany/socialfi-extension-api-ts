@@ -1,5 +1,5 @@
 import express from 'express';
-import { completeTutorial, getTutorials } from '../api/tutorial';
+import { completeTutorial, getTutorials, skipTutorial } from '../api/tutorial';
 import { Status } from '../utils/retVal';
 import { validateRequestAuth } from '../utils/auth';
 import { COMPLETE_QUEST_MIXPANEL_EVENT_HASH, TUTORIAL_COMPLETED_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
@@ -48,6 +48,40 @@ router.post('/complete_tutorial', async (req, res) => {
             });
 
             incrementEventCounterInContract(validateData?.twitterId, COMPLETE_QUEST_MIXPANEL_EVENT_HASH);
+        }
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
+
+router.post('/skip_tutorial', async (req, res) => {
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'skip_tutorial');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
+        const { status, message, data } = await skipTutorial(validateData?.twitterId);
+
+        if (status === Status.SUCCESS) {
+            mixpanel.track('Tutorial Skipped', {
+                distinct_id: validateData?.twitterId,
+            });
+
+            incrementEventCounterInContract(validateData?.twitterId, TUTORIAL_COMPLETED_MIXPANEL_EVENT_HASH);
         }
 
         return res.status(status).json({
