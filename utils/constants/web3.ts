@@ -11,6 +11,11 @@ export const BLAST_TESTNET_PROVIDER = new ethers.providers.JsonRpcProvider(`http
 export const ETH_MAINNET_PROVIDER = new ethers.providers.JsonRpcProvider(`https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY!}`);
 export const XPROTOCOL_TESTNET_PROVIDER = new ethers.providers.JsonRpcProvider(`https://rpc-xprotocol-testnet-kzg4iy2205.t.conduit.xyz/${process.env.X_PROTOCOL_TESTNET_API_KEY!}`);
 
+/// BASE URLS FOR APIS USED FOR WEB3 RELATED OPERATIONS (MAINLY PRICE FETCHING)
+export const BINANCE_API_BASE_URL = `https://data-api.binance.vision`;
+export const KUCOIN_API_BASE_URL = `https://api.kucoin.com`;
+export const GATEIO_API_BASE_URL = `https://api.gateio.ws`;
+
 /** Gets a deployer wallet instance based on the provider the deployer wallet will operate in */
 export const DEPLOYER_WALLET = (provider: ethers.providers.JsonRpcProvider) => {
     return new ethers.Wallet(process.env.DEPLOYER_PRIVATE_KEY!, provider);
