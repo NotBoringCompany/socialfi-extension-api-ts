@@ -9,6 +9,10 @@ export const ShopAssetSchema = new mongoose.Schema({
         type: String,
         default: generateObjectId()
     },
+    assetName: {
+        type: String,
+        index: true
+    },
     assetType: {
         type: String,
         index: true

@@ -16,6 +16,8 @@ export interface Shop<T> {
  * Represents an asset in the shop.
  */
 export interface ShopAsset<T> {
+    // the name of the asset
+    assetName: string;
     // the type of asset (e.g. food, item, etc.)
     assetType: T;
     // the price of the asset
@@ -36,7 +38,7 @@ export interface ShopAsset<T> {
     // the level requirement of the asset
     // if 'none', then players of any level can purchase this asset
     levelRequirement: number | 'none';
-    // the content data that the asset gives to the player
+    // the data of the content the player receives upon purchasing this asset
     givenContent: ShopAssetGivenContentData;
 }
 
@@ -109,6 +111,27 @@ export interface ShopAssetGivenContentData {
 export enum ShopPackageType {
     POUCH_OF_ENERGY_POTIONS = 'Pouch of Energy Potions',
 }
+
+/**
+ * Represents a purchase made in the shop by a user.
+ */
+export interface ShopAssetPurchase {
+    // the user's (who purchased the asset) database object ID 
+    userId: string;
+    // the purchased asset's database object ID
+    assetId: string;
+    // the purchased asset's name (for extra reference)
+    assetName: string;
+    // the purchase timestamp (in unix format)
+    purchaseTimestamp: number;
+    // the expiration timestamp of the asset's effects (in unix format)
+    // used primarily for assets with effect durations (like monthly passes, etc)
+    // for one-time use assets, this will be set to `never`.
+    effectExpiration: number | 'never';
+    // the data of the content the player receives after this asset was purchased
+    givenContent: ShopAssetGivenContentData;
+}
+
 
 /** Represents an item in the shop */
 export type ShopItem = ShopAsset<ItemType>;
