@@ -342,3 +342,42 @@ export const completeTutorial = async (twitterId: string, tutorialId: number): P
         };
     }
 };
+
+/**
+ * Skip all tutorial & rewards
+ */
+export const skipTutorial = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(skipTutorial) User not found.`,
+            };
+        }
+
+        const tutorials = await TutorialModel.find().sort({ id: 1 }).lean();
+
+        await UserModel.updateOne(
+            { twitterId },
+            {
+                $set: {
+                    'inGameData.completedTutorialIds': tutorials.map(({ id }) => id),
+                },
+            }
+        );
+
+        await claimCollabReward(user.twitterId);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(skipTutorial) User has skipped the tutorial.`,
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(skipTutorial) Error: ${err.message}`,
+        };
+    }
+};
