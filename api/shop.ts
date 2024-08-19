@@ -53,68 +53,68 @@ export const getShop = async (): Promise<ReturnValue> => {
     }
 }
 
-export const transferShopToDB = async (): Promise<void> => {
-    try {
-        // for each asset in `shop`, add it to the database
-        for (const asset of shop.items) {
-            const shopAsset = new ShopAssetModel({
-                _id: generateObjectId(),
-                assetName: asset.type,
-                assetType: asset.type,
-                price: {
-                    xCookies: asset.price.xCookies,
-                    usd: 0
-                },
-                expirationDate: 'never',
-                purchaseLimit: 'unlimited',
-                effectDuration: 'One Time',
-                refreshIntervalData: {
-                    intervalType: 'none',
-                    lastRefreshed: Math.floor(Date.now() / 1000),
-                },
-                levelRequirement: 'none',
-                givenContent: {
-                    contentType: 'item',
-                    content: asset.type,
-                    amount: 1
-                }
-            });
+// export const transferShopToDB = async (): Promise<void> => {
+//     try {
+//         // for each asset in `shop`, add it to the database
+//         for (const asset of shop.items) {
+//             const shopAsset = new ShopAssetModel({
+//                 _id: generateObjectId(),
+//                 assetName: asset.type,
+//                 assetType: asset.type,
+//                 price: {
+//                     xCookies: asset.price.xCookies,
+//                     usd: 0
+//                 },
+//                 expirationDate: 'never',
+//                 purchaseLimit: 'unlimited',
+//                 effectDuration: 'One Time',
+//                 refreshIntervalData: {
+//                     intervalType: 'none',
+//                     lastRefreshed: Math.floor(Date.now() / 1000),
+//                 },
+//                 levelRequirement: 'none',
+//                 givenContent: {
+//                     contentType: 'item',
+//                     content: asset.type,
+//                     amount: 1
+//                 }
+//             });
 
-            await shopAsset.save();
-        }
+//             await shopAsset.save();
+//         }
 
-        for (const asset of shop.foods) {
-            const shopAsset = new ShopAssetModel({
-                _id: generateObjectId(),
-                assetName: asset.type,
-                assetType: asset.type,
-                price: {
-                    xCookies: asset.price.xCookies,
-                    usd: 0
-                },
-                expirationDate: 'never',
-                purchaseLimit: 'unlimited',
-                effectDuration: 'One Time',
-                refreshIntervalData: {
-                    intervalType: 'none',
-                    lastRefreshed: Math.floor(Date.now() / 1000),
-                },
-                levelRequirement: 'none',
-                givenContent: {
-                    contentType: 'food',
-                    content: asset.type,
-                    amount: 1
-                }
-            });
+//         for (const asset of shop.foods) {
+//             const shopAsset = new ShopAssetModel({
+//                 _id: generateObjectId(),
+//                 assetName: asset.type,
+//                 assetType: asset.type,
+//                 price: {
+//                     xCookies: asset.price.xCookies,
+//                     usd: 0
+//                 },
+//                 expirationDate: 'never',
+//                 purchaseLimit: 'unlimited',
+//                 effectDuration: 'One Time',
+//                 refreshIntervalData: {
+//                     intervalType: 'none',
+//                     lastRefreshed: Math.floor(Date.now() / 1000),
+//                 },
+//                 levelRequirement: 'none',
+//                 givenContent: {
+//                     contentType: 'food',
+//                     content: asset.type,
+//                     amount: 1
+//                 }
+//             });
 
-            await shopAsset.save();
-        }
+//             await shopAsset.save();
+//         }
 
-        console.log(`(transferShopToDB) Shop transferred to database.`);
-    } catch (err: any) {
-        console.error(`(transferShopToDB) ${err.message}`);
-    }
-}
+//         console.log(`(transferShopToDB) Shop transferred to database.`);
+//     } catch (err: any) {
+//         console.error(`(transferShopToDB) ${err.message}`);
+//     }
+// }
 
 // /**
 //  * (User) Purchases `amount` of a shop asset. Requires enough xCookies.
