@@ -22,7 +22,7 @@ export const ShopAssetSchema = new mongoose.Schema({
         usd: Number
     },
     expirationDate: {
-        type: Number,
+        type: mongoose.Schema.Types.Mixed,
         default: 'never'
     },
     stockData: {
@@ -30,7 +30,7 @@ export const ShopAssetSchema = new mongoose.Schema({
         currentStock: Number
     },
     purchaseLimit: {
-        type: Number,
+        type: mongoose.Schema.Types.Mixed,
         default: 'unlimited'
     },
     effectDuration: String,
@@ -48,3 +48,32 @@ export const ShopAssetSchema = new mongoose.Schema({
         amount: Number
     }
 });
+
+/**
+ * ShopAssetPurchase schema. Represents closely to the `ShopAssetPurchase` interface in `models/shop.ts`.
+ */
+export const ShopAssetPurchaseSchema = new mongoose.Schema({
+    _id: {
+        type: String,
+        default: generateObjectId()
+    },
+    userId: {
+        type: String,
+        index: true
+    },
+    assetId: {
+        type: String,
+        index: true
+    },
+    assetName: String,
+    purchaseTimestamp: Number,
+    effectExpirationTimestamp: {
+        type: mongoose.Schema.Types.Mixed,
+        default: 'never'
+    },
+    givenContent: {
+        contentType: String,
+        content: String,
+        amount: Number
+    }
+})
