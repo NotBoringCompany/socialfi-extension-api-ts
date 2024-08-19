@@ -7,7 +7,7 @@ import { TerraCapsulatorType } from '../models/terraCapsulator';
 /**
  * Since we don't require the shop to be dynamic for now (i.e. not requiring the database), we can just hardcode the shop.
  */
-export const shop: Shop = {
+export const shop = {
     items: [
         {
             type: BitOrbType.BIT_ORB_I,

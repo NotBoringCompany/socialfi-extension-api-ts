@@ -39,7 +39,7 @@ export const ShopAssetSchema = new mongoose.Schema({
         lastRefreshed: Number
     },
     levelRequirement: {
-        type: Number,
+        type: mongoose.Schema.Types.Mixed,
         default: 'none'
     },
     givenContent: {
