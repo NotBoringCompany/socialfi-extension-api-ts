@@ -17,7 +17,7 @@ export interface Shop<T> {
  */
 export interface ShopAsset<T> {
     // the type of asset (e.g. food, item, etc.)
-    type: T;
+    assetType: T;
     // the price of the asset
     price: ShopPrice;
     // when the asset will be purchasable until (in unix timestamp)
@@ -83,7 +83,7 @@ export interface ShopAssetRefreshIntervalData {
     // the type of refresh interval
     // for instance, 'daily' means that the asset's stock can be refreshed daily back to its `totalStock`
     // if 'none', then the asset's stock will not be refreshed or has to be refreshed manually.
-    type: 'daily' | 'weekly' | 'monthly' | 'none';
+    intervalType: 'daily' | 'weekly' | 'monthly' | 'none';
     // when the asset's stock was last refreshed (in unix timestamp)
     lastRefreshed: number;
 }
@@ -95,7 +95,7 @@ export interface ShopAssetGivenContentData {
     // the type of content. used to easily identify and handle operations for the content given by the asset.
     contentType: 'item' | 'food' | 'xCookies' | 'monthlyPass';
     // the actual content that the asset gives to the player
-    content: ItemType | FoodType | 'xCookies' | ShopPackageType;
+    content: ItemType | FoodType | 'xCookies' | 'diamonds';
     // the amount of content that the asset gives to the player
     // for monthly passes and other non-quantity-based content, this will be 1
     amount: number;

@@ -21,6 +21,7 @@ import { KOSClaimableDailyRewardsSchema, KOSClaimableWeeklyRewardsSchema } from 
 import { WeeklyMVPClaimableRewardSchema, WeeklyMVPRankingLeaderboardSchema } from '../../schemas/WeeklyMVPReward';
 import { CollabSchema } from '../../schemas/Collab';
 import { CollabBasketSchema, CollabParticipantSchema } from '../../schemas/CollabV2';
+import { ShopAssetSchema } from '../../schemas/Shop';
 
 const TEST_DATABASE = process.env.MONGODB_URI!;
 const WONDERBITS_DATABASE = process.env.WONDERBITS_MONGODB_URI!;
@@ -61,6 +62,7 @@ export const WonderbitsCollabParticipantModel = WONDERBITS_CONNECTION.model('Col
 export const WonderbitsCollabBasketModel = WONDERBITS_CONNECTION.model('CollabBaskets', CollabBasketSchema, 'CollabBaskets');
 export const WonderbitsWeeklyMVPRankingLeaderboardModel = WONDERBITS_CONNECTION.model('WeeklyMVPRankingData', WeeklyMVPRankingLeaderboardSchema, 'WeeklyMVPRankingData');
 export const WonderbitsSuccessfulIndirectReferralModel = WONDERBITS_CONNECTION.model('SuccessfulIndirectReferrals', SuccessfulIndirectReferralSchema, 'SuccessfulIndirectReferrals');
+export const WonderbitsShopAssetModel = WONDERBITS_CONNECTION.model('ShopAssets', ShopAssetSchema, 'ShopAssets');
 
 // ALL TEST DATABASE MODELS
 export const UserModel = TEST_CONNECTION.model('Users', UserSchema, 'Users');
@@ -88,3 +90,4 @@ export const CollabParticipantModel = TEST_CONNECTION.model('CollabParticipants'
 export const CollabBasketModel = TEST_CONNECTION.model('CollabBaskets', CollabBasketSchema, 'CollabBaskets');
 export const WeeklyMVPRankingLeaderboardModel = TEST_CONNECTION.model('WeeklyMVPRankingData', WeeklyMVPRankingLeaderboardSchema, 'WeeklyMVPRankingData');
 export const SuccessfulIndirectReferralModel = TEST_CONNECTION.model('SuccessfulIndirectReferrals', SuccessfulIndirectReferralSchema, 'SuccessfulIndirectReferrals');
+export const ShopAssetModel = TEST_CONNECTION.model('ShopAssets', ShopAssetSchema, 'ShopAssets');
