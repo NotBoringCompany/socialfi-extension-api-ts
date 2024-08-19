@@ -1,7 +1,6 @@
 import { BitOrbType } from '../models/bitOrb';
 import { BoosterItem } from '../models/booster';
 import { FoodType } from '../models/food';
-import { Shop } from '../models/shop';
 import { TerraCapsulatorType } from '../models/terraCapsulator';
 
 /**

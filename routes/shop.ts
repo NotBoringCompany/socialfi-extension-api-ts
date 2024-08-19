@@ -17,7 +17,7 @@ const router = express.Router();
 
 router.get('/get_shop', async (_, res) => {
     try {
-        const { status, message, data } = getShop();
+        const { status, message, data } = await getShop();
 
         return res.status(status).json({
             status,
