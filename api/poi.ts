@@ -1141,35 +1141,39 @@ export const sellItemsInPOIShop = async (
         userUpdateOperations.$inc[`inventory.weight`] = -totalWeightToReduce;
 
         // divide update operations into two; $set and $inc on one, and $push and $pull on the other to prevent conflicts.
-        await UserModel.updateOne({ twitterId }, {
-            $set: userUpdateOperations.$set,
-            $inc: userUpdateOperations.$inc
-        });
+        await Promise.all([
+            UserModel.updateOne({ twitterId }, {
+                $set: userUpdateOperations.$set,
+                $inc: userUpdateOperations.$inc
+            }),
 
-        await UserModel.updateOne({ twitterId }, {
-            $push: userUpdateOperations.$push,
-            $pull: userUpdateOperations.$pull
-        });
+            LeaderboardModel.updateOne({ _id: leaderboard._id }, {
+                $set: leaderboardUpdateOperations.$set,
+                $inc: leaderboardUpdateOperations.$inc
+            }),
 
-        await LeaderboardModel.updateOne({ _id: leaderboard._id }, {
-            $set: leaderboardUpdateOperations.$set,
-            $inc: leaderboardUpdateOperations.$inc
-        });
+            POIModel.updateOne({ name: user.inGameData.location }, {
+                $set: poiUpdateOperations.$set,
+                $inc: poiUpdateOperations.$inc
+            })
+        ]);
 
-        await LeaderboardModel.updateOne({ _id: leaderboard._id }, {
-            $push: leaderboardUpdateOperations.$push,
-            $pull: leaderboardUpdateOperations.$pull
-        });
-
-        await POIModel.updateOne({ name: user.inGameData.location }, {
-            $set: poiUpdateOperations.$set,
-            $inc: poiUpdateOperations.$inc
-        });
-
-        await POIModel.updateOne({ name: user.inGameData.location }, {
-            $push: poiUpdateOperations.$push,
-            $pull: poiUpdateOperations.$pull
-        })
+        await Promise.all([
+            UserModel.updateOne({ twitterId }, {
+                $push: userUpdateOperations.$push,
+                $pull: userUpdateOperations.$pull
+            }),
+    
+            LeaderboardModel.updateOne({ _id: leaderboard._id }, {
+                $push: leaderboardUpdateOperations.$push,
+                $pull: leaderboardUpdateOperations.$pull
+            }),
+    
+            POIModel.updateOne({ name: user.inGameData.location }, {
+                $push: poiUpdateOperations.$push,
+                $pull: poiUpdateOperations.$pull
+            })
+        ]);
 
         // if the user is in a squad, update the squad's total points.
         if (squadId) {
