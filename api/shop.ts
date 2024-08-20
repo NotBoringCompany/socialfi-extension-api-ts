@@ -60,7 +60,7 @@ export const getShop = async (): Promise<ReturnValue> => {
 //             const shopAsset = new ShopAssetModel({
 //                 _id: generateObjectId(),
 //                 assetName: asset.type,
-//                 assetType: asset.type,
+//                 assetType: 'item',
 //                 price: {
 //                     xCookies: asset.price.xCookies,
 //                     usd: 0
@@ -87,7 +87,7 @@ export const getShop = async (): Promise<ReturnValue> => {
 //             const shopAsset = new ShopAssetModel({
 //                 _id: generateObjectId(),
 //                 assetName: asset.type,
-//                 assetType: asset.type,
+//                 assetType: 'food',
 //                 price: {
 //                     xCookies: asset.price.xCookies,
 //                     usd: 0

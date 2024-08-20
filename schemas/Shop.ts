@@ -15,6 +15,7 @@ export const ShopAssetSchema = new mongoose.Schema({
     },
     assetType: {
         type: String,
+        enum: ['item', 'food', 'package'],
         index: true
     },
     price: {
@@ -33,7 +34,10 @@ export const ShopAssetSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.Mixed,
         default: 'unlimited'
     },
-    effectDuration: String,
+    effectDuration: {
+        type: String,
+        enum: ['One Time', 'Daily', 'Weekly', 'Monthly', 'Monthly Pass']
+    },
     refreshIntervalData: {
         intervalType: String,
         lastRefreshed: Number
@@ -43,7 +47,10 @@ export const ShopAssetSchema = new mongoose.Schema({
         default: 'none'
     },
     givenContent: {
-        contentType: String,
+        contentType: {
+            type: String,
+            enum: ['item', 'food', 'xCookies', 'monthlyPass']
+        },
         content: String,
         amount: Number
     }
