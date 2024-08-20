@@ -35,6 +35,7 @@ export const getShop = async (): Promise<ReturnValue> => {
                                 usd: asset.price.usd
                             },
                             expirationDate: asset.expirationDate,
+                            stockData: asset.stockData,
                             purchaseLimit: asset.purchaseLimit,
                             effectDuration: asset.effectDuration,
                             refreshIntervalData: asset.refreshIntervalData,
