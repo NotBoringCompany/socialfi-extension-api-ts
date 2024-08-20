@@ -308,6 +308,7 @@ export const purchaseShopAsset = async (
         await Promise.all([
             UserModel.updateOne({ twitterId }, userUpdateOperations),
             ShopAssetPurchaseModel.create({
+                _id: generateObjectId(),
                 userId: user._id,
                 assetId: shopAsset._id,
                 assetName: shopAsset.assetName,
