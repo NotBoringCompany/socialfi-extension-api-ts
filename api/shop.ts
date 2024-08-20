@@ -304,6 +304,29 @@ export const purchaseShopAsset = async (
             }
         }
 
+        // calculate effect expiration.
+        // if asset is monthly pass, effect expires at 23:59 UTC at the end of this month, so calculate the seconds until the end of this month.
+        // otherwise, just add the effect duration to the current timestamp.
+        // because `effectDuration` is in words, we need to convert it to seconds.
+        // for instance, 'Daily' will be converted to 86400 seconds, 'Weekly' to 604800 seconds, 'Monthly' to 2592000 seconds.
+        const effectDurationInSeconds = () => {
+            switch (shopAsset.effectDuration) {
+                // one time wouldn't be counted here bc of the logic in `effectExpiration`, but just in case.
+                case 'One Time':
+                    return 0;
+                case 'Daily':
+                    return 86400;
+                case 'Weekly':
+                    return 604800;
+                case 'Monthly':
+                    return 2592000;
+                case 'Monthly Pass':
+                    return Math.floor((new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1, 0, 0, 0, 0).getTime() - Date.now()) / 1000);
+                default:
+                    return 0;
+            }
+        }
+
         // update the user's inventory and add the purchase to the ShopAssetPurchases collection
         await Promise.all([
             UserModel.updateOne({ twitterId }, userUpdateOperations),
@@ -321,12 +344,7 @@ export const purchaseShopAsset = async (
                     paidInCurrency: payment
                 },
                 purchaseTimestamp: Math.floor(Date.now() / 1000),
-                // if asset is monthly pass, effect expires at 23:59 UTC at the end of this month.
-                // otherwise, just add the effect duration to the current timestamp.
-                effectExpiration: 
-                    shopAsset.effectDuration === 'Monthly Pass' ? 
-                        new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59).getTime() / 1000 : 
-                        Math.floor(Date.now() / 1000) + shopAsset.effectDuration,
+                effectExpiration: shopAsset.effectDuration === 'One Time' ? 'never' : Math.floor(Date.now() / 1000) + effectDurationInSeconds(),
                 givenContent: shopAsset.givenContent
             })
         ])
