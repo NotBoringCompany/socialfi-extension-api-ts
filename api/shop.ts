@@ -1,8 +1,8 @@
 import { Food, FoodType } from '../models/food';
-import { ShopAsset, ShopPackageType } from '../models/shop';
+import { ShopAsset, ShopAssetType, ShopPackageType } from '../models/shop';
 import { ReturnValue, Status } from '../utils/retVal';
 import { shop } from '../utils/shop';
-import { ShopAssetModel, UserModel } from '../utils/constants/db';
+import { ShopAssetModel, ShopAssetPurchaseModel, UserModel } from '../utils/constants/db';
 import { Item, ItemType } from '../models/item';
 import { generateObjectId } from '../utils/crypto';
 
@@ -53,6 +53,15 @@ export const getShop = async (): Promise<ReturnValue> => {
     }
 }
 
+// export const deleteShopFromDB = async (): Promise<void> => {
+//     try {
+//         await ShopAssetModel.deleteMany({});
+//         console.log(`(deleteShopFromDB) Shop deleted from database.`);
+//     } catch (err: any) {
+//         console.error(`(deleteShopFromDB) ${err.message}`);
+//     }
+// }
+
 // export const transferShopToDB = async (): Promise<void> => {
 //     try {
 //         // for each asset in `shop`, add it to the database
@@ -66,6 +75,10 @@ export const getShop = async (): Promise<ReturnValue> => {
 //                     usd: 0
 //                 },
 //                 expirationDate: 'never',
+//                 stockData: {
+//                     totalStock: 'unlimited',
+//                     currentStock: 'unlimited'
+//                 },
 //                 purchaseLimit: 'unlimited',
 //                 effectDuration: 'One Time',
 //                 refreshIntervalData: {
@@ -116,127 +129,226 @@ export const getShop = async (): Promise<ReturnValue> => {
 //     }
 // }
 
-// /**
-//  * (User) Purchases `amount` of a shop asset. Requires enough xCookies.
-//  */
-// export const purchaseShopAsset = async (
-//     twitterId: string,
-//     amount: number,
-//     asset: ShopAsset
-// ): Promise<ReturnValue> => {
-//     if (!twitterId) {
-//         return {
-//             status: Status.UNAUTHORIZED,
-//             message: `(purchaseShopAsset) No twitterId provided.`
-//         }
-//     }
 
-//     if (!asset) {
-//         return {
-//             status: Status.ERROR,
-//             message: `(purchaseShopAsset) No asset provided.`
-//         }
-//     }
+/**
+ * (User) Purchases `amount` of a shop asset. Requires enough xCookies.
+ */
+export const purchaseShopAsset = async (
+    twitterId: string,
+    amount: number,
+    asset: ShopAssetType,
+    payment: 'xCookies' | 'usd' = 'xCookies'
+): Promise<ReturnValue> => {
+    if (!twitterId) {
+        return {
+            status: Status.UNAUTHORIZED,
+            message: `(purchaseShopAsset) No twitterId provided.`
+        }
+    }
 
-//     const userUpdateOperations = {
-//         $pull: {},
-//         $inc: {},
-//         $set: {},
-//         $push: {}
-//     }
+    if (!asset) {
+        return {
+            status: Status.ERROR,
+            message: `(purchaseShopAsset) No asset provided.`
+        }
+    }
 
-//     try {
-//         // since prices are currently only available in xCookies, we dont check for other payment methods
-//         let assetPrice = 0;
+    if (!amount || amount <= 0) {
+        return {
+            status: Status.ERROR,
+            message: `(purchaseShopAsset) Invalid amount provided.`
+        }
+    }
 
-//         // check if the asset specified exists in `shop.items` or `shop.foods`
-//         const shopItem = shop.items.find(i => i.type === asset);
-//         const shopFood = shop.foods.find(f => f.type === asset);
+    const userUpdateOperations = {
+        $pull: {},
+        $inc: {},
+        $set: {},
+        $push: {}
+    }
 
-//         if (!shopItem && !shopFood) {
-//             return {
-//                 status: Status.ERROR,
-//                 message: `(purchaseShopAsset) Asset not found.`
-//             }
-//         }
+    const shopAssetPurchaseUpdateOperations = {
+        $pull: {},
+        $inc: {},
+        $set: {},
+        $push: {}
+    }
 
-//         // fetch user
-//         const user = await UserModel.findOne({ twitterId }).lean();
+    try {
+        let assetPrice = 0;
 
-//         if (!user) {
-//             return {
-//                 status: Status.ERROR,
-//                 message: `(purchaseShopAsset) User not found.`
-//             }
-//         }
+        // fetch the asset from the database
+        const shopAsset = await ShopAssetModel.findOne({ assetName: asset }).lean();
 
-//         // fetch user's xCookies
-//         const userXCookies = user.inventory?.xCookieData.currentXCookies;
+        if (!shopAsset) {
+            return {
+                status: Status.ERROR,
+                message: `(purchaseShopAsset) Asset not found.`
+            }
+        }
 
-//         // check if the user has enough xCookies to purchase the asset
-//         if (shopItem) {
-//             assetPrice = shopItem.price.xCookies;
-//         } else {
-//             assetPrice = shopFood.price.xCookies;
-//         }
+        // check if asset is expired
+        if (shopAsset.expirationDate !== 'never' && shopAsset.expirationDate < Math.floor(Date.now() / 1000)) {
+            return {
+                status: Status.ERROR,
+                message: `(purchaseShopAsset) Asset is already expired.`
+            }
+        }
 
-//         if (userXCookies < (assetPrice * amount)) {
-//             return {
-//                 status: Status.ERROR,
-//                 message: `(purchaseShopAsset) Not enough xCookies.`
-//             }
-//         }
+        // check if asset is out of stock
+        if (
+            shopAsset.stockData.currentStock !== 'unlimited' &&
+            (shopAsset.stockData.currentStock <= 0 || shopAsset.stockData.currentStock < amount)
+        ) {
+            return {
+                status: Status.ERROR,
+                message: `(purchaseShopAsset) Not enough stock for purchase.`
+            }
+        }
 
-//         if (shopItem) {
-//             // add the item to the user's inventory
-//             const existingItemIndex = (user.inventory?.items as Item[]).findIndex(i => i.type === asset);
+        // fetch the user
+        const user = await UserModel.findOne({ twitterId }).lean();
 
-//             console.log(`existing item index for asset: ${asset}: ${existingItemIndex}`);
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(purchaseShopAsset) User not found.`
+            }
+        }
 
-//             if (existingItemIndex !== -1) {
-//                 userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = amount;
-//             } else {
-//                 userUpdateOperations.$push['inventory.items'] = { 
-//                     type: asset, 
-//                     amount,
-//                     totalAmountConsumed: 0,
-//                     weeklyAmountConsumed: 0
-//                 };
-//             }
-//         // if item is food
-//         } else {
-//             // add the food to the user's inventory
-//             const existingFoodIndex = (user.inventory?.foods as Food[]).findIndex(f => f.type === asset);
+        // if the asset has a level requirement, check if the user meets the requirement
+        if (shopAsset.levelRequirement !== 'none' && user.inGameData.level < shopAsset.levelRequirement) {
+            return {
+                status: Status.ERROR,
+                message: `(purchaseShopAsset) User does not meet the level requirement for this asset.`
+            }
+        }
 
-//             if (existingFoodIndex !== -1) {
-//                 userUpdateOperations.$inc[`inventory.foods.${existingFoodIndex}.amount`] = amount;
-//             } else {
-//                 userUpdateOperations.$push['inventory.foods'] = { type: asset, amount };
-//             }
-//         }
+        // check if this asset has a purchase limit. if it has, fetch the ShopAssetPurchases collection and
+        // check the amount of times the user has purchased this asset.
+        if (shopAsset.purchaseLimit !== 'unlimited') {
+            // fetch the user's purchase history of this asset
+            const assetPurchaseHistory = await ShopAssetPurchaseModel.find({ userId: user._id, assetId: shopAsset._id }).lean();
 
-//         // deduct the asset price from the user's xCookies and increment `totalXCookiesSpent` and `weeklyXCookiesSpent`
-//         userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = -(assetPrice * amount);
-//         userUpdateOperations.$inc['inventory.xCookieData.totalXCookiesSpent'] = assetPrice * amount;
-//         userUpdateOperations.$inc['inventory.xCookieData.weeklyXCookiesSpent'] = assetPrice * amount;
+            if (assetPurchaseHistory.length >= shopAsset.purchaseLimit) {
+                return {
+                    status: Status.ERROR,
+                    message: `(purchaseShopAsset) Purchase limit reached for this asset.`
+                }
+            }
+        }
 
-//         // update the user's inventory
-//         await UserModel.updateOne({ twitterId }, userUpdateOperations);
+        // fetch user's xCookies
+        const userXCookies = user.inventory?.xCookieData.currentXCookies;
 
-//         return {
-//             status: Status.SUCCESS,
-//             message: `(purchaseShopAsset) Asset purchased.`,
-//             data: {
-//                 asset,
-//                 amount,
-//                 totalPaid: assetPrice,
-//                 paymentChoice: 'xCookies',
-//             }
-//         }
-//     } catch (err: any) {
-//         return {
-//             status: Status.ERROR,
-//             message: `(purchaseShopAsset) ${err.message}`
-//         }
-//     }
-// }
+        // check payment type.
+        if (payment === 'xCookies') {
+            // check if the user has enough xCookies to purchase the asset
+            assetPrice = shopAsset.price.xCookies;
+
+            if (userXCookies < (assetPrice * amount)) {
+                return {
+                    status: Status.ERROR,
+                    message: `(purchaseShopAsset) Not enough xCookies.`
+                }
+            }
+
+            // deduct the asset price from the user's xCookies and increment `totalXCookiesSpent` and `weeklyXCookiesSpent`
+            userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = -(assetPrice * amount);
+            userUpdateOperations.$inc['inventory.xCookieData.totalXCookiesSpent'] = assetPrice * amount;
+            userUpdateOperations.$inc['inventory.xCookieData.weeklyXCookiesSpent'] = assetPrice * amount;
+        } else if (payment === 'usd') {
+            // not implemented yet.
+            return {
+                status: Status.ERROR,
+                message: `(purchaseShopAsset) USD payment not implemented yet.`
+            }
+        } else {
+            // invalid payment type for now.
+            return {
+                status: Status.ERROR,
+                message: `(purchaseShopAsset) Invalid payment type.`
+            }
+        }
+
+        // check if the asset is an item
+        if (shopAsset.assetType === 'item') {
+            // add the item to the user's inventory
+            const existingItemIndex = (user.inventory?.items as Item[]).findIndex(i => i.type === asset);
+
+            if (existingItemIndex !== -1) {
+                userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = amount;
+            } else {
+                userUpdateOperations.$push['inventory.items'] = { 
+                    type: asset, 
+                    amount,
+                    totalAmountConsumed: 0,
+                    weeklyAmountConsumed: 0
+                };
+            }
+        } else if (shopAsset.assetType === 'food') {
+            // add the food to the user's inventory
+            const existingFoodIndex = (user.inventory?.foods as Food[]).findIndex(f => f.type === asset);
+
+            if (existingFoodIndex !== -1) {
+                userUpdateOperations.$inc[`inventory.foods.${existingFoodIndex}.amount`] = amount;
+            } else {
+                userUpdateOperations.$push['inventory.foods'] = { type: asset, amount };
+            }
+        } else if (shopAsset.assetType === 'package') {
+            // not implemented yet.
+            return {
+                status: Status.ERROR,
+                message: `(purchaseShopAsset) Package purchase not implemented yet.`
+            }
+        }
+
+        // update the user's inventory and add the purchase to the ShopAssetPurchases collection
+        await Promise.all([
+            UserModel.updateOne({ twitterId }, userUpdateOperations),
+            ShopAssetPurchaseModel.create({
+                userId: user._id,
+                assetId: shopAsset._id,
+                assetName: shopAsset.assetName,
+                amount,
+                totalCost: {
+                    cost: assetPrice * amount,
+                    currency: payment,
+                    /// TO DO: right now, payment is only via xCookies. USD is not implemented yet.
+                    /// ONCE IMPLEMENTED, paidInCurrency will include TON, NOT and Telegram Stars.
+                    paidInCurrency: payment
+                },
+                purchaseTimestamp: Math.floor(Date.now() / 1000),
+                // if asset is monthly pass, effect expires at 23:59 UTC at the end of this month.
+                // otherwise, just add the effect duration to the current timestamp.
+                effectExpiration: 
+                    shopAsset.effectDuration === 'Monthly Pass' ? 
+                        new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59).getTime() / 1000 : 
+                        Math.floor(Date.now() / 1000) + shopAsset.effectDuration,
+                givenContent: shopAsset.givenContent
+            })
+        ])
+
+        // if stock is not unlimited, decrement the stock of the asset
+        if (shopAsset.stockData.totalStock !== 'unlimited') {
+            shopAssetPurchaseUpdateOperations.$inc['stockData.currentStock'] = -amount;
+
+            await ShopAssetModel.updateOne({ assetName: asset }, shopAssetPurchaseUpdateOperations);
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(purchaseShopAsset) Asset purchased successfully.`,
+            data: {
+                asset,
+                amount,
+                payment
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(purchaseShopAsset) ${err.message}`
+        }
+    }
+}

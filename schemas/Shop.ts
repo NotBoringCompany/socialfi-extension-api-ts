@@ -27,8 +27,14 @@ export const ShopAssetSchema = new mongoose.Schema({
         default: 'never'
     },
     stockData: {
-        totalStock: Number,
-        currentStock: Number
+        totalStock: {
+            type: mongoose.Schema.Types.Mixed,
+            default: 'unlimited',
+        },
+        currentStock: {
+            type: mongoose.Schema.Types.Mixed,
+            default: 'unlimited'
+        }
     },
     purchaseLimit: {
         type: mongoose.Schema.Types.Mixed,
@@ -73,8 +79,17 @@ export const ShopAssetPurchaseSchema = new mongoose.Schema({
         index: true
     },
     assetName: String,
+    amount: Number,
+    totalCost: {
+        cost: Number,
+        currency: {
+            type: String,
+            enum: ['xCookies', 'usd']
+        },
+        paidInCurrency: String
+    },
     purchaseTimestamp: Number,
-    effectExpirationTimestamp: {
+    effectExpiration: {
         type: mongoose.Schema.Types.Mixed,
         default: 'never'
     },

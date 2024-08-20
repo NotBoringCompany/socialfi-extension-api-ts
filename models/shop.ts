@@ -51,9 +51,10 @@ export interface ShopPrice {
 export interface ShopAssetStockData {
     // the total stock of the asset 
     // (this will be the amount `currentStock` will be reset to when the asset is refreshed)
-    totalStock: number;
+    // if 'unlimited', then there is no limit to the stock of the asset
+    totalStock: number | 'unlimited';
     // the current stock of the asset
-    currentStock: number;
+    currentStock: number | 'unlimited';
 }
 
 /**
@@ -115,6 +116,10 @@ export interface ShopAssetPurchase {
     assetId: string;
     // the purchased asset's name (for extra reference)
     assetName: string;
+    // the amount of the asset purchased
+    amount: number;
+    // the data of the total cost for this purchase
+    totalCost: ShopAssetPurchaseTotalCostData;
     // the purchase timestamp (in unix format)
     purchaseTimestamp: number;
     // the expiration timestamp of the asset's effects (in unix format)
@@ -124,3 +129,20 @@ export interface ShopAssetPurchase {
     // the data of the content the player receives after this asset was purchased
     givenContent: ShopAssetGivenContentData;
 }
+
+/**
+ * Represents the total cost of a shop asset purchase.
+ */
+export interface ShopAssetPurchaseTotalCostData {
+    // the value of the total cost (e.g. if 400 xCookies, then 400 is the `cost`)
+    cost: number;
+    // the base currency of the payment
+    currency: 'xCookies' | 'usd';
+    // if `currency` is xCookies, then `paidInCurrency` should be xCookies.
+    // however, if currency is USD, then `paidInCurrency` can be, for instance, TON, NOT or Telegram Stars,
+    // because USD is just the base currency which can be converted to other final paid-in currencies.
+    paidInCurrency: 'xCookies' | string;
+}
+
+// all available shop assets
+export type ShopAssetType = ItemType | FoodType | ShopPackageType;
