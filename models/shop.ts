@@ -136,13 +136,17 @@ export interface ShopAssetPurchase {
  */
 export interface ShopAssetPurchaseTotalCostData {
     // the value of the total cost (e.g. if 400 xCookies, then 400 is the `cost`)
-    cost: number;
+    baseCost: number;
     // the base currency of the payment
-    currency: 'xCookies' | 'usd';
-    // if `currency` is xCookies, then `paidInCurrency` should be xCookies.
-    // however, if currency is USD, then `paidInCurrency` can be, for instance, TON, NOT or Telegram Stars,
-    // because USD is just the base currency which can be converted to other final paid-in currencies.
-    paidInCurrency: 'xCookies' | string;
+    baseCurrency: 'xCookies' | 'usd';
+    // the actual cost of the payment after converting the currency into the `actualCurrency`.
+    // e.g. say a package is worth 10 USD, and the player pays in TON.
+    // say 1 TON is worth 6 USD. then, the `actualCost` will be 1.67 (10/6).
+    actualCost: number;
+    // if `currency` is xCookies, then `actualCurrency` should be xCookies.
+    // however, if currency is USD, then `actualCurrency` can be, for instance, TON, NOT or Telegram Stars,
+    // because USD is just the base currency which can be converted to other final (actual) currencies.
+    actualCurrency: 'xCookies' | string;
 }
 
 // all available shop assets

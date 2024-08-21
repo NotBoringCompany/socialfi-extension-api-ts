@@ -81,12 +81,13 @@ export const ShopAssetPurchaseSchema = new mongoose.Schema({
     assetName: String,
     amount: Number,
     totalCost: {
-        cost: Number,
-        currency: {
+        baseCost: Number,
+        baseCurrency: {
             type: String,
             enum: ['xCookies', 'usd']
         },
-        paidInCurrency: String
+        actualCost: Number,
+        actualCurrency: String
     },
     purchaseTimestamp: Number,
     effectExpiration: {

@@ -138,7 +138,7 @@ export const purchaseShopAsset = async (
     twitterId: string,
     amount: number,
     asset: ShopAssetType,
-    payment: 'xCookies' | 'usd' = 'xCookies'
+    payment: 'xCookies' | 'usd' = 'xCookies',
 ): Promise<ReturnValue> => {
     if (!twitterId) {
         return {
@@ -337,10 +337,11 @@ export const purchaseShopAsset = async (
                 assetName: shopAsset.assetName,
                 amount,
                 totalCost: {
-                    cost: assetPrice * amount,
-                    currency: payment,
+                    baseCost: assetPrice * amount,
+                    baseCurrency: payment,
                     /// TO DO: right now, payment is only via xCookies. USD is not implemented yet.
-                    /// ONCE IMPLEMENTED, paidInCurrency will include TON, NOT and Telegram Stars.
+                    /// ONCE IMPLEMENTED, actualCost and paidInCurrency will include TON, NOT and Telegram Stars and the actual value.
+                    actualCost: assetPrice * amount,
                     paidInCurrency: payment
                 },
                 purchaseTimestamp: Math.floor(Date.now() / 1000),
