@@ -11,11 +11,11 @@ export const GET_SQUAD_WEEKLY_RANKING = (points: number): SquadRank => {
         return SquadRank.BRONZE;
     } else if (points >= 5000 && points <= 19999) {
         return SquadRank.SILVER;
-    } else if (points >= 20000 && points <= 39999) {
+    } else if (points >= 20000 && points <= 79999) {
         return SquadRank.GOLD;
-    } else if (points >= 40000 && points <= 79999) {
+    } else if (points >= 80000 && points <= 159999) {
         return SquadRank.PLATINUM;
-    } else if (points >= 80000 && points <= 149999) {
+    } else if (points >= 160000 && points <= 299999) {
         return SquadRank.DIAMOND;
     } else {
         return SquadRank.MASTER;
