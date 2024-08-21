@@ -2,6 +2,7 @@
  * SHOP-RELATED MODELS
  ****************/
 
+import { AssetType } from './asset';
 import { FoodType } from './food';
 import { ItemType } from './item';
 
@@ -145,4 +146,4 @@ export interface ShopAssetPurchaseTotalCostData {
 }
 
 // all available shop assets
-export type ShopAssetType = ItemType | FoodType | ShopPackageType;
+export type ShopAssetType = AssetType | ShopPackageType;
