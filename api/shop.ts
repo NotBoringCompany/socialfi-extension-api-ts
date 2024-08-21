@@ -340,9 +340,9 @@ export const purchaseShopAsset = async (
                     baseCost: assetPrice * amount,
                     baseCurrency: payment,
                     /// TO DO: right now, payment is only via xCookies. USD is not implemented yet.
-                    /// ONCE IMPLEMENTED, actualCost and paidInCurrency will include TON, NOT and Telegram Stars and the actual value.
+                    /// ONCE IMPLEMENTED, actualCost and actualCurrency will include TON, NOT and Telegram Stars and the actual value.
                     actualCost: assetPrice * amount,
-                    paidInCurrency: payment
+                    actualCurrency: payment
                 },
                 purchaseTimestamp: Math.floor(Date.now() / 1000),
                 effectExpiration: shopAsset.effectDuration === 'One Time' ? 'never' : Math.floor(Date.now() / 1000) + effectDurationInSeconds(),
