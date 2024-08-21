@@ -86,11 +86,23 @@ export const KOS_WEEKLY_BENEFITS = (
     raftBooster60: number,
 } => {
     // there are 3 auras, snow, lightning and smoke. check if the user has all 3 auras from all the keys (not for each key since they can only have 1 aura each)
-    const hasAllAuras = keys.filter(key => key.attributes.find(attr => attr.traitType === 'Aura' && (attr.value === 'Snow' || attr.value === 'Lightning' || attr.value === 'Smoke'))).length === 3;
+    const hasAllAuras = ['Snow', 'Lightning', 'Smoke'].every(aura =>
+        keys.some(key =>
+            key.attributes.some(attr => attr.traitType === 'Aura' && attr.value === aura)
+        )
+    );
     // there are 3 houses, tradition, chaos and glory. check if the user has all 3 houses from all the keys (not for each key since they can only have 1 house each)
-    const hasAllHouses = keys.filter(key => key.attributes.find(attr => attr.traitType === 'House' && (attr.value === 'Tradition' || attr.value === 'Chaos' || attr.value === 'Glory'))).length === 3;
+    const hasAllHouses = ['Tradition', 'Chaos', 'Glory'].every(house =>
+        keys.some(key =>
+            key.attributes.some(attr => attr.traitType === 'House' && attr.value === house)
+        )
+    );
     // there are 3 podiums, timeless triune, primordial prism and stellar selenite. check if the user has all 3 podiums from all the keys (not for each key since they can only have 1 podium each)
-    const hasAllPodiums = keys.filter(key => key.attributes.find(attr => attr.traitType === 'Podium' && (attr.value === 'Timeless Triune' || attr.value === 'Primordial Prism' || attr.value === 'Stellar Selenite'))).length === 3;
+    const hasAllPodiums = ['Timeless Triune', 'Primordial Prism', 'Stellar Selenite'].every(podium =>
+        keys.some(key =>
+            key.attributes.some(attr => attr.traitType === 'Podium' && attr.value === podium)
+        )
+    );
 
     const points = KOS_BENEFITS_POINTS_FORMULA(keys);
     const xCookies = KOS_BENEFITS_X_COOKIES_FORMULA(keys, keychainsOwned, superiorKeychainsOwned);
