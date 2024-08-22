@@ -89,6 +89,8 @@ export const ShopAssetPurchaseSchema = new mongoose.Schema({
         actualCost: Number,
         actualCurrency: String
     },
+    txHash: String,
+    confirmed: Boolean,
     purchaseTimestamp: Number,
     effectExpiration: {
         type: mongoose.Schema.Types.Mixed,

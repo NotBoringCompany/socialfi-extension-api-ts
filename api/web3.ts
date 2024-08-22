@@ -4,8 +4,52 @@ import { UserModel } from '../utils/constants/db';
 import { UserWallet } from '../models/user';
 import { getUserCurrentPoints } from './leaderboard';
 import { generateHashSalt, generateWonderbitsDataHash } from '../utils/crypto';
-import { BINANCE_API_BASE_URL, DEPLOYER_WALLET, GATEIO_API_BASE_URL, KUCOIN_API_BASE_URL, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
+import { BINANCE_API_BASE_URL, DEPLOYER_WALLET, GATEIO_API_BASE_URL, KUCOIN_API_BASE_URL, TON_WEB, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
 import { ethers } from 'ethers';
+
+/**
+ * Converts a BOC (bag of cells) for TON-related transactions into its corresponding transaction hash in hex format.
+ */
+export const bocToMessageHash = async (boc: string): Promise<string> => {
+    // convert base64-encoded boc string into byte array
+    const bocBytes = TON_WEB.utils.base64ToBytes(boc);
+    // decode boc into a single TON cell (`boc` should only contain one cell)
+    const cell = TON_WEB.boc.Cell.oneFromBoc(bocBytes);
+    // calculate hash of cell to get the tx hash
+    const rawHash = await cell.hash();
+    // `rawHash` is still a bytes array; convert to hex
+    const hash = TON_WEB.utils.bytesToHex(rawHash);
+
+    return hash;
+}
+
+export const decodeTx = async (boc: string) => {
+    const msgHash = await bocToMessageHash(boc);
+
+    console.log(msgHash);
+
+    const txs = await TON_WEB.provider.getTransactions(
+        'UQC_7U9zL8VRBiSzQOADRf107G94jnc0NDTZfbeeFnTeUZJ7',
+        100
+    );
+
+    const firstTx = txs[0];
+
+    console.log(firstTx);
+
+    // set `isBounceable` to false to match the address format in TONKeeper
+    const receiverAddress = new TON_WEB.utils.Address(firstTx.out_msgs[0].destination).toString(true, true, false, false);
+
+    console.log(receiverAddress);
+    // // convert address
+    // const address = firstTx.out_msgs[0].destination;
+
+    // const converted = new TON_WEB.utils.Address(address).toString();
+
+    // console.log(converted);
+}
+
+decodeTx('te6cckEBBAEAtwAB5YgBf9qe5l+KogxJZoHABov66dje8RzuaGhpsvtvPCzpvKIDm0s7c///+Is2MuuYAAAAJdiI5UHCcREFO0Ozm6C4bJ/nWbB7Bzg7lxCjgIpmnc816edVxGeV22dNUOioBlI5ZEZY+BmkklHOZP+t0khQdAUBAgoOw8htAwIDAAAAaEIACz4IjlfWueXBT3j2C8JUTGPNuneJQxVwTSGhTA/E7eugCYloAAAAAAAAAAAAAAAAAAACRBwd');
 
 /**
  * Fetches the tickers of the tokens used for in-app purchases in Wonderbits.

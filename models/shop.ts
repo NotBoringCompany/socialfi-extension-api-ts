@@ -121,6 +121,17 @@ export interface ShopAssetPurchase {
     amount: number;
     // the data of the total cost for this purchase
     totalCost: ShopAssetPurchaseTotalCostData;
+    // the tx hash (or BOC for TON payments) of the payment
+    // if the payment was made in xCookies, then this will be null.
+    txHash: string | null;
+    // if the payment was already confirmed (double-checked in the backend). xCookie payments are always confirmed.
+    // this is mostly for blockchain payments; because the node providers may be subjected to rate limiting,
+    // there may be times where double-checking the `txHash` will result in errors.
+    // hence, this field is used to confirm that the payment was indeed successful.
+    // if `confirmed` is false, then the confirmation will be attempted again later, and repercussions may follow
+    // if the payment was indeed not successful. however, the player SHOULD receive the content they paid for initially,
+    // even if the payment was not confirmed.
+    confirmed: boolean;
     // the purchase timestamp (in unix format)
     purchaseTimestamp: number;
     // the expiration timestamp of the asset's effects (in unix format)
@@ -135,7 +146,7 @@ export interface ShopAssetPurchase {
  * Represents the total cost of a shop asset purchase.
  */
 export interface ShopAssetPurchaseTotalCostData {
-    // the value of the total cost (e.g. if 400 xCookies, then 400 is the `cost`)
+    // the base value of the total cost (e.g. if 400 xCookies, then 400 is the `baseCost`)
     baseCost: number;
     // the base currency of the payment
     baseCurrency: 'xCookies' | 'usd';

@@ -139,6 +139,10 @@ export const purchaseShopAsset = async (
     amount: number,
     asset: ShopAssetType,
     payment: 'xCookies' | 'usd' = 'xCookies',
+    // if payment is via 'usd', then most likely it's done via TON or NOT.
+    // in this case, a txHash is required, or else the fn throws an error.
+    // for TON, this will be in the form of a signed BOC (bag of cells).
+    txHash?: string
 ): Promise<ReturnValue> => {
     if (!twitterId) {
         return {
