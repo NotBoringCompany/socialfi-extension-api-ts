@@ -2815,7 +2815,7 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                 message: `(handleTwitterLogin) User found. Logging in.`,
                 data: {
                     userId: user._id,
-                    twitterId: telegramUser.id,
+                    twitterId: user.twitterId,
                     loginType: loginType,
                     referralCode: user.referralData.referralCode
                 },
