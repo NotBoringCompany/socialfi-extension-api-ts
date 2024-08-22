@@ -959,10 +959,7 @@ export const checkWeeklyKOSRewards = async (): Promise<void> => {
             );
 
             // TEMPORARY ADJUST SOME USERS REWARDS
-            if (user.twitterId === '1403010011920535557') {
-                // twitterUsername: MetaversonCouch
-                xCookies = 0;
-            } else if (user.twitterId === '1262952376488656898') {
+            if (user.twitterId === '1262952376488656898') {
                 // twitterUsername: TheArchitekt_ Affecting for 2 Weeks Until 26th August
                 xCookies = 155;
             }
