@@ -89,8 +89,12 @@ export const ShopAssetPurchaseSchema = new mongoose.Schema({
         actualCost: Number,
         actualCurrency: String
     },
-    txHash: String,
-    confirmed: Boolean,
+    blockchainData: {
+        address: String,
+        chain: mongoose.Schema.Types.Mixed,
+        txHash: String,
+        confirmationAttempts: Array,
+    },
     purchaseTimestamp: Number,
     effectExpiration: {
         type: mongoose.Schema.Types.Mixed,
