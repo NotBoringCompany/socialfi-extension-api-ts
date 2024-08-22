@@ -2937,7 +2937,10 @@ export const handleTelegramConnect = async (twitterId: string, telegramUser: Tel
             };
         } else {
             // backup the data
-            // await UserBackupModel.create(registeredTelegram);
+            await UserBackupModel.create({
+                ...registeredTelegram,
+                _id: generateObjectId()
+            });
 
             // if the user's confirmed then delete the existed telegram account
             await registeredTelegram.deleteOne();
