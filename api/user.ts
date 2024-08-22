@@ -5,7 +5,7 @@ import { generateHashSalt, generateObjectId, generateReferralCode } from '../uti
 import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
 import { RANDOMIZE_GENDER, getBitStatsModifiersFromTraits, randomizeBitTraits, randomizeBitType } from '../utils/constants/bit';
 import { ObtainMethod } from '../models/obtainMethod';
-import { IslandModel, LeaderboardModel, SquadLeaderboardModel, SquadModel, StarterCodeModel, UserModel, WeeklyMVPClaimableRewardsModel } from '../utils/constants/db';
+import { IslandModel, LeaderboardModel, SquadLeaderboardModel, SquadModel, StarterCodeModel, UserBackupModel, UserModel, WeeklyMVPClaimableRewardsModel } from '../utils/constants/db';
 import { addIslandToDatabase, getLatestIslandId, placeBit, randomizeBaseResourceCap } from './island';
 import { POIName } from '../models/poi';
 import { ExtendedResource, SimplifiedResource } from '../models/resource';
@@ -3285,7 +3285,7 @@ export const updateLoginStreak = async (twitterId: string): Promise<ReturnValue>
 /**
  * Connect existing Twitter account to Telegram
  */
-export const handleTelegramConnect = async (twitterId: string, telegramUser: TelegramAuthData['user']): Promise<ReturnValue> => {
+export const handleTelegramConnect = async (twitterId: string, telegramUser: TelegramAuthData['user'], confirm?: boolean): Promise<ReturnValue> => {
     try {
         const user = await UserModel.findOne({ twitterId });
 
@@ -3321,12 +3321,21 @@ export const handleTelegramConnect = async (twitterId: string, telegramUser: Tel
         }
 
         // check if the telegram account already registered via telegram
-        const isRegistered = await UserModel.findOne({ twitterId: telegramUser.id, method: 'telegram' });
-        if (isRegistered) {
+        const registeredTelegram = await UserModel.findOne({ twitterId: telegramUser.id, method: 'telegram' });
+        if (registeredTelegram && !confirm) {
             return {
                 status: Status.ERROR,
                 message: `(handleTelegramConnect) Telegram account already registered.`,
+                data: {
+                    needConfirmation: true
+                }
             };
+        } else {
+            // backup the data
+            await UserBackupModel.create(registeredTelegram);
+
+            // if the user's confirmed then delete the existed telegram account
+            await UserModel.deleteOne({ twitterId: telegramUser.id, method: 'telegram' });
         }
 
         // assign telegram profile to the account

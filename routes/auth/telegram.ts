@@ -116,7 +116,7 @@ router.post('/connect', async (req, res, next) => {
             });
         }
 
-        const { initData } = req.body;
+        const { initData, confirm } = req.body;
         if (!initData) {
             return res.status(Status.UNAUTHORIZED).json({
                 status: Status.UNAUTHORIZED,
@@ -134,11 +134,12 @@ router.post('/connect', async (req, res, next) => {
 
         const telegramData = parseTelegramData(initData);
 
-        const { message, status } = await handleTelegramConnect(validateData.twitterId, telegramData.user);
+        const { data, message, status } = await handleTelegramConnect(validateData.twitterId, telegramData.user, confirm);
         if (status !== Status.SUCCESS) {
             return res.status(status).json({
                 status: status,
                 message,
+                data
             });
         }
 
