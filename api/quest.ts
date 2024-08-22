@@ -972,7 +972,6 @@ export const incrementProgressionByType = async (
     type: QuestRequirementType,
     twitterId: string,
     count: number,
-    params?: string,
     params?: string
 ): Promise<void> => {
     try {
