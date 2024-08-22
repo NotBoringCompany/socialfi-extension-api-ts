@@ -132,6 +132,10 @@ export interface ShopAssetPurchase {
     // if the payment was indeed not successful. however, the player SHOULD receive the content they paid for initially,
     // even if the payment was not confirmed.
     confirmed: boolean;
+    // amount of times the payment confirmation was attempted (to convert `confirmed` to true)
+    // up to X tries (TBD), if the payment is not confirmed, then the purchase will be considered unsuccessful,
+    // and repercussions may follow (because the user will already have received the content they "paid" for at this point)
+    confirmationTries: number;
     // the purchase timestamp (in unix format)
     purchaseTimestamp: number;
     // the expiration timestamp of the asset's effects (in unix format)
