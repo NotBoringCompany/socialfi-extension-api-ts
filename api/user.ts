@@ -5,7 +5,7 @@ import { decryptPrivateKey, encryptPrivateKey, generateHashSalt, generateObjectI
 import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
 import { RANDOMIZE_GENDER, getBitStatsModifiersFromTraits, randomizeBitTraits, randomizeBitType } from '../utils/constants/bit';
 import { ObtainMethod } from '../models/obtainMethod';
-import { IslandModel, LeaderboardModel, SquadLeaderboardModel, SquadModel, StarterCodeModel, UserBackupModel, UserModel, WeeklyMVPClaimableRewardsModel } from '../utils/constants/db';
+import { IslandModel, LeaderboardModel, SquadLeaderboardModel, SquadModel, StarterCodeModel, UserModel, WeeklyMVPClaimableRewardsModel } from '../utils/constants/db';
 import { addIslandToDatabase, getLatestIslandId, randomizeBaseResourceCap } from './island';
 import { POIName } from '../models/poi';
 import { ExtendedResource, SimplifiedResource } from '../models/resource';
@@ -2936,12 +2936,6 @@ export const handleTelegramConnect = async (twitterId: string, telegramUser: Tel
                 }
             };
         } else {
-            // backup the data
-            await UserBackupModel.create({
-                ...registeredTelegram,
-                _id: generateObjectId()
-            });
-
             // if the user's confirmed then delete the existed telegram account
             await registeredTelegram.deleteOne();
         }
