@@ -67,6 +67,7 @@ export const WonderbitsShopAssetPurchaseModel = WONDERBITS_CONNECTION.model('Sho
 
 // ALL TEST DATABASE MODELS
 export const UserModel = TEST_CONNECTION.model('Users', UserSchema, 'Users');
+export const UserBackupModel = TEST_CONNECTION.model('UsersBackup', UserSchema, 'UsersBackup'); // backup data for deleted user from telegram connection process
 export const BitModel = TEST_CONNECTION.model('Bits', BitSchema, 'Bits');
 export const IslandModel = TEST_CONNECTION.model('Islands', IslandSchema, 'Islands');
 export const RaftModel = TEST_CONNECTION.model('Rafts', RaftSchema, 'Rafts');
