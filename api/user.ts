@@ -3335,7 +3335,7 @@ export const handleTelegramConnect = async (twitterId: string, telegramUser: Tel
             await UserBackupModel.create(registeredTelegram);
 
             // if the user's confirmed then delete the existed telegram account
-            await UserModel.deleteOne({ twitterId: telegramUser.id, method: 'telegram' });
+            await registeredTelegram.deleteOne();
         }
 
         // assign telegram profile to the account
