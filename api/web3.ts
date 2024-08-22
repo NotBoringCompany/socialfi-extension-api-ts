@@ -76,7 +76,7 @@ export const decodeTx = async (boc: string) => {
     // console.log(converted);
 }
 
-decodeBoc(`te6cckEBBAEAtwAB5YgBf9qe5l+KogxJZoHABov66dje8RzuaGhpsvtvPCzpvKIDm0s7c///+Is2MuuYAAAAJdiI5UHCcREFO0Ozm6C4bJ/nWbB7Bzg7lxCjgIpmnc816edVxGeV22dNUOioBlI5ZEZY+BmkklHOZP+t0khQdAUBAgoOw8htAwIDAAAAaEIACz4IjlfWueXBT3j2C8JUTGPNuneJQxVwTSGhTA/E7eugCYloAAAAAAAAAAAAAAAAAAACRBwd`);
+// decodeBoc(`te6cckEBBAEAtwAB5YgBf9qe5l+KogxJZoHABov66dje8RzuaGhpsvtvPCzpvKIDm0s7c///+Is2MuuYAAAAJdiI5UHCcREFO0Ozm6C4bJ/nWbB7Bzg7lxCjgIpmnc816edVxGeV22dNUOioBlI5ZEZY+BmkklHOZP+t0khQdAUBAgoOw8htAwIDAAAAaEIACz4IjlfWueXBT3j2C8JUTGPNuneJQxVwTSGhTA/E7eugCYloAAAAAAAAAAAAAAAAAAACRBwd`);
 // decodeTx('te6cckEBBAEAtwAB5YgBf9qe5l+KogxJZoHABov66dje8RzuaGhpsvtvPCzpvKIDm0s7c///+Is2MuuYAAAAJdiI5UHCcREFO0Ozm6C4bJ/nWbB7Bzg7lxCjgIpmnc816edVxGeV22dNUOioBlI5ZEZY+BmkklHOZP+t0khQdAUBAgoOw8htAwIDAAAAaEIACz4IjlfWueXBT3j2C8JUTGPNuneJQxVwTSGhTA/E7eugCYloAAAAAAAAAAAAAAAAAAACRBwd');
 
 /**
