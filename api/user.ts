@@ -10,7 +10,7 @@ import { addIslandToDatabase, getLatestIslandId, randomizeBaseResourceCap } from
 import { POIName } from '../models/poi';
 import { ExtendedResource, SimplifiedResource } from '../models/resource';
 import { resources } from '../utils/constants/resource';
-import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, PlayerEnergy, PlayerMastery, UserWallet, XCookieSource } from '../models/user';
+import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, PlayerEnergy, PlayerMastery, UserWallet, XCookieSource, User } from '../models/user';
 import {
     DAILY_REROLL_BONUS_MILESTONE,
     GET_BEGINNER_REWARDS,
@@ -43,7 +43,7 @@ import mongoose from 'mongoose';
 import * as dotenv from 'dotenv';
 import { getUserCurrentPoints } from './leaderboard';
 import { DEPLOYER_WALLET, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
-import { parseTelegramData, validateTelegramData } from '../utils/telegram';
+import { parseTelegramData, TelegramAuthData, validateTelegramData } from '../utils/telegram';
 import { sendKICKUponRegistration, updatePointsInContract } from './web3';
 import { ethers } from 'ethers';
 
@@ -1338,6 +1338,14 @@ export const linkInviteCode = async (twitterId: string, code: string): Promise<R
             };
         }
 
+        // Check if the user has already used a referral code
+        if (user.inviteCodeData.usedStarterCode || user.inviteCodeData.usedStarterCode) {
+            return {
+                status: Status.ERROR,
+                message: `(linkInviteCode) User already used a referral code.`,
+            };
+        }
+
         // check if the code is a starter code or a referral code
         const starterCode = await StarterCodeModel.findOne({ code: code.toUpperCase() }).lean();
 
@@ -1959,6 +1967,15 @@ export const connectToDiscord = async (twitterId: string, profile: ExtendedDisco
             };
         }
 
+        // check if the same discord account already connected
+        const existedDiscord = await UserModel.findOne({ 'discordProfile.discordId': profile.id, 'twitterId': { $ne: null } });
+        if (existedDiscord) {
+            return {
+                status: Status.BAD_REQUEST,
+                message: `(connectToDiscord) User is already connected.`,
+            };
+        }
+
         // prevent user to connect to another discord account
         if (!!user.discordProfile?.discordId && user.discordProfile?.discordId !== profile.id) {
             return {
@@ -1967,8 +1984,8 @@ export const connectToDiscord = async (twitterId: string, profile: ExtendedDisco
             };
         }
 
-        // merge the account if the user's already registered via BerryBot
-        const discordUser = await UserModel.findOne({ 'discordProfile.discordId': profile.id });
+        // merge the account if the user's already registered via BerryBot, if it's existed
+        const discordUser = await UserModel.findOne({ 'discordProfile.discordId': profile.id, 'twitterId': null });
         if (discordUser) {
             // get the current xCookies amount from the BerryBot account
             const amount = discordUser.inventory.xCookieData.currentXCookies;
@@ -2581,25 +2598,15 @@ export const updatePlayerLevels = async () => {
  * Twitter login logic. Creates a new user or simply log them in if they already exist.
  *
  */
-export const handleTelegramLogin = async (initData: string): Promise<ReturnValue> => {
+export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']): Promise<ReturnValue> => {
     try {
         let loginType: 'Register' | 'Login';
 
-        // validate the init data
-        const isValid = validateTelegramData(initData);
-        if (!isValid)
-            return {
-                status: Status.UNAUTHORIZED,
-                message: `(handleTelegramLogin) Unauthorized`,
-            };
-
-        const telegramData = parseTelegramData(initData);
-
-        const user = await UserModel.findOne({ twitterId: telegramData.user.id, method: 'telegram' }).lean();
+        const user = await UserModel.findOne({ twitterId: telegramUser.id, method: 'telegram' }).lean();
 
         // if user doesn't exist, create a new user
         if (!user) {
-            console.log(`creating new telegram user: ${telegramData.user.id}`)
+            console.log(`creating new telegram user: ${telegramUser.id}`)
             // generates a new object id for the user
             const userObjectId = generateObjectId();
             loginType = 'Register';
@@ -2712,11 +2719,11 @@ export const handleTelegramLogin = async (initData: string): Promise<ReturnValue
 
             const newUser = new UserModel({
                 _id: userObjectId,
-                twitterId: telegramData.user.id,
+                twitterId: telegramUser.id,
                 method: 'telegram',
                 twitterProfilePicture: 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png',
-                twitterUsername: telegramData.user.id,
-                twitterDisplayName: `${telegramData.user.first_name} ${telegramData.user.last_name}`.trim(),
+                twitterUsername: telegramUser.username,
+                twitterDisplayName: `${telegramUser.first_name} ${telegramUser.last_name}`.trim(),
                 createdTimestamp: Math.floor(Date.now() / 1000),
                 // invite code data will be null until users input their invite code.
                 inviteCodeData: {
@@ -2794,8 +2801,9 @@ export const handleTelegramLogin = async (initData: string): Promise<ReturnValue
                 message: `(handleTwitterLogin) New user created.`,
                 data: {
                     userId: newUser._id,
-                    twitterId: telegramData.user.id,
+                    twitterId: telegramUser.id,
                     loginType: loginType,
+                    referralCode: newUser.referralData.referralCode
                 },
             };
         } else {
@@ -2807,8 +2815,9 @@ export const handleTelegramLogin = async (initData: string): Promise<ReturnValue
                 message: `(handleTwitterLogin) User found. Logging in.`,
                 data: {
                     userId: user._id,
-                    twitterId: telegramData.user.id,
+                    twitterId: telegramUser.id,
                     loginType: loginType,
+                    referralCode: user.referralData.referralCode
                 },
             };
         }
@@ -2874,6 +2883,74 @@ export const updateLoginStreak = async (twitterId: string): Promise<ReturnValue>
         return {
             status: Status.ERROR,
             message: `(updateLoginStreak) ${err.message}`,
+        };
+    }
+}
+
+/**
+ * Connect existing Twitter account to Telegram
+ */
+export const handleTelegramConnect = async (twitterId: string, telegramUser: TelegramAuthData['user']): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId });
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(handleTelegramConnect) User not found.`,
+            };
+        }
+
+        if (user.telegramProfile) {
+            return {
+                status: Status.ERROR,
+                message: `(handleTelegramConnect) You've already connected to Telegram.`,
+            };
+        }
+
+        // prevent user that logged in using telegram to connect
+        if (user.method === 'telegram') {
+            return {
+                status: Status.ERROR,
+                message: `(handleTelegramConnect) Cannot connect the account because it was logged in via Telegram.`,
+            };
+        }
+
+        // check if the telegram account already connected to another account
+        const isConnected = await UserModel.findOne({ 'telegramProfile.telegramId': telegramUser.id });
+        if (isConnected) {
+            return {
+                status: Status.ERROR,
+                message: `(handleTelegramConnect) Telegram account already connected to another user.`,
+            };
+        }
+
+        // check if the telegram account already registered via telegram
+        const isRegistered = await UserModel.findOne({ twitterId: telegramUser.id, method: 'telegram' });
+        if (isRegistered) {
+            return {
+                status: Status.ERROR,
+                message: `(handleTelegramConnect) Telegram account already registered.`,
+            };
+        }
+
+        // assign telegram profile to the account
+        await user.updateOne({
+            telegramProfile: {
+                telegramId: telegramUser.id,
+                name: `${telegramUser.first_name} ${telegramUser.last_name}`.trim(),
+                username: telegramUser.username || telegramUser.id,
+            }
+        })
+
+        return {
+            status: Status.SUCCESS,
+            message: `(handleTelegramConnect) Telegram account connected successfully.`,
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(handleTelegramConnect) ${err.message}`,
         };
     }
 }
