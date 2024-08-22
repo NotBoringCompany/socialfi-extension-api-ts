@@ -2886,3 +2886,71 @@ export const updateLoginStreak = async (twitterId: string): Promise<ReturnValue>
         };
     }
 }
+
+/**
+ * Connect existing Twitter account to Telegram
+ */
+export const handleTelegramConnect = async (twitterId: string, telegramUser: TelegramAuthData['user']): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId });
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(handleTelegramConnect) User not found.`,
+            };
+        }
+
+        if (user.telegramProfile) {
+            return {
+                status: Status.ERROR,
+                message: `(handleTelegramConnect) You've already connected to Telegram.`,
+            };
+        }
+
+        // prevent user that logged in using telegram to connect
+        if (user.method === 'telegram') {
+            return {
+                status: Status.ERROR,
+                message: `(handleTelegramConnect) Cannot connect the account because it was logged in via Telegram.`,
+            };
+        }
+
+        // check if the telegram account already connected to another account
+        const isConnected = await UserModel.findOne({ 'telegramProfile.telegramId': telegramUser.id });
+        if (isConnected) {
+            return {
+                status: Status.ERROR,
+                message: `(handleTelegramConnect) Telegram account already connected to another user.`,
+            };
+        }
+
+        // check if the telegram account already registered via telegram
+        const isRegistered = await UserModel.findOne({ twitterId: telegramUser.id, method: 'telegram' });
+        if (isRegistered) {
+            return {
+                status: Status.ERROR,
+                message: `(handleTelegramConnect) Telegram account already registered.`,
+            };
+        }
+
+        // assign telegram profile to the account
+        await user.updateOne({
+            telegramProfile: {
+                telegramId: telegramUser.id,
+                name: `${telegramUser.first_name} ${telegramUser.last_name}`.trim(),
+                username: telegramUser.username || telegramUser.id,
+            }
+        })
+
+        return {
+            status: Status.SUCCESS,
+            message: `(handleTelegramConnect) Telegram account connected successfully.`,
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(handleTelegramConnect) ${err.message}`,
+        };
+    }
+}
