@@ -139,9 +139,11 @@ export const purchaseShopAsset = async (
     amount: number,
     asset: ShopAssetType,
     payment: 'xCookies' | 'usd' = 'xCookies',
-    // if payment is via 'usd', then most likely it's done via TON or NOT.
-    // in this case, a txHash is required, or else the fn throws an error.
-    // for TON, this will be in the form of a signed BOC (bag of cells).
+    // for blockchain txs only; the address the payment was made from.
+    address?: string,
+    // for blockchain txs only; the chain the payment was made on.
+    chain?: string | number,
+    // for blockchain txs only; the hex string of the transaction hash (for EVM chains) or the signed BOC (bag of cells; for TON).
     txHash?: string
 ): Promise<ReturnValue> => {
     if (!twitterId) {
@@ -235,10 +237,15 @@ export const purchaseShopAsset = async (
             // fetch the user's purchase history of this asset
             const assetPurchaseHistory = await ShopAssetPurchaseModel.find({ userId: user._id, assetId: shopAsset._id }).lean();
 
-            if (assetPurchaseHistory.length >= shopAsset.purchaseLimit) {
+            // get the `amount` purchased per asset (i.e. per document)
+            const assetPurchaseAmount = assetPurchaseHistory.reduce((acc, curr) => acc + curr.amount, 0);
+
+            console.log(`(purchaseShopAsset) total assets purchased for User ${user.twitterUsername}: ${assetPurchaseAmount}`);
+            
+            if (assetPurchaseAmount + amount > shopAsset.purchaseLimit) {
                 return {
                     status: Status.ERROR,
-                    message: `(purchaseShopAsset) Purchase limit reached for this asset.`
+                    message: `(purchaseShopAsset) User has reached the purchase limit for this asset.`
                 }
             }
         }
