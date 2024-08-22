@@ -38,9 +38,9 @@ export const decodeTx = async (boc: string) => {
     console.log(firstTx);
 
     // set `isBounceable` to false to match the address format in TONKeeper
-    const receiverAddress = new TON_WEB.utils.Address(firstTx.out_msgs[0].destination).toString(true, true, false, false);
+    // const receiverAddress = new TON_WEB.utils.Address(firstTx.out_msgs[0].destination).toString(true, true, false, false);
 
-    console.log(receiverAddress);
+    // console.log(receiverAddress);
     // // convert address
     // const address = firstTx.out_msgs[0].destination;
 
