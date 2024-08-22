@@ -42,7 +42,7 @@ export const ShopAssetSchema = new mongoose.Schema({
     },
     effectDuration: {
         type: String,
-        enum: ['One Time', 'Daily', 'Weekly', 'Monthly', 'Monthly Pass']
+        enum: ['One Time', 'Daily', 'Weekly', 'Monthly', 'Full Daily', 'Full Weekly', 'Full Monthly']
     },
     refreshIntervalData: {
         intervalType: String,

@@ -315,26 +315,83 @@ export const purchaseShopAsset = async (
             }
         }
 
-        // calculate effect expiration.
-        // if asset is monthly pass, effect expires at 23:59 UTC at the end of this month, so calculate the seconds until the end of this month.
-        // otherwise, just add the effect duration to the current timestamp.
-        // because `effectDuration` is in words, we need to convert it to seconds.
-        // for instance, 'Daily' will be converted to 86400 seconds, 'Weekly' to 604800 seconds, 'Monthly' to 2592000 seconds.
-        const effectDurationInSeconds = () => {
+        // // calculate effect expiration.
+        // // if asset is monthly pass, effect expires at 23:59 UTC at the end of this month, so calculate the seconds until the end of this month.
+        // // otherwise, just add the effect duration to the current timestamp.
+        // // because `effectDuration` is in words, we need to convert it to seconds.
+        // // for instance, 'Daily' will be converted to 86400 seconds, 'Weekly' to 604800 seconds, 'Monthly' to 2592000 seconds.
+        // // for 'Full ...', it will count until 23:59 UTC of the last day of the period.
+        // const effectDurationInSeconds = () => {
+        //     switch (shopAsset.effectDuration) {
+        //         // one time wouldn't be counted here bc of the logic in `effectExpiration`, but just in case.
+        //         case 'One Time':
+        //             return 0;
+        //         case 'Daily':
+        //             return 86400;
+        //         case 'Weekly':
+        //             return 604800;
+        //         case 'Monthly':
+        //             return 2592000;
+        //         case 'Full Daily':
+        //             // calculate the time from now until the next day at 23:59 UTC
+        //             const now = new Date();
+        //             const endOfNextDay = new Date(Date.UTC(
+        //                 now.getUTCFullYear(),
+        //                 now.getUTCMonth(),
+        //                 now.getUTCDate() + 1,
+        //                 23, 59, 59
+        //             ));
+        //             return Math.floor((endOfNextDay.getTime() - now.getTime()) / 1000); 
+                    
+        //     }
+        // }
+
+        // calculate timestamp of effect expiration.
+        // if one time, set to 'never'.
+        // if daily, weekly or monthly, set to exactly 1, 7 or 30 days from now.
+        // if full daily, full weekly or full monthly, set to 23:59 UTC of the next day, week or month; so in most cases, it will be a bit more than 1, 7 or 30 days.
+        const effectExpiration = (): number | 'never' => {
+            const now = new Date();
+
             switch (shopAsset.effectDuration) {
-                // one time wouldn't be counted here bc of the logic in `effectExpiration`, but just in case.
                 case 'One Time':
-                    return 0;
+                    return 'never';
                 case 'Daily':
-                    return 86400;
+                    return Math.floor(now.getTime() / 1000) + 86400;
                 case 'Weekly':
-                    return 604800;
+                    return Math.floor(now.getTime() / 1000) + 604800;
                 case 'Monthly':
-                    return 2592000;
-                case 'Monthly Pass':
-                    return Math.floor((new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1, 0, 0, 0, 0).getTime() - Date.now()) / 1000);
+                    return Math.floor(now.getTime() / 1000) + 2592000;
+                case 'Full Daily':
+                    // get the timestamp of 23:59 UTC of the next day
+                    const endOfNextDay = new Date(Date.UTC(
+                        now.getUTCFullYear(),
+                        now.getUTCMonth(),
+                        now.getUTCDate() + 1,
+                        23, 59, 0
+                    ));
+                    return Math.floor(endOfNextDay.getTime() / 1000);
+                case 'Full Weekly':
+                    // get the timestamp of 23:59 UTC in 7 days
+                    const endOf7Days = new Date(Date.UTC(
+                        now.getUTCFullYear(),
+                        now.getUTCMonth(),
+                        now.getUTCDate() + 7,
+                        23, 59, 0
+                    ));
+                    return Math.floor(endOf7Days.getTime() / 1000);
+                case 'Full Monthly':
+                    // get the timestamp of 23:59 UTC in 30 days
+                    const endOf30Days = new Date(Date.UTC(
+                        now.getUTCFullYear(),
+                        now.getUTCMonth(),
+                        now.getUTCDate() + 30,
+                        23, 59, 0
+                    ));
+
+                    return Math.floor(endOf30Days.getTime() / 1000);
                 default:
-                    return 0;
+                    return 'never';
             }
         }
 
@@ -355,8 +412,16 @@ export const purchaseShopAsset = async (
                     actualCost: assetPrice * amount,
                     actualCurrency: payment
                 },
+                blockchainData: {
+                    address,
+                    chain,
+                    txHash,
+                    // if payment is done via xCookies, then the confirmationAttempts will be ['success'].
+                    // else, confirmation will be done immediately after this function.
+                    confirmationAttempts: payment === 'xCookies' ? ['success'] : []
+                },
                 purchaseTimestamp: Math.floor(Date.now() / 1000),
-                effectExpiration: shopAsset.effectDuration === 'One Time' ? 'never' : Math.floor(Date.now() / 1000) + effectDurationInSeconds(),
+                effectExpiration: effectExpiration(),
                 givenContent: shopAsset.givenContent
             })
         ])
@@ -367,6 +432,9 @@ export const purchaseShopAsset = async (
 
             await ShopAssetModel.updateOne({ assetName: asset }, shopAssetPurchaseUpdateOperations);
         }
+
+        /// TO DO:
+        /// ADD CONFIRMATION CHECK FOR BLCOCKCHAIN PAYMENTS HERE.
 
         return {
             status: Status.SUCCESS,

@@ -65,12 +65,18 @@ export enum ShopAssetEffectDurationType {
     // one time use; no effect duration 
     // (used mainly for assets that give users content directly, like currencies, food, items, etc.)
     ONE_TIME = 'One Time',
+    // lasts 1 day from the date of purchase (exactly)
     DAILY = 'Daily',
+    // lasts 1 day on whole day intervals (i.e. until 23:59 UTC of the day)
+    FULL_DAILY = 'Full Daily',
+    // lasts 1 week from the date of purchase (exactly)
     WEEKLY = 'Weekly',
-    // lasts 1 month from the date of purchase
+    // lasts 1 week on whole day intervals (i.e. until 23:59 UTC of the last day of the week)
+    FULL_WEEKLY = 'Full Weekly',
+    // lasts 1 month from the date of purchase (exactly)
     MONTHLY = 'Monthly',
-    // unlike `MONTHLY`, MONTHLY_PASS will only be available until the end of the month it was purchased in
-    MONTHLY_PASS = 'Monthly Pass',
+    // lasts 1 month on whole day intervals (i.e. until 23:59 UTC of the last day of the month)
+    FULL_MONTHLY = 'Full Monthly',
 }
 
 /**
