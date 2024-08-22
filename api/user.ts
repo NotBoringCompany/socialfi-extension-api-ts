@@ -2602,7 +2602,7 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
     try {
         let loginType: 'Register' | 'Login';
 
-        const user = await UserModel.findOne({ twitterId: telegramUser.id, method: 'telegram' }).lean();
+        const user = await UserModel.findOne({ $or: [{ twitterId: telegramUser.id, method: 'telegram' }, { 'telegramProfile.telegramId': telegramUser.id }] }).lean();
 
         // if user doesn't exist, create a new user
         if (!user) {
@@ -2815,7 +2815,7 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                 message: `(handleTwitterLogin) User found. Logging in.`,
                 data: {
                     userId: user._id,
-                    twitterId: telegramUser.id,
+                    twitterId: user.twitterId,
                     loginType: loginType,
                     referralCode: user.referralData.referralCode
                 },
@@ -2890,7 +2890,7 @@ export const updateLoginStreak = async (twitterId: string): Promise<ReturnValue>
 /**
  * Connect existing Twitter account to Telegram
  */
-export const handleTelegramConnect = async (twitterId: string, telegramUser: TelegramAuthData['user']): Promise<ReturnValue> => {
+export const handleTelegramConnect = async (twitterId: string, telegramUser: TelegramAuthData['user'], confirm?: boolean): Promise<ReturnValue> => {
     try {
         const user = await UserModel.findOne({ twitterId });
 
@@ -2926,12 +2926,18 @@ export const handleTelegramConnect = async (twitterId: string, telegramUser: Tel
         }
 
         // check if the telegram account already registered via telegram
-        const isRegistered = await UserModel.findOne({ twitterId: telegramUser.id, method: 'telegram' });
-        if (isRegistered) {
+        const registeredTelegram = await UserModel.findOne({ twitterId: telegramUser.id, method: 'telegram' });
+        if (registeredTelegram && !confirm) {
             return {
                 status: Status.ERROR,
                 message: `(handleTelegramConnect) Telegram account already registered.`,
+                data: {
+                    needConfirmation: true
+                }
             };
+        } else {
+            // if the user's confirmed then delete the existed telegram account
+            await registeredTelegram.deleteOne();
         }
 
         // assign telegram profile to the account
