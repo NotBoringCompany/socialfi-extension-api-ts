@@ -121,21 +121,9 @@ export interface ShopAssetPurchase {
     amount: number;
     // the data of the total cost for this purchase
     totalCost: ShopAssetPurchaseTotalCostData;
-    // the tx hash (or BOC for TON payments) of the payment
-    // if the payment was made in xCookies, then this will be null.
-    txHash: string | null;
-    // if the payment was already confirmed (double-checked in the backend). xCookie payments are always confirmed.
-    // this is mostly for blockchain payments; because the node providers may be subjected to rate limiting,
-    // there may be times where double-checking the `txHash` will result in errors.
-    // hence, this field is used to confirm that the payment was indeed successful.
-    // if `confirmed` is false, then the confirmation will be attempted again later, and repercussions may follow
-    // if the payment was indeed not successful. however, the player SHOULD receive the content they paid for initially,
-    // even if the payment was not confirmed.
-    confirmed: boolean;
-    // amount of times the payment confirmation was attempted (to convert `confirmed` to true)
-    // up to X tries (TBD), if the payment is not confirmed, then the purchase will be considered unsuccessful,
-    // and repercussions may follow (because the user will already have received the content they "paid" for at this point)
-    confirmationTries: number;
+    // if the payment is done via blockchain, this will contain the blockchain data (e.g. which chain the payment was done on, the purchaser's wallet address, etc.)
+    // else, this will be null.
+    blockchainData: ShopAssetPurchaseBlockchainData;
     // the purchase timestamp (in unix format)
     purchaseTimestamp: number;
     // the expiration timestamp of the asset's effects (in unix format)
@@ -144,6 +132,32 @@ export interface ShopAssetPurchase {
     effectExpiration: number | 'never';
     // the data of the content the player receives after this asset was purchased
     givenContent: ShopAssetGivenContentData;
+}
+
+/**
+ * Represents the blockchain data of a shop asset purchase.
+ * 
+ * If the payment was done via xCookies, then this entire instance will be null.
+ */
+export interface ShopAssetPurchaseBlockchainData {
+    // the address used by the user to make the payment
+    address: string;
+    // the chain the payment was done on (e.g. 'ethereum', 'tron', 'bsc', etc.)
+    // also available in number/hex format.
+    chain: string | number;
+    // the tx hash (or signed BOC for TON payments) of the payment
+    txHash: string;
+    // an array of different strings that represent the status of each payment confirmation attempt.
+    // because the node providers may be subjected to rate limiting,
+    // there may be times where double-checking the `txHash` will result in rate limiting errors.
+    // `success` = payment was successful, `apiError` = there was an error with the API, `noValidTx` = no valid transaction was found.
+    // for example, if the first attempt failed due to an api error, then it will be ['apiError'].
+    // if the second attempt also failed, then it will be ['apiError', 'apiError'].
+    // if the third payment is unsuccessful due to no valid transaction found, then it will be ['apiError', 'apiError', 'noValidTx'].
+    // `confirmationAttempts` will stop updating once `success` or `noValidTx` is reached.
+    // if `noValidTx` is reached, then the purchase will be considered unsuccessful. because the user SHOULD
+    // already receive the content of the purchase regardless of the payment status, repercussions will be handled manually.
+    confirmationAttempts: 'success'|'apiError'|'noValidTx'[];
 }
 
 /**
