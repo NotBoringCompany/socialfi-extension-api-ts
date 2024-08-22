@@ -18,7 +18,7 @@ export const KUCOIN_API_BASE_URL = `https://api.kucoin.com`;
 export const GATEIO_API_BASE_URL = `https://api.gateio.ws`;
 
 /// TonWeb instance with API Key
-export const TON_WEB = new TonWeb(new TonWeb.HttpProvider('https://toncenter.com/api/v2/jsonRPC', { apiKey: '3c0a0f5f670a63999e7ce601c17872de2e557d425d373271d3bc1e0cd7517079'} ))
+export const TON_WEB = new TonWeb(new TonWeb.HttpProvider('https://toncenter.com/api/v2/jsonRPC', { apiKey: process.env.TON_API_KEY} ));
 
 /** Gets a deployer wallet instance based on the provider the deployer wallet will operate in */
 export const DEPLOYER_WALLET = (provider: ethers.providers.JsonRpcProvider) => {
