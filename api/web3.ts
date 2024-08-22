@@ -4,13 +4,19 @@ import { UserModel } from '../utils/constants/db';
 import { UserWallet } from '../models/user';
 import { getUserCurrentPoints } from './leaderboard';
 import { generateHashSalt, generateWonderbitsDataHash } from '../utils/crypto';
-import { BINANCE_API_BASE_URL, DEPLOYER_WALLET, GATEIO_API_BASE_URL, KUCOIN_API_BASE_URL, TON_WEB, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
+import { BINANCE_API_BASE_URL, DEPLOYER_WALLET, GATEIO_API_BASE_URL, KUCOIN_API_BASE_URL, TON_RECEIVER_ADDRESS, TON_WEB, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
 import { ethers } from 'ethers';
+import { TonClient } from '@eversdk/core';
+import { libNode } from '@eversdk/lib-node';
+
+TonClient.useBinaryLibrary(libNode);
+
+const client = new TonClient();
 
 /**
  * Converts a BOC (bag of cells) for TON-related transactions into its corresponding transaction hash in hex format.
  */
-export const bocToMessageHash = async (boc: string): Promise<string> => {
+export const bocToTxHash = async (boc: string): Promise<string> => {
     // convert base64-encoded boc string into byte array
     const bocBytes = TON_WEB.utils.base64ToBytes(boc);
     // decode boc into a single TON cell (`boc` should only contain one cell)
@@ -20,13 +26,32 @@ export const bocToMessageHash = async (boc: string): Promise<string> => {
     // `rawHash` is still a bytes array; convert to hex
     const hash = TON_WEB.utils.bytesToHex(rawHash);
 
+    console.log(`(bocToTxHash) tx hash: ${hash}`);
+
     return hash;
 }
 
-export const decodeTx = async (boc: string) => {
-    const msgHash = await bocToMessageHash(boc);
+export const decodeBoc = async (boc: string) => {
+    try {
+        const msg = await client.boc.parse_message({
+            boc
+        });
+    
+        const tx = await client.boc.parse_transaction({
+            boc: msg.parsed.boc
+        });
 
-    console.log(msgHash);
+        console.log(`(decodeBoc) msg: ${JSON.stringify(msg, null, 2)}`);
+        console.log(`(decodeBoc) tx: ${JSON.stringify(tx, null, 2)}`);
+    } catch (err: any) {
+        console.error(`(decodeBoc) Error: ${err.message}`);
+    }
+}
+
+export const decodeTx = async (boc: string) => {
+    const txHash = await bocToTxHash(boc);
+
+    console.log(txHash);
 
     const txs = await TON_WEB.provider.getTransactions(
         'UQC_7U9zL8VRBiSzQOADRf107G94jnc0NDTZfbeeFnTeUZJ7',
@@ -41,6 +66,8 @@ export const decodeTx = async (boc: string) => {
     const receiverAddress = new TON_WEB.utils.Address(firstTx.out_msgs[0].destination).toString(true, true, false, false);
 
     console.log(receiverAddress);
+
+    console.log('receiver address match: ', receiverAddress === TON_RECEIVER_ADDRESS);
     // // convert address
     // const address = firstTx.out_msgs[0].destination;
 
@@ -49,7 +76,8 @@ export const decodeTx = async (boc: string) => {
     // console.log(converted);
 }
 
-decodeTx('te6cckEBBAEAtwAB5YgBf9qe5l+KogxJZoHABov66dje8RzuaGhpsvtvPCzpvKIDm0s7c///+Is2MuuYAAAAJdiI5UHCcREFO0Ozm6C4bJ/nWbB7Bzg7lxCjgIpmnc816edVxGeV22dNUOioBlI5ZEZY+BmkklHOZP+t0khQdAUBAgoOw8htAwIDAAAAaEIACz4IjlfWueXBT3j2C8JUTGPNuneJQxVwTSGhTA/E7eugCYloAAAAAAAAAAAAAAAAAAACRBwd');
+decodeBoc(`te6cckEBBAEAtwAB5YgBf9qe5l+KogxJZoHABov66dje8RzuaGhpsvtvPCzpvKIDm0s7c///+Is2MuuYAAAAJdiI5UHCcREFO0Ozm6C4bJ/nWbB7Bzg7lxCjgIpmnc816edVxGeV22dNUOioBlI5ZEZY+BmkklHOZP+t0khQdAUBAgoOw8htAwIDAAAAaEIACz4IjlfWueXBT3j2C8JUTGPNuneJQxVwTSGhTA/E7eugCYloAAAAAAAAAAAAAAAAAAACRBwd`);
+// decodeTx('te6cckEBBAEAtwAB5YgBf9qe5l+KogxJZoHABov66dje8RzuaGhpsvtvPCzpvKIDm0s7c///+Is2MuuYAAAAJdiI5UHCcREFO0Ozm6C4bJ/nWbB7Bzg7lxCjgIpmnc816edVxGeV22dNUOioBlI5ZEZY+BmkklHOZP+t0khQdAUBAgoOw8htAwIDAAAAaEIACz4IjlfWueXBT3j2C8JUTGPNuneJQxVwTSGhTA/E7eugCYloAAAAAAAAAAAAAAAAAAACRBwd');
 
 /**
  * Fetches the tickers of the tokens used for in-app purchases in Wonderbits.
