@@ -2881,7 +2881,7 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
     try {
         let loginType: 'Register' | 'Login';
 
-        const user = await UserModel.findOne({ twitterId: telegramUser.id, method: 'telegram' }).lean();
+        const user = await UserModel.findOne({ $or: [{ twitterId: telegramUser.id, method: 'telegram' }, { 'telegramProfile.telegramId': telegramUser.id }] }).lean();
 
         // if user doesn't exist, create a new user
         if (!user) {
