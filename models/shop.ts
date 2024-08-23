@@ -38,12 +38,32 @@ export interface ShopAsset {
 }
 
 /**
+ * Represents an asset in the shop with extended pricing data, which includes the value of the asset in different currencies.
+ * 
+ * This is only used for purchases with real currency (i.e. USD), which can be converted to, for example, cryptocurrency values.
+ * 
+ * Mostly used to handle currency conversions in the frontend to get the source of truth for the asset's price in different currencies from the backend.
+ */
+export interface ShopAssetExtendedPricing extends ShopAsset {
+    // the extended price data of the asset in different currencies as required to execute purchases in the frontend.
+    extendedPriceData: ShopAssetExtendedPriceData[];
+}
+
+export interface ShopAssetExtendedPriceData {
+    // the price of the asset in the extended currency
+    extendedPrice: number;
+    // the extended currency of the asset
+    extendedCurrency: string;
+}
+
+/**
  * Represents the price of an asset in the shop.
  * 
- * For in-app purchases, `usd` should exist and NOT be 0, or else it will be considered as an in-game purchase (via virtual currency, i.e. xCookies).
+ * For in-app purchases/purchases with real money, `usd` should exist and NOT be 0, or else it will be considered as an in-game purchase (via virtual currency, i.e. xCookies).
  */
 export interface ShopPrice {
     xCookies: number;
+    // base USD value of the asset
     usd?: number;
 }
 
