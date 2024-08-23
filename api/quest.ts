@@ -13,7 +13,7 @@ import { QuestSchema } from '../schemas/Quest';
 import { generateObjectId } from '../utils/crypto';
 import { ExtendedXCookieData, User, UserInventory, XCookieSource } from '../models/user';
 import { UserSchema } from '../schemas/User';
-import { Food } from '../models/food';
+import { Food, FoodType } from '../models/food';
 import { RANDOMIZE_FOOD_FROM_QUEST } from '../utils/constants/quest';
 import { IslandModel, QuestModel, QuestProgressionModel, UserModel } from '../utils/constants/db';
 import { Bit, BitRarity } from '../models/bit';
@@ -268,21 +268,6 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
 
                     obtainedRewards.push({ type: rewardType, amount });
                     break;
-                // add the food into the user's inventory
-                case QuestRewardType.FOOD:
-                    // get the corresponding food type by probability
-                    const food = RANDOMIZE_FOOD_FROM_QUEST();
-                    // check if the food already exists in the user's inventory of `foods`
-                    const foodIndex = userInventory.foods.findIndex((f: Food) => f.type === food);
-                    // if the food exists, increment the amount; otherwise, push the food into the inventory
-                    if (foodIndex !== -1) {
-                        userUpdateOperations.$inc[`inventory.foods.${foodIndex}.amount`] = amount;
-                    } else {
-                        userUpdateOperations.$push['inventory.foods'] = { type: food, amount };
-                    }
-
-                    obtainedRewards.push({ type: food, amount });
-                    break;
                 // give user a bit, TODO: might need to add looping for the amount of bits rewarded
                 case QuestRewardType.BIT:
                     const rarity = BitRarity.COMMON;
@@ -405,33 +390,51 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                     obtainedRewards.push({ type: rewardType, amount, data: bitData });
 
                     break;
-                case QuestRewardType.GATHERING_PROGRESS_BOOSTER_25:
-                    // check if the user's `inventory.items` contain a gathering progress booster 25%
-                    const boosterIndex = userInventory.items.findIndex(
-                        (item) => item.type === BoosterItem.GATHERING_PROGRESS_BOOSTER_25
-                    );
+                // Default case when rewardType isn't X_COOKIES or BIT
+                default:
+                    // Check if the reward type is a part of FoodType
+                    if (Object.values(FoodType).includes(rewardType.toString() as FoodType)) {   
+                        // check if the food already exists in the user's inventory of `foods`
+                        const foodIndex = userInventory.foods.findIndex((f: Food) => f.type === rewardType.toString());
+                        // if the food exists, increment the amount; otherwise, push the food into the inventory
+                        if (foodIndex !== -1) {
+                            userUpdateOperations.$inc[`inventory.foods.${foodIndex}.amount`] = amount;
+                        } else {
+                            userUpdateOperations.$push['inventory.foods'] = { type: rewardType.toString(), amount };
+                        }
 
-                    // if the user has the booster, increment the amount; otherwise, push the booster into the inventory
-                    if (boosterIndex !== -1) {
-                        userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = amount;
-                    } else {
-                        userUpdateOperations.$push['inventory.items'] = {
-                            type: BoosterItem.GATHERING_PROGRESS_BOOSTER_25,
-                            amount,
-                            totalAmountConsumed: 0,
-                            weeklyAmountConsumed: 0,
+                        obtainedRewards.push({ type: rewardType.toString(), amount });
+                        break;
+                    }
+                    // Check if the reward type is a part of BoosterItem
+                    else if (Object.values(BoosterItem).includes(rewardType.toString() as BoosterItem)) {
+                        // check if the user's `inventory.items` contain a BoosterItem
+                        const boosterIndex = userInventory.items.findIndex(
+                            (item) => item.type === rewardType.toString()
+                        );
+
+                        // if the user has the booster, increment the amount; otherwise, push the booster into the inventory
+                        if (boosterIndex !== -1) {
+                            userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = amount;
+                        } else {
+                            userUpdateOperations.$push['inventory.items'] = {
+                                type: BoosterItem.GATHERING_PROGRESS_BOOSTER_25,
+                                amount,
+                                totalAmountConsumed: 0,
+                                weeklyAmountConsumed: 0,
+                            };
+                        }
+
+                        obtainedRewards.push({ type: rewardType, amount });
+                        break;
+                    }
+                    // Return Error if all Condition is false
+                    else {
+                        return {
+                            status: Status.ERROR,
+                            message: `(completeQuest) Unknown reward type: ${rewardType}`,
                         };
                     }
-
-                    obtainedRewards.push({ type: rewardType, amount });
-
-                    break;
-                // if default, return an error (shouldn't happen)
-                default:
-                    return {
-                        status: Status.ERROR,
-                        message: `(completeQuest) Unknown reward type: ${rewardType}`,
-                    };
             }
         }
 
