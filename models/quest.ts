@@ -3,6 +3,7 @@
  ****************/
 
 import { BoosterItem } from './booster';
+import { FoodType } from './food';
 import { POIName } from './poi';
 import { ResourceType } from './resource';
 
@@ -116,9 +117,12 @@ export interface QuestReward {
  */
 export enum QuestRewardType {
     X_COOKIES = 'xCookies',
-    FOOD = 'Food',
     BIT = 'Bit',
-    GATHERING_PROGRESS_BOOSTER_25 = BoosterItem.GATHERING_PROGRESS_BOOSTER_25
+    GATHERING_PROGRESS_BOOSTER_25 = BoosterItem.GATHERING_PROGRESS_BOOSTER_25,
+    BURGER = FoodType.BURGER,
+    CANDY = FoodType.CANDY,
+    Chocolate = FoodType.CHOCOLATE,
+    JUICE = FoodType.JUICE
 }
 
 /**
