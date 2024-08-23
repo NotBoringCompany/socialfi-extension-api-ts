@@ -1,12 +1,15 @@
 import axios from 'axios';
 import { ReturnValue, Status } from '../utils/retVal';
 import { ShopAssetPurchaseModel, UserModel } from '../utils/constants/db';
-import { UserWallet } from '../models/user';
+import { ExtendedXCookieData, UserWallet, XCookieSource } from '../models/user';
 import { getUserCurrentPoints } from './leaderboard';
 import { generateHashSalt, generateWonderbitsDataHash } from '../utils/crypto';
 import { BINANCE_API_BASE_URL, DEPLOYER_WALLET, GATEIO_API_BASE_URL, KUCOIN_API_BASE_URL, TON_RECEIVER_ADDRESS, TON_WEB, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
 import { ethers } from 'ethers';
 import { TxParsedMessage } from '../models/web3';
+import { ShopAssetPurchaseConfirmationAttemptType } from '../models/shop';
+import { Item } from '../models/item';
+import { Food } from '../models/food';
 
 /**
  * Converts a BOC (bag of cells) for TON-related transactions into its corresponding transaction hash in hex format.
@@ -29,7 +32,7 @@ export const bocToTxHash = async (boc: string): Promise<string> => {
 }
 
 /**
- * Verifies a transaction made in TON.
+ * Verifies a transaction made in TON (and optionally rewards the user the items they purchased upon specific errors).
  * 
  * Required parameters: `address`, `boc`.
  * 
@@ -151,7 +154,7 @@ export const verifyTONTransaction = async (
                     message: `(verifyTONTransaction) Value mismatch. Currency paid: ${txParsedMessage.curr}. Parsed message cost: ${parsedMessageCost}, tx value: ${txValue}`
                 }
             }
-        /// TO DOO!!!!!!!!!! IMPLEMENT OTHER CURRENCIES LIKE NOT, ETC HERE.
+        /// TO DO!!!!!!!!!! IMPLEMENT OTHER CURRENCIES LIKE NOT, ETC HERE.
         } else {
             console.log(`(verifyTONTransaction) Currency is not TON. Not developed yet. Currency: ${txParsedMessage.curr}`);
             
@@ -183,15 +186,116 @@ export const verifyTONTransaction = async (
             }
         }
 
-        // if all checks pass, either return success OR in the case of reverification, update the purchase's `blockchainData.confirmationAttempts` to include `success`
-        // as well as the `txPayload` as `txParsedMessage`
+        // if all checks pass, verification is successful.
+        // if reverification, then update the purchase's `blockchainData.confirmationAttempts` to include the status `success`
+        // and update the `blockchainData.txPayload` to the parsed message.
+        // additionally, if the `confirmationAttempts` up to this point ONLY contains `apiError`, then reward the user the items they purchased
+        // because that means that they were unable to receive the items due to an API error.
         if (reverification) {
+            // get the purchase data
+            const purchaseData = await ShopAssetPurchaseModel.findById(purchaseId).lean();
+
+            if (!purchaseData) {
+                // here we can't update the `confirmationAttempts` because the purchase wasn't found.
+                // so we log just in case.
+                console.error(`(verifyTONTransaction) Purchase not found. Address: ${address}, BOC: ${boc}, Purchase ID: ${purchaseId}`);
+                return {
+                    status: Status.ERROR,
+                    message: `(verifyTONTransaction) Purchase not found. Purchase ID: ${purchaseId}`
+                }
+            }
+
+            // if the `confirmationAttempts` array only contains `apiError`, then reward the user the items they purchased
+            // because that means that they were unable to receive the items due to an API error or DB-related errors.
+            if (purchaseData.blockchainData.confirmationAttempts.every(attempt => attempt === 'apiError')) {
+                // get the items they were supposed to receive
+                const { contentType, content, amount } = purchaseData.givenContent;
+
+                const userUpdateOperations = {
+                    $push: {},
+                    $inc: {}
+                }
+
+                const user = await UserModel.findOne({ _id: purchaseData.userId }).lean();
+
+                if (!user) {
+                    // if user is not found, then we can't give them the items they purchased.
+                    // we will have to add `userNotFound` to the `confirmationAttempts` array.
+                    await ShopAssetPurchaseModel.findByIdAndUpdate(purchaseId, {
+                        $push: {
+                            'blockchainData.confirmationAttempts': ShopAssetPurchaseConfirmationAttemptType.USER_NOT_FOUND
+                        }
+                    });
+
+                    console.error(`(verifyTONTransaction) User not found. User ID: ${purchaseData.userId}, BOC: ${boc}, Purchase ID: ${purchaseId}`);
+                    return {
+                        status: Status.ERROR,
+                        message: `(verifyTONTransaction) User not found. User ID: ${purchaseData.userId}`
+                    }
+                }
+
+                if (contentType === 'item') {
+                    // give the user the items they purchased
+                    // add the item to the user's inventory
+                    const existingItemIndex = (user.inventory?.items as Item[]).findIndex(i => i.type === content);
+
+                    if (existingItemIndex !== -1) {
+                        userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = amount;
+                    } else {
+                        userUpdateOperations.$push['inventory.items'] = { 
+                            type: content, 
+                            amount,
+                            totalAmountConsumed: 0,
+                            weeklyAmountConsumed: 0
+                        };
+                    }
+                } else if (contentType === 'food') {
+                    // add the food to the user's inventory
+                    const existingFoodIndex = (user.inventory?.foods as Food[]).findIndex(f => f.type === content);
+
+                    if (existingFoodIndex !== -1) {
+                        userUpdateOperations.$inc[`inventory.foods.${existingFoodIndex}.amount`] = amount;
+                    } else {
+                        userUpdateOperations.$push['inventory.foods'] = { type: content, amount };
+                    }
+                } else if (contentType === 'xCookies') {
+                    // add the xCookies to the user's currentXCookies
+                    userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = amount;
+                    // check if the `extendedXCookieData` contains the source SHOP_PURCHASE. if not, add it. if yes, increment the amount.
+                    const shopPurchaseIndex = (user.inventory?.xCookieData?.extendedXCookieData as ExtendedXCookieData[]).findIndex(data => data.source === XCookieSource.SHOP_PURCHASE);
+
+                    if (shopPurchaseIndex !== -1) {
+                        userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${shopPurchaseIndex}.xCookies`] = amount;
+                    } else {
+                        userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = { source: XCookieSource.SHOP_PURCHASE, xCookies: amount };
+                    }
+                } else if (contentType === 'diamonds' || contentType === 'monthlyPass') {
+                    /// TBD! THROW ERROR FOR NOW.
+                    console.error(`(verifyTONTransaction) Content type not implemented yet. Content type: ${contentType}`);
+
+                    return {
+                        status: Status.ERROR,
+                        message: `(verifyTONTransaction) Content type not implemented yet. Content type: ${contentType}`
+                    }
+                } else {
+                    // invalid content type. simply log and return an error.
+                    console.error(`(verifyTONTransaction) Invalid content type. Content type: ${contentType}`);
+
+                    return {
+                        status: Status.ERROR,
+                        message: `(verifyTONTransaction) Invalid content type. Content type: ${contentType}`
+                    }
+                }
+
+                // update the user's data
+                await UserModel.findByIdAndUpdate(user._id, userUpdateOperations);
+            }
             await ShopAssetPurchaseModel.findByIdAndUpdate(purchaseId, {
                 $push: {
-                    'blockchainData.confirmationAttempts': 'success'
+                    'blockchainData.confirmationAttempts': ShopAssetPurchaseConfirmationAttemptType.SUCCESS
                 },
                 'blockchainData.txPayload': txParsedMessage
-            })
+            });
         }
 
         return {

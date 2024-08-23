@@ -146,6 +146,7 @@ export enum XCookieSource {
     KOS_BENEFITS = 'KOS Benefits',
     TUTORIAL_REWARDS = 'Tutorial Rewards',
     DISCORD_ENGAGEMENT = 'Discord Engagement',
+    SHOP_PURCHASE = 'Shop Purchase',
 }
 
 /**

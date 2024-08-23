@@ -12,7 +12,7 @@ import { TxParsedMessage } from './web3';
  */
 export interface ShopAsset {
     // the name of the asset
-    assetName: string;
+    assetName: string | ShopAssetType;
     // the type of asset (e.g. food, item, in-app package, etc.)
     assetType: 'item' | 'food' | 'package';
     // the price of the asset
@@ -160,16 +160,29 @@ export interface ShopAssetPurchaseBlockchainData {
     // an array of different strings that represent the status of each payment confirmation attempt.
     // because the node providers may be subjected to rate limiting,
     // there may be times where double-checking the `txHash` will result in rate limiting errors.
-    // `success` = payment was successful, `apiError` = there was an error with the API, `noValidTx` = no valid transaction was found.
     // for example, if the first attempt failed due to an api error, then it will be ['apiError'].
     // if the second attempt also failed, then it will be ['apiError', 'apiError'].
     // if the third payment is unsuccessful due to no valid transaction found, then it will be ['apiError', 'apiError', 'noValidTx'].
-    // `confirmationAttempts` will stop updating once `success` or `noValidTx` is reached.
-    // if `noValidTx` is reached, then the purchase will be considered unsuccessful. because the user SHOULD
-    // already receive the content of the purchase regardless of the payment status, repercussions will be handled manually.
-    // if `itemMismatch` is reached, the most likely the items given to the user do not match the items purchased.
-    // this will also be handled manually.
-    confirmationAttempts: 'success'|'apiError'|'noValidTx'|'itemMismatch'[];
+    // `confirmationAttempts` will stop updating once any result apart from `apiError` or `dbError` is reached.
+    // users should NOT receive any items until `success` is reached.
+    // if `itemMismatch` was on the array, then items given to the user MAY have to be manually handled/fixed.
+    confirmationAttempts: ShopAssetPurchaseConfirmationAttemptType[];
+}
+
+/**
+ * Represents the different types of shop asset purchase confirmation attempts.
+ */
+export enum ShopAssetPurchaseConfirmationAttemptType {
+    // payment verification successful
+    SUCCESS = 'success',
+    // error with the API to verify (blockchain)
+    API_ERROR = 'apiError',
+    // no valid transaction with given params found
+    NO_VALID_TX = 'noValidTx',
+    // item mismatch between the items given to the user and the items in the payload
+    ITEM_MISMATCH = 'itemMismatch',
+    // user ID not found in database when verifying
+    USER_NOT_FOUND = 'userNotFound',
 }
 
 /**

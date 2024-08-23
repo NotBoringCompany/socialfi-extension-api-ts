@@ -257,7 +257,7 @@ export const purchaseShopAsset = async (
         // check payment type.
         if (payment === 'xCookies') {
             // check if the user has enough xCookies to purchase the asset
-            assetPrice = shopAsset.price.xCookies;
+            assetPrice = shopAsset.price.xCookies * amount;
 
             if (userXCookies < (assetPrice * amount)) {
                 return {
@@ -271,7 +271,21 @@ export const purchaseShopAsset = async (
             userUpdateOperations.$inc['inventory.xCookieData.totalXCookiesSpent'] = assetPrice * amount;
             userUpdateOperations.$inc['inventory.xCookieData.weeklyXCookiesSpent'] = assetPrice * amount;
         } else if (payment === 'usd') {
-            
+            // verify the transaction.
+            const { 
+                status: verificationStatus, 
+                message: verificationMessage
+            } = await verifyTONTransaction(address, txHash, asset, amount, false, null);
+
+            // if verification failed (even if API error), return the error message and DON'T proceed with the purchase.
+            if (verificationStatus !== Status.SUCCESS) {
+                // check the error type. create a new purchase instance and add the error message to the confirmationAttempts.
+                // then, return early.
+                /// TO DO!
+            }
+
+            // if verification is successful, no need to deduct anything currency-wise because the user has already paid for the asset.
+            // simply continue and get out of the if-else block.
         } else {
             // invalid payment type for now.
             return {
@@ -402,16 +416,6 @@ export const purchaseShopAsset = async (
 
             await ShopAssetModel.updateOne({ assetName: asset }, shopAssetPurchaseUpdateOperations);
         }
-
-        // // add verification check for the transaction if it was done in blockchain
-        // if (!!chain) {
-        //     switch (chain) {
-        //         case 'TON':
-        //             // call `verifyTONTransaction` here.
-        //             // this will not be done asynchronously to prevent the user from waiting for the verification.
-        //             verifyTONTransaction(assetPurchaseId, address, txHash);
-        //     }
-        // }
 
         return {
             status: Status.SUCCESS,
