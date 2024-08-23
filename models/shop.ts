@@ -167,7 +167,9 @@ export interface ShopAssetPurchaseBlockchainData {
     // `confirmationAttempts` will stop updating once `success` or `noValidTx` is reached.
     // if `noValidTx` is reached, then the purchase will be considered unsuccessful. because the user SHOULD
     // already receive the content of the purchase regardless of the payment status, repercussions will be handled manually.
-    confirmationAttempts: 'success'|'apiError'|'noValidTx'[];
+    // if `itemMismatch` is reached, the most likely the items given to the user do not match the items purchased.
+    // this will also be handled manually.
+    confirmationAttempts: 'success'|'apiError'|'noValidTx'|'itemMismatch'[];
 }
 
 /**

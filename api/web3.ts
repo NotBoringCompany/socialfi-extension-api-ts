@@ -111,6 +111,25 @@ export const verifyTONTransaction = async (purchaseId: string, address: string, 
             }
         }
 
+        // finally, check if the items given to the user match the items purchased (by checking the `txParsedMessage.asset` compared to the `purchase.assetName`)
+        // and if the amount of the asset given to the user matches the amount purchased (by checking the `txParsedMessage.amt` compared to the `purchase.amount`)
+        if (txParsedMessage.asset !== purchase.assetName || txParsedMessage.amt !== purchase.amount) {
+            console.error(`(decodeTx) Item mismatch. Parsed message asset: ${txParsedMessage.asset}, purchase asset: ${purchase.assetName}. Parsed message amount: ${txParsedMessage.amt}, purchase amount: ${purchase.amount}`);
+
+            // update the purchase's `blockchainData.confirmationAttempts` to include the error `itemMismatch`
+            await ShopAssetPurchaseModel.findByIdAndUpdate(purchaseId, {
+                $push: {
+                    'blockchainData.confirmationAttempts': 'itemMismatch'
+                },
+                'blockchainData.txPayload': txParsedMessage
+            });
+
+            return {
+                status: Status.ERROR,
+                message: `(decodeTx) Item mismatch. Parsed message asset: ${txParsedMessage.asset}, purchase asset: ${purchase.assetName}. Parsed message amount: ${txParsedMessage.amt}, purchase amount: ${purchase.amount}`
+            }
+        }
+
         // if all checks pass, update the purchase's `blockchainData.confirmationAttempts` to include `success`
         // as well as the `txPayload` as `txParsedMessage`
         await ShopAssetPurchaseModel.findByIdAndUpdate(purchaseId, {
