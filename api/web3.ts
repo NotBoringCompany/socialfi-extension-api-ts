@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { ReturnValue, Status } from '../utils/retVal';
-import { UserModel } from '../utils/constants/db';
+import { ShopAssetPurchaseModel, UserModel } from '../utils/constants/db';
 import { UserWallet } from '../models/user';
 import { getUserCurrentPoints } from './leaderboard';
 import { generateHashSalt, generateWonderbitsDataHash } from '../utils/crypto';
@@ -29,10 +29,21 @@ export const bocToTxHash = async (boc: string): Promise<string> => {
 }
 
 /**
- * Verifies a transaction made in TON given the sender's address and the BOC of the transaction.
+ * Verifies a transaction made in TON given the purchase ID (database ID of the purchase), sender's address and BOC of the transaction.
  */
-export const verifyTONTransaction = async (address: string, boc: string) => {
+export const verifyTONTransaction = async (purchaseId: string, address: string, boc: string): Promise<ReturnValue> => {
     try {
+        // get the ShopAssetPurchase document
+        const purchase = await ShopAssetPurchaseModel.findById(purchaseId).lean();
+
+        if (!purchase) {
+            console.error(`(decodeTx) Purchase not found. ID: ${purchaseId}`);
+            return {
+                status: Status.ERROR,
+                message: `(decodeTx) Purchase not found. ID: ${purchaseId}`
+            }
+        }
+
         const txHash = await bocToTxHash(boc);
 
         console.log(`tx hash: ${txHash}`);
@@ -54,17 +65,76 @@ export const verifyTONTransaction = async (address: string, boc: string) => {
         const receiverAddress: string = new TON_WEB.utils.Address(firstTx?.out_msgs[0]?.destination)?.toString(true, true, false, false);
         // get the parsed message body of the transaction (containing the asset, amount purchased and total cost)
         const txParsedMessage: TxParsedMessage = JSON.parse(firstTx?.out_msgs[0]?.message);
+        // get the value of the transaction (amount supposedly sent to `receiverAddress`)
         const txValue = firstTx?.out_msgs[0]?.value;
 
-        console.log('receiver address match: ', receiverAddress === TON_RECEIVER_ADDRESS);
+        // check if the receiver address matches the Wonderbits receiver address
+        if (receiverAddress !== TON_RECEIVER_ADDRESS) {
+            console.error(`(decodeTx) Receiver address mismatch. Expected: ${TON_RECEIVER_ADDRESS}, got: ${receiverAddress}`);
 
-        console.log('parsed msg body ', JSON.stringify(txParsedMessage, null, 2));
+            // update the purchase's `blockchainData.confirmationAttempts` to include the error `noValidTx`
+            await ShopAssetPurchaseModel.findByIdAndUpdate(purchaseId, {
+                $push: {
+                    'blockchainData.confirmationAttempts': 'noValidTx'
+                },
+                'blockchainData.txPayload': txParsedMessage
+            });
+
+            return {
+                status: Status.ERROR,
+                message: `(decodeTx) Receiver address mismatch. Expected: ${TON_RECEIVER_ADDRESS}, got: ${receiverAddress}`
+            }
+        }
+        
+
+        // if the currency is "TON", then `txValue` MUST be the same as `txParsedMessage.cost`
+        // because the cost of the transaction should be the same as the value sent to the receiver (value = native currency of the tx, which is TON)
+        // if NOT or other coins, then value most likely won't match because it's not paid with TON (so TBD).
+        if (txParsedMessage.curr === 'TON') {
+            const parsedMessageCost = txParsedMessage.cost;
+
+            if (txValue !== parsedMessageCost) {
+                console.error(`(decodeTx) Value mismatch. Parsed message cost: ${parsedMessageCost}, tx value: ${txValue}`);
+
+                // update the purchase's `blockchainData.confirmationAttempts` to include the error `noValidTx`
+                await ShopAssetPurchaseModel.findByIdAndUpdate(purchaseId, {
+                    $push: {
+                        'blockchainData.confirmationAttempts': 'noValidTx'
+                    },
+                    'blockchainData.txPayload': txParsedMessage
+                })
+
+                return {
+                    status: Status.ERROR,
+                    message: `(decodeTx) Value mismatch. Currency paid: ${txParsedMessage.curr}. Parsed message cost: ${parsedMessageCost}, tx value: ${txValue}`
+                }
+            }
+        }
+
+        // if all checks pass, update the purchase's `blockchainData.confirmationAttempts` to include `success`
+        // as well as the `txPayload` as `txParsedMessage`
+        await ShopAssetPurchaseModel.findByIdAndUpdate(purchaseId, {
+            $push: {
+                'blockchainData.confirmationAttempts': 'success'
+            },
+            'blockchainData.txPayload': txParsedMessage
+        });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(decodeTx) Transaction verified successfully.`
+        }
     } catch (err: any) {
         console.error(`(decodeTx) Error: ${err.message}`);
+
+        // update the purchase's `blockchainData.confirmationAttempts` to include the error `apiError`
+        await ShopAssetPurchaseModel.findByIdAndUpdate(purchaseId, {
+            $push: {
+                'blockchainData.confirmationAttempts': 'apiError'
+            }
+        })
     }
 }
-
-// verifyTONTransaction('UQC_7U9zL8VRBiSzQOADRf107G94jnc0NDTZfbeeFnTeUZJ7', 'te6cckEBBAEA7AAB5YgBf9qe5l+KogxJZoHABov66dje8RzuaGhpsvtvPCzpvKIDm0s7c///+Is2QzloAAAAlC6gQXGRzdHmim3onLDUrAe7m61S7Xm4YZhogKkkwEu4W6xDJqwLEZQRPH4IZ8DX+PLreGT3YRyIiWqJRPdQChUBAgoOw8htAwIDAAAA0kIACz4IjlfWueXBT3j2C8JUTGPNuneJQxVwTSGhTA/E7eugCYloAAAAAAAAAAAAAAAAAAAAAAAAeyJhc3NldCI6ImNhbmR5IiwiYW10IjoxLCJjb3N0IjowLjIsImN1cnIiOiJUT04ifcVQ8XY=');
 
 /**
  * Fetches the tickers of the tokens used for in-app purchases in Wonderbits.

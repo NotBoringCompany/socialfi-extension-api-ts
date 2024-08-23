@@ -315,37 +315,6 @@ export const purchaseShopAsset = async (
             }
         }
 
-        // // calculate effect expiration.
-        // // if asset is monthly pass, effect expires at 23:59 UTC at the end of this month, so calculate the seconds until the end of this month.
-        // // otherwise, just add the effect duration to the current timestamp.
-        // // because `effectDuration` is in words, we need to convert it to seconds.
-        // // for instance, 'Daily' will be converted to 86400 seconds, 'Weekly' to 604800 seconds, 'Monthly' to 2592000 seconds.
-        // // for 'Full ...', it will count until 23:59 UTC of the last day of the period.
-        // const effectDurationInSeconds = () => {
-        //     switch (shopAsset.effectDuration) {
-        //         // one time wouldn't be counted here bc of the logic in `effectExpiration`, but just in case.
-        //         case 'One Time':
-        //             return 0;
-        //         case 'Daily':
-        //             return 86400;
-        //         case 'Weekly':
-        //             return 604800;
-        //         case 'Monthly':
-        //             return 2592000;
-        //         case 'Full Daily':
-        //             // calculate the time from now until the next day at 23:59 UTC
-        //             const now = new Date();
-        //             const endOfNextDay = new Date(Date.UTC(
-        //                 now.getUTCFullYear(),
-        //                 now.getUTCMonth(),
-        //                 now.getUTCDate() + 1,
-        //                 23, 59, 59
-        //             ));
-        //             return Math.floor((endOfNextDay.getTime() - now.getTime()) / 1000); 
-                    
-        //     }
-        // }
-
         // calculate timestamp of effect expiration.
         // if one time, set to 'never'.
         // if daily, weekly or monthly, set to exactly 1, 7 or 30 days from now.
@@ -416,6 +385,8 @@ export const purchaseShopAsset = async (
                     address,
                     chain,
                     txHash,
+                    // txPayload will be added upon verification of the transaction.
+                    txPayload: null,
                     // if payment is done via xCookies, then the confirmationAttempts will be ['success'].
                     // else, confirmation will be done immediately after this function.
                     confirmationAttempts: payment === 'xCookies' ? ['success'] : []
