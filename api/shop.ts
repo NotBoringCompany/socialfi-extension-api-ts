@@ -133,7 +133,7 @@ export const getShop = async (): Promise<ReturnValue> => {
 
 
 /**
- * (User) Purchases `amount` of a shop asset. Requires enough xCookies.
+ * (User) Purchases `amount` of a shop asset (can be either an in-game purchase or in-app purchase with real currency).
  */
 export const purchaseShopAsset = async (
     twitterId: string,
@@ -271,11 +271,7 @@ export const purchaseShopAsset = async (
             userUpdateOperations.$inc['inventory.xCookieData.totalXCookiesSpent'] = assetPrice * amount;
             userUpdateOperations.$inc['inventory.xCookieData.weeklyXCookiesSpent'] = assetPrice * amount;
         } else if (payment === 'usd') {
-            // not implemented yet.
-            return {
-                status: Status.ERROR,
-                message: `(purchaseShopAsset) USD payment not implemented yet.`
-            }
+            
         } else {
             // invalid payment type for now.
             return {
@@ -407,15 +403,15 @@ export const purchaseShopAsset = async (
             await ShopAssetModel.updateOne({ assetName: asset }, shopAssetPurchaseUpdateOperations);
         }
 
-        // add verification check for the transaction if it was done in blockchain
-        if (!!chain) {
-            switch (chain) {
-                case 'TON':
-                    // call `verifyTONTransaction` here.
-                    // this will not be done asynchronously to prevent the user from waiting for the verification.
-                    verifyTONTransaction(assetPurchaseId, address, txHash);
-            }
-        }
+        // // add verification check for the transaction if it was done in blockchain
+        // if (!!chain) {
+        //     switch (chain) {
+        //         case 'TON':
+        //             // call `verifyTONTransaction` here.
+        //             // this will not be done asynchronously to prevent the user from waiting for the verification.
+        //             verifyTONTransaction(assetPurchaseId, address, txHash);
+        //     }
+        // }
 
         return {
             status: Status.SUCCESS,

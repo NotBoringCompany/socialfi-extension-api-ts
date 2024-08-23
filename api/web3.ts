@@ -29,45 +29,60 @@ export const bocToTxHash = async (boc: string): Promise<string> => {
 }
 
 /**
- * Verifies a transaction made in TON given the purchase ID (database ID of the purchase), sender's address and BOC of the transaction.
+ * Verifies a transaction made in TON.
+ * 
+ * Required parameters: `address`, `boc`.
+ * 
+ * If this is a first verification attempt (i.e. `reverification` is set to `false`), then these additional params are required:
+ * `assetName`, `amount`.
+ * 
+ * If the `reverification` flag is set to `true`, this means that the initial reverification attempt failed and we're trying again.
+ * In this case, these additional params are required: `purchaseId`.
+ * 
+ * If `reverification` is set to `true`, database operations to ShopAssetPurchase will be done to update the `blockchainData.confirmationAttempts` array and potentially the `blockchainData.txPayload` field.
  */
-export const verifyTONTransaction = async (purchaseId: string, address: string, boc: string): Promise<ReturnValue> => {
-    if (!purchaseId || purchaseId === '') {
-        console.error(`(decodeTx) Purchase ID not found.`);
-        return {
-            status: Status.ERROR,
-            message: `(decodeTx) Purchase ID not found.`
-        }
-    }
-
+export const verifyTONTransaction = async (
+    address: string, 
+    boc: string, 
+    assetName?: string,
+    amount?: number,
+    reverification: boolean = false,
+    purchaseId?: string
+): Promise<ReturnValue> => {
     if (!address || address === '') {
-        console.error(`(decodeTx) Address not found.`);
+        console.error(`(verifyTONTransaction) Address not found.`);
         return {
             status: Status.ERROR,
-            message: `(decodeTx) Address not found.`
+            message: `(verifyTONTransaction) Address not found.`
         }
     }
 
     if (!boc || boc === '') {
-        console.error(`(decodeTx) BOC not found.`);
+        console.error(`(verifyTONTransaction) BOC not found.`);
         return {
             status: Status.ERROR,
-            message: `(decodeTx) BOC not found.`
+            message: `(verifyTONTransaction) BOC not found.`
+        }
+    }
+
+    if (!reverification && (!assetName || assetName === '' || !amount || amount === 0 || amount < 0)) {
+        console.error(`(verifyTONTransaction) Asset name or amount not found/invalid.`);
+        return {
+            status: Status.ERROR,
+            message: `(verifyTONTransaction) Asset name or amount not found/invalid.`
+        }
+    }
+
+    // only check for `purchaseId` if this is a reverification attempt
+    if (reverification && (!purchaseId || purchaseId === '')) {
+        console.error(`(verifyTONTransaction) Purchase ID not found for reverification attempt.`);
+        return {
+            status: Status.ERROR,
+            message: `(verifyTONTransaction) Purchase ID not found for reverification attempt.`
         }
     }
 
     try {
-        // get the ShopAssetPurchase document
-        const purchase = await ShopAssetPurchaseModel.findById(purchaseId).lean();
-
-        if (!purchase) {
-            console.error(`(decodeTx) Purchase not found. ID: ${purchaseId}`);
-            return {
-                status: Status.ERROR,
-                message: `(decodeTx) Purchase not found. ID: ${purchaseId}`
-            }
-        }
-
         const txHash = await bocToTxHash(boc);
 
         console.log(`tx hash: ${txHash}`);
@@ -94,22 +109,23 @@ export const verifyTONTransaction = async (purchaseId: string, address: string, 
 
         // check if the receiver address matches the Wonderbits receiver address
         if (receiverAddress !== TON_RECEIVER_ADDRESS) {
-            console.error(`(decodeTx) Receiver address mismatch. Expected: ${TON_RECEIVER_ADDRESS}, got: ${receiverAddress}`);
+            console.error(`(verifyTONTransaction) Receiver address mismatch. Expected: ${TON_RECEIVER_ADDRESS}, got: ${receiverAddress}`);
 
-            // update the purchase's `blockchainData.confirmationAttempts` to include the error `noValidTx`
-            await ShopAssetPurchaseModel.findByIdAndUpdate(purchaseId, {
-                $push: {
-                    'blockchainData.confirmationAttempts': 'noValidTx'
-                },
-                'blockchainData.txPayload': txParsedMessage
-            });
+            // if reverification, then update the purchase's `blockchainData.confirmationAttempts` to include the error `noValidTx`
+            if (reverification) {
+                await ShopAssetPurchaseModel.findByIdAndUpdate(purchaseId, {
+                    $push: {
+                        'blockchainData.confirmationAttempts': 'noValidTx'
+                    },
+                    'blockchainData.txPayload': txParsedMessage
+                });
+            }
 
             return {
                 status: Status.ERROR,
-                message: `(decodeTx) Receiver address mismatch. Expected: ${TON_RECEIVER_ADDRESS}, got: ${receiverAddress}`
+                message: `(verifyTONTransaction) Receiver address mismatch. Expected: ${TON_RECEIVER_ADDRESS}, got: ${receiverAddress}`
             }
         }
-        
 
         // if the currency is "TON", then `txValue` MUST be the same as `txParsedMessage.cost`
         // because the cost of the transaction should be the same as the value sent to the receiver (value = native currency of the tx, which is TON)
@@ -118,64 +134,77 @@ export const verifyTONTransaction = async (purchaseId: string, address: string, 
             const parsedMessageCost = txParsedMessage.cost;
 
             if (txValue !== parsedMessageCost) {
-                console.error(`(decodeTx) Value mismatch. Parsed message cost: ${parsedMessageCost}, tx value: ${txValue}`);
+                console.error(`(verifyTONTransaction) Value mismatch. Parsed message cost: ${parsedMessageCost}, tx value: ${txValue}`);
 
-                // update the purchase's `blockchainData.confirmationAttempts` to include the error `noValidTx`
-                await ShopAssetPurchaseModel.findByIdAndUpdate(purchaseId, {
-                    $push: {
-                        'blockchainData.confirmationAttempts': 'noValidTx'
-                    },
-                    'blockchainData.txPayload': txParsedMessage
-                })
+                // if reverification, then update the purchase's `blockchainData.confirmationAttempts` to include the error `noValidTx`
+                if (reverification) {
+                    await ShopAssetPurchaseModel.findByIdAndUpdate(purchaseId, {
+                        $push: {
+                            'blockchainData.confirmationAttempts': 'noValidTx'
+                        },
+                        'blockchainData.txPayload': txParsedMessage
+                    });
+                }
 
                 return {
                     status: Status.ERROR,
-                    message: `(decodeTx) Value mismatch. Currency paid: ${txParsedMessage.curr}. Parsed message cost: ${parsedMessageCost}, tx value: ${txValue}`
+                    message: `(verifyTONTransaction) Value mismatch. Currency paid: ${txParsedMessage.curr}. Parsed message cost: ${parsedMessageCost}, tx value: ${txValue}`
                 }
+            }
+        /// TO DOO!!!!!!!!!! IMPLEMENT OTHER CURRENCIES LIKE NOT, ETC HERE.
+        } else {
+            console.log(`(verifyTONTransaction) Currency is not TON. Not developed yet. Currency: ${txParsedMessage.curr}`);
+            
+            // in this case, throw an error because it's not developed yet.
+            return {
+                status: Status.ERROR,
+                message: `(verifyTONTransaction) Currency is not TON. Currency: ${txParsedMessage.curr}`
             }
         }
 
-        // finally, check if the items given to the user match the items purchased (by checking the `txParsedMessage.asset` compared to the `purchase.assetName`)
-        // and if the amount of the asset given to the user matches the amount purchased (by checking the `txParsedMessage.amt` compared to the `purchase.amount`)
-        if (txParsedMessage.asset !== purchase.assetName || txParsedMessage.amt !== purchase.amount) {
-            console.error(`(decodeTx) Item mismatch. Parsed message asset: ${txParsedMessage.asset}, purchase asset: ${purchase.assetName}. Parsed message amount: ${txParsedMessage.amt}, purchase amount: ${purchase.amount}`);
+        // finally, check if the items given to the user match the items purchased (by checking the `txParsedMessage.asset` compared to the `assetName`)
+        // and if the amount of the asset given to the user matches the amount purchased (by checking the `txParsedMessage.amt` compared to the `amount`)
+        if (txParsedMessage.asset.toLowerCase() !== assetName.toLowerCase() || txParsedMessage.amt !== amount) {
+            console.error(`(verifyTONTransaction) Item mismatch. Parsed message asset: ${txParsedMessage.asset}, purchase asset: ${assetName}. Parsed message amount: ${txParsedMessage.amt}, purchase amount: ${amount}`);
 
-            // update the purchase's `blockchainData.confirmationAttempts` to include the error `itemMismatch`
-            await ShopAssetPurchaseModel.findByIdAndUpdate(purchaseId, {
-                $push: {
-                    'blockchainData.confirmationAttempts': 'itemMismatch'
-                },
-                'blockchainData.txPayload': txParsedMessage
-            });
+            // if reverification, then update the purchase's `blockchainData.confirmationAttempts` to include the error `itemMismatch`
+            if (reverification) {
+                await ShopAssetPurchaseModel.findByIdAndUpdate(purchaseId, {
+                    $push: {
+                        'blockchainData.confirmationAttempts': 'itemMismatch'
+                    },
+                    'blockchainData.txPayload': txParsedMessage
+                });
+            }
 
             return {
                 status: Status.ERROR,
-                message: `(decodeTx) Item mismatch. Parsed message asset: ${txParsedMessage.asset}, purchase asset: ${purchase.assetName}. Parsed message amount: ${txParsedMessage.amt}, purchase amount: ${purchase.amount}`
+                message: `(verifyTONTransaction) Item mismatch. Parsed message asset: ${txParsedMessage.asset}, purchase asset: ${assetName}. Parsed message amount: ${txParsedMessage.amt}, purchase amount: ${amount}`
             }
         }
 
-        // if all checks pass, update the purchase's `blockchainData.confirmationAttempts` to include `success`
+        // if all checks pass, either return success OR in the case of reverification, update the purchase's `blockchainData.confirmationAttempts` to include `success`
         // as well as the `txPayload` as `txParsedMessage`
-        await ShopAssetPurchaseModel.findByIdAndUpdate(purchaseId, {
-            $push: {
-                'blockchainData.confirmationAttempts': 'success'
-            },
-            'blockchainData.txPayload': txParsedMessage
-        });
+        if (reverification) {
+            await ShopAssetPurchaseModel.findByIdAndUpdate(purchaseId, {
+                $push: {
+                    'blockchainData.confirmationAttempts': 'success'
+                },
+                'blockchainData.txPayload': txParsedMessage
+            })
+        }
 
         return {
             status: Status.SUCCESS,
-            message: `(decodeTx) Transaction verified successfully.`
+            message: `(verifyTONTransaction) Transaction verified successfully.`
         }
     } catch (err: any) {
-        console.error(`(decodeTx) Error: ${err.message}`);
+        console.error(`(verifyTONTransaction) Error: ${err.message}`);
 
-        // update the purchase's `blockchainData.confirmationAttempts` to include the error `apiError`
-        await ShopAssetPurchaseModel.findByIdAndUpdate(purchaseId, {
-            $push: {
-                'blockchainData.confirmationAttempts': 'apiError'
-            }
-        })
+        return {
+            status: Status.ERROR,
+            message: `(verifyTONTransaction) ${err.message}`
+        }
     }
 }
 
