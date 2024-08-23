@@ -201,7 +201,9 @@ export const verifyTONTransaction = async (
         if (txParsedMessage.curr === 'TON') {
             const parsedMessageCost = txParsedMessage.cost;
 
-            if (txValue !== parsedMessageCost) {
+            // 1 ton is equal to 10^9 nanotons
+            // we divide by 10^9 to get the actual value in TON
+            if (parsedMessageCost !== txValue / Math.pow(10, 9)) {
                 console.error(`(verifyTONTransaction) Value mismatch. Parsed message cost: ${parsedMessageCost}, tx value: ${txValue}`);
 
                 // if reverification, then update the purchase's `blockchainData.confirmationAttempts` to include the error `noValidTx`
