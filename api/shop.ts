@@ -488,6 +488,7 @@ export const purchaseShopAsset = async (
             }
         }
     } catch (err: any) {
+        console.error(`(purchaseShopAsset) Error for User ${twitterId} ${err.message}`);
         return {
             status: Status.ERROR,
             message: `(purchaseShopAsset) ${err.message}`
