@@ -347,6 +347,16 @@ export const purchaseShopAsset = async (
                 }
             }
 
+            // one final check - see if the txHash is already used for a different purchase. if yes, return an error.
+            const txHashExists = await ShopAssetPurchaseModel.findOne({ 'blockchainData.txHash': txHash }).lean();
+
+            if (txHashExists) {
+                return {
+                    status: Status.ERROR,
+                    message: `(purchaseShopAsset) Transaction hash already used for a different purchase.`
+                }
+            }
+
             // if verification is successful, no need to deduct anything currency-wise because the user has already paid for the asset.
             // simply continue and get out of the if-else block.
         } else {
