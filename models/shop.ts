@@ -99,7 +99,7 @@ export interface ShopAssetGivenContentData {
     // the type of content. used to easily identify and handle operations for the content given by the asset.
     contentType: 'item' | 'food' | 'xCookies' | 'monthlyPass';
     // the actual content that the asset gives to the player
-    content: ItemType | FoodType | 'xCookies' | 'diamonds';
+    content: ItemType | FoodType | 'xCookies' | 'diamonds' | 'monthlyPass';
     // the amount of content that the asset gives to the player
     // for monthly passes and other non-quantity-based content, this will be 1
     amount: number;
