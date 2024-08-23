@@ -179,6 +179,8 @@ export enum ShopAssetPurchaseConfirmationAttemptType {
     API_ERROR = 'apiError',
     // no valid transaction with given params found
     NO_VALID_TX = 'noValidTx',
+    // payment sent with the transaction is lower than the required amount to pay for the asset
+    PAYMENT_TOO_LOW = 'paymentMismatch',
     // item mismatch between the items given to the user and the items in the payload
     ITEM_MISMATCH = 'itemMismatch',
     // user ID not found in database when verifying

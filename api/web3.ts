@@ -86,7 +86,39 @@ export const verifyTONTransaction = async (
     }
 
     try {
-        const txHash = await bocToTxHash(boc);
+        const txHash = await bocToTxHash(boc).catch(async err => {
+            // if an error occurs here, it's most likely due to the API. return an API error.
+            console.error(`(verifyTONTransaction) Error: ${err.message}`);
+
+            // if reverification, then update the purchase's `blockchainData.confirmationAttempts` to include the error `apiError`
+            if (reverification) {
+                const update = await ShopAssetPurchaseModel.findByIdAndUpdate(purchaseId, {
+                    $push: {
+                        'blockchainData.confirmationAttempts': ShopAssetPurchaseConfirmationAttemptType.API_ERROR
+                    }
+                });
+
+                // check if `update` is successful. if not, log the error.
+                if (!update) {
+                    console.error(`(verifyTONTransaction) API Error + Error updating confirmation attempts for purchase ID: ${purchaseId}`);
+
+                    return {
+                        status: Status.ERROR,
+                        message: `(verifyTONTransaction) API Error + Error updating confirmation attempts for purchase ID: ${purchaseId}`
+                    }
+                }
+
+                return {
+                    status: Status.ERROR,
+                    message: `(verifyTONTransaction) API Error. Possible rate limiting from TON node provider.`
+                }
+            }
+
+            return {
+                status: Status.ERROR,
+                message: `(verifyTONTransaction) API Error. Possible rate limiting from TON node provider.`
+            }
+        })
 
         console.log(`tx hash: ${txHash}`);
 
@@ -95,8 +127,41 @@ export const verifyTONTransaction = async (
             address,
             1,
             null,
-            txHash
-        );
+            // because `txHash` will already return early if an error is caught, we can safely force cast `txHash` to a string.
+            txHash as string
+        ).catch(async err => {
+            // if an error occurs here, it's most likely due to the API. return an API error.
+            console.error(`(verifyTONTransaction) Error: ${err.message}`);
+
+            // if reverification, then update the purchase's `blockchainData.confirmationAttempts` to include the error `apiError`
+            if (reverification) {
+                const update = await ShopAssetPurchaseModel.findByIdAndUpdate(purchaseId, {
+                    $push: {
+                        'blockchainData.confirmationAttempts': ShopAssetPurchaseConfirmationAttemptType.API_ERROR
+                    }
+                });
+
+                // check if `update` is successful. if not, log the error.
+                if (!update) {
+                    console.error(`(verifyTONTransaction) API error + Error updating confirmation attempts for purchase ID: ${purchaseId}`);
+
+                    return {
+                        status: Status.ERROR,
+                        message: `(verifyTONTransaction) API error + Error updating confirmation attempts for purchase ID: ${purchaseId}`
+                    }
+                }
+
+                return {
+                    status: Status.ERROR,
+                    message: `(verifyTONTransaction) API Error. Possible rate limiting from TON node provider.`
+                }
+            }
+
+            return {
+                status: Status.ERROR,
+                message: `(verifyTONTransaction) API Error. Possible rate limiting from TON node provider.`
+            }
+        })
 
         // fetch the transaction (bc it's in an array, we simply get the first index)
         const firstTx = txs[0];
@@ -290,24 +355,31 @@ export const verifyTONTransaction = async (
                 // update the user's data
                 await UserModel.findByIdAndUpdate(user._id, userUpdateOperations);
             }
+
             await ShopAssetPurchaseModel.findByIdAndUpdate(purchaseId, {
                 $push: {
                     'blockchainData.confirmationAttempts': ShopAssetPurchaseConfirmationAttemptType.SUCCESS
                 },
-                'blockchainData.txPayload': txParsedMessage
+                'blockchainData.txPayload': txParsedMessage,
+                // also update the actualCost and actualCurrency even if it was already updated before (just to finalize from the payload).
+                'blockchainData.actualCost': txParsedMessage.cost,
+                'blockchainData.actualCurrency': txParsedMessage.curr
             });
         }
 
         return {
             status: Status.SUCCESS,
-            message: `(verifyTONTransaction) Transaction verified successfully.`
+            message: `(verifyTONTransaction) Transaction verified successfully.`,
+            data: {
+                txPayload: txParsedMessage ?? null
+            }
         }
     } catch (err: any) {
-        console.error(`(verifyTONTransaction) Error: ${err.message}`);
+        console.error(`(verifyTONTransaction) Error outside of all other errors handled: ${err.message}`);
 
         return {
             status: Status.ERROR,
-            message: `(verifyTONTransaction) ${err.message}`
+            message: `(verifyTONTransaction) Error outside of all other errors handled: ${err.message}`
         }
     }
 }

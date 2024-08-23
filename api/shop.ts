@@ -1,11 +1,12 @@
 import { Food, FoodType } from '../models/food';
-import { ShopAsset, ShopAssetType, ShopPackageType } from '../models/shop';
+import { ShopAsset, ShopAssetPurchaseConfirmationAttemptType, ShopAssetType, ShopPackageType } from '../models/shop';
 import { ReturnValue, Status } from '../utils/retVal';
 import { shop } from '../utils/shop';
 import { ShopAssetModel, ShopAssetPurchaseModel, UserModel } from '../utils/constants/db';
 import { Item, ItemType } from '../models/item';
 import { generateObjectId } from '../utils/crypto';
 import { verifyTONTransaction } from './web3';
+import { TxParsedMessage } from '../models/web3';
 
 /**
  * Fetches all shop assets from the database and return them as a shop instance.
@@ -254,6 +255,10 @@ export const purchaseShopAsset = async (
         // fetch user's xCookies
         const userXCookies = user.inventory?.xCookieData.currentXCookies;
 
+        // tx payload for blockchain transactions done if payment === 'usd'.
+        // used to store the parsed message body of the transaction in the purchase instance.
+        let txPayload: TxParsedMessage | null = null;
+
         // check payment type.
         if (payment === 'xCookies') {
             // check if the user has enough xCookies to purchase the asset
@@ -274,14 +279,72 @@ export const purchaseShopAsset = async (
             // verify the transaction.
             const { 
                 status: verificationStatus, 
-                message: verificationMessage
+                message: verificationMessage,
+                data: verificationData
             } = await verifyTONTransaction(address, txHash, asset, amount, false, null);
+
+            txPayload = verificationData?.txPayload ?? null;
 
             // if verification failed (even if API error), return the error message and DON'T proceed with the purchase.
             if (verificationStatus !== Status.SUCCESS) {
                 // check the error type. create a new purchase instance and add the error message to the confirmationAttempts.
                 // then, return early.
-                /// TO DO!
+                let confirmationAttempt: ShopAssetPurchaseConfirmationAttemptType;
+
+                // if any of these messages are found, then the transaction is invalid.
+                if (verificationMessage.includes(
+                    'Address not found' ||
+                    'BOC not found' ||
+                    'Asset name or amount not found/invalid' ||
+                    'Purchase ID not found' ||
+                    'Purchase not found' ||
+                    'Receiver address mismatch'
+                )) {
+                    confirmationAttempt = ShopAssetPurchaseConfirmationAttemptType.NO_VALID_TX;
+                } else if (verificationMessage.includes('Value mismatch')) {
+                    confirmationAttempt = ShopAssetPurchaseConfirmationAttemptType.PAYMENT_TOO_LOW;
+                } else if (verificationMessage.includes('Item mismatch')) {
+                    confirmationAttempt = ShopAssetPurchaseConfirmationAttemptType.ITEM_MISMATCH;
+                } else if (verificationMessage.includes('User not found')) {
+                    confirmationAttempt = ShopAssetPurchaseConfirmationAttemptType.USER_NOT_FOUND;
+                } else if (verificationMessage.includes('API error')) {
+                    confirmationAttempt = ShopAssetPurchaseConfirmationAttemptType.API_ERROR;
+                } else {
+                    // also return `NO_VALID_TX` if any other error message is returned.
+                    confirmationAttempt = ShopAssetPurchaseConfirmationAttemptType.NO_VALID_TX;
+                }
+
+                // create a new purchase instance and add the error message to the confirmationAttempts.
+                const assetPurchaseId = generateObjectId();
+
+                await ShopAssetPurchaseModel.create({
+                    _id: assetPurchaseId,
+                    userId: user._id,
+                    assetId: shopAsset._id,
+                    assetName: shopAsset.assetName,
+                    amount,
+                    totalCost: {
+                        baseCost: assetPrice * amount,
+                        baseCurrency: payment,
+                        actualCost: null,
+                        actualCurrency: null
+                    },
+                    blockchainData: {
+                        address,
+                        chain,
+                        txHash,
+                        txPayload: verificationData?.txPayload ?? null,
+                        confirmationAttempts: [confirmationAttempt]
+                    },
+                    purchaseTimestamp: Math.floor(Date.now() / 1000),
+                    effectExpiration: 'never',
+                    givenContent: shopAsset.givenContent
+                });
+
+                return {
+                    status: Status.ERROR,
+                    message: `(purchaseShopAsset) Error from verifyTONTransaction: ${verificationMessage}`
+                }
             }
 
             // if verification is successful, no need to deduct anything currency-wise because the user has already paid for the asset.
@@ -375,41 +438,6 @@ export const purchaseShopAsset = async (
             }
         }
 
-        const assetPurchaseId = generateObjectId();
-
-        // update the user's inventory and add the purchase to the ShopAssetPurchases collection
-        await Promise.all([
-            UserModel.updateOne({ twitterId }, userUpdateOperations),
-            ShopAssetPurchaseModel.create({
-                _id: assetPurchaseId,
-                userId: user._id,
-                assetId: shopAsset._id,
-                assetName: shopAsset.assetName,
-                amount,
-                totalCost: {
-                    baseCost: assetPrice * amount,
-                    baseCurrency: payment,
-                    /// TO DO: right now, payment is only via xCookies. USD is not implemented yet.
-                    /// ONCE IMPLEMENTED, actualCost and actualCurrency will include TON, NOT and Telegram Stars and the actual value.
-                    actualCost: assetPrice * amount,
-                    actualCurrency: payment
-                },
-                blockchainData: {
-                    address,
-                    chain,
-                    txHash,
-                    // txPayload will be added upon verification of the transaction.
-                    txPayload: null,
-                    // if payment is done via xCookies, then the confirmationAttempts will be ['success'].
-                    // else, confirmation will be done immediately after this function.
-                    confirmationAttempts: payment === 'xCookies' ? ['success'] : []
-                },
-                purchaseTimestamp: Math.floor(Date.now() / 1000),
-                effectExpiration: effectExpiration(),
-                givenContent: shopAsset.givenContent
-            })
-        ])
-
         // if stock is not unlimited, decrement the stock of the asset
         if (shopAsset.stockData.totalStock !== 'unlimited') {
             shopAssetPurchaseUpdateOperations.$inc['stockData.currentStock'] = -amount;
@@ -417,13 +445,46 @@ export const purchaseShopAsset = async (
             await ShopAssetModel.updateOne({ assetName: asset }, shopAssetPurchaseUpdateOperations);
         }
 
+        // update the user's inventory and add the purchase to the ShopAssetPurchases collection
+        await Promise.all([
+            UserModel.updateOne({ twitterId }, userUpdateOperations),
+            ShopAssetPurchaseModel.create({
+                _id: generateObjectId(),
+                userId: user._id,
+                assetId: shopAsset._id,
+                assetName: shopAsset.assetName,
+                amount,
+                totalCost: {
+                    baseCost: assetPrice * amount,
+                    baseCurrency: payment,
+                    actualCost: txPayload.cost,
+                    actualCurrency: txPayload.curr
+                },
+                blockchainData: {
+                    address,
+                    chain,
+                    txHash,
+                    txPayload,
+                    confirmationAttempts: [ShopAssetPurchaseConfirmationAttemptType.SUCCESS]
+                },
+                purchaseTimestamp: Math.floor(Date.now() / 1000),
+                effectExpiration: effectExpiration(),
+                givenContent: shopAsset.givenContent
+            })
+        ])
+
         return {
             status: Status.SUCCESS,
             message: `(purchaseShopAsset) Asset purchased successfully.`,
             data: {
+                twitterId,
                 asset,
                 amount,
-                payment
+                payment,
+                address,
+                chain,
+                txHash,
+                txPayload
             }
         }
     } catch (err: any) {
