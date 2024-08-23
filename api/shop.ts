@@ -5,6 +5,7 @@ import { shop } from '../utils/shop';
 import { ShopAssetModel, ShopAssetPurchaseModel, UserModel } from '../utils/constants/db';
 import { Item, ItemType } from '../models/item';
 import { generateObjectId } from '../utils/crypto';
+import { verifyTONTransaction } from './web3';
 
 /**
  * Fetches all shop assets from the database and return them as a shop instance.
@@ -364,11 +365,13 @@ export const purchaseShopAsset = async (
             }
         }
 
+        const assetPurchaseId = generateObjectId();
+
         // update the user's inventory and add the purchase to the ShopAssetPurchases collection
         await Promise.all([
             UserModel.updateOne({ twitterId }, userUpdateOperations),
             ShopAssetPurchaseModel.create({
-                _id: generateObjectId(),
+                _id: assetPurchaseId,
                 userId: user._id,
                 assetId: shopAsset._id,
                 assetName: shopAsset.assetName,
@@ -404,8 +407,15 @@ export const purchaseShopAsset = async (
             await ShopAssetModel.updateOne({ assetName: asset }, shopAssetPurchaseUpdateOperations);
         }
 
-        /// TO DO:
-        /// ADD CONFIRMATION CHECK FOR BLCOCKCHAIN PAYMENTS HERE.
+        // add verification check for the transaction if it was done in blockchain
+        if (!!chain) {
+            switch (chain) {
+                case 'TON':
+                    // call `verifyTONTransaction` here.
+                    // this will not be done asynchronously to prevent the user from waiting for the verification.
+                    verifyTONTransaction(assetPurchaseId, address, txHash);
+            }
+        }
 
         return {
             status: Status.SUCCESS,

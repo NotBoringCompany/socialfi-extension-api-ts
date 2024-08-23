@@ -32,6 +32,30 @@ export const bocToTxHash = async (boc: string): Promise<string> => {
  * Verifies a transaction made in TON given the purchase ID (database ID of the purchase), sender's address and BOC of the transaction.
  */
 export const verifyTONTransaction = async (purchaseId: string, address: string, boc: string): Promise<ReturnValue> => {
+    if (!purchaseId || purchaseId === '') {
+        console.error(`(decodeTx) Purchase ID not found.`);
+        return {
+            status: Status.ERROR,
+            message: `(decodeTx) Purchase ID not found.`
+        }
+    }
+
+    if (!address || address === '') {
+        console.error(`(decodeTx) Address not found.`);
+        return {
+            status: Status.ERROR,
+            message: `(decodeTx) Address not found.`
+        }
+    }
+
+    if (!boc || boc === '') {
+        console.error(`(decodeTx) BOC not found.`);
+        return {
+            status: Status.ERROR,
+            message: `(decodeTx) BOC not found.`
+        }
+    }
+
     try {
         // get the ShopAssetPurchase document
         const purchase = await ShopAssetPurchaseModel.findById(purchaseId).lean();
