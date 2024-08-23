@@ -45,15 +45,18 @@ export interface ShopAsset {
  * Mostly used to handle currency conversions in the frontend to get the source of truth for the asset's price in different currencies from the backend.
  */
 export interface ShopAssetExtendedPricing extends ShopAsset {
-    // the extended price data of the asset in different currencies as required to execute purchases in the frontend.
-    extendedPriceData: ShopAssetExtendedPriceData[];
+    // the currency conversion of the asset into different currencies as required to execute purchases in the frontend.
+    currencyConversionData: ShopAssetCurrencyConversionData[];
 }
 
-export interface ShopAssetExtendedPriceData {
-    // the price of the asset in the extended currency
-    extendedPrice: number;
-    // the extended currency of the asset
-    extendedCurrency: string;
+/**
+ * Represents the extended price data of a shop asset (currency conversion data).
+ */
+export interface ShopAssetCurrencyConversionData {
+    // the price of the asset in the `chosenCurrency`
+    actualPrice: number;
+    // the chosen currency to represent the conversion from the base currency (USD) to this currency
+    chosenCurrency: string;
 }
 
 /**
