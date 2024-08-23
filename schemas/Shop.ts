@@ -93,6 +93,12 @@ export const ShopAssetPurchaseSchema = new mongoose.Schema({
         address: String,
         chain: mongoose.Schema.Types.Mixed,
         txHash: String,
+        txPayload: {
+            asset: String,
+            amt: Number,
+            cost: Number,
+            curr: String
+        },
         confirmationAttempts: Array,
     },
     purchaseTimestamp: Number,

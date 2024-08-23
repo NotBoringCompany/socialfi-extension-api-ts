@@ -6,78 +6,65 @@ import { getUserCurrentPoints } from './leaderboard';
 import { generateHashSalt, generateWonderbitsDataHash } from '../utils/crypto';
 import { BINANCE_API_BASE_URL, DEPLOYER_WALLET, GATEIO_API_BASE_URL, KUCOIN_API_BASE_URL, TON_RECEIVER_ADDRESS, TON_WEB, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
 import { ethers } from 'ethers';
-import { TonClient } from '@eversdk/core';
-import { libNode } from '@eversdk/lib-node';
-
-TonClient.useBinaryLibrary(libNode);
-
-const client = new TonClient();
+import { TxParsedMessage } from '../models/web3';
 
 /**
  * Converts a BOC (bag of cells) for TON-related transactions into its corresponding transaction hash in hex format.
  */
 export const bocToTxHash = async (boc: string): Promise<string> => {
-    // convert base64-encoded boc string into byte array
-    const bocBytes = TON_WEB.utils.base64ToBytes(boc);
-    // decode boc into a single TON cell (`boc` should only contain one cell)
-    const cell = TON_WEB.boc.Cell.oneFromBoc(bocBytes);
-    // calculate hash of cell to get the tx hash
-    const rawHash = await cell.hash();
-    // `rawHash` is still a bytes array; convert to hex
-    const hash = TON_WEB.utils.bytesToHex(rawHash);
-
-    console.log(`(bocToTxHash) tx hash: ${hash}`);
-
-    return hash;
-}
-
-export const decodeBoc = async (boc: string) => {
     try {
-        const msg = await client.boc.parse_message({
-            boc
-        });
-    
-        const tx = await client.boc.parse_transaction({
-            boc: msg.parsed.boc
-        });
+        // convert base64-encoded boc string into byte array
+        const bocBytes = TON_WEB.utils.base64ToBytes(boc);
+        // decode boc into a single TON cell (`boc` should only contain one cell)
+        const cell = TON_WEB.boc.Cell.oneFromBoc(bocBytes);
+        // calculate hash of cell to get the tx hash
+        const rawHash = await cell.hash();
+        // `rawHash` is still a bytes array; convert to hex
+        const hash = TON_WEB.utils.bytesToHex(rawHash);
 
-        console.log(`(decodeBoc) msg: ${JSON.stringify(msg, null, 2)}`);
-        console.log(`(decodeBoc) tx: ${JSON.stringify(tx, null, 2)}`);
+        return hash;
     } catch (err: any) {
-        console.error(`(decodeBoc) Error: ${err.message}`);
+        throw new Error(`(bocToTxHash) ${err.message}`);
     }
 }
 
-export const decodeTx = async (boc: string) => {
-    const txHash = await bocToTxHash(boc);
+/**
+ * Verifies a transaction made in TON given the sender's address and the BOC of the transaction.
+ */
+export const verifyTONTransaction = async (address: string, boc: string) => {
+    try {
+        const txHash = await bocToTxHash(boc);
 
-    console.log(txHash);
+        console.log(`tx hash: ${txHash}`);
 
-    const txs = await TON_WEB.provider.getTransactions(
-        'UQC_7U9zL8VRBiSzQOADRf107G94jnc0NDTZfbeeFnTeUZJ7',
-        100
-    );
+        // `getTransactions` will return an array of transactions, even if we're only fetching one transaction
+        const txs = await TON_WEB.provider.getTransactions(
+            address,
+            1,
+            null,
+            txHash
+        );
 
-    const firstTx = txs[0];
+        // fetch the transaction (bc it's in an array, we simply get the first index)
+        const firstTx = txs[0];
 
-    console.log(firstTx);
+        console.log(firstTx);
 
-    // set `isBounceable` to false to match the address format in TONKeeper
-    const receiverAddress = new TON_WEB.utils.Address(firstTx.out_msgs[0].destination)?.toString(true, true, false, false);
+        // set `isBounceable` to false to match the address format in TONKeeper
+        const receiverAddress: string = new TON_WEB.utils.Address(firstTx?.out_msgs[0]?.destination)?.toString(true, true, false, false);
+        // get the parsed message body of the transaction (containing the asset, amount purchased and total cost)
+        const txParsedMessage: TxParsedMessage = JSON.parse(firstTx?.out_msgs[0]?.message);
+        const txValue = firstTx?.out_msgs[0]?.value;
 
-    console.log(receiverAddress);
+        console.log('receiver address match: ', receiverAddress === TON_RECEIVER_ADDRESS);
 
-    console.log('receiver address match: ', receiverAddress === TON_RECEIVER_ADDRESS);
-    // // convert address
-    // const address = firstTx.out_msgs[0].destination;
-
-    // const converted = new TON_WEB.utils.Address(address).toString();
-
-    // console.log(converted);
+        console.log('parsed msg body ', JSON.stringify(txParsedMessage, null, 2));
+    } catch (err: any) {
+        console.error(`(decodeTx) Error: ${err.message}`);
+    }
 }
 
-// decodeBoc(`te6cckEBBAEAtwAB5YgBf9qe5l+KogxJZoHABov66dje8RzuaGhpsvtvPCzpvKIDm0s7c///+Is2MuuYAAAAJdiI5UHCcREFO0Ozm6C4bJ/nWbB7Bzg7lxCjgIpmnc816edVxGeV22dNUOioBlI5ZEZY+BmkklHOZP+t0khQdAUBAgoOw8htAwIDAAAAaEIACz4IjlfWueXBT3j2C8JUTGPNuneJQxVwTSGhTA/E7eugCYloAAAAAAAAAAAAAAAAAAACRBwd`);
-// decodeTx('te6cckEBBAEAtwAB5YgBf9qe5l+KogxJZoHABov66dje8RzuaGhpsvtvPCzpvKIDm0s7c///+Is2MuuYAAAAJdiI5UHCcREFO0Ozm6C4bJ/nWbB7Bzg7lxCjgIpmnc816edVxGeV22dNUOioBlI5ZEZY+BmkklHOZP+t0khQdAUBAgoOw8htAwIDAAAAaEIACz4IjlfWueXBT3j2C8JUTGPNuneJQxVwTSGhTA/E7eugCYloAAAAAAAAAAAAAAAAAAACRBwd');
+// verifyTONTransaction('UQC_7U9zL8VRBiSzQOADRf107G94jnc0NDTZfbeeFnTeUZJ7', 'te6cckEBBAEA7AAB5YgBf9qe5l+KogxJZoHABov66dje8RzuaGhpsvtvPCzpvKIDm0s7c///+Is2QzloAAAAlC6gQXGRzdHmim3onLDUrAe7m61S7Xm4YZhogKkkwEu4W6xDJqwLEZQRPH4IZ8DX+PLreGT3YRyIiWqJRPdQChUBAgoOw8htAwIDAAAA0kIACz4IjlfWueXBT3j2C8JUTGPNuneJQxVwTSGhTA/E7eugCYloAAAAAAAAAAAAAAAAAAAAAAAAeyJhc3NldCI6ImNhbmR5IiwiYW10IjoxLCJjb3N0IjowLjIsImN1cnIiOiJUT04ifcVQ8XY=');
 
 /**
  * Fetches the tickers of the tokens used for in-app purchases in Wonderbits.

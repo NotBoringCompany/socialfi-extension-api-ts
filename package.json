@@ -10,9 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@eversdk/core": "^1.48.0",
-    "@eversdk/lib-node": "^1.48.0",
     "@superfaceai/passport-twitter-oauth2": "^1.2.4",
+    "@ton/core": "^0.57.0",
     "axios": "^1.6.8",
     "base64url": "^3.0.1",
     "connect-mongo": "^5.1.0",

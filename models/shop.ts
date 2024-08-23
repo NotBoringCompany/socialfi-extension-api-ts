@@ -5,6 +5,7 @@
 import { AssetType } from './asset';
 import { FoodType } from './food';
 import { ItemType } from './item';
+import { TxParsedMessage } from './web3';
 
 /**
  * Represents an asset in the shop.
@@ -153,6 +154,9 @@ export interface ShopAssetPurchaseBlockchainData {
     chain: string | number;
     // the tx hash (or signed BOC for TON payments) of the payment
     txHash: string;
+    // the parsed payload message of the transaction
+    // this is not required but highly recommended to ensure that the payment contents are correct.
+    txPayload: TxParsedMessage;
     // an array of different strings that represent the status of each payment confirmation attempt.
     // because the node providers may be subjected to rate limiting,
     // there may be times where double-checking the `txHash` will result in rate limiting errors.
