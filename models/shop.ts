@@ -17,6 +17,10 @@ export interface ShopAsset {
     assetType: 'item' | 'food' | 'package';
     // the price of the asset
     price: ShopPrice;
+    // base available payment methods for the asset
+    // final available payment methods will depend on ShopAssetExtended.purchasableWith, depending on if
+    // the currency conversion data was successfully fetched, for example.
+    availablePaymentMethods: ShopAssetPaymentMethod[];
     // when the asset will be purchasable until (in unix timestamp)
     // if 'never', then it will be available forever, i.e. no expiration date
     expirationDate: number | 'never';
@@ -38,15 +42,50 @@ export interface ShopAsset {
 }
 
 /**
- * Represents an asset in the shop with extended pricing data, which includes the value of the asset in different currencies.
+ * Represents the different payment methods available for a shop asset with OUR in-game currencies.
+ */
+export enum ShopAssetIGCPaymentMethod {
+    X_COOKIES = 'xCookies',
+}
+
+/**
+ * Represents the different payment methods available for a shop asset with real or external in-game currencies.
+ * 
+ * This will be combined into the term 'external payment', where payments via crypto, real money, or external IGCs like Telegram Stars can be made.
+ * 
+ * They are technically treated as 'real currencies'.
+ */
+export enum ShopAssetExternalPaymentMethod {
+    // main payment for telegram
+    TELEGRAM_STARS = 'Telegram Stars',
+    // debit card, credit card, etc.
+    CARD = 'Card',
+    TON = 'TON',
+    NOT = 'NOT',
+}
+
+/**
+ * Represents the different payment methods available for a shop asset.
+ */
+export type ShopAssetPaymentMethod = ShopAssetIGCPaymentMethod | ShopAssetExternalPaymentMethod;
+
+/**
+ * Represents an asset in the shop with extended data, which includes the value of the asset in different currencies and the final payment methods usable for the asset purchase.
  * 
  * This is only used for purchases with real currency (i.e. USD), which can be converted to, for example, cryptocurrency values.
  * 
  * Mostly used to handle currency conversions in the frontend to get the source of truth for the asset's price in different currencies from the backend.
+ * 
+ * If there are API issues, then `purchasableWith` will only contain the payment methods that were successfully fetched.
  */
-export interface ShopAssetExtendedPricing extends ShopAsset {
+export interface ShopAssetExtended extends ShopAsset {
     // the currency conversion of the asset into different currencies as required to execute purchases in the frontend.
     currencyConversionData: ShopAssetCurrencyConversionData[];
+    // final payment methods that the asset can be purchased with
+    // this is after checking if `currencyConversionData` has the required currency/currencies to purchase the asset.
+    // for instance, if the asset can be purchased with TON and NOT, and currencyConversionData only has TON (bc let's say NOT wasn't able to be fetched),
+    // then only TON will be in `purchasableWith`.
+    purchasableWith: ShopAssetPaymentMethod[];
 }
 
 /**

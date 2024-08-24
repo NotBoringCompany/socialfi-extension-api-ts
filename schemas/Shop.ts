@@ -22,6 +22,7 @@ export const ShopAssetSchema = new mongoose.Schema({
         xCookies: Number,
         usd: Number
     },
+    availablePaymentMethods: Array,
     expirationDate: {
         type: mongoose.Schema.Types.Mixed,
         default: 'never'

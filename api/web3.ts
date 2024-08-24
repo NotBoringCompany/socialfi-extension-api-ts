@@ -325,19 +325,38 @@ export const verifyTONTransaction = async (
                     } else {
                         userUpdateOperations.$push['inventory.foods'] = { type: content, amount };
                     }
-                } else if (contentType === 'xCookies') {
-                    // add the xCookies to the user's currentXCookies
-                    userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = amount;
-                    // check if the `extendedXCookieData` contains the source SHOP_PURCHASE. if not, add it. if yes, increment the amount.
-                    const shopPurchaseIndex = (user.inventory?.xCookieData?.extendedXCookieData as ExtendedXCookieData[]).findIndex(data => data.source === XCookieSource.SHOP_PURCHASE);
+                } else if (contentType === 'igc') {
+                    // check if xCookies.
+                    if (content === 'xCookies') {
+                        // add the xCookies to the user's currentXCookies
+                        userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = amount;
+                        // check if the `extendedXCookieData` contains the source SHOP_PURCHASE. if not, add it. if yes, increment the amount.
+                        const shopPurchaseIndex = (user.inventory?.xCookieData?.extendedXCookieData as ExtendedXCookieData[]).findIndex(data => data.source === XCookieSource.SHOP_PURCHASE);
 
-                    if (shopPurchaseIndex !== -1) {
-                        userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${shopPurchaseIndex}.xCookies`] = amount;
+                        if (shopPurchaseIndex !== -1) {
+                            userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${shopPurchaseIndex}.xCookies`] = amount;
+                        } else {
+                            userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = { source: XCookieSource.SHOP_PURCHASE, xCookies: amount };
+                        }
+                    } else if (content === 'diamonds') {
+                        // NOT IMPLEMENTED YET. TBD.
+                        console.error(`(verifyTONTransaction) Content type not implemented yet. Content type: ${content}`);
+
+                        return {
+                            status: Status.ERROR,
+                            message: `(verifyTONTransaction) Content type not implemented yet. Content type: ${content}`
+                        }
                     } else {
-                        userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = { source: XCookieSource.SHOP_PURCHASE, xCookies: amount };
+                        // NOT IMPLEMENTED YET (other IGCs). TBD.
+                        console.error(`(verifyTONTransaction) Content type not implemented yet. Content type: ${content}`);
+
+                        return {
+                            status: Status.ERROR,
+                            message: `(verifyTONTransaction) Content type not implemented yet. Content type: ${content}`
+                        }
                     }
-                } else if (contentType === 'diamonds' || contentType === 'monthlyPass') {
-                    /// TBD! THROW ERROR FOR NOW.
+                } else if (contentType === 'monthlyPass') {
+                    // NOT IMPLEMENTED YET. TBD.
                     console.error(`(verifyTONTransaction) Content type not implemented yet. Content type: ${contentType}`);
 
                     return {
@@ -345,12 +364,12 @@ export const verifyTONTransaction = async (
                         message: `(verifyTONTransaction) Content type not implemented yet. Content type: ${contentType}`
                     }
                 } else {
-                    // invalid content type. simply log and return an error.
-                    console.error(`(verifyTONTransaction) Invalid content type. Content type: ${contentType}`);
+                    // NOT IMPLEMENTED YET. TBD.
+                    console.error(`(verifyTONTransaction) Content type not implemented yet. Content type: ${contentType}`);
 
                     return {
                         status: Status.ERROR,
-                        message: `(verifyTONTransaction) Invalid content type. Content type: ${contentType}`
+                        message: `(verifyTONTransaction) Content type not implemented yet. Content type: ${contentType}`
                     }
                 }
 
@@ -405,24 +424,24 @@ export const fetchIAPTickers = async (): Promise<ReturnValue> => {
         // 2. if the request fails (especially if it's 429), try the KuCoin API.
         // 3. if the request fails (especially if it's 429), try the Gate.io API.
         // 4. if all requests fail, return an error.
+        // 5. upon success, round tickers up to 3 decimal places and return the data.
         
         const binanceResponse = await axios.get(BINANCE_URL);
 
         // if the request is successful, return the response, else try KuCoin
         if (binanceResponse.status === 200) {
             // binance returns an array of objects with their symbol and price (tickers). we need to extract the price for TON and NOT
-            const TONTicker = binanceResponse.data[1].price;
-            const NOTTicker = binanceResponse.data[0].price;
-
-            console.log(`TON: ${TONTicker}`);
-            console.log(`NOT: ${NOTTicker}`);
+            // find the data with `chosenCurrency` = TON
+            const TONTicker = binanceResponse.data.find((data: any) => data.symbol === 'TONUSDT')?.price;
+            // find the data with `chosenCurrency` = NOT
+            const NOTTicker = binanceResponse.data.find((data: any) => data.symbol === 'NOTUSDT')?.price;
 
             return {
                 status: Status.SUCCESS,
                 message: `(fetchIAPTickers) Tickers fetched successfully.`,
                 data: {
-                    TONTicker,
-                    NOTTicker
+                    TONTicker: Math.ceil(parseFloat(TONTicker) * 1000) / 1000,
+                    NOTTicker: Math.ceil(parseFloat(NOTTicker) * 1000) / 1000
                 }
             }
         }
@@ -442,8 +461,8 @@ export const fetchIAPTickers = async (): Promise<ReturnValue> => {
                 status: Status.SUCCESS,
                 message: `(fetchIAPTickers) Tickers fetched successfully.`,
                 data: {
-                    TONTicker,
-                    NOTTicker
+                    TONTicker: Math.ceil(parseFloat(TONTicker) * 1000) / 1000,
+                    NOTTicker: Math.ceil(parseFloat(NOTTicker) * 1000) / 1000
                 }
             }
         }
@@ -463,8 +482,8 @@ export const fetchIAPTickers = async (): Promise<ReturnValue> => {
                 status: Status.SUCCESS,
                 message: `(fetchIAPTickers) Tickers fetched successfully.`,
                 data: {
-                    TONTicker,
-                    NOTTicker
+                    TONTicker: Math.ceil(parseFloat(TONTicker) * 1000) / 1000,
+                    NOTTicker: Math.ceil(parseFloat(NOTTicker) * 1000) / 1000
                 }
             }
         }
