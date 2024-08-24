@@ -120,7 +120,8 @@ export interface ShopAssetRefreshIntervalData {
  */
 export interface ShopAssetGivenContentData {
     // the type of content. used to easily identify and handle operations for the content given by the asset.
-    contentType: 'item' | 'food' | 'xCookies' | 'monthlyPass';
+    // igc = in-game currency.
+    contentType: 'item' | 'food' | 'igc' | 'monthlyPass';
     // the actual content that the asset gives to the player
     content: ItemType | FoodType | 'xCookies' | 'diamonds' | 'monthlyPass';
     // the amount of content that the asset gives to the player
@@ -134,7 +135,8 @@ export interface ShopAssetGivenContentData {
  * These can range from monthly passes, special event packages, bundles, etc.
  */
 export enum ShopPackageType {
-    POUCH_OF_ENERGY_POTIONS = 'Pouch of Energy Potions',
+    // test package
+    TEST_CANDY_PACKAGE = 'Test Candy Package',
 }
 
 /**

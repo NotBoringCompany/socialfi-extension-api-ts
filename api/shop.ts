@@ -1,11 +1,12 @@
 import { Food, FoodType } from '../models/food';
-import { ShopAsset, ShopAssetCurrencyConversionData, ShopAssetExtendedPricing, ShopAssetPurchaseConfirmationAttemptType, ShopAssetType, ShopPackageType } from '../models/shop';
+import { ShopAsset, ShopAssetCurrencyConversionData, ShopAssetEffectDurationType, ShopAssetExtendedPricing, ShopAssetPurchaseConfirmationAttemptType, ShopAssetType, ShopPackageType } from '../models/shop';
 import { ReturnValue, Status } from '../utils/retVal';
 import { ShopAssetModel, ShopAssetPurchaseModel, UserModel } from '../utils/constants/db';
 import { Item, ItemType } from '../models/item';
 import { generateObjectId } from '../utils/crypto';
 import { fetchIAPTickers, verifyTONTransaction } from './web3';
 import { TxParsedMessage } from '../models/web3';
+import { ExtendedXCookieData, XCookieSource } from '../models/user';
 
 /**
  * Fetches all shop assets from the database and return them as a shop instance.
@@ -239,6 +240,34 @@ export const addShopAssets = async (assets: ShopAsset[]): Promise<void> => {
     }
 }
 
+// addShopAssets([
+//     {
+//         assetName: ShopPackageType.TEST_CANDY_PACKAGE,
+//         assetType: 'package',
+//         price: {
+//             xCookies: 0,
+//             usd: 0.99
+//         },
+//         expirationDate: 'never',
+//         stockData: {
+//             totalStock: 'unlimited',
+//             currentStock: 'unlimited'
+//         },
+//         purchaseLimit: 'unlimited',
+//         effectDuration: ShopAssetEffectDurationType.ONE_TIME,
+//         refreshIntervalData: {
+//             intervalType: 'none',
+//             lastRefreshed: Math.floor(Date.now() / 1000),
+//         },
+//         levelRequirement: 'none',
+//         givenContent: {
+//             contentType: 'item',
+//             content: FoodType.CANDY,
+//             amount: 5
+//         }
+//     }
+// ]);
+
 
 /**
  * (User) Purchases `amount` of a shop asset (can be either an in-game purchase or in-app purchase with real currency).
@@ -359,6 +388,14 @@ export const purchaseShopAsset = async (
             }
         }
 
+        // if price in USD and xCookies <= 0, return an error.
+        if (shopAsset.price.usd <= 0 && shopAsset.price.xCookies <= 0) {
+            return {
+                status: Status.ERROR,
+                message: `(purchaseShopAsset) Invalid price for asset.`
+            }
+        }
+
         // fetch user's xCookies
         const userXCookies = user.inventory?.xCookieData.currentXCookies;
 
@@ -475,7 +512,7 @@ export const purchaseShopAsset = async (
         }
 
         // check if the asset is an item
-        if (shopAsset.assetType === 'item') {
+        if (shopAsset.givenContent.content === 'item') {
             // add the item to the user's inventory
             const existingItemIndex = (user.inventory?.items as Item[]).findIndex(i => i.type === asset);
 
@@ -489,7 +526,7 @@ export const purchaseShopAsset = async (
                     weeklyAmountConsumed: 0
                 };
             }
-        } else if (shopAsset.assetType === 'food') {
+        } else if (shopAsset.givenContent.contentType === 'food') {
             // add the food to the user's inventory
             const existingFoodIndex = (user.inventory?.foods as Food[]).findIndex(f => f.type === asset);
 
@@ -498,11 +535,42 @@ export const purchaseShopAsset = async (
             } else {
                 userUpdateOperations.$push['inventory.foods'] = { type: asset, amount };
             }
-        } else if (shopAsset.assetType === 'package') {
-            // not implemented yet.
+        } else if (shopAsset.givenContent.contentType === 'igc') {
+            // check if igc to reward is xCookies.
+            if (shopAsset.givenContent.content === 'xCookies') {
+                // add the xCookies to the user's inventory
+                userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = shopAsset.givenContent.amount;
+
+                // check if the user already has the source `SHOP_PURCHASE` in their extended xCookie data.
+                // if yes, increment the amount, if not, add it to the user's extended xCookie data.
+                const existingSourceIndex = (user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(d => d.source === XCookieSource.SHOP_PURCHASE);
+
+                if (existingSourceIndex !== -1) {
+                    userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${existingSourceIndex}.xCookies`] = shopAsset.givenContent.amount;
+                } else {
+                    userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = {
+                        source: XCookieSource.SHOP_PURCHASE,
+                        xCookies: shopAsset.givenContent.amount
+                    }
+                }
+            } else if (shopAsset.givenContent.content === 'diamonds') {
+                // TBD. not implemented yet.
+                return {
+                    status: Status.ERROR,
+                    message: `(purchaseShopAsset) Diamonds not implemented yet.`
+                }
+            } else {
+                // other currencies also TBD. not implemented yet.
+                return {
+                    status: Status.ERROR,
+                    message: `(purchaseShopAsset) Other currencies not implemented yet.`
+                }
+            }
+        } else if (shopAsset.givenContent.contentType === 'monthlyPass') {
+            // TBD. not implemented yet.
             return {
                 status: Status.ERROR,
-                message: `(purchaseShopAsset) Package purchase not implemented yet.`
+                message: `(purchaseShopAsset) Monthly pass not implemented yet.`
             }
         }
 
@@ -557,9 +625,12 @@ export const purchaseShopAsset = async (
 
         // if stock is not unlimited, decrement the stock of the asset
         if (shopAsset.stockData.totalStock !== 'unlimited') {
-            shopAssetPurchaseUpdateOperations.$inc['stockData.currentStock'] = -amount;
+            // only decrement amount if `currentStock` is not unlimited.
+            if (shopAsset.stockData.currentStock !== 'unlimited') {
+                shopAssetPurchaseUpdateOperations.$inc['stockData.currentStock'] = -amount;
 
-            await ShopAssetModel.updateOne({ assetName: asset }, shopAssetPurchaseUpdateOperations);
+                await ShopAssetModel.updateOne({ assetName: asset }, shopAssetPurchaseUpdateOperations);
+            }
         }
 
         // update the user's inventory and add the purchase to the ShopAssetPurchases collection
@@ -574,8 +645,10 @@ export const purchaseShopAsset = async (
                 totalCost: {
                     baseCost: assetPrice * amount,
                     baseCurrency: payment,
-                    actualCost: txPayload.cost,
-                    actualCurrency: txPayload.curr
+                    // include the txPayload cost only if payment === 'usd', else set equal to baseCost.
+                    actualCost: payment === 'usd' ? txPayload?.cost : assetPrice * amount,
+                    // include the txPayload currency only if payment === 'usd', else set equal to baseCurrency.
+                    actualCurrency: payment === 'usd' ? txPayload?.curr : payment
                 },
                 blockchainData: {
                     address,

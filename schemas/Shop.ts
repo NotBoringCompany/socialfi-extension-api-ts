@@ -55,7 +55,7 @@ export const ShopAssetSchema = new mongoose.Schema({
     givenContent: {
         contentType: {
             type: String,
-            enum: ['item', 'food', 'xCookies', 'monthlyPass']
+            enum: ['item', 'food', 'igc', 'monthlyPass']
         },
         content: String,
         amount: Number
