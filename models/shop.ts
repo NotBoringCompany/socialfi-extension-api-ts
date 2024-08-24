@@ -37,8 +37,8 @@ export interface ShopAsset {
     // the level requirement of the asset
     // if 'none', then players of any level can purchase this asset
     levelRequirement: number | 'none';
-    // the data of the content the player receives upon purchasing this asset
-    givenContent: ShopAssetGivenContentData;
+    // the data of the contents the player receives upon purchasing this asset
+    givenContents: ShopAssetGivenContentData[];
 }
 
 /**
@@ -201,8 +201,8 @@ export interface ShopAssetPurchase {
     // used primarily for assets with effect durations (like monthly passes, etc)
     // for one-time use assets, this will be set to `never`.
     effectExpiration: number | 'never';
-    // the data of the content the player receives after this asset was purchased
-    givenContent: ShopAssetGivenContentData;
+    // the data of the contents the player receives after this asset was purchased
+    givenContents: ShopAssetGivenContentData[];
 }
 
 /**
@@ -245,8 +245,8 @@ export enum ShopAssetPurchaseConfirmationAttemptType {
     NO_VALID_TX = 'noValidTx',
     // payment sent with the transaction is lower than the required amount to pay for the asset
     PAYMENT_TOO_LOW = 'paymentMismatch',
-    // item mismatch between the items given to the user and the items in the payload
-    ITEM_MISMATCH = 'itemMismatch',
+    // asset mismatch between the asset/contents given to the user and the asset purchased in the payload
+    ASSET_MISMATCH = 'assetMismatch',
     // user ID not found in database when verifying
     USER_NOT_FOUND = 'userNotFound',
 }

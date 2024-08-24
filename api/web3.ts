@@ -183,7 +183,7 @@ export const verifyTONTransaction = async (
             if (reverification) {
                 await ShopAssetPurchaseModel.findByIdAndUpdate(purchaseId, {
                     $push: {
-                        'blockchainData.confirmationAttempts': 'noValidTx'
+                        'blockchainData.confirmationAttempts': ShopAssetPurchaseConfirmationAttemptType.NO_VALID_TX
                     },
                     'blockchainData.txPayload': txParsedMessage
                 });
@@ -210,7 +210,7 @@ export const verifyTONTransaction = async (
                 if (reverification) {
                     await ShopAssetPurchaseModel.findByIdAndUpdate(purchaseId, {
                         $push: {
-                            'blockchainData.confirmationAttempts': 'noValidTx'
+                            'blockchainData.confirmationAttempts': ShopAssetPurchaseConfirmationAttemptType.NO_VALID_TX
                         },
                         'blockchainData.txPayload': txParsedMessage
                     });
@@ -241,7 +241,7 @@ export const verifyTONTransaction = async (
             if (reverification) {
                 await ShopAssetPurchaseModel.findByIdAndUpdate(purchaseId, {
                     $push: {
-                        'blockchainData.confirmationAttempts': 'itemMismatch'
+                        'blockchainData.confirmationAttempts': ShopAssetPurchaseConfirmationAttemptType.ASSET_MISMATCH
                     },
                     'blockchainData.txPayload': txParsedMessage
                 });
@@ -275,14 +275,6 @@ export const verifyTONTransaction = async (
             // if the `confirmationAttempts` array only contains `apiError`, then reward the user the items they purchased
             // because that means that they were unable to receive the items due to an API error or DB-related errors.
             if (purchaseData.blockchainData.confirmationAttempts.every(attempt => attempt === 'apiError')) {
-                // get the items they were supposed to receive
-                const { contentType, content, amount } = purchaseData.givenContent;
-
-                const userUpdateOperations = {
-                    $push: {},
-                    $inc: {}
-                }
-
                 const user = await UserModel.findOne({ _id: purchaseData.userId }).lean();
 
                 if (!user) {
@@ -301,75 +293,87 @@ export const verifyTONTransaction = async (
                     }
                 }
 
-                if (contentType === 'item') {
-                    // give the user the items they purchased
-                    // add the item to the user's inventory
-                    const existingItemIndex = (user.inventory?.items as Item[]).findIndex(i => i.type === content);
+                const userUpdateOperations = {
+                    $push: {
+                        'inventory.items': { $each: [] },
+                        'inventory.foods': { $each: [] },
+                    },
+                    $inc: {}
+                }
 
-                    if (existingItemIndex !== -1) {
-                        userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = amount;
-                    } else {
-                        userUpdateOperations.$push['inventory.items'] = { 
-                            type: content, 
-                            amount,
-                            totalAmountConsumed: 0,
-                            weeklyAmountConsumed: 0
-                        };
-                    }
-                } else if (contentType === 'food') {
-                    // add the food to the user's inventory
-                    const existingFoodIndex = (user.inventory?.foods as Food[]).findIndex(f => f.type === content);
-
-                    if (existingFoodIndex !== -1) {
-                        userUpdateOperations.$inc[`inventory.foods.${existingFoodIndex}.amount`] = amount;
-                    } else {
-                        userUpdateOperations.$push['inventory.foods'] = { type: content, amount };
-                    }
-                } else if (contentType === 'igc') {
-                    // check if xCookies.
-                    if (content === 'xCookies') {
-                        // add the xCookies to the user's currentXCookies
-                        userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = amount;
-                        // check if the `extendedXCookieData` contains the source SHOP_PURCHASE. if not, add it. if yes, increment the amount.
-                        const shopPurchaseIndex = (user.inventory?.xCookieData?.extendedXCookieData as ExtendedXCookieData[]).findIndex(data => data.source === XCookieSource.SHOP_PURCHASE);
-
-                        if (shopPurchaseIndex !== -1) {
-                            userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${shopPurchaseIndex}.xCookies`] = amount;
+                // loop through each content and give the user the assets they were supposed to receive
+                for (const givenContent of purchaseData.givenContents) {
+                    // get the content type (item, food, etc.)
+                    if (givenContent.contentType === 'item') {
+                        // give the user the items they purchased
+                        // add the item to the user's inventory
+                        const existingItemIndex = (user.inventory?.items as Item[]).findIndex(i => i.type === givenContent.content);
+    
+                        if (existingItemIndex !== -1) {
+                            userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = amount;
                         } else {
-                            userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = { source: XCookieSource.SHOP_PURCHASE, xCookies: amount };
+                            userUpdateOperations.$push['inventory.items'].$each.push({
+                                type: givenContent.content, 
+                                amount,
+                                totalAmountConsumed: 0,
+                                weeklyAmountConsumed: 0
+                            });
                         }
-                    } else if (content === 'diamonds') {
+                    } else if (givenContent.contentType === 'food') {
+                        // add the food to the user's inventory
+                        const existingFoodIndex = (user.inventory?.foods as Food[]).findIndex(f => f.type === givenContent.content);
+    
+                        if (existingFoodIndex !== -1) {
+                            userUpdateOperations.$inc[`inventory.foods.${existingFoodIndex}.amount`] = amount;
+                        } else {
+                            userUpdateOperations.$push['inventory.foods'].$each.push({ type: givenContent.content, amount });
+                        }
+                    } else if (givenContent.contentType === 'igc') {
+                        // check if xCookies.
+                        if (givenContent.content === 'xCookies') {
+                            // add the xCookies to the user's currentXCookies
+                            userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = amount;
+                            // check if the `extendedXCookieData` contains the source SHOP_PURCHASE. if not, add it. if yes, increment the amount.
+                            const shopPurchaseIndex = (user.inventory?.xCookieData?.extendedXCookieData as ExtendedXCookieData[]).findIndex(data => data.source === XCookieSource.SHOP_PURCHASE);
+    
+                            if (shopPurchaseIndex !== -1) {
+                                userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${shopPurchaseIndex}.xCookies`] = amount;
+                            } else {
+                                userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = { source: XCookieSource.SHOP_PURCHASE, xCookies: amount };
+                            }
+                        } else if (givenContent.content === 'diamonds') {
+                            // NOT IMPLEMENTED YET. TBD.
+                            console.error(`(verifyTONTransaction) Content not implemented yet. Content: ${givenContent.content}`);
+    
+                            return {
+                                status: Status.ERROR,
+                                message: `(verifyTONTransaction) Content not implemented yet. Content: ${givenContent.content}`
+                            }
+                        } else {
+                            // NOT IMPLEMENTED YET (other IGCs). TBD.
+                            console.error(`(verifyTONTransaction) Content not implemented yet. Content: ${givenContent.content}`);
+    
+                            return {
+                                status: Status.ERROR,
+                                message: `(verifyTONTransaction) Content not implemented yet. Content: ${givenContent.content}`
+                            }
+                        }
+                    } else if (givenContent.contentType === 'monthlyPass') {
                         // NOT IMPLEMENTED YET. TBD.
-                        console.error(`(verifyTONTransaction) Content type not implemented yet. Content type: ${content}`);
-
+                        console.error(`(verifyTONTransaction) Content not implemented yet. Content: ${givenContent.content}`);
+    
                         return {
                             status: Status.ERROR,
-                            message: `(verifyTONTransaction) Content type not implemented yet. Content type: ${content}`
+                            message: `(verifyTONTransaction) Content not implemented yet. Content: ${givenContent.content}`
                         }
                     } else {
-                        // NOT IMPLEMENTED YET (other IGCs). TBD.
-                        console.error(`(verifyTONTransaction) Content type not implemented yet. Content type: ${content}`);
-
+                        // NOT IMPLEMENTED YET. TBD.
+                        console.error(`(verifyTONTransaction) Content not implemented yet. Content: ${givenContent.content}`);
+    
                         return {
                             status: Status.ERROR,
-                            message: `(verifyTONTransaction) Content type not implemented yet. Content type: ${content}`
+                            message: `(verifyTONTransaction) Content not implemented yet. Content: ${givenContent.content}`
                         }
-                    }
-                } else if (contentType === 'monthlyPass') {
-                    // NOT IMPLEMENTED YET. TBD.
-                    console.error(`(verifyTONTransaction) Content type not implemented yet. Content type: ${contentType}`);
-
-                    return {
-                        status: Status.ERROR,
-                        message: `(verifyTONTransaction) Content type not implemented yet. Content type: ${contentType}`
-                    }
-                } else {
-                    // NOT IMPLEMENTED YET. TBD.
-                    console.error(`(verifyTONTransaction) Content type not implemented yet. Content type: ${contentType}`);
-
-                    return {
-                        status: Status.ERROR,
-                        message: `(verifyTONTransaction) Content type not implemented yet. Content type: ${contentType}`
                     }
                 }
 

@@ -2,6 +2,18 @@ import mongoose from 'mongoose';
 import { generateObjectId } from '../utils/crypto';
 
 /**
+ * GivenContent schema for `ShopAssetSchema.givenContent`. Represents the `ShopAssetGivenContent` interface in `models/shop.ts`.
+ */
+const GivenContentSchema = new mongoose.Schema({
+    contentType: {
+        type: String,
+        enum: ['item', 'food', 'igc', 'monthlyPass']
+    },
+    content: String,
+    amount: Number
+});
+
+/**
  * ShopAsset schema. Represents closely to the `ShopAsset` interface in `models/shop.ts`.
  */
 export const ShopAssetSchema = new mongoose.Schema({
@@ -53,14 +65,7 @@ export const ShopAssetSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.Mixed,
         default: 'none'
     },
-    givenContent: {
-        contentType: {
-            type: String,
-            enum: ['item', 'food', 'igc', 'monthlyPass']
-        },
-        content: String,
-        amount: Number
-    }
+    givenContents: [GivenContentSchema]
 });
 
 /**
@@ -107,9 +112,5 @@ export const ShopAssetPurchaseSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.Mixed,
         default: 'never'
     },
-    givenContent: {
-        contentType: String,
-        content: String,
-        amount: Number
-    }
+    givenContents: [GivenContentSchema]
 })

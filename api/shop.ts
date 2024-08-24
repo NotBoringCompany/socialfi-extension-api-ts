@@ -96,7 +96,7 @@ export const getShop = async (): Promise<ReturnValue> => {
                 effectDuration: asset.effectDuration,
                 refreshIntervalData: asset.refreshIntervalData,
                 levelRequirement: asset.levelRequirement,
-                givenContent: asset.givenContent,
+                givenContents: asset.givenContents,
                 currencyConversionData,
                 purchasableWith
             });
@@ -217,7 +217,7 @@ export const addShopAssets = async (assets: ShopAsset[]): Promise<void> => {
             effectDuration: asset.effectDuration,
             refreshIntervalData: asset.refreshIntervalData,
             levelRequirement: asset.levelRequirement,
-            givenContent: asset.givenContent
+            givenContents: asset.givenContents
         }));
 
         await ShopAssetModel.insertMany(shopAssets);
@@ -268,7 +268,10 @@ export const purchaseShopAsset = async (
         $pull: {},
         $inc: {},
         $set: {},
-        $push: {}
+        $push: {
+            'inventory.items': { $each: [] },
+            'inventory.foods': { $each: [] },
+        }
     }
 
     const shopAssetPurchaseUpdateOperations = {
@@ -429,8 +432,8 @@ export const purchaseShopAsset = async (
                     confirmationAttempt = ShopAssetPurchaseConfirmationAttemptType.NO_VALID_TX;
                 } else if (verificationMessage.includes('Value mismatch')) {
                     confirmationAttempt = ShopAssetPurchaseConfirmationAttemptType.PAYMENT_TOO_LOW;
-                } else if (verificationMessage.includes('Item mismatch')) {
-                    confirmationAttempt = ShopAssetPurchaseConfirmationAttemptType.ITEM_MISMATCH;
+                } else if (verificationMessage.includes('Asset mismatch')) {
+                    confirmationAttempt = ShopAssetPurchaseConfirmationAttemptType.ASSET_MISMATCH;
                 } else if (verificationMessage.includes('User not found')) {
                     confirmationAttempt = ShopAssetPurchaseConfirmationAttemptType.USER_NOT_FOUND;
                 } else if (verificationMessage.includes('API error')) {
@@ -464,7 +467,7 @@ export const purchaseShopAsset = async (
                     },
                     purchaseTimestamp: Math.floor(Date.now() / 1000),
                     effectExpiration: 'never',
-                    givenContent: shopAsset.givenContent
+                    givenContents: shopAsset.givenContents
                 });
 
                 return {
@@ -510,66 +513,69 @@ export const purchaseShopAsset = async (
             }
         }
 
-        // check if the asset is an item
-        if (shopAsset.givenContent.content === 'item') {
-            // add the item to the user's inventory
-            const existingItemIndex = (user.inventory?.items as Item[]).findIndex(i => i.type === asset);
+        // loop through each of the `givenContents` and give the user the appropriate asset.
+        for (const givenContent of shopAsset.givenContents) {
+            // check if the asset is an item
+            if (givenContent.contentType === 'item') {
+                // add the item to the user's inventory
+                const existingItemIndex = (user.inventory?.items as Item[]).findIndex(i => i.type === asset);
 
-            if (existingItemIndex !== -1) {
-                userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = amount;
-            } else {
-                userUpdateOperations.$push['inventory.items'] = {
-                    type: asset,
-                    amount,
-                    totalAmountConsumed: 0,
-                    weeklyAmountConsumed: 0
-                };
-            }
-        } else if (shopAsset.givenContent.contentType === 'food') {
-            // add the food to the user's inventory
-            const existingFoodIndex = (user.inventory?.foods as Food[]).findIndex(f => f.type === asset);
+                if (existingItemIndex !== -1) {
+                    userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = amount;
+                } else {
+                    userUpdateOperations.$push['inventory.items'].$each.push({
+                        type: asset,
+                        amount,
+                        totalAmountConsumed: 0,
+                        weeklyAmountConsumed: 0
+                    });
+                }
+            } else if (givenContent.contentType === 'food') {
+                // add the food to the user's inventory
+                const existingFoodIndex = (user.inventory?.foods as Food[]).findIndex(f => f.type === asset);
 
-            if (existingFoodIndex !== -1) {
-                userUpdateOperations.$inc[`inventory.foods.${existingFoodIndex}.amount`] = amount;
-            } else {
-                userUpdateOperations.$push['inventory.foods'] = { type: asset, amount };
-            }
-        } else if (shopAsset.givenContent.contentType === 'igc') {
-            switch (shopAsset.givenContent.content) {
-                case 'xCookies':
-                    // add the xCookies to the user's inventory
-                    userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = shopAsset.givenContent.amount;
+                if (existingFoodIndex !== -1) {
+                    userUpdateOperations.$inc[`inventory.foods.${existingFoodIndex}.amount`] = amount;
+                } else {
+                    userUpdateOperations.$push['inventory.foods'].$each.push({ type: asset, amount });
+                }
+            } else if (givenContent.contentType === 'igc') {
+                switch (givenContent.content) {
+                    case 'xCookies':
+                        // add the xCookies to the user's inventory
+                        userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = givenContent.amount;
 
-                    // check if the user already has the source `SHOP_PURCHASE` in their extended xCookie data.
-                    // if yes, increment the amount, if not, add it to the user's extended xCookie data.
-                    const existingSourceIndex = (user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(d => d.source === XCookieSource.SHOP_PURCHASE);
+                        // check if the user already has the source `SHOP_PURCHASE` in their extended xCookie data.
+                        // if yes, increment the amount, if not, add it to the user's extended xCookie data.
+                        const existingSourceIndex = (user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(d => d.source === XCookieSource.SHOP_PURCHASE);
 
-                    if (existingSourceIndex !== -1) {
-                        userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${existingSourceIndex}.xCookies`] = shopAsset.givenContent.amount;
-                    } else {
-                        userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = {
-                            source: XCookieSource.SHOP_PURCHASE,
-                            xCookies: shopAsset.givenContent.amount
+                        if (existingSourceIndex !== -1) {
+                            userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${existingSourceIndex}.xCookies`] = givenContent.amount;
+                        } else {
+                            userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = {
+                                source: XCookieSource.SHOP_PURCHASE,
+                                xCookies: givenContent.amount
+                            }
                         }
-                    }
-                case 'diamonds':
-                    // TBD. not implemented yet.
-                    return {
-                        status: Status.ERROR,
-                        message: `(purchaseShopAsset) Diamonds not implemented yet.`
-                    }
-                // other currencies also TBD. not implemented yet.
-                default:
-                    return {
-                        status: Status.ERROR,
-                        message: `(purchaseShopAsset) Other currencies not implemented yet.`
-                    }
-            }
-        } else if (shopAsset.givenContent.contentType === 'monthlyPass') {
-            // TBD. not implemented yet.
-            return {
-                status: Status.ERROR,
-                message: `(purchaseShopAsset) Monthly pass not implemented yet.`
+                    case 'diamonds':
+                        // TBD. not implemented yet.
+                        return {
+                            status: Status.ERROR,
+                            message: `(purchaseShopAsset) Diamonds not implemented yet.`
+                        }
+                    // other currencies also TBD. not implemented yet.
+                    default:
+                        return {
+                            status: Status.ERROR,
+                            message: `(purchaseShopAsset) Other currencies not implemented yet.`
+                        }
+                }
+            } else if (givenContent.contentType === 'monthlyPass') {
+                // TBD. not implemented yet.
+                return {
+                    status: Status.ERROR,
+                    message: `(purchaseShopAsset) Monthly pass not implemented yet.`
+                }
             }
         }
 
@@ -658,7 +664,7 @@ export const purchaseShopAsset = async (
                 },
                 purchaseTimestamp: Math.floor(Date.now() / 1000),
                 effectExpiration: effectExpiration(),
-                givenContent: shopAsset.givenContent
+                givenContents: shopAsset.givenContents
             })
         ])
 
