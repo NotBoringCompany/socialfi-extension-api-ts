@@ -1,11 +1,10 @@
 import { Food, FoodType } from '../models/food';
-import { ShopAsset, ShopAssetPurchaseConfirmationAttemptType, ShopAssetType, ShopPackageType } from '../models/shop';
+import { ShopAsset, ShopAssetCurrencyConversionData, ShopAssetExtendedPricing, ShopAssetPurchaseConfirmationAttemptType, ShopAssetType, ShopPackageType } from '../models/shop';
 import { ReturnValue, Status } from '../utils/retVal';
-import { shop } from '../utils/shop';
 import { ShopAssetModel, ShopAssetPurchaseModel, UserModel } from '../utils/constants/db';
 import { Item, ItemType } from '../models/item';
 import { generateObjectId } from '../utils/crypto';
-import { verifyTONTransaction } from './web3';
+import { fetchIAPTickers, verifyTONTransaction } from './web3';
 import { TxParsedMessage } from '../models/web3';
 
 /**
@@ -13,7 +12,7 @@ import { TxParsedMessage } from '../models/web3';
  */
 export const getShop = async (): Promise<ReturnValue> => {
     try {
-        const shopAssets = await ShopAssetModel.find({}).lean();
+        const shopAssets = await ShopAssetModel.find({}).lean() as ShopAsset[];
 
         if (!shopAssets || shopAssets.length === 0) {
             return {
@@ -22,29 +21,103 @@ export const getShop = async (): Promise<ReturnValue> => {
             }
         }
 
+        // for each asset marked with `usd`, include the currency conversion rate to: TON and NOT (for now).
+        const extendedShopAssets: ShopAssetExtendedPricing[] = [];
+
+        for (const asset of shopAssets) {
+            const currencyConversionData: ShopAssetCurrencyConversionData[] = [];
+
+            // if the asset contains a price in USD, fetch the conversion rates to TON and NOT (for now; add more if needed in the future).
+            if (asset.price.usd > 0) {
+                const { status, data } = await fetchIAPTickers();
+
+                if (status !== Status.SUCCESS) {
+                    // if an error occurs, it's most likely due to an API error (such as rate limiting).
+                    // in this case, just return the asset as is without the conversion data (empty array).
+                    // in the frontend, this asset SHOULD be marked as "unavailable" for purchase until the API is back up.
+                    extendedShopAssets.push({
+                        assetName: asset.assetName,
+                        assetType: asset.assetType,
+                        price: {
+                            xCookies: asset.price.xCookies,
+                            usd: asset.price.usd
+                        },
+                        expirationDate: asset.expirationDate,
+                        stockData: asset.stockData,
+                        purchaseLimit: asset.purchaseLimit,
+                        effectDuration: asset.effectDuration,
+                        refreshIntervalData: asset.refreshIntervalData,
+                        levelRequirement: asset.levelRequirement,
+                        givenContent: asset.givenContent,
+                        currencyConversionData,
+                    });
+                }
+
+                // if the API is up, proceed with fetching the conversion rates.
+                const { TONTicker, NOTTicker } = data;
+
+                // calculate the price in TON and NOT.
+                const priceInTON = asset.price.usd * TONTicker;
+                const priceInNOT = asset.price.usd * NOTTicker;
+
+                // add the conversion data to the array.
+                currencyConversionData.push(
+                    {
+                        actualPrice: priceInTON,
+                        chosenCurrency: 'TON',
+                       
+                    },
+                    {
+                        actualPrice: priceInNOT,
+                        chosenCurrency: 'NOT',
+                    }
+                )
+
+                // push the asset to the extendedShopAssets array.
+                extendedShopAssets.push({
+                    assetName: asset.assetName,
+                    assetType: asset.assetType,
+                    price: {
+                        xCookies: asset.price.xCookies,
+                        usd: asset.price.usd
+                    },
+                    expirationDate: asset.expirationDate,
+                    stockData: asset.stockData,
+                    purchaseLimit: asset.purchaseLimit,
+                    effectDuration: asset.effectDuration,
+                    refreshIntervalData: asset.refreshIntervalData,
+                    levelRequirement: asset.levelRequirement,
+                    givenContent: asset.givenContent,
+                    currencyConversionData,
+                });
+            // otherwise, just push the asset to the extendedShopAssets array without the conversion data.
+            // this is because the asset is only purchasable with xCookies.
+            } else {
+                extendedShopAssets.push({
+                    assetName: asset.assetName,
+                    assetType: asset.assetType,
+                    price: {
+                        xCookies: asset.price.xCookies,
+                        usd: asset.price.usd
+                    },
+                    expirationDate: asset.expirationDate,
+                    stockData: asset.stockData,
+                    purchaseLimit: asset.purchaseLimit,
+                    effectDuration: asset.effectDuration,
+                    refreshIntervalData: asset.refreshIntervalData,
+                    levelRequirement: asset.levelRequirement,
+                    givenContent: asset.givenContent,
+                    currencyConversionData,
+                });
+            }
+        }
+
         return {
             status: Status.SUCCESS,
             message: `(getShop) Shop fetched.`,
             data: {
                 shop: {
-                    // exclude `__v` and `_id` from the response
-                    assets: shopAssets.map(asset => {
-                        return {
-                            assetName: asset.assetName,
-                            assetType: asset.assetType,
-                            price: {
-                                xCookies: asset.price.xCookies,
-                                usd: asset.price.usd
-                            },
-                            expirationDate: asset.expirationDate,
-                            stockData: asset.stockData,
-                            purchaseLimit: asset.purchaseLimit,
-                            effectDuration: asset.effectDuration,
-                            refreshIntervalData: asset.refreshIntervalData,
-                            levelRequirement: asset.levelRequirement,
-                            givenContent: asset.givenContent
-                        }
-                    })
+                    assets: extendedShopAssets
                 }
             }
         }
@@ -55,6 +128,8 @@ export const getShop = async (): Promise<ReturnValue> => {
         }
     }
 }
+
+getShop();
 
 // export const deleteShopFromDB = async (): Promise<void> => {
 //     try {

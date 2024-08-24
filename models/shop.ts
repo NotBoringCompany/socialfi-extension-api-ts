@@ -46,7 +46,7 @@ export interface ShopAsset {
  */
 export interface ShopAssetExtendedPricing extends ShopAsset {
     // the currency conversion of the asset into different currencies as required to execute purchases in the frontend.
-    currencyConversionData: ShopAssetCurrencyConversionData[];
+    currencyConversionData?: ShopAssetCurrencyConversionData[];
 }
 
 /**
