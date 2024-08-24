@@ -112,6 +112,8 @@ export const getShop = async (): Promise<ReturnValue> => {
             }
         }
 
+        console.log(`assets: ${JSON.stringify(extendedShopAssets, null, 2)}`);
+
         return {
             status: Status.SUCCESS,
             message: `(getShop) Shop fetched.`,
@@ -206,6 +208,36 @@ getShop();
 //         console.error(`(transferShopToDB) ${err.message}`);
 //     }
 // }
+
+/**
+ * Adds one or more shop assets to the database.
+ * 
+ * NOTE: No sanitization checks or duplicate asset checks here, so proceed with caution.
+ */
+export const addShopAssets = async (assets: ShopAsset[]): Promise<void> => {
+    try {
+        // convert into shop asset models and insert many
+        const shopAssets = assets.map(asset => new ShopAssetModel({
+            _id: generateObjectId(),
+            assetName: asset.assetName,
+            assetType: asset.assetType,
+            price: asset.price,
+            expirationDate: asset.expirationDate,
+            stockData: asset.stockData,
+            purchaseLimit: asset.purchaseLimit,
+            effectDuration: asset.effectDuration,
+            refreshIntervalData: asset.refreshIntervalData,
+            levelRequirement: asset.levelRequirement,
+            givenContent: asset.givenContent
+        }));
+
+        await ShopAssetModel.insertMany(shopAssets);
+
+        console.log(`(addShopAssets) Shop assets added to database.`);
+    } catch (err: any) {
+        console.error(`(addShopAssets) ${err.message}`);
+    }
+}
 
 
 /**

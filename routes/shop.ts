@@ -1,5 +1,5 @@
 import express from 'express';
-import { getShop, purchaseShopAsset } from '../api/shop';
+import { addShopAssets, getShop, purchaseShopAsset } from '../api/shop';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { allowMixpanel, mixpanel } from '../utils/mixpanel';
@@ -12,6 +12,7 @@ import { BitOrbType } from '../models/bitOrb';
 import { incrementProgressionByType } from '../api/quest';
 import { QuestRequirementType } from '../models/quest';
 import { TerraCapsulatorType } from '../models/terraCapsulator';
+import { authMiddleware } from '../middlewares/auth';
 
 const router = express.Router();
 
@@ -31,6 +32,24 @@ router.get('/get_shop', async (_, res) => {
         })
     }
 });
+
+router.post('/add_shop_assets', authMiddleware(3), async (req, res) => {
+    const { assets } = req.body;
+
+    try {
+        await addShopAssets(assets);
+
+        return res.status(200).json({
+            status: Status.SUCCESS,
+            message: `Successfully added ${assets.length} assets to the shop.`
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
 
 router.post('/purchase_shop_asset', async (req, res) => {
     const { 
