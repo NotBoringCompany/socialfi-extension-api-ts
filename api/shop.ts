@@ -142,6 +142,7 @@ export const getShop = async (): Promise<ReturnValue> => {
 //                     xCookies: asset.price.xCookies,
 //                     usd: 0
 //                 },
+//                 availablePaymentMethods: [ShopAssetIGCPaymentMethod.X_COOKIES],
 //                 expirationDate: 'never',
 //                 stockData: {
 //                     totalStock: 'unlimited',
@@ -154,11 +155,11 @@ export const getShop = async (): Promise<ReturnValue> => {
 //                     lastRefreshed: Math.floor(Date.now() / 1000),
 //                 },
 //                 levelRequirement: 'none',
-//                 givenContent: {
+//                 givenContents: [{
 //                     contentType: 'item',
 //                     content: asset.type,
 //                     amount: 1
-//                 }
+//                 }]
 //             });
 
 //             await shopAsset.save();
@@ -173,6 +174,7 @@ export const getShop = async (): Promise<ReturnValue> => {
 //                     xCookies: asset.price.xCookies,
 //                     usd: 0
 //                 },
+//                 availablePaymentMethods: [ShopAssetIGCPaymentMethod.X_COOKIES],
 //                 expirationDate: 'never',
 //                 purchaseLimit: 'unlimited',
 //                 effectDuration: 'One Time',
@@ -181,11 +183,11 @@ export const getShop = async (): Promise<ReturnValue> => {
 //                     lastRefreshed: Math.floor(Date.now() / 1000),
 //                 },
 //                 levelRequirement: 'none',
-//                 givenContent: {
+//                 givenContents: [{
 //                     contentType: 'food',
 //                     content: asset.type,
 //                     amount: 1
-//                 }
+//                 }]
 //             });
 
 //             await shopAsset.save();
