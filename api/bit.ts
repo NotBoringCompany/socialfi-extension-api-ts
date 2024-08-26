@@ -580,7 +580,7 @@ export const feedBit = async (twitterId: string, bitId: number, foodType: FoodTy
 export const depleteEnergy = async (): Promise<void> => {
     try {
         // only deplete energy for bits that are placed in an island
-        const bits = await BitModel.find({ placedIslandId: { $ne: 0 } }).lean();
+        const bits = await BitModel.find({ placedIslandId: { $ne: 0 }, 'farmingStats.currentEnergy': { $gt: 0} }).lean();
 
         if (bits.length === 0 || !bits) {
             console.log(`(depleteEnergy) No bits found.`);
@@ -812,6 +812,7 @@ export const depleteEnergy = async (): Promise<void> => {
         console.error(`(depleteEnergy) Error: ${err.message}`);
     }
 };
+depleteEnergy();
 
 /**
  * (User) Evolves a bit to the next level (levelling it up).
