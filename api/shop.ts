@@ -558,11 +558,11 @@ export const purchaseShopAsset = async (
                 const existingItemIndex = (user.inventory?.items as Item[]).findIndex(i => i.type === givenContent.content);
 
                 if (existingItemIndex !== -1) {
-                    userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = amount;
+                    userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = givenContent.amount;
                 } else {
                     userUpdateOperations.$push['inventory.items'].$each.push({
                         type: givenContent.content,
-                        amount,
+                        amount: givenContent.amount,
                         totalAmountConsumed: 0,
                         weeklyAmountConsumed: 0
                     });
@@ -572,9 +572,9 @@ export const purchaseShopAsset = async (
                 const existingFoodIndex = (user.inventory?.foods as Food[]).findIndex(f => f.type === givenContent.content);
 
                 if (existingFoodIndex !== -1) {
-                    userUpdateOperations.$inc[`inventory.foods.${existingFoodIndex}.amount`] = amount;
+                    userUpdateOperations.$inc[`inventory.foods.${existingFoodIndex}.amount`] = givenContent.amount;
                 } else {
-                    userUpdateOperations.$push['inventory.foods'].$each.push({ type: givenContent.content, amount });
+                    userUpdateOperations.$push['inventory.foods'].$each.push({ type: givenContent.content, amount: givenContent.amount });
                 }
             } else if (givenContent.contentType === 'igc') {
                 switch (givenContent.content) {

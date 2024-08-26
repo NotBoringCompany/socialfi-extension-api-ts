@@ -329,11 +329,11 @@ export const verifyTONTransaction = async (
                         const existingItemIndex = (user.inventory?.items as Item[]).findIndex(i => i.type === givenContent.content);
     
                         if (existingItemIndex !== -1) {
-                            userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = amount;
+                            userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = givenContent.amount;
                         } else {
                             userUpdateOperations.$push['inventory.items'].$each.push({
                                 type: givenContent.content, 
-                                amount,
+                                amount: givenContent.amount,
                                 totalAmountConsumed: 0,
                                 weeklyAmountConsumed: 0
                             });
@@ -343,22 +343,22 @@ export const verifyTONTransaction = async (
                         const existingFoodIndex = (user.inventory?.foods as Food[]).findIndex(f => f.type === givenContent.content);
     
                         if (existingFoodIndex !== -1) {
-                            userUpdateOperations.$inc[`inventory.foods.${existingFoodIndex}.amount`] = amount;
+                            userUpdateOperations.$inc[`inventory.foods.${existingFoodIndex}.amount`] = givenContent.amount;
                         } else {
-                            userUpdateOperations.$push['inventory.foods'].$each.push({ type: givenContent.content, amount });
+                            userUpdateOperations.$push['inventory.foods'].$each.push({ type: givenContent.content, amount: givenContent.amount });
                         }
                     } else if (givenContent.contentType === 'igc') {
                         // check if xCookies.
                         if (givenContent.content === 'xCookies') {
                             // add the xCookies to the user's currentXCookies
-                            userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = amount;
+                            userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = givenContent.amount;
                             // check if the `extendedXCookieData` contains the source SHOP_PURCHASE. if not, add it. if yes, increment the amount.
                             const shopPurchaseIndex = (user.inventory?.xCookieData?.extendedXCookieData as ExtendedXCookieData[]).findIndex(data => data.source === XCookieSource.SHOP_PURCHASE);
     
                             if (shopPurchaseIndex !== -1) {
-                                userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${shopPurchaseIndex}.xCookies`] = amount;
+                                userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${shopPurchaseIndex}.xCookies`] = givenContent.amount;
                             } else {
-                                userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = { source: XCookieSource.SHOP_PURCHASE, xCookies: amount };
+                                userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = { source: XCookieSource.SHOP_PURCHASE, xCookies: givenContent.amount };
                             }
                         } else if (givenContent.content === 'diamonds') {
                             // NOT IMPLEMENTED YET. TBD.

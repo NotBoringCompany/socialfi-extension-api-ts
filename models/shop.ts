@@ -216,7 +216,7 @@ export interface ShopAssetPurchaseBlockchainData {
     // the chain the payment was done on (e.g. 'ethereum', 'tron', 'bsc', etc.)
     // also available in number/hex format.
     chain: string | number;
-    // the tx hash (or signed BOC for TON payments) of the payment
+    // the tx hash (for TON payments: the converted hash from the signed BOC) of the payment
     txHash: string;
     // the parsed payload message of the transaction
     // this is not required but highly recommended to ensure that the payment contents are correct.
