@@ -761,8 +761,6 @@ export const depleteEnergy = async (): Promise<void> => {
                                     'bitStatsModifiers.earningRateModifiers.$[elem].value':
                                         earningRateModifier.value,
                                 },
-                                // decrement current energy by current energy - new energy (i.e. actual depletion rate)
-                                $inc: { 'farmingStats.currentEnergy': -(currentEnergy - newEnergy) },
                             },
                             arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }],
                         },
