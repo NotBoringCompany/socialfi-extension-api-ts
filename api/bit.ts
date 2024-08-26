@@ -812,7 +812,6 @@ export const depleteEnergy = async (): Promise<void> => {
         console.error(`(depleteEnergy) Error: ${err.message}`);
     }
 };
-depleteEnergy();
 
 /**
  * (User) Evolves a bit to the next level (levelling it up).
