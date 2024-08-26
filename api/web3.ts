@@ -88,7 +88,7 @@ export const verifyTONTransaction = async (
     try {
         const txHash = await bocToTxHash(boc).catch(async err => {
             // if an error occurs here, it's most likely due to the API. return an API error.
-            console.error(`(verifyTONTransaction) Error: ${err.message}`);
+            console.error(`(verifyTONTransaction) Error most likely from API: ${err.message}`);
 
             // if reverification, then update the purchase's `blockchainData.confirmationAttempts` to include the error `apiError`
             if (reverification) {
@@ -121,6 +121,7 @@ export const verifyTONTransaction = async (
         })
 
         console.log(`tx hash: ${txHash}`);
+        console.log(`Address to verify transactions: ${address}`);
 
         // `getTransactions` will return an array of transactions, even if we're only fetching one transaction
         const txs = await TON_WEB.provider.getTransactions(
@@ -131,7 +132,7 @@ export const verifyTONTransaction = async (
             txHash as string
         ).catch(async err => {
             // if an error occurs here, it's most likely due to the API. return an API error.
-            console.error(`(verifyTONTransaction) Error: ${err.message}`);
+            console.error(`(verifyTONTransaction) Error getting user's transactions: ${err.message}`);
 
             // if reverification, then update the purchase's `blockchainData.confirmationAttempts` to include the error `apiError`
             if (reverification) {
