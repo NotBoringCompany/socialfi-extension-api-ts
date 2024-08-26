@@ -210,11 +210,11 @@ export const verifyTONTransaction = async (
             if (parsedMessageCost !== (parseInt(txValue) / Math.pow(10, 9))) {
                 console.error(`(verifyTONTransaction) Value mismatch. Parsed message cost: ${parsedMessageCost}, tx value: ${txValue / Math.pow(10, 9)}`);
 
-                // if reverification, then update the purchase's `blockchainData.confirmationAttempts` to include the error `noValidTx`
+                // if reverification, then update the purchase's `blockchainData.confirmationAttempts` to include the error `PAYMENT_MISMATCH`
                 if (reverification) {
                     await ShopAssetPurchaseModel.findByIdAndUpdate(purchaseId, {
                         $push: {
-                            'blockchainData.confirmationAttempts': ShopAssetPurchaseConfirmationAttemptType.NO_VALID_TX
+                            'blockchainData.confirmationAttempts': ShopAssetPurchaseConfirmationAttemptType.PAYMENT_MISMATCH
                         },
                         'blockchainData.txPayload': txParsedMessage
                     });
@@ -222,7 +222,7 @@ export const verifyTONTransaction = async (
 
                 return {
                     status: Status.ERROR,
-                    message: `(verifyTONTransaction) Value mismatch. Currency paid: ${txParsedMessage.curr}. Parsed message cost: ${parsedMessageCost}, tx value: ${txValue}`,
+                    message: `(verifyTONTransaction) Value mismatch. Currency paid: ${txParsedMessage.curr}. Parsed message cost: ${parsedMessageCost}, tx value: ${(parseInt(txValue) / Math.pow(10, 9))}`,
                     data: {
                         txPayload: txParsedMessage ?? null
                     }
