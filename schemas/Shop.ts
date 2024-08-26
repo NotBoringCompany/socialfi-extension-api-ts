@@ -11,6 +11,8 @@ const GivenContentSchema = new mongoose.Schema({
     },
     content: String,
     amount: Number
+}, {
+    _id: false
 });
 
 /**
