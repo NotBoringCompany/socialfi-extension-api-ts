@@ -952,17 +952,11 @@ export const checkWeeklyKOSRewards = async (): Promise<void> => {
             });
 
             // get the eligible weekly rewards
-            let { points, xCookies, bitOrbI, bitOrbII, terraCapI, terraCapII, raftBooster60 } = KOS_WEEKLY_BENEFITS(
+            const { points, xCookies, bitOrbI, bitOrbII, terraCapI, terraCapII, raftBooster60 } = KOS_WEEKLY_BENEFITS(
                 validKeysMetadata,
                 validKeychains.length,
                 validSuperiorKeychains.length
             );
-
-            // TEMPORARY ADJUST SOME USERS REWARDS
-            if (user.twitterId === '1262952376488656898') {
-                // twitterUsername: TheArchitekt_ Affecting for 2 Weeks Until 26th August
-                xCookies = 155;
-            }
 
             // check if the user exists in the `KOSClaimableWeeklyRewards` collection.
             // if it doesn't, add a new entry. else, update the entry.
