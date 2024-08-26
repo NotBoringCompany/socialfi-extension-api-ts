@@ -266,7 +266,7 @@ export interface ShopAssetPurchaseTotalCostData {
     // if `currency` is xCookies, then `actualCurrency` should be xCookies.
     // however, if currency is USD, then `actualCurrency` can be, for instance, TON, NOT or Telegram Stars,
     // because USD is just the base currency which can be converted to other final (actual) currencies.
-    actualCurrency: 'xCookies' | string;
+    actualCurrency: ShopAssetPaymentMethod | string;
 }
 
 // all available shop assets

@@ -489,7 +489,7 @@ export const purchaseShopAsset = async (
                     amount,
                     totalCost: {
                         baseCost: shopAsset.price.usd * amount,
-                        baseCurrency: payment,
+                        baseCurrency: 'usd',
                         actualCost: null,
                         actualCurrency: null
                     },
@@ -688,7 +688,7 @@ export const purchaseShopAsset = async (
                 amount,
                 totalCost: {
                     baseCost: totalCost,
-                    baseCurrency: payment,
+                    baseCurrency: payment in ShopAssetIGCPaymentMethod ? 'xCookies' : 'usd',
                     // include the txPayload cost only if payment is NOT via an in-game currency.
                     actualCost: !(payment in ShopAssetIGCPaymentMethod) ? txPayload?.cost : totalCost,
                     // include the txPayload currency only if payment is NOT via an in-game currency, else set equal to baseCurrency.
