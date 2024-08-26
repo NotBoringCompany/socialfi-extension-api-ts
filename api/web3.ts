@@ -167,6 +167,25 @@ export const verifyTONTransaction = async (
         // fetch the transaction (bc it's in an array, we simply get the first index)
         const firstTx = txs[0];
 
+        // if transaction is not found, then return an error
+        if (!firstTx) {
+            console.error(`(verifyTONTransaction) Transaction not found. Address: ${address}, BOC: ${boc}`);
+
+            // if reverification, then update the purchase's `blockchainData.confirmationAttempts` to include the error `noValidTx`
+            if (reverification) {
+                await ShopAssetPurchaseModel.findByIdAndUpdate(purchaseId, {
+                    $push: {
+                        'blockchainData.confirmationAttempts': ShopAssetPurchaseConfirmationAttemptType.NO_VALID_TX
+                    }
+                });
+            }
+
+            return {
+                status: Status.ERROR,
+                message: `(verifyTONTransaction) Transaction not found. Address: ${address}, BOC: ${boc}`
+            }
+        }
+
         console.log(firstTx);
 
         // set `isBounceable` to false to match the address format in TONKeeper
