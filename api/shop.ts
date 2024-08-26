@@ -641,8 +641,9 @@ export const purchaseShopAsset = async (
         }
 
         // update the user's inventory and add the purchase to the ShopAssetPurchases collection
+        // divide the update operations into $set + $inc and $push and $pull for UserModel
         await Promise.all([
-            UserModel.updateOne({ twitterId }, userUpdateOperations),
+            UserModel.findOneAndUpdate({ twitterId }, userUpdateOperations),
             ShopAssetPurchaseModel.create({
                 _id: generateObjectId(),
                 userId: user._id,
@@ -668,7 +669,7 @@ export const purchaseShopAsset = async (
                 effectExpiration: effectExpiration(),
                 givenContents: shopAsset.givenContents
             })
-        ])
+        ]);
 
         return {
             status: Status.SUCCESS,
