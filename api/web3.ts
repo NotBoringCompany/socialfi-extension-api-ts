@@ -245,7 +245,7 @@ export const verifyTONTransaction = async (
         // finally, check if the items given to the user match the items purchased (by checking the `txParsedMessage.asset` compared to the `assetName`)
         // and if the amount of the asset given to the user matches the amount purchased (by checking the `txParsedMessage.amt` compared to the `amount`)
         if (txParsedMessage.asset.toLowerCase() !== assetName.toLowerCase() || txParsedMessage.amt !== amount) {
-            console.error(`(verifyTONTransaction) Item mismatch. Parsed message asset: ${txParsedMessage.asset}, purchase asset: ${assetName}. Parsed message amount: ${txParsedMessage.amt}, purchase amount: ${amount}`);
+            console.error(`(verifyTONTransaction) Asset mismatch. Parsed message asset: ${txParsedMessage.asset}, purchase asset: ${assetName}. Parsed message amount: ${txParsedMessage.amt}, purchase amount: ${amount}`);
 
             // if reverification, then update the purchase's `blockchainData.confirmationAttempts` to include the error `itemMismatch`
             if (reverification) {
@@ -259,7 +259,7 @@ export const verifyTONTransaction = async (
 
             return {
                 status: Status.ERROR,
-                message: `(verifyTONTransaction) Item mismatch. Parsed message asset: ${txParsedMessage.asset}, purchase asset: ${assetName}. Parsed message amount: ${txParsedMessage.amt}, purchase amount: ${amount}`,
+                message: `(verifyTONTransaction) Asset mismatch. Parsed message asset: ${txParsedMessage.asset}, purchase asset: ${assetName}. Parsed message amount: ${txParsedMessage.amt}, purchase amount: ${amount}`,
                 data: {
                     txPayload: txParsedMessage ?? null
                 }
