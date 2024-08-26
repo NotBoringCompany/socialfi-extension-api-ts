@@ -521,6 +521,8 @@ export const purchaseShopAsset = async (
                 }
             }
 
+            console.log(`(purchaseShopAsset) Transaction verified for User ${twitterId}. Moving on to asset logic.`);
+
             // at this point, if verification is successful, no need to deduct anything currency-wise because the user has already paid for the asset.
             // simply continue and get out of the if-else block.
         } else if (payment === ShopAssetExternalPaymentMethod.TELEGRAM_STARS) {
@@ -672,6 +674,8 @@ export const purchaseShopAsset = async (
                 await ShopAssetModel.updateOne({ assetName: asset }, shopAssetPurchaseUpdateOperations);
             }
         }
+
+        console.log(`(purchaseShopAsset) User ${twitterId} update opeartions: ${JSON.stringify(userUpdateOperations, null, 2)}`);
 
         // update the user's inventory and add the purchase to the ShopAssetPurchases collection
         // divide the update operations into $set + $inc and $push and $pull for UserModel

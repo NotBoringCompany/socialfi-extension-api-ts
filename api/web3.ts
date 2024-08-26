@@ -408,8 +408,20 @@ export const verifyTONTransaction = async (
                     }
                 }
 
-                // update the user's data
-                await UserModel.findByIdAndUpdate(user._id, userUpdateOperations);
+                // update the user's data (divide by push and pull to ensure that the data is updated correctly)
+                // check if $inc is empty. if not, call `findByIdAndUpdate` with $inc.
+                if (Object.keys(userUpdateOperations.$inc).length > 0) {
+                    await UserModel.findByIdAndUpdate(user._id, {
+                        $inc: userUpdateOperations.$inc,
+                    });
+                }
+
+                // check if $push is empty. if not, call `findByIdAndUpdate` with $push.
+                if (Object.keys(userUpdateOperations.$push).length > 0) {
+                    await UserModel.findByIdAndUpdate(user._id, {
+                        $push: userUpdateOperations.$push
+                    });
+                }
             }
 
             await ShopAssetPurchaseModel.findByIdAndUpdate(purchaseId, {
@@ -422,6 +434,8 @@ export const verifyTONTransaction = async (
                 'blockchainData.actualCurrency': txParsedMessage.curr
             });
         }
+
+        console.log(`(verifyTONTransaction) Transaction verified successfully for address: ${address}.`);
 
         return {
             status: Status.SUCCESS,
