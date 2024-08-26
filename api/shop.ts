@@ -466,7 +466,7 @@ export const purchaseShopAsset = async (
                 )) {
                     confirmationAttempt = ShopAssetPurchaseConfirmationAttemptType.NO_VALID_TX;
                 } else if (verificationMessage.includes('Value mismatch')) {
-                    confirmationAttempt = ShopAssetPurchaseConfirmationAttemptType.PAYMENT_TOO_LOW;
+                    confirmationAttempt = ShopAssetPurchaseConfirmationAttemptType.PAYMENT_MISMATCH;
                 } else if (verificationMessage.includes('Asset mismatch')) {
                     confirmationAttempt = ShopAssetPurchaseConfirmationAttemptType.ASSET_MISMATCH;
                 } else if (verificationMessage.includes('User not found')) {

@@ -192,7 +192,10 @@ export const verifyTONTransaction = async (
 
             return {
                 status: Status.ERROR,
-                message: `(verifyTONTransaction) Receiver address mismatch. Expected: ${TON_RECEIVER_ADDRESS}, got: ${receiverAddress}`
+                message: `(verifyTONTransaction) Receiver address mismatch. Expected: ${TON_RECEIVER_ADDRESS}, got: ${receiverAddress}`,
+                data: {
+                    txPayload: txParsedMessage ?? null
+                }
             }
         }
 
@@ -204,8 +207,8 @@ export const verifyTONTransaction = async (
 
             // 1 ton is equal to 10^9 nanotons
             // we divide by 10^9 to get the actual value in TON
-            if (parsedMessageCost !== txValue / Math.pow(10, 9)) {
-                console.error(`(verifyTONTransaction) Value mismatch. Parsed message cost: ${parsedMessageCost}, tx value: ${txValue}`);
+            if (parsedMessageCost !== (txValue / Math.pow(10, 9))) {
+                console.error(`(verifyTONTransaction) Value mismatch. Parsed message cost: ${parsedMessageCost}, tx value: ${txValue / Math.pow(10, 9)}`);
 
                 // if reverification, then update the purchase's `blockchainData.confirmationAttempts` to include the error `noValidTx`
                 if (reverification) {
@@ -219,7 +222,10 @@ export const verifyTONTransaction = async (
 
                 return {
                     status: Status.ERROR,
-                    message: `(verifyTONTransaction) Value mismatch. Currency paid: ${txParsedMessage.curr}. Parsed message cost: ${parsedMessageCost}, tx value: ${txValue}`
+                    message: `(verifyTONTransaction) Value mismatch. Currency paid: ${txParsedMessage.curr}. Parsed message cost: ${parsedMessageCost}, tx value: ${txValue}`,
+                    data: {
+                        txPayload: txParsedMessage ?? null
+                    }
                 }
             }
         /// TO DO!!!!!!!!!! IMPLEMENT OTHER CURRENCIES LIKE NOT, ETC HERE.
@@ -229,7 +235,10 @@ export const verifyTONTransaction = async (
             // in this case, throw an error because it's not developed yet.
             return {
                 status: Status.ERROR,
-                message: `(verifyTONTransaction) Currency is not TON. Currency: ${txParsedMessage.curr}`
+                message: `(verifyTONTransaction) Currency is not TON. Currency: ${txParsedMessage.curr}`,
+                data: {
+                    txPayload: txParsedMessage ?? null
+                }
             }
         }
 
@@ -250,7 +259,10 @@ export const verifyTONTransaction = async (
 
             return {
                 status: Status.ERROR,
-                message: `(verifyTONTransaction) Item mismatch. Parsed message asset: ${txParsedMessage.asset}, purchase asset: ${assetName}. Parsed message amount: ${txParsedMessage.amt}, purchase amount: ${amount}`
+                message: `(verifyTONTransaction) Item mismatch. Parsed message asset: ${txParsedMessage.asset}, purchase asset: ${assetName}. Parsed message amount: ${txParsedMessage.amt}, purchase amount: ${amount}`,
+                data: {
+                    txPayload: txParsedMessage ?? null
+                }
             }
         }
 
@@ -269,7 +281,10 @@ export const verifyTONTransaction = async (
                 console.error(`(verifyTONTransaction) Purchase not found. Address: ${address}, BOC: ${boc}, Purchase ID: ${purchaseId}`);
                 return {
                     status: Status.ERROR,
-                    message: `(verifyTONTransaction) Purchase not found. Purchase ID: ${purchaseId}`
+                    message: `(verifyTONTransaction) Purchase not found. Purchase ID: ${purchaseId}`,
+                    data: {
+                        txPayload: txParsedMessage ?? null
+                    }
                 }
             }
 
@@ -290,7 +305,10 @@ export const verifyTONTransaction = async (
                     console.error(`(verifyTONTransaction) User not found. User ID: ${purchaseData.userId}, BOC: ${boc}, Purchase ID: ${purchaseId}`);
                     return {
                         status: Status.ERROR,
-                        message: `(verifyTONTransaction) User not found. User ID: ${purchaseData.userId}`
+                        message: `(verifyTONTransaction) User not found. User ID: ${purchaseData.userId}`,
+                        data: {
+                            txPayload: txParsedMessage ?? null
+                        }
                     }
                 }
 
@@ -348,7 +366,10 @@ export const verifyTONTransaction = async (
     
                             return {
                                 status: Status.ERROR,
-                                message: `(verifyTONTransaction) Content not implemented yet. Content: ${givenContent.content}`
+                                message: `(verifyTONTransaction) Content not implemented yet. Content: ${givenContent.content}`,
+                                data: {
+                                    txPayload: txParsedMessage ?? null
+                                }
                             }
                         } else {
                             // NOT IMPLEMENTED YET (other IGCs). TBD.
@@ -356,7 +377,10 @@ export const verifyTONTransaction = async (
     
                             return {
                                 status: Status.ERROR,
-                                message: `(verifyTONTransaction) Content not implemented yet. Content: ${givenContent.content}`
+                                message: `(verifyTONTransaction) Content not implemented yet. Content: ${givenContent.content}`,
+                                data: {
+                                    txPayload: txParsedMessage ?? null
+                                }
                             }
                         }
                     } else if (givenContent.contentType === 'monthlyPass') {
@@ -365,7 +389,10 @@ export const verifyTONTransaction = async (
     
                         return {
                             status: Status.ERROR,
-                            message: `(verifyTONTransaction) Content not implemented yet. Content: ${givenContent.content}`
+                            message: `(verifyTONTransaction) Content not implemented yet. Content: ${givenContent.content}`,
+                            data: {
+                                txPayload: txParsedMessage ?? null
+                            }
                         }
                     } else {
                         // NOT IMPLEMENTED YET. TBD.
@@ -373,7 +400,10 @@ export const verifyTONTransaction = async (
     
                         return {
                             status: Status.ERROR,
-                            message: `(verifyTONTransaction) Content not implemented yet. Content: ${givenContent.content}`
+                            message: `(verifyTONTransaction) Content not implemented yet. Content: ${givenContent.content}`,
+                            data: {
+                                txPayload: txParsedMessage ?? null
+                            }
                         }
                     }
                 }

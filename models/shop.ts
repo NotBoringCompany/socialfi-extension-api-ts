@@ -244,7 +244,7 @@ export enum ShopAssetPurchaseConfirmationAttemptType {
     // no valid transaction with given params found
     NO_VALID_TX = 'noValidTx',
     // payment sent with the transaction is lower than the required amount to pay for the asset
-    PAYMENT_TOO_LOW = 'paymentMismatch',
+    PAYMENT_MISMATCH = 'paymentMismatch',
     // asset mismatch between the asset/contents given to the user and the asset purchased in the payload
     ASSET_MISMATCH = 'assetMismatch',
     // user ID not found in database when verifying
