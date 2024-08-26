@@ -555,13 +555,13 @@ export const purchaseShopAsset = async (
             // check if the asset is an item
             if (givenContent.contentType === 'item') {
                 // add the item to the user's inventory
-                const existingItemIndex = (user.inventory?.items as Item[]).findIndex(i => i.type === asset);
+                const existingItemIndex = (user.inventory?.items as Item[]).findIndex(i => i.type === givenContent.content);
 
                 if (existingItemIndex !== -1) {
                     userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = amount;
                 } else {
                     userUpdateOperations.$push['inventory.items'].$each.push({
-                        type: asset,
+                        type: givenContent.content,
                         amount,
                         totalAmountConsumed: 0,
                         weeklyAmountConsumed: 0
@@ -569,12 +569,12 @@ export const purchaseShopAsset = async (
                 }
             } else if (givenContent.contentType === 'food') {
                 // add the food to the user's inventory
-                const existingFoodIndex = (user.inventory?.foods as Food[]).findIndex(f => f.type === asset);
+                const existingFoodIndex = (user.inventory?.foods as Food[]).findIndex(f => f.type === givenContent.content);
 
                 if (existingFoodIndex !== -1) {
                     userUpdateOperations.$inc[`inventory.foods.${existingFoodIndex}.amount`] = amount;
                 } else {
-                    userUpdateOperations.$push['inventory.foods'].$each.push({ type: asset, amount });
+                    userUpdateOperations.$push['inventory.foods'].$each.push({ type: givenContent.content, amount });
                 }
             } else if (givenContent.contentType === 'igc') {
                 switch (givenContent.content) {
