@@ -198,6 +198,8 @@ export const addShopAssets = async (assets: ShopAsset[]): Promise<void> => {
  */
 export const purchaseShopAsset = async (
     twitterId: string,
+    // the amount of the asset to purchase (NOTE: this is NOT the same as the amount of the content to be obtained).
+    // for example, if a package gives 10 candy and the user purchases 2 (which is the `amount`), then the final amount received is 10 * 2 = 20.
     amount: number,
     asset: ShopAssetType,
     payment: ShopAssetPaymentMethod,
@@ -488,11 +490,11 @@ export const purchaseShopAsset = async (
                 const existingItemIndex = (user.inventory?.items as Item[]).findIndex(i => i.type === givenContent.content);
 
                 if (existingItemIndex !== -1) {
-                    userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = givenContent.amount;
+                    userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = givenContent.amount * amount;
                 } else {
                     userUpdateOperations.$push['inventory.items'].$each.push({
                         type: givenContent.content,
-                        amount: givenContent.amount,
+                        amount: givenContent.amount * amount,
                         totalAmountConsumed: 0,
                         weeklyAmountConsumed: 0
                     });
@@ -502,26 +504,26 @@ export const purchaseShopAsset = async (
                 const existingFoodIndex = (user.inventory?.foods as Food[]).findIndex(f => f.type === givenContent.content);
 
                 if (existingFoodIndex !== -1) {
-                    userUpdateOperations.$inc[`inventory.foods.${existingFoodIndex}.amount`] = givenContent.amount;
+                    userUpdateOperations.$inc[`inventory.foods.${existingFoodIndex}.amount`] = (givenContent.amount * amount);
                 } else {
-                    userUpdateOperations.$push['inventory.foods'].$each.push({ type: givenContent.content, amount: givenContent.amount });
+                    userUpdateOperations.$push['inventory.foods'].$each.push({ type: givenContent.content, amount: (givenContent.amount * amount) });
                 }
             } else if (givenContent.contentType === 'igc') {
                 switch (givenContent.content) {
                     case 'xCookies':
                         // add the xCookies to the user's inventory
-                        userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = givenContent.amount;
+                        userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = givenContent.amount * amount;
 
                         // check if the user already has the source `SHOP_PURCHASE` in their extended xCookie data.
                         // if yes, increment the amount, if not, add it to the user's extended xCookie data.
                         const existingSourceIndex = (user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(d => d.source === XCookieSource.SHOP_PURCHASE);
 
                         if (existingSourceIndex !== -1) {
-                            userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${existingSourceIndex}.xCookies`] = givenContent.amount;
+                            userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${existingSourceIndex}.xCookies`] = givenContent.amount * amount;
                         } else {
                             userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = {
                                 source: XCookieSource.SHOP_PURCHASE,
-                                xCookies: givenContent.amount
+                                xCookies: givenContent.amount * amount,
                             }
                         }
                     case 'diamonds':
