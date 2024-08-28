@@ -87,6 +87,7 @@ export const getShop = async (): Promise<ReturnValue> => {
                 assetName: asset.assetName,
                 assetType: asset.assetType,
                 price: asset.price,
+                imageURL: asset.imageUrl ?? '',
                 assetClassification: asset.assetClassification,
                 availablePaymentMethods: asset.availablePaymentMethods,
                 expirationDate: asset.expirationDate,

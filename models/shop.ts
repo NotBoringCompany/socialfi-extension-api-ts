@@ -17,6 +17,10 @@ export interface ShopAsset {
     assetType: 'item' | 'food' | 'package';
     // the price of the asset
     price: ShopPrice;
+    // the image URL of the asset (for rendering in the frontend)
+    // if none, then a default one will be provided in the frontend
+    // used mostly for IAP asset backgrounds to differentiate the various categories of IAP assets
+    imageUrl: string;
     // the asset's classification.
     // this is mostly used in the frontend, where assets can be classified into non-IAP and IAP, and within IAP into more subcategories.
     // mostly for rendering classification purposes.
@@ -51,8 +55,10 @@ export interface ShopAsset {
 export enum ShopAssetClassification {
     // non-IAP asset
     NON_IAP = 'nonIAP',
-    // special/big-value in-app purchase asset
-    SPECIAL_IAP = 'specialIAP',
+    // special/big-value in-app purchase asset, rendered with a base component (e.g. with just a background)
+    SPECIAL_BASE_IAP = 'specialBaseIAP',
+    // special/incredible-value in-app purchase asset, rendered with a special component (e.g. showcasing its contents, with extra sparkling components, etc.)
+    SPECIAL_INCREDIBLE_VALUE_IAP = 'specialIncredibleValueIAP',
     // smaller value/normal in-app purchase assets that will be rendered in smaller components
     NORMAL_IAP = 'normalIAP',
 }
