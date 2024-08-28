@@ -17,6 +17,10 @@ export interface ShopAsset {
     assetType: 'item' | 'food' | 'package';
     // the price of the asset
     price: ShopPrice;
+    // the asset's classification.
+    // this is mostly used in the frontend, where assets can be classified into non-IAP and IAP, and within IAP into more subcategories.
+    // mostly for rendering classification purposes.
+    assetClassification: ShopAssetClassification;
     // base available payment methods for the asset
     // final available payment methods will depend on ShopAssetExtended.purchasableWith, depending on if
     // the currency conversion data was successfully fetched, for example.
@@ -39,6 +43,18 @@ export interface ShopAsset {
     levelRequirement: number | 'none';
     // the data of the contents the player receives upon purchasing this asset
     givenContents: ShopAssetGivenContentData[];
+}
+
+/**
+ * Represents the classification of a shop asset.
+ */
+export enum ShopAssetClassification {
+    // non-IAP asset
+    NON_IAP = 'Non-IAP',
+    // normal in-app purchase asset
+    NORMAL_IAP = 'Normal IAP',
+    // in-app purchase asset with a special classification that will have its own bigger component instance
+    SPECIAL_IAP = 'Special IAP',
 }
 
 /**
