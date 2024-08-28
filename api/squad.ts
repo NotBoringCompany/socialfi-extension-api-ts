@@ -771,7 +771,7 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
                 // update the user's squad ID and `lastLeftSquad` timestamp.
                 await UserModel.updateOne({ _id: user._id }, {
                     'inGameData.squadId': null,
-                    'inGameData.lastLeftSquad': Math.floor(Date.now() / 1000)
+                    'inGameData.lastLeftSquad': 0
                 });
 
                 return {
@@ -843,7 +843,7 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
                     // update the user's squad ID and `lastLeftSquad` timestamp.
                     await UserModel.updateOne({ _id: user._id }, {
                         'inGameData.squadId': null,
-                        'inGameData.lastLeftSquad': Math.floor(Date.now() / 1000)
+                        'inGameData.lastLeftSquad': 0
                     });
 
                     return {
@@ -871,7 +871,7 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
             // update the user's squad ID and `lastLeftSquad` timestamp.
             await UserModel.updateOne({ _id: user._id }, {
                 'inGameData.squadId': null,
-                'inGameData.lastLeftSquad': Math.floor(Date.now() / 1000)
+                'inGameData.lastLeftSquad': 0
             })
 
             console.log(`User ${user._id} left the squad ${squad._id}`)
