@@ -50,11 +50,11 @@ export interface ShopAsset {
  */
 export enum ShopAssetClassification {
     // non-IAP asset
-    NON_IAP = 'Non-IAP',
-    // normal in-app purchase asset
-    NORMAL_IAP = 'Normal IAP',
-    // in-app purchase asset with a special classification that will have its own bigger component instance
-    SPECIAL_IAP = 'Special IAP',
+    NON_IAP = 'nonIAP',
+    // special/big-value in-app purchase asset
+    SPECIAL_IAP = 'specialIAP',
+    // smaller value/normal in-app purchase assets that will be rendered in smaller components
+    NORMAL_IAP = 'normalIAP',
 }
 
 /**
@@ -120,9 +120,16 @@ export interface ShopAssetCurrencyConversionData {
  * For in-app purchases/purchases with real money, `usd` should exist and NOT be 0, or else it will be considered as an in-game purchase (via virtual currency, i.e. xCookies).
  */
 export interface ShopPrice {
+    // the base price of the asset in xCookies
     xCookies: number;
-    // base USD value of the asset
+    // the final price of the asset in xCookies after discounts (if no discount, then this will be the same as `xCookies`)
+    // this will be the price used for the final purchase
+    finalXCookies?: number;
+    // base non-discounted USD value of the asset
     usd?: number;
+    // final USD value of the asset. if discounted, this should be lower than `usd`.
+    // this will be the USD-based price used for the final purchase.
+    finalUsd?: number;
 }
 
 /**

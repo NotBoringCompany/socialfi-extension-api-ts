@@ -33,9 +33,7 @@ export const getShop = async (): Promise<ReturnValue> => {
             const purchasableWith: ShopAssetPaymentMethod[] = [];
 
             // if the asset contains a price in USD, check the available payment methods.
-            if (asset.price.usd > 0) {
-                console.log(`Asset: ${asset.assetName} has a price in USD.`);
-
+            if (asset.price.finalUsd > 0) {
                 // if payment method contains card, then no issue, simply add CARD to the purchasableWith array.
                 if (asset.availablePaymentMethods.includes(ShopAssetExternalPaymentMethod.CARD)) {
                     purchasableWith.push(ShopAssetExternalPaymentMethod.CARD);
@@ -59,8 +57,8 @@ export const getShop = async (): Promise<ReturnValue> => {
                     }
 
                     // calculate the price in TON and NOT.
-                    const priceInTON = asset.price.usd / TONTicker;
-                    const priceInNOT = asset.price.usd / NOTTicker;
+                    const priceInTON = asset.price.finalUsd / TONTicker;
+                    const priceInNOT = asset.price.finalUsd / NOTTicker;
 
                     // add the conversion data to the array.
                     currencyConversionData.push(
@@ -81,7 +79,7 @@ export const getShop = async (): Promise<ReturnValue> => {
             }
 
             // else, if the asset contains a price in xCookies, simply add it to the extendedShopAssets array.
-            if (asset.price.xCookies > 0) {
+            if (asset.price.finalXCookies > 0) {
                 purchasableWith.push(ShopAssetIGCPaymentMethod.X_COOKIES);
             }
 
@@ -89,6 +87,7 @@ export const getShop = async (): Promise<ReturnValue> => {
                 assetName: asset.assetName,
                 assetType: asset.assetType,
                 price: asset.price,
+                assetClassification: asset.assetClassification,
                 availablePaymentMethods: asset.availablePaymentMethods,
                 expirationDate: asset.expirationDate,
                 stockData: asset.stockData,
@@ -127,75 +126,6 @@ export const getShop = async (): Promise<ReturnValue> => {
 //         console.log(`(deleteShopFromDB) Shop deleted from database.`);
 //     } catch (err: any) {
 //         console.error(`(deleteShopFromDB) ${err.message}`);
-//     }
-// }
-
-// export const transferShopToDB = async (): Promise<void> => {
-//     try {
-//         // for each asset in `shop`, add it to the database
-//         for (const asset of shop.items) {
-//             const shopAsset = new ShopAssetModel({
-//                 _id: generateObjectId(),
-//                 assetName: asset.type,
-//                 assetType: 'item',
-//                 price: {
-//                     xCookies: asset.price.xCookies,
-//                     usd: 0
-//                 },
-//                 availablePaymentMethods: [ShopAssetIGCPaymentMethod.X_COOKIES],
-//                 expirationDate: 'never',
-//                 stockData: {
-//                     totalStock: 'unlimited',
-//                     currentStock: 'unlimited'
-//                 },
-//                 purchaseLimit: 'unlimited',
-//                 effectDuration: 'One Time',
-//                 refreshIntervalData: {
-//                     intervalType: 'none',
-//                     lastRefreshed: Math.floor(Date.now() / 1000),
-//                 },
-//                 levelRequirement: 'none',
-//                 givenContents: [{
-//                     contentType: 'item',
-//                     content: asset.type,
-//                     amount: 1
-//                 }]
-//             });
-
-//             await shopAsset.save();
-//         }
-
-//         for (const asset of shop.foods) {
-//             const shopAsset = new ShopAssetModel({
-//                 _id: generateObjectId(),
-//                 assetName: asset.type,
-//                 assetType: 'food',
-//                 price: {
-//                     xCookies: asset.price.xCookies,
-//                     usd: 0
-//                 },
-//                 availablePaymentMethods: [ShopAssetIGCPaymentMethod.X_COOKIES],
-//                 expirationDate: 'never',
-//                 purchaseLimit: 'unlimited',
-//                 effectDuration: 'One Time',
-//                 refreshIntervalData: {
-//                     intervalType: 'none',
-//                     lastRefreshed: Math.floor(Date.now() / 1000),
-//                 },
-//                 levelRequirement: 'none',
-//                 givenContents: [{
-//                     contentType: 'food',
-//                     content: asset.type,
-//                     amount: 1
-//                 }]
-//             });
-
-//             await shopAsset.save();
-//         }
-
-//         console.log(`(transferShopToDB) Shop transferred to database.`);
-//     } catch (err: any) {
-//         console.error(`(transferShopToDB) ${err.message}`);
 //     }
 // }
 
@@ -394,7 +324,7 @@ export const purchaseShopAsset = async (
         let txPayload: TxParsedMessage | null = null;
 
         if (payment === ShopAssetIGCPaymentMethod.X_COOKIES) {
-            if (shopAsset.price.xCookies <= 0) {
+            if (shopAsset.price.finalXCookies <= 0) {
                 return {
                     status: Status.ERROR,
                     message: `(purchaseShopAsset) Invalid xCookies price for asset.`
@@ -402,7 +332,7 @@ export const purchaseShopAsset = async (
             }
 
             // check if the user has enough xCookies to purchase the asset
-            totalCost = shopAsset.price.xCookies * amount;
+            totalCost = shopAsset.price.finalXCookies * amount;
 
             if (userXCookies < totalCost) {
                 return {
@@ -416,14 +346,14 @@ export const purchaseShopAsset = async (
             userUpdateOperations.$inc['inventory.xCookieData.totalXCookiesSpent'] = totalCost;
             userUpdateOperations.$inc['inventory.xCookieData.weeklyXCookiesSpent'] = totalCost;
         } else if (payment === ShopAssetExternalPaymentMethod.CARD) {
-            if (shopAsset.price.usd <= 0) {
+            if (shopAsset.price.finalUsd <= 0) {
                 return {
                     status: Status.ERROR,
                     message: `(purchaseShopAsset) Invalid USD price for asset.`
                 }
             }
 
-            totalCost = shopAsset.price.usd * amount;
+            totalCost = shopAsset.price.finalUsd * amount;
 
             // TBD. throw error; not implemented yet.
             return {
@@ -431,14 +361,14 @@ export const purchaseShopAsset = async (
                 message: `(purchaseShopAsset) Card payment not implemented yet.`
             }
         } else if (payment === ShopAssetExternalPaymentMethod.TON || payment === ShopAssetExternalPaymentMethod.NOT) {
-            if (shopAsset.price.usd <= 0) {
+            if (shopAsset.price.finalUsd <= 0) {
                 return {
                     status: Status.ERROR,
                     message: `(purchaseShopAsset) Invalid USD price for asset.`
                 }
             }
 
-            totalCost = shopAsset.price.usd * amount;
+            totalCost = shopAsset.price.finalUsd * amount;
 
             // verify the transaction.
             const {
@@ -488,7 +418,7 @@ export const purchaseShopAsset = async (
                     assetName: shopAsset.assetName,
                     amount,
                     totalCost: {
-                        baseCost: shopAsset.price.usd * amount,
+                        baseCost: shopAsset.price.finalUsd * amount,
                         baseCurrency: 'usd',
                         actualCost: null,
                         actualCurrency: null
@@ -526,14 +456,14 @@ export const purchaseShopAsset = async (
             // at this point, if verification is successful, no need to deduct anything currency-wise because the user has already paid for the asset.
             // simply continue and get out of the if-else block.
         } else if (payment === ShopAssetExternalPaymentMethod.TELEGRAM_STARS) {
-            if (shopAsset.price.usd <= 0) {
+            if (shopAsset.price.finalUsd <= 0) {
                 return {
                     status: Status.ERROR,
                     message: `(purchaseShopAsset) Invalid USD price for asset.`
                 }
             }
 
-            totalCost = shopAsset.price.usd * amount;
+            totalCost = shopAsset.price.finalUsd * amount;
 
             // TBD. throw error; not implemented yet.
             return {
@@ -541,7 +471,7 @@ export const purchaseShopAsset = async (
                 message: `(purchaseShopAsset) Telegram Stars payment not implemented yet.`
             }
         } else {
-            totalCost = shopAsset.price.usd * amount;
+            totalCost = shopAsset.price.finalUsd * amount;
 
             // other payments are also TBD. not implemented yet.
             return {

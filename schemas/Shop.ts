@@ -34,7 +34,13 @@ export const ShopAssetSchema = new mongoose.Schema({
     },
     price: {
         xCookies: Number,
-        usd: Number
+        finalXCookies: Number,
+        usd: Number,
+        finalUsd: Number
+    },
+    assetClassification: {
+        type: String,
+        enum: ['nonIAP', 'specialIAP', 'normalIAP']
     },
     availablePaymentMethods: Array,
     expirationDate: {
