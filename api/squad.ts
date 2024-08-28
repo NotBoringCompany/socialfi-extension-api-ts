@@ -794,9 +794,16 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
                     // we will promote this member to leader.
                     // if there are no co-leaders, promote the member with the longest tenure to leader.
                     // if the member with the longest tenure is the leader (i.e. the user), then promote the next member with the longest tenure.
-                    let memberWithLongestTenure = squad.members.filter(member => member.userId !== user._id && member.role === SquadRole.CO_LEADER).length > 0 ?
-                        squad.members.filter(member => member.userId !== user._id && member.role === SquadRole.CO_LEADER).reduce((prev, current) => (prev.joinedTimestamp < current.joinedTimestamp) ? prev : current) :
-                        squad.members.filter(member => member.userId !== user._id).reduce((prev, current) => (prev.joinedTimestamp < current.joinedTimestamp) ? prev : current);
+                    let coLeaders = squad.members.filter(member => member.userId !== user._id && member.role === SquadRole.CO_LEADER);
+
+                    let membersExcludingCurrentUser = squad.members.filter(member => member.userId !== user._id);
+
+                    let memberWithLongestTenure = coLeaders.length > 0
+                    ? coLeaders.reduce((prev, current) => (prev.joinedTimestamp < current.joinedTimestamp ? prev : current))
+                    : membersExcludingCurrentUser.length > 0
+                        ? membersExcludingCurrentUser.reduce((prev, current) => (prev.joinedTimestamp < current.joinedTimestamp ? prev : current))
+                        : null; // Handle the case where no members are found
+
 
                     // promote the co-leader/member found in `memberWithLongestTenure` to leader.
                     // remove the user-to-leave from the squad.
