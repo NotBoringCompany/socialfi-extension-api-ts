@@ -55,10 +55,10 @@ export interface ShopAsset {
 export enum ShopAssetClassification {
     // non-IAP asset
     NON_IAP = 'nonIAP',
-    // special/big-value in-app purchase asset, rendered with a base component (e.g. with just a background)
+    // special assets with lower/base value for IAP, rendered with a base component (e.g. with just a background)
     SPECIAL_BASE_IAP = 'specialBaseIAP',
-    // special/incredible-value in-app purchase asset, rendered with a special component (e.g. showcasing its contents, with extra sparkling components, etc.)
-    SPECIAL_INCREDIBLE_VALUE_IAP = 'specialIncredibleValueIAP',
+    // special higher value assets for IAP, rendered with a special component (e.g. showcasing its contents, with extra sparkling components, etc.)
+    SPECIAL_VALUE_IAP = 'specialIncredibleValueIAP',
     // smaller value/normal in-app purchase assets that will be rendered in smaller components
     NORMAL_IAP = 'normalIAP',
 }
