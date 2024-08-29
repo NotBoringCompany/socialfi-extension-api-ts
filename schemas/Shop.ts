@@ -11,6 +11,8 @@ const GivenContentSchema = new mongoose.Schema({
     },
     content: String,
     amount: Number
+}, {
+    _id: false
 });
 
 /**
@@ -30,9 +32,16 @@ export const ShopAssetSchema = new mongoose.Schema({
         enum: ['item', 'food', 'package'],
         index: true
     },
+    imageUrl: String,
     price: {
         xCookies: Number,
-        usd: Number
+        finalXCookies: Number,
+        usd: Number,
+        finalUsd: Number
+    },
+    assetClassification: {
+        type: String,
+        enum: ['nonIAP', 'specialIAP', 'normalIAP']
     },
     availablePaymentMethods: Array,
     expirationDate: {

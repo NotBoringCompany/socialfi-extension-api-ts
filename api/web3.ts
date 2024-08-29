@@ -88,7 +88,7 @@ export const verifyTONTransaction = async (
     try {
         const txHash = await bocToTxHash(boc).catch(async err => {
             // if an error occurs here, it's most likely due to the API. return an API error.
-            console.error(`(verifyTONTransaction) Error: ${err.message}`);
+            console.error(`(verifyTONTransaction) Error most likely from API: ${err.message}`);
 
             // if reverification, then update the purchase's `blockchainData.confirmationAttempts` to include the error `apiError`
             if (reverification) {
@@ -121,6 +121,7 @@ export const verifyTONTransaction = async (
         })
 
         console.log(`tx hash: ${txHash}`);
+        console.log(`Address to verify transactions: ${address}`);
 
         // `getTransactions` will return an array of transactions, even if we're only fetching one transaction
         const txs = await TON_WEB.provider.getTransactions(
@@ -131,7 +132,7 @@ export const verifyTONTransaction = async (
             txHash as string
         ).catch(async err => {
             // if an error occurs here, it's most likely due to the API. return an API error.
-            console.error(`(verifyTONTransaction) Error: ${err.message}`);
+            console.error(`(verifyTONTransaction) Error getting user's transactions: ${err.message}`);
 
             // if reverification, then update the purchase's `blockchainData.confirmationAttempts` to include the error `apiError`
             if (reverification) {
@@ -166,6 +167,25 @@ export const verifyTONTransaction = async (
         // fetch the transaction (bc it's in an array, we simply get the first index)
         const firstTx = txs[0];
 
+        // if transaction is not found, then return an error
+        if (!firstTx) {
+            console.error(`(verifyTONTransaction) Transaction not found. Address: ${address}, BOC: ${boc}`);
+
+            // if reverification, then update the purchase's `blockchainData.confirmationAttempts` to include the error `noValidTx`
+            if (reverification) {
+                await ShopAssetPurchaseModel.findByIdAndUpdate(purchaseId, {
+                    $push: {
+                        'blockchainData.confirmationAttempts': ShopAssetPurchaseConfirmationAttemptType.NO_VALID_TX
+                    }
+                });
+            }
+
+            return {
+                status: Status.ERROR,
+                message: `(verifyTONTransaction) Transaction not found. Address: ${address}, BOC: ${boc}`
+            }
+        }
+
         console.log(firstTx);
 
         // set `isBounceable` to false to match the address format in TONKeeper
@@ -191,7 +211,10 @@ export const verifyTONTransaction = async (
 
             return {
                 status: Status.ERROR,
-                message: `(verifyTONTransaction) Receiver address mismatch. Expected: ${TON_RECEIVER_ADDRESS}, got: ${receiverAddress}`
+                message: `(verifyTONTransaction) Receiver address mismatch. Expected: ${TON_RECEIVER_ADDRESS}, got: ${receiverAddress}`,
+                data: {
+                    txPayload: txParsedMessage ?? null
+                }
             }
         }
 
@@ -203,14 +226,14 @@ export const verifyTONTransaction = async (
 
             // 1 ton is equal to 10^9 nanotons
             // we divide by 10^9 to get the actual value in TON
-            if (parsedMessageCost !== txValue / Math.pow(10, 9)) {
-                console.error(`(verifyTONTransaction) Value mismatch. Parsed message cost: ${parsedMessageCost}, tx value: ${txValue}`);
+            if (parsedMessageCost !== (parseInt(txValue) / Math.pow(10, 9))) {
+                console.error(`(verifyTONTransaction) Value mismatch. Parsed message cost: ${parsedMessageCost}, tx value: ${txValue / Math.pow(10, 9)}`);
 
-                // if reverification, then update the purchase's `blockchainData.confirmationAttempts` to include the error `noValidTx`
+                // if reverification, then update the purchase's `blockchainData.confirmationAttempts` to include the error `PAYMENT_MISMATCH`
                 if (reverification) {
                     await ShopAssetPurchaseModel.findByIdAndUpdate(purchaseId, {
                         $push: {
-                            'blockchainData.confirmationAttempts': ShopAssetPurchaseConfirmationAttemptType.NO_VALID_TX
+                            'blockchainData.confirmationAttempts': ShopAssetPurchaseConfirmationAttemptType.PAYMENT_MISMATCH
                         },
                         'blockchainData.txPayload': txParsedMessage
                     });
@@ -218,7 +241,10 @@ export const verifyTONTransaction = async (
 
                 return {
                     status: Status.ERROR,
-                    message: `(verifyTONTransaction) Value mismatch. Currency paid: ${txParsedMessage.curr}. Parsed message cost: ${parsedMessageCost}, tx value: ${txValue}`
+                    message: `(verifyTONTransaction) Value mismatch. Currency paid: ${txParsedMessage.curr}. Parsed message cost: ${parsedMessageCost}, tx value: ${(parseInt(txValue) / Math.pow(10, 9))}`,
+                    data: {
+                        txPayload: txParsedMessage ?? null
+                    }
                 }
             }
         /// TO DO!!!!!!!!!! IMPLEMENT OTHER CURRENCIES LIKE NOT, ETC HERE.
@@ -228,14 +254,17 @@ export const verifyTONTransaction = async (
             // in this case, throw an error because it's not developed yet.
             return {
                 status: Status.ERROR,
-                message: `(verifyTONTransaction) Currency is not TON. Currency: ${txParsedMessage.curr}`
+                message: `(verifyTONTransaction) Currency is not TON. Currency: ${txParsedMessage.curr}`,
+                data: {
+                    txPayload: txParsedMessage ?? null
+                }
             }
         }
 
         // finally, check if the items given to the user match the items purchased (by checking the `txParsedMessage.asset` compared to the `assetName`)
         // and if the amount of the asset given to the user matches the amount purchased (by checking the `txParsedMessage.amt` compared to the `amount`)
         if (txParsedMessage.asset.toLowerCase() !== assetName.toLowerCase() || txParsedMessage.amt !== amount) {
-            console.error(`(verifyTONTransaction) Item mismatch. Parsed message asset: ${txParsedMessage.asset}, purchase asset: ${assetName}. Parsed message amount: ${txParsedMessage.amt}, purchase amount: ${amount}`);
+            console.error(`(verifyTONTransaction) Asset mismatch. Parsed message asset: ${txParsedMessage.asset}, purchase asset: ${assetName}. Parsed message amount: ${txParsedMessage.amt}, purchase amount: ${amount}`);
 
             // if reverification, then update the purchase's `blockchainData.confirmationAttempts` to include the error `itemMismatch`
             if (reverification) {
@@ -249,7 +278,10 @@ export const verifyTONTransaction = async (
 
             return {
                 status: Status.ERROR,
-                message: `(verifyTONTransaction) Item mismatch. Parsed message asset: ${txParsedMessage.asset}, purchase asset: ${assetName}. Parsed message amount: ${txParsedMessage.amt}, purchase amount: ${amount}`
+                message: `(verifyTONTransaction) Asset mismatch. Parsed message asset: ${txParsedMessage.asset}, purchase asset: ${assetName}. Parsed message amount: ${txParsedMessage.amt}, purchase amount: ${amount}`,
+                data: {
+                    txPayload: txParsedMessage ?? null
+                }
             }
         }
 
@@ -268,7 +300,10 @@ export const verifyTONTransaction = async (
                 console.error(`(verifyTONTransaction) Purchase not found. Address: ${address}, BOC: ${boc}, Purchase ID: ${purchaseId}`);
                 return {
                     status: Status.ERROR,
-                    message: `(verifyTONTransaction) Purchase not found. Purchase ID: ${purchaseId}`
+                    message: `(verifyTONTransaction) Purchase not found. Purchase ID: ${purchaseId}`,
+                    data: {
+                        txPayload: txParsedMessage ?? null
+                    }
                 }
             }
 
@@ -289,7 +324,10 @@ export const verifyTONTransaction = async (
                     console.error(`(verifyTONTransaction) User not found. User ID: ${purchaseData.userId}, BOC: ${boc}, Purchase ID: ${purchaseId}`);
                     return {
                         status: Status.ERROR,
-                        message: `(verifyTONTransaction) User not found. User ID: ${purchaseData.userId}`
+                        message: `(verifyTONTransaction) User not found. User ID: ${purchaseData.userId}`,
+                        data: {
+                            txPayload: txParsedMessage ?? null
+                        }
                     }
                 }
 
@@ -310,11 +348,11 @@ export const verifyTONTransaction = async (
                         const existingItemIndex = (user.inventory?.items as Item[]).findIndex(i => i.type === givenContent.content);
     
                         if (existingItemIndex !== -1) {
-                            userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = amount;
+                            userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = givenContent.amount;
                         } else {
                             userUpdateOperations.$push['inventory.items'].$each.push({
                                 type: givenContent.content, 
-                                amount,
+                                amount: givenContent.amount,
                                 totalAmountConsumed: 0,
                                 weeklyAmountConsumed: 0
                             });
@@ -324,22 +362,22 @@ export const verifyTONTransaction = async (
                         const existingFoodIndex = (user.inventory?.foods as Food[]).findIndex(f => f.type === givenContent.content);
     
                         if (existingFoodIndex !== -1) {
-                            userUpdateOperations.$inc[`inventory.foods.${existingFoodIndex}.amount`] = amount;
+                            userUpdateOperations.$inc[`inventory.foods.${existingFoodIndex}.amount`] = givenContent.amount;
                         } else {
-                            userUpdateOperations.$push['inventory.foods'].$each.push({ type: givenContent.content, amount });
+                            userUpdateOperations.$push['inventory.foods'].$each.push({ type: givenContent.content, amount: givenContent.amount });
                         }
                     } else if (givenContent.contentType === 'igc') {
                         // check if xCookies.
                         if (givenContent.content === 'xCookies') {
                             // add the xCookies to the user's currentXCookies
-                            userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = amount;
+                            userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = givenContent.amount;
                             // check if the `extendedXCookieData` contains the source SHOP_PURCHASE. if not, add it. if yes, increment the amount.
                             const shopPurchaseIndex = (user.inventory?.xCookieData?.extendedXCookieData as ExtendedXCookieData[]).findIndex(data => data.source === XCookieSource.SHOP_PURCHASE);
     
                             if (shopPurchaseIndex !== -1) {
-                                userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${shopPurchaseIndex}.xCookies`] = amount;
+                                userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${shopPurchaseIndex}.xCookies`] = givenContent.amount;
                             } else {
-                                userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = { source: XCookieSource.SHOP_PURCHASE, xCookies: amount };
+                                userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = { source: XCookieSource.SHOP_PURCHASE, xCookies: givenContent.amount };
                             }
                         } else if (givenContent.content === 'diamonds') {
                             // NOT IMPLEMENTED YET. TBD.
@@ -347,7 +385,10 @@ export const verifyTONTransaction = async (
     
                             return {
                                 status: Status.ERROR,
-                                message: `(verifyTONTransaction) Content not implemented yet. Content: ${givenContent.content}`
+                                message: `(verifyTONTransaction) Content not implemented yet. Content: ${givenContent.content}`,
+                                data: {
+                                    txPayload: txParsedMessage ?? null
+                                }
                             }
                         } else {
                             // NOT IMPLEMENTED YET (other IGCs). TBD.
@@ -355,7 +396,10 @@ export const verifyTONTransaction = async (
     
                             return {
                                 status: Status.ERROR,
-                                message: `(verifyTONTransaction) Content not implemented yet. Content: ${givenContent.content}`
+                                message: `(verifyTONTransaction) Content not implemented yet. Content: ${givenContent.content}`,
+                                data: {
+                                    txPayload: txParsedMessage ?? null
+                                }
                             }
                         }
                     } else if (givenContent.contentType === 'monthlyPass') {
@@ -364,7 +408,10 @@ export const verifyTONTransaction = async (
     
                         return {
                             status: Status.ERROR,
-                            message: `(verifyTONTransaction) Content not implemented yet. Content: ${givenContent.content}`
+                            message: `(verifyTONTransaction) Content not implemented yet. Content: ${givenContent.content}`,
+                            data: {
+                                txPayload: txParsedMessage ?? null
+                            }
                         }
                     } else {
                         // NOT IMPLEMENTED YET. TBD.
@@ -372,13 +419,28 @@ export const verifyTONTransaction = async (
     
                         return {
                             status: Status.ERROR,
-                            message: `(verifyTONTransaction) Content not implemented yet. Content: ${givenContent.content}`
+                            message: `(verifyTONTransaction) Content not implemented yet. Content: ${givenContent.content}`,
+                            data: {
+                                txPayload: txParsedMessage ?? null
+                            }
                         }
                     }
                 }
 
-                // update the user's data
-                await UserModel.findByIdAndUpdate(user._id, userUpdateOperations);
+                // update the user's data (divide by push and pull to ensure that the data is updated correctly)
+                // check if $inc is empty. if not, call `findByIdAndUpdate` with $inc.
+                if (Object.keys(userUpdateOperations.$inc).length > 0) {
+                    await UserModel.findByIdAndUpdate(user._id, {
+                        $inc: userUpdateOperations.$inc,
+                    });
+                }
+
+                // check if $push is empty. if not, call `findByIdAndUpdate` with $push.
+                if (Object.keys(userUpdateOperations.$push).length > 0) {
+                    await UserModel.findByIdAndUpdate(user._id, {
+                        $push: userUpdateOperations.$push
+                    });
+                }
             }
 
             await ShopAssetPurchaseModel.findByIdAndUpdate(purchaseId, {
@@ -391,6 +453,8 @@ export const verifyTONTransaction = async (
                 'blockchainData.actualCurrency': txParsedMessage.curr
             });
         }
+
+        console.log(`(verifyTONTransaction) Transaction verified successfully for address: ${address}.`);
 
         return {
             status: Status.SUCCESS,

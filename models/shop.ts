@@ -17,6 +17,14 @@ export interface ShopAsset {
     assetType: 'item' | 'food' | 'package';
     // the price of the asset
     price: ShopPrice;
+    // the image URL of the asset (for rendering in the frontend)
+    // if none, then a default one will be provided in the frontend
+    // used mostly for IAP asset backgrounds to differentiate the various categories of IAP assets
+    imageUrl: string;
+    // the asset's classification.
+    // this is mostly used in the frontend, where assets can be classified into non-IAP and IAP, and within IAP into more subcategories.
+    // mostly for rendering classification purposes.
+    assetClassification: ShopAssetClassification;
     // base available payment methods for the asset
     // final available payment methods will depend on ShopAssetExtended.purchasableWith, depending on if
     // the currency conversion data was successfully fetched, for example.
@@ -39,6 +47,20 @@ export interface ShopAsset {
     levelRequirement: number | 'none';
     // the data of the contents the player receives upon purchasing this asset
     givenContents: ShopAssetGivenContentData[];
+}
+
+/**
+ * Represents the classification of a shop asset.
+ */
+export enum ShopAssetClassification {
+    // non-IAP asset
+    NON_IAP = 'nonIAP',
+    // special/big-value in-app purchase asset, rendered with a base component (e.g. with just a background)
+    SPECIAL_BASE_IAP = 'specialBaseIAP',
+    // special/incredible-value in-app purchase asset, rendered with a special component (e.g. showcasing its contents, with extra sparkling components, etc.)
+    SPECIAL_INCREDIBLE_VALUE_IAP = 'specialIncredibleValueIAP',
+    // smaller value/normal in-app purchase assets that will be rendered in smaller components
+    NORMAL_IAP = 'normalIAP',
 }
 
 /**
@@ -104,9 +126,16 @@ export interface ShopAssetCurrencyConversionData {
  * For in-app purchases/purchases with real money, `usd` should exist and NOT be 0, or else it will be considered as an in-game purchase (via virtual currency, i.e. xCookies).
  */
 export interface ShopPrice {
+    // the base price of the asset in xCookies
     xCookies: number;
-    // base USD value of the asset
+    // the final price of the asset in xCookies after discounts (if no discount, then this will be the same as `xCookies`)
+    // this will be the price used for the final purchase
+    finalXCookies?: number;
+    // base non-discounted USD value of the asset
     usd?: number;
+    // final USD value of the asset. if discounted, this should be lower than `usd`.
+    // this will be the USD-based price used for the final purchase.
+    finalUsd?: number;
 }
 
 /**
@@ -216,7 +245,7 @@ export interface ShopAssetPurchaseBlockchainData {
     // the chain the payment was done on (e.g. 'ethereum', 'tron', 'bsc', etc.)
     // also available in number/hex format.
     chain: string | number;
-    // the tx hash (or signed BOC for TON payments) of the payment
+    // the tx hash (for TON payments: the converted hash from the signed BOC) of the payment
     txHash: string;
     // the parsed payload message of the transaction
     // this is not required but highly recommended to ensure that the payment contents are correct.
@@ -244,7 +273,7 @@ export enum ShopAssetPurchaseConfirmationAttemptType {
     // no valid transaction with given params found
     NO_VALID_TX = 'noValidTx',
     // payment sent with the transaction is lower than the required amount to pay for the asset
-    PAYMENT_TOO_LOW = 'paymentMismatch',
+    PAYMENT_MISMATCH = 'paymentMismatch',
     // asset mismatch between the asset/contents given to the user and the asset purchased in the payload
     ASSET_MISMATCH = 'assetMismatch',
     // user ID not found in database when verifying
@@ -266,7 +295,7 @@ export interface ShopAssetPurchaseTotalCostData {
     // if `currency` is xCookies, then `actualCurrency` should be xCookies.
     // however, if currency is USD, then `actualCurrency` can be, for instance, TON, NOT or Telegram Stars,
     // because USD is just the base currency which can be converted to other final (actual) currencies.
-    actualCurrency: 'xCookies' | string;
+    actualCurrency: ShopAssetPaymentMethod | string;
 }
 
 // all available shop assets

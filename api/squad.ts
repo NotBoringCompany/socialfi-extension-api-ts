@@ -772,6 +772,7 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
                 await UserModel.updateOne({ _id: user._id }, {
                     'inGameData.squadId': null,
                     'inGameData.lastLeftSquad': Math.floor(Date.now() / 1000)
+
                 });
 
                 return {
@@ -794,9 +795,12 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
                     // we will promote this member to leader.
                     // if there are no co-leaders, promote the member with the longest tenure to leader.
                     // if the member with the longest tenure is the leader (i.e. the user), then promote the next member with the longest tenure.
-                    let memberWithLongestTenure = squad.members.filter(member => member.userId !== user._id && member.role === SquadRole.CO_LEADER).length > 0 ?
-                        squad.members.filter(member => member.userId !== user._id && member.role === SquadRole.CO_LEADER).reduce((prev, current) => (prev.joinedTimestamp < current.joinedTimestamp) ? prev : current) :
-                        squad.members.filter(member => member.userId !== user._id).reduce((prev, current) => (prev.joinedTimestamp < current.joinedTimestamp) ? prev : current);
+                    const coLeaders = squad.members.filter(member => member.userId !== user._id && member.role === SquadRole.CO_LEADER);
+                    const members = squad.members.filter(member => member.userId !== user._id);
+
+                    let memberWithLongestTenure = coLeaders.length > 0 ?
+                        coLeaders.reduce((prev, current) => (prev.joinedTimestamp < current.joinedTimestamp ? prev : current)) :
+                        members.reduce((prev, current) => (prev.joinedTimestamp < current.joinedTimestamp ? prev : current));
 
                     // promote the co-leader/member found in `memberWithLongestTenure` to leader.
                     // remove the user-to-leave from the squad.
@@ -824,6 +828,7 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
                     await UserModel.updateOne({ _id: user._id }, {
                         'inGameData.squadId': null,
                         'inGameData.lastLeftSquad': Math.floor(Date.now() / 1000)
+
                     });
 
                     return {
@@ -844,6 +849,7 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
                     await UserModel.updateOne({ _id: user._id }, {
                         'inGameData.squadId': null,
                         'inGameData.lastLeftSquad': Math.floor(Date.now() / 1000)
+
                     });
 
                     return {
@@ -872,6 +878,7 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
             await UserModel.updateOne({ _id: user._id }, {
                 'inGameData.squadId': null,
                 'inGameData.lastLeftSquad': Math.floor(Date.now() / 1000)
+
             })
 
             console.log(`User ${user._id} left the squad ${squad._id}`)
