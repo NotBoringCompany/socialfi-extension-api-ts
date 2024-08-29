@@ -100,6 +100,8 @@ router.post('/purchase_shop_asset', async (req, res) => {
             if (asset === TerraCapsulatorType.TERRA_CAPSULATOR_I || asset === TerraCapsulatorType.TERRA_CAPSULATOR_II) {
                 incrementProgressionByType(QuestRequirementType.PURCHASE_CAPSULE, validateData?.twitterId, Number(amount));
             }
+
+            incrementProgressionByType(QuestRequirementType.PURCHASE_ITEM, validateData?.twitterId, Number(amount));
         }
 
         return res.status(status).json({

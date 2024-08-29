@@ -689,6 +689,8 @@ router.post('/apply_island_tapping_data', async (req, res) => {
 
             // increment the event counter in the wonderbits contract.
             incrementEventCounterInContract(validateData?.twitterId, APPLY_ISLAND_MILESTONE);
+
+            incrementProgressionByType(QuestRequirementType.TAPPING_MILESTONE, validateData?.twitterId, 1);
         }
         
         return res.status(status).json({

@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { generateObjectId } from '../utils/crypto';
-import { QuestRequirement } from '../models/quest';
+import { Quest, QuestDaily, QuestRequirement } from '../models/quest';
+import { POIName } from '../models/poi';
 
 const QuestRequirementSchema = new mongoose.Schema<QuestRequirement & Document>({
     _id: {
@@ -24,7 +25,7 @@ export const QuestProgressionSchema = new mongoose.Schema({
     requirement: { type: Number, default: 0 },
 });
 
-export const QuestSchema = new mongoose.Schema({
+export const QuestSchema = new mongoose.Schema<Quest & Document>({
     _id: {
         type: String,
         default: generateObjectId(),
@@ -35,13 +36,14 @@ export const QuestSchema = new mongoose.Schema({
     type: String,
     tier: String,
     unlockable: Boolean,
+    acceptable: Boolean,
     status: { type: Boolean, default: true },
     progression: { type: Boolean, default: false },
     limit: Number,
     category: String,
     imageUrl: String,
     bannerUrl: String,
-    poi: String,
+    poi: [String],
     start: Number,
     end: Number,
     rewards: Array,
@@ -58,4 +60,20 @@ export const QuestSchema = new mongoose.Schema({
         questId: Number,
         level: Number,
     },
+});
+
+export const QuestDailySchema = new mongoose.Schema<QuestDaily & Document>({
+    _id: {
+        type: String,
+        default: generateObjectId(),
+    },
+    quest: { type: String, ref: 'Quests', required: true, index: true },
+    user: { type: String, ref: 'Users', required: true, index: true },
+    accepted: { type: Boolean, required: true },
+    claimed: { type: Boolean, required: true },
+    poi: { type: String, enum: Object.values(POIName), default: null, index: true },
+    createdAt: { type: Number, required: true },
+    expiredAt: { type: Number, required: true },
+    acceptedAt: { type: Number },
+    claimedAt: { type: Number },
 });

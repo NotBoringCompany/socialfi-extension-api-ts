@@ -22,6 +22,8 @@ import { DEPLOYER_WALLET, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from
 import { generateHashSalt, generateWonderbitsDataHash } from '../utils/crypto';
 import { ethers } from 'ethers';
 import { updatePointsInContract } from './web3';
+import { incrementProgressionByType } from './quest';
+import { QuestRequirementType } from '../models/quest';
 
 /**
  * Resets the `currentBuyableAmount` and `currentSellableAmount` of all global items in all POI shops every day at 23:59 UTC.
@@ -172,6 +174,8 @@ export const travelToPOI = async (
         console.log('currentTime:', currentTime);
         console.log('timeToTravel:', timeToTravel);
         console.log('destinationArrival:', Math.ceil(currentTime + timeToTravel));
+
+        incrementProgressionByType(QuestRequirementType.TAPPING_MILESTONE, user.twitterId, Math.floor(timeToTravel / 60));
 
         // update the user's data
         // 1. set `travellingTo` in the user's inGameData to the destination

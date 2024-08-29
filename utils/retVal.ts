@@ -4,6 +4,7 @@
 export enum Status {
     SUCCESS=200,
     BAD_REQUEST=400,
+    INVALID_PAYLOAD=422,
     UNAUTHORIZED=401,
     ERROR=500
 }
