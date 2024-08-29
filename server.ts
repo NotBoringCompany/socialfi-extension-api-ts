@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import * as dotenv from 'dotenv';
+import './utils/zod';
 import passport from 'passport';
 import mongoose from 'mongoose';
 import session from 'express-session';
