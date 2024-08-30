@@ -8,6 +8,8 @@ import { fetchIAPTickers, verifyTONTransaction } from './web3';
 import { TxParsedMessage } from '../models/web3';
 import { ExtendedXCookieData, XCookieSource } from '../models/user';
 import { shop } from '../utils/shop';
+import { USD_TO_STARS_CONVERSION } from '../utils/constants/tg';
+import axios from 'axios';
 
 /**
  * Fetches all shop assets from the database and return them as a shop instance.
@@ -668,6 +670,50 @@ export const purchaseShopAsset = async (
         return {
             status: Status.ERROR,
             message: `(purchaseShopAsset) ${err.message}`
+        }
+    }
+}
+
+/**
+ * Sends an invoice to a user attempting to purchase an asset with Telegram Stars.
+ * 
+ * Once the invoice is paid, the user SHOULD receive the asset.
+ */
+export const sendTelegramStarsInvoice = async (asset: ShopAssetExtended): Promise<ReturnValue> => {
+    try {
+        const payload = {
+            // for prod, this NEEDS to be changed to the real bot!!!
+            chat_id: '@WonderverseTestingBot',
+            title: asset.assetName,
+            description: asset.assetName,
+            // TO DO: cost in telegram stars (need the API).
+            payload: `"asset":"${asset.assetName}","amt":1,"cost":"${USD_TO_STARS_CONVERSION(asset.price.finalUsd)} TG Stars","curr":"TG Stars"`,
+            provider_token: '',
+            // currency for telegram stars
+            currency: 'XTR',
+            prices: [
+                {
+                    label: 'USD',
+                    // needs to be converted into the smallest units of the currency (e.g. cents for USD). so multiply by 100.
+                    amount: asset.price.finalUsd * 100,
+                }
+            ]
+        }
+
+        const response = await axios.post(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendInvoice`, payload);
+
+        console.log('response.data: ', response.data);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(sendTelegramStarsInvoice) Invoice sent successfully.`,
+            data: response.data
+        }
+    } catch (err: any) {
+        console.error(`(sendTelegramStarsInvoice) ${err.message}`);
+        return {
+            status: Status.ERROR,
+            message: `(sendTelegramStarsInvoice) ${err.message}`
         }
     }
 }
