@@ -1,5 +1,5 @@
 import express from 'express';
-import { addShopAssets, getShop, purchaseShopAsset } from '../api/shop';
+import { addShopAssets, getShop, purchaseShopAsset, sendTelegramStarsInvoice } from '../api/shop';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { allowMixpanel, mixpanel } from '../utils/mixpanel';
@@ -50,6 +50,34 @@ router.post('/add_shop_assets', authMiddleware(3), async (req, res) => {
         })
     }
 })
+
+router.post('/send_telegram_stars_invoice', async (req, res) => {
+    const { asset } = req.body;
+
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'send_telegram_stars_invoice');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
+        const { status, message, data } = await sendTelegramStarsInvoice(asset);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+});
 
 router.post('/purchase_shop_asset', async (req, res) => {
     const { 
