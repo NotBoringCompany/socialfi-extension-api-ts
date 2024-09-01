@@ -76,7 +76,8 @@ export const getShop = async (): Promise<ReturnValue> => {
                 }
 
                 if (asset.availablePaymentMethods.includes(ShopAssetExternalPaymentMethod.TELEGRAM_STARS)) {
-                    // TBD. not implemented yet.
+                    // just add telegram stars. further checks are TBD.
+                    purchasableWith.push(ShopAssetExternalPaymentMethod.TELEGRAM_STARS);
                 }
             }
 
