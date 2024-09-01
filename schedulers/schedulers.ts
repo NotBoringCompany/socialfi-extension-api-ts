@@ -17,27 +17,27 @@ export const schedulers = async (): Promise<void> => {
         // await updateClaimableCrumbsScheduler();
         await depleteEnergyScheduler();
 
-        await updateSuccessfulIndirectReferralsScheduler();
+        updateSuccessfulIndirectReferralsScheduler();
         
-        await updateCurrentWeeklyMVPRankingLeaderboardScheduler();
+        updateCurrentWeeklyMVPRankingLeaderboardScheduler();
 
-        await batchSendKICKScheduler();
+        batchSendKICKScheduler();
 
-        await removeOpenedTweetIdsTodayScheduler();
-        await updateDailyBonusResourcesGatheredScheduler();
-        await updateDailyLoginRewardsDataScheduler();
-        await updateBeginnerRewardsDataScheduler();
-        await updateUserEnergyPotionScheduler();
-        await restoreUserCurrentEnergyAndResetRerollScheduler();
-        await resetGlobalItemsDailyBuyableAndSellableAmountScheduler();
-        await resetDailyIslandTappingMilestoneScheduler();
+        removeOpenedTweetIdsTodayScheduler();
+        updateDailyBonusResourcesGatheredScheduler();
+        updateDailyLoginRewardsDataScheduler();
+        updateBeginnerRewardsDataScheduler();
+        updateUserEnergyPotionScheduler();
+        restoreUserCurrentEnergyAndResetRerollScheduler();
+        resetGlobalItemsDailyBuyableAndSellableAmountScheduler();
+        resetDailyIslandTappingMilestoneScheduler();
 
-        await calculateWeeklySquadRankingAndAddSquadLeaderboardScheduler();
+        calculateWeeklySquadRankingAndAddSquadLeaderboardScheduler();
 
-        await distributeWeeklyMVPRewardsScheduler();
+        distributeWeeklyMVPRewardsScheduler();
 
-        await checkDailyKOSRewardsScheduler();
-        await checkWeeklyKOSRewardsScheduler();
+        checkDailyKOSRewardsScheduler();
+        checkWeeklyKOSRewardsScheduler();
     } catch (err: any) {
         console.error('Error in schedulers:', err.message);
     }
