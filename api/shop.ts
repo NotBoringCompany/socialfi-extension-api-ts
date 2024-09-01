@@ -76,7 +76,16 @@ export const getShop = async (): Promise<ReturnValue> => {
                 }
 
                 if (asset.availablePaymentMethods.includes(ShopAssetExternalPaymentMethod.TELEGRAM_STARS)) {
-                    // just add telegram stars. further checks are TBD.
+                    // fetch the price in telegram stars.
+                    const stars = USD_TO_STARS_CONVERSION(asset.price.finalUsd);
+
+                    // add the conversion data to the array.
+                    currencyConversionData.push({
+                        actualPrice: stars,
+                        chosenCurrency: 'Telegram Stars'
+                    });
+
+                    // just add telegram stars.
                     purchasableWith.push(ShopAssetExternalPaymentMethod.TELEGRAM_STARS);
                 }
             }
