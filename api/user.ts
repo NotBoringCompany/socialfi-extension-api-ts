@@ -2748,7 +2748,8 @@ export const consumeEnergyPotion = async (
             // Prepare bulk write operations for the islands
             bulkWriteIslandOps = tappingProgress.map(progress => {
                 const island = islands.find(island => island.islandId === progress.islandId);
-                const { caressEnergyMeter, currentCaressEnergyMeter } = island.islandTappingData as IslandTappingData;
+                console.log('(consumeEnergyPotion) islandTappingData: ', JSON.stringify(island.islandTappingData));
+                const { caressEnergyMeter, currentCaressEnergyMeter } = island.islandTappingData;
 
                 const newCurrentCaressEnergyMeter = Math.min(currentCaressEnergyMeter + progress.currentCaressEnergyMeter, caressEnergyMeter);
                 
@@ -2780,6 +2781,8 @@ export const consumeEnergyPotion = async (
             message: `(consumeEnergyPotion) Energy Potion consumed successfully.`
         };
     } catch (err: any) {
+        console.error('(consumeEnergyPotion), Error: ', err.message);
+
         return {
             status: Status.ERROR,
             message: `(consumeEnergyPotion) ${err.message}`,
