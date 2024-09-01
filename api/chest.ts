@@ -8,10 +8,6 @@ import { BitOrbType } from '../models/bitOrb';
 import { TerraCapsulatorType } from '../models/terraCapsulator';
 import { Item } from '../models/item';
 import { ExtendedXCookieData, XCookieSource } from '../models/user';
-import mixpanel from 'mixpanel';
-import { allowMixpanel } from '../utils/mixpanel';
-import { incrementEventCounterInContract } from './web3';
-import { CLAIM_TWEET_REWARDS_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 
 /**
  * Opens a chest found across Twitter's timeline, randomizing a chest item and adding it to the user's inventory.
@@ -168,16 +164,6 @@ export const openChest = async (twitterId: string, tweetId: string): Promise<Ret
             }
         });
 
-        if (allowMixpanel) {
-            mixpanel.track('Claim Tweet Rewards', {
-                distinct_id: twitterId,
-                '_item': item,
-                '_amount': amount,
-            });
-
-            incrementEventCounterInContract(twitterId, CLAIM_TWEET_REWARDS_MIXPANEL_EVENT_HASH);
-        }
-
         return {
             status: Status.SUCCESS,
             message: `(openChest) Successfully opened the chest and added the item to the user's inventory.`,
@@ -187,6 +173,7 @@ export const openChest = async (twitterId: string, tweetId: string): Promise<Ret
             }
         }
     } catch (err: any) {
+        console.error(`(openChest) ${err.message}`);
         return {
             status: Status.ERROR,
             message: `(openChest) ${err.message}`
