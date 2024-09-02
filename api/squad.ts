@@ -463,10 +463,13 @@ export const declinePendingSquadMember = async (leaderTwitterId: string, memberT
             }
         }
 
-        if (squad.members.find(member => member.userId === leader._id)?.role !== SquadRole.LEADER) {
+        if (
+            squad.members.find(member => member.userId === leader._id)?.role !== SquadRole.LEADER &&
+            squad.members.find(member => member.userId === leader._id)?.role !== SquadRole.CO_LEADER
+        ) {
             return {
                 status: Status.ERROR,
-                message: `(declinePendingSquadMember) User is not a squad leader for the given squad.`
+                message: `(declinePendingSquadMember) User is not a squad leader or co-leader for the given squad.`
             }
         }
 
