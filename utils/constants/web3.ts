@@ -3,12 +3,24 @@ import fs from 'fs';
 import path from 'path';
 
 import * as dotenv from 'dotenv';
+import TonWeb from 'tonweb';
 
 dotenv.config();
 
 export const BLAST_TESTNET_PROVIDER = new ethers.providers.JsonRpcProvider(`https://sepolia.blast.io`);
 export const ETH_MAINNET_PROVIDER = new ethers.providers.JsonRpcProvider(`https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY!}`);
 export const XPROTOCOL_TESTNET_PROVIDER = new ethers.providers.JsonRpcProvider(`https://rpc-xprotocol-testnet-kzg4iy2205.t.conduit.xyz/${process.env.X_PROTOCOL_TESTNET_API_KEY!}`);
+
+/// TonWeb instance with API Key
+export const TON_WEB = new TonWeb(new TonWeb.HttpProvider('https://toncenter.com/api/v2/jsonRPC', { apiKey: process.env.TON_API_KEY} ));
+
+/// W5 receiver address for IAP payments made in TON
+export const TON_RECEIVER_ADDRESS = 'UQAWfBEcr61zy4Ke8ewXhKiYx5t07xKGKuCaQ0KYH4nb14aM';
+
+/// BASE URLS FOR APIS USED FOR WEB3 RELATED OPERATIONS (MAINLY PRICE FETCHING)
+export const BINANCE_API_BASE_URL = `https://data-api.binance.vision`;
+export const KUCOIN_API_BASE_URL = `https://api.kucoin.com`;
+export const GATEIO_API_BASE_URL = `https://api.gateio.ws`;
 
 /** Gets a deployer wallet instance based on the provider the deployer wallet will operate in */
 export const DEPLOYER_WALLET = (provider: ethers.providers.JsonRpcProvider) => {

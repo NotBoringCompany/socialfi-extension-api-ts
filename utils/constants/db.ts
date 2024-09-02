@@ -16,6 +16,7 @@ import { POAPSchema } from '../../schemas/POAP';
 import { KOSClaimableDailyRewardsSchema, KOSClaimableWeeklyRewardsSchema } from '../../schemas/KOSRewards';
 import { WeeklyMVPClaimableRewardSchema, WeeklyMVPRankingLeaderboardSchema } from '../../schemas/WeeklyMVPReward';
 import { CollabBasketSchema, CollabParticipantSchema } from '../../schemas/Collab';
+import { ShopAssetPurchaseSchema, ShopAssetSchema } from '../../schemas/Shop';
 
 export const WONDERBITS_DATABASE = process.env.WONDERBITS_MONGODB_URI!;
 // create a connection to the wonderbits database
@@ -50,3 +51,5 @@ export const CollabParticipantModel = WONDERBITS_CONNECTION.model('CollabPartici
 export const CollabBasketModel = WONDERBITS_CONNECTION.model('CollabBaskets', CollabBasketSchema, 'CollabBaskets');
 export const WeeklyMVPRankingLeaderboardModel = WONDERBITS_CONNECTION.model('WeeklyMVPRankingData', WeeklyMVPRankingLeaderboardSchema, 'WeeklyMVPRankingData');
 export const SuccessfulIndirectReferralModel = WONDERBITS_CONNECTION.model('SuccessfulIndirectReferrals', SuccessfulIndirectReferralSchema, 'SuccessfulIndirectReferrals');
+export const ShopAssetModel = WONDERBITS_CONNECTION.model('ShopAssets', ShopAssetSchema, 'ShopAssets');
+export const ShopAssetPurchaseModel = WONDERBITS_CONNECTION.model('ShopAssetPurchases', ShopAssetPurchaseSchema, 'ShopAssetPurchases');
