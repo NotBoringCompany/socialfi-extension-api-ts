@@ -1,16 +1,52 @@
 import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
-import { acceptPendingSquadMember, checkSquadCreationMethodAndCost, createSquad, declinePendingSquadMember, delegateLeadership, getLatestSquadWeeklyRanking, getSquadData, getSquadMemberData, kickMember, leaveSquad, renameSquad, requestToJoinSquad, squadKOSData, upgradeSquadLimit } from '../api/squad';
+import { acceptPendingSquadMember, addCoLeader, checkSquadCreationMethodAndCost, createSquad, declinePendingSquadMember, delegateLeadership, getLatestSquadWeeklyRanking, getSquadData, getSquadMemberData, kickMember, leaveSquad, renameSquad, requestToJoinSquad, squadKOSData, upgradeSquadLimit } from '../api/squad';
 import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 import { authMiddleware } from '../middlewares/auth';
-import { CREATE_SQUAD_MIXPANEL_EVENT_HASH, GET_CURRENT_USER_SQUAD_MIXPANEL_EVENT_HASH, JOIN_SQUAD_MIXPANEL_EVENT_HASH, KICK_SQUAD_MEMBER_MIXPANEL_EVENT_HASH, LEAVE_SQUAD_MIXPANEL_EVENT_HASH, RENAME_SQUAD_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
-import { UserWallet } from '../models/user';
-
-import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
+import { ADD_SQUAD_CO_LEADER_EVENT_HASH, CREATE_SQUAD_MIXPANEL_EVENT_HASH, GET_CURRENT_USER_SQUAD_MIXPANEL_EVENT_HASH, JOIN_SQUAD_MIXPANEL_EVENT_HASH, KICK_SQUAD_MEMBER_MIXPANEL_EVENT_HASH, LEAVE_SQUAD_MIXPANEL_EVENT_HASH, RENAME_SQUAD_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { incrementEventCounterInContract } from '../api/web3';
 
 const router = express.Router();
+
+router.post('/add_co_leader', async (req, res) => {
+    const { newCoLeaderTwitterId, newCoLeaderUserId } = req.body;
+
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'add_co_leader');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
+        const { status, message, data } = await addCoLeader(validateData?.twitterId, newCoLeaderTwitterId, newCoLeaderUserId);
+
+        if (status === Status.SUCCESS && allowMixpanel) {
+            mixpanel.track('Squad Member', {
+                distinct_id: validateData?.twitterId,
+                '_type': 'Add Co-Leader',
+                '_data': data,
+            });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, ADD_SQUAD_CO_LEADER_EVENT_HASH);
+        }
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
 
 router.post('/request_to_join_squad', async (req, res) => {
     const { squadId, squadName } = req.body;
