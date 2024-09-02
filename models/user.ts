@@ -29,6 +29,8 @@ export interface User {
     twitterDisplayName: string;
     /** the user's discord profile */
     discordProfile?: DiscordProfile;
+    /** the user's telegram profile */
+    telegramProfile?: TelegramProfile;
     /** when the account was created */
     createdTimestamp: number;
     /** 
@@ -281,6 +283,15 @@ export interface DiscordProfile {
     username: string;
     /** discord oauth refresh token, lasts for 365 days */
     token: string;
+}
+
+/**
+ * Represents a user's telegram profile.
+ */
+export interface TelegramProfile {
+    telegramId: string;
+    name: string | null;
+    username: string;
 }
 
 /**

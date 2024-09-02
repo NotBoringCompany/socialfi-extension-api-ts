@@ -2881,7 +2881,7 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
     try {
         let loginType: 'Register' | 'Login';
 
-        const user = await UserModel.findOne({ twitterId: telegramUser.id, method: 'telegram' }).lean();
+        const user = await UserModel.findOne({ $or: [{ twitterId: telegramUser.id, method: 'telegram' }, { 'telegramProfile.telegramId': telegramUser.id }] }).lean();
 
         // if user doesn't exist, create a new user
         if (!user) {
@@ -3210,7 +3210,7 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                 message: `(handleTwitterLogin) User found. Logging in.`,
                 data: {
                     userId: user._id,
-                    twitterId: telegramUser.id,
+                    twitterId: user.twitterId,
                     loginType: loginType,
                     referralCode: user.referralData.referralCode
                 },
@@ -3278,6 +3278,80 @@ export const updateLoginStreak = async (twitterId: string): Promise<ReturnValue>
         return {
             status: Status.ERROR,
             message: `(updateLoginStreak) ${err.message}`,
+        };
+    }
+}
+
+/**
+ * Connect existing Twitter account to Telegram
+ */
+export const handleTelegramConnect = async (twitterId: string, telegramUser: TelegramAuthData['user'], confirm?: boolean): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId });
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(handleTelegramConnect) User not found.`,
+            };
+        }
+
+        if (user.telegramProfile) {
+            return {
+                status: Status.ERROR,
+                message: `(handleTelegramConnect) You've already connected to Telegram.`,
+            };
+        }
+
+        // prevent user that logged in using telegram to connect
+        if (user.method === 'telegram') {
+            return {
+                status: Status.ERROR,
+                message: `(handleTelegramConnect) Cannot connect the account because it was logged in via Telegram.`,
+            };
+        }
+
+        // check if the telegram account already connected to another account
+        const isConnected = await UserModel.findOne({ 'telegramProfile.telegramId': telegramUser.id });
+        if (isConnected) {
+            return {
+                status: Status.ERROR,
+                message: `(handleTelegramConnect) Telegram account already connected to another user.`,
+            };
+        }
+
+        // check if the telegram account already registered via telegram
+        const registeredTelegram = await UserModel.findOne({ twitterId: telegramUser.id, method: 'telegram' });
+        if (registeredTelegram && !confirm) {
+            return {
+                status: Status.ERROR,
+                message: `(handleTelegramConnect) Telegram account already registered.`,
+                data: {
+                    needConfirmation: true
+                }
+            };
+        } else {
+            // if the user's confirmed then delete the existed telegram account
+            await registeredTelegram.deleteOne();
+        }
+
+        // assign telegram profile to the account
+        await user.updateOne({
+            telegramProfile: {
+                telegramId: telegramUser.id,
+                name: `${telegramUser.first_name} ${telegramUser.last_name}`.trim(),
+                username: telegramUser.username || telegramUser.id,
+            }
+        })
+
+        return {
+            status: Status.SUCCESS,
+            message: `(handleTelegramConnect) Telegram account connected successfully.`,
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(handleTelegramConnect) ${err.message}`,
         };
     }
 }
