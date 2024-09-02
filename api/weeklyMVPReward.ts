@@ -59,9 +59,9 @@ export const fetchWeeklyMVPRankingData = async (week: number | 'latest'): Promis
  */
 export const distributeWeeklyMVPRewards = async (): Promise<void> => {
     try {
-        const users = await UserModel.find({ twitterId: { $ne: null, $exists: true } }).lean();
+        const weeklyRankingData = await WeeklyMVPRankingLeaderboardModel.findOne().sort({ week: -1 }).lean();
 
-        if (users.length === 0 || !users) {
+        if (!weeklyRankingData) {
             return;
         }
 
@@ -78,35 +78,51 @@ export const distributeWeeklyMVPRewards = async (): Promise<void> => {
             terraCapsulatorsConsumed: number;
         }[] = [];
 
-        for (const user of users) {
-            const userItems = !user.inventory?.items || user.inventory?.items.length === 0 ? [] : user.inventory.items as Item[];
-
-            const xCookiesSpent = (user.inventory.xCookieData as XCookieData)?.weeklyXCookiesSpent ?? 0;
-
-            const bitOrbsConsumed = !userItems || userItems.length === 0 ? 0 :
-                userItems.reduce((acc, item) => {
-                    if (item.type === BitOrbType.BIT_ORB_I || item.type === BitOrbType.BIT_ORB_II || item.type === BitOrbType.BIT_ORB_III) {
-                        return acc + item.weeklyAmountConsumed;
-                    }
-                    return acc;
-                }, 0);
-
-            const terraCapsulatorsConsumed = !userItems || userItems.length ? 0 :
-                userItems.reduce((acc, item) => {
-                    if (item.type === TerraCapsulatorType.TERRA_CAPSULATOR_I || item.type === TerraCapsulatorType.TERRA_CAPSULATOR_II) {
-                        return acc + item.weeklyAmountConsumed;
-                    }
-                    return acc;
-                }, 0);
-
+        for (const xCookieData of weeklyRankingData.xCookiesSpentRankingData) {
             mvpData.push({
-                userId: user._id,
-                username: user.twitterUsername,
-                twitterProfilePicture: user.twitterProfilePicture,
-                xCookiesSpent,
-                bitOrbsConsumed,
-                terraCapsulatorsConsumed,
-            });
+                userId: xCookieData.userId,
+                username: xCookieData.username,
+                twitterProfilePicture: xCookieData.twitterProfilePicture,
+                xCookiesSpent: xCookieData.amount,
+                bitOrbsConsumed: 0,
+                terraCapsulatorsConsumed: 0,
+            })
+        }
+
+        for (const bitOrbData of weeklyRankingData.bitOrbsConsumedRankingData) {
+            // check first if the user already exists in the MVP data
+            const userIndex = mvpData.findIndex(data => data.userId === bitOrbData.userId);
+
+            if (userIndex === -1) {
+                mvpData.push({
+                    userId: bitOrbData.userId,
+                    username: bitOrbData.username,
+                    twitterProfilePicture: bitOrbData.twitterProfilePicture,
+                    xCookiesSpent: 0,
+                    bitOrbsConsumed: bitOrbData.amount,
+                    terraCapsulatorsConsumed: 0,
+                });
+            } else {
+                mvpData[userIndex].bitOrbsConsumed = bitOrbData.amount;
+            }
+        }
+
+        for (const terraCapsulatorData of weeklyRankingData.terraCapsulatorsConsumedRankingData) {
+            // check first if the user already exists in the MVP data
+            const userIndex = mvpData.findIndex(data => data.userId === terraCapsulatorData.userId);
+
+            if (userIndex === -1) {
+                mvpData.push({
+                    userId: terraCapsulatorData.userId,
+                    username: terraCapsulatorData.username,
+                    twitterProfilePicture: terraCapsulatorData.twitterProfilePicture,
+                    xCookiesSpent: 0,
+                    bitOrbsConsumed: 0,
+                    terraCapsulatorsConsumed: terraCapsulatorData.amount,
+                });
+            } else {
+                mvpData[userIndex].terraCapsulatorsConsumed = terraCapsulatorData.amount;
+            }
         }
 
         // sort the MVP data by the most xCookies spent and get the highest spender
@@ -117,6 +133,10 @@ export const distributeWeeklyMVPRewards = async (): Promise<void> => {
 
         // sort the MVP data by the most terra capsulators consumed and get the highest consumer
         const terraCapsulatorsMVPData = mvpData.sort((a, b) => b.terraCapsulatorsConsumed - a.terraCapsulatorsConsumed)[0];
+
+        console.log(`xCookies MVP: ${xCookiesMVPData.username} (${xCookiesMVPData.xCookiesSpent} xCookies spent)`);
+        console.log(`Bit Orbs MVP: ${bitOrbsMVPData.username} (${bitOrbsMVPData.bitOrbsConsumed} bit orbs consumed)`);
+        console.log(`Terra Capsulators MVP: ${terraCapsulatorsMVPData.username} (${terraCapsulatorsMVPData.terraCapsulatorsConsumed} terra capsulators consumed)`);
 
         const xCookiesMVPRewardsUpdateOperations = {
             $set: {},
