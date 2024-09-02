@@ -693,13 +693,24 @@ export const purchaseShopAsset = async (
  */
 export const sendTelegramStarsInvoice = async (asset: ShopAssetExtended): Promise<ReturnValue> => {
     try {
+        // double check to see if the asset matches with the asset on the database.
+        const dbAsset = await ShopAssetModel.findOne({ assetName: asset.assetName }).lean();
+
+        if (!dbAsset) {
+            return {
+                status: Status.ERROR,
+                message: `(sendTelegramStarsInvoice) Asset not found.`
+            }
+        }
+
+        // to ensure that only legit data is sent to the Telegram API, the asset data is fetched from the database.
         const payload = {
             // for prod, this NEEDS to be changed to the real bot!!!
             chat_id: '@WonderverseTestingBot',
-            title: asset.assetName,
-            description: asset.assetName,
+            title: dbAsset.assetName,
+            description: dbAsset.assetName,
             // TO DO: cost in telegram stars (need the API).
-            payload: `"asset":"${asset.assetName}","amt":1,"cost":"${USD_TO_STARS_CONVERSION(asset.price.finalUsd)} TG Stars","curr":"TG Stars"`,
+            payload: `"asset":"${dbAsset.assetName}","amt":1,"cost":"${USD_TO_STARS_CONVERSION(dbAsset.price.finalUsd)} TG Stars","curr":"TG Stars"`,
             provider_token: '',
             // currency for telegram stars
             currency: 'XTR',
@@ -707,7 +718,7 @@ export const sendTelegramStarsInvoice = async (asset: ShopAssetExtended): Promis
                 {
                     label: 'USD',
                     // needs to be converted into the smallest units of the currency (e.g. cents for USD). so multiply by 100.
-                    amount: asset.price.finalUsd * 100,
+                    amount: dbAsset.price.finalUsd * 100,
                 }
             ]
         }
