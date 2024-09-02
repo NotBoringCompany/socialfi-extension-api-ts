@@ -1182,6 +1182,12 @@ export const delegateLeadership = async (currentLeaderTwitterId: string, newLead
     }
 }
 
+/**
+ * Kicks a member from the squad.
+ * 
+ * Leaders can kick co-leaders and members.
+ * Co-leaders can only kick members.
+ */
 export const kickMember = async (leaderTwitterId: string, memberTwitterId: string = '', memberUserId: string = ''): Promise<ReturnValue> => {
     try {
         const [leader, member] = await Promise.all([
@@ -1221,10 +1227,14 @@ export const kickMember = async (leaderTwitterId: string, memberTwitterId: strin
             }
         }
 
-        if (squad.members.find(member => member.userId === leader._id)?.role !== SquadRole.LEADER) {
+        // must be either leader or co-leader
+        if (
+            squad.members.find(member => member.userId === leader._id)?.role !== SquadRole.LEADER &&
+            squad.members.find(member => member.userId === leader._id)?.role !== SquadRole.CO_LEADER
+        ) {
             return {
                 status: Status.ERROR,
-                message: `(kickMember) User is not a squad leader for the given squad.`
+                message: `(kickMember) User is not a squad leader or co-leader for the given squad.`
             }
         }
 
@@ -1236,11 +1246,24 @@ export const kickMember = async (leaderTwitterId: string, memberTwitterId: strin
             }
         }
 
-        // check if the leader is trying to kick themselves.
+        // check if the leader is trying to kick themself.
         if (leader._id === member._id) {
             return {
                 status: Status.ERROR,
-                message: `(kickMember) Leader cannot kick themselves.`
+                message: `(kickMember) Cannot kick self.`
+            }
+        }
+
+        // if user is a co-leader, they can only kick members. if they try to kick the leader or another co-leader, return an error.
+        if (squad.members.find(m => m.userId === leader._id)?.role === SquadRole.CO_LEADER) {
+            if (
+                squad.members.find(m => m.userId === member._id)?.role === SquadRole.LEADER ||
+                squad.members.find(m => m.userId === member._id)?.role === SquadRole.CO_LEADER
+            ) {
+                return {
+                    status: Status.ERROR,
+                    message: `(kickMember) Co-leaders cannot kick leaders or other co-leaders.`
+                }
             }
         }
 
@@ -1264,7 +1287,7 @@ export const kickMember = async (leaderTwitterId: string, memberTwitterId: strin
             data: {
                 memberTwitterId,
                 memberUserId,
-                currentMember: squad.members.length,
+                currentMember: squad.members.length - 1,
             }
         }
     } catch (err: any) {
