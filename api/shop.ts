@@ -1,7 +1,6 @@
 import { Food } from '../models/food';
 import { ShopAsset, ShopAssetCurrencyConversionData, ShopAssetExtended, ShopAssetExternalPaymentMethod, ShopAssetIGCPaymentMethod, ShopAssetPaymentMethod, ShopAssetPurchaseConfirmationAttemptType, ShopAssetType } from '../models/shop';
 import { ReturnValue, Status } from '../utils/retVal';
-import { shop } from '../utils/shop';
 import { ShopAssetModel, ShopAssetPurchaseModel, UserModel } from '../utils/constants/db';
 import { Item, ItemType } from '../models/item';
 import { USD_TO_STARS_CONVERSION } from '../utils/constants/tg';
