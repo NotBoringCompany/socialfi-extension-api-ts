@@ -1000,7 +1000,7 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
 }
 
 /**
- * Upgrades the max members limit for a squad. Only callable by a squad leader.
+ * Upgrades the max members limit for a squad. Only callable by a squad leader OR co-leader.
  */
 export const upgradeSquadLimit = async (twitterId: string): Promise<ReturnValue> => {
     try {
@@ -1031,10 +1031,13 @@ export const upgradeSquadLimit = async (twitterId: string): Promise<ReturnValue>
             }
         }
 
-        if (squad.members.find(member => member.userId === user._id)?.role !== SquadRole.LEADER) {
+        if (
+            squad.members.find(member => member.userId === user._id)?.role !== SquadRole.LEADER &&
+            squad.members.find(member => member.userId === user._id)?.role !== SquadRole.CO_LEADER
+        ) {
             return {
                 status: Status.ERROR,
-                message: `(upgradeSquadLimit) User is not a squad leader for the given squad.`
+                message: `(upgradeSquadLimit) User is not a squad leader or co-leader for the given squad.`
             }
         }
 
