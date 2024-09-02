@@ -100,5 +100,6 @@ export enum SquadCreationMethod {
  */
 export enum SquadRole {
     LEADER = 'Leader',
+    CO_LEADER = 'Co-Leader',
     MEMBER = 'Member'
 }

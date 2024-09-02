@@ -2,10 +2,114 @@ import { Leaderboard, LeaderboardPointsSource } from '../models/leaderboard';
 import { SquadCreationMethod, SquadMember, SquadRank, SquadRole } from '../models/squad';
 import { UserSecondaryWallet, UserWallet } from '../models/user';
 import { LeaderboardModel, SquadLeaderboardModel, SquadModel, UserModel } from '../utils/constants/db';
-import { CREATE_SQUAD_COST, INITIAL_MAX_MEMBERS, MAX_MEMBERS_INCREASE_UPON_UPGRADE, MAX_MEMBERS_LIMIT, RENAME_SQUAD_COOLDOWN, RENAME_SQUAD_COST, SQUAD_LEAVE_COOLDOWN, UPGRADE_SQUAD_MAX_MEMBERS_COST } from '../utils/constants/squad';
+import { CREATE_SQUAD_COST, INITIAL_MAX_MEMBERS, MAX_CO_LEADERS_LIMIT, MAX_MEMBERS_INCREASE_UPON_UPGRADE, MAX_MEMBERS_LIMIT, RENAME_SQUAD_COOLDOWN, RENAME_SQUAD_COST, SQUAD_LEAVE_COOLDOWN, UPGRADE_SQUAD_MAX_MEMBERS_COST } from '../utils/constants/squad';
 import { generateObjectId } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
 import { explicitOwnershipsOfKOS, getOwnedKeyIDs } from './kos';
+
+/**
+ * Adds a co-leader into the squad. Only callable by a squad leader.
+ */
+export const addCoLeader = async (leaderTwitterId: string, newCoLeaderTwitterId: string, newCoLeaderUserId: string = ''): Promise<ReturnValue> => {
+    try {
+        const [leader, newCoLeader] = await Promise.all([
+            UserModel.findOne({ twitterId: leaderTwitterId }).lean(),
+            UserModel.findOne({ $or: [{ twitterId: newCoLeaderTwitterId }, { _id: newCoLeaderUserId }] }).lean()
+        ]);
+
+        if (!leader) {
+            return {
+                status: Status.ERROR,
+                message: `(addCoLeader) Leader not found.`
+            }
+        }
+
+        if (!newCoLeader) {
+            return {
+                status: Status.ERROR,
+                message: `(addCoLeader) New co-leader not found.`
+            }
+        }
+
+        // check if the leader is in a squad.
+        if (leader.inGameData.squadId === null) {
+            return {
+                status: Status.ERROR,
+                message: `(addCoLeader) Leader is not in a squad.`
+            }
+        }
+
+        // check if the leader is a squad leader.
+        const squad = await SquadModel.findOne({ _id: leader.inGameData.squadId });
+
+        if (!squad) {
+            return {
+                status: Status.ERROR,
+                message: `(addCoLeader) Squad not found.`
+            }
+        }
+
+        if (squad.members.find(member => member.userId === leader._id)?.role !== SquadRole.LEADER) {
+            return {
+                status: Status.ERROR,
+                message: `(addCoLeader) User is not a squad leader for the given squad.`
+            }
+        }
+
+        // check if the new leader is in the squad.
+        if (!squad.members.find(member => member.userId === newCoLeader._id)) {
+            return {
+                status: Status.ERROR,
+                message: `(addCoLeader) New co-leader is not in the squad.`
+            }
+        }
+
+        // check if the new leader is already a co-leader (or a leader) in the current squad.
+        if (
+            squad.members.find(member => member.userId === newCoLeader._id)?.role === SquadRole.LEADER ||
+            squad.members.find(member => member.userId === newCoLeader._id)?.role === SquadRole.CO_LEADER
+        ) {
+            return {
+                status: Status.ERROR,
+                message: `(addCoLeader) New co-leader is already a leader/co-leader in the squad.`
+            }
+        }
+
+        // check if there are already the max amount of leaders allowed in the squad.
+        const coLeaderCount = squad.members.filter(member => member.role === SquadRole.CO_LEADER).length;
+
+        if (coLeaderCount >= MAX_CO_LEADERS_LIMIT) {
+            return {
+                status: Status.ERROR,
+                message: `(addCoLeader) Squad has reached the max leaders limit.`
+            }
+        }
+
+        // update the role of the new leader.
+        const newLeaderIndex = squad.members.findIndex(member => member.userId === newCoLeader._id);
+
+        await SquadModel.updateOne({ _id: squad._id }, {
+            $set: {
+                [`members.${newLeaderIndex}.role`]: SquadRole.CO_LEADER,
+                [`members.${newLeaderIndex}.roleUpdatedTimestamp`]: Math.floor(Date.now() / 1000)
+            }
+        });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(addCoLeader) Added new leader successfully.`,
+            data: {
+                squadId: squad._id,
+                newCoLeaderId: newCoLeader._id
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(addCoLeader) ${err.message}`
+        }
+    }
+}
 
 /**
  * Attempts to join the referrer's squad if possible.
