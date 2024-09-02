@@ -118,6 +118,13 @@ export const calculateWeeklySquadRankingAndGiveRewards = async (): Promise<void>
         }> = [];
 
         for (const squad of squads) {
+            // Check if the squad has no members
+            if (!squad.members || squad.members.length === 0) {
+                console.log(`(calculateWeeklySquadRankingAndGiveRewards) Squad ${squad._id} has no members. continue to next squad`);
+                // Continue to the next squad
+                continue;
+            }
+
             // find the squad in the latest squad leaderboard
             const squadInLeaderboard = latestSquadLeaderboard.pointsData.find((squadData) => squadData.squadId === squad._id);
 
