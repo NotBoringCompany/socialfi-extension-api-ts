@@ -133,6 +133,37 @@ export const getShop = async (): Promise<ReturnValue> => {
 }
 
 /**
+ * Adds one or more shop assets to the database.
+ * 
+ * NOTE: No sanitization checks or duplicate asset checks here, so proceed with caution.
+ */
+export const addShopAssets = async (assets: ShopAsset[]): Promise<void> => {
+    try {
+        // convert into shop asset models and insert many
+        const shopAssets = assets.map(asset => new ShopAssetModel({
+            _id: generateObjectId(),
+            assetName: asset.assetName,
+            assetType: asset.assetType,
+            price: asset.price,
+            availablePaymentMethods: asset.availablePaymentMethods,
+            expirationDate: asset.expirationDate,
+            stockData: asset.stockData,
+            purchaseLimit: asset.purchaseLimit,
+            effectDuration: asset.effectDuration,
+            refreshIntervalData: asset.refreshIntervalData,
+            levelRequirement: asset.levelRequirement,
+            givenContents: asset.givenContents
+        }));
+
+        await ShopAssetModel.insertMany(shopAssets);
+
+        console.log(`(addShopAssets) Shop assets added to database.`);
+    } catch (err: any) {
+        console.error(`(addShopAssets) ${err.message}`);
+    }
+}
+
+/**
  * (User) Purchases `amount` of a shop asset (can be either an in-game purchase or in-app purchase with real currency).
  */
 export const purchaseShopAsset = async (
