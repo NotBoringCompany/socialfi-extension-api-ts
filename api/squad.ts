@@ -1677,3 +1677,109 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
         }
     }
 }
+
+/**
+ * Gets all squads and fetch their data. Used for players searching for squads.
+ * 
+ * The following data will be fetched:
+ * 1. the squad's name
+ * 2. the total keys owned by EVERY squad member (excluding pending ones)
+ * 3. the total points earned by EVERY squad member
+ * 4. the current members of the squad
+ * 5. if its still joinable (i.e. current members excluding pending members < max members)
+ */
+export const getAllSquadData = async (): Promise<ReturnValue> => {
+    try {
+        const squads = await SquadModel.find().lean();
+
+        if (squads.length === 0) {
+            return {
+                status: Status.SUCCESS,
+                message: `(getAllSquadData) No squads found.`,
+                data: {
+                    squads: []
+                }
+            }
+        }
+
+        const [explicitOwnerships, leaderboards, users] = await Promise.all([
+            // fetch all explicit ownerships of keys
+            // ID from 1 to 5000
+            explicitOwnershipsOfKOS(Array.from({ length: 5000 }, (_, i) => i + 1)).then(res => res.data.keyOwnerships ?? []),
+            LeaderboardModel.find().lean(),
+            UserModel.find().lean()
+        ]);
+
+        if (!users || users.length === 0) {
+            return {
+                status: Status.ERROR,
+                message: `(getAllSquadData) No users found.`
+            }
+        }
+
+        // create maps for faster lookups
+        const userMap = new Map(users.map(user => [user._id, user]));
+
+        const explicitOwnershipMap = new Map();
+        explicitOwnerships.forEach((ownership: KOSExplicitOwnership) => {
+            explicitOwnershipMap.set(ownership.owner.toLowerCase(), (explicitOwnershipMap.get(ownership.owner.toLowerCase()) || 0) + 1);
+        });
+
+        const leaderboardPointsMap = new Map();
+        for (const leaderboard of leaderboards) {
+            for (const userData of leaderboard.userData) {
+                const totalPoints = userData.pointsData
+                    .filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP)
+                    .reduce((prev, current) => prev + current.points, 0);
+
+                leaderboardPointsMap.set(userData.userId, (leaderboardPointsMap.get(userData.userId) || 0) + totalPoints);
+            }
+        }
+
+        const squadData = squads.map(squad => {
+            let totalKOSCount = 0;
+            let totalLeaderboardPoints = 0;
+
+            for (const member of squad.members) {
+                const user = userMap.get(member.userId);
+                if (!user) continue;
+
+                const validAddresses = [user.wallet.address.toLowerCase()]
+                    .concat(user.secondaryWallets?.map(wallet => wallet.address.toLowerCase()) || []);
+
+                // sum up KOS count of all the user's valid addresses
+                validAddresses.forEach(address => {
+                    totalKOSCount += explicitOwnershipMap.get(address) || 0;
+                });
+
+                // sum up the total points earned
+                totalLeaderboardPoints += leaderboardPointsMap.get(member.userId) || 0;
+            }
+
+            const totalMembers = squad.members.length;
+            const joinable = totalMembers < squad.maxMembers;
+
+            return {
+                name: squad.name,
+                totalKOSCount,
+                totalPointsEarned: totalLeaderboardPoints,
+                totalMembers,
+                maxMembers: squad.maxMembers,
+                joinable
+            };
+        });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getAllSquadData) Fetched all squad data successfully.`,
+            data: {
+                squads: squadData
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getAllSquadData) ${err.message}`
+        }
+    }
+}

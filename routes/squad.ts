@@ -499,4 +499,22 @@ router.get('/get_squad_member_data/:squadId', async (req, res) => {
     }
 })
 
+router.get('/get_all_squad_data', async (req, res) => {
+    try {
+        const { status, message, data } = await getAllSquadData();
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
+
+
 export default router;
