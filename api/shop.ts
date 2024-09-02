@@ -223,6 +223,8 @@ export const purchaseShopAsset = async (
     // for blockchain txs only; the hex string of the transaction hash (for EVM chains) or the signed BOC (bag of cells; for TON).
     txHash?: string
 ): Promise<ReturnValue> => {
+    console.log(`(purchaseShopAsset) User ${twitterId} attempting to purchase ${amount} of ${asset} with ${payment}.`);
+    
     if (!twitterId) {
         return {
             status: Status.UNAUTHORIZED,
