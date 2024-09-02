@@ -43,3 +43,4 @@ export const TWITTER_LOGIN_CALLBACK_MIXPANEL_EVENT_HASH = convertToBytes32('Twit
 export const TUTORIAL_COMPLETED_MIXPANEL_EVENT_HASH = convertToBytes32('Tutorial Completed');
 export const CLAIM_REFERRAL_REWARDS_MIXPANEL_EVENT_HASH = convertToBytes32('Claim Referral Rewards');
 export const CLAIM_INDIRECT_REFERRAL_REWARDS_MIXPANEL_EVENT_HASH = convertToBytes32('Claim Indirect Referral Rewards');
+export const CLAIM_SQUAD_REWARDS_MIXPANEL_EVENT_HASH = convertToBytes32('Claim Squad Rewards');
