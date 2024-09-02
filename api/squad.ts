@@ -541,26 +541,20 @@ export const checkSquadCreationMethodAndCost = async (twitterId: string): Promis
             }
         }
 
-        // check if the user linked a starter code.
-        // starter codes allow users to create a squad for free ONCE.
-        const hasStarterCodeLinked = user.inviteCodeData.usedStarterCode !== null;
         let hasCreatedFreeSquad: boolean = false;
         let creationMethod: SquadCreationMethod;
 
-        // if `hasStarterCodeLinked` is true, check if the user has already created a squad with the starter code.
-        if (hasStarterCodeLinked) {
-            // find at least one squad where `formedBy` is the user's ID and `creationMethod` is `FREE_STARTER_CODE`.
-            const freeSquad = await SquadModel.findOne({
-                formedBy: user._id,
-                creationMethod: SquadCreationMethod.FREE_STARTER_CODE
-            });
+        // find at least one squad where `formedBy` is the user's ID and `creationMethod` is `FREE_STARTER_CODE`.
+        const freeSquad = await SquadModel.findOne({
+            formedBy: user._id,
+            creationMethod: SquadCreationMethod.FREE_STARTER_CODE
+        });
 
-            if (freeSquad) {
-                hasCreatedFreeSquad = true;
-            }
+        if (freeSquad) {
+            hasCreatedFreeSquad = true;
         }
 
-        creationMethod = hasStarterCodeLinked && !hasCreatedFreeSquad ? SquadCreationMethod.FREE_STARTER_CODE : SquadCreationMethod.X_COOKIES;
+        creationMethod = !hasCreatedFreeSquad ? SquadCreationMethod.FREE_STARTER_CODE : SquadCreationMethod.X_COOKIES;
 
         // check the cost in xCookies to create a squad.
         const cost = creationMethod === SquadCreationMethod.FREE_STARTER_CODE ? 0 : CREATE_SQUAD_COST;
