@@ -3,7 +3,7 @@ import { KOSExplicitOwnership } from '../models/kos';
 import { Leaderboard, LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
 import { PendingSquadMember, SquadCreationMethod, SquadMember, SquadRank, SquadRole } from '../models/squad';
 import { User, UserSecondaryWallet, UserWallet } from '../models/user';
-import { LeaderboardModel, SquadModel, UserModel } from '../utils/constants/db';
+import { LeaderboardModel, SquadLeaderboardModel, SquadModel, UserModel } from '../utils/constants/db';
 import { CREATE_SQUAD_COST, INITIAL_MAX_MEMBERS, MAX_CO_LEADERS_LIMIT, MAX_LEADERS_LIMIT, MAX_MEMBERS_INCREASE_UPON_UPGRADE, MAX_MEMBERS_LIMIT, RENAME_SQUAD_COOLDOWN, RENAME_SQUAD_COST, SQUAD_LEAVE_COOLDOWN, UPGRADE_SQUAD_MAX_MEMBERS_COST } from '../utils/constants/squad';
 import { generateObjectId } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
@@ -493,6 +493,13 @@ export const renameSquad = async (twitterId: string, newSquadName: string): Prom
             lastNameChangeTimestamp: currentTimestamp
         });
 
+        // rename the squad name on the leaderboard
+        await SquadLeaderboardModel.updateMany(
+            { 'pointsData.squadId': squad._id },
+            { $set: { 'pointsData.$[elem].squadName': newSquadName } },
+            { arrayFilters: [{ 'elem.squadId': squad._id }] }
+        );
+
         // deduct the cost from the user's xCookies and update `totalXCookiesSpent` and `weeklyXCookiesSpent`
         await UserModel.updateOne({ _id: user._id }, {
             $inc: {
@@ -534,26 +541,20 @@ export const checkSquadCreationMethodAndCost = async (twitterId: string): Promis
             }
         }
 
-        // check if the user linked a starter code.
-        // starter codes allow users to create a squad for free ONCE.
-        const hasStarterCodeLinked = user.inviteCodeData.usedStarterCode !== null;
         let hasCreatedFreeSquad: boolean = false;
         let creationMethod: SquadCreationMethod;
 
-        // if `hasStarterCodeLinked` is true, check if the user has already created a squad with the starter code.
-        if (hasStarterCodeLinked) {
-            // find at least one squad where `formedBy` is the user's ID and `creationMethod` is `FREE_STARTER_CODE`.
-            const freeSquad = await SquadModel.findOne({
-                formedBy: user._id,
-                creationMethod: SquadCreationMethod.FREE_STARTER_CODE
-            });
+        // find at least one squad where `formedBy` is the user's ID and `creationMethod` is `FREE_STARTER_CODE`.
+        const freeSquad = await SquadModel.findOne({
+            formedBy: user._id,
+            creationMethod: SquadCreationMethod.FREE_STARTER_CODE
+        });
 
-            if (freeSquad) {
-                hasCreatedFreeSquad = true;
-            }
+        if (freeSquad) {
+            hasCreatedFreeSquad = true;
         }
 
-        creationMethod = hasStarterCodeLinked && !hasCreatedFreeSquad ? SquadCreationMethod.FREE_STARTER_CODE : SquadCreationMethod.X_COOKIES;
+        creationMethod = !hasCreatedFreeSquad ? SquadCreationMethod.FREE_STARTER_CODE : SquadCreationMethod.X_COOKIES;
 
         // check the cost in xCookies to create a squad.
         const cost = creationMethod === SquadCreationMethod.FREE_STARTER_CODE ? 0 : CREATE_SQUAD_COST;
