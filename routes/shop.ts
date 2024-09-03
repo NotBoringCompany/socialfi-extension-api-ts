@@ -52,7 +52,7 @@ router.post('/add_shop_assets', authMiddleware(3), async (req, res) => {
 })
 
 router.post('/send_telegram_stars_invoice', async (req, res) => {
-    const { asset } = req.body;
+    const { asset, chatId } = req.body;
 
     try {
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'send_telegram_stars_invoice');
@@ -64,7 +64,7 @@ router.post('/send_telegram_stars_invoice', async (req, res) => {
             })
         }
 
-        const { status, message, data } = await sendTelegramStarsInvoice(asset);
+        const { status, message, data } = await sendTelegramStarsInvoice(asset, chatId);
 
         return res.status(status).json({
             status,

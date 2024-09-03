@@ -691,7 +691,10 @@ export const purchaseShopAsset = async (
  * 
  * Once the invoice is paid, the user SHOULD receive the asset.
  */
-export const sendTelegramStarsInvoice = async (asset: ShopAssetExtended): Promise<ReturnValue> => {
+export const sendTelegramStarsInvoice = async (
+    asset: ShopAssetExtended,
+    chatId: string,
+): Promise<ReturnValue> => {
     try {
         // double check to see if the asset matches with the asset on the database.
         const dbAsset = await ShopAssetModel.findOne({ assetName: asset.assetName }).lean();
@@ -705,8 +708,7 @@ export const sendTelegramStarsInvoice = async (asset: ShopAssetExtended): Promis
 
         // to ensure that only legit data is sent to the Telegram API, the asset data is fetched from the database.
         const payload = {
-            // for prod, this NEEDS to be changed to the real bot!!!
-            chat_id: '@WonderverseTestingBot',
+            chat_id: chatId,
             title: dbAsset.assetName,
             description: dbAsset.assetName,
             // TO DO: cost in telegram stars (need the API).
