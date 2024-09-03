@@ -723,6 +723,10 @@ export const sendTelegramStarsInvoice = async (asset: ShopAssetExtended): Promis
             ]
         }
 
+        const url = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendInvoice`;
+
+        console.log(`(sendTelegramStarsInvoice) Sending invoice to Telegram API: ${url}`);
+
         const response = await axios.post(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendInvoice`, payload);
 
         console.log('response.data: ', response.data);
