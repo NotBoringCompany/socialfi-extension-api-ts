@@ -12,7 +12,7 @@ import { TxParsedMessage } from './web3';
  */
 export interface ShopAsset {
     // the name of the asset
-    assetName: string | ShopAssetType;
+    assetName: ShopAssetType;
     // the type of asset (e.g. food, item, in-app package, etc.)
     assetType: 'item' | 'food' | 'package';
     // the price of the asset
