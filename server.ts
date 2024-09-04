@@ -93,5 +93,5 @@ app.use('/web3', checkMaintenance, web3);
 app.listen(port, async () => {
     console.log(`Server running on port: ${port}`);
 
-    // await schedulers();
+    await schedulers();
 });
