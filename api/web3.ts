@@ -190,13 +190,17 @@ export const verifyTONTransaction = async (
 
         // set `isBounceable` to false to match the address format in TONKeeper
         const receiverAddress: string = new TON_WEB.utils.Address(firstTx?.out_msgs[0]?.destination)?.toString(true, true, false, false);
+
+        console.log(`receiver address: ${receiverAddress}`);
+
         // get the parsed message body of the transaction (containing the asset, amount purchased and total cost)
         const txParsedMessage: TxParsedMessage = JSON.parse(firstTx?.out_msgs[0]?.message);
+
+        console.log(`tx parsed message: ${JSON.stringify(txParsedMessage, null, 2)}`);
+
         // get the value of the transaction (amount supposedly sent to `receiverAddress`)
         const txValue = firstTx?.out_msgs[0]?.value;
 
-        console.log(`receiver address: ${receiverAddress}`);
-        console.log(`tx parsed message: ${JSON.stringify(txParsedMessage, null, 2)}`);
         console.log(`tx value: ${txValue}`);
 
         // check if the receiver address matches the Wonderbits receiver address
