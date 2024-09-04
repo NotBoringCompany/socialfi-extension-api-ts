@@ -12,33 +12,33 @@ import { distributeWeeklyMVPRewardsScheduler, updateCurrentWeeklyMVPRankingLeade
 export const schedulers = async (): Promise<void> => {
     try {
         // update gathering progress first because bits' energies will deplete afterwards
-        // await updateGatheringProgressAndDropResourceScheduler();
-        // // await updateClaimableXCookiesScheduler();
-        // // await updateClaimableCrumbsScheduler();
-        // depleteEnergyScheduler();
+        await updateGatheringProgressAndDropResourceScheduler();
+        // await updateClaimableXCookiesScheduler();
+        // await updateClaimableCrumbsScheduler();
+        depleteEnergyScheduler();
 
-        // updateSuccessfulIndirectReferralsScheduler();
+        updateSuccessfulIndirectReferralsScheduler();
         
-        // updateCurrentWeeklyMVPRankingLeaderboardScheduler();
+        updateCurrentWeeklyMVPRankingLeaderboardScheduler();
 
-        // batchSendKICKScheduler();
+        batchSendKICKScheduler();
 
-        // removeOpenedTweetIdsTodayScheduler();
-        // updateDailyBonusResourcesGatheredScheduler();
-        // updateDailyLoginRewardsDataScheduler();
-        // updateBeginnerRewardsDataScheduler();
-        // updateUserEnergyPotionScheduler();
-        // restoreUserCurrentEnergyAndResetRerollScheduler();
-        // resetGlobalItemsDailyBuyableAndSellableAmountScheduler();
-        // resetDailyIslandTappingMilestoneScheduler();
+        removeOpenedTweetIdsTodayScheduler();
+        updateDailyBonusResourcesGatheredScheduler();
+        updateDailyLoginRewardsDataScheduler();
+        updateBeginnerRewardsDataScheduler();
+        updateUserEnergyPotionScheduler();
+        restoreUserCurrentEnergyAndResetRerollScheduler();
+        resetGlobalItemsDailyBuyableAndSellableAmountScheduler();
+        resetDailyIslandTappingMilestoneScheduler();
 
-        // calculateWeeklySquadRankingAndAddSquadLeaderboardScheduler();
+        calculateWeeklySquadRankingAndAddSquadLeaderboardScheduler();
 
-        // distributeWeeklyMVPRewardsScheduler();
+        distributeWeeklyMVPRewardsScheduler();
 
-        // checkDailyKOSRewardsScheduler();
-        // checkWeeklyKOSRewardsScheduler();
-        testRandomizeSchedulerTimer();
+        checkDailyKOSRewardsScheduler();
+        checkWeeklyKOSRewardsScheduler();
+        // testRandomizeSchedulerTimer();
     } catch (err: any) {
         console.error('Error in schedulers:', err.message);
     }
