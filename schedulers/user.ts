@@ -61,3 +61,34 @@ export const restoreUserCurrentEnergyAndResetRerollScheduler = async (): Promise
         console.error('Error in restoreUserCurrentEnergyAndResetRerollScheduler:', err.message);
     }
 }
+
+/**
+ * Test Randomize Scheduler Timer Between 1 Minute Range - 5 Minute Range
+ */
+export const testRandomizeSchedulerTimer = async (): Promise<void> => {
+    try {
+        // Function to set a random timeout
+        const scheduleRandomTask = () => {
+            // Generate a random interval between 1 and 5 minutes
+            const minInterval = 1; // Minimum 1 minute
+            const maxInterval = 5; // Maximum 5 minutes
+            const randomInterval = Math.floor(Math.random() * (maxInterval - minInterval + 1) + minInterval); // Random interval between 1 and 5
+    
+            console.log(`(testRandomizeSchedulerTimer) Scheduled job to run in ${randomInterval} minutes`);
+    
+            // Schedule the task using setTimeout
+            setTimeout(() => {
+            console.log(`(testRandomizeSchedulerTimer) Task executed after ${randomInterval} minutes`);
+            // Your logic here
+    
+            // Reschedule the task again with a new random interval
+            scheduleRandomTask();
+            }, randomInterval * 60 * 1000); // Convert minutes to milliseconds
+        };
+  
+        // Start the initial schedule
+        scheduleRandomTask();
+    } catch (err: any) {
+      console.error('Error in testRandomizeSchedulerTimer: ', err.message);
+    }
+};

@@ -5,7 +5,7 @@ import { resetDailyIslandTappingMilestoneScheduler, updateClaimableCrumbsSchedul
 import { checkDailyKOSRewardsScheduler, checkWeeklyKOSRewardsScheduler } from './kos';
 import { resetGlobalItemsDailyBuyableAndSellableAmountScheduler } from './poi';
 import { calculateWeeklySquadRankingAndAddSquadLeaderboardScheduler } from './squadLeaderboard';
-import { restoreUserCurrentEnergyAndResetRerollScheduler, updateBeginnerRewardsDataScheduler, updateDailyLoginRewardsDataScheduler, updateUserEnergyPotionScheduler } from './user';
+import { restoreUserCurrentEnergyAndResetRerollScheduler, testRandomizeSchedulerTimer, updateBeginnerRewardsDataScheduler, updateDailyLoginRewardsDataScheduler, updateUserEnergyPotionScheduler } from './user';
 import { batchSendKICKScheduler } from './web3';
 import { distributeWeeklyMVPRewardsScheduler, updateCurrentWeeklyMVPRankingLeaderboardScheduler } from './weeklyMVPReward';
 
@@ -38,6 +38,7 @@ export const schedulers = async (): Promise<void> => {
 
         checkDailyKOSRewardsScheduler();
         checkWeeklyKOSRewardsScheduler();
+        // testRandomizeSchedulerTimer();
     } catch (err: any) {
         console.error('Error in schedulers:', err.message);
     }
