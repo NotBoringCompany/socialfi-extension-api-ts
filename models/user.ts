@@ -1,12 +1,9 @@
 import { POIName } from './poi';
 import { Food } from './food';
-import { Item } from './item';
+import { BitOrbType, Item, TerraCapsulatorType } from './item';
 import { ExtendedResource } from './resource';
 import { InviteCodeData, ReferralData } from './invite';
-import { TerraCapsulatorType } from './terraCapsulator';
-import { BitOrbType } from './bitOrb';
 import { CarpentingMastery, CookingMastery, SmeltingMastery, TailoringMastery, TappingMastery } from './mastery';
-import { CraftItem, CraftResultItem } from './craft';
 
 /****************
  * USER-RELATED MODELS

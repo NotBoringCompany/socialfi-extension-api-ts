@@ -25,9 +25,7 @@ import {
     WEEKLY_MVP_REWARDS,
 } from '../utils/constants/user';
 import { ReferralData, ReferralReward, ReferredUserData } from '../models/invite';
-import { BitOrbType } from '../models/bitOrb';
-import { TerraCapsulatorType } from '../models/terraCapsulator';
-import { Item } from '../models/item';
+import { BitOrbType, Item, TerraCapsulatorType } from '../models/item';
 import { BitRarity, BitTrait } from '../models/bit';
 import { IslandStatsModifiers, IslandType } from '../models/island';
 import { Modifier } from '../models/modifier';

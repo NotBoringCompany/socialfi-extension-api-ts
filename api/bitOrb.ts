@@ -6,8 +6,7 @@ import { ReturnValue, Status } from '../utils/retVal';
 import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
 import { IslandModel, UserModel } from '../utils/constants/db';
 import { Modifier } from '../models/modifier';
-import { BitOrbType } from '../models/bitOrb';
-import { Item } from '../models/item';
+import { BitOrbType, Item } from '../models/item';
 
 /**
  * (User) Consumes a Bit Orb to obtain a Bit.

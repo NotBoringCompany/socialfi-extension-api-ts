@@ -7,7 +7,6 @@ import { generateObjectId } from '../utils/crypto';
 import { fetchIAPTickers, verifyTONTransaction } from './web3';
 import { TxParsedMessage } from '../models/web3';
 import { ExtendedXCookieData, XCookieSource } from '../models/user';
-import { shop } from '../utils/shop';
 import { USD_TO_STARS_CONVERSION } from '../utils/constants/tg';
 import axios from 'axios';
 

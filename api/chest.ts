@@ -4,9 +4,7 @@ import { Food, FoodType } from '../models/food';
 import { BarrenResource, CombinedResources, ExtendedResource, Resource, ResourceType } from '../models/resource';
 import { UserModel } from '../utils/constants/db';
 import { resources } from '../utils/constants/resource';
-import { BitOrbType } from '../models/bitOrb';
-import { TerraCapsulatorType } from '../models/terraCapsulator';
-import { Item } from '../models/item';
+import { BitOrbType, Item, TerraCapsulatorType } from '../models/item';
 import { ExtendedXCookieData, XCookieSource } from '../models/user';
 
 /**

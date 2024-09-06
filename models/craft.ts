@@ -1,133 +1,89 @@
-import { ExtendedResource, ResourceRarity, ResourceType, SimplifiedResource } from "./resource";
-
-export interface Crafting {
-    catalysts: SimplifiedResource[],
-    resultItem : ExtendedResource,
-    rarity : ResourceRarity
-}
-
-export interface CraftItem {
-    /** the type of crafting */
-    //type: CraftType;
-    type: ResourceType;
-
-    /** the craft item line */
-
-    line: CraftItemLine;
-
-    /** the rarity of the craft item */
-
-    rarity: CraftItemRarity;
-
-    /** the energy required to create 1 of this resource (singular weight) */
-
-    baseEnergy: number;
-
-    /** resource required to create 1 of this resource */
-    berries:number,
-    catalyst: SimplifiedResource[],
-    baseSuccessChance: number,
-    baseCritChance: number,
-    points: number,
-    craftPoints: number,
-    reqLevel: number,
-    reqCraftLevel: number,
-    craftExp: number,
-    weight: number
-}
-
-export interface CraftResultItem {
-    /** the type of crafting */
-    //type: CraftType;
-    type: CraftType;
-    /** the craft item line */
-    line: CraftItemLine;
-    /** the rarity of the craft item */
-    rarity: CraftItemRarity;
-    /** the energy required to create 1 of this resource (singular weight) */
-    baseEnergy: number;
-    /** Berry required to create 1 of this resource */
-    berries:number,
-    /** resource required to create 1 of this resource */
-    catalyst: SimplifiedResource[],
-    /** Success Rate to create 1 of this item */
-    baseSuccessChance: number,
-    /** Crit chance to create more of this item */
-    baseCritChance: number,
-    /** Points generated  */
-    points: number,
-    /** Craft points given after creating 1 of this item */
-    craftPoints: number,
-    /** Required level to create 1 of this item */
-    reqLevel: number,
-    /** Required Craft level to create 1 of this item */
-    reqCraftLevel: number,
-    /** Craft exp given after creating 1 of this item */
-    craftExp: number,
-    /** weight of the resulted item (but i think we can search from the resourceDB) */
-    weight: number
-}
-
-export enum CraftRecipes
-{
-    MAPLE_SYRUP = "HIGH QUALITY MAPLE SYRUP",
-    GOLD = "HIGH QUALITY GOLD",
-    SILVER = "HIGH QUALITY SILVER"
-}
-
-export enum SmeltingCraft
-{
-    PURIFIED_STONE = "PURIFIED STONE",
-    PURIFIED_IRON = "PURIFIED IRON",
-    PURIFIED_SILVER = "PURIFIED SILVER",
-    PURIFIED_GOLD = "PURIFIED GOLD",
-    PLATINUM_TEAR = "PLATINUM TEAR"
-}
-
-export enum CookingCraft
-{
-    
-    REFRESHING_MELON = "REFRESHING MELON",
-    ROYAL_JELLY = "ROYAL JELLY",
-    HONEYDEW = "HONEYDEW",
-    SALAD = "SALAD",
-    SUGAR_RUSH = "SUGAR RUSH",
-    SWEET_DRAGON = "SWEET DRAGON",
-    GOLD_SYRUP = "GOLD SYRUP",
-}
-
-export enum CarpentingCraft
-{
-    BRICKSTONE_WOOD = "BRICKSTONE WOOD",
-    BOLD_BRANCH = "BOLD BRANCH",
-    ADAM_WOOD = "ADAM WOOD",
-    ROOT_OF_EVE = "ROOT OF EVE",
-
-}
-
-export enum TailoringCraft
-{
-    SHINING_FABRIC = "SHINING FABRIC",
-    GOLDEN_THREAD = "GOLDEN THREAD",
-    DENIM = "DENIM",
-    SATIN = "SATIN"
-}
-
+import { AssetType } from './asset';
+import { FoodType } from './food';
+import { EnergyItem, PotionItem, RestorationItem, TeleporterItem, TransmutationItem } from './item';
+import { BarrenResource, ExtendedResource, FruitResource, LiquidResource, OreResource, Resource, ResourceRarity, ResourceType, SimplifiedResource } from "./resource";
 
 /**
- * Represents the resource's line.
+ * Represents a crafting recipe with the required assets to craft the recipe.
  */
-export enum CraftItemLine {
-    SMELTING = 'Smelting',
-    COOKING = 'Cooking',
-    CARPENTING = 'Carpenting',
-    TAILORING = 'Tailoring',
+export interface CraftingRecipe {
+    /** the resulting asset from crafting via this recipe */
+    craftedAsset: CraftableAsset;
+    /** the description of the crafted asset */
+    craftedAssetDescription: string;
+    /** the rarity of the crafted asset */
+    craftedAssetRarity: CraftedAssetRarity;
+    /** the `line`, `category` or type of crafting recipe */
+    craftingRecipeLine: CraftingRecipeLine;
+    /** the base energy required to craft 1 of the `craftedAssetType` */
+    baseEnergyRequired: number;
+    /** 
+     * base success chance of obtaining at LEAST 1 of this asset upon crafting. 
+     * 
+     * if, for example, `baseSuccessChance` is not reached upon a dice roll, the player will not obtain the crafted asset at all, 
+     * and they will lose the assets used to craft the asset.
+     */
+    baseSuccessChance: number;
+    /**
+     * the base chance that an extra asset of the same type will be obtained upon crafting, such that the user obtains 2 of the asset.
+     * 
+     * exact implementation is TBD.
+     */
+    baseCritChance: number;
+    /**
+     * the points the user will obtain upon crafting, whether successful or not.
+     */
+    obtainedPoints: number;
+    /**
+     * the amount of `xCookies` required to craft the recipe.
+     */
+    requiredXCookies: number;
+    /**
+     * the required in-game level of the player to craft the recipe.
+     * 
+     * if `none`, then the player can craft the recipe at any level.
+     */
+    requiredLevel: number | 'none';
+    /**
+     * the required crafting level of the player to craft the recipe.
+     * 
+     * if `none`, then the player can craft the recipe at any crafting level.
+     */
+    requiredCraftingLevel: number | 'none';
+    /**
+     * the earned experience the player will obtain upon crafting the recipe.
+     * 
+     * Added to the user's craftingEXP.
+     */
+    earnedEXP: number;
+    /**
+     * the weight of 1 of the crafted asset.
+     */
+    weight: number;
+    /** the required assets to craft the recipe */
+    requiredAssets: CraftingRecipeRequiredAssetData[];
 }
 
-/** 
- * Represents the resource's rarity 
+/**
+ * The different types of crafting recipe lines.
  */
-export enum CraftItemRarity {
+export enum CraftingRecipeLine {
+    RESTORATION = 'Restoration',
+    TRANSMUTATION = 'Transmutation',
+    ENERGY = 'Energy',
+    TELEPORTER = 'Teleporter',
+    POTION = 'Potion'
+}
+
+/**
+ * Represents the resulting asset that was crafted from a recipe.
+ */
+export type CraftedAssetType = AssetType;
+
+/** 
+ * Represents the crafted asset's rarity 
+ */
+export enum CraftedAssetRarity {
     COMMON = 'Common',
     UNCOMMON = 'Uncommon',
     RARE = 'Rare',
@@ -136,29 +92,47 @@ export enum CraftItemRarity {
 }
 
 /** Numeric representation of `ResourceRarity` */
-export const CraftItemRarityNumeric: { [key in ResourceRarity]: number } = {
-    [CraftItemRarity.COMMON]: 0,
-    [CraftItemRarity.UNCOMMON]: 1,
-    [CraftItemRarity.RARE]: 2,
-    [CraftItemRarity.EPIC]: 3,
-    [CraftItemRarity.LEGENDARY]: 4,
+export const CraftedAssetRarityNumeric: { [key in ResourceRarity]: number } = {
+    [CraftedAssetRarity.COMMON]: 0,
+    [CraftedAssetRarity.UNCOMMON]: 1,
+    [CraftedAssetRarity.RARE]: 2,
+    [CraftedAssetRarity.EPIC]: 3,
+    [CraftedAssetRarity.LEGENDARY]: 4,
 }
 
-export type CraftType = SmeltingCraft | CookingCraft | CarpentingCraft | TailoringCraft;
+/**
+ * Represents the required asset data for a crafting recipe.
+ */
+export interface CraftingRecipeRequiredAssetData {
+    /** 
+     * the asset category.
+     * 
+     * if any, the user can use any asset (unless bound by other restrictions like minimum rarity for resources) to craft the asset.
+     */
+    assetCategory: 'resource' | 'food' | 'item' | 'any';
+    /**
+     * the specific asset required to craft the recipe.
+     * 
+     * if `assetCategory` is `any`, `specificAsset` SHOULD also be `any`.
+     * however, having a specific `specificAsset` and having `specificAsset` as `any` is allowed.
+     * 
+     * for example, if `assetCategory` is `resource` and `specificAsset` is `any` and `requiredRarity` is `ResourceRarity.COMMON`,
+     * the user can use any common resource to craft the recipe.
+     */
+    specificAsset: AssetType | 'any';
+    /**
+     * The minimum rarity of the asset required.
+     * 
+     * Some assets have no rarity, so the value can be 'none'.
+     */
+    requiredRarity: CraftedAssetRarity | ResourceRarity | 'none';
+    /**
+     * The amount of the asset required.
+     */
+    amount: number;
+}
 
-/* 
-
-    public class recipe
-    {
-        public List<ExtendedItem> catalyst;
-        public Item resultItem;
-    }
-
-    public class ExtendedItem
-    {
-        public Item item;
-        public int amount;
-    }
-    
-
-*/
+/**
+ * Represents a craftable asset.
+ */
+export type CraftableAsset = RestorationItem | TransmutationItem | EnergyItem | TeleporterItem | PotionItem;
