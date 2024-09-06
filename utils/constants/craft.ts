@@ -19,20 +19,24 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             requiredCraftingLevel: 1,
             earnedEXP: 10,
             weight: 0,
-            requiredAssets: [
+            requiredAssetGroups: [
                 {
-                    // 15 of any common resource
-                    assetCategory: 'resource',
-                    specificAsset: 'any',
-                    requiredRarity: ResourceRarity.COMMON,
-                    amount: 15
-                },
-                {
-                    // 5 of any uncommon resource
-                    assetCategory: 'resource',
-                    specificAsset: 'any',
-                    requiredRarity: ResourceRarity.UNCOMMON,
-                    amount: 5
+                    requiredAssets: [
+                        {
+                            // 15 of any common resource
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.COMMON,
+                            amount: 15
+                        },
+                        {
+                            // 5 of any uncommon resource
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.UNCOMMON,
+                            amount: 5
+                        }
+                    ]
                 }
             ]
         }

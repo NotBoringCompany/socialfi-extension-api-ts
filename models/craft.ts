@@ -60,8 +60,16 @@ export interface CraftingRecipe {
      * the weight of 1 of the crafted asset.
      */
     weight: number;
-    /** the required assets to craft the recipe */
-    requiredAssets: CraftingRecipeRequiredAssetData[];
+    /** 
+     * the assets required to craft the recipe, grouped. 
+     * 
+     * this will facilitate the possibility of optional asset conditions. for example, to craft Item A,
+     * a player requires, say, 1. 5 of resource A and 10 of resource B or 2. 4 of resource C.
+     * 
+     * 5 of resource A and 10 of resource B (1) will be grouped into Group 1 (i.e. `requiredAssetGroups[0]`)
+     * and 4 of resource C (2) will be grouped into Group 2 (i.e. `requiredAssetGroups[1]`)
+     */
+    requiredAssetGroups: CraftingRecipeRequiredAssetGroup[];
 }
 
 /**
@@ -101,7 +109,15 @@ export const CraftedAssetRarityNumeric: { [key in ResourceRarity]: number } = {
 }
 
 /**
- * Represents the required asset data for a crafting recipe.
+ * Represents a group of required assets for a crafting recipe.
+ */
+export interface CraftingRecipeRequiredAssetGroup {
+    // the required assets for this group.
+    requiredAssets: CraftingRecipeRequiredAssetData[];
+}
+
+/**
+ * Represents the required asset data for a specific required asset group of a crafting recipe.
  */
 export interface CraftingRecipeRequiredAssetData {
     /** 
