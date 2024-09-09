@@ -1,5 +1,5 @@
 import { IslandType } from '../../models/island';
-import { TerraCapsulatorType } from '../../models/terraCapsulator';
+import { TerraCapsulatorType } from '../../models/item';
 
 /**
  * Gets the Island's type based on the probability of obtaining it, depending on `rand`, which is a number from 1 to 100
