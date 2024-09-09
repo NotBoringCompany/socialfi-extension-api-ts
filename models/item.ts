@@ -64,9 +64,9 @@ export enum TransmutationItem {
 }
 
 /**
- * A list of different craftable Energy items.
+ * A list of different craftable Energy Totem items.
  */
-export enum EnergyItem {
+export enum EnergyTotemItem {
     SMALL_TOTEM_OF_ENERGY = 'Small Totem of Energy',
     BIG_TOTEM_OF_ENERGY = 'Big Totem of Energy',
     GRAND_TOTEM_OF_ENERGY = 'Grand Totem of Energy',

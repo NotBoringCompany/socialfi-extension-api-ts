@@ -1,15 +1,27 @@
+import Bull from 'bull';
 import { AssetType } from '../../models/asset';
 import { CraftedAssetRarity, CraftingRecipe, CraftingRecipeLine } from "../../models/craft";
 import { RestorationItem } from '../../models/item';
 import { BarrenResource, CombinedResources, ExtendedResource, FruitResource, LiquidResource, OreResource, ResourceRarity, ResourceType, SimplifiedResource } from "../../models/resource";
 
+/**
+ * Creates a new Bull instance for crafting assets to be queued.
+ */
+export const CRAFT_QUEUE = new Bull('craftQueue', {
+    redis: process.env.REDIS_URL
+});
+
 export const CRAFTING_RECIPES: CraftingRecipe[] =
     [
         {
-            craftedAsset: RestorationItem.PARCHMENT_OF_RESTORATION,
-            craftedAssetDescription: 'Select an Isle (Exotic rarity or below) and instantly restore 1% of total resources.',
-            craftedAssetRarity: CraftedAssetRarity.COMMON,
+            craftedAssetData: {
+                asset: RestorationItem.PARCHMENT_OF_RESTORATION,
+                assetDescription: `Select an Isle (Exotic rarity or below) and instantly restore 1% of total resources.`,
+                assetRarity: CraftedAssetRarity.COMMON,
+                assetEffectDuration: 'none'
+            },
             craftingRecipeLine: CraftingRecipeLine.RESTORATION,
+            craftingDuration: 600,
             baseEnergyRequired: 10,
             baseSuccessChance: 70,
             baseCritChance: 0,

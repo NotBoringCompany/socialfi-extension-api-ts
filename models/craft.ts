@@ -1,20 +1,18 @@
 import { AssetType } from './asset';
 import { FoodType } from './food';
-import { EnergyItem, PotionItem, RestorationItem, TeleporterItem, TransmutationItem } from './item';
+import { EnergyTotemItem, PotionItem, RestorationItem, TeleporterItem, TransmutationItem } from './item';
 import { BarrenResource, ExtendedResource, FruitResource, LiquidResource, OreResource, Resource, ResourceRarity, ResourceType, SimplifiedResource } from "./resource";
 
 /**
  * Represents a crafting recipe with the required assets to craft the recipe.
  */
 export interface CraftingRecipe {
-    /** the resulting asset from crafting via this recipe */
-    craftedAsset: CraftableAsset;
-    /** the description of the crafted asset */
-    craftedAssetDescription: string;
-    /** the rarity of the crafted asset */
-    craftedAssetRarity: CraftedAssetRarity;
+    /** the data/stats of the asset that's crafted from this recipe */
+    craftedAssetData: CraftedAssetData;
     /** the `line`, `category` or type of crafting recipe */
     craftingRecipeLine: CraftingRecipeLine;
+    /** the amount of time taken to craft this recipe (in seconds) */
+    craftingDuration: number;
     /** the base energy required to craft 1 of the `craftedAssetType` */
     baseEnergyRequired: number;
     /** 
@@ -73,12 +71,32 @@ export interface CraftingRecipe {
 }
 
 /**
+ * Represents the data of the crafted asset.
+ */
+export interface CraftedAssetData {
+    /** the resulting asset from crafting via this recipe */
+    asset: CraftableAsset;
+    /** the description of the crafted asset */
+    assetDescription: string;
+    /** the rarity of the crafted asset */
+    assetRarity: CraftedAssetRarity;
+    /**
+     * some assets have an effect on the game mechanic, such as increasing the stats of an island, reducing energy depletion of bits, etc.
+     * 
+     * in this case, `assetEffectDuration` will be the duration of the effect.
+     * 
+     * if `none`, then the asset has no external effect with duration.
+     */
+    assetEffectDuration: number | 'none';
+}
+
+/**
  * The different types of crafting recipe lines.
  */
 export enum CraftingRecipeLine {
     RESTORATION = 'Restoration',
     TRANSMUTATION = 'Transmutation',
-    ENERGY = 'Energy',
+    ENERGY_TOTEM = 'Energy Totem',
     TELEPORTER = 'Teleporter',
     POTION = 'Potion'
 }
@@ -151,4 +169,4 @@ export interface CraftingRecipeRequiredAssetData {
 /**
  * Represents a craftable asset.
  */
-export type CraftableAsset = RestorationItem | TransmutationItem | EnergyItem | TeleporterItem | PotionItem;
+export type CraftableAsset = RestorationItem | TransmutationItem | EnergyTotemItem | TeleporterItem | PotionItem;
