@@ -1,6 +1,11 @@
 import cron from 'node-cron';
 import { addNewWeeklyMVPRankingLeaderboard, distributeWeeklyMVPRewards, updateCurrentWeeklyMVPRankingLeaderboard } from '../api/weeklyMVPReward';
 import { resetWeeklyItemsConsumed, resetWeeklyXCookiesSpent } from '../api/user';
+import Bull from 'bull';
+
+export const distributeWeeklyMVPRewardsQueue = new Bull('distributeWeeklyMVPRewardsQueue', {
+    redis: process.env.REDIS_URL
+});
 
 /**
  * Does a few things:
@@ -12,36 +17,23 @@ import { resetWeeklyItemsConsumed, resetWeeklyXCookiesSpent } from '../api/user'
  * 
  * Called every 23:59 UTC Sunday 
  */
-export const distributeWeeklyMVPRewardsScheduler = async (): Promise<void> => {
-    try {
-        cron.schedule('59 23 * * 0', async () => {
-            console.log('Running distributeWeeklyMVPRewards...');
+distributeWeeklyMVPRewardsQueue.process(async () => {
+    console.log('Running distributeWeeklyMVPRewardsQueue...');
+    await distributeWeeklyMVPRewards();
+    await updateCurrentWeeklyMVPRankingLeaderboard();
+    await resetWeeklyXCookiesSpent();
+    await resetWeeklyItemsConsumed();
+    await addNewWeeklyMVPRankingLeaderboard();
+});
 
-            await distributeWeeklyMVPRewards();
-            await updateCurrentWeeklyMVPRankingLeaderboard();
-            await resetWeeklyXCookiesSpent();
-            await resetWeeklyItemsConsumed();
-
-            // add new ranking leaderboard
-            await addNewWeeklyMVPRankingLeaderboard();
-        });
-    } catch (err: any) {
-        console.error('Error in distributeWeeklyMVPRewards:', err.message);
-    }
-}
+export const updateCurrentWeeklyMVPRankingLeaderboardQueue = new Bull('updateCurrentWeeklyMVPRankingLeaderboardQueue', {
+    redis: process.env.REDIS_URL
+});
 
 /**
- * Calls `updateCurrentWeeklyMVPRankingLeaderboard` to update the current weekly MVP ranking leaderboard every hour.
+ * Calls `updateCurrentWeeklyMVPRankingLeaderboard` to update the current weekly MVP ranking leaderboard every hour
  */
-export const updateCurrentWeeklyMVPRankingLeaderboardScheduler = async (): Promise<void> => {
-    try {
-        // run every hour
-        cron.schedule('0 * * * *', async () => {
-            console.log('Running updateCurrentWeeklyMVPRankingLeaderboard...');
-
-            await updateCurrentWeeklyMVPRankingLeaderboard();
-        });
-    } catch (err: any) {
-        console.error('Error in updateCurrentWeeklyMVPRankingLeaderboard:', err.message);
-    }
-}
+updateCurrentWeeklyMVPRankingLeaderboardQueue.process(async () => {
+    console.log('Running updateCurrentWeeklyMVPRankingLeaderboardQueue...');
+    await updateCurrentWeeklyMVPRankingLeaderboard();
+});
