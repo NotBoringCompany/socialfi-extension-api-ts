@@ -1,4 +1,5 @@
 import express from 'express';
+import http from 'http';
 import cors from 'cors';
 import * as dotenv from 'dotenv';
 import './utils/zod';
@@ -11,6 +12,7 @@ import { checkMaintenance } from './middlewares/maintenance';
 dotenv.config();
 
 const app = express();
+const server = http.createServer(app);
 const port = process.env.PORT!;
 const mongoUri = process.env.MONGODB_URI!;
 
@@ -19,12 +21,14 @@ app.use(express.json());
 // temporarily allowing all cors requests
 app.use(cors());
 
-app.use(session({
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    // store: MongoStore.create({ mongoUrl: mongoUri, collectionName: 'Sessions' })
-}));
+app.use(
+    session({
+        secret: process.env.SESSION_SECRET,
+        resave: false,
+        saveUninitialized: false,
+        // store: MongoStore.create({ mongoUrl: mongoUri, collectionName: 'Sessions' })
+    })
+);
 
 app.use(passport.initialize());
 app.use(passport.session());
@@ -60,6 +64,7 @@ import collab from './routes/collab';
 import collabV2 from './routes/collab_v2';
 import web3 from './routes/web3';
 import { schedulers } from './schedulers/schedulers';
+import { initializeSocket } from './configs/socket';
 
 app.use('/auth/twitter', checkMaintenance, twitterAuth);
 app.use('/auth/discord', checkMaintenance, discordAuth);
@@ -89,6 +94,9 @@ app.use('/squad_leaderboard', checkMaintenance, squadLeaderboard);
 app.use('/weekly_mvp_reward', checkMaintenance, weeklyMVPReward);
 app.use('/collab', checkMaintenance, collabV2);
 app.use('/web3', checkMaintenance, web3);
+
+/** socket io listener */
+initializeSocket(server);
 
 app.listen(port, async () => {
     console.log(`Server running on port: ${port}`);
