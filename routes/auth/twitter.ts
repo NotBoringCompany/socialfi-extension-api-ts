@@ -110,6 +110,8 @@ router.post('/wonderbits_admin_registration', async (req, res) => {
             })
         }
 
+        console.log(`(wonderbits_admin_registration) Is admin call.`);
+
         if (adminCall && adminKey !== process.env.ADMIN_KEY) {
             return res.status(401).json({
                 status: Status.UNAUTHORIZED,
@@ -117,7 +119,11 @@ router.post('/wonderbits_admin_registration', async (req, res) => {
             })
         }
 
+        console.log(`(wonderbits_admin_registration) Admin key is valid.`);
+
         const { status, message, data } = await handleTwitterLogin(twitterId, adminCall, profile, adminKey);
+
+        console.log(`(wonderbits_admin_registration) handleTwitterLogin --- Status: ${status}, Message: ${message}, Data: ${data}`);
 
         return res.status(status).json({
             status,

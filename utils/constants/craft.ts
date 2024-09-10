@@ -21,7 +21,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
                 assetEffectDuration: 'none'
             },
             craftingRecipeLine: CraftingRecipeLine.RESTORATION,
-            craftingDuration: 600,
+            craftingDuration: 60,
             baseEnergyRequired: 10,
             baseSuccessChance: 70,
             baseCritChance: 0,
