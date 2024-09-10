@@ -44,6 +44,14 @@ export enum TerraCapsulatorType {
 }
 
 /**
+ * Represents all Wonder Artefact items.
+ */
+export enum WonderArtefactItem {
+    ESSENCE_OF_WONDER = 'Essence of Wonder',
+    LIGHT_OF_WONDER = 'Light of Wonder',
+}
+
+/**
  * A list of different Restoration items.
  */
 export enum RestorationItem {

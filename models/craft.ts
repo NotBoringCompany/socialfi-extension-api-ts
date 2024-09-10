@@ -117,8 +117,8 @@ export enum CraftedAssetRarity {
     LEGENDARY = 'Legendary',
 }
 
-/** Numeric representation of `ResourceRarity` */
-export const CraftedAssetRarityNumeric: { [key in ResourceRarity]: number } = {
+/** Numeric representation of `CraftedAssetRarity` */
+export const CraftedAssetRarityNumeric: { [key in CraftedAssetRarity]: number } = {
     [CraftedAssetRarity.COMMON]: 0,
     [CraftedAssetRarity.UNCOMMON]: 1,
     [CraftedAssetRarity.RARE]: 2,

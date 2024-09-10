@@ -22,14 +22,14 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             },
             craftingRecipeLine: CraftingRecipeLine.RESTORATION,
             craftingDuration: 60,
-            baseEnergyRequired: 10,
+            baseEnergyRequired: 50,
             baseSuccessChance: 70,
             baseCritChance: 0,
-            obtainedPoints: 10,
-            requiredXCookies: 0.10,
+            obtainedPoints: 0,
+            requiredXCookies: 0,
             requiredLevel: 1,
             requiredCraftingLevel: 1,
-            earnedEXP: 10,
+            earnedEXP: 50,
             weight: 0,
             requiredAssetGroups: [
                 {
@@ -51,5 +51,168 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
                     ]
                 }
             ]
-        }
+        },
+        {
+            craftedAssetData: {
+                asset: RestorationItem.SCROLL_OF_RESTORATION,
+                assetDescription: `Select an Isle (Exotic rarity or below) and instantly restore 3% of total resources.`,
+                assetRarity: CraftedAssetRarity.UNCOMMON,
+                assetEffectDuration: 'none'
+            },
+            craftingRecipeLine: CraftingRecipeLine.RESTORATION,
+            craftingDuration: 600,
+            baseEnergyRequired: 50,
+            baseSuccessChance: 70,
+            baseCritChance: 0,
+            obtainedPoints: 0,
+            requiredXCookies: 0,
+            requiredLevel: 1,
+            requiredCraftingLevel: 1,
+            earnedEXP: 100,
+            weight: 0,
+            requiredAssetGroups: [
+                {
+                    requiredAssets: [
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.COMMON,
+                            amount: 20
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.UNCOMMON,
+                            amount: 10
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            craftedAssetData: {
+                asset: RestorationItem.TOME_OF_RESTORATION,
+                assetDescription: `Select an Isle (Exotic rarity or below) and instantly restore 7% of total resources.`,
+                assetRarity: CraftedAssetRarity.RARE,
+                assetEffectDuration: 'none'
+            },
+            craftingRecipeLine: CraftingRecipeLine.RESTORATION,
+            // 4 hours
+            craftingDuration: 14400,
+            baseEnergyRequired: 100,
+            baseSuccessChance: 70,
+            baseCritChance: 0,
+            obtainedPoints: 0,
+            requiredXCookies: 0,
+            requiredLevel: 1,
+            requiredCraftingLevel: 3,
+            earnedEXP: 250,
+            weight: 0,
+            requiredAssetGroups: [
+                {
+                    requiredAssets: [
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.COMMON,
+                            amount: 30
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.UNCOMMON,
+                            amount: 15
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.RARE,
+                            amount: 5
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            craftedAssetData: {
+                asset: RestorationItem.ANCIENT_SCROLL_OF_RESTORATION,
+                assetDescription: `Select an Isle (any rarity) and instantly restore 10% of total resources.`,
+                assetRarity: CraftedAssetRarity.EPIC,
+                assetEffectDuration: 'none'
+            },
+            craftingRecipeLine: CraftingRecipeLine.RESTORATION,
+            // 12 hours
+            craftingDuration: 43200,
+            baseEnergyRequired: 100,
+            baseSuccessChance: 70,
+            baseCritChance: 0,
+            obtainedPoints: 0,
+            requiredXCookies: 0,
+            requiredLevel: 1,
+            requiredCraftingLevel: 4,
+            earnedEXP: 500,
+            weight: 0,
+            requiredAssetGroups: [
+                {
+                    requiredAssets: [
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.RARE,
+                            amount: 30
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.EPIC,
+                            amount: 15
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            craftedAssetData: {
+                asset: RestorationItem.ANCIENT_TOME_OF_RESTORATION,
+                assetDescription: `Select an Isle (any rarity) and instantly restore 20% of total resources.`,
+                assetRarity: CraftedAssetRarity.LEGENDARY,
+                assetEffectDuration: 'none'
+            },
+            craftingRecipeLine: CraftingRecipeLine.RESTORATION,
+            // 24 hours
+            craftingDuration: 86400,
+            baseEnergyRequired: 200,
+            baseSuccessChance: 70,
+            baseCritChance: 0,
+            obtainedPoints: 0,
+            requiredXCookies: 0,
+            requiredLevel: 1,
+            requiredCraftingLevel: 5,
+            earnedEXP: 1000,
+            weight: 0,
+            requiredAssetGroups: [
+                {
+                    requiredAssets: [
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.RARE,
+                            amount: 30
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.EPIC,
+                            amount: 15
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.LEGENDARY,
+                            amount: 5
+                        }
+                    ]
+                }
+            ]
+        },
     ];
