@@ -1,4 +1,5 @@
 import express from 'express';
+import http from 'http';
 import cors from 'cors';
 import * as dotenv from 'dotenv';
 import './utils/zod';
@@ -8,11 +9,11 @@ import session from 'express-session';
 import MongoStore from 'connect-mongo';
 import { checkMaintenance } from './middlewares/maintenance';
 import {Server} from 'socket.io'
-import http from 'http';
 
 dotenv.config();
 
 const app = express();
+const server = http.createServer(app);
 const port = process.env.PORT!;
 const mongoUri = process.env.MONGODB_URI!;
 
@@ -21,12 +22,14 @@ app.use(express.json());
 // temporarily allowing all cors requests
 app.use(cors());
 
-app.use(session({
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    // store: MongoStore.create({ mongoUrl: mongoUri, collectionName: 'Sessions' })
-}));
+app.use(
+    session({
+        secret: process.env.SESSION_SECRET,
+        resave: false,
+        saveUninitialized: false,
+        // store: MongoStore.create({ mongoUrl: mongoUri, collectionName: 'Sessions' })
+    })
+);
 
 app.use(passport.initialize());
 app.use(passport.session());
@@ -69,6 +72,7 @@ import upgrade from './routes/upgrade';
 import gacha from './routes/gacha';
 import cosmetic from './routes/cosmetic';
 import { populateBitCosmeticEnum } from './utils/constants/cosmetic';
+import { initializeSocket } from './configs/socket';
 
 app.use('/auth/twitter', checkMaintenance, twitterAuth);
 app.use('/auth/discord', checkMaintenance, discordAuth);
@@ -98,6 +102,9 @@ app.use('/squad_leaderboard', checkMaintenance, squadLeaderboard);
 app.use('/weekly_mvp_reward', checkMaintenance, weeklyMVPReward);
 app.use('/collab', checkMaintenance, collabV2);
 app.use('/web3', checkMaintenance, web3);
+
+/** socket io listener */
+initializeSocket(server);
 app.use('/bans', checkMaintenance, ban);
 app.use('/mail', checkMaintenance, mail);
 app.use('/upgrade', checkMaintenance, upgrade);

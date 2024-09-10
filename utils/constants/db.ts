@@ -22,6 +22,7 @@ import { WeeklyMVPClaimableRewardSchema, WeeklyMVPRankingLeaderboardSchema } fro
 import { CollabSchema } from '../../schemas/Collab';
 import { CollabBasketSchema, CollabParticipantSchema } from '../../schemas/CollabV2';
 import { ShopAssetPurchaseSchema, ShopAssetSchema } from '../../schemas/Shop';
+import { ChatroomSchema, ChatSchema } from '../../schemas/Chat';
 import { CraftingQueueSchema } from '../../schemas/Craft';
 import { BanSchema } from '../../schemas/Ban';
 import { MailReceiverDataSchema, MailSchema } from '../../schemas/Mail';
@@ -112,3 +113,5 @@ export const WonderspinModel = TEST_CONNECTION.model('Wonderspins', WonderspinSc
 export const BitCosmeticModel = TEST_CONNECTION.model('BitCosmetics', BitCosmeticSchema, 'BitCosmetics');
 export const WonderpassModel = TEST_CONNECTION.model('Wonderpasses', WonderpassSchema, 'Wonderpasses');
 export const UserWonderpassDataModel = TEST_CONNECTION.model('UserWonderpassData', UserWonderpassDataSchema, 'UserWonderpassData');
+export const ChatModel = TEST_CONNECTION.model('Chats', ChatSchema, 'Chats');
+export const ChatroomModel = TEST_CONNECTION.model('Chatrooms', ChatroomSchema, 'Chatrooms');
