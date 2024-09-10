@@ -100,7 +100,7 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
         }
 
         const preregisteredUser = await UserModel.findOne({ $and: [{ twitterUsername: profile.username }, { twitterId: null }] }).lean();
-        if (preregisteredUser) return handlePreRegister(twitterId, profile);
+        if (preregisteredUser && !adminCall) return handlePreRegister(twitterId, profile);
 
         const user = await UserModel.findOne({ twitterId }).lean();
 
