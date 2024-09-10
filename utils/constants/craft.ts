@@ -1,7 +1,7 @@
 import Bull from 'bull';
 import { AssetType } from '../../models/asset';
 import { CraftedAssetRarity, CraftingRecipe, CraftingRecipeLine } from "../../models/craft";
-import { RestorationItem } from '../../models/item';
+import { RestorationItem, WonderArtefactItem } from '../../models/item';
 import { BarrenResource, CombinedResources, ExtendedResource, FruitResource, LiquidResource, OreResource, ResourceRarity, ResourceType, SimplifiedResource } from "../../models/resource";
 
 /**
@@ -210,6 +210,12 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
                             specificAsset: 'any',
                             requiredRarity: ResourceRarity.LEGENDARY,
                             amount: 5
+                        },
+                        {
+                            assetCategory: 'item',
+                            specificAsset: WonderArtefactItem.ESSENCE_OF_WONDER,
+                            requiredRarity: 'none',
+                            amount: 3
                         }
                     ]
                 }

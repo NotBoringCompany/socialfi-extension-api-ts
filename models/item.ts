@@ -24,7 +24,16 @@ export interface Item {
 /**
  * Represents the type of item, which are generic assets that are usable in-game.
  */
-export type ItemType = BoosterItem | BitOrbType | TerraCapsulatorType;
+export type ItemType = 
+BoosterItem | 
+BitOrbType | 
+TerraCapsulatorType | 
+WonderArtefactItem | 
+RestorationItem | 
+TransmutationItem | 
+EnergyTotemItem | 
+TeleporterItem | 
+PotionItem;
 
 /**
  * Represents all Bit Orb types in the game.
