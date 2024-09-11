@@ -66,10 +66,12 @@ export interface CraftingRecipe {
      * the assets required to craft the recipe, grouped. 
      * 
      * this will facilitate the possibility of optional asset conditions. for example, to craft Item A,
-     * a player requires, say, 1. 5 of resource A and 10 of resource B or 2. 4 of resource C.
+     * a player requires, say, 1. 5 of resource A and 10 of resource B OR 2. 4 of resource C.
      * 
      * 5 of resource A and 10 of resource B (1) will be grouped into Group 1 (i.e. `requiredAssetGroups[0]`)
      * and 4 of resource C (2) will be grouped into Group 2 (i.e. `requiredAssetGroups[1]`)
+     * 
+     * if there is only 1 group, then the user must fulfill all the conditions in that group to craft the recipe.
      */
     requiredAssetGroups: CraftingRecipeRequiredAssetGroup[];
 }
