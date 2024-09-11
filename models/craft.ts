@@ -18,12 +18,16 @@ export interface CraftingRecipe {
     /** 
      * base success chance of obtaining at LEAST 1 of this asset upon crafting. 
      * 
+     * number is in basis points (i.e. 0-9999), so each 100 is 1%.
+     * 
      * if, for example, `baseSuccessChance` is not reached upon a dice roll, the player will not obtain the crafted asset at all, 
      * and they will lose the assets used to craft the asset.
      */
     baseSuccessChance: number;
     /**
      * the base chance that an extra asset of the same type will be obtained upon crafting, such that the user obtains 2 of the asset.
+     * 
+     * number is in basis points (i.e. 0-9999), so each 100 is 1%.
      * 
      * exact implementation is TBD.
      */
@@ -164,6 +168,25 @@ export interface CraftingRecipeRequiredAssetData {
      * The amount of the asset required.
      */
     amount: number;
+}
+
+/**
+ * Represents an asset that's being crafted from a recipe and is still pending for the crafting process to be completed.
+ * 
+ * Each time a user crafts something, a new OngoingCraft instance will be created (because of time-based crafting).
+ * Simply incrementing the amount of an existing asset that's being crafted DOES NOT WORK!
+ */
+export interface OngoingCraft {
+    /** the user's database ID */
+    userId: string;
+    /** the asset that's being crafted in this process */
+    craftedAsset: CraftableAsset;
+    /** the amount of this asset */
+    amount: number;
+    /** when the recipe was crafted */
+    craftingStart: number;
+    /** when the crafting will be completed; the user will receive the asset then */
+    craftingEnd: number;
 }
 
 /**

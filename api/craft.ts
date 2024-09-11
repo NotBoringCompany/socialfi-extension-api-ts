@@ -1,12 +1,112 @@
-// import { AssetType } from '../models/asset';
-// import { CookingCraft, CraftingRecipe, CraftItemLine, CraftRecipes, CraftType, SmeltingCraft } from "../models/craft";
-// import { CarpentingMastery, CookingMastery, SmeltingMastery, TailoringMastery } from "../models/mastery";
-// import { BarrenResource, ExtendedResource, ExtendedResourceOrigin, FruitResource, LiquidResource, OreResource, ResourceType, SimplifiedResource } from "../models/resource";
-// import { GET_CRAFTING_RECIPE, getAllCraftItemRecipes, getAllCraftItems, getCraftItem, getCraftItemCriteria } from "../utils/constants/craft";
-// import { UserModel } from "../utils/constants/db";
-// import { CARPENTING_MASTERY_LEVEL, COOKING_MASTERY_LEVEL, SMELTING_MASTERY_LEVEL, TAILORING_MASTERY_LEVEL } from "../utils/constants/mastery";
-// import { getResource, getResourceWeight, resources } from "../utils/constants/resource";
-// import { ReturnValue, Status } from "../utils/retVal";
+import { AssetType } from '../models/asset';
+import { CraftableAsset, CraftingRecipe } from "../models/craft";
+import { CarpentingMastery, CookingMastery, SmeltingMastery, TailoringMastery } from "../models/mastery";
+import { BarrenResource, ExtendedResource, ExtendedResourceOrigin, FruitResource, LiquidResource, OreResource, ResourceType, SimplifiedResource } from "../models/resource";
+import { CRAFTING_RECIPES } from '../utils/constants/craft';
+import { UserModel } from "../utils/constants/db";
+import { CARPENTING_MASTERY_LEVEL, COOKING_MASTERY_LEVEL, SMELTING_MASTERY_LEVEL, TAILORING_MASTERY_LEVEL } from "../utils/constants/mastery";
+import { getResource, getResourceWeight, resources } from "../utils/constants/resource";
+import { ReturnValue, Status } from "../utils/retVal";
+
+// /**
+//  * Crafts a craftable asset for the user.
+//  */
+// export const craftAsset = async (twitterId: string, assetToCraft: CraftableAsset, amount: number = 1): Promise<ReturnValue> => {
+//     try {
+//         const user = await UserModel.findOne({ twitterId }).lean();
+
+//         if (!user) {
+//             return {
+//                 status: Status.ERROR,
+//                 message: `(craftAsset) User not found`
+//             }
+//         }
+
+//         const userUpdateOperations = {
+//             $pull: {},
+//             $inc: {},
+//             $set: {},
+//             $push: {}
+//         }
+
+//         // get the asset data from `CRAFTING_RECIPES` by querying the craftedAssetData.asset
+//         const craftingRecipe = CRAFTING_RECIPES.find(recipe => recipe.craftedAssetData.asset === assetToCraft);
+
+//         if (!craftingRecipe) {
+//             return {
+//                 status: Status.ERROR,
+//                 message: `(craftAsset) Crafting recipe not found`
+//             }
+//         }
+
+//         // check if the user has enough energy to craft the asset
+//         const energyRequired = craftingRecipe.baseEnergyRequired * amount;
+
+//         if (user.inGameData.energy.currentEnergy < energyRequired) {
+//             return {
+//                 status: Status.ERROR,
+//                 message: `(craftAsset) Not enough energy to craft ${amount}x ${assetToCraft}`
+//             }
+//         }
+
+//         // if `requiredXCookies` > 0, check if the user has enough xCookies to craft the asset
+//         if (craftingRecipe.requiredXCookies > 0) {
+//             if (user.inventory?.xCookieData.currentXCookies < craftingRecipe.requiredXCookies) {
+//                 return {
+//                     status: Status.ERROR,
+//                     message: `(craftAsset) Not enough xCookies to craft ${amount}x ${assetToCraft}`
+//                 }
+//             }
+//         }
+
+//         // if `requiredLevel` !== none, check if the user has the required level to craft the asset
+//         if (craftingRecipe.requiredLevel !== 'none') {
+//             if (user.inGameData.level < craftingRecipe.requiredLevel) {
+//                 return {
+//                     status: Status.ERROR,
+//                     message: `(craftAsset) User level too low to craft ${assetToCraft}`
+//                 }
+//             }
+//         }
+
+//         // if `requiredCraftingLevel` !== none, check if the user has the required crafting level to craft the asset
+//         if (craftingRecipe.requiredCraftingLevel !== 'none') {
+//             if (user.inGameData.craftingStats.craftingLevel < craftingRecipe.requiredCraftingLevel) {
+//                 return {
+//                     status: Status.ERROR,
+//                     message: `(craftAsset) User crafting level too low to craft ${assetToCraft}`
+//                 }
+//             }
+//         }
+
+//         // if weight > 0, check if the user's inventory can still hold the crafted asset (x the amount).
+//         if (craftingRecipe.weight > 0) {
+//             const userWeight = user.inventory.weight;
+//             const maxWeight = user.inventory.maxWeight;
+//             const totalWeight = craftingRecipe.weight * amount;
+
+//             if (userWeight + totalWeight > maxWeight) {
+//                 return {
+//                     status: Status.ERROR,
+//                     message: `(craftAsset) User inventory weight limit exceeded. Cannot craft ${amount}x ${assetToCraft}`
+//                 }
+//             }
+//         }
+
+//         // at this point, all base checks should pass. proceed with the crafting logic.
+//         // per each amount of the asset to craft, we will roll the first dice to determine if the user successfully crafts 1 of this asset.
+//         // for instance, if the user wants to craft 5 (amount = 5) of asset A, we will roll the dice of 0-9999 5 times.
+//         // any dice that rolls below the `baseSuccessChance` will be considered a success, and the user will obtain 1 of the asset.
+//         // for instance, if the user rolls 7900, 5500, 3200, 8800, 9100, and the `baseSuccessChance` is 7000 (70%), the user will obtain 2 of the asset instead of 5,
+//         // because only 2 of the rolls (5500 and 3200) are below 7000 (or 70%).
+
+//     } catch (err: any) {
+//         return {
+//             status: Status.ERROR,
+//             message: `(craftAsset) ${err.message}`,
+//         }
+//     }
+// }
 
 // export const doCraft = async(twitterId: string, craftType: ResourceType, amount: number = 1) : Promise<ReturnValue> =>{
 //     try {

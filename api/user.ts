@@ -10,7 +10,7 @@ import { addIslandToDatabase, getLatestIslandId, randomizeBaseResourceCap } from
 import { POIName } from '../models/poi';
 import { ExtendedResource, SimplifiedResource } from '../models/resource';
 import { resources } from '../utils/constants/resource';
-import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, PlayerEnergy, PlayerMastery, UserWallet, XCookieSource, User } from '../models/user';
+import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, PlayerEnergy, UserWallet, XCookieSource, User } from '../models/user';
 import {
     DAILY_REROLL_BONUS_MILESTONE,
     GET_BEGINNER_REWARDS,
@@ -182,38 +182,6 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
                 dailyEnergyPotion: MAX_ENERGY_POTION_CAP,
             }
 
-            // initialize PlayerMastery for new user
-            const newMastery: PlayerMastery = {
-                tapping: {
-                    level: 1,
-                    totalExp: 0,
-                    rerollCount: 6,
-                },
-                smelting:
-                {
-                    level: 1,
-                    totalExp: 0,
-                },
-
-                cooking:
-                {
-                    level: 1,
-                    totalExp: 0,
-                },
-
-                carpenting:
-                {
-                    level: 1,
-                    totalExp: 0,
-                },
-
-                tailoring:
-                {
-                    level: 1,
-                    totalExp: 0,
-                }
-            };
-
             const newUser = new UserModel({
                 _id: userObjectId,
                 twitterId,
@@ -269,7 +237,10 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
                 inGameData: {
                     level: 1,
                     energy: newEnergy,
-                    mastery: newMastery,
+                    craftingData: {
+                        craftingLevel: 1,
+                        craftingXP: 0,
+                    },
                     completedTutorialIds: [],
                     beginnerRewardData: {
                         lastClaimedTimestamp: 0,
@@ -2252,38 +2223,6 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
             dailyEnergyPotion: MAX_ENERGY_POTION_CAP,
         };
 
-        // initialize PlayerMastery for new user
-        const newMastery: PlayerMastery = {
-            tapping: {
-                level: 1,
-                totalExp: 0,
-                rerollCount: 6,
-            },
-            smelting:
-            {
-                level: 1,
-                totalExp: 0,
-            },
-
-            cooking:
-            {
-                level: 1,
-                totalExp: 0,
-            },
-
-            carpenting:
-            {
-                level: 1,
-                totalExp: 0,
-            },
-
-            tailoring:
-            {
-                level: 1,
-                totalExp: 0,
-            }
-        };
-
         await user.updateOne({
             twitterId,
             twitterProfilePicture: profile.photos[0].value ?? '',
@@ -2337,7 +2276,10 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
             inGameData: {
                 level: 1,
                 energy: newEnergy,
-                mastery: newMastery,
+                craftingData: {
+                    craftingLevel: 1,
+                    craftingXP: 0,
+                },
                 completedTutorialIds: [],
                 beginnerRewardData: {
                     lastClaimedTimestamp: 0,
@@ -2682,39 +2624,6 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                 dailyEnergyPotion: MAX_ENERGY_POTION_CAP,
             };
 
-            // initialize PlayerMastery for new user
-            const newMastery: PlayerMastery = {
-                tapping: {
-                    level: 1,
-                    totalExp: 0,
-                    rerollCount: 6,
-                },
-
-                smelting:
-                {
-                    level: 1,
-                    totalExp: 0,
-                },
-
-                cooking:
-                {
-                    level: 1,
-                    totalExp: 0,
-                },
-
-                carpenting:
-                {
-                    level: 1,
-                    totalExp: 0,
-                },
-
-                tailoring:
-                {
-                    level: 1,
-                    totalExp: 0,
-                }
-            };
-
             const newUser = new UserModel({
                 _id: userObjectId,
                 twitterId: telegramUser.id,
@@ -2771,7 +2680,10 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                 inGameData: {
                     level: 1,
                     energy: newEnergy,
-                    mastery: newMastery,
+                    craftingData: {
+                        craftingLevel: 1,
+                        craftingXP: 0,
+                    },
                     completedTutorialIds: [],
                     beginnerRewardData: {
                         lastClaimedTimestamp: 0,

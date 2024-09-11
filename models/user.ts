@@ -4,6 +4,7 @@ import { BitOrbType, Item, TerraCapsulatorType } from './item';
 import { ExtendedResource } from './resource';
 import { InviteCodeData, ReferralData } from './invite';
 import { CarpentingMastery, CookingMastery, SmeltingMastery, TailoringMastery, TappingMastery } from './mastery';
+import { OngoingCraft } from './craft';
 
 /****************
  * USER-RELATED MODELS
@@ -154,8 +155,8 @@ export interface InGameData {
     level: number;
     /** the user PlayerEnergy data */
     energy: PlayerEnergy;
-    /** the user PlayerMastery level data */
-    mastery: PlayerMastery;
+    /** the user's crafting stats */
+    craftingStats: CraftingStats;
     /** the list of tutorial IDs the user has completed at the start */
     completedTutorialIds: number[];
     /** 
@@ -303,10 +304,12 @@ export interface PlayerEnergy {
     dailyEnergyPotion: number;
 }
 
-export interface PlayerMastery {
-    tapping: TappingMastery;
-    smelting: SmeltingMastery;
-    cooking: CookingMastery;
-    carpenting: CarpentingMastery;
-    tailoring: TailoringMastery;
+/**
+ * Represents the user's crafting stats
+ */
+export interface CraftingStats {
+    /** the user's crafting level */
+    craftingLevel: number;
+    /** the user's crafting XP (that impacts the level) */
+    craftingXP: number;
 }
