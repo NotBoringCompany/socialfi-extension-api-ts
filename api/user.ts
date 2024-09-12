@@ -2554,8 +2554,6 @@ export const consumeEnergyPotion = async (
     tappingProgress?: {islandId: number, currentCaressEnergyMeter: number}[],
 ): Promise<ReturnValue> => {
     try {
-        console.log('(consumeEnergyPotion), tappingProgress: ', tappingProgress);
-
         const userUpdateOperations = {
             $pull: {},
             $inc: {},
@@ -2576,6 +2574,8 @@ export const consumeEnergyPotion = async (
         
         // Destructure user's energy variables
         const { currentEnergy, maxEnergy, dailyEnergyPotion } = user.inGameData.energy as PlayerEnergy;
+        console.log(`(consumeEnergyPotion), userId ${user._id} | username ${user.twitterUsername}`);
+        console.log('(consumeEnergyPotion), tappingProgress: ', tappingProgress);
 
         if (dailyEnergyPotion <= 0) {
             return {
@@ -2604,16 +2604,16 @@ export const consumeEnergyPotion = async (
             const islandIds = tappingProgress.map(progress => progress.islandId);
             // Get all islands that need to be udpated
             const islands = await IslandModel.find({ islandId: { $in: islandIds }, owner: user._id });
+            console.log('(consumeEnergyPotion) islands: ', JSON.stringify(islands));
 
             // Prepare bulk write operations for the islands
             bulkWriteIslandOps = tappingProgress.map(progress => {
                 const island = islands.find(island => island.islandId === progress.islandId);
-                console.log('(consumeEnergyPotion) islandTappingData: ', JSON.stringify(island.islandTappingData));
-                const { caressEnergyMeter, currentCaressEnergyMeter } = island.islandTappingData;
 
-                const newCurrentCaressEnergyMeter = Math.min(currentCaressEnergyMeter + progress.currentCaressEnergyMeter, caressEnergyMeter);
-                
                 if (island) {
+                    const { caressEnergyMeter, currentCaressEnergyMeter } = island.islandTappingData;
+                    const newCurrentCaressEnergyMeter = Math.min(currentCaressEnergyMeter + progress.currentCaressEnergyMeter, caressEnergyMeter);
+
                     return {
                         updateOne: {
                             filter: { islandId: progress.islandId, owner: user._id },
@@ -2621,6 +2621,7 @@ export const consumeEnergyPotion = async (
                         }
                     };
                 } else {
+                    console.warn(`(consumeEnergyPotion) Island with ID ${progress.islandId} not found for User ID: ${user._id}, Username: ${user.twitterUsername}`);
                     return null;
                 }
             }).filter(op => op !== null);
