@@ -4,7 +4,6 @@ import { CollabModel, UserModel } from '../utils/constants/db';
 import { Collab, CollabReward, CollabRewardType, Group, Participant } from '../models/collab';
 import { readSheetObject } from '../utils/sheet';
 import { Item } from '../models/item';
-import { BitOrbType } from '../models/bitOrb';
 import { ExtendedXCookieData, XCookieSource } from '../models/user';
 
 /**

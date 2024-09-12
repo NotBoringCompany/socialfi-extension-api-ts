@@ -84,6 +84,8 @@ export enum QuestType {
  * Represents the tier of a Quest.
  */
 export enum QuestTier {
+    TUTORIAL = 'Tutorial',
+    RESOURCE = 'Resource Gathering',
     BEGINNER = 'Beginner',
     INTERMEDIATE = 'Intermediate',
     ADVANCED = 'Advanced',
@@ -128,7 +130,7 @@ export enum QuestRewardType {
     GATHERING_PROGRESS_BOOSTER_25 = BoosterItem.GATHERING_PROGRESS_BOOSTER_25,
     BURGER = FoodType.BURGER,
     CANDY = FoodType.CANDY,
-    Chocolate = FoodType.CHOCOLATE,
+    CHOCOLATE = FoodType.CHOCOLATE,
     JUICE = FoodType.JUICE,
 }
 

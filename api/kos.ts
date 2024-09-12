@@ -11,8 +11,6 @@ import { Item } from '../models/item';
 import { BoosterItem } from '../models/booster';
 import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
 import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
-import { BitOrbType } from '../models/bitOrb';
-import { TerraCapsulatorType } from '../models/terraCapsulator';
 import { generateHashSalt, generateObjectId, generateWonderbitsDataHash } from '../utils/crypto';
 import mongoose from 'mongoose';
 import * as dotenv from 'dotenv';

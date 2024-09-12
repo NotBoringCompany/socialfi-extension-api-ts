@@ -8,11 +8,10 @@ import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { getMainWallet } from '../api/user';
 import { PURCHASE_SHOP_ASSET_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { incrementEventCounterInContract } from '../api/web3';
-import { BitOrbType } from '../models/bitOrb';
 import { incrementProgressionByType } from '../api/quest';
 import { QuestRequirementType } from '../models/quest';
-import { TerraCapsulatorType } from '../models/terraCapsulator';
 import { authMiddleware } from '../middlewares/auth';
+import { BitOrbType, TerraCapsulatorType } from '../models/item';
 
 const router = express.Router();
 

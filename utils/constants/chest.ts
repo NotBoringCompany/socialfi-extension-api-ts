@@ -1,7 +1,6 @@
-import { BitOrbType } from '../../models/bitOrb';
 import { FoodType } from '../../models/food';
+import { BitOrbType, TerraCapsulatorType } from '../../models/item';
 import { BarrenResource, ResourceRarity, ResourceType } from '../../models/resource';
-import { TerraCapsulatorType } from '../../models/terraCapsulator';
 import { resources } from './resource';
 
 /** the max amount of chest an user can open each day */

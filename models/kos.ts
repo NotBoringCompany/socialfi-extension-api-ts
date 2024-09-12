@@ -1,6 +1,5 @@
-import { BitOrbType } from './bitOrb';
 import { BoosterItem } from './booster';
-import { TerraCapsulatorType } from './terraCapsulator';
+import { BitOrbType, TerraCapsulatorType } from './item';
 
 /**
  * Represents the full metadata of a Key Of Salvation.

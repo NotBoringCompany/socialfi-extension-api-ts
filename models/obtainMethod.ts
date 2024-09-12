@@ -1,4 +1,4 @@
-import { BitOrbType } from './bitOrb';
+import { BitOrbType } from './item';
 
 /**
  * Represents the method to obtain an asset.

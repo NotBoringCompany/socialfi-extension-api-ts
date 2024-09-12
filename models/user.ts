@@ -1,10 +1,10 @@
 import { POIName } from './poi';
 import { Food } from './food';
-import { Item } from './item';
+import { BitOrbType, Item, TerraCapsulatorType } from './item';
 import { ExtendedResource } from './resource';
 import { InviteCodeData, ReferralData } from './invite';
-import { CarpentingMastery, CookingMastery, SmeltingMastery, TailoringMastery, TappingMastery } from './mastery';
 import { OngoingCraft } from './craft';
+import { CraftingMastery, TappingMastery } from './mastery';
 
 /****************
  * USER-RELATED MODELS
@@ -155,8 +155,10 @@ export interface InGameData {
     level: number;
     /** the user PlayerEnergy data */
     energy: PlayerEnergy;
-    /** the user's crafting stats */
-    craftingStats: CraftingStats;
+    /**
+     * Showcases the user's mastery in different aspects (such as crafting or tapping).
+     */
+    mastery: PlayerMastery;
     /** the list of tutorial IDs the user has completed at the start */
     completedTutorialIds: number[];
     /** 
@@ -305,11 +307,9 @@ export interface PlayerEnergy {
 }
 
 /**
- * Represents the user's crafting stats
+ * Represents a user's mastery in different aspects.
  */
-export interface CraftingStats {
-    /** the user's crafting level */
-    craftingLevel: number;
-    /** the user's crafting XP (that impacts the level) */
-    craftingXP: number;
+export interface PlayerMastery {
+    tapping: TappingMastery;
+    crafting: CraftingMastery;
 }

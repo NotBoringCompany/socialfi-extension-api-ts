@@ -6,9 +6,7 @@ import {
     GET_SEASON_0_PLAYER_LEVEL_REWARDS,
     WEEKLY_MVP_REWARDS,
 } from '../utils/constants/user';
-import { BitOrbType } from '../models/bitOrb';
-import { TerraCapsulatorType } from '../models/terraCapsulator';
-import { Item } from '../models/item';
+import { BitOrbType, Item, TerraCapsulatorType } from '../models/item';
 import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
 import { WeeklyMVPRanking, WeeklyMVPRankingData, WeeklyMVPReward, WeeklyMVPRewardType } from '../models/weeklyMVPReward';
 import { ExtendedXCookieData, UserWallet, XCookieData, XCookieSource } from '../models/user';

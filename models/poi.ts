@@ -1,8 +1,7 @@
-import { BitOrbType } from './bitOrb';
 import { BoosterItem } from './booster';
 import { FoodType } from './food';
+import { BitOrbType, TerraCapsulatorType } from './item';
 import { BarrenResource, FruitResource, LiquidResource, OreResource } from './resource';
-import { TerraCapsulatorType } from './terraCapsulator';
 
 /**
  * Represents a Point of Interest (POI).

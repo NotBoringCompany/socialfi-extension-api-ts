@@ -10,7 +10,7 @@ import { addIslandToDatabase, getLatestIslandId, randomizeBaseResourceCap } from
 import { POIName } from '../models/poi';
 import { ExtendedResource, SimplifiedResource } from '../models/resource';
 import { resources } from '../utils/constants/resource';
-import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, PlayerEnergy, PlayerMastery, UserWallet, XCookieSource, User } from '../models/user';
+import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, PlayerEnergy, UserWallet, XCookieSource, User } from '../models/user';
 import {
     DAILY_REROLL_BONUS_MILESTONE,
     GET_BEGINNER_REWARDS,
@@ -25,9 +25,7 @@ import {
     WEEKLY_MVP_REWARDS,
 } from '../utils/constants/user';
 import { ReferralData, ReferralReward, ReferredUserData } from '../models/invite';
-import { BitOrbType } from '../models/bitOrb';
-import { TerraCapsulatorType } from '../models/terraCapsulator';
-import { Item } from '../models/item';
+import { BitOrbType, Item, TerraCapsulatorType } from '../models/item';
 import { BitRarity, BitTrait } from '../models/bit';
 import { IslandStatsModifiers, IslandType } from '../models/island';
 import { Modifier } from '../models/modifier';
@@ -184,38 +182,6 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
                 dailyEnergyPotion: MAX_ENERGY_POTION_CAP,
             }
 
-            // initialize PlayerMastery for new user
-            const newMastery: PlayerMastery = {
-                tapping: {
-                    level: 1,
-                    totalExp: 0,
-                    rerollCount: 6,
-                },
-                smelting:
-                {
-                    level: 1,
-                    totalExp: 0,
-                },
-
-                cooking:
-                {
-                    level: 1,
-                    totalExp: 0,
-                },
-
-                carpenting:
-                {
-                    level: 1,
-                    totalExp: 0,
-                },
-
-                tailoring:
-                {
-                    level: 1,
-                    totalExp: 0,
-                }
-            };
-
             const newUser = new UserModel({
                 _id: userObjectId,
                 twitterId,
@@ -271,9 +237,14 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
                 inGameData: {
                     level: 1,
                     energy: newEnergy,
-                    craftingData: {
-                        craftingLevel: 1,
-                        craftingXP: 0,
+                    mastery: {
+                        tapping: {
+                            level: 1,
+                            totalExp: 0,
+                            rerollCount: 6,
+                        },
+                        // empty crafting for now (so it can be more flexible)
+                        crafting: {}
                     },
                     completedTutorialIds: [],
                     beginnerRewardData: {
@@ -2257,38 +2228,6 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
             dailyEnergyPotion: MAX_ENERGY_POTION_CAP,
         };
 
-        // initialize PlayerMastery for new user
-        const newMastery: PlayerMastery = {
-            tapping: {
-                level: 1,
-                totalExp: 0,
-                rerollCount: 6,
-            },
-            smelting:
-            {
-                level: 1,
-                totalExp: 0,
-            },
-
-            cooking:
-            {
-                level: 1,
-                totalExp: 0,
-            },
-
-            carpenting:
-            {
-                level: 1,
-                totalExp: 0,
-            },
-
-            tailoring:
-            {
-                level: 1,
-                totalExp: 0,
-            }
-        };
-
         await user.updateOne({
             twitterId,
             twitterProfilePicture: profile.photos[0].value ?? '',
@@ -2342,9 +2281,14 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
             inGameData: {
                 level: 1,
                 energy: newEnergy,
-                craftingData: {
-                    craftingLevel: 1,
-                    craftingXP: 0,
+                mastery: {
+                    tapping: {
+                        level: 1,
+                        totalExp: 0,
+                        rerollCount: 6,
+                    },
+                    // empty crafting for now (so it can be more flexible)
+                    crafting: {}
                 },
                 completedTutorialIds: [],
                 beginnerRewardData: {
@@ -2417,6 +2361,8 @@ export const consumeEnergyPotion = async (
         
         // Destructure user's energy variables
         const { currentEnergy, maxEnergy, dailyEnergyPotion } = user.inGameData.energy as PlayerEnergy;
+        console.log(`(consumeEnergyPotion), userId ${user._id} | username ${user.twitterUsername}`);
+        console.log('(consumeEnergyPotion), tappingProgress: ', tappingProgress);
 
         if (dailyEnergyPotion <= 0) {
             return {
@@ -2445,12 +2391,16 @@ export const consumeEnergyPotion = async (
             const islandIds = tappingProgress.map(progress => progress.islandId);
             // Get all islands that need to be udpated
             const islands = await IslandModel.find({ islandId: { $in: islandIds }, owner: user._id });
+            console.log('(consumeEnergyPotion) islands: ', JSON.stringify(islands));
 
             // Prepare bulk write operations for the islands
             bulkWriteIslandOps = tappingProgress.map(progress => {
                 const island = islands.find(island => island.islandId === progress.islandId);
 
                 if (island) {
+                    const { caressEnergyMeter, currentCaressEnergyMeter } = island.islandTappingData;
+                    const newCurrentCaressEnergyMeter = Math.min(currentCaressEnergyMeter + progress.currentCaressEnergyMeter, caressEnergyMeter);
+
                     return {
                         updateOne: {
                             filter: { islandId: progress.islandId, owner: user._id },
@@ -2458,6 +2408,7 @@ export const consumeEnergyPotion = async (
                         }
                     };
                 } else {
+                    console.warn(`(consumeEnergyPotion) Island with ID ${progress.islandId} not found for User ID: ${user._id}, Username: ${user.twitterUsername}`);
                     return null;
                 }
             }).filter(op => op !== null);
@@ -2623,7 +2574,7 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
             if (status !== Status.SUCCESS) {
                 return {
                     status,
-                    message: `(handleTelegramLogin) Error from createRaft: ${message}`,
+                    message: `(handleTwitterLogin) Error from createRaft: ${message}`,
                 };
             }
 
@@ -2633,7 +2584,7 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
             if (bitIdStatus !== Status.SUCCESS) {
                 return {
                     status: bitIdStatus,
-                    message: `(handleTelegramLogin) Error from getLatestBitId: ${bitIdMessage}`,
+                    message: `(handleTwitterLogin) Error from getLatestBitId: ${bitIdMessage}`,
                 };
             }
 
@@ -2676,7 +2627,7 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
             if (bitStatus !== Status.SUCCESS) {
                 return {
                     status: bitStatus,
-                    message: `(handleTelegramLogin) Error from addBitToDatabase: ${bitMessage}`,
+                    message: `(handleTwitterLogin) Error from addBitToDatabase: ${bitMessage}`,
                 };
             }
 
@@ -2688,39 +2639,6 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                 currentEnergy: MAX_ENERGY_CAP,
                 maxEnergy: MAX_ENERGY_CAP,
                 dailyEnergyPotion: MAX_ENERGY_POTION_CAP,
-            };
-
-            // initialize PlayerMastery for new user
-            const newMastery: PlayerMastery = {
-                tapping: {
-                    level: 1,
-                    totalExp: 0,
-                    rerollCount: 6,
-                },
-
-                smelting:
-                {
-                    level: 1,
-                    totalExp: 0,
-                },
-
-                cooking:
-                {
-                    level: 1,
-                    totalExp: 0,
-                },
-
-                carpenting:
-                {
-                    level: 1,
-                    totalExp: 0,
-                },
-
-                tailoring:
-                {
-                    level: 1,
-                    totalExp: 0,
-                }
             };
 
             const newUser = new UserModel({
@@ -2779,9 +2697,14 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                 inGameData: {
                     level: 1,
                     energy: newEnergy,
-                    craftingData: {
-                        craftingLevel: 1,
-                        craftingXP: 0,
+                    mastery: {
+                        tapping: {
+                            level: 1,
+                            totalExp: 0,
+                            rerollCount: 6,
+                        },
+                        // empty crafting for now (so it can be more flexible)
+                        crafting: {}
                     },
                     completedTutorialIds: [],
                     beginnerRewardData: {
@@ -2807,7 +2730,7 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
 
             return {
                 status: Status.SUCCESS,
-                message: `(handleTelegramLogin) New user created.`,
+                message: `(handleTwitterLogin) New user created.`,
                 data: {
                     userId: newUser._id,
                     twitterId: telegramUser.id,
@@ -2821,7 +2744,7 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
             // user exists, return
             return {
                 status: Status.SUCCESS,
-                message: `(handleTelegramLogin) User found. Logging in.`,
+                message: `(handleTwitterLogin) User found. Logging in.`,
                 data: {
                     userId: user._id,
                     twitterId: user.twitterId,
@@ -2833,7 +2756,7 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
     } catch (err: any) {
         return {
             status: Status.ERROR,
-            message: `(handleTelegramLogin) ${err.message}`,
+            message: `(handleTwitterLogin) ${err.message}`,
         };
     }
 };

@@ -1,7 +1,6 @@
-import { BitOrbType } from './bitOrb';
 import { BoosterItem } from './booster';
 import { FoodType } from './food';
-import { TerraCapsulatorType } from './terraCapsulator';
+import { BitOrbType, TerraCapsulatorType } from './item';
 
 /**
  * Represents a weekly leaderboard for squads.

@@ -7,7 +7,6 @@ import { generateObjectId } from '../utils/crypto';
 import { fetchIAPTickers, verifyTONTransaction } from './web3';
 import { TxParsedMessage } from '../models/web3';
 import { ExtendedXCookieData, XCookieSource } from '../models/user';
-import { shop } from '../utils/shop';
 import { USD_TO_STARS_CONVERSION } from '../utils/constants/tg';
 import axios from 'axios';
 
@@ -172,39 +171,6 @@ export const addShopAssets = async (assets: ShopAsset[]): Promise<void> => {
         console.error(`(addShopAssets) ${err.message}`);
     }
 }
-
-// addShopAssets([{
-//     assetName: 'Test Candy Package',
-//     assetType:'package',
-//     price: {
-//         xCookies: 0,
-//         usd: 0.19
-//     },
-//     availablePaymentMethods: [
-//         ShopAssetExternalPaymentMethod.TON,
-//         ShopAssetExternalPaymentMethod.NOT,
-//         ShopAssetExternalPaymentMethod.TELEGRAM_STARS
-//     ],
-//     expirationDate: 'never',
-//     stockData: {
-//         totalStock: 'unlimited',
-//         currentStock: 'unlimited'
-//     },
-//     purchaseLimit: 'unlimited',
-//     effectDuration: ShopAssetEffectDurationType.ONE_TIME,
-//     refreshIntervalData: {
-//         intervalType: 'none',
-//         lastRefreshed: Math.floor(Date.now() / 1000)
-//     },
-//     levelRequirement: 'none',
-//     givenContents: [
-//         {
-//             contentType: 'item',
-//             content: FoodType.CANDY,
-//             amount: 5
-//         }
-//     ]
-// }]);
 
 /**
  * (User) Purchases `amount` of a shop asset (can be either an in-game purchase or in-app purchase with real currency).
