@@ -1,6 +1,5 @@
 import { AssetType } from '../models/asset';
 import { CraftableAsset, CraftingRecipe } from "../models/craft";
-import { CarpentingMastery, CookingMastery, SmeltingMastery, TailoringMastery } from "../models/mastery";
 import { BarrenResource, ExtendedResource, ExtendedResourceOrigin, FruitResource, LiquidResource, OreResource, ResourceType, SimplifiedResource } from "../models/resource";
 import { CRAFTING_RECIPES } from '../utils/constants/craft';
 import { UserModel } from "../utils/constants/db";

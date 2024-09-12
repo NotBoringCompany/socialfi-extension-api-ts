@@ -1,31 +1,40 @@
+/**
+ * Represents the user's mastery in tapping.
+ */
 export interface TappingMastery {
     level: number;
     totalExp: number;
     rerollCount: number;
 }
 
-export interface CraftingMastery
-{
+/**
+ * Represents the user's mastery in crafting.
+ */
+export interface CraftingMastery {
+    /**
+     * Anything clothes/accessories related.
+     */
+    tailoring: CraftingMasteryStats;
+    /**
+     * Anything food related.
+     */
+    cooking: CraftingMasteryStats;
+    /**
+     * Anything weapon/armor/tools related.
+     */
+    blacksmithing: CraftingMasteryStats;
+    /**
+     * Anything consumables/basic assets related.
+     */
+    synthesizing: CraftingMasteryStats;
+}
+
+/**
+ * Represents the stats for a specific crafting mastery.
+ */
+export interface CraftingMasteryStats {
+    /** the level of a specific crafting mastery */
     level: number;
-    totalExp: number;
-}
-
-export interface SmeltingMastery extends CraftingMastery
-{
-
-}
-
-export interface CookingMastery extends CraftingMastery
-{
-
-}
-
-export interface CarpentingMastery extends CraftingMastery
-{
-
-}
-
-export interface TailoringMastery extends CraftingMastery
-{
-
+    /** the total experience points of a specific crafting mastery */
+    xp: number;
 }
