@@ -2756,7 +2756,7 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
             if (status !== Status.SUCCESS) {
                 return {
                     status,
-                    message: `(handleTwitterLogin) Error from createRaft: ${message}`,
+                    message: `(handleTelegramLogin) Error from createRaft: ${message}`,
                 };
             }
 
@@ -2766,7 +2766,7 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
             if (bitIdStatus !== Status.SUCCESS) {
                 return {
                     status: bitIdStatus,
-                    message: `(handleTwitterLogin) Error from getLatestBitId: ${bitIdMessage}`,
+                    message: `(handleTelegramLogin) Error from getLatestBitId: ${bitIdMessage}`,
                 };
             }
 
@@ -2809,7 +2809,7 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
             if (bitStatus !== Status.SUCCESS) {
                 return {
                     status: bitStatus,
-                    message: `(handleTwitterLogin) Error from addBitToDatabase: ${bitMessage}`,
+                    message: `(handleTelegramLogin) Error from addBitToDatabase: ${bitMessage}`,
                 };
             }
 
@@ -2913,7 +2913,7 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
 
             return {
                 status: Status.SUCCESS,
-                message: `(handleTwitterLogin) New user created.`,
+                message: `(handleTelegramLogin) New user created.`,
                 data: {
                     userId: newUser._id,
                     twitterId: telegramUser.id,
@@ -2927,7 +2927,7 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
             // user exists, return
             return {
                 status: Status.SUCCESS,
-                message: `(handleTwitterLogin) User found. Logging in.`,
+                message: `(handleTelegramLogin) User found. Logging in.`,
                 data: {
                     userId: user._id,
                     twitterId: user.twitterId,
@@ -2939,7 +2939,7 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
     } catch (err: any) {
         return {
             status: Status.ERROR,
-            message: `(handleTwitterLogin) ${err.message}`,
+            message: `(handleTelegramLogin) ${err.message}`,
         };
     }
 };
