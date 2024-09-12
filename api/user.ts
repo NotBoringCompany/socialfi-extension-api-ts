@@ -2554,8 +2554,6 @@ export const consumeEnergyPotion = async (
     tappingProgress?: {islandId: number, currentCaressEnergyMeter: number}[],
 ): Promise<ReturnValue> => {
     try {
-        console.log('(consumeEnergyPotion), tappingProgress: ', tappingProgress);
-
         const userUpdateOperations = {
             $pull: {},
             $inc: {},
@@ -2608,12 +2606,11 @@ export const consumeEnergyPotion = async (
             // Prepare bulk write operations for the islands
             bulkWriteIslandOps = tappingProgress.map(progress => {
                 const island = islands.find(island => island.islandId === progress.islandId);
-                console.log('(consumeEnergyPotion) islandTappingData: ', JSON.stringify(island.islandTappingData));
-                const { caressEnergyMeter, currentCaressEnergyMeter } = island.islandTappingData;
 
-                const newCurrentCaressEnergyMeter = Math.min(currentCaressEnergyMeter + progress.currentCaressEnergyMeter, caressEnergyMeter);
-                
                 if (island) {
+                    const { caressEnergyMeter, currentCaressEnergyMeter } = island.islandTappingData;
+                    const newCurrentCaressEnergyMeter = Math.min(currentCaressEnergyMeter + progress.currentCaressEnergyMeter, caressEnergyMeter);
+
                     return {
                         updateOne: {
                             filter: { islandId: progress.islandId, owner: user._id },
@@ -2621,6 +2618,7 @@ export const consumeEnergyPotion = async (
                         }
                     };
                 } else {
+                    console.warn(`(consumeEnergyPotion) Island with ID ${progress.islandId} not found for User ID: ${user._id}, Username: ${user.twitterUsername}`);
                     return null;
                 }
             }).filter(op => op !== null);
