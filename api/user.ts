@@ -2574,8 +2574,6 @@ export const consumeEnergyPotion = async (
         
         // Destructure user's energy variables
         const { currentEnergy, maxEnergy, dailyEnergyPotion } = user.inGameData.energy as PlayerEnergy;
-        console.log(`(consumeEnergyPotion), userId ${user._id} | username ${user.twitterUsername}`);
-        console.log('(consumeEnergyPotion), tappingProgress: ', tappingProgress);
 
         if (dailyEnergyPotion <= 0) {
             return {
@@ -2604,7 +2602,6 @@ export const consumeEnergyPotion = async (
             const islandIds = tappingProgress.map(progress => progress.islandId);
             // Get all islands that need to be udpated
             const islands = await IslandModel.find({ islandId: { $in: islandIds }, owner: user._id });
-            console.log('(consumeEnergyPotion) islands: ', JSON.stringify(islands));
 
             // Prepare bulk write operations for the islands
             bulkWriteIslandOps = tappingProgress.map(progress => {
