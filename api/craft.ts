@@ -1,4 +1,5 @@
-import { CookingCraft, CraftItemLine, CraftRecipes, CraftType, SmeltingCraft } from "../models/craft";
+import { AssetType } from '../models/asset';
+import { CraftableAsset, CraftingRecipe } from "../models/craft";
 import { CarpentingMastery, CookingMastery, SmeltingMastery, TailoringMastery } from "../models/mastery";
 import { BarrenResource, ExtendedResource, ExtendedResourceOrigin, FruitResource, LiquidResource, OreResource, ResourceType, SimplifiedResource } from "../models/resource";
 import { GET_CRAFT_RECIPE, getAllCraftItemRecipes, getAllCraftItems, getCraftItem, getCraftItemCriteria } from "../utils/constants/craft";

@@ -271,7 +271,10 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
                 inGameData: {
                     level: 1,
                     energy: newEnergy,
-                    mastery: newMastery,
+                    craftingData: {
+                        craftingLevel: 1,
+                        craftingXP: 0,
+                    },
                     completedTutorialIds: [],
                     beginnerRewardData: {
                         lastClaimedTimestamp: 0,
@@ -2339,7 +2342,10 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
             inGameData: {
                 level: 1,
                 energy: newEnergy,
-                mastery: newMastery,
+                craftingData: {
+                    craftingLevel: 1,
+                    craftingXP: 0,
+                },
                 completedTutorialIds: [],
                 beginnerRewardData: {
                     lastClaimedTimestamp: 0,
@@ -2773,7 +2779,10 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                 inGameData: {
                     level: 1,
                     energy: newEnergy,
-                    mastery: newMastery,
+                    craftingData: {
+                        craftingLevel: 1,
+                        craftingXP: 0,
+                    },
                     completedTutorialIds: [],
                     beginnerRewardData: {
                         lastClaimedTimestamp: 0,
