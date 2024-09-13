@@ -1,6 +1,6 @@
 import { AssetType } from './asset';
 import { FoodType } from './food';
-import { EnergyTotemItem, PotionItem, RestorationItem, TeleporterItem, TransmutationItem } from './item';
+import { ContinuumRelicItem, EnergyTotemItem, PotionItem, RestorationItem, TransmutationItem } from './item';
 import { BarrenResource, ExtendedResource, FruitResource, LiquidResource, OreResource, Resource, ResourceRarity, ResourceType, SimplifiedResource } from "./resource";
 
 /**
@@ -191,4 +191,4 @@ export interface OngoingCraft {
 /**
  * Represents a craftable asset.
  */
-export type CraftableAsset = RestorationItem | TransmutationItem | EnergyTotemItem | TeleporterItem | PotionItem;
+export type CraftableAsset = RestorationItem | TransmutationItem | EnergyTotemItem | ContinuumRelicItem | PotionItem;

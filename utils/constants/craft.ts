@@ -1,7 +1,7 @@
 import Bull from 'bull';
 import { AssetType } from '../../models/asset';
 import { CraftedAssetRarity, CraftingRecipe, CraftingRecipeLine } from "../../models/craft";
-import { EnergyTotemItem, IngotItem, RestorationItem, TransmutationItem, WonderArtefactItem } from '../../models/item';
+import { ContinuumRelicItem, EnergyTotemItem, IngotItem, PotionItem, RestorationItem, TransmutationItem, WonderArtefactItem } from '../../models/item';
 import { BarrenResource, CombinedResources, ExtendedResource, FruitResource, LiquidResource, OreResource, ResourceRarity, ResourceType, SimplifiedResource } from "../../models/resource";
 import { FoodType } from '../../models/food';
 
@@ -437,6 +437,294 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
                             specificAsset: WonderArtefactItem.ESSENCE_OF_WONDER,
                             requiredRarity: 'none',
                             amount: 3
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            craftedAssetData: {
+                asset: ContinuumRelicItem.FADED_CONTINUUM_RELIC,
+                assetDescription: `Select a Bit (rare rarity or below) and allow transfer to Season 1.`,
+                assetRarity: CraftedAssetRarity.RARE,
+                assetEffectDuration: 'none'
+            },
+            craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
+            // 4 hours
+            craftingDuration: 14400,
+            baseEnergyRequired: 100,
+            baseSuccessChance: 100,
+            baseCritChance: 0,
+            obtainedPoints: 0,
+            requiredXCookies: 0,
+            requiredLevel: 1,
+            requiredCraftingLevel: 3,
+            earnedEXP: 250,
+            weight: 0,
+            requiredAssetGroups: [
+                {
+                    requiredAssets: [
+                        {
+                            assetCategory: 'item',
+                            specificAsset: IngotItem.IRON_INGOT,
+                            requiredRarity: 'none',
+                            amount: 25
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.EPIC,
+                            amount: 15
+                        },
+                        {
+                            assetCategory: 'item',
+                            specificAsset: WonderArtefactItem.ESSENCE_OF_WONDER,
+                            requiredRarity: 'none',
+                            amount: 5
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            craftedAssetData: {
+                asset: ContinuumRelicItem.GLEAMING_CONTINUUM_RELIC,
+                assetDescription: `Select a Bit (epic rarity or below) and allow transfer to Season 1.`,
+                assetRarity: CraftedAssetRarity.EPIC,
+                assetEffectDuration: 'none'
+            },
+            craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
+            // 12 hours
+            craftingDuration: 43200,
+            baseEnergyRequired: 100,
+            baseSuccessChance: 100,
+            baseCritChance: 0,
+            obtainedPoints: 0,
+            requiredXCookies: 0,
+            requiredLevel: 1,
+            requiredCraftingLevel: 4,
+            earnedEXP: 500,
+            weight: 0,
+            requiredAssetGroups: [
+                {
+                    requiredAssets: [
+                        {
+                            assetCategory: 'item',
+                            specificAsset: IngotItem.IRON_INGOT,
+                            requiredRarity: 'none',
+                            amount: 25
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.EPIC,
+                            amount: 15
+                        },
+                        {
+                            assetCategory: 'item',
+                            specificAsset: IngotItem.GOLD_INGOT,
+                            requiredRarity: 'none',
+                            amount: 5
+                        },
+                        {
+                            assetCategory: 'item',
+                            specificAsset: WonderArtefactItem.LIGHT_OF_WONDER,
+                            requiredRarity: 'none',
+                            amount: 5
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            craftedAssetData: {
+                asset: ContinuumRelicItem.MYTHIC_CONTINUUM_RELIC,
+                assetDescription: `Select a Bit (any rarity) and allow transfer to Season 1.`,
+                assetRarity: CraftedAssetRarity.LEGENDARY,
+                assetEffectDuration: 'none'
+            },
+            craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
+            // 24 hours
+            craftingDuration: 86400,
+            baseEnergyRequired: 200,
+            baseSuccessChance: 100,
+            baseCritChance: 0,
+            obtainedPoints: 0,
+            requiredXCookies: 0,
+            requiredLevel: 1,
+            requiredCraftingLevel: 5,
+            earnedEXP: 1000,
+            weight: 0,
+            requiredAssetGroups: [
+                {
+                    requiredAssets: [
+                        {
+                            assetCategory: 'item',
+                            specificAsset: IngotItem.IRON_INGOT,
+                            requiredRarity: 'none',
+                            amount: 25
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.EPIC,
+                            amount: 20
+                        },
+                        {
+                            assetCategory: 'item',
+                            specificAsset: IngotItem.GOLD_INGOT,
+                            requiredRarity: 'none',
+                            amount: 10
+                        },
+                        {
+                            assetCategory: 'item',
+                            specificAsset: WonderArtefactItem.LIGHT_OF_WONDER,
+                            requiredRarity: 'none',
+                            amount: 15
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            craftedAssetData: {
+                asset: PotionItem.POTION_OF_LUCK,
+                assetDescription: `Select a Bit and reroll one trait randomly.`,
+                assetRarity: CraftedAssetRarity.RARE,
+                assetEffectDuration: 'none'
+            },
+            craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
+            // 4 hours
+            craftingDuration: 14400,
+            baseEnergyRequired: 100,
+            baseSuccessChance: 100,
+            baseCritChance: 0,
+            obtainedPoints: 0,
+            requiredXCookies: 0,
+            requiredLevel: 1,
+            requiredCraftingLevel: 3,
+            earnedEXP: 250,
+            weight: 0,
+            requiredAssetGroups: [
+                {
+                    requiredAssets: [
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: LiquidResource.WATER,
+                            requiredRarity: 'none',
+                            amount: 50
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: LiquidResource.MAPLE_SYRUP,
+                            requiredRarity: 'none',
+                            amount: 15
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: LiquidResource.HONEY,
+                            requiredRarity: 'none',
+                            amount: 5
+                        },
+                    ]
+                }
+            ]
+        },
+        {
+            craftedAssetData: {
+                asset: PotionItem.POTION_OF_ENLIGHTENMENT,
+                assetDescription: `Select a Bit and reroll all traits randomly.`,
+                assetRarity: CraftedAssetRarity.EPIC,
+                assetEffectDuration: 'none'
+            },
+            craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
+            // 12 hours
+            craftingDuration: 43200,
+            baseEnergyRequired: 100,
+            baseSuccessChance: 100,
+            baseCritChance: 0,
+            obtainedPoints: 0,
+            requiredXCookies: 0,
+            requiredLevel: 1,
+            requiredCraftingLevel: 4,
+            earnedEXP: 500,
+            weight: 0,
+            requiredAssetGroups: [
+                {
+                    requiredAssets: [
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: LiquidResource.WATER,
+                            requiredRarity: 'none',
+                            amount: 50
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: LiquidResource.HONEY,
+                            requiredRarity: 'none',
+                            amount: 15
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: LiquidResource.MOONLIGHT_DEW,
+                            requiredRarity: 'none',
+                            amount: 5
+                        },
+                        {
+                            assetCategory: 'item',
+                            specificAsset: WonderArtefactItem.ESSENCE_OF_WONDER,
+                            requiredRarity: 'none',
+                            amount: 10
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            craftedAssetData: {
+                asset: PotionItem.POTION_OF_DIVINE_ENLIGHTENMENT,
+                assetDescription: `Select a Bit and reroll all traits randomly. Positive traits are guaranteed.`,
+                assetRarity: CraftedAssetRarity.LEGENDARY,
+                assetEffectDuration: 'none'
+            },
+            craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
+            // 24 hours
+            craftingDuration: 86400,
+            baseEnergyRequired: 200,
+            baseSuccessChance: 100,
+            baseCritChance: 0,
+            obtainedPoints: 0,
+            requiredXCookies: 0,
+            requiredLevel: 1,
+            requiredCraftingLevel: 5,
+            earnedEXP: 1000,
+            weight: 0,
+            requiredAssetGroups: [
+                {
+                    requiredAssets: [
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: LiquidResource.WATER,
+                            requiredRarity: 'none',
+                            amount: 50
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: FruitResource.DRAGON_FRUIT,
+                            requiredRarity: 'none',
+                            amount: 5
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: LiquidResource.PHOENIX_TEAR,
+                            requiredRarity: 'none',
+                            amount: 5
+                        },
+                        {
+                            assetCategory: 'item',
+                            specificAsset: WonderArtefactItem.LIGHT_OF_WONDER,
+                            requiredRarity: 'none',
+                            amount: 10
                         }
                     ]
                 }

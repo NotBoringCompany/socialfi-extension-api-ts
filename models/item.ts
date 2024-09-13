@@ -32,7 +32,7 @@ WonderArtefactItem |
 RestorationItem | 
 TransmutationItem | 
 EnergyTotemItem | 
-TeleporterItem | 
+ContinuumRelicItem | 
 PotionItem |
 IngotItem;
 
@@ -91,12 +91,12 @@ export enum EnergyTotemItem {
 }
 
 /**
- * A list of different Teleporter items.
+ * A list of different Continuum Relic items.
  */
-export enum TeleporterItem {
-    TELEPORTER = 'Teleporter',
-    VERSATILE_TELEPORTER = 'Versatile Teleporter',
-    SUPERIOR_TELEPORTER = 'Superior Teleporter',
+export enum ContinuumRelicItem {
+    FADED_CONTINUUM_RELIC = 'Faded Continuum Relic',
+    GLEAMING_CONTINUUM_RELIC = 'Gleaming Continuum Relic',
+    MYTHIC_CONTINUUM_RELIC = 'Mythic Continuum Relic',
 }
 
 /**
