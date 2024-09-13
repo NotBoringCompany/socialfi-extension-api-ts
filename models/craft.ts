@@ -100,11 +100,8 @@ export interface CraftedAssetData {
  * The different types of crafting recipe lines.
  */
 export enum CraftingRecipeLine {
-    RESTORATION = 'Restoration',
-    TRANSMUTATION = 'Transmutation',
-    ENERGY_TOTEM = 'Energy Totem',
-    TELEPORTER = 'Teleporter',
-    POTION = 'Potion'
+    /** related to consumables or any basic assets */
+    SYNTHESIZING = 'Synthesizing',
 }
 
 /**

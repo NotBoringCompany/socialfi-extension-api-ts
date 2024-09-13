@@ -20,7 +20,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
                 assetRarity: CraftedAssetRarity.COMMON,
                 assetEffectDuration: 'none'
             },
-            craftingRecipeLine: CraftingRecipeLine.RESTORATION,
+            craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
             craftingDuration: 60,
             baseEnergyRequired: 50,
             baseSuccessChance: 70,
@@ -59,7 +59,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
                 assetRarity: CraftedAssetRarity.UNCOMMON,
                 assetEffectDuration: 'none'
             },
-            craftingRecipeLine: CraftingRecipeLine.RESTORATION,
+            craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
             craftingDuration: 600,
             baseEnergyRequired: 50,
             baseSuccessChance: 70,
@@ -96,7 +96,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
                 assetRarity: CraftedAssetRarity.RARE,
                 assetEffectDuration: 'none'
             },
-            craftingRecipeLine: CraftingRecipeLine.RESTORATION,
+            craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
             // 4 hours
             craftingDuration: 14400,
             baseEnergyRequired: 100,
@@ -140,7 +140,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
                 assetRarity: CraftedAssetRarity.EPIC,
                 assetEffectDuration: 'none'
             },
-            craftingRecipeLine: CraftingRecipeLine.RESTORATION,
+            craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
             // 12 hours
             craftingDuration: 43200,
             baseEnergyRequired: 100,
@@ -178,7 +178,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
                 assetRarity: CraftedAssetRarity.LEGENDARY,
                 assetEffectDuration: 'none'
             },
-            craftingRecipeLine: CraftingRecipeLine.RESTORATION,
+            craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
             // 24 hours
             craftingDuration: 86400,
             baseEnergyRequired: 200,
