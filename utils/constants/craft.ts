@@ -1,8 +1,9 @@
 import Bull from 'bull';
 import { AssetType } from '../../models/asset';
 import { CraftedAssetRarity, CraftingRecipe, CraftingRecipeLine } from "../../models/craft";
-import { RestorationItem, WonderArtefactItem } from '../../models/item';
+import { EnergyTotemItem, IngotItem, RestorationItem, TransmutationItem, WonderArtefactItem } from '../../models/item';
 import { BarrenResource, CombinedResources, ExtendedResource, FruitResource, LiquidResource, OreResource, ResourceRarity, ResourceType, SimplifiedResource } from "../../models/resource";
+import { FoodType } from '../../models/food';
 
 /**
  * Creates a new Bull instance for crafting assets to be queued.
@@ -23,7 +24,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
             craftingDuration: 60,
             baseEnergyRequired: 50,
-            baseSuccessChance: 70,
+            baseSuccessChance: 100,
             baseCritChance: 0,
             obtainedPoints: 0,
             requiredXCookies: 0,
@@ -62,7 +63,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
             craftingDuration: 600,
             baseEnergyRequired: 50,
-            baseSuccessChance: 70,
+            baseSuccessChance: 100,
             baseCritChance: 0,
             obtainedPoints: 0,
             requiredXCookies: 0,
@@ -100,7 +101,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             // 4 hours
             craftingDuration: 14400,
             baseEnergyRequired: 100,
-            baseSuccessChance: 70,
+            baseSuccessChance: 100,
             baseCritChance: 0,
             obtainedPoints: 0,
             requiredXCookies: 0,
@@ -144,7 +145,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             // 12 hours
             craftingDuration: 43200,
             baseEnergyRequired: 100,
-            baseSuccessChance: 70,
+            baseSuccessChance: 100,
             baseCritChance: 0,
             obtainedPoints: 0,
             requiredXCookies: 0,
@@ -182,7 +183,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             // 24 hours
             craftingDuration: 86400,
             baseEnergyRequired: 200,
-            baseSuccessChance: 70,
+            baseSuccessChance: 100,
             baseCritChance: 0,
             obtainedPoints: 0,
             requiredXCookies: 0,
@@ -209,6 +210,226 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
                             assetCategory: 'resource',
                             specificAsset: 'any',
                             requiredRarity: ResourceRarity.LEGENDARY,
+                            amount: 5
+                        },
+                        {
+                            assetCategory: 'item',
+                            specificAsset: WonderArtefactItem.ESSENCE_OF_WONDER,
+                            requiredRarity: 'none',
+                            amount: 3
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            craftedAssetData: {
+                asset: TransmutationItem.WAND_OF_TRANSMUTATION,
+                assetDescription: `Select an Isle (Verdant rarity or below) and transmute the Isle's current resource line into another line.`,
+                assetRarity: CraftedAssetRarity.COMMON,
+                assetEffectDuration: 'none'
+            },
+            craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
+            craftingDuration: 60,
+            baseEnergyRequired: 50,
+            baseSuccessChance: 100,
+            baseCritChance: 0,
+            obtainedPoints: 0,
+            requiredXCookies: 0,
+            requiredLevel: 1,
+            requiredCraftingLevel: 1,
+            earnedEXP: 50,
+            weight: 0,
+            requiredAssetGroups: [
+                {
+                    requiredAssets: [
+                        // to be added
+                    ]
+                }
+            ]
+        },
+        {
+            craftedAssetData: {
+                asset: TransmutationItem.STAFF_OF_TRANSMUTATION,
+                assetDescription: `Select an Isle (Exotic rarity or below) and transmute the Isle's current resource line into another line.`,
+                assetRarity: CraftedAssetRarity.UNCOMMON,
+                assetEffectDuration: 'none'
+            },
+            craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
+            craftingDuration: 600,
+            baseEnergyRequired: 50,
+            baseSuccessChance: 100,
+            baseCritChance: 0,
+            obtainedPoints: 0,
+            requiredXCookies: 0,
+            requiredLevel: 1,
+            requiredCraftingLevel: 1,
+            earnedEXP: 100,
+            weight: 0,
+            requiredAssetGroups: [
+                {
+                    requiredAssets: [
+                        // to be added
+                    ]
+                }
+            ]
+        },
+        {
+            craftedAssetData: {
+                asset: TransmutationItem.ROYAL_SCEPTER_OF_TRANSMUTATION,
+                assetDescription: `Select an Isle (any rarity) and transmute the Isle's current resource line into another line.`,
+                assetRarity: CraftedAssetRarity.EPIC,
+                assetEffectDuration: 'none'
+            },
+            craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
+            // 12 hours
+            craftingDuration: 43200,
+            baseEnergyRequired: 100,
+            baseSuccessChance: 100,
+            baseCritChance: 0,
+            obtainedPoints: 0,
+            requiredXCookies: 0,
+            requiredLevel: 1,
+            requiredCraftingLevel: 4,
+            earnedEXP: 500,
+            weight: 0,
+            requiredAssetGroups: [
+                {
+                    requiredAssets: [
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.RARE,
+                            amount: 30
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.EPIC,
+                            amount: 15
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            craftedAssetData: {
+                asset: EnergyTotemItem.SMALL_TOTEM_OF_ENERGY,
+                assetDescription: `Select an Isle and receive +2.5% Isle farming rate & -12.5% energy consumption for all bits there.`,
+                assetRarity: CraftedAssetRarity.COMMON,
+                assetEffectDuration: 'none'
+            },
+            craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
+            craftingDuration: 60,
+            baseEnergyRequired: 50,
+            baseSuccessChance: 100,
+            baseCritChance: 0,
+            obtainedPoints: 0,
+            requiredXCookies: 0,
+            requiredLevel: 1,
+            requiredCraftingLevel: 1,
+            earnedEXP: 50,
+            weight: 0,
+            requiredAssetGroups: [
+                {
+                    requiredAssets: [
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: FruitResource.TOMATO,
+                            requiredRarity: 'none',
+                            amount: 20
+                        },
+                        {
+                            assetCategory: 'item',
+                            specificAsset: IngotItem.COPPER_INGOT,
+                            requiredRarity: 'none',
+                            amount: 5
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            craftedAssetData: {
+                asset: EnergyTotemItem.BIG_TOTEM_OF_ENERGY,
+                assetDescription: `Select an Isle and receive +5% Isle farming rate & -25% energy consumption for all bits there.`,
+                assetRarity: CraftedAssetRarity.UNCOMMON,
+                assetEffectDuration: 'none'
+            },
+            craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
+            craftingDuration: 600,
+            baseEnergyRequired: 50,
+            baseSuccessChance: 100,
+            baseCritChance: 0,
+            obtainedPoints: 0,
+            requiredXCookies: 0,
+            requiredLevel: 1,
+            requiredCraftingLevel: 1,
+            earnedEXP: 100,
+            weight: 0,
+            requiredAssetGroups: [
+                {
+                    requiredAssets: [
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: FruitResource.APPLE,
+                            requiredRarity: 'none',
+                            amount: 10
+                        },
+                        {
+                            assetCategory: 'item',
+                            specificAsset: IngotItem.COPPER_INGOT,
+                            requiredRarity: 'none',
+                            amount: 10
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: FruitResource.MELON,
+                            requiredRarity: 'none',
+                            amount: 1
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            craftedAssetData: {
+                asset: EnergyTotemItem.GRAND_TOTEM_OF_ENERGY,
+                assetDescription: `Select an Isle and receive +5% Isle farming rate & -50% energy consumption for all bits there.`,
+                assetRarity: CraftedAssetRarity.RARE,
+                assetEffectDuration: 'none'
+            },
+            craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
+            // 4 hours
+            craftingDuration: 14400,
+            baseEnergyRequired: 100,
+            baseSuccessChance: 100,
+            baseCritChance: 0,
+            obtainedPoints: 0,
+            requiredXCookies: 0,
+            requiredLevel: 1,
+            requiredCraftingLevel: 3,
+            earnedEXP: 250,
+            weight: 0,
+            requiredAssetGroups: [
+                {
+                    requiredAssets: [
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: FruitResource.STAR_FRUIT,
+                            requiredRarity: 'none',
+                            amount: 10
+                        },
+                        {
+                            assetCategory: 'item',
+                            specificAsset: IngotItem.IRON_INGOT,
+                            requiredRarity: 'none',
+                            amount: 10
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: FruitResource.MELON,
+                            requiredRarity: 'none',
                             amount: 5
                         },
                         {

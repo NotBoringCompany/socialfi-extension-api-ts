@@ -33,7 +33,8 @@ RestorationItem |
 TransmutationItem | 
 EnergyTotemItem | 
 TeleporterItem | 
-PotionItem;
+PotionItem |
+IngotItem;
 
 /**
  * Represents all Bit Orb types in the game.
@@ -105,4 +106,14 @@ export enum PotionItem {
     POTION_OF_LUCK = 'Potion of Luck',
     POTION_OF_ENLIGHTENMENT = 'Potion of Enlightenment',
     POTION_OF_DIVINE_ENLIGHTENMENT = 'Potion of Divine Enlightenment',
+}
+
+/**
+ * A list of different ingots that are refined from resource ores.
+ */
+export enum IngotItem {
+    COPPER_INGOT = 'Copper Ingot',
+    IRON_INGOT = 'Iron Ingot',
+    SILVER_INGOT = 'Silver Ingot',
+    GOLD_INGOT = 'Gold Ingot'
 }
