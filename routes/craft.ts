@@ -1,9 +1,37 @@
-// import express from 'express';
-// import { Status } from '../utils/retVal';
-// import { validateRequestAuth } from '../utils/auth';
-// import { doCraft, getAllCraftingRecipes } from '../api/craft';
+import express from 'express';
+import { Status } from '../utils/retVal';
+import { validateRequestAuth } from '../utils/auth';
+import { craftAsset } from '../api/craft';
 
-// const router = express.Router();
+const router = express.Router();
+
+router.post('/craft_asset', async (req, res) => {
+    const { assetToCraft, amount } = req.body;
+
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'craft_asset');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
+        const { status, message, data } = await craftAsset(validateData?.twitterId, assetToCraft, amount);
+        
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+});
 
 // router.post('/do_craft', async (req, res) => {
 //     const { resType, amt } = req.body;

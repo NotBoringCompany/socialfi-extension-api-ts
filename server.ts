@@ -74,7 +74,7 @@ app.use('/bit_orb', checkMaintenance, bitOrb);
 app.use('/bit', checkMaintenance, bit);
 app.use('/user', checkMaintenance, user);
 app.use('/chest', checkMaintenance, chest);
-// app.use('/craft', checkMaintenance, craft);
+app.use('/craft', checkMaintenance, craft);
 app.use('/poi', checkMaintenance, poi);
 app.use('/cookie', checkMaintenance, cookie);
 app.use('/leaderboard', checkMaintenance, leaderboard);
