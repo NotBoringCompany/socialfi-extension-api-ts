@@ -1,5 +1,7 @@
 import { AssetType } from '../models/asset';
-import { CraftableAsset, CraftingRecipe } from "../models/craft";
+import { CraftableAsset, CraftingRecipe, CraftingRecipeRequiredAssetData } from "../models/craft";
+import { Food } from '../models/food';
+import { Item } from '../models/item';
 import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
 import { BarrenResource, ExtendedResource, ExtendedResourceOrigin, FruitResource, LiquidResource, OreResource, ResourceType, SimplifiedResource } from "../models/resource";
 import { CRAFT_QUEUE, CRAFTING_RECIPES, GET_CRAFTING_LEVEL } from '../utils/constants/craft';
@@ -15,7 +17,24 @@ import { ReturnValue, Status } from "../utils/retVal";
  * 
  * A new `OngoingCraft` instance will be created for the crafted asset, and the user's inventory will be updated accordingly once the duration expires.
  */
-export const craftAsset = async (twitterId: string, assetToCraft: CraftableAsset, amount: number = 1): Promise<ReturnValue> => {
+export const craftAsset = async (
+    twitterId: string, 
+    assetToCraft: CraftableAsset, 
+    amount: number = 1,
+    // the asset group to choose from to craft the asset. see `CraftingRecipe.requiredAssetGroups` for more details.
+    // if a recipe only has 1 asset group, this can be ignored. any number above 1 will return an error.
+    chosenAssetGroup: number = 0,
+    // this should only be used if one or more of the required assets within the chosen asset group doesn't require a specific asset type to be submitted (aka flexible required assets).
+    // for example, some recipes can allow players to submit X amount of ANY common rarity resource.
+    // let's say a recipe requires 10 of ANY common resource. a user can submit 10 of resource A or 10 of resource B, or even a combination of multiple different common resources to make up 10 total.
+    // this `chosenFlexibleRequiredAssets` array should contain the additional assets that the user wants to submit to meet the "10 of any common resource" requirement.
+    // this will then be checked against the required assets in the chosen asset group to see if the user has inputted the correct amount of the specific flexible assets.
+    chosenFlexibleRequiredAssets: Array<{
+        asset: AssetType,
+        assetCategory: 'resource' | 'food' | 'item',
+        amount: number,
+    }>
+): Promise<ReturnValue> => {
     // get the asset data from `CRAFTING_RECIPES` by querying the craftedAssetData.asset
     const craftingRecipe = CRAFTING_RECIPES.find(recipe => recipe.craftedAssetData.asset === assetToCraft);
 
@@ -66,6 +85,9 @@ export const craftAsset = async (twitterId: string, assetToCraft: CraftableAsset
             $set: {},
             $push: {}
         }
+
+        // used only for updating the squad leaderboard if needed.
+        let squadLeaderboardWeek = 0;
 
         // check if the user has enough energy to craft the asset
         const energyRequired = craftingRecipe.baseEnergyRequired * amount;
@@ -121,6 +143,226 @@ export const craftAsset = async (twitterId: string, assetToCraft: CraftableAsset
             }
         }
 
+        // check if the user has the required assets to craft the asset (which is also multiplied by the `amount`) based on the `chosenAssetGroup`.
+        // if the user doesn't have the required assets, return an error.
+        // firstly, check if the recipe has multiple asset groups. if it does, check if the chosenAssetGroup is within the boundary of the length.
+        if (
+            (craftingRecipe.requiredAssetGroups.length === 1 && chosenAssetGroup > 0) ||
+            (craftingRecipe.requiredAssetGroups.length > 1 && chosenAssetGroup > craftingRecipe.requiredAssetGroups.length - 1) ||
+            chosenAssetGroup < 0
+        ) {
+            return {
+                status: Status.ERROR,
+                message: `(craftAsset) Chosen asset group out of bounds.`
+            }
+        }
+
+        // a boolean to check if the user has all the required assets to craft the asset. if any of the required assets are not owned by the user, this will be set to false.
+        let allRequiredAssetsOwned = true;
+        // as mentioned in the parameter `chosenFlexibleRequiredAssets`, some recipes may require players to have to manually input the specific assets they want to use to craft the asset.
+        // for example, if the recipe requires the player to submit 10 of ANY common resource, the player can, for example:
+        // input 1. 2 of common resource A, 2. 3 of common resource B, 3. 3 of common resource C and 4. 2 of common resource D (to make 10 in total).
+        // this array will contain all of these flexible assets required, and for each `chosenFlexibleRequiredAsset`, if valid, we will deduct the `amount` of the respective `remainingFlexibleRequiredAsset`.
+        // for example, let's use the example above (2 of A, 3 of B, 3 of C and 2 of D). to start with, one of the indexes of `remainingFlexibleRequiredAssets` will require 10 of ANY common resource.
+        // after looping through A, the index's amount will be reduced by 2 to become 8. then, after looping through B, it will become 5, and so on.
+        // only when `remainingFlexibleRequiredAssets` contain 0 for ALL indexes will the user be considered to have inputted the correct amount of the flexible assets.
+        const remainingFlexibleRequiredAssets: CraftingRecipeRequiredAssetData[] = craftingRecipe.requiredAssetGroups[chosenAssetGroup].requiredAssets.filter(requiredAsset => requiredAsset.specificAsset === 'any');
+        // a boolean to check if the user has all the flexible required assets to craft the asset. if any of the flexible required assets are not owned by the user, this will be set to false.
+        // `remainingFlexibleRequiredAssets` only checks if the user has inputted the correct amount of the flexible assets.
+        // `allFlexibleRequiredAssetsOwned` will check if the user OWNS the correct amount of the flexible assets. if the user doesn't own the correct amount, this will be set to false.
+        let allFlexibleRequiredAssetsOwned = true;
+
+        // divide into the flexible assets and the non-flexible (i.e. specificAsset !== 'any') assets.
+        const flexibleRequiredAssets = craftingRecipe.requiredAssetGroups[chosenAssetGroup].requiredAssets.filter(requiredAsset => requiredAsset.specificAsset === 'any');
+        const requiredAssets = craftingRecipe.requiredAssetGroups[chosenAssetGroup].requiredAssets.filter(requiredAsset => requiredAsset.specificAsset !== 'any');
+
+        // loop through the flexible required assets first. this will check against the `chosenFlexibleRequiredAssets` array to see if the user has inputted the correct amount of the flexible assets.
+        for (const flexibleRequiredAsset of flexibleRequiredAssets) {
+            const requiredAssetCategory = flexibleRequiredAsset.assetCategory;
+            const requiredAssetRarity = flexibleRequiredAsset.requiredRarity;
+            // required asset amount is the base amount required for the recipe multiplied by the amount the user wants to craft.
+            const requiredAssetAmount = flexibleRequiredAsset.amount * amount;
+
+            // if `requiredAssetCategory` is resource, we need to manually check the rarity of the resources inputted in the `chosenFlexibleRequiredAssets` array.
+            if (requiredAssetCategory === 'resource') {
+                // loop through the `chosenFlexibleRequiredAssets` array and fetch only the resources.
+                // then, fetch the resource data for each resource. we then filter the resources to get the ones that match the `requiredAssetRarity`.
+                // then, we sum up the amount of the resources that match the `requiredAssetRarity` and check if it's equal to the `requiredAssetAmount`.
+                const flexibleResources = chosenFlexibleRequiredAssets.filter(asset => asset.assetCategory === 'resource');
+                // fetch the resources data for the flexible resources and filter them by the required rarity.
+                const flexibleResourceData = flexibleResources.map(resource => resources.find(r => r.type === resource.asset)).filter(resource => resource?.rarity === requiredAssetRarity);
+
+                if (flexibleResourceData.length === 0) {
+                    console.log(`(craftAsset) User didn't input the correct amount of ${requiredAssetRarity} resources (1)`);
+
+                    allFlexibleRequiredAssetsOwned = false;
+                    break;
+                }
+
+                const totalFlexibleResourceAmount = flexibleResources.reduce((acc, resource) => {
+                    // only increment the amount if the resource exists in `flexibleResourceData`
+                    if (flexibleResourceData.find(data => data.type === resource.asset)) {
+                        return acc + resource.amount;
+                    }
+                }, 0);
+
+                if (totalFlexibleResourceAmount !== requiredAssetAmount) {
+                    console.log(`(craftAsset) User didn't input the correct amount of ${requiredAssetRarity} resources (2)`);
+
+                    allFlexibleRequiredAssetsOwned = false;
+                    break;
+                }
+
+                // if the user has inputted the correct amount of the flexible resources, we need to deduct the amount from the `remainingFlexibleRequiredAssets` array.
+                remainingFlexibleRequiredAssets.find(asset => asset.requiredRarity === requiredAssetRarity).amount -= requiredAssetAmount;
+
+                // if the amount of the flexible resource is 0, remove it from the array.
+                if (remainingFlexibleRequiredAssets.find(asset => asset.requiredRarity === requiredAssetRarity).amount === 0) {
+                    remainingFlexibleRequiredAssets.splice(remainingFlexibleRequiredAssets.findIndex(asset => asset.requiredRarity === requiredAssetRarity), 1);
+                }
+
+                // now we just need to check if the user owns the correct amount of the flexible resources.
+                // for example, if 2 of common resource A, 3 of common resource B, 3 of common resource C and 2 of common resource D are inputted,
+                // then the user needs to own AT LEAST 2 of common resource A, 3 of common resource B, 3 of common resource C and 2 of common resource D.
+                for (const flexibleResource of flexibleResourceData) {
+                    const userResource = (user.inventory?.resources as ExtendedResource[]).find(resource => resource.type === flexibleResource.type);
+
+                    if (!userResource || userResource.amount < flexibleResources.find(resource => resource.asset === flexibleResource.type)?.amount) {
+                        console.log(`(craftAsset) User doesn't own the correct amount of ${flexibleResource.type}`);
+
+                        allFlexibleRequiredAssetsOwned = false;
+                        break;
+                    }
+                }
+            } else if (requiredAssetCategory === 'food') {
+                // food has no rarity, so we simply just check if the user has inputted the correct amount of the food.
+                // e.g. if the recipe, say, requires 10 of any food, the user can input 5 burgers, 2 candies and 3 juices.
+                // we just need to check if the user has inputted 10 food items in total.
+                const flexibleFoods = chosenFlexibleRequiredAssets.filter(asset => asset.assetCategory === 'food');
+
+                const totalFlexibleFoodAmount = flexibleFoods.reduce((acc, food) => {
+                    return acc + food.amount;
+                }, 0);
+
+                if (totalFlexibleFoodAmount !== requiredAssetAmount) {
+                    console.log(`(craftAsset) User didn't input the correct amount of food`);
+
+                    allFlexibleRequiredAssetsOwned = false;
+                    break;
+                }
+
+                // if the user has inputted the correct amount of the flexible foods, we need to deduct the amount from the `remainingFlexibleRequiredAssets` array.
+                remainingFlexibleRequiredAssets.find(asset => asset.assetCategory === 'food').amount -= requiredAssetAmount;
+
+                // if the amount of the flexible food is 0, remove it from the array.
+                if (remainingFlexibleRequiredAssets.find(asset => asset.assetCategory === 'food').amount === 0) {
+                    remainingFlexibleRequiredAssets.splice(remainingFlexibleRequiredAssets.findIndex(asset => asset.assetCategory === 'food'), 1);
+                }
+
+                // now we just need to check if the user owns the correct amount of the flexible foods.
+                // for example, if 5 burgers, 2 candies and 3 juices are inputted,
+                // then the user needs to own AT LEAST 5 burgers, 2 candies and 3 juices.
+                for (const flexibleFood of flexibleFoods) {
+                    const userFood = (user.inventory?.foods as Food[]).find(food => food.type === flexibleFood.asset);
+
+                    if (!userFood || userFood.amount < flexibleFood.amount) {
+                        console.log(`(craftAsset) User doesn't own the correct amount of ${flexibleFood.asset}`);
+
+                        allFlexibleRequiredAssetsOwned = false;
+                        break;
+                    }
+                }
+            } else if (requiredAssetCategory === 'item') {
+                // item has no rarity, so we simply just check if the user has inputted the correct amount of the item.
+                // e.g. if the recipe, say, requires 10 of any item, the user can input 5 of item A and 5 of item B.
+                // we just need to check if the user has inputted 10 items in total.
+                const flexibleItems = chosenFlexibleRequiredAssets.filter(asset => asset.assetCategory === 'item');
+
+                const totalFlexibleItemAmount = flexibleItems.reduce((acc, item) => {
+                    return acc + item.amount;
+                }, 0);
+
+                if (totalFlexibleItemAmount !== requiredAssetAmount) {
+                    console.log(`(craftAsset) User didn't input the correct amount of items`);
+
+                    allFlexibleRequiredAssetsOwned = false;
+                    break;
+                }
+                
+                // if the user has inputted the correct amount of the flexible items, we need to deduct the amount from the `remainingFlexibleRequiredAssets` array.
+                remainingFlexibleRequiredAssets.find(asset => asset.assetCategory === 'item').amount -= requiredAssetAmount;
+
+                // if the amount of the flexible item is 0, remove it from the array.
+                if (remainingFlexibleRequiredAssets.find(asset => asset.assetCategory === 'item').amount === 0) {
+                    remainingFlexibleRequiredAssets.splice(remainingFlexibleRequiredAssets.findIndex(asset => asset.assetCategory === 'item'), 1);
+                }
+
+                // now we just need to check if the user owns the correct amount of the flexible items.
+                // for example, if 5 of item A and 5 of item B are inputted,
+                // then the user needs to own AT LEAST 5 of item A and 5 of item B.
+                for (const flexibleItem of flexibleItems) {
+                    const userItem = (user.inventory?.items as Item[]).find(item => item.type === flexibleItem.asset);
+
+                    if (!userItem || userItem.amount < flexibleItem.amount) {
+                        console.log(`(craftAsset) User doesn't own the correct amount of ${flexibleItem.asset}`);
+
+                        allFlexibleRequiredAssetsOwned = false;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // now, loop through the non-flexible required assets. because non-flexible required assets will require a specific asset,
+        // we just need to check if the user owns at least the required amount of the specific asset.
+        for (const requiredAsset of requiredAssets) {
+            // note: no need to check for rarity because the required asset is always a specific asset.
+            const requiredAssetCategory = requiredAsset.assetCategory;
+            const requiredAssetType = requiredAsset.specificAsset;
+            const requiredAssetAmount = requiredAsset.amount * amount;
+
+            if (requiredAssetCategory === 'resource') {
+                const userResource = (user.inventory?.resources as ExtendedResource[]).find(resource => resource.type === requiredAssetType);
+
+                if (!userResource || userResource.amount < requiredAssetAmount) {
+                    console.log(`(craftAsset) User doesn't own the correct amount of ${requiredAssetType}`);
+
+                    allRequiredAssetsOwned = false;
+                    break;
+                }
+            } else if (requiredAssetCategory === 'food') {
+                const userFood = (user.inventory?.foods as Food[]).find(food => food.type === requiredAssetType);
+
+                if (!userFood || userFood.amount < requiredAssetAmount) {
+                    console.log(`(craftAsset) User doesn't own the correct amount of ${requiredAssetType}`);
+
+                    allRequiredAssetsOwned = false;
+                    break;
+                }
+            } else if (requiredAssetCategory === 'item') {
+                const userItem = (user.inventory?.items as Item[]).find(item => item.type === requiredAssetType);
+
+                if (!userItem || userItem.amount < requiredAssetAmount) {
+                    console.log(`(craftAsset) User doesn't own the correct amount of ${requiredAssetType}`);
+
+                    allRequiredAssetsOwned = false;
+                    break;
+                }
+            }
+        }
+
+        // check if 1. `allRequiredAssetsOwned` is true and `allFlexibleRequiredAssetsOwned` is true, and 2. `remainingFlexibleRequiredAssets` is empty.
+        // if both conditions are met, the function logic continues (meaning that the asset check has passed).
+        if (!allRequiredAssetsOwned || !allFlexibleRequiredAssetsOwned || remainingFlexibleRequiredAssets.length > 0) {
+            console.log(`(craftAsset) allRequiredAssetsOwned/allFlexibleRequiredAssetsOwned/remainingFlexibleRequiredAssets checks failed.`);
+            
+            return {
+                status: Status.ERROR,
+                message: `(craftAsset) One or more asset checks failed. Please try again.`
+            }
+        }
+
+
         let obtainedAssetCount = 0;
 
         // at this point, all base checks should pass. proceed with the crafting logic.
@@ -174,6 +416,7 @@ export const craftAsset = async (twitterId: string, assetToCraft: CraftableAsset
         // squad's total points (if they are in a squad).
         // 3. increase the player's crafting XP (and potentially level) for the specific crafting line based on the `earnedXP` of the recipe.
         // 4. reduce the energy of the user by the `energyRequired` of the recipe.
+        // 5. remove the assets used to craft the asset from the user's inventory.
 
         // do task 1.
         if (craftingRecipe.requiredXCookies > 0) {
@@ -289,6 +532,7 @@ export const craftAsset = async (twitterId: string, assetToCraft: CraftableAsset
                 }
 
                 const latestSquadLeaderboard = await SquadLeaderboardModel.findOne().sort({ week: -1 }).lean();
+                squadLeaderboardWeek = latestSquadLeaderboard.week;
 
                 // add only the points to the squad's total points
                 squadUpdateOperations.updateOperations.$inc[`squadPoints`] = craftingRecipe.obtainedPoints * amount;
@@ -342,6 +586,120 @@ export const craftAsset = async (twitterId: string, assetToCraft: CraftableAsset
         // do task 4.
         // reduce the user's energy
         userUpdateOperations.$inc[`inGameData.energy.currentEnergy`] = -energyRequired;
+
+        // do task 5.
+        // remove the assets used to craft the asset.
+        // to do this, we will loop through 1. the `requiredAssets` array and 2. the `chosenFlexibleRequiredAssets` array.
+        // for each required asset, we will deduct the amount from the user's inventory.
+        // for each flexible required asset, we will deduct the amount from the user's inventory.
+        for (const requiredAsset of requiredAssets) {
+            const requiredAssetCategory = requiredAsset.assetCategory;
+            const requiredAssetType = requiredAsset.specificAsset;
+            const requiredAssetAmount = requiredAsset.amount * amount;
+
+            if (requiredAssetCategory === 'resource') {
+                const resourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(resource => resource.type === requiredAssetType);
+
+                if (resourceIndex !== -1) {
+                    userUpdateOperations.$inc[`inventory.resources.${resourceIndex}.amount`] = -requiredAssetAmount;
+                // just in case
+                } else {
+                    console.log(`(craftAsset) Required asset ${requiredAssetType} not found in user's inventory.`);
+                
+                    return {
+                        status: Status.ERROR,
+                        message: `(craftAsset) Required asset ${requiredAssetType} not found in user's inventory.`
+                    }
+                }
+            } else if (requiredAssetCategory === 'food') {
+                const foodIndex = (user.inventory?.foods as Food[]).findIndex(food => food.type === requiredAssetType);
+
+                if (foodIndex !== -1) {
+                    userUpdateOperations.$inc[`inventory.foods.${foodIndex}.amount`] = -requiredAssetAmount;
+                // just in case
+                } else {
+                    console.log(`(craftAsset) Required asset ${requiredAssetType} not found in user's inventory.`);
+                
+                    return {
+                        status: Status.ERROR,
+                        message: `(craftAsset) Required asset ${requiredAssetType} not found in user's inventory.`
+                    }
+                }
+            } else if (requiredAssetCategory === 'item') {
+                const itemIndex = (user.inventory?.items as Item[]).findIndex(item => item.type === requiredAssetType);
+
+                if (itemIndex !== -1) {
+                    userUpdateOperations.$inc[`inventory.items.${itemIndex}.amount`] = -requiredAssetAmount;
+                // just in case
+                } else {
+                    console.log(`(craftAsset) Required asset ${requiredAssetType} not found in user's inventory.`);
+                
+                    return {
+                        status: Status.ERROR,
+                        message: `(craftAsset) Required asset ${requiredAssetType} not found in user's inventory.`
+                    }
+                }
+            }
+        }
+
+        // for each flexible required asset, we will deduct the amount from the user's inventory.
+        for (const flexibleRequiredAsset of chosenFlexibleRequiredAssets) {
+            const flexibleAssetCategory = flexibleRequiredAsset.assetCategory;
+            const flexibleAssetType = flexibleRequiredAsset.asset;
+            const flexibleAssetAmount = flexibleRequiredAsset.amount;
+
+            if (flexibleAssetCategory === 'resource') {
+                const resourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(resource => resource.type === flexibleAssetType);
+
+                if (resourceIndex !== -1) {
+                    userUpdateOperations.$inc[`inventory.resources.${resourceIndex}.amount`] = -flexibleAssetAmount;
+                // just in case
+                } else {
+                    console.log(`(craftAsset) Flexible asset ${flexibleAssetType} not found in user's inventory.`);
+                
+                    return {
+                        status: Status.ERROR,
+                        message: `(craftAsset) Flexible asset ${flexibleAssetType} not found in user's inventory.`
+                    }
+                }
+            } else if (flexibleAssetCategory === 'food') {
+                const foodIndex = (user.inventory?.foods as Food[]).findIndex(food => food.type === flexibleAssetType);
+
+                if (foodIndex !== -1) {
+                    userUpdateOperations.$inc[`inventory.foods.${foodIndex}.amount`] = -flexibleAssetAmount;
+                // just in case
+                } else {
+                    console.log(`(craftAsset) Flexible asset ${flexibleAssetType} not found in user's inventory.`);
+                
+                    return {
+                        status: Status.ERROR,
+                        message: `(craftAsset) Flexible asset ${flexibleAssetType} not found in user's inventory.`
+                    }
+                }
+            } else if (flexibleAssetCategory === 'item') {
+                const itemIndex = (user.inventory?.items as Item[]).findIndex(item => item.type === flexibleAssetType);
+
+                if (itemIndex !== -1) {
+                    userUpdateOperations.$inc[`inventory.items.${itemIndex}.amount`] = -flexibleAssetAmount;
+                // just in case
+                } else {
+                    console.log(`(craftAsset) Flexible asset ${flexibleAssetType} not found in user's inventory.`);
+                
+                    return {
+                        status: Status.ERROR,
+                        message: `(craftAsset) Flexible asset ${flexibleAssetType} not found in user's inventory.`
+                    }
+                }
+            }
+        }
+
+        // update the user's inventory, leaderboard, squad and squad leaderboard.
+        await Promise.all([
+            UserModel.updateOne({ twitterId }, userUpdateOperations),
+            LeaderboardModel.updateOne({ name: 'Season 0' }, leaderboardUpdateOperations),
+            SquadModel.updateOne({ _id: user.inGameData.squadId }, squadUpdateOperations),
+            SquadLeaderboardModel.updateOne({ week: squadLeaderboardWeek }, squadLeaderboardUpdateOperations)
+        ]);
 
         // create a new ongoing craft instance in the database.
         const newOngoingCraft = new OngoingCraftModel({

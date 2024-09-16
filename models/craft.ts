@@ -144,16 +144,13 @@ export interface CraftingRecipeRequiredAssetGroup {
  */
 export interface CraftingRecipeRequiredAssetData {
     /** 
-     * the asset category.
-     * 
-     * if any, the user can use any asset (unless bound by other restrictions like minimum rarity for resources) to craft the asset.
+     * the asset category of the required asset.
      */
-    assetCategory: 'resource' | 'food' | 'item' | 'any';
+    assetCategory: 'resource' | 'food' | 'item';
     /**
      * the specific asset required to craft the recipe.
      * 
-     * if `assetCategory` is `any`, `specificAsset` SHOULD also be `any`.
-     * however, having a specific `specificAsset` and having `specificAsset` as `any` is allowed.
+     * having a specific `specificAsset` and having `specificAsset` as `any` is allowed.
      * 
      * for example, if `assetCategory` is `resource` and `specificAsset` is `any` and `requiredRarity` is `ResourceRarity.COMMON`,
      * the user can use any common resource to craft the recipe.
