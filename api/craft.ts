@@ -97,9 +97,9 @@ export const craftAsset = async (twitterId: string, assetToCraft: CraftableAsset
             }
         }
 
-        // if `requiredCraftingLevel` !== none, check if the user has the required crafting level to craft the asset
+        // if `requiredCraftingLevel` !== none, check if the user has the required crafting level to craft the asset (within the line)
         if (craftingRecipe.requiredCraftingLevel !== 'none') {
-            if (user.inGameData.craftingStats.craftingLevel < craftingRecipe.requiredCraftingLevel) {
+            if (user.inGameData.mastery.crafting[craftingRecipe.craftingRecipeLine.toLowerCase()].level < craftingRecipe.requiredCraftingLevel){
                 return {
                     status: Status.ERROR,
                     message: `(craftAsset) User crafting level too low to craft ${assetToCraft}.`

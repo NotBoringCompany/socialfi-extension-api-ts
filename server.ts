@@ -43,7 +43,7 @@ import bitOrb from './routes/bitOrb';
 import bit from './routes/bit';
 import user from './routes/user';
 import chest from './routes/chest';
-// import craft from './routes/craft';
+import craft from './routes/craft';
 import cookie from './routes/cookie';
 import poi from './routes/poi';
 import leaderboard from './routes/leaderboard';
