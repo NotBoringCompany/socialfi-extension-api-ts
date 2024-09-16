@@ -16,9 +16,9 @@ export interface Ban {
   bandId: string;
   userId: string;
   banType: BanType;
-  startDate: Date;
-  endDate: Date;
-  reason: string;
+  startDate?: Date;
+  endDate?: Date;
+  reason?: string;
   adminId: string;
   status: BanStatus;
   createdAt: Date;
