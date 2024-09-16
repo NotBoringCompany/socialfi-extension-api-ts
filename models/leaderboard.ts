@@ -52,4 +52,5 @@ export enum LeaderboardPointsSource {
     KOS_BENEFITS = 'KOS Benefits',
     DISCORD_ENGAGEMENT = 'Discord Engagement',
     WEEKLY_MVP_REWARDS = 'Weekly MVP Rewards',
+    CRAFTING_RECIPES = 'Crafting Recipes',
 }

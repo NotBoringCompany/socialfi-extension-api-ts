@@ -1,572 +1,384 @@
 import { AssetType } from '../models/asset';
 import { CraftableAsset, CraftingRecipe } from "../models/craft";
+import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
 import { BarrenResource, ExtendedResource, ExtendedResourceOrigin, FruitResource, LiquidResource, OreResource, ResourceType, SimplifiedResource } from "../models/resource";
-import { CRAFTING_RECIPES } from '../utils/constants/craft';
-import { UserModel } from "../utils/constants/db";
+import { CRAFT_QUEUE, CRAFTING_RECIPES, GET_CRAFTING_LEVEL } from '../utils/constants/craft';
+import { LeaderboardModel, OngoingCraftModel, SquadLeaderboardModel, SquadModel, UserModel } from "../utils/constants/db";
 import { CARPENTING_MASTERY_LEVEL, COOKING_MASTERY_LEVEL, SMELTING_MASTERY_LEVEL, TAILORING_MASTERY_LEVEL } from "../utils/constants/mastery";
 import { getResource, getResourceWeight, resources } from "../utils/constants/resource";
+import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
+import { generateObjectId } from '../utils/crypto';
 import { ReturnValue, Status } from "../utils/retVal";
 
-// /**
-//  * Crafts a craftable asset for the user.
-//  */
-// export const craftAsset = async (twitterId: string, assetToCraft: CraftableAsset, amount: number = 1): Promise<ReturnValue> => {
-//     try {
-//         const user = await UserModel.findOne({ twitterId }).lean();
+/**
+ * Crafts a craftable asset for the user.
+ * 
+ * A new `OngoingCraft` instance will be created for the crafted asset, and the user's inventory will be updated accordingly once the duration expires.
+ */
+export const craftAsset = async (twitterId: string, assetToCraft: CraftableAsset, amount: number = 1): Promise<ReturnValue> => {
+    // get the asset data from `CRAFTING_RECIPES` by querying the craftedAssetData.asset
+    const craftingRecipe = CRAFTING_RECIPES.find(recipe => recipe.craftedAssetData.asset === assetToCraft);
 
-//         if (!user) {
-//             return {
-//                 status: Status.ERROR,
-//                 message: `(craftAsset) User not found`
-//             }
-//         }
+    if (!craftingRecipe) {
+        return {
+            status: Status.ERROR,
+            message: `(craftAsset) Crafting recipe not found.`
+        }
+    }
 
-//         const userUpdateOperations = {
-//             $pull: {},
-//             $inc: {},
-//             $set: {},
-//             $push: {}
-//         }
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
 
-//         // get the asset data from `CRAFTING_RECIPES` by querying the craftedAssetData.asset
-//         const craftingRecipe = CRAFTING_RECIPES.find(recipe => recipe.craftedAssetData.asset === assetToCraft);
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(craftAsset) User not found.`
+            }
+        }
 
-//         if (!craftingRecipe) {
-//             return {
-//                 status: Status.ERROR,
-//                 message: `(craftAsset) Crafting recipe not found`
-//             }
-//         }
+        const userUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
 
-//         // check if the user has enough energy to craft the asset
-//         const energyRequired = craftingRecipe.baseEnergyRequired * amount;
+        const leaderboardUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
 
-//         if (user.inGameData.energy.currentEnergy < energyRequired) {
-//             return {
-//                 status: Status.ERROR,
-//                 message: `(craftAsset) Not enough energy to craft ${amount}x ${assetToCraft}`
-//             }
-//         }
+        const squadUpdateOperations = {
+            squadId: user.inGameData.squadId ?? null,
+            updateOperations: {
+                $pull: {},
+                $inc: {},
+                $set: {},
+                $push: {}
+            }
+        }
 
-//         // if `requiredXCookies` > 0, check if the user has enough xCookies to craft the asset
-//         if (craftingRecipe.requiredXCookies > 0) {
-//             if (user.inventory?.xCookieData.currentXCookies < craftingRecipe.requiredXCookies) {
-//                 return {
-//                     status: Status.ERROR,
-//                     message: `(craftAsset) Not enough xCookies to craft ${amount}x ${assetToCraft}`
-//                 }
-//             }
-//         }
+        const squadLeaderboardUpdateOperations = {
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
 
-//         // if `requiredLevel` !== none, check if the user has the required level to craft the asset
-//         if (craftingRecipe.requiredLevel !== 'none') {
-//             if (user.inGameData.level < craftingRecipe.requiredLevel) {
-//                 return {
-//                     status: Status.ERROR,
-//                     message: `(craftAsset) User level too low to craft ${assetToCraft}`
-//                 }
-//             }
-//         }
+        // check if the user has enough energy to craft the asset
+        const energyRequired = craftingRecipe.baseEnergyRequired * amount;
 
-//         // if `requiredCraftingLevel` !== none, check if the user has the required crafting level to craft the asset
-//         if (craftingRecipe.requiredCraftingLevel !== 'none') {
-//             if (user.inGameData.craftingStats.craftingLevel < craftingRecipe.requiredCraftingLevel) {
-//                 return {
-//                     status: Status.ERROR,
-//                     message: `(craftAsset) User crafting level too low to craft ${assetToCraft}`
-//                 }
-//             }
-//         }
+        if (user.inGameData.energy.currentEnergy < energyRequired) {
+            return {
+                status: Status.ERROR,
+                message: `(craftAsset) Not enough energy to craft ${amount}x ${assetToCraft}.`
+            }
+        }
 
-//         // if weight > 0, check if the user's inventory can still hold the crafted asset (x the amount).
-//         if (craftingRecipe.weight > 0) {
-//             const userWeight = user.inventory.weight;
-//             const maxWeight = user.inventory.maxWeight;
-//             const totalWeight = craftingRecipe.weight * amount;
+        // if `requiredXCookies` > 0, check if the user has enough xCookies to craft the asset
+        if (craftingRecipe.requiredXCookies > 0) {
+            if (user.inventory?.xCookieData.currentXCookies < craftingRecipe.requiredXCookies) {
+                return {
+                    status: Status.ERROR,
+                    message: `(craftAsset) Not enough xCookies to craft ${amount}x ${assetToCraft}.`
+                }
+            }
+        }
 
-//             if (userWeight + totalWeight > maxWeight) {
-//                 return {
-//                     status: Status.ERROR,
-//                     message: `(craftAsset) User inventory weight limit exceeded. Cannot craft ${amount}x ${assetToCraft}`
-//                 }
-//             }
-//         }
+        // if `requiredLevel` !== none, check if the user has the required level to craft the asset
+        if (craftingRecipe.requiredLevel !== 'none') {
+            if (user.inGameData.level < craftingRecipe.requiredLevel) {
+                return {
+                    status: Status.ERROR,
+                    message: `(craftAsset) User level too low to craft ${assetToCraft}.`
+                }
+            }
+        }
 
-//         // at this point, all base checks should pass. proceed with the crafting logic.
-//         // per each amount of the asset to craft, we will roll the first dice to determine if the user successfully crafts 1 of this asset.
-//         // for instance, if the user wants to craft 5 (amount = 5) of asset A, we will roll the dice of 0-9999 5 times.
-//         // any dice that rolls below the `baseSuccessChance` will be considered a success, and the user will obtain 1 of the asset.
-//         // for instance, if the user rolls 7900, 5500, 3200, 8800, 9100, and the `baseSuccessChance` is 7000 (70%), the user will obtain 2 of the asset instead of 5,
-//         // because only 2 of the rolls (5500 and 3200) are below 7000 (or 70%).
+        // if `requiredCraftingLevel` !== none, check if the user has the required crafting level to craft the asset
+        if (craftingRecipe.requiredCraftingLevel !== 'none') {
+            if (user.inGameData.craftingStats.craftingLevel < craftingRecipe.requiredCraftingLevel) {
+                return {
+                    status: Status.ERROR,
+                    message: `(craftAsset) User crafting level too low to craft ${assetToCraft}.`
+                }
+            }
+        }
 
-//     } catch (err: any) {
-//         return {
-//             status: Status.ERROR,
-//             message: `(craftAsset) ${err.message}`,
-//         }
-//     }
-// }
+        // if weight > 0, check if the user's inventory can still hold the crafted asset (x the amount).
+        if (craftingRecipe.weight > 0) {
+            const userWeight = user.inventory.weight;
+            const maxWeight = user.inventory.maxWeight;
+            const totalWeight = craftingRecipe.weight * amount;
 
-// export const doCraft = async(twitterId: string, craftType: ResourceType, amount: number = 1) : Promise<ReturnValue> =>{
-//     try {
-//         const userUpdateOperations = {
-//             $pull: {},
-//             $inc: {},
-//             $set: {},
-//             $push: {}
-//         }
+            if (userWeight + totalWeight > maxWeight) {
+                return {
+                    status: Status.ERROR,
+                    message: `(craftAsset) User inventory weight limit exceeded. Cannot craft ${amount}x ${assetToCraft}`
+                }
+            }
+        }
 
-//         const user = await UserModel.findOne({ twitterId }).lean();
-//         const craftItem  = getCraftItem(craftType);
-//         var successAmount = amount;
-//         console.log(`You want to craft ${craftItem.type} x ${amount}`);
+        let obtainedAssetCount = 0;
 
-//         //#region SuccessRate Wall
-//         /** I think there should be success chances, but based on current requirement all crafting will be guaranteed success */
-//         var baseSuccessRate = craftItem.baseSuccessChance;
+        // at this point, all base checks should pass. proceed with the crafting logic.
+        // per each amount of the asset to craft, we will roll the first dice to determine if the user successfully crafts 1 of this asset.
+        // for instance, if the user wants to craft 5 (amount = 5) of asset A, we will roll the dice of 0-9999 5 times.
+        // any dice that rolls below the `baseSuccessChance` will be considered a success, and the user will obtain 1 of the asset.
+        // for instance, if the user rolls 7900, 5500, 3200, 8800, 9100, and the `baseSuccessChance` is 7000 (70%), the user will obtain 2 of the asset instead of 5,
+        // because only 2 of the rolls (5500 and 3200) are below 7000 (or 70%).
+        const successRolls = [];
 
-//         /** Success Rate Should Be Affected by your crafting level i think, it will give incentives to player to increase it's crafting level more */
-//         /**Comment below if you want to apply actual success chances based on the crafting item data */
-//         baseSuccessRate = 100;
+        for (let i = 0; i < amount; i++) {
+            const roll = Math.floor(Math.random() * 10000);
+            successRolls.push(roll);
+        }
 
-//         //baseSuccessRate = baseSuccessRate + (CraftLevel ( this should require conditional to know which crafting line are we in ) * ... * ...);
-//         //baseSuccessRate = (baseSuccessRate > 100 ? 100 : baseSuccessRate);
+        // get the amount of successful crafts based on the rolls below the `baseSuccessChance`
+        const successfulCrafts = successRolls.length > 0 ? successRolls.filter(roll => roll <= craftingRecipe.baseSuccessChance).length : 0;
 
-//         console.log(`-----------------------====-------------------`);
-//         console.log(`Try to craft ${amount}pcs of ${craftItem.type} with ${baseSuccessRate}% of success rate ..`);
-        
-//         for(let i = 0 ; i < amount ; i++)
-//         {
-//             const rollResult = Math.floor(Math.random() * (100 + 1));
-//             console.log(`Craft Success Rate : ${baseSuccessRate}%, current roll : ${rollResult}`);
-//             if(rollResult <= baseSuccessRate)
-//             {
-//                 console.log(`The craft resulting in a success`);
-//             }
-//             else
-//             {
-//                 successAmount--;
-//                 console.log(`The craft resulting in a Failure`);
-//             }
-//         }
+        // if successfulCrafts is 0, the user failed to craft the asset. return an error.
+        if (successfulCrafts === 0) {
+            return {
+                status: Status.ERROR,
+                message: `(craftAsset) User failed to craft ${amount}x ${assetToCraft}. Rolls: ${successRolls.join(', ')}`
+            }
+        }
 
-//         console.log(`From ${amount} of pcs you desire to craft, you succeeded ${successAmount} times..`);
+        obtainedAssetCount += successfulCrafts;
 
-//         if(successAmount <= 0)
-//         {
-//             return {
-//                 status: Status.ERROR,
-//                 message: `(doCraft) You failed to craft ${craftItem.type}`,
-//             };
-//         }
-//         console.log(`-----------------------====-------------------`);
+        // if successfulCrafts > 0, the user successfully crafted the asset. if baseCritChance > 0, roll another dice to determine if, for each successful craft, the user obtains an extra asset.
+        // for instance, if the user successfully crafts 2 of the asset, and the `baseCritChance` is 3000 (30%), we will roll the dice 2 times.
+        // if both dices fall below 3000, the user will obtain 4 of the asset instead of 2 (1 extra for each successful craft).
+        const critRolls = [];
 
-//         //#endregion
+        // only if baseCritChance > 0, roll the dice for each successful craft
+        if (craftingRecipe.baseCritChance > 0) {
+            for (let i = 0; i < successfulCrafts; i++) {
+                const roll = Math.floor(Math.random() * 10000);
+                critRolls.push(roll);
+            }
 
-//         //#region Critical Section
-//         //Currently ALL ITEM'S CRITICAL CHANCE IS 0
-//         var criticalRate = craftItem.baseCritChance;
+            // get the amount of extra crafts based on the rolls below the `baseCritChance`
+            const extraCrafts = critRolls.length > 0 && critRolls.filter(roll => roll <= craftingRecipe.baseCritChance).length;
 
+            obtainedAssetCount += extraCrafts;
+        }
 
-//         //criticalRate = criticalRate + (craftLevel * ... * ... *... formula here)
+        //// TO DO: USER COMPENSATION FOR FAILED CRAFTS (check logic with team)
+        // FOR EACH `amount` (NOT successfulCrafts) OF THE ASSET TO CRAFT:
+        // 1. if `requiredXCookies` > 0, deduct the required xCookies from the user's inventory.
+        // 2. if `obtainedPoints` > 0, increase the user's points in the leaderboard, also potentially add the points to the user's
+        // squad's total points (if they are in a squad).
+        // 3. increase the player's crafting XP (and potentially level) for the specific crafting line based on the `earnedXP` of the recipe.
+        // 4. reduce the energy of the user by the `energyRequired` of the recipe.
 
-//         var producedAmount = 0;
-//         producedAmount = Number(producedAmount);
-//         console.log(`-----------------------====-------------------`);
-//         console.log(`Calculating Critical Production for ${successAmount}Pcs of ${craftItem.type} with ...`);
-//         for(let i = 0 ; i < successAmount ; i++)
-//         {
-//             producedAmount++;
-//             const criticalRoll = Math.floor(Math.random() * 101);
-//             console.log(`Craft #${i+1} rolled in ${criticalRoll} from ${criticalRate}% Critical Rate`);
-//             if(criticalRoll < criticalRate)
-//             {
-//                 console.log(`Craft #${i+1} resulted in critical, and yielded extra result !!`);
-//                 producedAmount++;
-//             }
-//             else
-//             {
-//                 console.log(`Craft #${i+1} does not resulted in critical, and yielded no extra result`);
-//             }
-//         }
-//         console.log(`After Critical Procession You will get ${producedAmount}Pcs of ${craftItem.type} in final craft production !!`);
-//         console.log(`-----------------------====-------------------`);
+        // do task 1.
+        if (craftingRecipe.requiredXCookies > 0) {
+            userUpdateOperations.$inc[`inventory.xCookieData.currentXCookies`] = -craftingRecipe.requiredXCookies * amount;
+        }
 
-//         //#endregion
+        // do task 2.
+        if (craftingRecipe.obtainedPoints > 0) {
+            // check if the user exists in the season 0 leaderboard's `userData` array.
+            // if it doesn't, create a new entry. else:
+            // check if the source `CRAFTING_RECIPES` exists in the user's points data
+            // if it does, increment the points. else, create a new entry.
+            // also, if the user is eligible for additional points, add the additional points to the `points`.
+            const leaderboard = await LeaderboardModel.findOne({ name: 'Season 0' }).lean();
 
-//         //#region LEVEL WALL
-//         //Level Data---
-//         const levelReq = craftItem.reqLevel;
-//         const userLevel = user.inGameData.level;
-//         //---Level Data
+            if (!leaderboard) {
+                return {
+                    status: Status.ERROR,
+                    message: `(craftAsset) Leaderboard not found.`
+                }
+            }
 
-//         //Check if user level is eligible to craft this item;
-//         console.log(`${craftItem.type} requires you to be on level ${levelReq}, now you are level ${userLevel}`);
-//         if(userLevel < levelReq)
-//         {
-//             console.log(`(doCraft) Your Level is Too Low to Craft ${craftType}`);
-//             return {
-//                 status: Status.ERROR,
-//                 message: `(doCraft) Your Level is Too Low to Craft ${craftType}`,
-//             };
-//         }
-//         const levelAbove = levelReq - userLevel;
-//         console.log(`You are ${levelAbove} above the requirement level, which means you're eligible !`);
-//         //#endregion
+            const userIndex = (leaderboard.userData as LeaderboardUserData[]).findIndex(userData => userData.userId === user._id);
 
-//         //#region ENERGY WALL
-//         const energyReq = craftItem.baseEnergy * amount;
-//         const userEnergy = user.inGameData.energy.currentEnergy;
-//         console.log(`-----------------------====-------------------`);
-//         console.log(`${craftItem.type} requires ${energyReq} energy, You have ${userEnergy} energy`);
-//         if(userEnergy < energyReq)
-//         {
-//             console.log(`(doCraft) Your Energy is not enough to Craft ${craftType}`);
-//             return {
-//                 status: Status.ERROR,
-//                 message: `(doCraft) Your Energy is not enough to Craft ${craftType}`,
-//             };
-//         }
-//         else
-//         {
-//             userUpdateOperations.$inc[`inGameData.energy.currentEnergy`] = -energyReq;
-//         }
-//         const leftEnergy = userEnergy - energyReq;
-//         console.log(`You Have enough energy, deducting ${energyReq} now you have ${leftEnergy} left`);
-//         console.log(`-----------------------====-------------------`);
-//         //#endregion
+            let additionalPoints = 0;
 
-//         //#region BERRY WALL
-//         const berryReq = craftItem.berries * amount;
-//         const userBerry = user.inventory?.xCookieData.currentXCookies;
+            const currentLevel = user.inGameData.level;
 
-//         console.log(`Crafting ${craftItem.type} requires ${berryReq} berries, You have ${userBerry} berries`);
-//         var berryLeft = userBerry - berryReq;
-//         if(berryLeft < 0)
-//         {
-//             var sortBerries = berryReq - userBerry;
-//             console.log(`You don't have enough berry to craft ${craftItem.type}, you have ${userBerry} in your account but you need ${berryReq}, you sort ${sortBerries}.`);
-//             return {
-//                 status: Status.ERROR,
-//                 message: `(doCraft) Your Berry is not enough to Craft ${craftType}`,
-//             };
-//         }
-//         else
-//         {
-//             console.log(`You have enough berry to craft ${craftItem.type} !!, deducting ${berryReq} from your ${userBerry} berries, you have ${berryLeft} berries left`);
-//             userUpdateOperations.$inc[`inventory.xCookieData.currentXCookies`] = -berryReq;
-//         }
+            // if not found, create a new entry
+            if (userIndex === -1) {
+                // check if the user is eligible to level up to the next level
+                const newLevel = GET_SEASON_0_PLAYER_LEVEL(craftingRecipe.obtainedPoints * amount);
 
-//         console.log(`Next-->`);
-//         //#endregion
+                if (newLevel > currentLevel) {
+                    // set the user's `inGameData.level` to the new level
+                    userUpdateOperations.$set['inGameData.level'] = newLevel;
 
-//         //#region Proficiency Wall
-//         const userMasteries = user.inGameData.mastery;
-//         const craftingLine = craftItem.line;
-//         const reqCraftLevel = craftItem.reqCraftLevel;
-//         const craftAddExp = craftItem.craftExp;
-//         var newTotalExp = 0;
-//         var newLevel = user.inGameData.mastery.tapping.level;
-        
-//         console.log(`-----------------------====-------------------`);
-//         if(craftingLine === CraftItemLine.SMELTING)
-//         {
-//             const smeltingMastery = userMasteries.smelting.level;
-//             console.log(`${craftItem.type} requires you to be on level ${reqCraftLevel} of ${craftingLine} proficiency, your ${craftingLine} proficiency is level : ${smeltingMastery}`);
-//             if(smeltingMastery < reqCraftLevel)
-//             {
-//                 console.log(`(doCraft) Your Smelting Mastery Not Enough to Craft ${craftType} (${smeltingMastery}, Required : ${reqCraftLevel})`);
-//                 return {
-//                     status: Status.ERROR,
-//                     message: `(doCraft) Your Smelting Mastery Not Enough to Craft ${craftType} (${smeltingMastery}, Required : ${reqCraftLevel})`,
-//                 };
-//             }
-//             else
-//             {
-//                 newTotalExp = userMasteries.smelting.totalExp; + ( craftAddExp * producedAmount );
-//                 const newSmeltingLevel = SMELTING_MASTERY_LEVEL(newTotalExp);
-//                 newLevel = newSmeltingLevel;
-//                 if(newSmeltingLevel > smeltingMastery)
-//                 {
-//                     console.log(`You Leveled Up !! your Smelting level Before : ${smeltingMastery} ==> ${newSmeltingLevel}`);
-//                     userUpdateOperations.$set[`inGameData.mastery.smelting.level`] = newSmeltingLevel;
-//                 }
-//                 console.log(`You increase your Smelting Exp by ${craftAddExp * producedAmount}, which makes your exp : ${newTotalExp}`);
-//                 userUpdateOperations.$inc[`inGameData.mastery.smelting.totalExp`] = craftAddExp * producedAmount;
-//             }
-//         }
-//         else if(craftingLine === CraftItemLine.COOKING)
-//         {
-//             const cookingMastery = userMasteries.cooking.level;
-//             console.log(`${craftItem.type} requires you to be on level ${reqCraftLevel} of ${craftingLine} proficiency, your ${craftingLine} proficiency is level : ${cookingMastery}`);
-//             if(cookingMastery < reqCraftLevel)
-//             {
-//                 console.log(`(doCraft) Your Cooking Mastery Not Enough to Craft ${craftType} (${cookingMastery}, Required : ${reqCraftLevel})`);
-//                 return {
-//                     status: Status.ERROR,
-//                     message: `(doCraft) Your Cooking Mastery Not Enough to Craft ${craftType} (${cookingMastery}, Required : ${reqCraftLevel})`,
-//                 };
-//             }
-//             else
-//             {
-//                 newTotalExp = userMasteries.cooking.totalExp; + ( craftAddExp * producedAmount );
-//                 const newCookingLevel = COOKING_MASTERY_LEVEL(newTotalExp);
-//                 newLevel = newCookingLevel;
-//                 if(newCookingLevel > cookingMastery)
-//                 {
-//                     console.log(`You Leveled Up !! your Cooking level Before : ${cookingMastery} ==> ${newCookingLevel}`);
-//                     userUpdateOperations.$set[`inGameData.mastery.cooking.level`] = newCookingLevel;
-//                 }
-//                 console.log(`You increase your Cooking Exp by ${craftAddExp * producedAmount}, which makes your exp : ${newTotalExp}`);
-//                 userUpdateOperations.$inc[`inGameData.mastery.cooking.totalExp`] = craftAddExp * producedAmount;
-//             }
-//         }
-//         else if(craftingLine === CraftItemLine.CARPENTING)
-//         {
-//             const carpentingMastery = userMasteries.carpenting.level;
-//             console.log(`${craftItem.type} requires you to be on level ${reqCraftLevel} of ${craftingLine} proficiency, your ${craftingLine} proficiency is level : ${carpentingMastery}`);
-//             if(carpentingMastery < reqCraftLevel)
-//             {
-//                 console.log(`(doCraft) Your Carpenting Mastery Not Enough to Craft ${craftType} (${carpentingMastery}, Required : ${reqCraftLevel})`);
-//                 return {
-//                     status: Status.ERROR,
-//                     message: `(doCraft) Your Carpenting Mastery Not Enough to Craft ${craftType} (${carpentingMastery}, Required : ${reqCraftLevel})`,
-//                 };
-//             }
-//             else
-//             {
-//                 newTotalExp = userMasteries.carpenting.totalExp; + ( craftAddExp * producedAmount );
-//                 const newCarpetingLevel = CARPENTING_MASTERY_LEVEL(newTotalExp);
-//                 newLevel = newCarpetingLevel;
-//                 if(newCarpetingLevel > carpentingMastery)
-//                 {
-//                     console.log(`You Leveled Up !! your Carpenting level Before : ${carpentingMastery} ==> ${newCarpetingLevel}`);
-//                     userUpdateOperations.$set[`inGameData.mastery.carpenting.level`] = newCarpetingLevel;
-//                 }
-//                 console.log(`You increase your Carpenting Exp by ${craftAddExp * producedAmount}, which makes your exp : ${newTotalExp}`);
-//                 userUpdateOperations.$inc[`inGameData.mastery.carpenting.totalExp`] = craftAddExp * producedAmount;
-//             }
-//         }
-//         else
-//         {
-//             const tailoringMastery = userMasteries.tailoring.level;
-//             console.log(`${craftItem.type} requires you to be on level ${reqCraftLevel} of ${craftingLine} proficiency, your ${craftingLine} proficiency is level : ${tailoringMastery}`);
-//             if(tailoringMastery < reqCraftLevel)
-//             {
-//                 console.log(`(doCraft) Your Tailoring Mastery Not Enough to Craft ${craftType} (${tailoringMastery}, Required : ${reqCraftLevel})`);
-//                 return {
-//                     status: Status.ERROR,
-//                     message: `(doCraft) Your Tailoring Mastery Not Enough to Craft ${craftType} (${tailoringMastery}, Required : ${reqCraftLevel})`,
-//                 };
-//             }
-//             else
-//             {
-//                 newTotalExp = userMasteries.tailoring.totalExp; + ( craftAddExp * producedAmount );
-//                 const newTailoringLevel = TAILORING_MASTERY_LEVEL(newTotalExp);
-//                 newLevel = newTailoringLevel;
-//                 if(newTailoringLevel > tailoringMastery)
-//                 {
-//                     console.log(`You Leveled Up !! your Tailoring level Before : ${tailoringMastery} ==> ${newTailoringLevel}`);
-//                     userUpdateOperations.$set[`inGameData.mastery.tailoring.level`] = newTailoringLevel;
-//                 }
-//                 console.log(`You increase your Tailoring Exp by ${craftAddExp * producedAmount}, which makes your exp : ${newTotalExp} from ${userMasteries.tailoring.totalExp}`);
-//                 userUpdateOperations.$inc[`inGameData.mastery.tailoring.totalExp`] = craftAddExp * producedAmount;
-//             }
-//         }
-            
-//         console.log(`Your are proficient enough to craft ${craftItem.type} !`);
-//         console.log(`-----------------------====-------------------`);
-//         //#endregion
+                    // add the additional points based on the rewards obtainable
+                    additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
+                }
 
-//         //#region Catalyst Wall
-//         const userResources = user.inventory.resources;
-//         const requiredResources = craftItem.catalyst;
-//         console.log(`-----------------------====-------------------`);
-//         console.log(`You have ${userResources.length} Resources : `);
-//         for(let i = 0 ; i < userResources.length ; i++)
-//         {
-            
-//             console.log(`${i+1}. ${userResources[i].type} x ${userResources[i].amount}`);
-//         }
-//         console.log(`-----------------------====-------------------`);
-//         var updatedResourceCount = new Array();
-//         for(let i = 0 ; i < requiredResources.length; i++)
-//         {
-//             var res = requiredResources[i].type;
-//             console.log(`Searching for ${res} in your Inventory...`);
-//             var searchResult = userResources.find(searchItem => searchItem.type === requiredResources[i].type);
-            
-//             if(searchResult !== undefined)
-//             {
-//                 console.log(`${res} Found ! you have x${searchResult.amount}pcs of them`);
-//                 if(searchResult.amount >= (requiredResources[i].amount * amount))
-//                 {
-//                     var updatedResourceAmount = searchResult.amount - (requiredResources[i].amount * amount);
-//                     updatedResourceCount.push({type:searchResult.type, amount: updatedResourceAmount, before: searchResult.amount, required: requiredResources[i].amount * amount});
-//                 }
-//                 else
-//                 {
-//                     console.log(`(doCraft) You don't have enough ${searchResult.type} to craft ${craftType}`);
-//                     return {
-//                         status: Status.ERROR,
-//                         message: `(doCraft) You don't have enough ${searchResult.type} to craft ${craftType}`,
-//                     };
-//                 }
-//             }
-//             else
-//             {
-//                 console.log(`(doCraft) Resource Required not Found ${craftType}`);
-//                 return {
-//                     status: Status.ERROR,
-//                     message: `(doCraft) Resource Required not Found ${craftType}`,
-//                 };
-//             }
-//         }
-//         console.log(`-----------------------====-------------------`);
-        
-//         const craftResourceResult = getResource(craftItem.type);
-//         const craftResultWeight = craftResourceResult.weight;
-//         var requiredResourceTotalWeight = 0;
-//         const uWeight = user.inventory.weight;
-//         const maxWeight = user.inventory.maxWeight;
+                leaderboardUpdateOperations.$push['userData'] = {
+                    userId: user._id,
+                    username: user.twitterUsername,
+                    twitterProfilePicture: user.twitterProfilePicture,
+                    pointsData: [
+                        {
+                            points: craftingRecipe.obtainedPoints * amount,
+                            source: LeaderboardPointsSource.CRAFTING_RECIPES
+                        },
+                        {
+                            points: additionalPoints,
+                            source: LeaderboardPointsSource.LEVELLING_UP
+                        }
+                    ]
+                }
+                // if the user is found, increment the points
+            } else {
+                // get the user's total leaderboard points
+                // this is done by summing up all the points from the `pointsData` array, BUT EXCLUDING SOURCES FROM:
+                // 1. LeaderboardPointsSource.LEVELLING_UP
+                const totalLeaderboardPoints = leaderboard.userData[userIndex].pointsData.reduce((acc, pointsData) => {
+                    if (pointsData.source !== LeaderboardPointsSource.LEVELLING_UP) {
+                        return acc + pointsData.points;
+                    }
 
-//         //#endregion
+                    return acc;
+                }, 0);
 
-//         //#region Weight Wall
-//         for(let i = 0 ; i < updatedResourceCount.length ; i++)
-//         {
-//             var uResWeight = getResourceWeight(updatedResourceCount[i].type);
-            
-//             //uResWeight *= updatedResourceCount[i].amount;
-//             requiredResourceTotalWeight += (uResWeight * updatedResourceCount[i].required);
-//             console.log(`UresWeight : ${uResWeight} x ${updatedResourceCount[i].required } totaling in : ${uResWeight * updatedResourceCount[i].required}`);
-//         }
+                const newLevel = GET_SEASON_0_PLAYER_LEVEL(totalLeaderboardPoints + (craftingRecipe.obtainedPoints * amount));
 
-//         console.log(`Your Current Weight : ${uWeight}, Required Resource for This Craft's Weight : ${requiredResourceTotalWeight}, Crafted Item's Weight : ${(craftResultWeight * amount)}`);
+                if (newLevel > currentLevel) {
+                    userUpdateOperations.$set['inGameData.level'] = newLevel;
+                    additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
+                }
 
+                // get the source index for CRAFTING_RECIPES
+                const sourceIndex = leaderboard.userData[userIndex].pointsData.findIndex(pointsData => pointsData.source === LeaderboardPointsSource.KOS_BENEFITS);
 
-//         const resultWeight = uWeight - requiredResourceTotalWeight + (craftResultWeight * amount);
-//         if(resultWeight > maxWeight)
-//         {
-//             console.log(`(doCraft) Weight Limit Exceeded (${resultWeight})`);
-//             return {
-//                 status: Status.ERROR,
-//                 message: `(doCraft) Weight Limit Exceeded (${resultWeight})`,
-//             };
-//         }
+                if (sourceIndex !== -1) {
+                    leaderboardUpdateOperations.$inc[`userData.${userIndex}.pointsData.${sourceIndex}.points`] = craftingRecipe.obtainedPoints * amount;
+                } else {
+                    leaderboardUpdateOperations.$push[`userData.${userIndex}.pointsData`] = {
+                        points: craftingRecipe.obtainedPoints * amount,
+                        source: LeaderboardPointsSource.CRAFTING_RECIPES
+                    }
+                }
 
-//         //#endregion
+                if (additionalPoints > 0) {
+                    const levellingUpIndex = leaderboard.userData[userIndex].pointsData.findIndex(pointsData => pointsData.source === LeaderboardPointsSource.LEVELLING_UP);
 
-//         // for(let i = 0 ; i < requiredResources.length ; i++)
-//         // {
-//         //     var resIndexes = (user.inventory?.resources as ExtendedResource[]).findIndex(resource => resource.type === requiredResources[i].type);
-//         //     var deductionAmount = (requiredResources[i].amount  * amount);
-//         //     userUpdateOperations.$inc[`inventory.resources.${resIndexes}.amount`] = -deductionAmount;
-//         // }
+                    if (levellingUpIndex !== -1) {
+                        leaderboardUpdateOperations.$inc[`userData.${userIndex}.pointsData.${levellingUpIndex}.points`] = additionalPoints;
+                    } else {
+                        leaderboardUpdateOperations.$push[`userData.${userIndex}.pointsData`] = {
+                            points: additionalPoints,
+                            source: LeaderboardPointsSource.LEVELLING_UP
+                        }
+                    }
+                }
+            }
 
+            // if the user also has a squad, add the points to the squad's total points
+            if (user.inGameData.squad !== null) {
+                // get the squad
+                const squad = await SquadModel.findOne({ _id: user.inGameData.squadId }).lean();
 
-//         //#region RESULT
-//         const iResIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(resource => resource.type === craftItem.type);
-//         var finalCraftResultWeight = craftResultWeight * amount;
-//         var finalCostWeight = - requiredResourceTotalWeight + (finalCraftResultWeight);
-        
-//         console.log(`-----------------------====-------------------`);
-//         console.log(`Crafting Successful ! Resulting in : ${producedAmount} x ${craftItem.type} adding ${craftResultWeight * amount} kg of weight, Consuming : `);
-//         for(let i = 0 ; i < updatedResourceCount.length ; i++)
-//         {
-//             const uResIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(resource => resource.type === updatedResourceCount[i].type);
-//             var uResWeight = getResourceWeight(updatedResourceCount[i].type);
-//             userUpdateOperations.$inc[`inventory.resources.${uResIndex}.amount`] = -updatedResourceCount[i].required;
-//             // userUpdateOperations.$inc[`inventory.weight`] = -(uResWeight * amount);
-//             console.log(`${updatedResourceCount[i].type} x ${updatedResourceCount[i].required}, reducing from before : ${updatedResourceCount[i].before}, You have ${updatedResourceCount[i].amount} left`);
-//         }
-        
-//         console.log(`Final Cost Weight : ${finalCostWeight}`);
+                if (!squad) {
+                    return {
+                        status: Status.ERROR,
+                        message: `(claimWeeklyKOSRewards) Squad not found.`
+                    }
+                }
 
-//         const newResourceData = resources.find(r => r.type === craftItem.type);
-//         userUpdateOperations.$inc[`inventory.weight`] = finalCostWeight;
-//         console.log(`-----------------------====-------------------`);
-//         if(iResIndex === -1)
-//         {
-//             console.log(`${craftItem.type} is not in your inventory, creating one right now...`);
-//             userUpdateOperations.$push[`inventory.resources`] = {
-//                 ...newResourceData,
-//                 origin: ExtendedResourceOrigin.NORMAL,
-//                 amount: producedAmount, 
-//             };
-//             console.log(`${craftItem.type} is not in your inventory, creating one right now in the DB`);
-//         }
-//         else
-//         {
-//             console.log(`Adding ${producedAmount}Pcs of ${craftItem.type} into your inventory..`);
-//             userUpdateOperations.$inc[`inventory.resources.${iResIndex}.amount`] = producedAmount;
-//         }
-//         //#endregion    
-        
-//         await UserModel.updateOne({ _id: user._id }, {
-//             $set: Object.keys(userUpdateOperations.$set).length > 0 ? userUpdateOperations.$set : {},
-//             $inc: Object.keys(userUpdateOperations.$inc).length > 0 ? userUpdateOperations.$inc : {},
-//         });
+                const latestSquadLeaderboard = await SquadLeaderboardModel.findOne().sort({ week: -1 }).lean();
 
-//         await UserModel.updateOne({ _id: user._id }, {
-//             $pull: Object.keys(userUpdateOperations.$pull).length > 0 ? userUpdateOperations.$pull : {},
-//             $push: Object.keys(userUpdateOperations.$push).length > 0 ? userUpdateOperations.$push : {},
-//         });
+                // add only the points to the squad's total points
+                squadUpdateOperations.updateOperations.$inc[`squadPoints`] = craftingRecipe.obtainedPoints * amount;
 
-//         console.log(`Crafting Operation Successfully Done !`);
-//         return {
-//             status: Status.SUCCESS,
-//             message: `(doCraft) Craft Item Success!!`,
-//             data: {
-//                 "craftItem": craftItem,
-//                 "amount": producedAmount,
-//                 "newLevel": newLevel,
-//                 "newTotalExp": newTotalExp
-//             }
-//         }
-//     } catch (err: any) {
-//         console.log(`ERROR : ${err.message}`);
-//         return {
-//             status: Status.ERROR,
-//             message: `(doCraft) ${err.message}`,
-//         };
-//     }
-// };
+                // check if the squad exists in the squad leaderboard's `pointsData`. if not, we create a new instance.
+                const squadIndex = latestSquadLeaderboard.pointsData.findIndex(data => data.squadId === squad._id);
 
-// export const getCraftableRecipesByEnergy = async (twitterId: string): Promise<ReturnValue> => {
-//     try {
-//         // var recipes = Object.keys(CraftRecipes);
-//         // var noOfRecipes = recipes.length;
-//         // console.log(`There are : ${noOfRecipes} Recipes, which are : `);
-//         // for(let i = 0 ; i < noOfRecipes ; i++)
-//         // {
-//         //     console.log(recipes[i]);
-//         // }
+                if (squadIndex === -1) {
+                    squadLeaderboardUpdateOperations.$push['pointsData'] = {
+                        squadId: squad._id,
+                        squadName: squad.name,
+                        memberPoints: [
+                            {
+                                userId: user._id,
+                                username: user.twitterUsername,
+                                points: craftingRecipe.obtainedPoints * amount
+                            }
+                        ]
+                    }
+                } else {
+                    // otherwise, we increment the points for the user in the squad
+                    const userIndex = latestSquadLeaderboard.pointsData[squadIndex].memberPoints.findIndex(member => member.userId === user._id);
 
-        
+                    if (userIndex !== -1) {
+                        squadLeaderboardUpdateOperations.$inc[`pointsData.${squadIndex}.memberPoints.${userIndex}.points`] = craftingRecipe.obtainedPoints * amount;
+                    } else {
+                        squadLeaderboardUpdateOperations.$push[`pointsData.${squadIndex}.memberPoints`] = {
+                            userId: user._id,
+                            username: user.twitterUsername,
+                            points: craftingRecipe.obtainedPoints * amount
+                        }
+                    }
+                }
+            }
+        }
 
-//         var allRecipes = getCraftItemCriteria(CraftItemLine.COOKING);
-//         console.log(`All ${CraftItemLine.COOKING} Recipes : `);
-//         for(let i = 0 ; i < allRecipes.length ; i++)
-//         {
-//             var recipeName = allRecipes[i].type;
-//             var catalyst = allRecipes[i].catalyst;
-//             console.log(`${recipeName}, Requires : `);
-//             for(let j = 0 ; j < catalyst.length; j++)
-//             {
-//                 var catalystName = catalyst[j].type;
-//                 var catalystAmount = catalyst[j].amount;
-//                 console.log(`${catalystName} | ${catalystAmount} pcs`);
-//             }
-//         }
-//     } catch (err: any) {
-//         return {
-//             status: Status.ERROR,
-//             message: `(getUserData) ${err.message}`,
-//         };
-//     }
+        // do task 3.
+        // get the user's current crafting level for the specific crafting line
+        const currentCraftingLineData = user.inGameData.mastery.crafting[craftingRecipe.craftingRecipeLine.toLowerCase()];
+        // check, with the obtainedXP, if the user will level up in the crafting line
+        const newCraftingLevel = GET_CRAFTING_LEVEL(craftingRecipe.craftingRecipeLine, currentCraftingLineData.xp + (craftingRecipe.earnedXP * amount));
 
-// };
+        // set the new XP for the crafting line
+        userUpdateOperations.$inc[`inGameData.mastery.crafting.${craftingRecipe.craftingRecipeLine.toLowerCase()}.xp`] = craftingRecipe.earnedXP * amount;
+
+        // if the user will level up, set the new level
+        if (newCraftingLevel > currentCraftingLineData.level) {
+            userUpdateOperations.$set[`inGameData.mastery.crafting.${craftingRecipe.craftingRecipeLine.toLowerCase()}.level`] = newCraftingLevel;
+        }
+
+        // do task 4.
+        // reduce the user's energy
+        userUpdateOperations.$inc[`inGameData.energy.currentEnergy`] = -energyRequired;
+
+        // create a new ongoing craft instance in the database.
+        const newOngoingCraft = new OngoingCraftModel({
+            _id: generateObjectId(),
+            userId: user._id,
+            craftedAsset: assetToCraft,
+            amount: obtainedAssetCount,
+            craftingStart: Math.floor(Date.now() / 1000),
+            craftingEnd: Math.floor(Date.now() / 1000) + craftingRecipe.craftingDuration
+        });
+
+        await newOngoingCraft.save();
+
+        // add the ongoing craft to the queue to be completed once the duration expires.
+        CRAFT_QUEUE.add(
+            'completeCraft', 
+            {
+                userId: user._id,
+                craftedAssetData: craftingRecipe.craftedAssetData,
+                amount: obtainedAssetCount,
+                craftingDuration: craftingRecipe.craftingDuration,
+                weight: craftingRecipe.weight * obtainedAssetCount
+            }, 
+            { delay: craftingRecipe.craftingDuration * 1000 }
+        );
+
+        return {
+            status: Status.SUCCESS,
+            message: `(craftAsset) Added ${obtainedAssetCount}x ${assetToCraft} to the crafting queue.`
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(craftAsset) ${err.message}`,
+        }
+    }
+}
 
 // export const getCraftableRecipesByResources = async (twitterId: string): Promise<ReturnValue> => {
 //     try {

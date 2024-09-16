@@ -57,7 +57,7 @@ export interface CraftingRecipe {
      * 
      * Added to the user's craftingEXP.
      */
-    earnedEXP: number;
+    earnedXP: number;
     /**
      * the weight of 1 of the crafted asset.
      */
@@ -82,6 +82,8 @@ export interface CraftingRecipe {
 export interface CraftedAssetData {
     /** the resulting asset from crafting via this recipe */
     asset: CraftableAsset;
+    /** the asset type. used to make logic for granting the user the asset easier. */
+    assetType: 'item' | 'food' | 'resource';
     /** the description of the crafted asset */
     assetDescription: string;
     /** the rarity of the crafted asset */
