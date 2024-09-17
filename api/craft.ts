@@ -183,6 +183,7 @@ export const craftAsset = async (
             const requiredAssetRarity = flexibleRequiredAsset.requiredRarity;
             // required asset amount is the base amount required for the recipe multiplied by the amount the user wants to craft.
             const requiredAssetAmount = flexibleRequiredAsset.amount * amount;
+            console.log(`(craftAsset) requiredAssetAmount: ${flexibleRequiredAsset.amount} * ${amount}`);
 
             // if `requiredAssetCategory` is resource, we need to manually check the rarity of the resources inputted in the `chosenFlexibleRequiredAssets` array.
             if (requiredAssetCategory === 'resource') {
