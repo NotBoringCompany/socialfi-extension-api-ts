@@ -787,25 +787,6 @@ export const craftAsset = async (
     }
 }
 
-craftAsset(
-    '1462755469102137357',
-    RestorationItem.PARCHMENT_OF_RESTORATION,
-    1,
-    0,
-    [
-        {
-            asset: OreResource.STONE,
-            assetCategory: 'resource',
-            amount: 15,
-        },
-        {
-            asset: LiquidResource.MAPLE_SYRUP,
-            assetCategory: 'resource',
-            amount: 5
-        }
-    ]
-);
-
 // export const getCraftableRecipesByResources = async (twitterId: string): Promise<ReturnValue> => {
 //     try {
 //         // var recipes = Object.keys(CraftRecipes);
