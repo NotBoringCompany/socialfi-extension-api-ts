@@ -190,8 +190,10 @@ export const craftAsset = async (
                 // then, fetch the resource data for each resource. we then filter the resources to get the ones that match the `requiredAssetRarity`.
                 // then, we sum up the amount of the resources that match the `requiredAssetRarity` and check if it's equal to the `requiredAssetAmount`.
                 const flexibleResources = chosenFlexibleRequiredAssets.filter(asset => asset.assetCategory === 'resource');
+                console.log(`(craftAsset) flexibleResources: ${JSON.stringify(flexibleResources)}`);
                 // fetch the resources data for the flexible resources and filter them by the required rarity.
                 const flexibleResourceData = flexibleResources.map(resource => resources.find(r => r.type === resource.asset)).filter(resource => resource?.rarity === requiredAssetRarity);
+                console.log(`(craftAsset) flexibleResourceData: ${JSON.stringify(flexibleResourceData)}`);
 
                 if (flexibleResourceData.length === 0) {
                     console.log(`(craftAsset) User didn't input the correct amount of ${requiredAssetRarity} resources (1)`);
