@@ -128,3 +128,4 @@ router.patch('/bans/:banId', authMiddleware(3), async (req, res) => {
     })
   }
 })
+export default router;
