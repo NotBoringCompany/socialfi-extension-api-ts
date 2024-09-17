@@ -207,7 +207,7 @@ export const craftAsset = async (
                 }, 0);
 
                 if (totalFlexibleResourceAmount !== requiredAssetAmount) {
-                    console.log(`(craftAsset) User didn't input the correct amount of ${requiredAssetRarity} resources (2)`);
+                    console.log(`(craftAsset) User didn't input the correct amount of ${requiredAssetRarity} resources (2). ${totalFlexibleResourceAmount} === ${requiredAssetAmount}`);
 
                     allFlexibleRequiredAssetsOwned = false;
                     break;
