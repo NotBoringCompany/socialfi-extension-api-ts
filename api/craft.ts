@@ -37,6 +37,7 @@ export const craftAsset = async (
 ): Promise<ReturnValue> => {
     // get the asset data from `CRAFTING_RECIPES` by querying the craftedAssetData.asset
     const craftingRecipe = CRAFTING_RECIPES.find(recipe => recipe.craftedAssetData.asset === assetToCraft);
+    console.log('(craftAsset), chosenFlexibleRequiredAssets: ', JSON.stringify(chosenFlexibleRequiredAssets));
 
     if (!craftingRecipe) {
         return {
