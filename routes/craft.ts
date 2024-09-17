@@ -6,7 +6,7 @@ import { craftAsset } from '../api/craft';
 const router = express.Router();
 
 router.post('/craft_asset', async (req, res) => {
-    const { assetToCraft, amount, chosenAssetGroup, chosenFlexibleREquiredAssets } = req.body;
+    const { assetToCraft, amount, chosenAssetGroup, chosenFlexibleRequiredAssets } = req.body;
 
     try {
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'craft_asset');
@@ -18,7 +18,7 @@ router.post('/craft_asset', async (req, res) => {
             })
         }
 
-        const { status, message, data } = await craftAsset(validateData?.twitterId, assetToCraft, amount, chosenAssetGroup, chosenFlexibleREquiredAssets);
+        const { status, message, data } = await craftAsset(validateData?.twitterId, assetToCraft, amount, chosenAssetGroup, chosenFlexibleRequiredAssets);
         
         return res.status(status).json({
             status,
