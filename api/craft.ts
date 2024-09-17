@@ -201,6 +201,7 @@ export const craftAsset = async (
 
         // loop through the flexible required assets first. this will check against the `chosenFlexibleRequiredAssets` array to see if the user has inputted the correct amount of the flexible assets.
         for (const flexibleRequiredAsset of flexibleRequiredAssets) {
+            console.log(`(craftAsset) flexibleRequiredAsset: ${JSON.stringify(flexibleRequiredAsset)}`);
             const requiredAssetCategory = flexibleRequiredAsset.assetCategory;
             const requiredAssetRarity = flexibleRequiredAsset.requiredRarity;
             // required asset amount is the base amount required for the recipe multiplied by the amount the user wants to craft.
