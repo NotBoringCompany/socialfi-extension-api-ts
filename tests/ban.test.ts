@@ -8,21 +8,21 @@ const mockBanList = getBans as jest.MockedFunction<typeof getBans>;
 
 describe('Ban', () => {
   it('should return banned list', async () => {
-   const mockBan:Ban = {
-    adminId: "1",
-    bandId: "1",
-    banType: BanType.TEMPORARY,
-    createdAt: new Date(),
-    endDate: new Date(),
-    reason: "test",
-    status: BanStatus.ACTIVE,
-    startDate: new Date(),
-    updatedAt: new Date(),
-    userId: "1",
-   }
-   mockBanList.mockResolvedValueOnce({status: 200, message: "success", data: [mockBan]})
+    const mockBan: Ban[] = new Array(3).fill(null).map((_, i) => ({
+      adminId: "123",
+      bandId: i.toString(),
+      banType: BanType.TEMPORARY,
+      createdAt: new Date(),
+      endDate: new Date(),
+      reason: "test",
+      status: BanStatus.ACTIVE,
+      startDate: new Date(),
+      updatedAt: new Date(),
+      userId: i + 'test',
+    }))
+    mockBanList.mockResolvedValueOnce({ status: 200, message: "success", data: mockBan })
     const response = await getBans();
     expect(response.status).toBe(200);
-    expect(response.data).toEqual([mockBan]);
+    expect(response.data).toEqual(mockBan);
   });
 })
