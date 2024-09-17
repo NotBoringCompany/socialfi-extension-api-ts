@@ -203,10 +203,14 @@ export const craftAsset = async (
                 }
 
                 const totalFlexibleResourceAmount = flexibleResources.reduce((acc, resource) => {
-                    // only increment the amount if the resource exists in `flexibleResourceData`
-                    if (flexibleResourceData.find(data => data.type === resource.asset)) {
+                    // Find the resource in flexibleResourceData
+                    const foundResource = flexibleResourceData.find(data => data.type === resource.asset);
+                    // Only increment the amount if the resource exists in `flexibleResourceData`
+                    if (foundResource) {
                         return acc + resource.amount;
                     }
+                    // Return the accumulator unchanged if the resource does not match
+                    return acc;
                 }, 0);
 
                 if (totalFlexibleResourceAmount !== requiredAssetAmount) {
