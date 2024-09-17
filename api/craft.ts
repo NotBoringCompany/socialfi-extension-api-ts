@@ -189,7 +189,11 @@ export const craftAsset = async (
         // for example, let's use the example above (2 of A, 3 of B, 3 of C and 2 of D). to start with, one of the indexes of `remainingFlexibleRequiredAssets` will require 10 of ANY common resource.
         // after looping through A, the index's amount will be reduced by 2 to become 8. then, after looping through B, it will become 5, and so on.
         // only when `remainingFlexibleRequiredAssets` contain 0 for ALL indexes will the user be considered to have inputted the correct amount of the flexible assets.
-        const remainingFlexibleRequiredAssets: CraftingRecipeRequiredAssetData[] = craftingRecipe.requiredAssetGroups[chosenAssetGroup].requiredAssets.filter(requiredAsset => requiredAsset.specificAsset === 'any');
+        const remainingFlexibleRequiredAssets: CraftingRecipeRequiredAssetData[] = JSON.parse(
+            JSON.stringify(
+                craftingRecipe.requiredAssetGroups[chosenAssetGroup].requiredAssets.filter(requiredAsset => requiredAsset.specificAsset === 'any')
+            )
+        );
         // a boolean to check if the user has all the flexible required assets to craft the asset. if any of the flexible required assets are not owned by the user, this will be set to false.
         // `remainingFlexibleRequiredAssets` only checks if the user has inputted the correct amount of the flexible assets.
         // `allFlexibleRequiredAssetsOwned` will check if the user OWNS the correct amount of the flexible assets. if the user doesn't own the correct amount, this will be set to false.
