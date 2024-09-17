@@ -1,10 +1,11 @@
 import Bull from 'bull';
 import { AssetType } from '../../models/asset';
-import { CraftedAssetRarity, CraftingRecipe, CraftingRecipeLine } from "../../models/craft";
-import { ContinuumRelicItem, EnergyTotemItem, IngotItem, PotionItem, RestorationItem, TransmutationItem, WonderArtefactItem } from '../../models/item';
+import { CraftedAssetData, CraftedAssetRarity, CraftingRecipe, CraftingRecipeLine } from "../../models/craft";
+import { ContinuumRelicItem, EnergyTotemItem, IngotItem, Item, PotionItem, RestorationItem, TransmutationItem, WonderArtefactItem } from '../../models/item';
 import { BarrenResource, CombinedResources, ExtendedResource, FruitResource, LiquidResource, OreResource, ResourceRarity, ResourceType, SimplifiedResource } from "../../models/resource";
 import { FoodType } from '../../models/food';
-import e from 'express';
+import { UserModel } from './db';
+import { resources } from './resource';
 
 /**
  * Creates a new Bull instance for crafting assets to be queued.
@@ -12,6 +13,66 @@ import e from 'express';
 export const CRAFT_QUEUE = new Bull('craftQueue', {
     redis: process.env.REDIS_URL
 });
+
+/**
+ * Process all crafting queues upon completion to grant the user their crafted asset.
+ */
+CRAFT_QUEUE.process('completeCraft', async (job) => {
+    const { userId, craftedAssetData, amount, craftingDuration, totalWeight, assetsUsed } = job.data;
+
+    try {
+        const user = await UserModel.findOne({ _id: userId }).lean();
+
+        if (!user) {
+            console.error(`(CRAFT_QUEUE, completeCraft) User ${userId} not found.`);
+            return;
+        }
+
+        const userUpdateOperations = {
+            $push: {},
+            $inc: {},
+            $set: {},
+            $pull: {}
+        }
+
+        // grant the user the asset. firstly, check the crafted asset data.
+        const { asset, assetType } = craftedAssetData as CraftedAssetData;
+
+        // resource and food isn't implemented yet, so we'll just do items for now. res and food TO BE IMPLEMENTED LATER.
+        if (assetType === 'food' || assetType === 'resource') {
+            console.error(`(CRAFT_QUEUE, completeCraft) Asset type ${assetType} is not implemented yet.`);
+            return;
+        } else if (assetType === 'item') {
+            // check if the user owns this asset in their inventory
+            const itemIndex = (user.inventory?.items as Item[]).find(item => item.type === asset)?.amount;
+
+            // if not found, add the item to the user's inventory (along with the amount). if found, increment the amount.
+            if (itemIndex === -1) {
+                userUpdateOperations.$push['inventory.items'] = {
+                    type: asset,
+                    amount,
+                    totalAmountConsumed: 0,
+                    weeklyAmountConsumed: 0
+                }
+            } else {
+                userUpdateOperations.$inc[`inventory.items.${itemIndex}.amount`] = amount;
+            }
+        }
+
+        // if weight > 0, increment the user's inventory weight by the totalWeight.
+        if (totalWeight > 0) {
+            userUpdateOperations.$inc['inventory.weight'] = totalWeight;
+        }
+
+        // update the user's data.
+        await UserModel.updateOne({ _id: userId }, userUpdateOperations);
+
+        // log the crafting event.
+        console.log(`(CRAFT_QUEUE, completeCraft) User ${userId} successfully crafted ${amount}x ${asset} in ${craftingDuration} seconds.`);
+    } catch (err: any) {
+        console.error(`(CRAFT_QUEUE, completeCraft) Error processing crafting queue for user ${userId}: ${err.message}`);
+    }
+})
 
 /**
  * Get the crafting level for a specific crafting line for a user's crafting mastery based on their current XP for that line.

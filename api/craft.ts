@@ -767,7 +767,7 @@ export const craftAsset = async (
                 craftedAssetData: craftingRecipe.craftedAssetData,
                 amount: obtainedAssetCount,
                 craftingDuration: craftingRecipe.craftingDuration,
-                weight: craftingRecipe.weight * obtainedAssetCount,
+                totalWeight: craftingRecipe.weight * obtainedAssetCount,
                 // used in case the player wants to cancel the craft, so they can get their assets back
                 assetsUsed: {
                     requiredAssets,
