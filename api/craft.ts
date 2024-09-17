@@ -1,7 +1,7 @@
 import { AssetType } from '../models/asset';
 import { CraftableAsset, CraftingRecipe, CraftingRecipeRequiredAssetData } from "../models/craft";
 import { Food } from '../models/food';
-import { Item } from '../models/item';
+import { Item, RestorationItem } from '../models/item';
 import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
 import { BarrenResource, ExtendedResource, ExtendedResourceOrigin, FruitResource, LiquidResource, OreResource, ResourceType, SimplifiedResource } from "../models/resource";
 import { CRAFT_QUEUE, CRAFTING_RECIPES, GET_CRAFTING_LEVEL } from '../utils/constants/craft';
@@ -37,9 +37,12 @@ export const craftAsset = async (
 ): Promise<ReturnValue> => {
     // get the asset data from `CRAFTING_RECIPES` by querying the craftedAssetData.asset
     const craftingRecipe = CRAFTING_RECIPES.find(recipe => recipe.craftedAssetData.asset === assetToCraft);
-    console.log('(craftAsset), chosenFlexibleRequiredAssets: ', JSON.stringify(chosenFlexibleRequiredAssets));
+
+    console.log('(craftAsset), chosenFlexibleRequiredAssets: ', JSON.stringify(chosenFlexibleRequiredAssets, null, 2));
 
     if (!craftingRecipe) {
+        console.log(`(craftAsset) Crafting recipe not found.`);
+
         return {
             status: Status.ERROR,
             message: `(craftAsset) Crafting recipe not found.`
@@ -50,6 +53,8 @@ export const craftAsset = async (
         const user = await UserModel.findOne({ twitterId }).lean();
 
         if (!user) {
+            console.log(`(craftAsset) User not found.`);
+
             return {
                 status: Status.ERROR,
                 message: `(craftAsset) User not found.`
@@ -94,6 +99,8 @@ export const craftAsset = async (
         const energyRequired = craftingRecipe.baseEnergyRequired * amount;
 
         if (user.inGameData.energy.currentEnergy < energyRequired) {
+            console.log(`(craftAsset) Not enough energy to craft ${amount}x ${assetToCraft}.`);
+
             return {
                 status: Status.ERROR,
                 message: `(craftAsset) Not enough energy to craft ${amount}x ${assetToCraft}.`
@@ -103,6 +110,8 @@ export const craftAsset = async (
         // if `requiredXCookies` > 0, check if the user has enough xCookies to craft the asset
         if (craftingRecipe.requiredXCookies > 0) {
             if (user.inventory?.xCookieData.currentXCookies < craftingRecipe.requiredXCookies) {
+                console.log(`(craftAsset) Not enough xCookies to craft ${amount}x ${assetToCraft}.`);
+
                 return {
                     status: Status.ERROR,
                     message: `(craftAsset) Not enough xCookies to craft ${amount}x ${assetToCraft}.`
@@ -113,6 +122,8 @@ export const craftAsset = async (
         // if `requiredLevel` !== none, check if the user has the required level to craft the asset
         if (craftingRecipe.requiredLevel !== 'none') {
             if (user.inGameData.level < craftingRecipe.requiredLevel) {
+                console.log(`(craftAsset) User level too low to craft ${assetToCraft}.`);
+
                 return {
                     status: Status.ERROR,
                     message: `(craftAsset) User level too low to craft ${assetToCraft}.`
@@ -122,10 +133,17 @@ export const craftAsset = async (
 
         // if `requiredCraftingLevel` !== none, check if the user has the required crafting level to craft the asset (within the line)
         if (craftingRecipe.requiredCraftingLevel !== 'none') {
-            if (user.inGameData.mastery.crafting[craftingRecipe.craftingRecipeLine.toLowerCase()].level < craftingRecipe.requiredCraftingLevel){
-                return {
-                    status: Status.ERROR,
-                    message: `(craftAsset) User crafting level too low to craft ${assetToCraft}.`
+            // if the required crafting level is 1, then continue. some users might not have the crafting level set up in the schema,
+            // so we don't need to worry.
+            // only when the required crafting level is above 1 will we need to check if the user has the required crafting level.
+            if (craftingRecipe.requiredCraftingLevel > 1) {
+                if (user.inGameData.mastery.crafting[craftingRecipe.craftingRecipeLine.toLowerCase()].level < craftingRecipe.requiredCraftingLevel){
+                    console.log(`(craftAsset) User crafting level too low to craft ${assetToCraft}.`);
+    
+                    return {
+                        status: Status.ERROR,
+                        message: `(craftAsset) User crafting level too low to craft ${assetToCraft}.`
+                    }
                 }
             }
         }
@@ -137,6 +155,8 @@ export const craftAsset = async (
             const totalWeight = craftingRecipe.weight * amount;
 
             if (userWeight + totalWeight > maxWeight) {
+                console.log(`(craftAsset) User inventory weight limit exceeded. Cannot craft ${amount}x ${assetToCraft}`);
+
                 return {
                     status: Status.ERROR,
                     message: `(craftAsset) User inventory weight limit exceeded. Cannot craft ${amount}x ${assetToCraft}`
@@ -152,6 +172,8 @@ export const craftAsset = async (
             (craftingRecipe.requiredAssetGroups.length > 1 && chosenAssetGroup > craftingRecipe.requiredAssetGroups.length - 1) ||
             chosenAssetGroup < 0
         ) {
+            console.log(`(craftAsset) Chosen asset group out of bounds.`);
+
             return {
                 status: Status.ERROR,
                 message: `(craftAsset) Chosen asset group out of bounds.`
@@ -370,7 +392,6 @@ export const craftAsset = async (
             }
         }
 
-
         let obtainedAssetCount = 0;
 
         // at this point, all base checks should pass. proceed with the crafting logic.
@@ -441,6 +462,8 @@ export const craftAsset = async (
             const leaderboard = await LeaderboardModel.findOne({ name: 'Season 0' }).lean();
 
             if (!leaderboard) {
+                console.log(`(craftAsset) Leaderboard not found.`);
+
                 return {
                     status: Status.ERROR,
                     message: `(craftAsset) Leaderboard not found.`
@@ -579,16 +602,30 @@ export const craftAsset = async (
 
         // do task 3.
         // get the user's current crafting level for the specific crafting line
-        const currentCraftingLineData = user.inGameData.mastery.crafting[craftingRecipe.craftingRecipeLine.toLowerCase()];
-        // check, with the obtainedXP, if the user will level up in the crafting line
-        const newCraftingLevel = GET_CRAFTING_LEVEL(craftingRecipe.craftingRecipeLine, currentCraftingLineData.xp + (craftingRecipe.earnedXP * amount));
+        const currentCraftingLineData = user?.inGameData?.mastery?.crafting?.[craftingRecipe.craftingRecipeLine.toLowerCase()] ?? null;
 
-        // set the new XP for the crafting line
-        userUpdateOperations.$inc[`inGameData.mastery.crafting.${craftingRecipe.craftingRecipeLine.toLowerCase()}.xp`] = craftingRecipe.earnedXP * amount;
+        // if current crafting line data exists, update. else, create a new entry.
+        if (currentCraftingLineData) {
+            console.log(`(craftAsset) currentCraftingLineData: ${JSON.stringify(currentCraftingLineData, null, 2)}`);
 
-        // if the user will level up, set the new level
-        if (newCraftingLevel > currentCraftingLineData.level) {
-            userUpdateOperations.$set[`inGameData.mastery.crafting.${craftingRecipe.craftingRecipeLine.toLowerCase()}.level`] = newCraftingLevel;
+            // check, with the obtainedXP, if the user will level up in the crafting line
+            const newCraftingLevel = GET_CRAFTING_LEVEL(craftingRecipe.craftingRecipeLine, currentCraftingLineData.xp + (craftingRecipe.earnedXP * amount));
+
+            // set the new XP for the crafting line
+            userUpdateOperations.$inc[`inGameData.mastery.crafting.${craftingRecipe.craftingRecipeLine.toLowerCase()}.xp`] = craftingRecipe.earnedXP * amount;
+
+            // if the user will level up, set the new level
+            if (newCraftingLevel > currentCraftingLineData.level) {
+                userUpdateOperations.$set[`inGameData.mastery.crafting.${craftingRecipe.craftingRecipeLine.toLowerCase()}.level`] = newCraftingLevel;
+            }
+        // if not found, create a new entry
+        } else {
+            console.log(`(craftAsset) currentCraftingLineData not found. Creating new entry.`);
+
+            userUpdateOperations.$set[`inGameData.mastery.crafting.${craftingRecipe.craftingRecipeLine.toLowerCase()}`] = {
+                level: GET_CRAFTING_LEVEL(craftingRecipe.craftingRecipeLine, craftingRecipe.earnedXP * amount),
+                xp: craftingRecipe.earnedXP * amount
+            }
         }
 
         // do task 4.
@@ -734,17 +771,40 @@ export const craftAsset = async (
             { delay: craftingRecipe.craftingDuration * 1000 }
         );
 
+        console.log(`(craftAsset) Added ${obtainedAssetCount}x ${assetToCraft} to the crafting queue.`);
+
         return {
             status: Status.SUCCESS,
             message: `(craftAsset) Added ${obtainedAssetCount}x ${assetToCraft} to the crafting queue.`
         }
     } catch (err: any) {
+        console.error(`(craftAsset) ${err.message}`);
+
         return {
             status: Status.ERROR,
             message: `(craftAsset) ${err.message}`,
         }
     }
 }
+
+craftAsset(
+    '1462755469102137357',
+    RestorationItem.PARCHMENT_OF_RESTORATION,
+    1,
+    0,
+    [
+        {
+            asset: OreResource.STONE,
+            assetCategory: 'resource',
+            amount: 15,
+        },
+        {
+            asset: LiquidResource.MAPLE_SYRUP,
+            assetCategory: 'resource',
+            amount: 5
+        }
+    ]
+);
 
 // export const getCraftableRecipesByResources = async (twitterId: string): Promise<ReturnValue> => {
 //     try {
