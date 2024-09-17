@@ -44,7 +44,7 @@ CRAFT_QUEUE.process('completeCraft', async (job) => {
             return;
         } else if (assetType === 'item') {
             // check if the user owns this asset in their inventory
-            const itemIndex = (user.inventory?.items as Item[]).find(item => item.type === asset)?.amount;
+            const itemIndex = (user.inventory?.items as Item[]).findIndex(item => item.type === asset);
 
             // if not found, add the item to the user's inventory (along with the amount). if found, increment the amount.
             if (itemIndex === -1) {
