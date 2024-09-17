@@ -8,21 +8,23 @@ const router = express.Router();
  * 
  * @returns {Promise<Response>} status 200 with ban data, or status 500 with error message
  */
-router.get('/bans', authMiddleware(3), async (req, res) => {
-  try {
-    const { status, message, data } = await getBans();
-    return res.status(status).json({
-      status,
-      message,
-      data
-    });
-  } catch (err: any) {
-    return res.status(500).json({
-      status: 500,
-      message: err.message
-    })
-  }
-})
+router.get('/',
+  // authMiddleware(3),
+  async (req, res) => {
+    try {
+      const { status, message, data } = await getBans();
+      return res.status(status).json({
+        status,
+        message,
+        data
+      });
+    } catch (err: any) {
+      return res.status(500).json({
+        status: 500,
+        message: err.message
+      })
+    }
+  })
 
 /**
  * Get ban by id
@@ -30,23 +32,25 @@ router.get('/bans', authMiddleware(3), async (req, res) => {
  * @param {string} banId
  * @returns {Promise<Response>} status 200 with ban data, or status 500 with error message
  */
-router.get('/bans/:banId', authMiddleware(3), async (req, res) => {
-  const { banId } = req.params;
-  try {
-    const { status, message, data } = await getBanById(banId);
+router.get('/:banId',
+  // authMiddleware(3),
+  async (req, res) => {
+    const { banId } = req.params;
+    try {
+      const { status, message, data } = await getBanById(banId);
 
-    return res.status(status).json({
-      status,
-      message,
-      data
-    });
-  } catch (err: any) {
-    return res.status(500).json({
-      status: 500,
-      message: err.message
-    })
-  }
-})
+      return res.status(status).json({
+        status,
+        message,
+        data
+      });
+    } catch (err: any) {
+      return res.status(500).json({
+        status: 500,
+        message: err.message
+      })
+    }
+  })
 
 /**
  * Get ban by user id
@@ -55,7 +59,7 @@ router.get('/bans/:banId', authMiddleware(3), async (req, res) => {
  * @returns {Promise<Response>} status 200 with ban data, or status 500 with error message
  * this route for protecting page
  */
-router.get('/bans/user/:userId', async (req, res) => {
+router.get('/user/:userId', async (req, res) => {
   const { userId } = req.params;
   try {
     const { status, message, data } = await getBanByUserId(userId);
@@ -79,24 +83,26 @@ router.get('/bans/user/:userId', async (req, res) => {
  * @param {string} userId
  * @returns {Promise<Response>} status 200 with ban data, or status 500 with error message
  */
-router.post('/bans', authMiddleware(3), async (req, res) => {
-  const { userId, reason, startDate, endDate, status: banStatus, banType } = req.body;
-  const admin = 'test'; // todo get admin 
-  try {
-    const { status, message, data } = await addBan(userId, banType, startDate, endDate, reason, admin, banStatus);
+router.post('/',
+  // authMiddleware(3),
+  async (req, res) => {
+    const { userId, reason, startDate, endDate, status: banStatus, banType } = req.body;
+    const admin = 'test'; // todo get admin 
+    try {
+      const { status, message, data } = await addBan(userId, banType, startDate, endDate, reason, admin, banStatus);
 
-    return res.status(status).json({
-      status,
-      message,
-      data
-    });
-  } catch (err: any) {
-    return res.status(500).json({
-      status: 500,
-      message: err.message
-    })
-  }
-})
+      return res.status(status).json({
+        status,
+        message,
+        data
+      });
+    } catch (err: any) {
+      return res.status(500).json({
+        status: 500,
+        message: err.message
+      })
+    }
+  })
 
 /**
  * Update a ban
@@ -110,22 +116,24 @@ router.post('/bans', authMiddleware(3), async (req, res) => {
  * @param {BanStatus} status - The status of the ban
  * @returns {Promise<Response>} status 200 with ban data, or status 500 with error message
  */
-router.patch('/bans/:banId', authMiddleware(3), async (req, res) => {
-  const { banId } = req.params;
-  const { reason, status: banStatus, startDate, endDate, banType } = req.body;
-  const admin = 'test'; // todo get admin
-  try {
-    const { status, message, data } = await updateBan(banId, banType, startDate, endDate, reason, admin, banStatus);
-    return res.status(status).json({
-      status,
-      message,
-      data
-    });
-  } catch (err: any) {
-    return res.status(500).json({
-      status: 500,
-      message: err.message
-    })
-  }
-})
+router.patch('/:banId',
+  // authMiddleware(3),
+  async (req, res) => {
+    const { banId } = req.params;
+    const { reason, status: banStatus, startDate, endDate, banType } = req.body;
+    const admin = 'test'; // todo get admin
+    try {
+      const { status, message, data } = await updateBan(banId, banType, startDate, endDate, reason, admin, banStatus);
+      return res.status(status).json({
+        status,
+        message,
+        data
+      });
+    } catch (err: any) {
+      return res.status(500).json({
+        status: 500,
+        message: err.message
+      })
+    }
+  })
 export default router;
