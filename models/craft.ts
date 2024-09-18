@@ -169,22 +169,76 @@ export interface CraftingRecipeRequiredAssetData {
 }
 
 /**
- * Represents an asset that's being crafted from a recipe and is still pending for the crafting process to be completed.
+ * Represents an asset that's being crafted from a recipe and is added to the crafting queue to be claimed after the duration ends.
  * 
- * Each time a user crafts something, a new OngoingCraft instance will be created (because of time-based crafting).
+ * Each time a player crafts something, a new OngoingCraft instance will be created (because of time-based crafting).
  * Simply incrementing the amount of an existing asset that's being crafted DOES NOT WORK!
+ * 
+ * NOTE: OngoingCraft instances that have the status `CLAIMABLE` means that the player can claim the asset.
  */
 export interface OngoingCraft {
     /** the user's database ID */
     userId: string;
-    /** the asset that's being crafted in this process */
-    craftedAsset: CraftableAsset;
-    /** the amount of this asset */
-    amount: number;
+    /** the status of the ongoing craft */
+    status: OngoingCraftStatus;
+    /** the data of the asset being crafted */
+    craftedAssetData: OngoingCraftAssetData;
+    /** the assets used to craft the recipe for this OngoingCraft instance */
+    assetsUsed: OngoingCraftUsedAssetData;
     /** when the recipe was crafted */
     craftingStart: number;
     /** when the crafting will be completed; the user will receive the asset then */
     craftingEnd: number;
+}
+
+/**
+ * Modified version of `CraftedAssetData` for crafted assets used primarily for `OngoingCraft` instances.
+ * 
+ * This is used to only display required info.
+ */
+export interface OngoingCraftAssetData {
+    /**
+     * the resulting asset from crafting via this recipe.
+     */
+    asset: CraftableAsset;
+    /** the number of `asset` being crafted in this instance. */
+    amount: number;
+    /**
+     * the asset type. used to make logic for granting the user the asset easier.
+     */
+    assetType: 'item' | 'food' | 'resource';
+    /** the total weight of the crafted asset(s). Calculated by the base weight of the asset * the `amount` */
+    totalWeight: number;
+}
+
+/**
+ * Represents the required assets used to craft a recipe to create an ongoing craft.
+ */
+export interface OngoingCraftUsedAssetData {
+    /**
+     * Required assets are assets that have an exact type specified on the recipe.
+     * 
+     * This means that the user must use that exact asset with that exact amount to fulfill that part of the recipe's requirements.
+     */
+    requiredAssets: CraftingRecipeRequiredAssetData[];
+    /**
+     * Flexible required assets are assets that have 'any' as the specific asset required, meaning that the player can input
+     * any asset of that category (and rarity, if applicable) to fulfill that part of the recipe's requirements.
+     * 
+     * For example, if a recipe requires 15 of ANY common resources, the user can input 3 of common resource A, 4 of common resource B...
+     * to make 15 in total. they can also just put 15 of a single common resource. This means that flexibility is prevalent here.
+     */
+    chosenFlexibleRequiredAssets: CraftingRecipeRequiredAssetData[];
+}
+
+/**
+ * Represents the status of an ongoing craft.
+ */
+export enum OngoingCraftStatus {
+    ONGOING = 'Ongoing',
+    CLAIMABLE = 'Claimable',
+    CLAIMED = 'Claimed',
+    CANCELLED = 'Cancelled',
 }
 
 /**

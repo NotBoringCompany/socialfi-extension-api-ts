@@ -1,10 +1,10 @@
 import Bull from 'bull';
 import { AssetType } from '../../models/asset';
-import { CraftedAssetData, CraftedAssetRarity, CraftingRecipe, CraftingRecipeLine } from "../../models/craft";
+import { CraftedAssetData, CraftedAssetRarity, CraftingRecipe, CraftingRecipeLine, OngoingCraftStatus } from "../../models/craft";
 import { ContinuumRelicItem, EnergyTotemItem, IngotItem, Item, PotionItem, RestorationItem, TransmutationItem, WonderArtefactItem } from '../../models/item';
 import { BarrenResource, CombinedResources, ExtendedResource, FruitResource, LiquidResource, OreResource, ResourceRarity, ResourceType, SimplifiedResource } from "../../models/resource";
 import { FoodType } from '../../models/food';
-import { UserModel } from './db';
+import { OngoingCraftModel, UserModel } from './db';
 import { resources } from './resource';
 
 /**
@@ -15,62 +15,73 @@ export const CRAFT_QUEUE = new Bull('craftQueue', {
 });
 
 /**
- * Process all crafting queues upon completion to grant the user their crafted asset.
+ * Process all crafting queues upon completion to convert the OngoingCraft instance from 'ONGOING' to 'CLAIMABLE'.
  */
 CRAFT_QUEUE.process('completeCraft', async (job) => {
-    const { userId, craftedAssetData, amount, craftingDuration, totalWeight, assetsUsed } = job.data;
+    const { ongoingCraftId } = job.data;
 
     try {
-        const user = await UserModel.findOne({ _id: userId }).lean();
+        const ongoingCraft = await OngoingCraftModel.findOneAndUpdate(
+            { _id: ongoingCraftId, status: OngoingCraftStatus.ONGOING }, 
+            { status: OngoingCraftStatus.CLAIMABLE }
+        );
 
-        if (!user) {
-            console.error(`(CRAFT_QUEUE, completeCraft) User ${userId} not found.`);
+        // check if the `ongoingCraft` instance is modified.
+        if (!ongoingCraft) {
+            console.error(`(CRAFT_QUEUE, completeCraft) OngoingCraft ${ongoingCraftId} not found.`);
             return;
         }
 
-        const userUpdateOperations = {
-            $push: {},
-            $inc: {},
-            $set: {},
-            $pull: {}
-        }
+        // const user = await UserModel.findOne({ _id: userId }).lean();
 
-        // grant the user the asset. firstly, check the crafted asset data.
-        const { asset, assetType } = craftedAssetData as CraftedAssetData;
+        // if (!user) {
+        //     console.error(`(CRAFT_QUEUE, completeCraft) User ${userId} not found.`);
+        //     return;
+        // }
 
-        // resource and food isn't implemented yet, so we'll just do items for now. res and food TO BE IMPLEMENTED LATER.
-        if (assetType === 'food' || assetType === 'resource') {
-            console.error(`(CRAFT_QUEUE, completeCraft) Asset type ${assetType} is not implemented yet.`);
-            return;
-        } else if (assetType === 'item') {
-            // check if the user owns this asset in their inventory
-            const itemIndex = (user.inventory?.items as Item[]).findIndex(item => item.type === asset);
+        // const userUpdateOperations = {
+        //     $push: {},
+        //     $inc: {},
+        //     $set: {},
+        //     $pull: {}
+        // }
 
-            // if not found, add the item to the user's inventory (along with the amount). if found, increment the amount.
-            if (itemIndex === -1) {
-                userUpdateOperations.$push['inventory.items'] = {
-                    type: asset,
-                    amount,
-                    totalAmountConsumed: 0,
-                    weeklyAmountConsumed: 0
-                }
-            } else {
-                userUpdateOperations.$inc[`inventory.items.${itemIndex}.amount`] = amount;
-            }
-        }
+        // // grant the user the asset. firstly, check the crafted asset data.
+        // const { asset, assetType } = craftedAssetData as CraftedAssetData;
 
-        // if weight > 0, increment the user's inventory weight by the totalWeight.
-        if (totalWeight > 0) {
-            userUpdateOperations.$inc['inventory.weight'] = totalWeight;
-        }
+        // // resource and food isn't implemented yet, so we'll just do items for now. res and food TO BE IMPLEMENTED LATER.
+        // if (assetType === 'food' || assetType === 'resource') {
+        //     console.error(`(CRAFT_QUEUE, completeCraft) Asset type ${assetType} is not implemented yet.`);
+        //     return;
+        // } else if (assetType === 'item') {
+        //     // check if the user owns this asset in their inventory
+        //     const itemIndex = (user.inventory?.items as Item[]).findIndex(item => item.type === asset);
 
-        // update the user's data.
-        await UserModel.updateOne({ _id: userId }, userUpdateOperations);
+        //     // if not found, add the item to the user's inventory (along with the amount). if found, increment the amount.
+        //     if (itemIndex === -1) {
+        //         userUpdateOperations.$push['inventory.items'] = {
+        //             type: asset,
+        //             amount,
+        //             totalAmountConsumed: 0,
+        //             weeklyAmountConsumed: 0
+        //         }
+        //     } else {
+        //         userUpdateOperations.$inc[`inventory.items.${itemIndex}.amount`] = amount;
+        //     }
+        // }
 
-        // log the crafting event.
-        console.log(`(CRAFT_QUEUE, completeCraft) User ${userId} successfully crafted ${amount}x ${asset} in ${craftingDuration} seconds.`);
+        // // if weight > 0, increment the user's inventory weight by the totalWeight.
+        // if (totalWeight > 0) {
+        //     userUpdateOperations.$inc['inventory.weight'] = totalWeight;
+        // }
+
+        // // update the user's data.
+        // await UserModel.updateOne({ _id: userId }, userUpdateOperations);
+
+        // // log the crafting event.
+        // console.log(`(CRAFT_QUEUE, completeCraft) User ${userId} successfully crafted ${amount}x ${asset} in ${craftingDuration} seconds.`);
     } catch (err: any) {
-        console.error(`(CRAFT_QUEUE, completeCraft) Error processing crafting queue for user ${userId}: ${err.message}`);
+        console.error(`(CRAFT_QUEUE, completeCraft) Error processing crafting queue for OngoingCraft ${ongoingCraftId}: ${err.message}`);
     }
 })
 

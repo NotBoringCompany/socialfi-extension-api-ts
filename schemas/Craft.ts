@@ -11,8 +11,27 @@ export const OngoingCraftSchema = new mongoose.Schema({
         default: generateObjectId()
     },
     userId: String,
-    craftedAsset: String,
-    amount: Number,
+    status: String,
+    craftedAssetData: {
+        asset: String,
+        amount: Number,
+        assetType: String,
+        totalWeight: Number,
+    },
+    assetsUsed: {
+        requiredAssets: [{
+            assetCategory: String,
+            specificAsset: String,
+            requiredRarity: String,
+            amount: Number
+        }],
+        chosenFlexibleRequiredAssets: [{
+            assetCategory: String,
+            specificAsset: String,
+            requiredRarity: String,
+            amount: Number
+        }]
+    },
     craftingStart: Number,
-    craftingEnd: Number,
+    craftingEnd: Number
 })

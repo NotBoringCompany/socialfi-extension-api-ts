@@ -1,5 +1,5 @@
 import { AssetType } from '../models/asset';
-import { CraftableAsset, CraftingRecipe, CraftingRecipeRequiredAssetData } from "../models/craft";
+import { CraftableAsset, CraftingRecipe, CraftingRecipeRequiredAssetData, OngoingCraftStatus } from "../models/craft";
 import { Food } from '../models/food';
 import { Item, RestorationItem } from '../models/item';
 import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
@@ -752,37 +752,37 @@ export const craftAsset = async (
             SquadLeaderboardModel.updateOne({ week: squadLeaderboardWeek }, squadLeaderboardUpdateOperations)
         ]);
 
+        const newOngoingCraftObjectId = generateObjectId();
+
         // create a new ongoing craft instance in the database.
         const newOngoingCraft = new OngoingCraftModel({
             _id: generateObjectId(),
             userId: user._id,
-            craftedAsset: assetToCraft,
-            amount: obtainedAssetCount,
+            status: OngoingCraftStatus.ONGOING,
+            craftedAssetData: {
+                asset: assetToCraft,
+                amount: obtainedAssetCount,
+                assetType: craftingRecipe.craftedAssetData.assetType,
+                totalWeight: craftingRecipe.weight * obtainedAssetCount
+            },
+            assetsUsed: {
+                requiredAssets,
+                chosenFlexibleRequiredAssets
+            },
             craftingStart: Math.floor(Date.now() / 1000),
-            craftingEnd: Math.floor(Date.now() / 1000) + craftingRecipe.craftingDuration
+            craftingEnd: Math.floor(Date.now() / 1000) + craftingRecipe.craftingDuration   
         });
 
         await newOngoingCraft.save();
 
-        // add the ongoing craft to the queue to be completed once the duration expires.
+        // add the ongoing craft to the queue to change the OngoingCraft status to `CLAIMABLE` after the crafting duration has passed.
         CRAFT_QUEUE.add(
             'completeCraft', 
             {
-                userId: user._id,
-                craftedAssetData: craftingRecipe.craftedAssetData,
-                amount: obtainedAssetCount,
-                craftingDuration: craftingRecipe.craftingDuration,
-                totalWeight: craftingRecipe.weight * obtainedAssetCount,
-                // used in case the player wants to cancel the craft, so they can get their assets back
-                assetsUsed: {
-                    requiredAssets,
-                    chosenFlexibleRequiredAssets
-                }
+                ongoingCraftId: newOngoingCraft._id
             }, 
             { delay: craftingRecipe.craftingDuration * 1000 }
         );
-
-        console.log(`(craftAsset) Current recipe: ${JSON.stringify(CRAFTING_RECIPES.find(recipe => recipe.craftedAssetData.asset === assetToCraft), null, 2)}`);
 
         console.log(`(craftAsset) Added ${obtainedAssetCount}x ${assetToCraft} to the crafting queue.`);
 
