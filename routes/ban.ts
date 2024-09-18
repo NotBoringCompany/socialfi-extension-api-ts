@@ -9,7 +9,7 @@ const router = express.Router();
  * @returns {Promise<Response>} status 200 with ban data, or status 500 with error message
  */
 router.get('/',
-  // authMiddleware(3),
+  authMiddleware(3),
   async (req, res) => {
     try {
       const { status, message, data } = await getBans();
@@ -33,7 +33,7 @@ router.get('/',
  * @returns {Promise<Response>} status 200 with ban data, or status 500 with error message
  */
 router.get('/:banId',
-  // authMiddleware(3),
+  authMiddleware(3),
   async (req, res) => {
     const { banId } = req.params;
     try {
@@ -84,7 +84,7 @@ router.get('/user/:userId', async (req, res) => {
  * @returns {Promise<Response>} status 200 with ban data, or status 500 with error message
  */
 router.post('/',
-  // authMiddleware(3),
+  authMiddleware(3),
   async (req, res) => {
     const { userId, reason, startDate, endDate, status: banStatus, banType } = req.body;
     const admin = 'test'; // todo get admin 
@@ -117,7 +117,7 @@ router.post('/',
  * @returns {Promise<Response>} status 200 with ban data, or status 500 with error message
  */
 router.patch('/:banId',
-  // authMiddleware(3),
+  authMiddleware(3),
   async (req, res) => {
     const { banId } = req.params;
     const { reason, status: banStatus, startDate, endDate, banType } = req.body;
