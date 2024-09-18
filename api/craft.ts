@@ -859,6 +859,95 @@ export const fetchCraftingQueues = async (userId: string): Promise<ReturnValue> 
     }
 }
 
+/**
+ * Claims a crafted asset for a user. Only claimable ones in the CraftingQueue database can be claimed, or else the function throws an error.
+ */
+export const claimCraftedAsset = async (twitterId: string, craftingQueueId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(claimCraftedAsset) User not found.`
+            }
+        }
+
+        const craftingQueue = await CraftingQueueModel.findOne({ _id: craftingQueueId }).lean();
+
+        if (!craftingQueue) {
+            return {
+                status: Status.ERROR,
+                message: `(claimCraftedAsset) Crafting queue not found.`
+            }
+        }
+
+        const userUpdateOperations = {
+            $push: {},
+            $inc: {},
+            $set: {},
+            $pull: {}
+        }
+
+        // check if the crafting queue is claimable
+        if (craftingQueue.status !== CraftingQueueStatus.CLAIMABLE) {
+            return {
+                status: Status.ERROR,
+                message: `(claimCraftedAsset) Crafting queue is not claimable. Current status: ${craftingQueue.status}`
+            }
+        }
+
+        // add the crafted asset to the user's inventory
+        const { asset, assetType, amount, totalWeight } = craftingQueue.craftedAssetData;
+
+        // resource and food isn't implemented yet, so we'll just do items for now. RES AND FOOD TO BE IMPLEMENTED LATER.
+        if (assetType === 'food' || assetType === 'resource') {
+            return {
+                status: Status.ERROR,
+                message: `(claimCraftedAsset) Asset type ${assetType} not implemented yet.`
+            }
+        } else if (assetType === 'item') {
+            // check if the user owns this asset in their inventory
+            const itemIndex = (user.inventory?.items as Item[]).findIndex(item => item.type === asset);
+
+            // if not found, add the item to the user's inventory (along with the amount). if found, increment the amount.
+            if (itemIndex === -1) {
+                userUpdateOperations.$push['inventory.items'] = {
+                    type: asset,
+                    amount,
+                    totalAmountConsumed: 0,
+                    weeklyAmountConsumed: 0
+                }
+            } else {
+                userUpdateOperations.$inc[`inventory.items.${itemIndex}.amount`] = amount;
+            }
+        }
+
+        // if weight > 0, increment the user's inventory weight by the totalWeight.
+        if (totalWeight > 0) {
+            userUpdateOperations.$inc['inventory.weight'] = totalWeight;
+        }
+
+        // update the user's data and set the crafting queue status to `CLAIMED`.
+        await Promise.all([
+            UserModel.updateOne({ twitterId }, userUpdateOperations),
+            CraftingQueueModel.updateOne({ _id: craftingQueueId }, { status: CraftingQueueStatus.CLAIMED })
+        ]);
+
+        console.log(`(claimCraftedAsset) Successfully claimed ${amount}x ${asset} for user ID ${user._id}.`);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(claimCraftedAsset) Successfully claimed ${amount}x ${asset}.`
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(claimCraftedAsset) ${err.message}`
+        }
+    }
+}
+
 // export const getCraftableRecipesByResources = async (twitterId: string): Promise<ReturnValue> => {
 //     try {
 //         // var recipes = Object.keys(CraftRecipes);
