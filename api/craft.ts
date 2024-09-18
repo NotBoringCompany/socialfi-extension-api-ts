@@ -859,25 +859,6 @@ export const fetchCraftingQueues = async (userId: string): Promise<ReturnValue> 
     }
 }
 
-// craftAsset(
-//     '1462755469102137357',
-//     RestorationItem.PARCHMENT_OF_RESTORATION,
-//     2,
-//     0,
-//     [
-//         {
-//             asset: OreResource.STONE,
-//             assetCategory: 'resource',
-//             amount: 30
-//         },
-//         {
-//             asset: LiquidResource.MAPLE_SYRUP,
-//             assetCategory: 'resource',
-//             amount: 10
-//         }
-//     ]
-// );
-
 // export const getCraftableRecipesByResources = async (twitterId: string): Promise<ReturnValue> => {
 //     try {
 //         // var recipes = Object.keys(CraftRecipes);
