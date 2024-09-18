@@ -49,7 +49,7 @@ router.get('/get_craft_assets', async (req, res) => {
             status: 200,
             message: 'Succesfully retrieved craftable assets',
             data: {
-                craftableAsset: CRAFTING_RECIPES,
+                craftableAssets: CRAFTING_RECIPES,
             }
         });
     } catch (err: any) {
