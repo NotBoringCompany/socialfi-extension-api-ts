@@ -199,7 +199,14 @@ export const craftAsset = async (
         // `allFlexibleRequiredAssetsOwned` will check if the user OWNS the correct amount of the flexible assets. if the user doesn't own the correct amount, this will be set to false.
         let allFlexibleRequiredAssetsOwned = true;
 
+        // we need to update each flexible required asset in `remainingFlexibleRequiredAssets` based on the amount of the asset the user wants to craft.
+        // for example, when the recipe requires 15 common resources and 5 uncommon resources, if the user wants to craft 3 of the asset, we need to multiply the amount by 3.
+        remainingFlexibleRequiredAssets.forEach(asset => {
+            asset.amount *= amount;
+        })
+
         // divide into the flexible assets and the non-flexible (i.e. specificAsset !== 'any') assets.
+        // unlike `remainingFlexibleRequiredAssets`, we will multiply the amounts manually when we for loop each flexible required asset to check for the user's input.
         const flexibleRequiredAssets = craftingRecipe.requiredAssetGroups[chosenAssetGroup].requiredAssets.filter(requiredAsset => requiredAsset.specificAsset === 'any');
         const requiredAssets = craftingRecipe.requiredAssetGroups[chosenAssetGroup].requiredAssets.filter(requiredAsset => requiredAsset.specificAsset !== 'any');
 
@@ -389,14 +396,42 @@ export const craftAsset = async (
 
         // check if 1. `allRequiredAssetsOwned` is true and `allFlexibleRequiredAssetsOwned` is true, and 2. `remainingFlexibleRequiredAssets` is empty.
         // if both conditions are met, the function logic continues (meaning that the asset check has passed).
-        if (!allRequiredAssetsOwned || !allFlexibleRequiredAssetsOwned || remainingFlexibleRequiredAssets.length > 0) {
-            console.log(`(craftAsset) allRequiredAssetsOwned/allFlexibleRequiredAssetsOwned/remainingFlexibleRequiredAssets checks failed.`);
-            
+        if (!allRequiredAssetsOwned) {
+            console.log(`(craftAsset) allRequiredAssetsOwned check failed.`);
+
             return {
                 status: Status.ERROR,
-                message: `(craftAsset) One or more asset checks failed. Please try again.`
+                message: `(craftAsset) allRequiredAssetsOwned check failed. Please try again.`
             }
         }
+
+        if (!allFlexibleRequiredAssetsOwned) {
+            console.log(`(craftAsset) allFlexibleRequiredAssetsOwned check failed.`);
+
+            return {
+                status: Status.ERROR,
+                message: `(craftAsset) allFlexibleRequiredAssetsOwned check failed. Please try again.`
+            }
+        }
+
+        if (remainingFlexibleRequiredAssets.length > 0) {
+            console.log(`(craftAsset) remainingFlexibleRequiredAssets check failed.`);
+            console.log(`remainingFlexibleRequiredAssets data: ${JSON.stringify(remainingFlexibleRequiredAssets, null, 2)}`);
+
+            return {
+                status: Status.ERROR,
+                message: `(craftAsset) remainingFlexibleRequiredAssets check failed. Please try again.`
+            }
+        }
+
+        // if (!allRequiredAssetsOwned || !allFlexibleRequiredAssetsOwned || remainingFlexibleRequiredAssets.length > 0) {
+        //     console.log(`(craftAsset) allRequiredAssetsOwned/allFlexibleRequiredAssetsOwned/remainingFlexibleRequiredAssets checks failed.`);
+            
+        //     return {
+        //         status: Status.ERROR,
+        //         message: `(craftAsset) One or more asset checks failed. Please try again.`
+        //     }
+        // }
 
         let obtainedAssetCount = 0;
 
@@ -823,6 +858,25 @@ export const fetchCraftingQueues = async (userId: string): Promise<ReturnValue> 
     
     }
 }
+
+// craftAsset(
+//     '1462755469102137357',
+//     RestorationItem.PARCHMENT_OF_RESTORATION,
+//     2,
+//     0,
+//     [
+//         {
+//             asset: OreResource.STONE,
+//             assetCategory: 'resource',
+//             amount: 30
+//         },
+//         {
+//             asset: LiquidResource.MAPLE_SYRUP,
+//             assetCategory: 'resource',
+//             amount: 10
+//         }
+//     ]
+// );
 
 // export const getCraftableRecipesByResources = async (twitterId: string): Promise<ReturnValue> => {
 //     try {
