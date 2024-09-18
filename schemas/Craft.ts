@@ -30,7 +30,8 @@ export const CraftingQueueSchema = new mongoose.Schema({
             specificAsset: String,
             requiredRarity: String,
             amount: Number
-        }]
+        }],
+        _id: false
     },
     craftingStart: Number,
     craftingEnd: Number
