@@ -32,6 +32,8 @@ CRAFT_QUEUE.process('completeCraft', async (job) => {
             return;
         }
 
+        console.log(`(CRAFT_QUEUE, completeCraft) CraftingQueue ${craftingQueueId} completed.`);
+
         // const user = await UserModel.findOne({ _id: userId }).lean();
 
         // if (!user) {
