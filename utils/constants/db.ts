@@ -22,7 +22,7 @@ import { WeeklyMVPClaimableRewardSchema, WeeklyMVPRankingLeaderboardSchema } fro
 import { CollabSchema } from '../../schemas/Collab';
 import { CollabBasketSchema, CollabParticipantSchema } from '../../schemas/CollabV2';
 import { ShopAssetPurchaseSchema, ShopAssetSchema } from '../../schemas/Shop';
-import { OngoingCraftSchema } from '../../schemas/Craft';
+import { CraftingQueueSchema } from '../../schemas/Craft';
 
 const TEST_DATABASE = process.env.MONGODB_URI!;
 const WONDERBITS_DATABASE = process.env.WONDERBITS_MONGODB_URI!;
@@ -95,4 +95,4 @@ export const WeeklyMVPRankingLeaderboardModel = TEST_CONNECTION.model('WeeklyMVP
 export const SuccessfulIndirectReferralModel = TEST_CONNECTION.model('SuccessfulIndirectReferrals', SuccessfulIndirectReferralSchema, 'SuccessfulIndirectReferrals');
 export const ShopAssetModel = TEST_CONNECTION.model('ShopAssets', ShopAssetSchema, 'ShopAssets');
 export const ShopAssetPurchaseModel = TEST_CONNECTION.model('ShopAssetPurchases', ShopAssetPurchaseSchema, 'ShopAssetPurchases');
-export const OngoingCraftModel = TEST_CONNECTION.model('OngoingCrafts', OngoingCraftSchema, 'OngoingCrafts');
+export const CraftingQueueModel = TEST_CONNECTION.model('CraftingQueues', CraftingQueueSchema, 'CraftingQueues');

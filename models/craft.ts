@@ -171,20 +171,20 @@ export interface CraftingRecipeRequiredAssetData {
 /**
  * Represents an asset that's being crafted from a recipe and is added to the crafting queue to be claimed after the duration ends.
  * 
- * Each time a player crafts something, a new OngoingCraft instance will be created (because of time-based crafting).
+ * Each time a player crafts something, a new CraftingQueue instance will be created (because of time-based crafting).
  * Simply incrementing the amount of an existing asset that's being crafted DOES NOT WORK!
  * 
- * NOTE: OngoingCraft instances that have the status `CLAIMABLE` means that the player can claim the asset.
+ * NOTE: CraftingQueue instances that have the status `CLAIMABLE` means that the player can claim the asset.
  */
-export interface OngoingCraft {
+export interface CraftingQueue {
     /** the user's database ID */
     userId: string;
     /** the status of the ongoing craft */
-    status: OngoingCraftStatus;
+    status: CraftingQueueStatus;
     /** the data of the asset being crafted */
-    craftedAssetData: OngoingCraftAssetData;
-    /** the assets used to craft the recipe for this OngoingCraft instance */
-    assetsUsed: OngoingCraftUsedAssetData;
+    craftedAssetData: CraftingQueueAssetData;
+    /** the assets used to craft the recipe for this CraftingQueue instance */
+    assetsUsed: CraftingQueueUsedAssetData;
     /** when the recipe was crafted */
     craftingStart: number;
     /** when the crafting will be completed; the user will receive the asset then */
@@ -192,11 +192,11 @@ export interface OngoingCraft {
 }
 
 /**
- * Modified version of `CraftedAssetData` for crafted assets used primarily for `OngoingCraft` instances.
+ * Modified version of `CraftedAssetData` for crafted assets used primarily for `CraftingQueue` instances.
  * 
  * This is used to only display required info.
  */
-export interface OngoingCraftAssetData {
+export interface CraftingQueueAssetData {
     /**
      * the resulting asset from crafting via this recipe.
      */
@@ -214,7 +214,7 @@ export interface OngoingCraftAssetData {
 /**
  * Represents the required assets used to craft a recipe to create an ongoing craft.
  */
-export interface OngoingCraftUsedAssetData {
+export interface CraftingQueueUsedAssetData {
     /**
      * Required assets are assets that have an exact type specified on the recipe.
      * 
@@ -234,7 +234,7 @@ export interface OngoingCraftUsedAssetData {
 /**
  * Represents the status of an ongoing craft.
  */
-export enum OngoingCraftStatus {
+export enum CraftingQueueStatus {
     ONGOING = 'Ongoing',
     CLAIMABLE = 'Claimable',
     CLAIMED = 'Claimed',

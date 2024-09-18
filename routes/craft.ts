@@ -1,7 +1,7 @@
 import express from 'express';
 import { Status } from '../utils/retVal';
 import { validateRequestAuth } from '../utils/auth';
-import { craftAsset } from '../api/craft';
+import { craftAsset, fetchCraftingQueues } from '../api/craft';
 import { CRAFTING_RECIPES } from '../utils/constants/craft';
 
 const router = express.Router();
@@ -34,9 +34,9 @@ router.post('/craft_asset', async (req, res) => {
     }
 });
 
-router.get('/get_craft_assets', async (req, res) => {
+router.get('/get_craftable_assets', async (req, res) => {
     try {
-        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'get_craft_assets');
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'get_crafting_assets');
 
         if (validateStatus !== Status.SUCCESS) {
             return res.status(validateStatus).json({
@@ -47,7 +47,7 @@ router.get('/get_craft_assets', async (req, res) => {
 
         return res.status(200).json({
             status: 200,
-            message: 'Succesfully retrieved craftable assets',
+            message: 'Succesfully retrieved craftable assets.',
             data: {
                 craftableAssets: CRAFTING_RECIPES,
             }
@@ -59,6 +59,34 @@ router.get('/get_craft_assets', async (req, res) => {
         })
     }
 });
+
+router.get('/fetch_crafting_queues/:userId', async (req, res) => {
+    const { userId } = req.params;
+
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'fetch_crafting_queues');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
+        const { status, message, data } = await fetchCraftingQueues(userId);
+        
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
 
 // router.post('/do_craft', async (req, res) => {
 //     const { resType, amt } = req.body;

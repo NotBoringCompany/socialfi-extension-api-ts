@@ -1,11 +1,11 @@
 import { AssetType } from '../models/asset';
-import { CraftableAsset, CraftingRecipe, CraftingRecipeRequiredAssetData, OngoingCraftStatus } from "../models/craft";
+import { CraftableAsset, CraftingRecipe, CraftingRecipeRequiredAssetData, CraftingQueueStatus } from "../models/craft";
 import { Food } from '../models/food';
 import { Item, RestorationItem } from '../models/item';
 import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
 import { BarrenResource, ExtendedResource, ExtendedResourceOrigin, FruitResource, LiquidResource, OreResource, ResourceType, SimplifiedResource } from "../models/resource";
 import { CRAFT_QUEUE, CRAFTING_RECIPES, GET_CRAFTING_LEVEL } from '../utils/constants/craft';
-import { LeaderboardModel, OngoingCraftModel, SquadLeaderboardModel, SquadModel, UserModel } from "../utils/constants/db";
+import { LeaderboardModel, CraftingQueueModel, SquadLeaderboardModel, SquadModel, UserModel } from "../utils/constants/db";
 import { CARPENTING_MASTERY_LEVEL, COOKING_MASTERY_LEVEL, SMELTING_MASTERY_LEVEL, TAILORING_MASTERY_LEVEL } from "../utils/constants/mastery";
 import { getResource, getResourceWeight, resources } from "../utils/constants/resource";
 import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
@@ -15,7 +15,7 @@ import { ReturnValue, Status } from "../utils/retVal";
 /**
  * Crafts a craftable asset for the user.
  * 
- * A new `OngoingCraft` instance will be created for the crafted asset, and the user's inventory will be updated accordingly once the duration expires.
+ * A new `CraftingQueue` instance will be created for the crafted asset, and the user's inventory will be updated accordingly once the duration expires.
  */
 export const craftAsset = async (
     twitterId: string, 
@@ -752,13 +752,11 @@ export const craftAsset = async (
             SquadLeaderboardModel.updateOne({ week: squadLeaderboardWeek }, squadLeaderboardUpdateOperations)
         ]);
 
-        const newOngoingCraftObjectId = generateObjectId();
-
         // create a new ongoing craft instance in the database.
-        const newOngoingCraft = new OngoingCraftModel({
+        const newCraftingQueue = new CraftingQueueModel({
             _id: generateObjectId(),
             userId: user._id,
-            status: OngoingCraftStatus.ONGOING,
+            status: CraftingQueueStatus.ONGOING,
             craftedAssetData: {
                 asset: assetToCraft,
                 amount: obtainedAssetCount,
@@ -773,13 +771,13 @@ export const craftAsset = async (
             craftingEnd: Math.floor(Date.now() / 1000) + craftingRecipe.craftingDuration   
         });
 
-        await newOngoingCraft.save();
+        await newCraftingQueue.save();
 
-        // add the ongoing craft to the queue to change the OngoingCraft status to `CLAIMABLE` after the crafting duration has passed.
+        // add the ongoing craft to the queue to change the CraftingQueue status to `CLAIMABLE` after the crafting duration has passed.
         CRAFT_QUEUE.add(
             'completeCraft', 
             {
-                ongoingCraftId: newOngoingCraft._id
+                craftingQueueId: newCraftingQueue._id
             }, 
             { delay: craftingRecipe.craftingDuration * 1000 }
         );
@@ -797,6 +795,32 @@ export const craftAsset = async (
             status: Status.ERROR,
             message: `(craftAsset) ${err.message}`,
         }
+    }
+}
+
+/**
+ * Fetches the crafting queues of a user.
+ */
+export const fetchCraftingQueues = async (userId: string): Promise<ReturnValue> => {
+    try {
+        const craftingQueues = await CraftingQueueModel.find({ userId }).lean();
+
+        return {
+            status: Status.SUCCESS,
+            message: `(fetchCraftingQueues) Fetched crafting queues.`,
+            data: {
+                ongoingCraftingQueues: craftingQueues.find(queue => queue.status === CraftingQueueStatus.ONGOING) ?? null,
+                claimableCraftingQueues: craftingQueues.filter(queue => queue.status === CraftingQueueStatus.CLAIMABLE) ?? null,
+                claimedCraftingQueues: craftingQueues.filter(queue => queue.status === CraftingQueueStatus.CLAIMED) ?? null,
+                cancelledCraftingQueues: craftingQueues.filter(queue => queue.status === CraftingQueueStatus.CANCELLED) ?? null
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(fetchCraftingQueues) ${err.message}`
+        }
+    
     }
 }
 

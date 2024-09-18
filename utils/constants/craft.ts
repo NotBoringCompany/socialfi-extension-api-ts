@@ -1,10 +1,10 @@
 import Bull from 'bull';
 import { AssetType } from '../../models/asset';
-import { CraftedAssetData, CraftedAssetRarity, CraftingRecipe, CraftingRecipeLine, OngoingCraftStatus } from "../../models/craft";
+import { CraftedAssetData, CraftedAssetRarity, CraftingQueueStatus, CraftingRecipe, CraftingRecipeLine } from "../../models/craft";
 import { ContinuumRelicItem, EnergyTotemItem, IngotItem, Item, PotionItem, RestorationItem, TransmutationItem, WonderArtefactItem } from '../../models/item';
 import { BarrenResource, CombinedResources, ExtendedResource, FruitResource, LiquidResource, OreResource, ResourceRarity, ResourceType, SimplifiedResource } from "../../models/resource";
 import { FoodType } from '../../models/food';
-import { OngoingCraftModel, UserModel } from './db';
+import { CraftingQueueModel, UserModel } from './db';
 import { resources } from './resource';
 
 /**
@@ -15,20 +15,20 @@ export const CRAFT_QUEUE = new Bull('craftQueue', {
 });
 
 /**
- * Process all crafting queues upon completion to convert the OngoingCraft instance from 'ONGOING' to 'CLAIMABLE'.
+ * Process all crafting queues upon completion to convert the CraftingQueue instance from 'ONGOING' to 'CLAIMABLE'.
  */
 CRAFT_QUEUE.process('completeCraft', async (job) => {
-    const { ongoingCraftId } = job.data;
+    const { craftingQueueId } = job.data;
 
     try {
-        const ongoingCraft = await OngoingCraftModel.findOneAndUpdate(
-            { _id: ongoingCraftId, status: OngoingCraftStatus.ONGOING }, 
-            { status: OngoingCraftStatus.CLAIMABLE }
+        const craftingQueue = await CraftingQueueModel.findOneAndUpdate(
+            { _id: craftingQueueId, status: CraftingQueueStatus.ONGOING }, 
+            { status: CraftingQueueStatus.CLAIMABLE }
         );
 
-        // check if the `ongoingCraft` instance is modified.
-        if (!ongoingCraft) {
-            console.error(`(CRAFT_QUEUE, completeCraft) OngoingCraft ${ongoingCraftId} not found.`);
+        // check if the `craftingQueue` instance is modified.
+        if (!craftingQueue) {
+            console.error(`(CRAFT_QUEUE, completeCraft) craftingQueue ${craftingQueueId} not found.`);
             return;
         }
 
@@ -81,7 +81,7 @@ CRAFT_QUEUE.process('completeCraft', async (job) => {
         // // log the crafting event.
         // console.log(`(CRAFT_QUEUE, completeCraft) User ${userId} successfully crafted ${amount}x ${asset} in ${craftingDuration} seconds.`);
     } catch (err: any) {
-        console.error(`(CRAFT_QUEUE, completeCraft) Error processing crafting queue for OngoingCraft ${ongoingCraftId}: ${err.message}`);
+        console.error(`(CRAFT_QUEUE, completeCraft) Error processing crafting queue for CraftingQueue ${craftingQueueId}: ${err.message}`);
     }
 })
 

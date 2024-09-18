@@ -3,9 +3,9 @@ import { generateObjectId } from '../utils/crypto';
 import { CraftingRecipeLine } from '../models/craft';
 
 /**
- * OngoingCraft schema. Represents closely to the `OngoingSchema` interface in `models/craft.ts`.
+ * CraftingQueue schema. Represents closely to the `CraftingQueue` interface in `models/craft.ts`.
  */
-export const OngoingCraftSchema = new mongoose.Schema({
+export const CraftingQueueSchema = new mongoose.Schema({
     _id: {
         type: String,
         default: generateObjectId()

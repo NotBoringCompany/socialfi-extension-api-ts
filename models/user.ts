@@ -3,7 +3,6 @@ import { Food } from './food';
 import { BitOrbType, Item, TerraCapsulatorType } from './item';
 import { ExtendedResource } from './resource';
 import { InviteCodeData, ReferralData } from './invite';
-import { OngoingCraft } from './craft';
 import { CraftingMastery, TappingMastery } from './mastery';
 
 /****************
