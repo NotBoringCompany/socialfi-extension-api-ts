@@ -803,7 +803,7 @@ export const craftAsset = async (
                 chosenFlexibleRequiredAssets
             },
             craftingStart: Math.floor(Date.now() / 1000),
-            craftingEnd: Math.floor(Date.now() / 1000) + craftingRecipe.craftingDuration   
+            craftingEnd: (Math.floor(Date.now() / 1000) + craftingRecipe.craftingDuration) * amount  
         });
 
         await newCraftingQueue.save();
@@ -1246,7 +1246,7 @@ export const claimCraftedAssets = async (
 
         return {
             status: Status.SUCCESS,
-            message: `(claimCraftedAssets) Successfully claimed crafted assets. ${partialClaimedCraftingQueueIDs.length > 0 && `Some assets from crafting queues could not be claimed fully due to inventory weight limitations.`}`,
+            message: `(claimCraftedAssets) Successfully claimed crafted assets. ${partialClaimedCraftingQueueIDs.length > 0 ? `Some assets from crafting queues could not be claimed fully due to inventory weight limitations.` : ``}`,
             data: {
                 fullyClaimedCraftingQueueIDs,
                 partialClaimedCraftingQueueIDs
