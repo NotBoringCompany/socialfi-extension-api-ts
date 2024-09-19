@@ -814,7 +814,9 @@ export const craftAsset = async (
             {
                 craftingQueueId: newCraftingQueue._id
             }, 
-            { delay: craftingRecipe.craftingDuration * 1000 }
+            // time it takes to fully craft the asset depends on the amount being crafted as well.
+            // for example, say 1 of the asset takes 1 minute to craft. if the user crafts 10, then they will need to wait 10 minutes.
+            { delay: (craftingRecipe.craftingDuration * 1000) * amount}
         );
 
         console.log(`(craftAsset) Added ${obtainedAssetCount}x ${assetToCraft} to the crafting queue.`);
