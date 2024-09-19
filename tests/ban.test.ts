@@ -195,27 +195,28 @@ describe('Ban unit test', () => {
       expect(addBanResponse.body).toEqual({ status: 200, message: "success", data: expectedAddData });
       expect(addBanResponse.body.data.status).toBe(BanStatus.ACTIVE);
 
-      // const updateMockBan: Ban = {
-      //   ...mockBan,
-      //   status: BanStatus.EXPIRED
-      // }
+      const updateMockBan = {
+        ...mockBan,
+        createdAt: mockBan.createdAt.toISOString(),
+        endDate: mockBan.endDate.toISOString(),
+        startDate: mockBan.startDate.toISOString(),
+        updatedAt: mockBan.updatedAt.toISOString(),
+        status: BanStatus.EXPIRED
+      }
 
-      // mockUpdateBan.mockResolvedValueOnce({ status: 200, message: "success", data: updateMockBan });
-      // const updateBanResponse = await request(app).patch(`/bans/${addBanResponse.body.data.id}`).set('Authorization', `Bearer ${validToken}`).send({
-      //   status: BanStatus.EXPIRED
-      // })
+      mockVerifyToken.mockResolvedValueOnce({
+        status: Status.SUCCESS,
+        message: 'Token valid',
+        data: { id: '123', role: 3, name: "admin", method: "patch", username: "admin" },
+      });
 
-      // const expectedData = {
-      //   ...updateMockBan,
-      //   createdAt: updateMockBan.createdAt.toISOString(),
-      //   endDate: updateMockBan.endDate.toISOString(),
-      //   startDate: updateMockBan.startDate.toISOString(),
-      //   updatedAt: updateMockBan.updatedAt.toISOString(),
-      // };
+      mockUpdateBan.mockResolvedValueOnce({ status: 200, message: "success", data: updateMockBan });
+      const updateBanResponse = await request(app).patch(`/bans/${addBanResponse.body.data.id}`).set('Authorization', `Bearer ${validToken}`).send({
+        status: BanStatus.EXPIRED
+      })
 
-      // expect(updateBanResponse.status).toBe(200);
-      // expect(updateBanResponse.body).toEqual({ status: 200, message: "success", data: expectedData });
-      // expect(updateBanResponse.body.data.status).toBe(BanStatus.EXPIRED);
+      expect(updateBanResponse.status).toBe(200);
+      expect(updateBanResponse.body).toEqual({ status: 200, message: "success", data: updateMockBan });
     })
   })
 })
