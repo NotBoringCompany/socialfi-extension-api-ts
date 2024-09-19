@@ -1,7 +1,7 @@
 import express from 'express';
 import { Status } from '../utils/retVal';
 import { validateRequestAuth } from '../utils/auth';
-import { claimCraftedAsset, craftAsset, fetchCraftingQueues } from '../api/craft';
+import { claimCraftedAssets, craftAsset, fetchCraftingQueues } from '../api/craft';
 import { CRAFTING_RECIPES } from '../utils/constants/craft';
 
 const router = express.Router();
@@ -88,8 +88,8 @@ router.get('/fetch_crafting_queues/:userId', async (req, res) => {
     }
 })
 
-router.post('/claim_crafted_asset', async (req, res) => {
-    const { craftingQueueId } = req.body;
+router.post('/claim_crafted_assets', async (req, res) => {
+    const { claimType, craftingQueueIds } = req.body;
 
     try {
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'claim_crafted_asset');
@@ -101,7 +101,7 @@ router.post('/claim_crafted_asset', async (req, res) => {
             })
         }
 
-        const { status, message, data } = await claimCraftedAsset(validateData?.twitterId, craftingQueueId);
+        const { status, message, data } = await claimCraftedAssets(validateData?.twitterId, claimType, craftingQueueIds);
 
         return res.status(status).json({
             status,
