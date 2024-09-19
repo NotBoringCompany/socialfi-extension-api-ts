@@ -59,7 +59,7 @@ router.get('/:banId',
  * @returns {Promise<Response>} status 200 with ban data, or status 500 with error message
  * this route for protecting page
  */
-router.get('/user/:userId', async (req, res) => {
+router.get('/user/:userId', authMiddleware(1), async (req, res) => {
   const { userId } = req.params;
   try {
     const { status, message, data } = await getBanByUserId(userId);
