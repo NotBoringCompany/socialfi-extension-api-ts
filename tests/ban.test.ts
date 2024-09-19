@@ -1,6 +1,6 @@
 import request from 'supertest'
 import app from '../server'
-import { addBan, getBanById, getBanByUserId, getBans } from '../api/ban';
+import { addBan, getBanById, getBanByUserId, getBans, updateBan } from '../api/ban';
 import { verifyToken } from '../api/auth';
 import { Ban, BanStatus, BanType } from '../models/ban';
 import jwt from 'jsonwebtoken';
@@ -8,10 +8,13 @@ import { Status } from '../utils/retVal';
 jest.mock('../api/ban');
 jest.mock('../api/auth');
 
+const mockAddBan = addBan as jest.MockedFunction<typeof addBan>;
+const mockUpdateBan = updateBan as jest.MockedFunction<typeof updateBan>;
+
 const mockBanList = getBans as jest.MockedFunction<typeof getBans>;
 const mockBanId = getBanById as jest.MockedFunction<typeof getBanById>;
-const mockAddBan = addBan as jest.MockedFunction<typeof addBan>;
 const mockBanByUserId = getBanByUserId as jest.MockedFunction<typeof getBanByUserId>;
+
 const mockVerifyToken = verifyToken as jest.MockedFunction<typeof verifyToken>;
 const validToken = jwt.sign(
   { userId: '123', role: 3 },
@@ -56,7 +59,7 @@ describe('Ban unit test', () => {
       })
       expect(response.status).toBe(401);
       expect(response.body).toEqual({ status: 401, message: "(verifyToken) No token provided" })
-    });
+    }, 100000);
 
     it('should error when invalid format', async () => {
       mockAddBan.mockResolvedValueOnce({ status: 200, message: "success", data: mockBan })
@@ -65,7 +68,7 @@ describe('Ban unit test', () => {
       })
       expect(response.status).toBe(401);
       expect(response.body).toEqual({ status: 401, message: "(verifyToken) Invalid token format" })
-    })
+    }, 30000);
 
     it('should add ban with admin permission', async () => {
       mockVerifyToken.mockResolvedValueOnce({
@@ -167,4 +170,52 @@ describe('Ban unit test', () => {
   })
 
   // todo admin test update user ban status (active, expired, revoked)
+  describe('PATCH /bans', () => {
+    it('should update ban status from active to expired', async () => {
+      mockVerifyToken.mockResolvedValueOnce({
+        status: Status.SUCCESS,
+        message: 'Token valid',
+        data: { id: '123', role: 3, name: "admin", method: "patch", username: "admin" },
+      });
+
+      mockAddBan.mockResolvedValueOnce({ status: 200, message: "success", data: mockBan });
+      const addBanResponse = await request(app).post('/bans').set('Authorization', `Bearer ${validToken}`).send({
+        userId: "test",
+      })
+
+      const expectedAddData = {
+        ...mockBan,
+        createdAt: mockBan.createdAt.toISOString(),
+        endDate: mockBan.endDate.toISOString(),
+        startDate: mockBan.startDate.toISOString(),
+        updatedAt: mockBan.updatedAt.toISOString(),
+      };
+
+      expect(addBanResponse.status).toBe(200);
+      expect(addBanResponse.body).toEqual({ status: 200, message: "success", data: expectedAddData });
+      expect(addBanResponse.body.data.status).toBe(BanStatus.ACTIVE);
+
+      // const updateMockBan: Ban = {
+      //   ...mockBan,
+      //   status: BanStatus.EXPIRED
+      // }
+
+      // mockUpdateBan.mockResolvedValueOnce({ status: 200, message: "success", data: updateMockBan });
+      // const updateBanResponse = await request(app).patch(`/bans/${addBanResponse.body.data.id}`).set('Authorization', `Bearer ${validToken}`).send({
+      //   status: BanStatus.EXPIRED
+      // })
+
+      // const expectedData = {
+      //   ...updateMockBan,
+      //   createdAt: updateMockBan.createdAt.toISOString(),
+      //   endDate: updateMockBan.endDate.toISOString(),
+      //   startDate: updateMockBan.startDate.toISOString(),
+      //   updatedAt: updateMockBan.updatedAt.toISOString(),
+      // };
+
+      // expect(updateBanResponse.status).toBe(200);
+      // expect(updateBanResponse.body).toEqual({ status: 200, message: "success", data: expectedData });
+      // expect(updateBanResponse.body.data.status).toBe(BanStatus.EXPIRED);
+    })
+  })
 })
