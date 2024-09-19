@@ -951,12 +951,12 @@ export const claimCraftedAssets = async (
             }
 
             // get the total weight of the assets to claim
-            const totalWeight = filteredClaimableCraftingQueues.reduce((acc, queue) => {
+            const finalizedTotalWeight = filteredClaimableCraftingQueues.reduce((acc, queue) => {
                 return acc + queue.craftedAssetData.totalWeight;
             }, 0);
 
             // check if the user's inventory weight + the totalWeight of the assets to claim exceeds the limit
-            if (user.inventory.weight + totalWeight > user.inventory.maxWeight) {
+            if (user.inventory.weight + finalizedTotalWeight > user.inventory.maxWeight) {
                 return {
                     status: Status.ERROR,
                     message: `(claimCraftedAssets) Claiming the assets will exceed the inventory weight limit.`
@@ -1035,7 +1035,7 @@ export const claimCraftedAssets = async (
                 });
 
                 // increase the user's weight
-                userUpdateOperations.$inc['inventory.weight'] = totalWeight;
+                userUpdateOperations.$inc['inventory.weight'] = finalizedTotalWeight;
             }
         // if auto, we need to do the following:
         // 1. check if ALL claimable assets can be claimed based on the user's inventory weight. if yes, then we can just simply claim everything.
