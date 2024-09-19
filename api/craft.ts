@@ -844,7 +844,7 @@ export const fetchCraftingQueues = async (userId: string): Promise<ReturnValue> 
             status: Status.SUCCESS,
             message: `(fetchCraftingQueues) Fetched crafting queues.`,
             data: {
-                ongoingCraftingQueues: craftingQueues.find(queue => queue.status === CraftingQueueStatus.ONGOING) ?? null,
+                ongoingCraftingQueues: craftingQueues.filter(queue => queue.status === CraftingQueueStatus.ONGOING) ?? null,
                 claimableCraftingQueues: craftingQueues.filter(queue => queue.status === CraftingQueueStatus.CLAIMABLE) ?? null,
                 claimedCraftingQueues: craftingQueues.filter(queue => queue.status === CraftingQueueStatus.CLAIMED) ?? null,
                 cancelledCraftingQueues: craftingQueues.filter(queue => queue.status === CraftingQueueStatus.CANCELLED) ?? null
