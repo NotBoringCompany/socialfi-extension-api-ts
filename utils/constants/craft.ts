@@ -30,6 +30,13 @@ export const REQUIRED_CRAFTING_LEVEL_RARE = 1;
 export const REQUIRED_CRAFTING_LEVEL_EPIC = 2;
 export const REQUIRED_CRAFTING_LEVEL_LEGENDARY = 3;
 
+// the amount of XP earned upon crafting a specific rarity of craftable assets.
+export const EARNED_XP_COMMON = 50;
+export const EARNED_XP_UNCOMMON = 100;
+export const EARNED_XP_RARE = 300;
+export const EARNED_XP_EPIC = 600;
+export const EARNED_XP_LEGENDARY = 1000;
+
 /**
  * Process all crafting queues upon completion to convert the CraftingQueue instance from 'ONGOING' to 'CLAIMABLE'.
  */
@@ -102,7 +109,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             requiredXCookies: 0,
             requiredLevel: 1,
             requiredCraftingLevel: REQUIRED_CRAFTING_LEVEL_COMMON,
-            earnedXP: 50,
+            earnedXP: EARNED_XP_COMMON,
             weight: 0,
             requiredAssetGroups: [
                 {
@@ -142,7 +149,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             requiredXCookies: 0,
             requiredLevel: 1,
             requiredCraftingLevel: REQUIRED_CRAFTING_LEVEL_UNCOMMON,
-            earnedXP: 100,
+            earnedXP: EARNED_XP_UNCOMMON,
             weight: 0,
             requiredAssetGroups: [
                 {
@@ -181,7 +188,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             requiredXCookies: 0,
             requiredLevel: 1,
             requiredCraftingLevel: REQUIRED_CRAFTING_LEVEL_RARE,
-            earnedXP: 250,
+            earnedXP: EARNED_XP_RARE,
             weight: 0,
             requiredAssetGroups: [
                 {
@@ -226,7 +233,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             requiredXCookies: 0,
             requiredLevel: 1,
             requiredCraftingLevel: REQUIRED_CRAFTING_LEVEL_EPIC,
-            earnedXP: 500,
+            earnedXP: EARNED_XP_EPIC,
             weight: 0,
             requiredAssetGroups: [
                 {
@@ -265,7 +272,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             requiredXCookies: 0,
             requiredLevel: 1,
             requiredCraftingLevel: REQUIRED_CRAFTING_LEVEL_LEGENDARY,
-            earnedXP: 1000,
+            earnedXP: EARNED_XP_LEGENDARY,
             weight: 0,
             requiredAssetGroups: [
                 {
@@ -315,7 +322,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             requiredXCookies: 0,
             requiredLevel: 1,
             requiredCraftingLevel: REQUIRED_CRAFTING_LEVEL_COMMON,
-            earnedXP: 50,
+            earnedXP: EARNED_XP_COMMON,
             weight: 0,
             requiredAssetGroups: [
                 {
@@ -342,7 +349,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             requiredXCookies: 0,
             requiredLevel: 1,
             requiredCraftingLevel: REQUIRED_CRAFTING_LEVEL_UNCOMMON,
-            earnedXP: 100,
+            earnedXP: EARNED_XP_UNCOMMON,
             weight: 0,
             requiredAssetGroups: [
                 {
@@ -370,7 +377,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             requiredXCookies: 0,
             requiredLevel: 1,
             requiredCraftingLevel: REQUIRED_CRAFTING_LEVEL_EPIC,
-            earnedXP: 500,
+            earnedXP: EARNED_XP_EPIC,
             weight: 0,
             requiredAssetGroups: [
                 {
@@ -408,7 +415,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             requiredXCookies: 0,
             requiredLevel: 1,
             requiredCraftingLevel: REQUIRED_CRAFTING_LEVEL_COMMON,
-            earnedXP: 50,
+            earnedXP: EARNED_XP_COMMON,
             weight: 0,
             requiredAssetGroups: [
                 {
@@ -446,7 +453,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             requiredXCookies: 0,
             requiredLevel: 1,
             requiredCraftingLevel: REQUIRED_CRAFTING_LEVEL_UNCOMMON,
-            earnedXP: 100,
+            earnedXP: EARNED_XP_UNCOMMON,
             weight: 0,
             requiredAssetGroups: [
                 {
@@ -491,7 +498,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             requiredXCookies: 0,
             requiredLevel: 1,
             requiredCraftingLevel: REQUIRED_CRAFTING_LEVEL_RARE,
-            earnedXP: 250,
+            earnedXP: EARNED_XP_RARE,
             weight: 0,
             requiredAssetGroups: [
                 {
@@ -542,7 +549,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             requiredXCookies: 0,
             requiredLevel: 1,
             requiredCraftingLevel: REQUIRED_CRAFTING_LEVEL_RARE,
-            earnedXP: 250,
+            earnedXP: EARNED_XP_RARE,
             weight: 0,
             requiredAssetGroups: [
                 {
@@ -587,7 +594,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             requiredXCookies: 0,
             requiredLevel: 1,
             requiredCraftingLevel: REQUIRED_CRAFTING_LEVEL_EPIC,
-            earnedXP: 500,
+            earnedXP: EARNED_XP_EPIC,
             weight: 0,
             requiredAssetGroups: [
                 {
@@ -638,7 +645,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             requiredXCookies: 0,
             requiredLevel: 1,
             requiredCraftingLevel: REQUIRED_CRAFTING_LEVEL_LEGENDARY,
-            earnedXP: 1000,
+            earnedXP: EARNED_XP_LEGENDARY,
             weight: 0,
             requiredAssetGroups: [
                 {
@@ -689,7 +696,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             requiredXCookies: 0,
             requiredLevel: 1,
             requiredCraftingLevel: REQUIRED_CRAFTING_LEVEL_RARE,
-            earnedXP: 250,
+            earnedXP: EARNED_XP_RARE,
             weight: 0,
             requiredAssetGroups: [
                 {
@@ -734,7 +741,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             requiredXCookies: 0,
             requiredLevel: 1,
             requiredCraftingLevel: REQUIRED_CRAFTING_LEVEL_EPIC,
-            earnedXP: 500,
+            earnedXP: EARNED_XP_EPIC,
             weight: 0,
             requiredAssetGroups: [
                 {
@@ -785,7 +792,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             requiredXCookies: 0,
             requiredLevel: 1,
             requiredCraftingLevel: REQUIRED_CRAFTING_LEVEL_LEGENDARY,
-            earnedXP: 1000,
+            earnedXP: EARNED_XP_LEGENDARY,
             weight: 0,
             requiredAssetGroups: [
                 {
