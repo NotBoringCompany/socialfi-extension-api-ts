@@ -803,7 +803,7 @@ export const craftAsset = async (
                 chosenFlexibleRequiredAssets
             },
             craftingStart: Math.floor(Date.now() / 1000),
-            craftingEnd: (Math.floor(Date.now() / 1000) + craftingRecipe.craftingDuration) * amount  
+            craftingEnd: Math.floor(Date.now() / 1000) + (craftingRecipe.craftingDuration * amount)
         });
 
         await newCraftingQueue.save();
