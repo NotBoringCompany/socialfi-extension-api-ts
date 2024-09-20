@@ -112,58 +112,55 @@ export const craftAsset = async (
         // fetch all ongoing OR claimable crafting queues because these occupy the user's crafting slots.
         const craftingQueues = await CraftingQueueModel.find({ userId: user._id, status: { $in: [CraftingQueueStatus.ONGOING, CraftingQueueStatus.CLAIMABLE] } }).lean();
 
-        // check if the user is in the right POI to craft assets, and if they have reached the limit to craft the asset.
-        // for now, these are the requirements:
-        // 1. SYNTHESIZING: only available in Evergreen Village (POIName.EVERGREEN_VILLAGE)
-        if (craftingRecipe.craftingRecipeLine === CraftingRecipeLine.SYNTHESIZING) {
-            // if the user is not in Evergreen Village, return an error.
-            if (user.inGameData.location !== POIName.EVERGREEN_VILLAGE) {
-                console.log(`(craftAsset) User is not in Evergreen Village to craft ${assetToCraft}.`);
+        // check if the user is in the right POI to craft assets and if they have reached the limit to craft the asset.
+        const requiredPOI = REQUIRED_POI_FOR_CRAFTING_LINE(craftingRecipe.craftingRecipeLine);
 
-                return {
-                    status: Status.ERROR,
-                    message: `(craftAsset) User is not in Evergreen Village to craft ${assetToCraft}.`
-                }
+        if (user.inGameData.location !== requiredPOI) {
+            console.log(`(craftAsset) User is not in the right POI to craft ${assetToCraft}.`);
+
+            return {
+                status: Status.ERROR,
+                message: `(craftAsset) User is not in the right POI to craft ${assetToCraft}. Required POI: ${requiredPOI}, User POI: ${user.inGameData.location}`
             }
+        }
 
-            // check their crafting slots for this particular crafting line (via their mastery data).
-            const synthesizingMastery = user.inGameData?.mastery?.crafting?.synthesizing as CraftingMasteryStats ?? null;
+        // check their crafting slots for this particular crafting line (via their mastery data)
+        const masteryData = user.inGameData.mastery.crafting[craftingRecipe.craftingRecipeLine.toLowerCase()] as CraftingMasteryStats ?? null;
 
-            let craftingSlots = 0;
-            let craftablePerSlot = 0;
+        let craftingSlots = 0;
+        let craftablePerSlot = 0;
 
-            // if synthesizingMastery doesn't exist, we will assume that they SHOULD have the base crafting slots and craftable per slot counts.
-            // no need to instantiate the synthesizingMastery object here, because it will be done at the end of the function.
-            if (!synthesizingMastery) {
-                craftingSlots = BASE_CRAFTING_SLOTS;
-                craftablePerSlot = BASE_CRAFTABLE_PER_SLOT;
-            } else {
-                // otherwise, fetch the `craftingSlots` and `craftablePerSlot` from the mastery data
-                craftingSlots = synthesizingMastery.craftingSlots;
-                craftablePerSlot = synthesizingMastery.craftablePerSlot;
-            }
-
-            // throw IF craftingQueues >= craftingSlots
-            if (craftingQueues.length >= craftingSlots) {
-                console.log(`(craftAsset) User has reached the crafting slots limit for synthesizing.`);
-
-                return {
-                    status: Status.ERROR,
-                    message: `(craftAsset) User has reached the crafting slots limit for synthesizing.`
-                }
-            }
-
-            // throw IF `amount` specified in params > craftablePerSlot
-            if (amount > craftablePerSlot) {
-                console.log(`(craftAsset) Amount exceeds the craftable per slot limit for synthesizing.`);
-
-                return {
-                    status: Status.ERROR,
-                    message: `(craftAsset) Amount exceeds the craftable per slot limit for synthesizing.`
-                }
-            }
+        // if masteryData doesn't exist, we will assume that they SHOULD have the base crafting slots and craftable per slot counts.
+        // no need to instantiate the masteryData object here because it will be done at the end of the function.
+        if (!masteryData) {
+            craftingSlots = BASE_CRAFTING_SLOTS;
+            craftablePerSlot = BASE_CRAFTABLE_PER_SLOT;
         } else {
-            // OTHER CRAFTING LINES' REQUIREMENTS TBD.
+            // otherwise, fetch the `craftingSlots` and `craftablePerSlot` from the mastery data
+            craftingSlots = masteryData.craftingSlots;
+            craftablePerSlot = masteryData.craftablePerSlot;
+        }
+
+        console.log(`User ${user.twitterUsername} has ${craftingSlots} crafting slots and can craft ${craftablePerSlot} of ${assetToCraft} per slot for line ${craftingRecipe.craftingRecipeLine}.`);
+
+        // throw IF craftingQueues >= craftingSlots
+        if (craftingQueues.length >= craftingSlots) {
+            console.log(`(craftAsset) User has reached the crafting slots limit for ${craftingRecipe.craftingRecipeLine}.`);
+
+            return {
+                status: Status.ERROR,
+                message: `(craftAsset) User has reached the crafting slots limit for ${craftingRecipe.craftingRecipeLine}.`
+            }
+        }
+
+        // throw IF `amount` specified in params > craftablePerSlot
+        if (amount > craftablePerSlot) {
+            console.log(`(craftAsset) Amount exceeds the craftable per slot limit for ${craftingRecipe.craftingRecipeLine}.`);
+
+            return {
+                status: Status.ERROR,
+                message: `(craftAsset) Amount exceeds the craftable per slot limit for ${craftingRecipe.craftingRecipeLine}.`
+            }
         }
 
         // if `requiredXCookies` > 0, check if the user has enough xCookies to craft the asset
