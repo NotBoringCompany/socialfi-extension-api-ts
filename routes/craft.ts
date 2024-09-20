@@ -89,7 +89,7 @@ router.get('/fetch_crafting_queues/:userId', async (req, res) => {
 })
 
 router.post('/claim_crafted_assets', async (req, res) => {
-    const { claimType, craftingQueueIds } = req.body;
+    const { claimType, craftingLine, craftingQueueIds } = req.body;
 
     try {
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'claim_crafted_asset');
@@ -101,7 +101,7 @@ router.post('/claim_crafted_assets', async (req, res) => {
             })
         }
 
-        const { status, message, data } = await claimCraftedAssets(validateData?.twitterId, claimType, craftingQueueIds);
+        const { status, message, data } = await claimCraftedAssets(validateData?.twitterId, claimType, craftingLine, craftingQueueIds);
 
         return res.status(status).json({
             status,
