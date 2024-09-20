@@ -6,6 +6,7 @@ import { BarrenResource, CombinedResources, ExtendedResource, FruitResource, Liq
 import { FoodType } from '../../models/food';
 import { CraftingQueueModel, UserModel } from './db';
 import { resources } from './resource';
+import { POIName } from '../../models/poi';
 
 /**
  * this is the base amount of crafting slots users get per crafting line.
@@ -74,6 +75,19 @@ CRAFT_QUEUE.process('completeCraft', async (job) => {
         console.error(`(CRAFT_QUEUE, completeCraft) Error processing crafting queue for CraftingQueue ${craftingQueueId}: ${err.message}`);
     }
 })
+
+/**
+ * Gets the required POI the user needs to be in in order to craft or claim an asset of a specific crafting line.
+ */
+export const REQUIRED_POI_FOR_CRAFTING_LINE = (craftingRecipeLine: CraftingRecipeLine): POIName => {
+    switch (craftingRecipeLine) {
+        case CraftingRecipeLine.SYNTHESIZING:
+            return POIName.EVERGREEN_VILLAGE;
+        // by default just throw an error
+        default:
+            throw new Error(`(REQUIRED_POI_FOR_CRAFTING_LINE) Crafting line ${craftingRecipeLine} not implemented yet or not found.`);
+    }
+}
 
 /**
  * Get the crafting level for a specific crafting line for a user's crafting mastery based on their current XP for that line.

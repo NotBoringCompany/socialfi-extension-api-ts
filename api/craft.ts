@@ -6,7 +6,7 @@ import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderbo
 import { CraftingMasteryStats } from '../models/mastery';
 import { POIName } from '../models/poi';
 import { BarrenResource, ExtendedResource, ExtendedResourceOrigin, FruitResource, LiquidResource, OreResource, ResourceType, SimplifiedResource } from "../models/resource";
-import { BASE_CRAFTABLE_PER_SLOT, BASE_CRAFTING_SLOTS, CRAFT_QUEUE, CRAFTING_RECIPES, GET_CRAFTING_LEVEL } from '../utils/constants/craft';
+import { BASE_CRAFTABLE_PER_SLOT, BASE_CRAFTING_SLOTS, CRAFT_QUEUE, CRAFTING_RECIPES, GET_CRAFTING_LEVEL, REQUIRED_POI_FOR_CRAFTING_LINE } from '../utils/constants/craft';
 import { LeaderboardModel, CraftingQueueModel, SquadLeaderboardModel, SquadModel, UserModel } from "../utils/constants/db";
 import { CARPENTING_MASTERY_LEVEL, COOKING_MASTERY_LEVEL, SMELTING_MASTERY_LEVEL, TAILORING_MASTERY_LEVEL } from "../utils/constants/mastery";
 import { getResource, getResourceWeight, resources } from "../utils/constants/resource";
@@ -842,6 +842,7 @@ export const craftAsset = async (
             _id: generateObjectId(),
             userId: user._id,
             status: CraftingQueueStatus.ONGOING,
+            craftingRecipeLine: craftingRecipe.craftingRecipeLine,
             craftedAssetData: {
                 asset: assetToCraft,
                 amount: obtainedAssetCount,
@@ -925,6 +926,9 @@ export const fetchCraftingQueues = async (userId: string): Promise<ReturnValue> 
 export const claimCraftedAssets = async (
     twitterId: string,
     claimType: 'manual' | 'auto' = 'auto',
+    // different assets are craftable in different POI locations (e.g. synthesizing is done in Evergreen Village).
+    // therefore, a user can only claim assets of a specific crafting line.
+    craftingLine: CraftingRecipeLine,
     // MUST be provided if `claimType` is 'manual'
     craftingQueueIds?: string[]
 ): Promise<ReturnValue> => {
@@ -938,12 +942,30 @@ export const claimCraftedAssets = async (
             }
         }
 
-        const claimableCraftingQueues = await CraftingQueueModel.find({ userId: user._id, status: CraftingQueueStatus.CLAIMABLE }).lean();
+        if (!craftingLine) {
+            return {
+                status: Status.ERROR,
+                message: `(claimCraftedAssets) Crafting line must be provided.`
+            }
+        }
+
+        // find all claimable crafting queues for a user given the crafting line (which can be queried under `craftingRecipeLine`)
+        const claimableCraftingQueues = await CraftingQueueModel.find({ userId: user._id, status: CraftingQueueStatus.CLAIMABLE, craftingRecipeLine: craftingLine }).lean();
 
         if (claimableCraftingQueues.length === 0) {
             return {
                 status: Status.ERROR,
-                message: `(claimCraftedAssets) No claimable crafted assets found.`
+                message: `(claimCraftedAssets) No claimable crafted assets found for the chosen line: ${craftingLine}.`
+            }
+        }
+
+        // for each crafting line, check if the user is in the right POI. if not, throw an error.
+        const requiredPOI = REQUIRED_POI_FOR_CRAFTING_LINE(craftingLine);
+
+        if (user.inGameData.location !== requiredPOI) {
+            return {
+                status: Status.ERROR,
+                message: `(claimCraftedAssets) User must be in ${requiredPOI} to claim crafted assets of this line.`
             }
         }
 

@@ -12,6 +12,7 @@ export const CraftingQueueSchema = new mongoose.Schema({
     },
     userId: String,
     status: String,
+    craftingRecipeLine: String,
     craftedAssetData: {
         asset: String,
         amount: Number,

@@ -181,6 +181,8 @@ export interface CraftingQueue {
     userId: string;
     /** the status of the ongoing craft */
     status: CraftingQueueStatus;
+    // the crafting line of the recipe used to craft this asset
+    craftingRecipeLine: CraftingRecipeLine;
     /** the data of the asset being crafted */
     craftedAssetData: CraftingQueueAssetData;
     /** the assets used to craft the recipe for this CraftingQueue instance */
