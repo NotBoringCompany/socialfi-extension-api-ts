@@ -16,12 +16,12 @@ export const BASE_CRAFTING_SLOTS = 1;
  */
 export const BASE_CRAFTABLE_PER_SLOT = 10;
 
-/**
- * Creates a new Bull instance for crafting assets to be queued.
- */
-export const CRAFT_QUEUE = new Bull('craftQueue', {
-    redis: process.env.REDIS_URL
-});
+// the required energy costs to craft a specific rarity of craftable assets.
+export const BASE_ENERGY_COST_COMMON = 50;
+export const BASE_ENERGY_COST_UNCOMMON = 50;
+export const BASE_ENERGY_COST_RARE = 100;
+export const BASE_ENERGY_COST_EPIC = 100;
+export const BASE_ENERGY_COST_LEGENDARY = 200;
 
 // the required crafting level to craft a specific rarity of craftable assets.
 export const REQUIRED_CRAFTING_LEVEL_COMMON = 1;
@@ -36,6 +36,13 @@ export const EARNED_XP_UNCOMMON = 100;
 export const EARNED_XP_RARE = 300;
 export const EARNED_XP_EPIC = 600;
 export const EARNED_XP_LEGENDARY = 1000;
+
+/**
+ * Creates a new Bull instance for crafting assets to be queued.
+ */
+export const CRAFT_QUEUE = new Bull('craftQueue', {
+    redis: process.env.REDIS_URL
+});
 
 /**
  * Process all crafting queues upon completion to convert the CraftingQueue instance from 'ONGOING' to 'CLAIMABLE'.

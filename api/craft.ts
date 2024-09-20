@@ -853,7 +853,9 @@ export const craftAsset = async (
                 chosenFlexibleRequiredAssets
             },
             craftingStart: Math.floor(Date.now() / 1000),
-            craftingEnd: Math.floor(Date.now() / 1000) + (craftingRecipe.craftingDuration * amount)
+            // craftingEnd should only take into account the amount of successfulCrafts, not the base `amount`.
+            // e.g. if a user successfully crafts 5 out of 10 of the asset, the craftingEnd should be the base crafting duration * 5.
+            craftingEnd: Math.floor(Date.now() / 1000) + (craftingRecipe.craftingDuration * successfulCrafts)
         });
 
         await newCraftingQueue.save();
@@ -864,9 +866,9 @@ export const craftAsset = async (
             {
                 craftingQueueId: newCraftingQueue._id
             }, 
-            // time it takes to fully craft the asset depends on the amount being crafted as well.
-            // for example, say 1 of the asset takes 1 minute to craft. if the user crafts 10, then they will need to wait 10 minutes.
-            { delay: (craftingRecipe.craftingDuration * 1000) * amount}
+            // time it takes to fully craft the asset depends on the `successfulCrafts` amount being crafted as well, NOT the base amount.
+            // for example, say 1 of the asset takes 1 minute to craft. if the user successfully crafts 5 (instead of the base amount of 10), then they will need to wait 5 minutes.
+            { delay: (craftingRecipe.craftingDuration * 1000) * successfulCrafts}
         );
 
         console.log(`(craftAsset) Added ${obtainedAssetCount}x ${assetToCraft} to the crafting queue.`);
