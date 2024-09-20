@@ -23,6 +23,13 @@ export const BASE_ENERGY_COST_RARE = 100;
 export const BASE_ENERGY_COST_EPIC = 100;
 export const BASE_ENERGY_COST_LEGENDARY = 200;
 
+// the base crafting duration to craft a specific rarity of craftable assets.
+export const BASE_CRAFTING_DURATION_COMMON = 60;
+export const BASE_CRAFTING_DURATION_UNCOMMON = 600;
+export const BASE_CRAFTING_DURATION_RARE = 14400;
+export const BASE_CRAFTING_DURATION_EPIC = 43200;
+export const BASE_CRAFTING_DURATION_LEGENDARY = 86400;
+
 // the required crafting level to craft a specific rarity of craftable assets.
 export const REQUIRED_CRAFTING_LEVEL_COMMON = 1;
 export const REQUIRED_CRAFTING_LEVEL_UNCOMMON = 1;
@@ -108,8 +115,8 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
                 assetEffectDuration: 'none'
             },
             craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
-            craftingDuration: 60,
-            baseEnergyRequired: 50,
+            craftingDuration: BASE_CRAFTING_DURATION_COMMON,
+            baseEnergyRequired: BASE_ENERGY_COST_COMMON,
             baseSuccessChance: 10000,
             baseCritChance: 0,
             obtainedPoints: 0,
@@ -148,8 +155,8 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
                 assetEffectDuration: 'none'
             },
             craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
-            craftingDuration: 600,
-            baseEnergyRequired: 50,
+            craftingDuration: BASE_CRAFTING_DURATION_UNCOMMON,
+            baseEnergyRequired: BASE_ENERGY_COST_UNCOMMON,
             baseSuccessChance: 10000,
             baseCritChance: 0,
             obtainedPoints: 0,
@@ -187,8 +194,8 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             },
             craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
             // 4 hours
-            craftingDuration: 14400,
-            baseEnergyRequired: 100,
+            craftingDuration: BASE_CRAFTING_DURATION_RARE,
+            baseEnergyRequired: BASE_ENERGY_COST_RARE,
             baseSuccessChance: 10000,
             baseCritChance: 0,
             obtainedPoints: 0,
@@ -232,8 +239,8 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             },
             craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
             // 12 hours
-            craftingDuration: 43200,
-            baseEnergyRequired: 100,
+            craftingDuration: BASE_CRAFTING_DURATION_EPIC,
+            baseEnergyRequired: BASE_ENERGY_COST_EPIC,
             baseSuccessChance: 10000,
             baseCritChance: 0,
             obtainedPoints: 0,
@@ -271,8 +278,8 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             },
             craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
             // 24 hours
-            craftingDuration: 86400,
-            baseEnergyRequired: 200,
+            craftingDuration: BASE_CRAFTING_DURATION_LEGENDARY,
+            baseEnergyRequired: BASE_ENERGY_COST_LEGENDARY,
             baseSuccessChance: 10000,
             baseCritChance: 0,
             obtainedPoints: 0,
@@ -321,8 +328,8 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
                 assetEffectDuration: 'none'
             },
             craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
-            craftingDuration: 60,
-            baseEnergyRequired: 50,
+            craftingDuration: BASE_CRAFTING_DURATION_COMMON,
+            baseEnergyRequired: BASE_ENERGY_COST_COMMON,
             baseSuccessChance: 10000,
             baseCritChance: 0,
             obtainedPoints: 0,
@@ -348,8 +355,8 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
                 assetEffectDuration: 'none'
             },
             craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
-            craftingDuration: 600,
-            baseEnergyRequired: 50,
+            craftingDuration: BASE_CRAFTING_DURATION_UNCOMMON,
+            baseEnergyRequired: BASE_ENERGY_COST_UNCOMMON,
             baseSuccessChance: 10000,
             baseCritChance: 0,
             obtainedPoints: 0,
@@ -376,8 +383,8 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             },
             craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
             // 12 hours
-            craftingDuration: 43200,
-            baseEnergyRequired: 100,
+            craftingDuration: BASE_CRAFTING_DURATION_EPIC,
+            baseEnergyRequired: BASE_ENERGY_COST_EPIC,
             baseSuccessChance: 10000,
             baseCritChance: 0,
             obtainedPoints: 0,
@@ -414,8 +421,8 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
                 assetEffectDuration: 'none'
             },
             craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
-            craftingDuration: 60,
-            baseEnergyRequired: 50,
+            craftingDuration: BASE_CRAFTING_DURATION_COMMON,
+            baseEnergyRequired: BASE_ENERGY_COST_COMMON,
             baseSuccessChance: 10000,
             baseCritChance: 0,
             obtainedPoints: 0,
@@ -452,8 +459,8 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
                 assetEffectDuration: 'none'
             },
             craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
-            craftingDuration: 600,
-            baseEnergyRequired: 50,
+            craftingDuration: BASE_CRAFTING_DURATION_UNCOMMON,
+            baseEnergyRequired: BASE_ENERGY_COST_UNCOMMON,
             baseSuccessChance: 10000,
             baseCritChance: 0,
             obtainedPoints: 0,
@@ -497,8 +504,8 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             },
             craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
             // 4 hours
-            craftingDuration: 14400,
-            baseEnergyRequired: 100,
+            craftingDuration: BASE_CRAFTING_DURATION_RARE,
+            baseEnergyRequired: BASE_ENERGY_COST_RARE,
             baseSuccessChance: 10000,
             baseCritChance: 0,
             obtainedPoints: 0,
@@ -548,8 +555,8 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             },
             craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
             // 4 hours
-            craftingDuration: 14400,
-            baseEnergyRequired: 100,
+            craftingDuration: BASE_CRAFTING_DURATION_RARE,
+            baseEnergyRequired: BASE_ENERGY_COST_RARE,
             baseSuccessChance: 10000,
             baseCritChance: 0,
             obtainedPoints: 0,
@@ -593,8 +600,8 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             },
             craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
             // 12 hours
-            craftingDuration: 43200,
-            baseEnergyRequired: 100,
+            craftingDuration: BASE_CRAFTING_DURATION_EPIC,
+            baseEnergyRequired: BASE_ENERGY_COST_EPIC,
             baseSuccessChance: 10000,
             baseCritChance: 0,
             obtainedPoints: 0,
@@ -644,8 +651,8 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             },
             craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
             // 24 hours
-            craftingDuration: 86400,
-            baseEnergyRequired: 200,
+            craftingDuration: BASE_CRAFTING_DURATION_LEGENDARY,
+            baseEnergyRequired: BASE_ENERGY_COST_LEGENDARY,
             baseSuccessChance: 10000,
             baseCritChance: 0,
             obtainedPoints: 0,
@@ -695,8 +702,8 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             },
             craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
             // 4 hours
-            craftingDuration: 14400,
-            baseEnergyRequired: 100,
+            craftingDuration: BASE_CRAFTING_DURATION_RARE,
+            baseEnergyRequired: BASE_ENERGY_COST_RARE,
             baseSuccessChance: 10000,
             baseCritChance: 0,
             obtainedPoints: 0,
@@ -740,8 +747,8 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             },
             craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
             // 12 hours
-            craftingDuration: 43200,
-            baseEnergyRequired: 100,
+            craftingDuration: BASE_CRAFTING_DURATION_EPIC,
+            baseEnergyRequired: BASE_ENERGY_COST_EPIC,
             baseSuccessChance: 10000,
             baseCritChance: 0,
             obtainedPoints: 0,
@@ -791,8 +798,8 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             },
             craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
             // 24 hours
-            craftingDuration: 86400,
-            baseEnergyRequired: 200,
+            craftingDuration: BASE_CRAFTING_DURATION_LEGENDARY,
+            baseEnergyRequired: BASE_ENERGY_COST_LEGENDARY,
             baseSuccessChance: 10000,
             baseCritChance: 0,
             obtainedPoints: 0,
