@@ -8,6 +8,15 @@ import { CraftingQueueModel, UserModel } from './db';
 import { resources } from './resource';
 
 /**
+ * this is the base amount of crafting slots users get per crafting line.
+ */
+export const BASE_CRAFTING_SLOTS = 1;
+/**
+ * this is the base amount of the craftable amount of an asset per crafting slot.
+ */
+export const BASE_CRAFTABLE_PER_SLOT = 10;
+
+/**
  * Creates a new Bull instance for crafting assets to be queued.
  */
 export const CRAFT_QUEUE = new Bull('craftQueue', {

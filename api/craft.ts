@@ -1,10 +1,12 @@
 import { AssetType } from '../models/asset';
-import { CraftableAsset, CraftingRecipe, CraftingRecipeRequiredAssetData, CraftingQueueStatus, CraftedAssetData } from "../models/craft";
+import { CraftableAsset, CraftingRecipe, CraftingRecipeRequiredAssetData, CraftingQueueStatus, CraftedAssetData, CraftingRecipeLine } from "../models/craft";
 import { Food } from '../models/food';
 import { Item, RestorationItem } from '../models/item';
 import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
+import { CraftingMasteryStats } from '../models/mastery';
+import { POIName } from '../models/poi';
 import { BarrenResource, ExtendedResource, ExtendedResourceOrigin, FruitResource, LiquidResource, OreResource, ResourceType, SimplifiedResource } from "../models/resource";
-import { CRAFT_QUEUE, CRAFTING_RECIPES, GET_CRAFTING_LEVEL } from '../utils/constants/craft';
+import { BASE_CRAFTABLE_PER_SLOT, BASE_CRAFTING_SLOTS, CRAFT_QUEUE, CRAFTING_RECIPES, GET_CRAFTING_LEVEL } from '../utils/constants/craft';
 import { LeaderboardModel, CraftingQueueModel, SquadLeaderboardModel, SquadModel, UserModel } from "../utils/constants/db";
 import { CARPENTING_MASTERY_LEVEL, COOKING_MASTERY_LEVEL, SMELTING_MASTERY_LEVEL, TAILORING_MASTERY_LEVEL } from "../utils/constants/mastery";
 import { getResource, getResourceWeight, resources } from "../utils/constants/resource";
@@ -107,6 +109,63 @@ export const craftAsset = async (
             }
         }
 
+        // fetch all ongoing OR claimable crafting queues because these occupy the user's crafting slots.
+        const craftingQueues = await CraftingQueueModel.find({ userId: user._id, status: { $in: [CraftingQueueStatus.ONGOING, CraftingQueueStatus.CLAIMABLE] } }).lean();
+
+        // check if the user is in the right POI to craft assets, and if they have reached the limit to craft the asset.
+        // for now, these are the requirements:
+        // 1. SYNTHESIZING: only available in Evergreen Village (POIName.EVERGREEN_VILLAGE)
+        if (craftingRecipe.craftingRecipeLine === CraftingRecipeLine.SYNTHESIZING) {
+            // if the user is not in Evergreen Village, return an error.
+            if (user.inGameData.currentPOI !== POIName.EVERGREEN_VILLAGE) {
+                console.log(`(craftAsset) User is not in Evergreen Village to craft ${assetToCraft}.`);
+
+                return {
+                    status: Status.ERROR,
+                    message: `(craftAsset) User is not in Evergreen Village to craft ${assetToCraft}.`
+                }
+            }
+
+            // check their crafting slots for this particular crafting line (via their mastery data).
+            const synthesizingMastery = user.inGameData?.mastery?.crafting?.synthesizing as CraftingMasteryStats ?? null;
+
+            let craftingSlots = 0;
+            let craftablePerSlot = 0;
+
+            // if synthesizingMastery doesn't exist, we will assume that they SHOULD have the base crafting slots and craftable per slot counts.
+            // no need to instantiate the synthesizingMastery object here, because it will be done at the end of the function.
+            if (!synthesizingMastery) {
+                craftingSlots = BASE_CRAFTING_SLOTS;
+                craftablePerSlot = BASE_CRAFTABLE_PER_SLOT;
+            } else {
+                // otherwise, fetch the `craftingSlots` and `craftablePerSlot` from the mastery data
+                craftingSlots = synthesizingMastery.craftingSlots;
+                craftablePerSlot = synthesizingMastery.craftablePerSlot;
+            }
+
+            // throw IF craftingQueues >= craftingSlots
+            if (craftingQueues.length >= craftingSlots) {
+                console.log(`(craftAsset) User has reached the crafting slots limit for synthesizing.`);
+
+                return {
+                    status: Status.ERROR,
+                    message: `(craftAsset) User has reached the crafting slots limit for synthesizing.`
+                }
+            }
+
+            // throw IF `amount` specified in params > craftablePerSlot
+            if (amount > craftablePerSlot) {
+                console.log(`(craftAsset) Amount exceeds the craftable per slot limit for synthesizing.`);
+
+                return {
+                    status: Status.ERROR,
+                    message: `(craftAsset) Amount exceeds the craftable per slot limit for synthesizing.`
+                }
+            }
+        } else {
+            // OTHER CRAFTING LINES' REQUIREMENTS TBD.
+        }
+
         // if `requiredXCookies` > 0, check if the user has enough xCookies to craft the asset
         if (craftingRecipe.requiredXCookies > 0) {
             if (user.inventory?.xCookieData.currentXCookies < craftingRecipe.requiredXCookies) {
@@ -115,18 +174,6 @@ export const craftAsset = async (
                 return {
                     status: Status.ERROR,
                     message: `(craftAsset) Not enough xCookies to craft ${amount}x ${assetToCraft}.`
-                }
-            }
-        }
-
-        // if `requiredLevel` !== none, check if the user has the required level to craft the asset
-        if (craftingRecipe.requiredLevel !== 'none') {
-            if (user.inGameData.level < craftingRecipe.requiredLevel) {
-                console.log(`(craftAsset) User level too low to craft ${assetToCraft}.`);
-
-                return {
-                    status: Status.ERROR,
-                    message: `(craftAsset) User level too low to craft ${assetToCraft}.`
                 }
             }
         }
@@ -665,7 +712,10 @@ export const craftAsset = async (
 
             userUpdateOperations.$set[`inGameData.mastery.crafting.${craftingRecipe.craftingRecipeLine.toLowerCase()}`] = {
                 level: GET_CRAFTING_LEVEL(craftingRecipe.craftingRecipeLine, craftingRecipe.earnedXP * amount),
-                xp: craftingRecipe.earnedXP * amount
+                xp: craftingRecipe.earnedXP * amount,
+                // instantiate craftingSlots AND craftablePerSlot to the base values.
+                craftingSlots: BASE_CRAFTING_SLOTS,
+                craftablePerSlot: BASE_CRAFTABLE_PER_SLOT
             }
         }
 
