@@ -117,7 +117,7 @@ export const craftAsset = async (
         // 1. SYNTHESIZING: only available in Evergreen Village (POIName.EVERGREEN_VILLAGE)
         if (craftingRecipe.craftingRecipeLine === CraftingRecipeLine.SYNTHESIZING) {
             // if the user is not in Evergreen Village, return an error.
-            if (user.inGameData.currentPOI !== POIName.EVERGREEN_VILLAGE) {
+            if (user.inGameData.location !== POIName.EVERGREEN_VILLAGE) {
                 console.log(`(craftAsset) User is not in Evergreen Village to craft ${assetToCraft}.`);
 
                 return {
