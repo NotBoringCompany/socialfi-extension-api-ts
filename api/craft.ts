@@ -137,8 +137,9 @@ export const craftAsset = async (
             craftablePerSlot = BASE_CRAFTABLE_PER_SLOT;
         } else {
             // otherwise, fetch the `craftingSlots` and `craftablePerSlot` from the mastery data
-            craftingSlots = masteryData.craftingSlots;
-            craftablePerSlot = masteryData.craftablePerSlot;
+            // again, just in case the mastery data does exist BUT the crafting slots/craftable per slot doesn't, we will assume that they SHOULD have the base crafting slots and craftable per slot counts.
+            craftingSlots = masteryData.craftingSlots ?? BASE_CRAFTING_SLOTS;
+            craftablePerSlot = masteryData.craftablePerSlot ?? BASE_CRAFTABLE_PER_SLOT;
         }
 
         console.log(`User ${user.twitterUsername} has ${craftingSlots} crafting slots and can craft ${craftablePerSlot} of ${assetToCraft} per slot for line ${craftingRecipe.craftingRecipeLine}.`);
@@ -824,6 +825,15 @@ export const craftAsset = async (
                     }
                 }
             }
+        }
+
+        // if the mastery data's `craftingSlots` or `craftablePerSlot` is undefined now, we set it.
+        if (userUpdateOperations.$set[`inGameData.mastery.crafting.${craftingRecipe.craftingRecipeLine.toLowerCase()}.craftingSlots`] === undefined) {
+            userUpdateOperations.$set[`inGameData.mastery.crafting.${craftingRecipe.craftingRecipeLine.toLowerCase()}.craftingSlots`] = BASE_CRAFTING_SLOTS;
+        }
+
+        if (userUpdateOperations.$set[`inGameData.mastery.crafting.${craftingRecipe.craftingRecipeLine.toLowerCase()}.craftablePerSlot`] === undefined) {
+            userUpdateOperations.$set[`inGameData.mastery.crafting.${craftingRecipe.craftingRecipeLine.toLowerCase()}.craftablePerSlot`] = BASE_CRAFTABLE_PER_SLOT;
         }
 
         // update the user's inventory, leaderboard, squad and squad leaderboard.
