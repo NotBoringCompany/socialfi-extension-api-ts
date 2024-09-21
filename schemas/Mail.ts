@@ -18,13 +18,13 @@ const ReceiverStatusSchema = new mongoose.Schema<ReceiverStatus>({
   _id: {
     type: String,
     required: true
-  }, 
+  },
   /**
    * Whether the mail has been read by the receiver.
    */
   isRead: {
-    type:StatusEmailSchema
-  }, 
+    type: StatusEmailSchema
+  },
   /**
    * Whether the mail has been claimed by the receiver.
    */
@@ -46,11 +46,11 @@ export const MailSchema = new mongoose.Schema<Mail>({
   },
   /**
    * The user ID of the receiver.
+   * This is an array of objects containing the receiver's ID and other metadata.
+   * for more info please check Mail Model 
+   * @file"../models/mail"
    */
-  receiverIds: {
-    type: ReceiverStatusSchema,
-    required: true
-  },
+  receiverIds: { type: [ReceiverStatusSchema], required: true },
   /**
    * The subject of the mail.
    */

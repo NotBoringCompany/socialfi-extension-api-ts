@@ -25,7 +25,7 @@ export interface Mail {
    * the strategies is to use the user id as the key and statuses as the state value
    * so we just need to create one email for each user
    */
-  receiverIds: ReceiverStatus;
+  receiverIds: ReceiverStatus[];
   /**
    * The subject of the mail.
    */

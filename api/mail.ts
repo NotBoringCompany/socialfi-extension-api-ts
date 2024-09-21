@@ -106,7 +106,9 @@ export const notifyUsers = async (
  * @param {Items[]} items - The items attached to the mail.
  * @param {MailType} type - The type of mail.
  * @returns {Promise<ReturnValue>}
- * @example notifySpecificUser(receivers, subject, body, items, type): Promise<ReturnValue> => {
+ * @example 
+ * const receivers = ["userId1", "userId2"];
+ * notifySpecificUser(receivers, subject, body, items, type): Promise<ReturnValue> => {
  *  return {
  *    status: Status.SUCCESS,
  *    message: "(notifySpecificUser) Successfully added new mail to database",
@@ -120,6 +122,10 @@ export const notifySpecificUser = async (
   items: Items[],
   type: MailType
 ): Promise<ReturnValue> => {
+  /**
+   * Map the receiver IDs to a ReceiverStatus array.
+   * Each receiver status is initialized with default values.
+   */
   const receiverList: ReceiverStatus[] = receivers.map((receiver) => ({
     _id: receiver,
     isRead: { status: false, timestamp: new Date() },
@@ -158,11 +164,18 @@ export const getAllMailsByUserId = async (userId: string): Promise<ReturnValue<M
   if (!userId) {
     return {
       status: Status.BAD_REQUEST,
-      message: '(getAllMailsByReceiverId) Receiver ID is required',
+      message: '(getAllMailsByUserId) Receiver ID is required',
     };
   }
 
   try {
+    /**
+     * This query retrieves all mail where the receiverId field matches the userId in the query.
+     * The receiverId field is an array of objects containing the receiver's ID and other metadata.
+     * The $elemMatch operator is used to match the first element of the array that matches the userId.
+     * 
+     * @see https://docs.mongodb.com/manual/reference/operator/query/elemMatch/
+     */
     const mails = await MailModel.find({ receiverId:{
       receiverIds: { 
         $elemMatch: { _id: userId } 
