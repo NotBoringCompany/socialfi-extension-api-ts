@@ -1,24 +1,43 @@
-import { Items, Mail, MailType } from "../models/mail";
-import { MailModel, UserModel } from "../utils/constants/db";
-import { ReturnValue, Status } from "../utils/retVal";
-import { ClientSession, startSession } from 'mongoose'
+import { Items, Mail, MailType, ReceiverStatus } from '../models/mail';
+import { MailModel, UserModel } from '../utils/constants/db';
+import { ReturnValue, Status } from '../utils/retVal';
+import { ClientSession, startSession } from 'mongoose';
 
-/**
- * Creates a new mail in the database.
- *
- * @param {string} receiverId - The user ID of the receiver.
- * @param {string} subject - The subject of the mail.
- * @param {string} body - The body of the mail.
- * @param {Items[]} items - The items attached to the mail.
- * @param {MailType} type - The type of mail.
- * @returns {Promise<ReturnValue>}
- * @example createMail(receiverId, subject, body, items, type): Promise<boolean> => {
- * return true
- */
-const createMail = async (receiverId: string, subject: string, body: string, items: Items[], type: MailType, session?: ClientSession): Promise<boolean> => {
+interface CreateMailParams {
+  /**
+   * The list of receivers of the mail.
+   * Each receiver is represented by an object with the following properties:
+   * - `_id`: the ID of the receiver user
+   * - `isRead`: whether the mail has been read by the receiver
+   * - `isClaimed`: whether the mail has been claimed by the receiver
+   * - `isDeleted`: whether the mail has been deleted by the receiver
+   */
+  receivers: ReceiverStatus[];
+  /**
+   * The subject of the mail
+   */
+  subject: string;
+  /**
+   * The body of the mail
+   */
+  body: string;
+  /**
+   * The items attached to the mail
+   */
+  items: Items[];
+  /**
+   * The type of mail
+   */
+  type: MailType;
+}
+
+const createMail = async (
+  { receivers, subject, body, items, type }: CreateMailParams,
+  session?: ClientSession
+): Promise<boolean> => {
   try {
     const newMail = new MailModel({
-      receiverId,
+      receiverIds: receivers,
       subject,
       body,
       items,
@@ -42,38 +61,35 @@ const createMail = async (receiverId: string, subject: string, body: string, ite
  * @param {MailType} type - The type of mail.
  * @returns {Promise<ReturnValue>}
  * @example notifyUsers(subject, body, items, type): Promise<ReturnValue> => {
- * return {
- *  status: Status.SUCCESS,
- *  message: "(notifyUsers) Successfully added new mail to database",
- }
+ *  return {
+ *    status: Status.SUCCESS,
+ *    message: "(notifyUsers) Successfully added new mail to database",
+ *  }
+ * }
  */
-export const notifyUsers = async (subject: string, body: string, items: Items[], type: MailType): Promise<ReturnValue> => {
-  // this session for the transaction to deal with the race condition
-  // see https://www.mongodb.com/docs/manual/core/transactions/
-  /**
-   * why whe are using sessions?
-   * because whe want to make sure all seed successful created
-   * in my opinion if race condition happens, and some email is failed or someone else it should be dosn't create email in the database
-   * so this approach it would be save for the race condition
-   */
-  const session = await startSession();
+export const notifyUsers = async (
+  subject: string,
+  body: string,
+  items: Items[],
+  type: MailType
+): Promise<ReturnValue> => {
   try {
     const users = await UserModel.find().lean();
-    await Promise.all(users.map((user) => createMail(user._id, subject, body, items, type, session)));
-    // if all users are successful, commit the transaction
-    await session.commitTransaction();
-    // end the session
-    await session.endSession();
+    const receiverIds: ReceiverStatus[] = users.map((user) => {
+      return {
+        _id: user._id,
+        isRead: { status: false, timestamp: new Date() },
+        isClaimed: { status: false, timestamp: new Date() },
+        isDeleted: { status: false, timestamp: new Date() },
+      };
+    });
 
+    await createMail({ receivers: receiverIds, subject, body, items, type });
     return {
       status: Status.SUCCESS,
-      message: "(notifyUsers) Successfully added new mail to database",
+      message: '(notifyUsers) Successfully added new mail to database',
     };
   } catch (err: any) {
-    // if any user fails, abort the transaction
-    await session.abortTransaction();
-    // end the session
-    await session.endSession();
     return {
       status: Status.ERROR,
       message: `(notifyUsers) Error: ${err.message}`,
@@ -82,26 +98,40 @@ export const notifyUsers = async (subject: string, body: string, items: Items[],
 };
 
 /**
- * Notify a specific user with a new mail.
+ * Notify specific users with a new mail.
  *
- * @param {string} receiverId - The user ID of the receiver.
+ * @param {string[]} receivers - The user IDs of the receivers.
  * @param {string} subject - The subject of the mail.
  * @param {string} body - The body of the mail.
  * @param {Items[]} items - The items attached to the mail.
  * @param {MailType} type - The type of mail.
  * @returns {Promise<ReturnValue>}
- * @example notifySpecificUser(receiverId, subject, body, items, type): Promise<ReturnValue> => {
- * return {
- *  status: Status.SUCCESS,
- *  message: "(notifySpecificUser) Successfully added new mail to database",
+ * @example notifySpecificUser(receivers, subject, body, items, type): Promise<ReturnValue> => {
+ *  return {
+ *    status: Status.SUCCESS,
+ *    message: "(notifySpecificUser) Successfully added new mail to database",
+ *  }
  * }
  */
-export const notifySpecificUser = async (receiverId: string, subject: string, body: string, items: Items[], type: MailType): Promise<ReturnValue> => {
+export const notifySpecificUser = async (
+  receivers: string[],
+  subject: string,
+  body: string,
+  items: Items[],
+  type: MailType
+): Promise<ReturnValue> => {
+  const receiverList: ReceiverStatus[] = receivers.map((receiver) => ({
+    _id: receiver,
+    isRead: { status: false, timestamp: new Date() },
+    isClaimed: { status: false, timestamp: new Date() },
+    isDeleted: { status: false, timestamp: new Date() },
+  }));
+
   try {
-    await createMail(receiverId, subject, body, items, type);
+    await createMail({ receivers: receiverList, subject, body, items, type });
     return {
       status: Status.SUCCESS,
-      message: "(notifySpecificUser) Successfully added new mail to database",
+      message: '(notifySpecificUser) Successfully added new mail to database',
     };
   } catch (err: any) {
     return {
@@ -111,46 +141,36 @@ export const notifySpecificUser = async (receiverId: string, subject: string, bo
   }
 };
 
-/**
- * Retrieves all mails sent to a specific user.
- *
- * @param {string} receiverId - The user ID of the receiver.
- * @returns {Promise<ReturnValue<Mail[]>>}
- * @example getAllMailsByReceiverId(receiverId): Promise<ReturnValue<Mail[]>> => ({
- *  status: Status.SUCCESS,
- *  message: "(getAllMailsByReceiverId) Successfully retrieved mails",
- *  data: [{
- *      _id: "123",
- *      receiverId: "123",
- *      subject: "test",
- *      body: "test",
- *      items: [],
- *      isRead: false,
- *      timestamp: "2022-01-01T00:00:00.000Z",
- *      type: MailType.OTHER }],
- * })
- */
-export const getAllMailsByReceiverId = async (receiverId: string): Promise<ReturnValue<Mail[]>> => {
-  // todo whe need put this same response error in middleware
-  if (!receiverId) {
+export const getAllMailsByUserId = async (userId: string): Promise<ReturnValue<Mail[]>> => {
+  /**
+   * Retrieves all mail by a specific user ID.
+   * 
+   * @param {string} userId - The ID of the user.
+   * @returns {Promise<ReturnValue<Mail[]>>} - A promise with a ReturnValue object which contains an array of mail objects.
+   * @example getAllMailsByUserId(userId): Promise<ReturnValue<Mail[]>> => {
+   *  return {
+   *    status: Status.SUCCESS,
+   *    message: '(getAllMailsByReceiverId) Successfully retrieved mails',
+   *    data: [Mail]
+   *  }
+   * }
+   */
+  if (!userId) {
     return {
       status: Status.BAD_REQUEST,
-      message: "(getAllMailsByReceiverId) Receiver ID is required",
+      message: '(getAllMailsByReceiverId) Receiver ID is required',
     };
   }
 
   try {
-    const mails = await MailModel.find({ receiverId }).lean();
-    if (!mails || mails.length === 0) {
-      return {
-        status: Status.BAD_REQUEST,
-        message: `(getAllMailsByReceiverId) No mails found for user ${receiverId}`,
-      };
-    }
-
+    const mails = await MailModel.find({ receiverId:{
+      receiverIds: { 
+        $elemMatch: { _id: userId } 
+      }
+    } }).lean();
     return {
       status: Status.SUCCESS,
-      message: "(getAllMailsByReceiverId) Successfully retrieved mails",
+      message: '(getAllMailsByReceiverId) Successfully retrieved mails',
       data: mails,
     };
   } catch (err: any) {
@@ -160,56 +180,3 @@ export const getAllMailsByReceiverId = async (receiverId: string): Promise<Retur
     };
   }
 };
-
-/**
- * user read mail
- * @param {string} receiverId - The user ID of the receiver.
- * @param {string} mailId - The ID of the mail to be read.
- * @returns {Promise<ReturnValue<Mail>>}
- * @example readMail(receiverId, mailId): Promise<ReturnValue<Mail>> => ({
- *  status: Status.SUCCESS,
- *  message: "(readMail) Successfully read mail",
- *  data: {
- *      _id: "123",
- *      receiverId: "123",
- *      subject: "test",
- *      body: "test",
- *      items: [],
- *      isRead: true,
- *      timestamp: "2022-01-01T00:00:00.000Z",
- *      type: MailType.OTHER },
- * })
- */
-export const readMail = async (receiverId: string, mailId: string): Promise<ReturnValue<Mail>> => {
-  if (!receiverId || !mailId) {
-    return {
-      status: Status.BAD_REQUEST,
-      message: "(readMail) Receiver ID and mail ID are required",
-    };
-  }
-
-  try {
-    const mail = await MailModel.findOne({ _id: mailId, receiverId });
-    if (!mail) {
-      return {
-        status: Status.BAD_REQUEST,
-        message: "(readMail) Mail not found",
-        data: null,
-      };
-    }
-
-    mail.isRead = true;
-    await mail.save();
-    return {
-      status: Status.SUCCESS,
-      message: "(readMail) Successfully read mail",
-      data: mail,
-    };
-  } catch (err: any) {
-    return {
-      status: Status.ERROR,
-      message: `(readMail) Error: ${err.message}`,
-      data: null,
-    };
-  }
-}

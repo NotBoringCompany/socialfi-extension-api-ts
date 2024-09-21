@@ -1,10 +1,44 @@
 import mongoose from "mongoose";
-import { Mail } from "../models/mail";
+import { Mail, ReceiverStatus } from "../models/mail";
 import { generateObjectId } from "../utils/crypto";
 
 /**
  * Mongoose schema for Mail model.
  */
+
+const StatusEmailSchema = new mongoose.Schema({
+  status: { type: Boolean, default: true },
+  timestamp: Date,
+});
+
+const ReceiverStatusSchema = new mongoose.Schema<ReceiverStatus>({
+  /**
+   * The ID of the receiver.
+   */
+  _id: {
+    type: String,
+    required: true
+  }, 
+  /**
+   * Whether the mail has been read by the receiver.
+   */
+  isRead: {
+    type:StatusEmailSchema
+  }, 
+  /**
+   * Whether the mail has been claimed by the receiver.
+   */
+  isClaimed: {
+    type: StatusEmailSchema
+  },
+  /**
+   * Whether the mail has been deleted by the receiver.
+   */
+  isDeleted: {
+    type: StatusEmailSchema
+  }
+})
+
 export const MailSchema = new mongoose.Schema<Mail>({
   _id: {
     type: String,
@@ -13,7 +47,10 @@ export const MailSchema = new mongoose.Schema<Mail>({
   /**
    * The user ID of the receiver.
    */
-  receiverId: String,
+  receiverIds: {
+    type: ReceiverStatusSchema,
+    required: true
+  },
   /**
    * The subject of the mail.
    */
@@ -27,20 +64,14 @@ export const MailSchema = new mongoose.Schema<Mail>({
    */
   body: String,
   /**
-   * Whether the mail has been read by the receiver.
-   */
-  isRead: {
-    type: Boolean,
-    default: false
-  },
-  /**
    * The timestamp when the mail was sent.
    */
   timestamp: Date,
   /**
    * The type of mail.
    * This is a string that defines the purpose of the mail.
-   * e.g. "gift","system"
+   * e.g. "Updates", "Rewards", "Notices", "Maintenance"
    */
   type: String
 })
+
