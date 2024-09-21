@@ -176,11 +176,13 @@ export const getAllMailsByUserId = async (userId: string): Promise<ReturnValue<M
      * 
      * @see https://docs.mongodb.com/manual/reference/operator/query/elemMatch/
      */
-    const mails = await MailModel.find({ receiverId:{
-      receiverIds: { 
-        $elemMatch: { _id: userId } 
+    const mails = await MailModel.find({
+      receiverId: {
+        receiverIds: {
+          $elemMatch: { _id: userId }
+        }
       }
-    } }).lean();
+    }).lean();
     return {
       status: Status.SUCCESS,
       message: '(getAllMailsByReceiverId) Successfully retrieved mails',
@@ -193,3 +195,165 @@ export const getAllMailsByUserId = async (userId: string): Promise<ReturnValue<M
     };
   }
 };
+
+/**
+ * Retrieves a mail by its ID.
+ * 
+ * @param {string} mailId - The ID of the mail to retrieve.
+ * @returns {Promise<ReturnValue<Mail>>} A promise that resolves with the retrieved mail.
+ */
+export const getEmailById = async (mailId: string): Promise<ReturnValue<Mail>> => {
+  try {
+    const mail = await MailModel.findOne({ _id: mailId }).lean();
+    return {
+      status: Status.SUCCESS,
+      message: '(getEmailById) Successfully retrieved mail',
+      data: mail,
+    };
+  } catch (err: any) {
+    return {
+      status: Status.ERROR,
+      message: `(getEmailById) Error: ${err.message}`,
+    };
+  }
+};
+
+/**
+ * Updates the status of a mail for a specific user.
+ * 
+ * @param {string} mailId - The ID of the mail to update.
+ * @param {string} userId - The ID of the user to update the mail status for.
+ * @param {('isRead' | 'isClaimed' | 'isDeleted')} mailStatusType - The type of status to update.
+ * @param {{ status: boolean, timestamp: Date }} status - The new status of the mail.
+ * @returns {Promise<ReturnValue>} A promise that resolves with the updated mail status.
+ * @example updateMailStatus(mailId, userId, mailStatusType, status): Promise<ReturnValue> => {
+ *  return {
+ *    status: Status.SUCCESS,
+ *    message: '(updateMailStatus) Successfully updated mail status',
+ *  }
+ }
+ */
+export const updateMailStatus = async (mailId: string, userId: string, mailStatusType: 'isRead' | 'isClaimed' | 'isDeleted', status: { status: boolean, timestamp: Date }): Promise<ReturnValue> => {
+  try {
+    await MailModel.updateOne({
+      _id: mailId,
+      "receiverIds._id": userId
+    }, {
+      $set: {
+        [`receiverIds.$.${mailStatusType}`]: status.status,
+        [`receiverIds.$.${mailStatusType}.timestamp`]: status.timestamp,
+      }
+    })
+  } catch (err: any) {
+    return {
+      status: Status.ERROR,
+      message: `(updateMailStatus) Error: ${err.message}`,
+    };
+  }
+}
+
+/**
+ * Sets all mail for a specific user to read.
+ * 
+ * @param {string} userId - The ID of the user to set all mail to read for.
+ * @returns {Promise<ReturnValue>} A promise that resolves with the updated mail status.
+ * @example readAllMails(userId): Promise<ReturnValue> => {
+ *  return {
+ *    status: Status.SUCCESS,
+ *    message: '(readAllMails) Successfully set all mail to read',
+ *  }
+ * }
+ */
+export const readAllMails = async (userId: string): Promise<ReturnValue> => {
+  try {
+    await MailModel.updateMany({
+      receiverIds: {
+        $elemMatch: { _id: userId }
+      }
+    }, {
+      $set: {
+        "receiverIds.$.isRead": true,
+        "receiverIds.$.isRead.timestamp": new Date(),
+      }
+    })
+  } catch (err: any) {
+    return {
+      status: Status.ERROR,
+      message: `(readAllMails) Error: ${err.message}`,
+    };
+  }
+}
+
+/**
+ * Sets all mail for a specific user to deleted.
+ * 
+ * @param {string} userId - The ID of the user to set all mail to deleted for.
+ * @returns {Promise<ReturnValue>} A promise that resolves with the updated mail status.
+ * @example deletedAllMails(userId): Promise<ReturnValue> => {
+ *  return {
+ *    status: Status.SUCCESS,
+ *    message: '(deletedAllMails) Successfully set all mail to deleted',
+ *  }
+ * }
+ */
+export const deletedAllMails = async (userId: string): Promise<ReturnValue> => {
+  try {
+    await MailModel.updateMany({
+      receiverIds: {
+        $elemMatch: { _id: userId }
+      }
+    }, {
+      $set: {
+        "receiverIds.$.isDeleted": true,
+        "receiverIds.$.isDeleted.timestamp": new Date(),
+      }
+    })
+  } catch (err: any) {
+    return {
+      status: Status.ERROR,
+      message: `(deletedAllMails) Error: ${err.message}`,
+    };
+  }
+}
+
+/**
+ * Claims all mail for a specific user.
+ * 
+ * @param {string} userId - The ID of the user to claim all mail for.
+ * @returns {Promise<ReturnValue>} A promise that resolves with the updated mail status.
+ * @example claimAllMails(userId): Promise<ReturnValue> => {
+ *  return {
+ *    status: Status.SUCCESS,
+ *    message: '(claimAllMails) Successfully claimed all mail',
+ *  }
+ * }
+ */
+export const claimAllMails = async (userId: string): Promise<ReturnValue> => {
+  try {
+    // todo need send the user items
+    await MailModel.updateMany({
+      receiverIds: {
+        $elemMatch: { _id: userId }
+      }
+    }, {
+      // when we claim the mail, we also update the read state to true, so that the user no needs to update the mail again.
+      $set: {
+        "receiverIds.$.isClaimed": true,
+        "receiverIds.$.isClaimed.timestamp": new Date(),
+        "receiverIds.$.isRead": true,
+        "receiverIds.$.isRead.timestamp": new Date(),
+      }
+    })
+  } catch (err: any) {
+    return {
+      status: Status.ERROR,
+      message: `(claimAllMails) Error: ${err.message}`,
+    };
+  }
+}
+/**
+ * Todo purge all mails should be automated
+ * update models timestamp startdate and enddate
+ * and delete all mails between those dates using cronjob
+ */
+export const purgeMails = async () => {}
