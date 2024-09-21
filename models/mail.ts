@@ -19,6 +19,11 @@ export interface Mail {
   _id: string;
   /**
    * The user ID of the receiver.
+   * this receiver ids, it is represented by user id, and a bit state isRead, isClaimed, isDeleted
+   * this approach is for optimization storage, for example if we have 1000 users, and we want to send mail to 1000 users,
+   * we can use this approach.
+   * the strategies is to use the user id as the key and statuses as the state value
+   * so we just need to create one email for each user
    */
   receiverIds: ReceiverStatus;
   /**
