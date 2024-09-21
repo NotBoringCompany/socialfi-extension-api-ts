@@ -82,6 +82,8 @@ CRAFT_QUEUE.process('completeCraft', async (job) => {
 export const REQUIRED_POI_FOR_CRAFTING_LINE = (craftingRecipeLine: CraftingRecipeLine): POIName => {
     switch (craftingRecipeLine) {
         case CraftingRecipeLine.SYNTHESIZING:
+            return POIName.HOME;
+        case CraftingRecipeLine.BLACKSMITHING:
             return POIName.EVERGREEN_VILLAGE;
         // by default just throw an error
         default:
