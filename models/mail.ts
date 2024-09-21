@@ -23,7 +23,7 @@ export interface Mail {
   type: MailType;
 }
 
-interface Items {
+export interface Items {
   name: ItemType;
   quantity: number;
 }
