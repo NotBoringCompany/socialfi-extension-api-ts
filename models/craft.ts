@@ -104,6 +104,9 @@ export interface CraftedAssetData {
 export enum CraftingRecipeLine {
     /** related to consumables or any basic assets */
     SYNTHESIZING = 'Synthesizing',
+    BLACKSMITHING = 'Blacksmithing',
+    COOKING = 'Cooking',
+    TAILORING = 'Tailoring'
 }
 
 /**
