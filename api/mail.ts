@@ -15,7 +15,7 @@ import { ClientSession, startSession } from 'mongoose'
  * @example createMail(receiverId, subject, body, items, type): Promise<boolean> => {
  * return true
  */
-const createMail = async (receiverId: string, subject: string, body: string, items: Items[], type: MailType, session: ClientSession): Promise<boolean> => {
+const createMail = async (receiverId: string, subject: string, body: string, items: Items[], type: MailType, session?: ClientSession): Promise<boolean> => {
   try {
     const newMail = new MailModel({
       receiverId,
@@ -53,7 +53,7 @@ export const notifyUsers = async (subject: string, body: string, items: Items[],
   /**
    * why whe are using sessions?
    * because whe want to make sure all seed successful created
-   * in my opinion if race condition happens, and some email is not created it should be dosn't create email in the database
+   * in my opinion if race condition happens, and some email is failed or someone else it should be dosn't create email in the database
    * so this approach it would be save for the race condition
    */
   const session = await startSession();
@@ -94,21 +94,16 @@ export const notifyUsers = async (subject: string, body: string, items: Items[],
  * return {
  *  status: Status.SUCCESS,
  *  message: "(notifySpecificUser) Successfully added new mail to database",
- }
+ * }
  */
 export const notifySpecificUser = async (receiverId: string, subject: string, body: string, items: Items[], type: MailType): Promise<ReturnValue> => {
-  const session = await startSession();
   try {
-    await createMail(receiverId, subject, body, items, type, session);
-    await session.commitTransaction();
-    await session.endSession();
+    await createMail(receiverId, subject, body, items, type);
     return {
       status: Status.SUCCESS,
       message: "(notifySpecificUser) Successfully added new mail to database",
     };
   } catch (err: any) {
-    await session.abortTransaction();
-    await session.endSession();
     return {
       status: Status.ERROR,
       message: `(notifySpecificUser) Error: ${err.message}`,
@@ -121,7 +116,7 @@ export const notifySpecificUser = async (receiverId: string, subject: string, bo
  *
  * @param {string} receiverId - The user ID of the receiver.
  * @returns {Promise<ReturnValue<Mail[]>>}
- * @example  {
+ * @example getAllMailsByReceiverId(receiverId): Promise<ReturnValue<Mail[]>> => ({
  *  status: Status.SUCCESS,
  *  message: "(getAllMailsByReceiverId) Successfully retrieved mails",
  *  data: [{
@@ -132,12 +127,27 @@ export const notifySpecificUser = async (receiverId: string, subject: string, bo
  *      items: [],
  *      isRead: false,
  *      timestamp: "2022-01-01T00:00:00.000Z",
- *      type: MailType.OTHER 
- * }],
+ *      type: MailType.OTHER }],
+ * })
  */
 export const getAllMailsByReceiverId = async (receiverId: string): Promise<ReturnValue<Mail[]>> => {
+  // todo whe need put this same response error in middleware
+  if (!receiverId) {
+    return {
+      status: Status.BAD_REQUEST,
+      message: "(getAllMailsByReceiverId) Receiver ID is required",
+    };
+  }
+
   try {
     const mails = await MailModel.find({ receiverId }).lean();
+    if (!mails || mails.length === 0) {
+      return {
+        status: Status.BAD_REQUEST,
+        message: `(getAllMailsByReceiverId) No mails found for user ${receiverId}`,
+      };
+    }
+
     return {
       status: Status.SUCCESS,
       message: "(getAllMailsByReceiverId) Successfully retrieved mails",
@@ -150,3 +160,56 @@ export const getAllMailsByReceiverId = async (receiverId: string): Promise<Retur
     };
   }
 };
+
+/**
+ * user read mail
+ * @param {string} receiverId - The user ID of the receiver.
+ * @param {string} mailId - The ID of the mail to be read.
+ * @returns {Promise<ReturnValue<Mail>>}
+ * @example readMail(receiverId, mailId): Promise<ReturnValue<Mail>> => ({
+ *  status: Status.SUCCESS,
+ *  message: "(readMail) Successfully read mail",
+ *  data: {
+ *      _id: "123",
+ *      receiverId: "123",
+ *      subject: "test",
+ *      body: "test",
+ *      items: [],
+ *      isRead: true,
+ *      timestamp: "2022-01-01T00:00:00.000Z",
+ *      type: MailType.OTHER },
+ * })
+ */
+export const readMail = async (receiverId: string, mailId: string): Promise<ReturnValue<Mail>> => {
+  if (!receiverId || !mailId) {
+    return {
+      status: Status.BAD_REQUEST,
+      message: "(readMail) Receiver ID and mail ID are required",
+    };
+  }
+
+  try {
+    const mail = await MailModel.findOne({ _id: mailId, receiverId });
+    if (!mail) {
+      return {
+        status: Status.BAD_REQUEST,
+        message: "(readMail) Mail not found",
+        data: null,
+      };
+    }
+
+    mail.isRead = true;
+    await mail.save();
+    return {
+      status: Status.SUCCESS,
+      message: "(readMail) Successfully read mail",
+      data: mail,
+    };
+  } catch (err: any) {
+    return {
+      status: Status.ERROR,
+      message: `(readMail) Error: ${err.message}`,
+      data: null,
+    };
+  }
+}
