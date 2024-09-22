@@ -196,10 +196,14 @@ export const getAllMailsByUserId = async (userId: string): Promise<ReturnValue<M
      * @see https://docs.mongodb.com/manual/reference/operator/query/elemMatch/
      */
     const mails = await MailModel.find({
-      receiverId: {
-        $elemMatch: { _id: userId, isDeleted: { status: false } }
+      receiverIds: {
+        $elemMatch: { _id: userId }
       }
     }).lean();
+     // remove email if user status is deleted true
+     mails.filter((mail) => {
+      return !mail.receiverIds.find((receiver) => receiver.isDeleted.status === false);
+    })
     return {
       status: Status.SUCCESS,
       message: '(getAllMailsByReceiverId) Successfully retrieved mails',
@@ -405,7 +409,7 @@ export const purgeMails = async (currentDate: Date): Promise<void> => {
  */
 export const getAllMailsByUserIdWithPagination = async (userId: string, page: number, limit: number): Promise<ReturnWithPagination<Mail[]>> => {
   try {
-    const totalMails = await MailModel.countDocuments({ receiverIds: { $elemMatch: { _id: userId, isDeleted: { status: false } } } });
+    const totalMails = await MailModel.countDocuments({ receiverIds: { $elemMatch: { _id: userId } } });
     const totalDocument = Math.ceil(totalMails / limit);
     const totalPage = Math.ceil(totalDocument / limit);
     const pageSize = limit;
@@ -413,11 +417,15 @@ export const getAllMailsByUserIdWithPagination = async (userId: string, page: nu
 
     const mails = await MailModel
       .find({
-        receiverIds: { $elemMatch: { _id: userId, isDeleted: { status: false } } }
+        receiverIds: { $elemMatch: { _id: userId } }
       })
       .skip((page - 1) * limit)
       .limit(limit)
       .lean();
+      // remove email if user status is deleted true
+      mails.filter((mail) => {
+        return !mail.receiverIds.find((receiver) => receiver.isDeleted.status === false);
+      })
     return {
       status: Status.SUCCESS,
       message: '(getAllMailsByUserIdWithPagination) Successfully retrieved mails',
