@@ -1,7 +1,8 @@
+import { FoodType } from '../models/food';
 import { Items, Mail, MailType, ReceiverStatus } from '../models/mail';
 import { MailModel, UserModel } from '../utils/constants/db';
 import { ReturnValue, ReturnWithPagination, Status } from '../utils/retVal';
-import { ClientSession, startSession } from 'mongoose';
+import { ClientSession } from 'mongoose';
 
 interface CreateMailParams {
   /**
@@ -42,12 +43,11 @@ const createMail = async (
       subject,
       body,
       items,
-      isRead: false,
       timestamp: new Date(),
-      type: MailType[type],
+      type,
       expiredDate,
     });
-    await newMail.save({ session });
+    await newMail.save();
     return true;
   } catch (err: any) {
     return false;
@@ -87,7 +87,13 @@ export const notifyUsers = async (
       };
     });
 
-    await createMail({ receivers: receiverIds, subject, body, items, type, expiredDate });
+    const isSuccess = await createMail({ receivers: receiverIds, subject, body, items, type, expiredDate });
+    if (!isSuccess) {
+      return {
+        status: Status.ERROR,
+        message: '(notifyUsers) Failed to add new mail to database',
+      };
+    }
     return {
       status: Status.SUCCESS,
       message: '(notifyUsers) Successfully added new mail to database',
@@ -349,9 +355,9 @@ export const claimAllMails = async (userId: string): Promise<ReturnValue> => {
     }, {
       // when user claim the mail, we also update the read state to true, so that the user no needs to update the mail again.
       $set: {
-        "receiverIds.$.isClaimed": true,
+        "receiverIds.$.isClaimed.status": true,
         "receiverIds.$.isClaimed.timestamp": new Date(),
-        "receiverIds.$.isRead": true,
+        "receiverIds.$.isRead.status": true,
         "receiverIds.$.isRead.timestamp": new Date(),
       }
     })
@@ -406,7 +412,15 @@ export const getAllMailsByUserIdWithPagination = async (userId: string, page: nu
     const isHasNext = page < totalPage;
 
     const mails = await MailModel
-      .find({ receiverIds: { $elemMatch: { _id: userId, isDeleted: false } } })
+      .find({
+        receiverIds: {
+          $elemMatch: {
+            _id: userId, isDeleted: {
+              status: false
+            }
+          }
+        }
+      })
       .skip((page - 1) * limit)
       .limit(limit)
       .lean();
@@ -429,3 +443,18 @@ export const getAllMailsByUserIdWithPagination = async (userId: string, page: nu
     };
   }
 }
+
+// const getmails = async () => {
+//   const mails = await MailModel.find().lean();
+//   console.log(mails);
+// }
+
+// // getmails().catch((err) => console.error(err)).then(() => console.log("done")).finally(() => process.exit(1))
+
+// notifyUsers("rewards mail test", "Lorem ipsum dolor sit amet, consectetur adipiscing elit", [{
+//   name: FoodType.BURGER,
+//   quantity: 1
+// }, {
+//   name: FoodType.CANDY,
+//   quantity: 1
+// }], MailType.REWARDS, new Date(Date.now() + 60 * 60 * 1000)).catch((err) => console.error(err)).then(() => console.log("done")).finally(() => getmails().catch((err) => console.error(err)).then(() => console.log("done")).finally(() => process.exit(1)))

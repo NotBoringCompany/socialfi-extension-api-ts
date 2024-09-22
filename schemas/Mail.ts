@@ -7,7 +7,7 @@ import { generateObjectId } from "../utils/crypto";
  */
 
 const StatusEmailSchema = new mongoose.Schema({
-  status: { type: Boolean, default: true },
+  status: { type: Boolean, default: false },
   timestamp: Date,
 });
 
@@ -39,6 +39,11 @@ const ReceiverStatusSchema = new mongoose.Schema<ReceiverStatus>({
   }
 })
 
+const ItemsSchema = new mongoose.Schema({
+  name: String,
+  quantity: Number
+})
+
 export const MailSchema = new mongoose.Schema<Mail>({
   _id: {
     type: String,
@@ -58,7 +63,7 @@ export const MailSchema = new mongoose.Schema<Mail>({
   /**
    * The items attached to the mail.
    */
-  items: [String],
+  items: { type: [ItemsSchema] },
   /**
    * The body of the mail.
    */

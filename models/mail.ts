@@ -1,3 +1,4 @@
+import { FoodType } from "./food";
 import { ItemType } from "./item";
 
 /**
@@ -54,7 +55,7 @@ export interface Mail {
 }
 
 export interface Items {
-  name: ItemType;
+  name: ItemType | FoodType ;
   quantity: number;
 }
 
