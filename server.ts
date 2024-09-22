@@ -92,7 +92,7 @@ app.use('/weekly_mvp_reward', checkMaintenance, weeklyMVPReward);
 app.use('/collab', checkMaintenance, collabV2);
 app.use('/web3', checkMaintenance, web3);
 app.use('/bans', checkMaintenance, ban);
-app.use('mail', checkMaintenance, mail);
+app.use('/mail', checkMaintenance, mail);
 
 app.listen(port, async () => {
     console.log(`Server running on port: ${port}`);
