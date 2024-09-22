@@ -405,7 +405,7 @@ export const purgeMails = async (currentDate: Date): Promise<void> => {
  */
 export const getAllMailsByUserIdWithPagination = async (userId: string, page: number, limit: number): Promise<ReturnWithPagination<Mail[]>> => {
   try {
-    const totalMails = await MailModel.countDocuments({ receiverIds: { $elemMatch: { _id: userId } } });
+    const totalMails = await MailModel.countDocuments({ receiverIds: { $elemMatch: { _id: userId, isDeleted: { status: false } } } });
     const totalDocument = Math.ceil(totalMails / limit);
     const totalPage = Math.ceil(totalDocument / limit);
     const pageSize = limit;
@@ -413,13 +413,7 @@ export const getAllMailsByUserIdWithPagination = async (userId: string, page: nu
 
     const mails = await MailModel
       .find({
-        receiverIds: {
-          $elemMatch: {
-            _id: userId, isDeleted: {
-              status: false
-            }
-          }
-        }
+        receiverIds: { $elemMatch: { _id: userId, isDeleted: { status: false } } }
       })
       .skip((page - 1) * limit)
       .limit(limit)
