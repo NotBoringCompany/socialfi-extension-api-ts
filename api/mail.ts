@@ -1,6 +1,6 @@
 import { Items, Mail, MailType, ReceiverStatus } from '../models/mail';
 import { MailModel, UserModel } from '../utils/constants/db';
-import { ReturnValue, Status } from '../utils/retVal';
+import { ReturnValue, ReturnWithPagination, Status } from '../utils/retVal';
 import { ClientSession, startSession } from 'mongoose';
 
 interface CreateMailParams {
@@ -375,3 +375,57 @@ export const purgeMails = async (currentDate: Date): Promise<void> => {
     console.error(`(purgeMails) Error: ${err.message}`);
   }
 };
+
+/** 
+ * get all email with pagination
+ * Gets all emails for a specific user with pagination.
+ * 
+ * @param {string} userId
+ * @param {number} page
+ * @param {number} limit
+ * @returns {Promise<ReturnWithPagination<Mail[]>>} A promise that resolves with the retrieved mails.
+ * @example getAllMailsByUserId(userId, page, limit): Promise<MailPaginationDTO> => {
+ *  return {
+ *    status: Status.SUCCESS,
+ *    message: '(getAllMailsByUserId) Successfully retrieved mails',
+ *    data: mails,
+ *    meta: {
+ *      totalPage:20,
+ *      pageSize: 5,
+ *      currentPage: 1,
+ *      totalDocument: 100
+ *    }
+ * }
+ */
+export const getAllMailsByUserIdWithPagination = async (userId: string, page: number, limit: number): Promise<ReturnWithPagination<Mail[]>> => {
+  try {
+    const totalMails = await MailModel.countDocuments({ receiverIds: { $elemMatch: { _id: userId } } });
+    const totalDocument = Math.ceil(totalMails / limit);
+    const totalPage = Math.ceil(totalDocument / limit);
+    const pageSize = limit;
+    const isHasNext = page < totalPage;
+
+    const mails = await MailModel
+      .find({ receiverIds: { $elemMatch: { _id: userId, isDeleted: false } } })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean();
+    return {
+      status: Status.SUCCESS,
+      message: '(getAllMailsByUserIdWithPagination) Successfully retrieved mails',
+      data: mails,
+      meta: {
+        totalPage,
+        pageSize,
+        currentPage: page,
+        totalDocument,
+        isHasNext
+      }
+    };
+  } catch (err: any) {
+    return {
+      status: Status.ERROR,
+      message: `(getAllMailsByUserIdWithPagination) Error: ${err.message}`,
+    };
+  }
+}

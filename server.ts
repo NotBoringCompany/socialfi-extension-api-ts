@@ -61,6 +61,7 @@ import collabV2 from './routes/collab_v2';
 import web3 from './routes/web3';
 import { schedulers } from './schedulers/schedulers';
 import ban from './routes/ban';
+import mail from './routes/mail';
 
 app.use('/auth/twitter', checkMaintenance, twitterAuth);
 app.use('/auth/discord', checkMaintenance, discordAuth);
@@ -91,6 +92,7 @@ app.use('/weekly_mvp_reward', checkMaintenance, weeklyMVPReward);
 app.use('/collab', checkMaintenance, collabV2);
 app.use('/web3', checkMaintenance, web3);
 app.use('/bans', checkMaintenance, ban);
+app.use('mail', checkMaintenance, mail);
 
 app.listen(port, async () => {
     console.log(`Server running on port: ${port}`);
