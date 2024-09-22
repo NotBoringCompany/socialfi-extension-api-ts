@@ -173,14 +173,13 @@ export const getAllMailsByUserId = async (userId: string): Promise<ReturnValue<M
      * This query retrieves all mail where the receiverId field matches the userId in the query.
      * The receiverId field is an array of objects containing the receiver's ID and other metadata.
      * The $elemMatch operator is used to match the first element of the array that matches the userId.
+     * The isDeleted field is also filtered to only include mails that are not deleted.
      * 
      * @see https://docs.mongodb.com/manual/reference/operator/query/elemMatch/
      */
     const mails = await MailModel.find({
       receiverId: {
-        receiverIds: {
-          $elemMatch: { _id: userId }
-        }
+        $elemMatch: { _id: userId, isDeleted: { status: false } }
       }
     }).lean();
     return {
@@ -336,7 +335,7 @@ export const claimAllMails = async (userId: string): Promise<ReturnValue> => {
         $elemMatch: { _id: userId }
       }
     }, {
-      // when we claim the mail, we also update the read state to true, so that the user no needs to update the mail again.
+      // when user claim the mail, we also update the read state to true, so that the user no needs to update the mail again.
       $set: {
         "receiverIds.$.isClaimed": true,
         "receiverIds.$.isClaimed.timestamp": new Date(),
@@ -356,4 +355,4 @@ export const claimAllMails = async (userId: string): Promise<ReturnValue> => {
  * update models timestamp startdate and enddate
  * and delete all mails between those dates using cronjob
  */
-export const purgeMails = async () => {}
+export const purgeMails = async () => { }
