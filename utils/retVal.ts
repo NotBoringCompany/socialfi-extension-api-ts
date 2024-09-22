@@ -30,7 +30,7 @@ export interface ReturnWithPagination<T = any> extends ReturnValue<T> {
         /** The current page number. This is the page number that the user is currently viewing. */
         currentPage: number
         /** The total number of documents. This is the total number of documents in the database. */
-        totalDocument: number
+        totalItems: number
         /** the document that has the next page */
         isHasNext: boolean
     }

@@ -419,13 +419,14 @@ export const getAllMailsByUserIdWithPagination = async (userId: string, page: nu
       .find({
         receiverIds: { $elemMatch: { _id: userId } }
       })
+      .sort({ timestamp: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
       .lean();
       // remove email if user status is deleted true
       mails.filter((mail) => {
         return !mail.receiverIds.find((receiver) => receiver.isDeleted.status === false);
-      })
+      });
     return {
       status: Status.SUCCESS,
       message: '(getAllMailsByUserIdWithPagination) Successfully retrieved mails',
@@ -434,7 +435,7 @@ export const getAllMailsByUserIdWithPagination = async (userId: string, page: nu
         totalPage,
         pageSize,
         currentPage: page,
-        totalDocument,
+        totalItems: totalMails,
         isHasNext
       }
     };
