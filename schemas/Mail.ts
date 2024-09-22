@@ -68,6 +68,11 @@ export const MailSchema = new mongoose.Schema<Mail>({
    */
   timestamp: Date,
   /**
+   * Whether the mail has expired.
+   * when the mail has expired, it will be deleted from the database
+   */
+  expiredDate: Date,
+  /**
    * The type of mail.
    * This is a string that defines the purpose of the mail.
    * e.g. "Updates", "Rewards", "Notices", "Maintenance"

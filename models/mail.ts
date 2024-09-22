@@ -43,6 +43,11 @@ export interface Mail {
    */
   timestamp: Date;
   /**
+   * the expired date of the mail
+   * the expired date is for cronjob to make easier to filter and purge the mail
+   */
+  expiredDate: Date;
+  /**
    * The type of mail.
    */
   type: MailType;

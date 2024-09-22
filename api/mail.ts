@@ -29,10 +29,11 @@ interface CreateMailParams {
    * The type of mail
    */
   type: MailType;
+  expiredDate?: Date;
 }
 
 const createMail = async (
-  { receivers, subject, body, items, type }: CreateMailParams,
+  { receivers, subject, body, items, type, expiredDate }: CreateMailParams,
   session?: ClientSession
 ): Promise<boolean> => {
   try {
@@ -44,6 +45,7 @@ const createMail = async (
       isRead: false,
       timestamp: new Date(),
       type: MailType[type],
+      expiredDate,
     });
     await newMail.save({ session });
     return true;
@@ -71,7 +73,8 @@ export const notifyUsers = async (
   subject: string,
   body: string,
   items: Items[],
-  type: MailType
+  type: MailType,
+  expiredDate?: Date
 ): Promise<ReturnValue> => {
   try {
     const users = await UserModel.find().lean();
@@ -84,7 +87,7 @@ export const notifyUsers = async (
       };
     });
 
-    await createMail({ receivers: receiverIds, subject, body, items, type });
+    await createMail({ receivers: receiverIds, subject, body, items, type, expiredDate });
     return {
       status: Status.SUCCESS,
       message: '(notifyUsers) Successfully added new mail to database',
@@ -120,7 +123,8 @@ export const notifySpecificUser = async (
   subject: string,
   body: string,
   items: Items[],
-  type: MailType
+  type: MailType,
+  expiredDate?: Date
 ): Promise<ReturnValue> => {
   /**
    * Map the receiver IDs to a ReceiverStatus array.
@@ -134,7 +138,7 @@ export const notifySpecificUser = async (
   }));
 
   try {
-    await createMail({ receivers: receiverList, subject, body, items, type });
+    await createMail({ receivers: receiverList, subject, body, items, type, expiredDate });
     return {
       status: Status.SUCCESS,
       message: '(notifySpecificUser) Successfully added new mail to database',
@@ -147,24 +151,32 @@ export const notifySpecificUser = async (
   }
 };
 
+/**
+ * Retrieves all mails sent to a specific user.
+ * 
+ * @param {string} userId - The ID of the user to retrieve mails for.
+ * @returns {Promise<ReturnValue<Mail[]>>} A promise that resolves with the retrieved mails.
+ * @example getAllMailsByUserId(userId): Promise<ReturnValue<Mail[]>> => {
+ *  return {
+ *    status: Status.SUCCESS,
+ *    message: '(getAllMailsByUserId) Successfully retrieved mails',
+ *    data: mails,
+ *  }
+ * }
+ */
 export const getAllMailsByUserId = async (userId: string): Promise<ReturnValue<Mail[]>> => {
-  /**
-   * Retrieves all mail by a specific user ID.
-   * 
-   * @param {string} userId - The ID of the user.
-   * @returns {Promise<ReturnValue<Mail[]>>} - A promise with a ReturnValue object which contains an array of mail objects.
-   * @example getAllMailsByUserId(userId): Promise<ReturnValue<Mail[]>> => {
-   *  return {
-   *    status: Status.SUCCESS,
-   *    message: '(getAllMailsByReceiverId) Successfully retrieved mails',
-   *    data: [Mail]
-   *  }
-   * }
-   */
   if (!userId) {
     return {
       status: Status.BAD_REQUEST,
       message: '(getAllMailsByUserId) Receiver ID is required',
+    };
+  }
+
+  const isUserExists = await UserModel.exists({ _id: userId });
+  if (!isUserExists) {
+    return {
+      status: Status.BAD_REQUEST,
+      message: '(getAllMailsByUserId) User not found',
     };
   }
 
@@ -351,8 +363,15 @@ export const claimAllMails = async (userId: string): Promise<ReturnValue> => {
   }
 }
 /**
- * Todo purge all mails should be automated
- * update models timestamp startdate and enddate
- * and delete all mails between those dates using cronjob
+ * Purges all expired mails.
+ * 
+ * @param {Date} currentDate - The current date.
+ * @returns {Promise<void>} A promise that resolves when the mails are purged.
  */
-export const purgeMails = async () => { }
+export const purgeMails = async (currentDate: Date): Promise<void> => {
+  try {
+    await MailModel.deleteMany({ expiredDate: { $lt: currentDate } });
+  } catch (err) {
+    console.error(`(purgeMails) Error: ${err.message}`);
+  }
+};
