@@ -1350,9 +1350,7 @@ export const claimCraftedAssets = async (
 export const cancelCraft = async (twitterId: string, craftingQueueId: string): Promise<ReturnValue> => {
     try {
         // get all current queues
-        const currentQueues = await CRAFT_QUEUE.getJobs(['waiting', 'active', 'delayed', 'failed', 'paused', 'completed']);
-
-        console.log(`(cancelCraft) currentQueues: ${JSON.stringify(currentQueues, null, 2)}`);
+        const currentQueues = await CRAFT_QUEUE.getJobs(['waiting', 'active']);
 
         // find the queue that matches the craftingQueueId
         const queueToRemove = currentQueues.find(queue => queue.data.craftingQueueId === craftingQueueId);
@@ -1439,6 +1437,8 @@ export const cancelCraft = async (twitterId: string, craftingQueueId: string): P
         const allRequiredAssets = [...requiredAssets, ...chosenFlexibleRequiredAssets];
 
         for (const asset of allRequiredAssets) {
+            console.log(`(cancelCraft) asset: ${JSON.stringify(asset, null, 2)}`);
+
             const requiredAssetCategory = asset.assetCategory;
             const requiredAssetType = asset.specificAsset;
             const requiredAssetAmount = asset.amount;
