@@ -131,6 +131,12 @@ export interface MailDTO {
   isClaimedAt: number;
   subject: string;
   body: string;
+  /**
+   * the attachments here for email with MailType Reward.
+   * we have name, type, and quantity.
+   * so we can use this attachments to store food and items to the user
+   * and for claiming method we create some endpoints to claim food and items with POST method mail/claim_mail and body {mailId, userId}
+   */
   attachments: Attachment[];
   timestamp: number;
   /**

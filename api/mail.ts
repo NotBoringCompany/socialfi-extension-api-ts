@@ -35,7 +35,7 @@ interface CreateMailParams {
 }
 
 const createMail = async (
-  { receivers, subject, body, attachments: items, type, expiredDate }: CreateMailParams,
+  { receivers, subject, body, attachments, type, expiredDate }: CreateMailParams,
   session?: ClientSession
 ): Promise<boolean> => {
   try {
@@ -43,7 +43,7 @@ const createMail = async (
       receiverIds: receivers,
       subject,
       body,
-      items,
+      attachments,
       timestamp: Math.floor(Date.now() / 1000),
       type,
       expiredDate,
@@ -238,6 +238,7 @@ export const getEmailById = async (mailId: string): Promise<ReturnValue<Mail>> =
 };
 
 /**
+ * @deprecated use readMail, claimMail, or deleteMail instead
  * Updates the status of a mail for a specific user.
  * 
  * @param {string} mailId - The ID of the mail to update.
