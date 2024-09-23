@@ -77,6 +77,27 @@ CRAFT_QUEUE.process('completeCraft', async (job) => {
 })
 
 /**
+ * Gets the cost in xCookies to cancel a pending crafting queue.
+ */
+export const CANCEL_CRAFT_X_COOKIES_COST = (craftedAssetRarity: CraftedAssetRarity): number => {
+    switch (craftedAssetRarity) {
+        case CraftedAssetRarity.COMMON:
+            return 2;
+        case CraftedAssetRarity.UNCOMMON:
+            return 5;
+        case CraftedAssetRarity.RARE:
+            return 15;
+        case CraftedAssetRarity.EPIC:
+            return 30;
+        case CraftedAssetRarity.LEGENDARY:
+            return 50;
+        default:
+            throw new Error(`(CANCEL_CRAFT_X_COOKIES_COST) Crafted asset rarity ${craftedAssetRarity} not found.`);
+    
+    }
+}
+
+/**
  * Gets the required POI the user needs to be in in order to craft or claim an asset of a specific crafting line.
  */
 export const REQUIRED_POI_FOR_CRAFTING_LINE = (craftingRecipeLine: CraftingRecipeLine): POIName => {

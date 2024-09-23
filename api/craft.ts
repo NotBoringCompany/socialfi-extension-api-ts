@@ -1,12 +1,12 @@
 import { AssetType } from '../models/asset';
-import { CraftableAsset, CraftingRecipe, CraftingRecipeRequiredAssetData, CraftingQueueStatus, CraftedAssetData, CraftingRecipeLine } from "../models/craft";
+import { CraftableAsset, CraftingRecipe, CraftingRecipeRequiredAssetData, CraftingQueueStatus, CraftedAssetData, CraftingRecipeLine, CraftingQueueUsedAssetData } from "../models/craft";
 import { Food } from '../models/food';
 import { Item, RestorationItem } from '../models/item';
 import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
 import { CraftingMasteryStats } from '../models/mastery';
 import { POIName } from '../models/poi';
 import { BarrenResource, ExtendedResource, ExtendedResourceOrigin, FruitResource, LiquidResource, OreResource, ResourceType, SimplifiedResource } from "../models/resource";
-import { BASE_CRAFTABLE_PER_SLOT, BASE_CRAFTING_SLOTS, CRAFT_QUEUE, CRAFTING_RECIPES, GET_CRAFTING_LEVEL, REQUIRED_POI_FOR_CRAFTING_LINE } from '../utils/constants/craft';
+import { BASE_CRAFTABLE_PER_SLOT, BASE_CRAFTING_SLOTS, CANCEL_CRAFT_X_COOKIES_COST, CRAFT_QUEUE, CRAFTING_RECIPES, GET_CRAFTING_LEVEL, REQUIRED_POI_FOR_CRAFTING_LINE } from '../utils/constants/craft';
 import { LeaderboardModel, CraftingQueueModel, SquadLeaderboardModel, SquadModel, UserModel } from "../utils/constants/db";
 import { CARPENTING_MASTERY_LEVEL, COOKING_MASTERY_LEVEL, SMELTING_MASTERY_LEVEL, TAILORING_MASTERY_LEVEL } from "../utils/constants/mastery";
 import { getResource, getResourceWeight, resources } from "../utils/constants/resource";
@@ -233,7 +233,8 @@ export const craftAsset = async (
         // this array will contain all of these flexible assets required, and for each `chosenFlexibleRequiredAsset`, if valid, we will deduct the `amount` of the respective `remainingFlexibleRequiredAsset`.
         // for example, let's use the example above (2 of A, 3 of B, 3 of C and 2 of D). to start with, one of the indexes of `remainingFlexibleRequiredAssets` will require 10 of ANY common resource.
         // after looping through A, the index's amount will be reduced by 2 to become 8. then, after looping through B, it will become 5, and so on.
-        // only when `remainingFlexibleRequiredAssets` contain 0 for ALL indexes will the user be considered to have inputted the correct amount of the flexible assets.
+        // when the amount reaches 0, the index will be spliced from the array.
+        // only when `remainingFlexibleRequiredAssets` end up being empty will we consider the user to have inputted the correct amount of the flexible assets.
         const remainingFlexibleRequiredAssets: CraftingRecipeRequiredAssetData[] = JSON.parse(
             JSON.stringify(
                 craftingRecipe.requiredAssetGroups[chosenAssetGroup].requiredAssets.filter(requiredAsset => requiredAsset.specificAsset === 'any')
@@ -1337,6 +1338,170 @@ export const claimCraftedAssets = async (
         return {
             status: Status.ERROR,
             message: `(claimCraftedAssets) ${err.message}`
+        }
+    }
+}
+
+/**
+ * Cancels a crafting queue. Only available when the asset(s) in the queue is/are still being crafted and not claimable yet.
+ * 
+ * Will cost xCookies. Energy will NOT be refunded.
+ */
+export const cancelCraft = async (twitterId: string, craftingQueueId: string): Promise<ReturnValue> => {
+    try {
+        // get all current queues
+        const currentQueues = await CRAFT_QUEUE.getWaiting();
+
+        // find the queue that matches the craftingQueueId
+        const queueToRemove = currentQueues.find(queue => queue.data.craftingQueueId === craftingQueueId);
+
+        if (!queueToRemove) {
+            return {
+                status: Status.ERROR,
+                message: `(cancelCraft) Crafting queue not found.`
+            }
+        }
+
+        // get the user data
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(cancelCraft) User not found.`
+            }
+        }
+
+        // get the crafting queue data
+        const craftingQueue = await CraftingQueueModel.findOne({ _id: craftingQueueId }).lean();
+
+        if (!craftingQueue) {
+            return {
+                status: Status.ERROR,
+                message: `(cancelCraft) Crafting queue not found.`
+            }
+        }
+
+        const rarity = CRAFTING_RECIPES.find(recipe => recipe.craftedAssetData.asset === craftingQueue.craftedAssetData.asset)?.craftedAssetData.assetRarity ?? null;
+        
+        if (!rarity) {
+            return {
+                status: Status.ERROR,
+                message: `(cancelCraft) Asset rarity not found.`
+            }
+        }
+
+        // check if the user has the xCookies required to remove the queue
+        const xCookiesRequired = CANCEL_CRAFT_X_COOKIES_COST(rarity);
+
+        if (user.inventory.xCookieData.currentXCookies < xCookiesRequired) {
+            return {
+                status: Status.ERROR,
+                message: `(cancelCraft) User does not have enough xCookies to cancel the crafting queue.`
+            }
+        }
+
+        const userUpdateOperations = {
+            $inc: {},
+            $pull: {},
+            $set: {},
+            $push: {}
+        }
+
+        // 1. reduce the user's xCookies
+        // 2. refund the assets used to craft the asset
+        // 3. remove the crafting queue from the database
+        // NOTE: energy will NOT be refunded.
+        userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = -xCookiesRequired;
+
+        // refund the assets
+        const { requiredAssets, chosenFlexibleRequiredAssets } = craftingQueue.assetsUsed;
+
+        // initialize $each on the user's inventory items, foods and/or resources.
+        if (!userUpdateOperations.$push['inventory.items']) {
+            userUpdateOperations.$push['inventory.items'] = { $each: [] }
+        }
+
+        if (!userUpdateOperations.$push['inventory.foods']) {
+            userUpdateOperations.$push['inventory.foods'] = { $each: [] }
+        }
+
+        if (!userUpdateOperations.$push['inventory.resources']) {
+            userUpdateOperations.$push['inventory.resources'] = { $each: [] }
+        }
+
+        // combine the required assets and the chosen flexible required assets
+        const allRequiredAssets = [...requiredAssets, ...chosenFlexibleRequiredAssets];
+
+        for (const asset of allRequiredAssets) {
+            const requiredAssetCategory = asset.assetCategory;
+            const requiredAssetType = asset.specificAsset;
+            const requiredAssetAmount = asset.amount;
+
+            if (requiredAssetCategory === 'resource') {
+                const resourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(resource => resource.type === requiredAssetType);
+
+                if (resourceIndex !== -1) {
+                    userUpdateOperations.$inc[`inventory.resources.${resourceIndex}.amount`] = requiredAssetAmount;
+                // if not found, create a new entry
+                } else {
+                    userUpdateOperations.$push['inventory.resources'].$each.push({
+                        type: requiredAssetType,
+                        amount: requiredAssetAmount,
+                        origin: ExtendedResourceOrigin.NORMAL
+                    })
+                }
+            } else if (requiredAssetCategory === 'food') {
+                const foodIndex = (user.inventory?.foods as Food[]).findIndex(food => food.type === requiredAssetType);
+
+                if (foodIndex !== -1) {
+                    userUpdateOperations.$inc[`inventory.foods.${foodIndex}.amount`] = requiredAssetAmount;
+                // if not found, create a new entry
+                } else {
+                    userUpdateOperations.$push['inventory.foods'].$each.push({
+                        type: requiredAssetType,
+                        amount: requiredAssetAmount
+                    })
+                }
+            } else if (requiredAssetCategory === 'item') {
+                const itemIndex = (user.inventory?.items as Item[]).findIndex(item => item.type === requiredAssetType);
+
+                if (itemIndex !== -1) {
+                    userUpdateOperations.$inc[`inventory.items.${itemIndex}.amount`] = requiredAssetAmount;
+                // if not found, create a new entry
+                } else {
+                    userUpdateOperations.$push['inventory.items'].$each.push({
+                        type: requiredAssetType,
+                        amount: requiredAssetAmount,
+                        totalAmountConsumed: 0,
+                        weeklyAmountConsumed: 0
+                    })
+                }
+            }
+        }
+
+        // do the operations (divide into $set and $inc, then $push and $pull) and remove the crafting queue
+        await Promise.all([
+            UserModel.updateOne({ twitterId }, {
+                $set: userUpdateOperations.$set,
+                $inc: userUpdateOperations.$inc
+            }),
+            queueToRemove.remove()
+        ]);
+
+        await UserModel.updateOne({ twitterId }, {
+            $push: userUpdateOperations.$push,
+            $pull: userUpdateOperations.$pull
+        });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(cancelCraft) Successfully cancelled the crafting queue. Assets have been refunded.`
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(cancelCraft) ${err.message}`
         }
     }
 }
