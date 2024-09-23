@@ -1,6 +1,6 @@
 import express from 'express';
 import { authMiddleware } from '../middlewares/auth';
-import { claimAllMails, getAllMailsByUserId, getAllMailsByUserIdWithPagination, getEmailById, notifySpecificUser, notifyUsers, readAllMails } from '../api/mail';
+import { claimAllMails, getAllMailsByUserId, getAllMailsByUserIdWithPagination, getEmailById, notifySpecificUser, notifyUsers, readAllMails, updateMailStatus } from '../api/mail';
 import { Status } from '../utils/retVal';
 import { validateRequestAuth } from '../utils/auth';
 const router = express.Router();
@@ -107,7 +107,7 @@ router.get('/get_mails/:userId',  async (req, res) => {
 // read mail 
 // todo check user has an email
 router.post('/read_mail',  async (req, res) => {
-  const { mailId } = req.body;
+  const { mailId, userId } = req.body;
   try {
 
     const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'read_mail');
@@ -119,7 +119,7 @@ router.post('/read_mail',  async (req, res) => {
         })
     }
 
-    const { status, message } = await getEmailById(mailId);
+    const { status, message } = await updateMailStatus(mailId, userId, 'isRead', { status: true, timestamp: Math.floor(Date.now() / 1000) });
     return res.status(status).json({
       status,
       message
@@ -134,7 +134,7 @@ router.post('/read_mail',  async (req, res) => {
 
 // delete mail
 router.post('/delete_mail',  async (req, res) => {
-  const { mailId } = req.body;
+  const { mailId, userId } = req.body;
   try {
 
     const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'delete_mail');
@@ -146,10 +146,37 @@ router.post('/delete_mail',  async (req, res) => {
         })
     }
 
-    const { status, message } = await getEmailById(mailId);
+    const { status, message } = await updateMailStatus(mailId, userId, 'isDeleted', { status: true, timestamp: Math.floor(Date.now() / 1000) });
     return res.status(status).json({
       status,
       message
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      status: 500,
+      message: err.message
+    })
+  }
+})
+
+// claim mail
+router.post('/claim_mail',  async (req, res) => {
+  const { mailId, userId } = req.body;
+  try {
+
+    const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'claim_mail');
+
+    if (validateStatus !== Status.SUCCESS) {
+        return res.status(validateStatus).json({
+            status: validateStatus,
+            message: validateMessage
+        })
+    }
+
+    const { status, message } = await updateMailStatus(mailId, userId, 'isClaimed', { status: true, timestamp: Math.floor(Date.now() / 1000) });
+    return res.status(status).json({
+      status,
+      message 
     });
   } catch (err: any) {
     return res.status(500).json({

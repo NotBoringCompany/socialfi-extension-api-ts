@@ -252,7 +252,7 @@ export const getEmailById = async (mailId: string): Promise<ReturnValue<Mail>> =
  *  }
  }
  */
-export const updateMailStatus = async (mailId: string, userId: string, mailStatusType: 'isRead' | 'isClaimed' | 'isDeleted', status: { status: boolean, timestamp: Date }): Promise<ReturnValue> => {
+export const updateMailStatus = async (mailId: string, userId: string, mailStatusType: 'isRead' | 'isClaimed' | 'isDeleted', status: { status: boolean, timestamp: number }): Promise<ReturnValue> => {
   try {
     await MailModel.updateOne({
       _id: mailId,
@@ -373,10 +373,10 @@ export const claimAllMails = async (userId: string): Promise<ReturnValue> => {
 /**
  * Purges all expired mails.
  * 
- * @param {Date} currentDate - The current date.
+ * @param {number} currentDate - The current date.
  * @returns {Promise<void>} A promise that resolves when the mails are purged.
  */
-export const purgeMails = async (currentDate: Date): Promise<void> => {
+export const purgeMails = async (currentDate: number): Promise<void> => {
   try {
     await MailModel.deleteMany({ expiredDate: { $lt: currentDate } });
   } catch (err) {
