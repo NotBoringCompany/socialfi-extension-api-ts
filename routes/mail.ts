@@ -89,11 +89,12 @@ router.get('/get_mails/:userId',  async (req, res) => {
         }
 
 
-    const { status, message, data } = await getAllMailsByUserIdWithPagination(userId, page, limit);
+    const { status, message, data, meta } = await getAllMailsByUserIdWithPagination(userId, page, limit);
     return res.status(status).json({
       status,
       message,
-      data
+      data,
+      meta
     });
   } catch (err: any) {
     return res.status(500).json({
