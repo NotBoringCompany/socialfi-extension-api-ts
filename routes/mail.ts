@@ -105,8 +105,8 @@ router.get('/get_mails/:userId',  async (req, res) => {
 
 // read mail 
 // todo check user has an email
-router.post('/read_mail/:mailId',  async (req, res) => {
-  const { mailId } = req.params;
+router.post('/read_mail',  async (req, res) => {
+  const { mailId } = req.body;
   try {
 
     const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'read_mail');
@@ -132,8 +132,8 @@ router.post('/read_mail/:mailId',  async (req, res) => {
 })
 
 // delete mail
-router.post('/delete_mail/:mailId',  async (req, res) => {
-  const { mailId } = req.params;
+router.post('/delete_mail',  async (req, res) => {
+  const { mailId } = req.body;
   try {
 
     const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'delete_mail');
@@ -159,8 +159,8 @@ router.post('/delete_mail/:mailId',  async (req, res) => {
 })
 
 // read all mail
-router.post('/read_all_mail/:userId',  async (req, res) => {
-  const { userId } = req.params;
+router.post('/read_all_mail',  async (req, res) => {
+  const { userId } = req.body;
   try {
 
     const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'read_all_mail');
@@ -186,8 +186,8 @@ router.post('/read_all_mail/:userId',  async (req, res) => {
 })
 
 // claim all mail
-router.post('/claim_all_mail/:userId',  async (req, res) => {
-  const { userId } = req.params;
+router.post('/claim_all_mail',  async (req, res) => {
+  const { userId } = req.body;
   try {
 
     const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'claim_all_mail');
@@ -213,8 +213,8 @@ router.post('/claim_all_mail/:userId',  async (req, res) => {
 })
 
 // delete all mail
-router.post('/delete_all_mail/:userId',  async (req, res) => {
-  const { userId } = req.params;
+router.post('/delete_all_mail',  async (req, res) => {
+  const { userId } = req.body;
   try {
 
     const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'delete_all_mail');
