@@ -1350,7 +1350,7 @@ export const claimCraftedAssets = async (
 export const cancelCraft = async (twitterId: string, craftingQueueId: string): Promise<ReturnValue> => {
     try {
         // get all current queues
-        const currentQueues = await CRAFT_QUEUE.getActive();
+        const currentQueues = await CRAFT_QUEUE.getJobs(['waiting', 'active', 'delayed', 'failed', 'paused', 'completed']);
 
         console.log(`(cancelCraft) currentQueues: ${JSON.stringify(currentQueues, null, 2)}`);
 
