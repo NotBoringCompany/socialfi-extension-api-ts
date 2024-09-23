@@ -1,7 +1,7 @@
 import express from 'express';
 import { Status } from '../utils/retVal';
 import { validateRequestAuth } from '../utils/auth';
-import { claimCraftedAssets, craftAsset, fetchCraftingQueues } from '../api/craft';
+import { cancelCraft, claimCraftedAssets, craftAsset, fetchCraftingQueues } from '../api/craft';
 import { CRAFTING_RECIPES } from '../utils/constants/craft';
 
 const router = express.Router();
@@ -33,6 +33,34 @@ router.post('/craft_asset', async (req, res) => {
         })
     }
 });
+
+router.post('/cancel_craft', async (req, res) => {
+    const { craftingQueueId } = req.body;
+
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'cancel_craft');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
+        const { status, message, data } = await cancelCraft(validateData?.twitterId, craftingQueueId);
+        
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
 
 router.get('/get_craftable_assets', async (req, res) => {
     try {
