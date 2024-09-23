@@ -366,7 +366,7 @@ export const readAllMails = async (userId: string): Promise<ReturnValue> => {
       }
     }, {
       $set: {
-        "receiverIds.$.isRead": true,
+        "receiverIds.$.isRead.status": true,
         "receiverIds.$.isRead.timestamp": Math.floor(Date.now() / 1000),
       }
     })
@@ -398,7 +398,7 @@ export const deletedAllMails = async (userId: string): Promise<ReturnValue> => {
       }
     }, {
       $set: {
-        "receiverIds.$.isDeleted": true,
+        "receiverIds.$.isDeleted.status": true,
         "receiverIds.$.isDeleted.timestamp": Math.floor(Date.now() / 1000),
       }
     })
