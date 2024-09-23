@@ -1446,12 +1446,15 @@ export const cancelCraft = async (twitterId: string, craftingQueueId: string): P
             if (requiredAssetCategory === 'resource') {
                 const resourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(resource => resource.type === requiredAssetType);
 
+                console.log(`(cancelCraft) resourceIndex: ${resourceIndex}`);
+
                 if (resourceIndex !== -1) {
                     userUpdateOperations.$inc[`inventory.resources.${resourceIndex}.amount`] = requiredAssetAmount;
                 // if not found, create a new entry
                 } else {
+                    const resource = resources.find(resource => resource.type === requiredAssetType);
                     userUpdateOperations.$push['inventory.resources'].$each.push({
-                        type: requiredAssetType,
+                        ...resource,
                         amount: requiredAssetAmount,
                         origin: ExtendedResourceOrigin.NORMAL
                     })
