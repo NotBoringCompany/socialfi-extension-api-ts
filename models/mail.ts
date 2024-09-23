@@ -8,7 +8,7 @@ import { ItemType } from "./item";
  * @property {string} receiverId - The user ID of the receiver.
  * @property {string} subject - The subject of the mail.
  * @property {string} body - The body of the mail.
- * @property {Items[]} items - The items attached to the mail.
+ * @property {Attachment[]} attachments - The attached data to the mail.
  * @property {boolean} isRead - Whether the mail has been read by the receiver.
  * @property {Date} timestamp - The timestamp when the mail was sent.
  * @property {MailType} type - The type of mail.
@@ -36,9 +36,9 @@ export interface Mail {
    */
   body: string;
   /**
-   * The items attached to the mail.
+   * The attached data to the mail.
    */
-  items: Items[];
+  attachments: Attachment[];
   /**
    * The timestamp when the mail was sent.
    */
@@ -54,8 +54,9 @@ export interface Mail {
   type: MailType;
 }
 
-export interface Items {
+export interface Attachment {
   name: ItemType | FoodType;
+  type: 'Food' | 'Item';
   quantity: number;
 }
 
@@ -115,7 +116,7 @@ export interface MailDTO {
   isClaimedAt: number;
   subject: string;
   body: string;
-  items: Items[];
+  attachments: Attachment[];
   timestamp: number;
   expiredDate: number;
   type: MailType;

@@ -39,8 +39,9 @@ const ReceiverStatusSchema = new mongoose.Schema<ReceiverStatus>({
   }
 })
 
-const ItemsSchema = new mongoose.Schema({
+const AttachmentSchema = new mongoose.Schema({
   name: String,
+  type: String,
   quantity: Number
 })
 
@@ -63,7 +64,7 @@ export const MailSchema = new mongoose.Schema<Mail>({
   /**
    * The items attached to the mail.
    */
-  items: { type: [ItemsSchema] },
+  attachments: { type: [AttachmentSchema] },
   /**
    * The body of the mail.
    */

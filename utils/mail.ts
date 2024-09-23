@@ -15,7 +15,7 @@ export const mailTransformHelper = (mails:Mail[], userId:string):MailDTO[]=>{
           isClaimedAt: receiver.isClaimed.timestamp,
           subject: mail.subject,
           body: mail.body,
-          items: mail.items,
+          attachments: mail.attachments,
           timestamp: mail.timestamp,
           expiredDate: mail.expiredDate,
           type: mail.type,

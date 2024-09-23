@@ -1,5 +1,5 @@
-import { FoodType } from '../models/food';
-import { Items, Mail, MailDTO, MailType, ReceiverStatus } from '../models/mail';
+import { Attachment, Mail, MailDTO, MailType, ReceiverStatus } from '../models/mail';
+import { UserInventory } from '../models/user';
 import { MailModel, UserModel } from '../utils/constants/db';
 import { mailTransformHelper } from '../utils/mail';
 import { ReturnValue, ReturnWithPagination, Status } from '../utils/retVal';
@@ -26,7 +26,7 @@ interface CreateMailParams {
   /**
    * The items attached to the mail
    */
-  items: Items[];
+  attachments: Attachment[];
   /**
    * The type of mail
    */
@@ -35,7 +35,7 @@ interface CreateMailParams {
 }
 
 const createMail = async (
-  { receivers, subject, body, items, type, expiredDate }: CreateMailParams,
+  { receivers, subject, body, attachments: items, type, expiredDate }: CreateMailParams,
   session?: ClientSession
 ): Promise<boolean> => {
   try {
@@ -60,7 +60,7 @@ const createMail = async (
  *
  * @param {string} subject - The subject of the mail.
  * @param {string} body - The body of the mail.
- * @param {Items[]} items - The items attached to the mail.
+ * @param {Attachment[]} items - The items attached to the mail.
  * @param {MailType} type - The type of mail.
  * @returns {Promise<ReturnValue>}
  * @example notifyUsers(subject, body, items, type): Promise<ReturnValue> => {
@@ -73,7 +73,7 @@ const createMail = async (
 export const notifyUsers = async (
   subject: string,
   body: string,
-  items: Items[],
+  items: Attachment[],
   type: MailType,
   expiredDate?: number
 ): Promise<ReturnValue> => {
@@ -88,7 +88,7 @@ export const notifyUsers = async (
       };
     });
 
-    const isSuccess = await createMail({ receivers: receiverIds, subject, body, items, type, expiredDate });
+    const isSuccess = await createMail({ receivers: receiverIds, subject, body, attachments: items, type, expiredDate });
     if (!isSuccess) {
       return {
         status: Status.ERROR,
@@ -113,7 +113,7 @@ export const notifyUsers = async (
  * @param {string[]} receivers - The user IDs of the receivers.
  * @param {string} subject - The subject of the mail.
  * @param {string} body - The body of the mail.
- * @param {Items[]} items - The items attached to the mail.
+ * @param {Attachment[]} items - The items attached to the mail.
  * @param {MailType} type - The type of mail.
  * @returns {Promise<ReturnValue>}
  * @example 
@@ -129,7 +129,7 @@ export const notifySpecificUser = async (
   receivers: string[],
   subject: string,
   body: string,
-  items: Items[],
+  items: Attachment[],
   type: MailType,
   expiredDate?: number
 ): Promise<ReturnValue> => {
@@ -145,7 +145,7 @@ export const notifySpecificUser = async (
   }));
 
   try {
-    await createMail({ receivers: receiverList, subject, body, items, type, expiredDate });
+    await createMail({ receivers: receiverList, subject, body, attachments: items, type, expiredDate });
     return {
       status: Status.SUCCESS,
       message: '(notifySpecificUser) Successfully added new mail to database',
@@ -254,6 +254,81 @@ export const getEmailById = async (mailId: string): Promise<ReturnValue<Mail>> =
  */
 export const updateMailStatus = async (mailId: string, userId: string, mailStatusType: 'isRead' | 'isClaimed' | 'isDeleted', status: { status: boolean, timestamp: number }): Promise<ReturnValue> => {
   try {
+    // Handle Claiming Function
+    if (mailStatusType === 'isClaimed') {
+      const userUpdateOperations = {
+        $pull: {},
+        $inc: {},
+        $set: {},
+        $push: {}
+      };
+
+      const user = await UserModel.findOne({ _id: userId }).lean();
+      if (!user) {
+        console.error(`(updateMailStatus) mailStatusType: ${mailStatusType}, user not found!`);
+        return {
+            status: Status.ERROR,
+            message: `(updateMailStatus) mailStatusType: ${mailStatusType}, user not found!`
+        }
+      }
+
+      const mail = await MailModel.findOne({ _id: mailId }).lean();
+      if (!mail) {
+        console.error(`(updateMailStatus) mailStatusType: ${mailStatusType}, mail with id ${mailId} not found!`);
+        return {
+            status: Status.ERROR,
+            message: `(updateMailStatus) mailStatusType: ${mailStatusType}, mail with id ${mailId} not found!`
+        }
+      }
+
+      if (mail.attachments.length > 0) {
+        // Destructure user Inventory data
+        const { foods, items} = user.inventory as UserInventory;
+        mail.attachments.forEach((attachment) => {
+          if (attachment.type === 'Food') {
+            // add the food to the user's inventory
+            const existingFoodIndex = foods.findIndex(f => f.type === attachment.name);
+
+            if (existingFoodIndex !== -1) {
+              userUpdateOperations.$inc[`inventory.foods.${existingFoodIndex}.amount`] = attachment.quantity;
+            } else {
+              userUpdateOperations.$push['inventory.foods'] = { type: attachment.name, amount: attachment.quantity };
+            }
+          } else if (attachment.type === 'Item') {
+            // add the item to the user's inventory
+            const existingItemIndex = items.findIndex(i => i.type === attachment.name);
+
+            if (existingItemIndex !== -1) {
+                userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = attachment.quantity;
+            } else {
+                userUpdateOperations.$push['inventory.items'] = {
+                    type: attachment.name,
+                    amount: attachment.quantity,
+                    totalAmountConsumed: 0,
+                    weeklyAmountConsumed: 0
+                };
+            }
+          }
+        });
+
+        // First, increment the amounts of existing items/foods
+        await UserModel.updateOne({ _id: userId }, {
+          $inc: userUpdateOperations.$inc
+        });
+
+        // Then, push new items/foods to the array
+        await UserModel.updateOne({ _id: userId }, {
+          $push: userUpdateOperations.$push
+        });
+      } else {
+        console.log(`(updateMailStatus) mail with id ${mailId} has no attachments to be claimed!`);
+        return {
+          status: Status.SUCCESS,
+          message: `(updateMailStatus) mail with id ${mailId} has no rewards to claim.`,
+        };
+      }     
+    }
+
     await MailModel.updateOne({
       _id: mailId,
       "receiverIds._id": userId
