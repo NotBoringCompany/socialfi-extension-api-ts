@@ -1352,8 +1352,12 @@ export const cancelCraft = async (twitterId: string, craftingQueueId: string): P
         // get all current queues
         const currentQueues = await CRAFT_QUEUE.getWaiting();
 
+        console.log(`(cancelCraft) currentQueues: ${JSON.stringify(currentQueues, null, 2)}`);
+
         // find the queue that matches the craftingQueueId
         const queueToRemove = currentQueues.find(queue => queue.data.craftingQueueId === craftingQueueId);
+
+        console.log(`(cancelCraft) queueToRemove: ${JSON.stringify(queueToRemove, null, 2)}`);
 
         if (!queueToRemove) {
             return {
@@ -1411,6 +1415,7 @@ export const cancelCraft = async (twitterId: string, craftingQueueId: string): P
         // 1. reduce the user's xCookies
         // 2. refund the assets used to craft the asset
         // 3. remove the crafting queue from the database
+        // 4. update the crafting queue status to `CANCELLED`
         // NOTE: energy will NOT be refunded.
         userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = -xCookiesRequired;
 
@@ -1485,6 +1490,11 @@ export const cancelCraft = async (twitterId: string, craftingQueueId: string): P
             UserModel.updateOne({ twitterId }, {
                 $set: userUpdateOperations.$set,
                 $inc: userUpdateOperations.$inc
+            }),
+            CraftingQueueModel.updateOne({ _id: craftingQueueId }, {
+                $set: {
+                    status: CraftingQueueStatus.CANCELLED
+                }
             }),
             queueToRemove.remove()
         ]);
