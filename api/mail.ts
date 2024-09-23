@@ -456,5 +456,3 @@ export const getAllMailsByUserIdWithPagination = async (userId: string, page: nu
 //   name: FoodType.CANDY,
 //   quantity: 1
 // }], MailType.REWARDS, Math.floor(Date.now() / 1000)).catch((err) => console.error(err)).then(() => console.log("done")).finally(() => getmails().catch((err) => console.error(err)).then(() => console.log("done")).finally(() => process.exit(1)))
-
-getAllMailsByUserIdWithPagination("c7c1d1f7f763929e2df1da9e371c63f9", 1, 5).then((res) => console.log(res)).finally(() => process.exit(1))
