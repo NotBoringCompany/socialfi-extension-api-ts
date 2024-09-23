@@ -22,6 +22,7 @@ export const addSquadLeaderboard = async (): Promise<void> => {
         // if no leaderboard exists, create a new one
         if (!latestSquadLeaderboard) {
             await SquadLeaderboardModel.create({
+                _id: generateObjectId(),
                 week: 1,
                 pointsData: []
             });
@@ -31,6 +32,7 @@ export const addSquadLeaderboard = async (): Promise<void> => {
             // otherwise, get the latest week number and create a new leaderboard
         } else {
             await SquadLeaderboardModel.create({
+                _id: generateObjectId(),
                 week: latestSquadLeaderboard.week + 1,
                 pointsData: []
             });
