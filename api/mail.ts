@@ -334,7 +334,7 @@ export const updateMailStatus = async (mailId: string, userId: string, mailStatu
       "receiverIds._id": userId
     }, {
       $set: {
-        [`receiverIds.$.${mailStatusType}`]: status.status,
+        [`receiverIds.$.${mailStatusType}.status`]: status.status,
         [`receiverIds.$.${mailStatusType}.timestamp`]: status.timestamp,
       }
     })
