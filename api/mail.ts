@@ -35,7 +35,7 @@ interface CreateMailParams {
 }
 
 const createMail = async (
-  { receivers, subject, body, attachments: items, type, expiredDate }: CreateMailParams,
+  { receivers, subject, body, attachments, type, expiredDate }: CreateMailParams,
   session?: ClientSession
 ): Promise<boolean> => {
   try {
@@ -43,7 +43,7 @@ const createMail = async (
       receiverIds: receivers,
       subject,
       body,
-      items,
+      attachments,
       timestamp: Math.floor(Date.now() / 1000),
       type,
       expiredDate,
