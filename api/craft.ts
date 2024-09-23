@@ -1411,6 +1411,7 @@ export const cancelCraft = async (twitterId: string, craftingQueueId: string): P
         // 1. reduce the user's xCookies
         // 2. refund the assets used to craft the asset
         // 3. remove the crafting queue from the database
+        // 4. update the crafting queue status to `CANCELLED`
         // NOTE: energy will NOT be refunded.
         userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = -xCookiesRequired;
 
@@ -1485,6 +1486,11 @@ export const cancelCraft = async (twitterId: string, craftingQueueId: string): P
             UserModel.updateOne({ twitterId }, {
                 $set: userUpdateOperations.$set,
                 $inc: userUpdateOperations.$inc
+            }),
+            CraftingQueueModel.updateOne({ _id: craftingQueueId }, {
+                $set: {
+                    status: CraftingQueueStatus.CANCELLED
+                }
             }),
             queueToRemove.remove()
         ]);
