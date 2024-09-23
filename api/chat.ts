@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { ChatModel, ChatroomModel, SquadModel, UserModel } from '../utils/constants/db';
+import { ChatModel, ChatroomModel, SquadModel, TEST_CONNECTION, UserModel } from '../utils/constants/db';
 import { ChatroomType } from '../models/chat';
 import { generateObjectId } from '../utils/crypto';
 import { dayjs } from '../utils/dayjs';
@@ -101,7 +101,7 @@ export const getChatMessages = async (query: ChatMessageQuery): Promise<ReturnVa
  * Sends a message to a chatroom.
  */
 export const sendMessage = async (senderId: string, chatroomId: string, message: string): Promise<ReturnValue> => {
-    const session = await mongoose.startSession();
+    const session = await TEST_CONNECTION.startSession();
     session.startTransaction();
 
     try {
@@ -119,14 +119,16 @@ export const sendMessage = async (senderId: string, chatroomId: string, message:
 
         // create a new chat messsage
         const chat = await ChatModel.create(
-            {
-                _id: generateObjectId(),
-                chatroom: chatroom._id,
-                receiver: null,
-                sender: senderId,
-                createdTimestamp: currentTimestamp,
-                message,
-            },
+            [
+                {
+                    _id: generateObjectId(),
+                    chatroom: chatroom._id,
+                    receiver: null,
+                    sender: user._id,
+                    createdTimestamp: currentTimestamp,
+                    message,
+                },
+            ],
             { session }
         );
 
@@ -281,7 +283,7 @@ export const joinChatroom = async (
     chatroomId: string,
     allowPrivate: boolean = false
 ): Promise<ReturnValue> => {
-    const session = await mongoose.startSession();
+    const session = await TEST_CONNECTION.startSession();
     session.startTransaction();
 
     try {
@@ -309,9 +311,11 @@ export const joinChatroom = async (
         await chatroom.updateOne(
             {
                 $push: {
-                    _id: generateObjectId(),
-                    user: user._id,
-                    joinedTimestamp: dayjs().unix(),
+                    participants: {
+                        _id: generateObjectId(),
+                        user: user._id,
+                        joinedTimestamp: dayjs().unix(),
+                    },
                 },
             },
             { session }

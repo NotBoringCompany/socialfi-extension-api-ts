@@ -63,6 +63,7 @@ import weeklyMVPReward from './routes/weeklyMVPReward';
 import collab from './routes/collab';
 import collabV2 from './routes/collab_v2';
 import web3 from './routes/web3';
+import chat from './routes/chat';
 import { schedulers } from './schedulers/schedulers';
 import { initializeSocket } from './configs/socket';
 
@@ -94,6 +95,7 @@ app.use('/squad_leaderboard', checkMaintenance, squadLeaderboard);
 app.use('/weekly_mvp_reward', checkMaintenance, weeklyMVPReward);
 app.use('/collab', checkMaintenance, collabV2);
 app.use('/web3', checkMaintenance, web3);
+app.use('/chat', checkMaintenance, chat);
 
 /** socket io listener */
 initializeSocket(server);
