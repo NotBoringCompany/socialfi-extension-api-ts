@@ -1352,8 +1352,12 @@ export const cancelCraft = async (twitterId: string, craftingQueueId: string): P
         // get all current queues
         const currentQueues = await CRAFT_QUEUE.getWaiting();
 
+        console.log(`(cancelCraft) currentQueues: ${JSON.stringify(currentQueues, null, 2)}`);
+
         // find the queue that matches the craftingQueueId
         const queueToRemove = currentQueues.find(queue => queue.data.craftingQueueId === craftingQueueId);
+
+        console.log(`(cancelCraft) queueToRemove: ${JSON.stringify(queueToRemove, null, 2)}`);
 
         if (!queueToRemove) {
             return {
