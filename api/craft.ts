@@ -1350,7 +1350,7 @@ export const claimCraftedAssets = async (
 export const cancelCraft = async (twitterId: string, craftingQueueId: string): Promise<ReturnValue> => {
     try {
         // get all current queues
-        const currentQueues = await CRAFT_QUEUE.getWaiting();
+        const currentQueues = await CRAFT_QUEUE.getActive();
 
         console.log(`(cancelCraft) currentQueues: ${JSON.stringify(currentQueues, null, 2)}`);
 
@@ -1485,7 +1485,10 @@ export const cancelCraft = async (twitterId: string, craftingQueueId: string): P
             }
         }
 
-        // do the operations (divide into $set and $inc, then $push and $pull) and remove the crafting queue
+        // remove the crafting queue
+        await queueToRemove.remove();
+
+        // do the operations (divide into $set and $inc, then $push and $pull)
         await Promise.all([
             UserModel.updateOne({ twitterId }, {
                 $set: userUpdateOperations.$set,
@@ -1495,8 +1498,7 @@ export const cancelCraft = async (twitterId: string, craftingQueueId: string): P
                 $set: {
                     status: CraftingQueueStatus.CANCELLED
                 }
-            }),
-            queueToRemove.remove()
+            })
         ]);
 
         await UserModel.updateOne({ twitterId }, {
