@@ -345,6 +345,138 @@ export const updateMailStatus = async (mailId: string, userId: string, mailStatu
     };
   }
 }
+// update mail isRead status in receiverIds
+export const readMail = async (mailId: string, userId: string): Promise<ReturnValue> => {
+  try {
+    await MailModel.updateOne({
+      _id: mailId,
+      "receiverIds._id": userId
+    }, {
+      $set: {
+        "receiverIds.$.isRead.status": true,
+        "receiverIds.$.isRead.timestamp": Math.floor(Date.now() / 1000),
+      }
+    })
+  } catch (err: any) {
+    return {
+      status: Status.ERROR,
+      message: `(readMail) Error: ${err.message}`,
+    };
+  }
+}
+
+// update mail isDeleted status in receiverIds
+export const deleteMail = async (mailId: string, userId: string): Promise<ReturnValue> => {
+  try {
+    await MailModel.updateOne({
+      _id: mailId,
+      "receiverIds._id": userId
+    }, {
+      $set: {
+        "receiverIds.$.isDeleted.status": true,
+        "receiverIds.$.isDeleted.timestamp": Math.floor(Date.now() / 1000),
+      }
+    })
+  } catch (err: any) {
+    return {
+      status: Status.ERROR,
+      message: `(deleteMail) Error: ${err.message}`,
+    };
+  }
+}
+
+// update mail Claim status in receiverIds
+export const claimMail = async (mailId: string, userId: string): Promise<ReturnValue> => {
+  try { 
+
+    const userUpdateOperations = {
+      $pull: {},
+      $inc: {},
+      $set: {},
+      $push: {}
+    };
+
+    const user = await UserModel.findOne({ _id: userId }).lean();
+    if (!user) {
+      console.error(`(updateMailStatus) mailStatusType: Claim, user not found!`);
+      return {
+          status: Status.ERROR,
+          message: `(updateMailStatus) mailStatusType: Claim, user not found!`
+      }
+    }
+
+    const mail = await MailModel.findOne({ _id: mailId }).lean();
+    if (!mail) {
+      console.error(`(updateMailStatus) mailStatusType: Claim, mail with id ${mailId} not found!`);
+      return {
+          status: Status.ERROR,
+          message: `(updateMailStatus) mailStatusType: Claim, mail with id ${mailId} not found!`
+      }
+    }
+
+    if (mail.attachments.length > 0) {
+      // Destructure user Inventory data
+      const { foods, items} = user.inventory as UserInventory;
+      mail.attachments.forEach((attachment) => {
+        if (attachment.type === 'Food') {
+          // add the food to the user's inventory
+          const existingFoodIndex = foods.findIndex(f => f.type === attachment.name);
+
+          if (existingFoodIndex !== -1) {
+            userUpdateOperations.$inc[`inventory.foods.${existingFoodIndex}.amount`] = attachment.quantity;
+          } else {
+            userUpdateOperations.$push['inventory.foods'] = { type: attachment.name, amount: attachment.quantity };
+          }
+        } else if (attachment.type === 'Item') {
+          // add the item to the user's inventory
+          const existingItemIndex = items.findIndex(i => i.type === attachment.name);
+
+          if (existingItemIndex !== -1) {
+              userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = attachment.quantity;
+          } else {
+              userUpdateOperations.$push['inventory.items'] = {
+                  type: attachment.name,
+                  amount: attachment.quantity,
+                  totalAmountConsumed: 0,
+                  weeklyAmountConsumed: 0
+              };
+          }
+        }
+      });
+
+      // First, increment the amounts of existing items/foods
+      await UserModel.updateOne({ _id: userId }, {
+        $inc: userUpdateOperations.$inc
+      });
+
+      // Then, push new items/foods to the array
+      await UserModel.updateOne({ _id: userId }, {
+        $push: userUpdateOperations.$push
+      });
+    } else {
+      console.log(`(updateMailStatus) mail with id ${mailId} has no attachments to be claimed!`);
+      return {
+        status: Status.SUCCESS,
+        message: `(updateMailStatus) mail with id ${mailId} has no rewards to claim.`,
+      };
+    }   
+
+    await MailModel.updateOne({
+      _id: mailId,
+      "receiverIds._id": userId
+    }, {
+      $set: {
+        "receiverIds.$.isClaimed.status": true,
+        "receiverIds.$.isClaimed.timestamp": Math.floor(Date.now() / 1000),
+      }
+    })  
+  } catch (err: any) {
+    return {
+      status: Status.ERROR,
+      message: `(claimMail) Error: ${err.message}`,
+    };
+  }
+}
 
 /**
  * Sets all mail for a specific user to read.
