@@ -1350,7 +1350,7 @@ export const claimCraftedAssets = async (
 export const cancelCraft = async (twitterId: string, craftingQueueId: string): Promise<ReturnValue> => {
     try {
         // get all current queues
-        const currentQueues = await CRAFT_QUEUE.getJobs(['waiting', 'active']);
+        const currentQueues = await CRAFT_QUEUE.getJobs(['waiting', 'active', 'delayed']);
 
         // find the queue that matches the craftingQueueId
         const queueToRemove = currentQueues.find(queue => queue.data.craftingQueueId === craftingQueueId);
