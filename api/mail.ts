@@ -238,6 +238,7 @@ export const getEmailById = async (mailId: string): Promise<ReturnValue<Mail>> =
 };
 
 /**
+ * @deprecated use readMail, claimMail, or deleteMail instead
  * Updates the status of a mail for a specific user.
  * 
  * @param {string} mailId - The ID of the mail to update.
