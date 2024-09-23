@@ -24,12 +24,14 @@ export const CraftingQueueSchema = new mongoose.Schema({
             assetCategory: String,
             specificAsset: String,
             requiredRarity: String,
-            amount: Number
+            amount: Number,
+            _id: false
         }],
         chosenFlexibleRequiredAssets: [{
             assetCategory: String,
             specificAsset: String,
-            amount: Number
+            amount: Number,
+            _id: false
         }],
         _id: false
     },
