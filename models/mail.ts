@@ -42,12 +42,12 @@ export interface Mail {
   /**
    * The timestamp when the mail was sent.
    */
-  timestamp: Date;
+  timestamp: number;
   /**
    * the expired date of the mail
    * the expired date is for cronjob to make easier to filter and purge the mail
    */
-  expiredDate: Date;
+  expiredDate: number;
   /**
    * The type of mail.
    */
@@ -55,7 +55,7 @@ export interface Mail {
 }
 
 export interface Items {
-  name: ItemType | FoodType ;
+  name: ItemType | FoodType;
   quantity: number;
 }
 
@@ -99,7 +99,24 @@ export interface ReceiverStatus {
   isDeleted: StatusEmail;
 }
 
-export interface StatusEmail  {
+export interface StatusEmail {
   status: boolean;
-  timestamp: Date;
+  timestamp: number;
+}
+
+export interface MailDTO {
+  _id: string;
+  userId: string;
+  isRead: boolean;
+  isReadAt: number;
+  isDeleted: boolean;
+  isDeletedAt: number;
+  isClaimed: boolean;
+  isClaimedAt: number;
+  subject: string;
+  body: string;
+  items: Items[];
+  timestamp: number;
+  expiredDate: number;
+  type: MailType;
 }

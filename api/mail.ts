@@ -1,6 +1,7 @@
 import { FoodType } from '../models/food';
-import { Items, Mail, MailType, ReceiverStatus } from '../models/mail';
+import { Items, Mail, MailDTO, MailType, ReceiverStatus } from '../models/mail';
 import { MailModel, UserModel } from '../utils/constants/db';
+import { mailTransformHelper } from '../utils/mail';
 import { ReturnValue, ReturnWithPagination, Status } from '../utils/retVal';
 import { ClientSession } from 'mongoose';
 
@@ -30,7 +31,7 @@ interface CreateMailParams {
    * The type of mail
    */
   type: MailType;
-  expiredDate?: Date;
+  expiredDate?: number;
 }
 
 const createMail = async (
@@ -43,7 +44,7 @@ const createMail = async (
       subject,
       body,
       items,
-      timestamp: new Date(),
+      timestamp: Math.floor(Date.now() / 1000),
       type,
       expiredDate,
     });
@@ -74,16 +75,16 @@ export const notifyUsers = async (
   body: string,
   items: Items[],
   type: MailType,
-  expiredDate?: Date
+  expiredDate?: number
 ): Promise<ReturnValue> => {
   try {
     const users = await UserModel.find().lean();
     const receiverIds: ReceiverStatus[] = users.map((user) => {
       return {
         _id: user._id,
-        isRead: { status: false, timestamp: new Date() },
-        isClaimed: { status: false, timestamp: new Date() },
-        isDeleted: { status: false, timestamp: new Date() },
+        isRead: { status: false, timestamp: Math.floor(Date.now() / 1000) },
+        isClaimed: { status: false, timestamp: Math.floor(Date.now() / 1000) },
+        isDeleted: { status: false, timestamp: Math.floor(Date.now() / 1000) },
       };
     });
 
@@ -130,7 +131,7 @@ export const notifySpecificUser = async (
   body: string,
   items: Items[],
   type: MailType,
-  expiredDate?: Date
+  expiredDate?: number
 ): Promise<ReturnValue> => {
   /**
    * Map the receiver IDs to a ReceiverStatus array.
@@ -138,9 +139,9 @@ export const notifySpecificUser = async (
    */
   const receiverList: ReceiverStatus[] = receivers.map((receiver) => ({
     _id: receiver,
-    isRead: { status: false, timestamp: new Date() },
-    isClaimed: { status: false, timestamp: new Date() },
-    isDeleted: { status: false, timestamp: new Date() },
+    isRead: { status: false, timestamp: Math.floor(Date.now() / 1000) },
+    isClaimed: { status: false, timestamp: Math.floor(Date.now() / 1000) },
+    isDeleted: { status: false, timestamp: Math.floor(Date.now() / 1000) },
   }));
 
   try {
@@ -170,7 +171,7 @@ export const notifySpecificUser = async (
  *  }
  * }
  */
-export const getAllMailsByUserId = async (userId: string): Promise<ReturnValue<Mail[]>> => {
+export const getAllMailsByUserId = async (userId: string): Promise<ReturnValue<MailDTO[]>> => {
   if (!userId) {
     return {
       status: Status.BAD_REQUEST,
@@ -200,14 +201,11 @@ export const getAllMailsByUserId = async (userId: string): Promise<ReturnValue<M
         $elemMatch: { _id: userId }
       }
     }).lean();
-     // remove email if user status is deleted true
-     mails.filter((mail) => {
-      return !mail.receiverIds.find((receiver) => receiver.isDeleted.status === false);
-    })
+   const transForm = mailTransformHelper(mails, userId);
     return {
       status: Status.SUCCESS,
       message: '(getAllMailsByReceiverId) Successfully retrieved mails',
-      data: mails,
+      data: transForm,
     };
   } catch (err: any) {
     return {
@@ -294,7 +292,7 @@ export const readAllMails = async (userId: string): Promise<ReturnValue> => {
     }, {
       $set: {
         "receiverIds.$.isRead": true,
-        "receiverIds.$.isRead.timestamp": new Date(),
+        "receiverIds.$.isRead.timestamp": Math.floor(Date.now() / 1000),
       }
     })
   } catch (err: any) {
@@ -326,7 +324,7 @@ export const deletedAllMails = async (userId: string): Promise<ReturnValue> => {
     }, {
       $set: {
         "receiverIds.$.isDeleted": true,
-        "receiverIds.$.isDeleted.timestamp": new Date(),
+        "receiverIds.$.isDeleted.timestamp": Math.floor(Date.now() / 1000),
       }
     })
   } catch (err: any) {
@@ -360,9 +358,9 @@ export const claimAllMails = async (userId: string): Promise<ReturnValue> => {
       // when user claim the mail, we also update the read state to true, so that the user no needs to update the mail again.
       $set: {
         "receiverIds.$.isClaimed.status": true,
-        "receiverIds.$.isClaimed.timestamp": new Date(),
+        "receiverIds.$.isClaimed.timestamp": Math.floor(Date.now() / 1000),
         "receiverIds.$.isRead.status": true,
-        "receiverIds.$.isRead.timestamp": new Date(),
+        "receiverIds.$.isRead.timestamp": Math.floor(Date.now() / 1000),
       }
     })
   } catch (err: any) {
@@ -407,7 +405,7 @@ export const purgeMails = async (currentDate: Date): Promise<void> => {
  *    }
  * }
  */
-export const getAllMailsByUserIdWithPagination = async (userId: string, page: number, limit: number): Promise<ReturnWithPagination<Mail[]>> => {
+export const getAllMailsByUserIdWithPagination = async (userId: string, page: number, limit: number): Promise<ReturnWithPagination<MailDTO[]>> => {
   try {
     const totalMails = await MailModel.countDocuments({ receiverIds: { $elemMatch: { _id: userId } } });
     const totalDocument = Math.ceil(totalMails / limit);
@@ -423,14 +421,11 @@ export const getAllMailsByUserIdWithPagination = async (userId: string, page: nu
       .skip((page - 1) * limit)
       .limit(limit)
       .lean();
-      // remove email if user status is deleted true
-      mails.filter((mail) => {
-        return !mail.receiverIds.find((receiver) => receiver.isDeleted.status === false);
-      });
+    const transForm = mailTransformHelper(mails, userId); 
     return {
       status: Status.SUCCESS,
       message: '(getAllMailsByUserIdWithPagination) Successfully retrieved mails',
-      data: mails,
+      data: transForm,
       meta: {
         totalPage,
         pageSize,
@@ -460,4 +455,6 @@ export const getAllMailsByUserIdWithPagination = async (userId: string, page: nu
 // }, {
 //   name: FoodType.CANDY,
 //   quantity: 1
-// }], MailType.REWARDS, new Date(Date.now() + 60 * 60 * 1000)).catch((err) => console.error(err)).then(() => console.log("done")).finally(() => getmails().catch((err) => console.error(err)).then(() => console.log("done")).finally(() => process.exit(1)))
+// }], MailType.REWARDS, Math.floor(Date.now() / 1000)).catch((err) => console.error(err)).then(() => console.log("done")).finally(() => getmails().catch((err) => console.error(err)).then(() => console.log("done")).finally(() => process.exit(1)))
+
+getAllMailsByUserIdWithPagination("c7c1d1f7f763929e2df1da9e371c63f9", 1, 5).then((res) => console.log(res)).finally(() => process.exit(1))

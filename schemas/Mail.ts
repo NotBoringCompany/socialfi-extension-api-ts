@@ -8,7 +8,7 @@ import { generateObjectId } from "../utils/crypto";
 
 const StatusEmailSchema = new mongoose.Schema({
   status: { type: Boolean, default: false },
-  timestamp: Date,
+  timestamp: Number,
 });
 
 const ReceiverStatusSchema = new mongoose.Schema<ReceiverStatus>({
@@ -71,12 +71,12 @@ export const MailSchema = new mongoose.Schema<Mail>({
   /**
    * The timestamp when the mail was sent.
    */
-  timestamp: Date,
+  timestamp: Number,
   /**
    * Whether the mail has expired.
    * when the mail has expired, it will be deleted from the database
    */
-  expiredDate: Date,
+  expiredDate: Number,
   /**
    * The type of mail.
    * This is a string that defines the purpose of the mail.
