@@ -32,7 +32,7 @@ export const craftAsset = async (
     // this `chosenFlexibleRequiredAssets` array should contain the additional assets that the user wants to submit to meet the "10 of any common resource" requirement.
     // this will then be checked against the required assets in the chosen asset group to see if the user has inputted the correct amount of the specific flexible assets.
     chosenFlexibleRequiredAssets: Array<{
-        asset: AssetType,
+        specificAsset: AssetType,
         assetCategory: 'resource' | 'food' | 'item',
         amount: number,
     }>
@@ -274,7 +274,7 @@ export const craftAsset = async (
                 const flexibleResources = chosenFlexibleRequiredAssets.filter(asset => asset.assetCategory === 'resource');
                 console.log(`(craftAsset) flexibleResources: ${JSON.stringify(flexibleResources)}`);
                 // fetch the resources data for the flexible resources and filter them by the required rarity.
-                const flexibleResourceData = flexibleResources.map(resource => resources.find(r => r.type === resource.asset)).filter(resource => resource?.rarity === requiredAssetRarity);
+                const flexibleResourceData = flexibleResources.map(resource => resources.find(r => r.type === resource.specificAsset)).filter(resource => resource?.rarity === requiredAssetRarity);
                 console.log(`(craftAsset) flexibleResourceData: ${JSON.stringify(flexibleResourceData)}`);
 
                 if (flexibleResourceData.length === 0) {
@@ -286,7 +286,7 @@ export const craftAsset = async (
 
                 const totalFlexibleResourceAmount = flexibleResources.reduce((acc, resource) => {
                     // Find the resource in flexibleResourceData
-                    const foundResource = flexibleResourceData.find(data => data.type === resource.asset);
+                    const foundResource = flexibleResourceData.find(data => data.type === resource.specificAsset);
                     // Only increment the amount if the resource exists in `flexibleResourceData`
                     if (foundResource) {
                         return acc + resource.amount;
@@ -316,7 +316,7 @@ export const craftAsset = async (
                 for (const flexibleResource of flexibleResourceData) {
                     const userResource = (user.inventory?.resources as ExtendedResource[]).find(resource => resource.type === flexibleResource.type);
 
-                    if (!userResource || userResource.amount < flexibleResources.find(resource => resource.asset === flexibleResource.type)?.amount) {
+                    if (!userResource || userResource.amount < flexibleResources.find(resource => resource.specificAsset === flexibleResource.type)?.amount) {
                         console.log(`(craftAsset) User doesn't own the correct amount of ${flexibleResource.type}`);
 
                         allFlexibleRequiredAssetsOwned = false;
@@ -352,10 +352,10 @@ export const craftAsset = async (
                 // for example, if 5 burgers, 2 candies and 3 juices are inputted,
                 // then the user needs to own AT LEAST 5 burgers, 2 candies and 3 juices.
                 for (const flexibleFood of flexibleFoods) {
-                    const userFood = (user.inventory?.foods as Food[]).find(food => food.type === flexibleFood.asset);
+                    const userFood = (user.inventory?.foods as Food[]).find(food => food.type === flexibleFood.specificAsset);
 
                     if (!userFood || userFood.amount < flexibleFood.amount) {
-                        console.log(`(craftAsset) User doesn't own the correct amount of ${flexibleFood.asset}`);
+                        console.log(`(craftAsset) User doesn't own the correct amount of ${flexibleFood.specificAsset}`);
 
                         allFlexibleRequiredAssetsOwned = false;
                         break;
@@ -390,10 +390,10 @@ export const craftAsset = async (
                 // for example, if 5 of item A and 5 of item B are inputted,
                 // then the user needs to own AT LEAST 5 of item A and 5 of item B.
                 for (const flexibleItem of flexibleItems) {
-                    const userItem = (user.inventory?.items as Item[]).find(item => item.type === flexibleItem.asset);
+                    const userItem = (user.inventory?.items as Item[]).find(item => item.type === flexibleItem.specificAsset);
 
                     if (!userItem || userItem.amount < flexibleItem.amount) {
-                        console.log(`(craftAsset) User doesn't own the correct amount of ${flexibleItem.asset}`);
+                        console.log(`(craftAsset) User doesn't own the correct amount of ${flexibleItem.specificAsset}`);
 
                         allFlexibleRequiredAssetsOwned = false;
                         break;
@@ -780,7 +780,7 @@ export const craftAsset = async (
         // for each flexible required asset, we will deduct the amount from the user's inventory.
         for (const flexibleRequiredAsset of chosenFlexibleRequiredAssets) {
             const flexibleAssetCategory = flexibleRequiredAsset.assetCategory;
-            const flexibleAssetType = flexibleRequiredAsset.asset;
+            const flexibleAssetType = flexibleRequiredAsset.specificAsset;
             const flexibleAssetAmount = flexibleRequiredAsset.amount;
 
             if (flexibleAssetCategory === 'resource') {
