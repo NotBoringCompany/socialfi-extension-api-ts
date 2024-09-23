@@ -104,20 +104,41 @@ export interface StatusEmail {
   status: boolean;
   timestamp: number;
 }
-
+/**
+ * the MailDTO is for return value
+ *  so this interface different from Mail models
+ * for information Mail is for database schema
+ * and if we return the value same as Mail interface
+ * it should be confused, because in the Mail interface we have recevierIds as an array of who user have received mail and configurations status.
+ * so that why we transform it to MailDTO when we return.
+ * for better information chek receiverIds in Mail interface
+ */
 export interface MailDTO {
+  // id here is for the mail id
   _id: string;
+  // userId here for user 
   userId: string;
   isRead: boolean;
   isReadAt: number;
+  // is deleted here for the user who delete the mail
+  // the fondation from the user who delete the mail, is not truly deleted the mail it just change the status
   isDeleted: boolean;
   isDeletedAt: number;
+  // is claimed here for the user who claim the mail with MailType Reward
+  // if user already claim the mail, isClaimed will be true and we can used it for prevent claim more than once
   isClaimed: boolean;
+  // isClaimedAt is for the timestamp when user claim the mail
   isClaimedAt: number;
   subject: string;
   body: string;
   attachments: Attachment[];
   timestamp: number;
+  /**
+   * in previous deleted status we already know the mail is not truly deleted right ?
+   * so thats why expiredDate is for cronjob to make easier to filter and purge the mail, if the mail is expired.
+   * now if cronjob see the expiredDate is less than current time, it will delete the mail
+   * this approach is for storage optimization, we just only need to create one email for each user
+   */
   expiredDate: number;
   type: MailType;
 }

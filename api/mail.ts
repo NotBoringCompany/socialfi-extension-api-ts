@@ -201,7 +201,7 @@ export const getAllMailsByUserId = async (userId: string): Promise<ReturnValue<M
         $elemMatch: { _id: userId }
       }
     }).lean();
-   const transForm = mailTransformHelper(mails, userId);
+    const transForm = mailTransformHelper(mails, userId);
     return {
       status: Status.SUCCESS,
       message: '(getAllMailsByReceiverId) Successfully retrieved mails',
@@ -267,8 +267,8 @@ export const updateMailStatus = async (mailId: string, userId: string, mailStatu
       if (!user) {
         console.error(`(updateMailStatus) mailStatusType: ${mailStatusType}, user not found!`);
         return {
-            status: Status.ERROR,
-            message: `(updateMailStatus) mailStatusType: ${mailStatusType}, user not found!`
+          status: Status.ERROR,
+          message: `(updateMailStatus) mailStatusType: ${mailStatusType}, user not found!`
         }
       }
 
@@ -276,14 +276,14 @@ export const updateMailStatus = async (mailId: string, userId: string, mailStatu
       if (!mail) {
         console.error(`(updateMailStatus) mailStatusType: ${mailStatusType}, mail with id ${mailId} not found!`);
         return {
-            status: Status.ERROR,
-            message: `(updateMailStatus) mailStatusType: ${mailStatusType}, mail with id ${mailId} not found!`
+          status: Status.ERROR,
+          message: `(updateMailStatus) mailStatusType: ${mailStatusType}, mail with id ${mailId} not found!`
         }
       }
 
       if (mail.attachments.length > 0) {
         // Destructure user Inventory data
-        const { foods, items} = user.inventory as UserInventory;
+        const { foods, items } = user.inventory as UserInventory;
         mail.attachments.forEach((attachment) => {
           if (attachment.type === 'Food') {
             // add the food to the user's inventory
@@ -299,14 +299,14 @@ export const updateMailStatus = async (mailId: string, userId: string, mailStatu
             const existingItemIndex = items.findIndex(i => i.type === attachment.name);
 
             if (existingItemIndex !== -1) {
-                userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = attachment.quantity;
+              userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = attachment.quantity;
             } else {
-                userUpdateOperations.$push['inventory.items'] = {
-                    type: attachment.name,
-                    amount: attachment.quantity,
-                    totalAmountConsumed: 0,
-                    weeklyAmountConsumed: 0
-                };
+              userUpdateOperations.$push['inventory.items'] = {
+                type: attachment.name,
+                amount: attachment.quantity,
+                totalAmountConsumed: 0,
+                weeklyAmountConsumed: 0
+              };
             }
           }
         });
@@ -326,12 +326,12 @@ export const updateMailStatus = async (mailId: string, userId: string, mailStatu
           status: Status.SUCCESS,
           message: `(updateMailStatus) mail with id ${mailId} has no rewards to claim.`,
         };
-      }     
+      }
     }
 
     await MailModel.updateOne({
-      _id: mailId,
-      "receiverIds._id": userId
+      _id: mailId, 
+      receiverIds: { $elemMatch: { _id: userId } } 
     }, {
       $set: {
         [`receiverIds.$.${mailStatusType}.status`]: status.status,
@@ -349,14 +349,18 @@ export const updateMailStatus = async (mailId: string, userId: string, mailStatu
 export const readMail = async (mailId: string, userId: string): Promise<ReturnValue> => {
   try {
     await MailModel.updateOne({
-      _id: mailId,
-      "receiverIds._id": userId
+      _id: mailId, 
+      receiverIds: { $elemMatch: { _id: userId } } 
     }, {
       $set: {
         "receiverIds.$.isRead.status": true,
         "receiverIds.$.isRead.timestamp": Math.floor(Date.now() / 1000),
       }
     })
+    return {
+      status: Status.SUCCESS,
+      message: `(readMail) Successfully updated mail status`,
+    }
   } catch (err: any) {
     return {
       status: Status.ERROR,
@@ -369,14 +373,18 @@ export const readMail = async (mailId: string, userId: string): Promise<ReturnVa
 export const deleteMail = async (mailId: string, userId: string): Promise<ReturnValue> => {
   try {
     await MailModel.updateOne({
-      _id: mailId,
-      "receiverIds._id": userId
+      _id: mailId, 
+      receiverIds: { $elemMatch: { _id: userId } } 
     }, {
       $set: {
         "receiverIds.$.isDeleted.status": true,
         "receiverIds.$.isDeleted.timestamp": Math.floor(Date.now() / 1000),
       }
     })
+    return {
+      status: Status.SUCCESS,
+      message: `(deleteMail) Successfully updated mail status`,
+    }
   } catch (err: any) {
     return {
       status: Status.ERROR,
@@ -387,7 +395,7 @@ export const deleteMail = async (mailId: string, userId: string): Promise<Return
 
 // update mail Claim status in receiverIds
 export const claimMail = async (mailId: string, userId: string): Promise<ReturnValue> => {
-  try { 
+  try {
 
     const userUpdateOperations = {
       $pull: {},
@@ -400,8 +408,8 @@ export const claimMail = async (mailId: string, userId: string): Promise<ReturnV
     if (!user) {
       console.error(`(updateMailStatus) mailStatusType: Claim, user not found!`);
       return {
-          status: Status.ERROR,
-          message: `(updateMailStatus) mailStatusType: Claim, user not found!`
+        status: Status.ERROR,
+        message: `(updateMailStatus) mailStatusType: Claim, user not found!`
       }
     }
 
@@ -409,14 +417,14 @@ export const claimMail = async (mailId: string, userId: string): Promise<ReturnV
     if (!mail) {
       console.error(`(updateMailStatus) mailStatusType: Claim, mail with id ${mailId} not found!`);
       return {
-          status: Status.ERROR,
-          message: `(updateMailStatus) mailStatusType: Claim, mail with id ${mailId} not found!`
+        status: Status.ERROR,
+        message: `(updateMailStatus) mailStatusType: Claim, mail with id ${mailId} not found!`
       }
     }
 
     if (mail.attachments.length > 0) {
       // Destructure user Inventory data
-      const { foods, items} = user.inventory as UserInventory;
+      const { foods, items } = user.inventory as UserInventory;
       mail.attachments.forEach((attachment) => {
         if (attachment.type === 'Food') {
           // add the food to the user's inventory
@@ -432,14 +440,14 @@ export const claimMail = async (mailId: string, userId: string): Promise<ReturnV
           const existingItemIndex = items.findIndex(i => i.type === attachment.name);
 
           if (existingItemIndex !== -1) {
-              userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = attachment.quantity;
+            userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = attachment.quantity;
           } else {
-              userUpdateOperations.$push['inventory.items'] = {
-                  type: attachment.name,
-                  amount: attachment.quantity,
-                  totalAmountConsumed: 0,
-                  weeklyAmountConsumed: 0
-              };
+            userUpdateOperations.$push['inventory.items'] = {
+              type: attachment.name,
+              amount: attachment.quantity,
+              totalAmountConsumed: 0,
+              weeklyAmountConsumed: 0
+            };
           }
         }
       });
@@ -453,23 +461,30 @@ export const claimMail = async (mailId: string, userId: string): Promise<ReturnV
       await UserModel.updateOne({ _id: userId }, {
         $push: userUpdateOperations.$push
       });
+
+      await MailModel.updateOne({ 
+        _id: mailId, 
+        receiverIds: { $elemMatch: { _id: userId } } 
+      }, {
+        $set: {
+          "receiverIds.$.isClaimed.status": true,
+          "receiverIds.$.isClaimed.timestamp": Math.floor(Date.now() / 1000),
+        }
+      })
+
+      return {
+        status: Status.SUCCESS,
+        message: `(claimMail) Successfully claimed mail`,
+      }
+
     } else {
       console.log(`(updateMailStatus) mail with id ${mailId} has no attachments to be claimed!`);
       return {
         status: Status.SUCCESS,
         message: `(updateMailStatus) mail with id ${mailId} has no rewards to claim.`,
       };
-    }   
+    }
 
-    await MailModel.updateOne({
-      _id: mailId,
-      "receiverIds._id": userId
-    }, {
-      $set: {
-        "receiverIds.$.isClaimed.status": true,
-        "receiverIds.$.isClaimed.timestamp": Math.floor(Date.now() / 1000),
-      }
-    })  
   } catch (err: any) {
     return {
       status: Status.ERROR,
@@ -628,7 +643,7 @@ export const getAllMailsByUserIdWithPagination = async (userId: string, page: nu
       .skip((page - 1) * limit)
       .limit(limit)
       .lean();
-    const transForm = mailTransformHelper(mails, userId); 
+    const transForm = mailTransformHelper(mails, userId);
     return {
       status: Status.SUCCESS,
       message: '(getAllMailsByUserIdWithPagination) Successfully retrieved mails',
