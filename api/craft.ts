@@ -1491,6 +1491,8 @@ export const cancelCraft = async (twitterId: string, craftingQueueId: string): P
         // remove the crafting queue
         await queueToRemove.remove();
 
+        console.log(`(cancelCraft) User update operations: ${JSON.stringify(userUpdateOperations, null, 2)}`);
+
         // do the operations (divide into $set and $inc, then $push and $pull)
         await Promise.all([
             UserModel.updateOne({ twitterId }, {
