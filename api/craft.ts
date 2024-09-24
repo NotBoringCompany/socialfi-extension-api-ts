@@ -442,6 +442,9 @@ export const craftAsset = async (
                     allRequiredAssetsOwned = false;
                     break;
                 }
+
+                // get the total weight to reduce based on the non-flexible resources
+                totalWeightToReduce += resources.find(resource => resource.type === requiredAssetType)?.weight * requiredAssetAmount;
             } else if (requiredAssetCategory === 'food') {
                 const userFood = (user.inventory?.foods as Food[]).find(food => food.type === requiredAssetType);
 
@@ -451,6 +454,10 @@ export const craftAsset = async (
                     allRequiredAssetsOwned = false;
                     break;
                 }
+
+                // get the total weight to reduce based on the non-flexible foods
+                // right now, it's 0 because food doesn't have weight
+                totalWeightToReduce += 0;
             } else if (requiredAssetCategory === 'item') {
                 const userItem = (user.inventory?.items as Item[]).find(item => item.type === requiredAssetType);
 
@@ -460,6 +467,10 @@ export const craftAsset = async (
                     allRequiredAssetsOwned = false;
                     break;
                 }
+
+                // get the total weight to reduce based on the non-flexible items
+                // right now, it's 0 because items don't have weight
+                totalWeightToReduce += 0;
             }
         }
 
