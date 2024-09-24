@@ -630,17 +630,29 @@ export const purgeMails = async (currentDate: number): Promise<void> => {
  */
 export const getAllMailsByUserIdWithPagination = async (userId: string, page: number, limit: number): Promise<ReturnWithPagination<MailDTO[]>> => {
   try {
+    // get total mails whose related with the user
     const totalMails = await MailModel.countDocuments({ receiverIds: { $elemMatch: { _id: userId } } });
-    const totalDocument = Math.ceil(totalMails / limit);
-    const totalPage = Math.ceil(totalDocument / limit);
+   /**
+    * totalMail = 100
+    * limit = 5
+    * totalPage = totalMail / limit = 20
+    * now we we have 20 pages and 5 mails per page
+    */
+    const totalPage = Math.ceil(totalMails / limit);
     const pageSize = limit;
     const isHasNext = page < totalPage;
+
+    console.log(`(getAllMailsByUserIdWithPagination) totalMails: ${totalMails}, totalPage: ${totalPage}, pageSize: ${pageSize}, currentPage: ${page}, isHasNext: ${isHasNext}`);
 
     const mails = await MailModel
       .find({
         receiverIds: { $elemMatch: { _id: userId } }
       })
+      // the latest mail first
       .sort({ timestamp: -1 })
+      // skip the previous page's documents
+      // example: if page = 2 and limit = 5, we will skip the first 5 documents
+      // then we will get the next 5 documents which is the second page
       .skip((page - 1) * limit)
       .limit(limit)
       .lean();
