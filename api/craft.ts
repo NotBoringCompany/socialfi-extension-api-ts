@@ -438,6 +438,11 @@ export const craftAsset = async (
                     break;
                 }
             }
+
+            // update `requiredAsset.amount` to the required amount multiplied by the `amount` the user wants to craft.
+            // this is because the `requiredAsset.amount` is the base amount required for the recipe, and since we want to return `requiredAssets`
+            // in the CraftingQueue as the required assets instance for this recipe, we will need to update the amount count manually.
+            requiredAsset.amount *= amount;
         }
 
         // check if 1. `allRequiredAssetsOwned` is true and `allFlexibleRequiredAssetsOwned` is true, and 2. `remainingFlexibleRequiredAssets` is empty.
@@ -469,15 +474,6 @@ export const craftAsset = async (
                 message: `(craftAsset) remainingFlexibleRequiredAssets check failed. Please try again.`
             }
         }
-
-        // if (!allRequiredAssetsOwned || !allFlexibleRequiredAssetsOwned || remainingFlexibleRequiredAssets.length > 0) {
-        //     console.log(`(craftAsset) allRequiredAssetsOwned/allFlexibleRequiredAssetsOwned/remainingFlexibleRequiredAssets checks failed.`);
-            
-        //     return {
-        //         status: Status.ERROR,
-        //         message: `(craftAsset) One or more asset checks failed. Please try again.`
-        //     }
-        // }
 
         let obtainedAssetCount = 0;
 
