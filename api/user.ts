@@ -2405,7 +2405,7 @@ export const consumeEnergyPotion = async (
                     return {
                         updateOne: {
                             filter: { islandId: progress.islandId, owner: user._id },
-                            update: { $set: { 'islandTappingData.currentCaressEnergyMeter': progress.currentCaressEnergyMeter } }
+                            update: { $set: { 'islandTappingData.currentCaressEnergyMeter': newCurrentCaressEnergyMeter } }
                         }
                     };
                 } else {
