@@ -193,22 +193,6 @@ export const craftAsset = async (
             }
         }
 
-        // if weight > 0, check if the user's inventory can still hold the crafted asset (x the amount).
-        if (craftingRecipe.weight > 0) {
-            const userWeight = user.inventory.weight;
-            const maxWeight = user.inventory.maxWeight;
-            const totalWeight = craftingRecipe.weight * amount;
-
-            if (userWeight + totalWeight > maxWeight) {
-                console.log(`(craftAsset) User inventory weight limit exceeded. Cannot craft ${amount}x ${assetToCraft}`);
-
-                return {
-                    status: Status.ERROR,
-                    message: `(craftAsset) User inventory weight limit exceeded. Cannot craft ${amount}x ${assetToCraft}`
-                }
-            }
-        }
-
         // check if the user has the required assets to craft the asset (which is also multiplied by the `amount`) based on the `chosenAssetGroup`.
         // if the user doesn't have the required assets, return an error.
         // firstly, check if the recipe has multiple asset groups. if it does, check if the chosenAssetGroup is within the boundary of the length.
@@ -255,6 +239,9 @@ export const craftAsset = async (
         // unlike `remainingFlexibleRequiredAssets`, we will multiply the amounts manually when we for loop each flexible required asset to check for the user's input.
         const flexibleRequiredAssets = craftingRecipe.requiredAssetGroups[chosenAssetGroup].requiredAssets.filter(requiredAsset => requiredAsset.specificAsset === 'any');
         const requiredAssets = craftingRecipe.requiredAssetGroups[chosenAssetGroup].requiredAssets.filter(requiredAsset => requiredAsset.specificAsset !== 'any');
+
+        // used to calculate the total weight to reduce from the user's inventory (since assets will be removed)
+        let totalWeightToReduce = 0;
 
         // loop through the flexible required assets first. this will check against the `chosenFlexibleRequiredAssets` array to see if the user has inputted the correct amount of the flexible assets.
         for (const flexibleRequiredAsset of flexibleRequiredAssets) {
@@ -323,6 +310,11 @@ export const craftAsset = async (
                         break;
                     }
                 }
+
+                // get the total weight to reduce based on the flexible resources
+                totalWeightToReduce += flexibleResourceData.reduce((acc, resource) => {
+                    return acc + (resource.weight * flexibleResources.find(r => r.specificAsset === resource.type)?.amount);
+                }, 0);
             } else if (requiredAssetCategory === 'food') {
                 // food has no rarity, so we simply just check if the user has inputted the correct amount of the food.
                 // e.g. if the recipe, say, requires 10 of any food, the user can input 5 burgers, 2 candies and 3 juices.
@@ -361,6 +353,12 @@ export const craftAsset = async (
                         break;
                     }
                 }
+
+                // get the total weight to reduce based on the flexible foods
+                totalWeightToReduce += flexibleFoods.reduce((acc, food) => {
+                    // right now, it's 0 because food doesn't have weight
+                    return acc + (food.amount * 0);
+                }, 0);
             } else if (requiredAssetCategory === 'item') {
                 // item has no rarity, so we simply just check if the user has inputted the correct amount of the item.
                 // e.g. if the recipe, say, requires 10 of any item, the user can input 5 of item A and 5 of item B.
@@ -399,8 +397,33 @@ export const craftAsset = async (
                         break;
                     }
                 }
+
+                // get the total weight to reduce based on the flexible items
+                totalWeightToReduce += flexibleItems.reduce((acc, item) => {
+                    // right now, it's 0 because items don't have weight
+                    return acc + (item.amount * 0);
+                }, 0);
             }
         }
+
+        // // if weight > 0, check if the user's inventory can still hold the crafted asset (x the amount).
+        // // because assets will be removed, we need to check if the user's inventory weight + the crafted asset(s) - the total weight to reduce will exceed the user's max weight.
+        // if (craftingRecipe.weight > 0) {
+        //     const userWeight = user.inventory.weight;
+        //     const maxWeight = user.inventory.maxWeight;
+        //     const totalWeight = craftingRecipe.weight * amount;
+
+        //     const userWeightAfterCraft = userWeight + totalWeight - totalWeightToReduce;
+
+        //     if (userWeightAfterCraft > maxWeight) {
+        //         console.log(`(craftAsset) User inventory weight limit exceeded. Cannot craft ${amount}x ${assetToCraft}`);
+
+        //         return {
+        //             status: Status.ERROR,
+        //             message: `(craftAsset) User inventory weight limit exceeded. Cannot craft ${amount}x ${assetToCraft}`
+        //         }
+        //     }
+        // }
 
         // now, loop through the non-flexible required assets. because non-flexible required assets will require a specific asset,
         // we just need to check if the user owns at least the required amount of the specific asset.
@@ -523,7 +546,8 @@ export const craftAsset = async (
         // squad's total points (if they are in a squad).
         // 3. increase the player's crafting XP (and potentially level) for the specific crafting line based on the `earnedXP` of the recipe.
         // 4. reduce the energy of the user by the `energyRequired` of the recipe.
-        // 5. remove the assets used to craft the asset from the user's inventory.
+        // 5. reduce the user's inventory weight by the `weight` of the recipe.
+        // 6. remove the assets used to craft the asset from the user's inventory.
 
         // do task 1.
         if (craftingRecipe.requiredXCookies > 0) {
@@ -714,6 +738,11 @@ export const craftAsset = async (
         userUpdateOperations.$inc[`inGameData.energy.currentEnergy`] = -energyRequired;
 
         // do task 5.
+        // reduce the user's inventory weight
+        userUpdateOperations.$inc[`inventory.weight`] = -totalWeightToReduce;
+        
+
+        // do task 6.
         // remove the assets used to craft the asset.
         // to do this, we will loop through 1. the `requiredAssets` array and 2. the `chosenFlexibleRequiredAssets` array.
         // for each required asset, we will deduct the amount from the user's inventory.
