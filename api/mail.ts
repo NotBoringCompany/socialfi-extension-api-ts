@@ -407,19 +407,28 @@ export const claimMail = async (mailId: string, userId: string): Promise<ReturnV
 
     const user = await UserModel.findOne({ _id: userId }).lean();
     if (!user) {
-      console.error(`(updateMailStatus) mailStatusType: Claim, user not found!`);
+      console.error(`(claimMail) user not found!`);
       return {
         status: Status.ERROR,
-        message: `(updateMailStatus) mailStatusType: Claim, user not found!`
+        message: `(claimMail) user not found!`
       }
     }
 
     const mail = await MailModel.findOne({ _id: mailId }).lean();
     if (!mail) {
-      console.error(`(updateMailStatus) mailStatusType: Claim, mail with id ${mailId} not found!`);
+      console.error(`(claimMail) mail with id ${mailId} not found!`);
       return {
         status: Status.ERROR,
-        message: `(updateMailStatus) mailStatusType: Claim, mail with id ${mailId} not found!`
+        message: `(claimMail) mail with id ${mailId} not found!`
+      }
+    }
+
+    const userHasClaimed = mail.receiverIds.find((receiver) => receiver._id === userId).isClaimed.status;
+    if (userHasClaimed) {
+      console.error(`(claimMail) user already claimed mail with id ${mailId}`);
+      return {
+        status: Status.ERROR,
+        message: `(claimMail) user already claimed mail with id ${mailId}`
       }
     }
 
