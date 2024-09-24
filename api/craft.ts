@@ -438,11 +438,6 @@ export const craftAsset = async (
                     break;
                 }
             }
-
-            // update `requiredAsset.amount` to the required amount multiplied by the `amount` the user wants to craft.
-            // this is because the `requiredAsset.amount` is the base amount required for the recipe, and since we want to return `requiredAssets`
-            // in the CraftingQueue as the required assets instance for this recipe, we will need to update the amount count manually.
-            requiredAsset.amount *= amount;
         }
 
         // check if 1. `allRequiredAssetsOwned` is true and `allFlexibleRequiredAssetsOwned` is true, and 2. `remainingFlexibleRequiredAssets` is empty.
@@ -854,7 +849,10 @@ export const craftAsset = async (
                 totalWeight: craftingRecipe.weight * obtainedAssetCount
             },
             assetsUsed: {
-                requiredAssets,
+                // for each required asset, we need to multiply the amount by the `amount` parameter.
+                // this is because the true amount of the required asset used depends on the `amount` that the user wants to craft.
+                // chosenFlexibleRequiredAssets already has the correct amount because it's required from the FE and is double checked, while requiredAssets manually check for it and not update it automatically.
+                requiredAssets: requiredAssets.map(asset => ({ ...asset, amount: asset.amount * amount })),
                 chosenFlexibleRequiredAssets
             },
             craftingStart: Math.floor(Date.now() / 1000),
