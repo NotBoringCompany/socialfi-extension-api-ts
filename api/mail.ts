@@ -373,6 +373,24 @@ export const readMail = async (mailId: string, userId: string): Promise<ReturnVa
 // update mail isDeleted status in receiverIds
 export const deleteMail = async (mailId: string, userId: string): Promise<ReturnValue> => {
   try {
+    const mail = await MailModel.findOne({ _id: mailId }).lean();
+    if (!mail) {
+      console.error(`(deleteMail) mail with id ${mailId} not found!`);
+      return {
+        status: Status.ERROR,
+        message: `(deleteMail) mail with id ${mailId} not found!`
+      }
+    }
+
+    const userHasClaimed = mail.receiverIds.find((receiver) => receiver._id === userId).isClaimed.status;
+    if (userHasClaimed && mail.attachments.length > 0) {
+      console.error(`(deleteMail) user didn't claim rewards inside mail with id ${mailId}!`);
+      return {
+        status: Status.ERROR,
+        message: `(deleteMail) user didn't claim rewards inside mail with id ${mailId}!`
+      }
+    }
+
     await MailModel.updateOne({
       _id: mailId, 
       receiverIds: { $elemMatch: { _id: userId } } 
