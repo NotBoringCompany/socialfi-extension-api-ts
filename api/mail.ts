@@ -373,6 +373,24 @@ export const readMail = async (mailId: string, userId: string): Promise<ReturnVa
 // update mail isDeleted status in receiverIds
 export const deleteMail = async (mailId: string, userId: string): Promise<ReturnValue> => {
   try {
+    const mail = await MailModel.findOne({ _id: mailId }).lean();
+    if (!mail) {
+      console.error(`(deleteMail) mail with id ${mailId} not found!`);
+      return {
+        status: Status.ERROR,
+        message: `(deleteMail) mail with id ${mailId} not found!`
+      }
+    }
+
+    const userHasClaimed = mail.receiverIds.find((receiver) => receiver._id === userId).isClaimed.status;
+    if (!userHasClaimed && mail.attachments.length > 0) {
+      console.error(`(deleteMail) user didn't claim rewards inside mail with id ${mailId}!`);
+      return {
+        status: Status.ERROR,
+        message: `(deleteMail) user didn't claim rewards inside mail with id ${mailId}!`
+      }
+    }
+
     await MailModel.updateOne({
       _id: mailId, 
       receiverIds: { $elemMatch: { _id: userId } } 
@@ -407,19 +425,28 @@ export const claimMail = async (mailId: string, userId: string): Promise<ReturnV
 
     const user = await UserModel.findOne({ _id: userId }).lean();
     if (!user) {
-      console.error(`(updateMailStatus) mailStatusType: Claim, user not found!`);
+      console.error(`(claimMail) user not found!`);
       return {
         status: Status.ERROR,
-        message: `(updateMailStatus) mailStatusType: Claim, user not found!`
+        message: `(claimMail) user not found!`
       }
     }
 
     const mail = await MailModel.findOne({ _id: mailId }).lean();
     if (!mail) {
-      console.error(`(updateMailStatus) mailStatusType: Claim, mail with id ${mailId} not found!`);
+      console.error(`(claimMail) mail with id ${mailId} not found!`);
       return {
         status: Status.ERROR,
-        message: `(updateMailStatus) mailStatusType: Claim, mail with id ${mailId} not found!`
+        message: `(claimMail) mail with id ${mailId} not found!`
+      }
+    }
+
+    const userHasClaimed = mail.receiverIds.find((receiver) => receiver._id === userId).isClaimed.status;
+    if (userHasClaimed) {
+      console.error(`(claimMail) user already claimed mail with id ${mailId}`);
+      return {
+        status: Status.ERROR,
+        message: `(claimMail) user already claimed mail with id ${mailId}`
       }
     }
 
@@ -630,17 +657,29 @@ export const purgeMails = async (currentDate: number): Promise<void> => {
  */
 export const getAllMailsByUserIdWithPagination = async (userId: string, page: number, limit: number): Promise<ReturnWithPagination<MailDTO[]>> => {
   try {
+    // get total mails whose related with the user
     const totalMails = await MailModel.countDocuments({ receiverIds: { $elemMatch: { _id: userId } } });
-    const totalDocument = Math.ceil(totalMails / limit);
-    const totalPage = Math.ceil(totalDocument / limit);
+   /**
+    * totalMail = 100
+    * limit = 5
+    * totalPage = totalMail / limit = 20
+    * now we we have 20 pages and 5 mails per page
+    */
+    const totalPage = Math.ceil(totalMails / limit);
     const pageSize = limit;
     const isHasNext = page < totalPage;
+
+    console.log(`(getAllMailsByUserIdWithPagination) totalMails: ${totalMails}, totalPage: ${totalPage}, pageSize: ${pageSize}, currentPage: ${page}, isHasNext: ${isHasNext}`);
 
     const mails = await MailModel
       .find({
         receiverIds: { $elemMatch: { _id: userId } }
       })
+      // the latest mail first
       .sort({ timestamp: -1 })
+      // skip the previous page's documents
+      // example: if page = 2 and limit = 5, we will skip the first 5 documents
+      // then we will get the next 5 documents which is the second page
       .skip((page - 1) * limit)
       .limit(limit)
       .lean();
@@ -662,6 +701,25 @@ export const getAllMailsByUserIdWithPagination = async (userId: string, page: nu
       status: Status.ERROR,
       message: `(getAllMailsByUserIdWithPagination) Error: ${err.message}`,
     };
+  }
+}
+
+/**
+ * Purges all expired mails.
+ * 
+ * @param {number} currentDate - The current date.
+ * @returns {Promise<void>} A promise that resolves when the mails are purged.
+ * @example purgeExpiredMails(currentDate): Promise<void> => {
+ * //if expired date is less than current date, delete the mail
+ *    await MailModel.deleteMany({ expiredDate: { $lt: currentDate } });
+ * }
+ */
+export const purgeExpiredMails = async (currentDate: number): Promise<void> => {
+  try {
+    // if expired date is less than current date, delete the mail
+    await MailModel.deleteMany({ expiredDate: { $lt: currentDate } });
+  } catch (err) {
+    console.error(`(purgeExpiredMails) Error: ${err.message}`);
   }
 }
 

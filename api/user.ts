@@ -13,6 +13,7 @@ import { resources } from '../utils/constants/resource';
 import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, PlayerEnergy, UserWallet, XCookieSource, User } from '../models/user';
 import {
     DAILY_REROLL_BONUS_MILESTONE,
+    ENERGY_POTION_RECOVERY,
     GET_BEGINNER_REWARDS,
     GET_DAILY_LOGIN_REWARDS,
     GET_SEASON_0_PLAYER_LEVEL,
@@ -2379,7 +2380,7 @@ export const consumeEnergyPotion = async (
         }
 
         // Calculate new current energy and new energy potion count
-        const newCurrentEnergy = Math.min(maxEnergy, currentEnergy + 1000);
+        const newCurrentEnergy = Math.min(maxEnergy, currentEnergy + ENERGY_POTION_RECOVERY);
         const newEnergyPotionCount = Math.max(dailyEnergyPotion - 1, 0);
 
         // Set the new current energy and daily energy potion count in the update operations
@@ -2404,7 +2405,7 @@ export const consumeEnergyPotion = async (
                     return {
                         updateOne: {
                             filter: { islandId: progress.islandId, owner: user._id },
-                            update: { $set: { 'islandTappingData.currentCaressEnergyMeter': progress.currentCaressEnergyMeter } }
+                            update: { $set: { 'islandTappingData.currentCaressEnergyMeter': newCurrentCaressEnergyMeter } }
                         }
                     };
                 } else {
