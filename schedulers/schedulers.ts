@@ -18,6 +18,7 @@ import { calculateWeeklySquadRankingAndAddSquadLeaderboardQueue } from './squadL
 import { restoreUserCurrentEnergyAndResetRerollQueue, updateBeginnerRewardsDataQueue, updateDailyLoginRewardsDataQueue, updateUserEnergyPotionQueue } from './user';
 import { batchSendKICKQueue } from './web3';
 import { distributeWeeklyMVPRewardsQueue, updateCurrentWeeklyMVPRankingLeaderboardQueue } from './weeklyMVPReward';
+import {mailGarbageCollector} from './mail'
 
 export const schedulers = async (): Promise<void> => {
     try {
@@ -131,6 +132,13 @@ export const schedulers = async (): Promise<void> => {
             // every sunday at 23:59
             repeat: {
                 cron: '59 23 * * SUN'
+            }
+        });
+
+        mailGarbageCollector.add({}, {
+            // every day at 23:59
+            repeat: {
+                cron: '59 23 * * *'
             }
         });
     } catch (err: any) {

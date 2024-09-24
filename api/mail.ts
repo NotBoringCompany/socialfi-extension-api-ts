@@ -665,6 +665,25 @@ export const getAllMailsByUserIdWithPagination = async (userId: string, page: nu
   }
 }
 
+/**
+ * Purges all expired mails.
+ * 
+ * @param {number} currentDate - The current date.
+ * @returns {Promise<void>} A promise that resolves when the mails are purged.
+ * @example purgeExpiredMails(currentDate): Promise<void> => {
+ * //if expired date is less than current date, delete the mail
+ *    await MailModel.deleteMany({ expiredDate: { $lt: currentDate } });
+ * }
+ */
+export const purgeExpiredMails = async (currentDate: number): Promise<void> => {
+  try {
+    // if expired date is less than current date, delete the mail
+    await MailModel.deleteMany({ expiredDate: { $lt: currentDate } });
+  } catch (err) {
+    console.error(`(purgeExpiredMails) Error: ${err.message}`);
+  }
+}
+
 // const getmails = async () => {
 //   const mails = await MailModel.find().lean();
 //   console.log(mails);
