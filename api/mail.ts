@@ -383,7 +383,7 @@ export const deleteMail = async (mailId: string, userId: string): Promise<Return
     }
 
     const userHasClaimed = mail.receiverIds.find((receiver) => receiver._id === userId).isClaimed.status;
-    if (userHasClaimed && mail.attachments.length > 0) {
+    if (!userHasClaimed && mail.attachments.length > 0) {
       console.error(`(deleteMail) user didn't claim rewards inside mail with id ${mailId}!`);
       return {
         status: Status.ERROR,
