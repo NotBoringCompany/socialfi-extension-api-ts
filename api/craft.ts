@@ -1459,6 +1459,9 @@ export const cancelCraft = async (twitterId: string, craftingQueueId: string): P
         // combine the required assets and the chosen flexible required assets
         const allRequiredAssets = [...requiredAssets, ...chosenFlexibleRequiredAssets];
 
+        // calculate the total weight to increase for the user's inventory
+        let totalWeightToIncrease = 0;
+
         for (const asset of allRequiredAssets) {
             console.log(`(cancelCraft) asset: ${JSON.stringify(asset, null, 2)}`);
 
@@ -1482,6 +1485,9 @@ export const cancelCraft = async (twitterId: string, craftingQueueId: string): P
                         origin: ExtendedResourceOrigin.NORMAL
                     })
                 }
+
+                // calculate the weight to increase
+                totalWeightToIncrease += requiredAssetAmount * resources.find(resource => resource.type === requiredAssetType).weight;
             } else if (requiredAssetCategory === 'food') {
                 const foodIndex = (user.inventory?.foods as Food[]).findIndex(food => food.type === requiredAssetType);
 
@@ -1494,6 +1500,10 @@ export const cancelCraft = async (twitterId: string, craftingQueueId: string): P
                         amount: requiredAssetAmount
                     })
                 }
+
+                // calculate the weight to increase
+                // for now, food has no weight, so put 0
+                totalWeightToIncrease += requiredAssetAmount * 0;
             } else if (requiredAssetCategory === 'item') {
                 const itemIndex = (user.inventory?.items as Item[]).findIndex(item => item.type === requiredAssetType);
 
@@ -1508,8 +1518,15 @@ export const cancelCraft = async (twitterId: string, craftingQueueId: string): P
                         weeklyAmountConsumed: 0
                     })
                 }
+
+                // calculate the weight to increase
+                // for now, items have no weight, so put 0
+                totalWeightToIncrease += requiredAssetAmount * 0;
             }
         }
+
+        // increase the user's weight
+        userUpdateOperations.$inc['inventory.weight'] = totalWeightToIncrease;
 
         // remove the crafting queue
         await queueToRemove.remove();
