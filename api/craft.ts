@@ -966,7 +966,7 @@ export const fetchCraftingQueues = async (userId: string): Promise<ReturnValue> 
 /**
  * Claims craftable assets either manually or automatically.
  * 
- * If `claimType` is `auto`, then the function will attempt to claim ALL claimable crafted assets for the user.
+ * If `claimType` is `auto`, then the function will attempt to claim ALL claimable crafted assets for the user for each queue.
  * However, if, for example, the user's inventory exceeds the limit and therefore cannot claim all assets, the function will claim as many as possible.
  * 
  * If `claimType` is `manual`, then the function will only claim the crafted assets with the specified `craftingQueueIds`.
@@ -1065,7 +1065,6 @@ export const claimCraftedAssets = async (
             // firstly, we need to check if the provided `craftingQueueIds` are valid.
             // to do this, we will filter the `claimableCraftingQueues` array with the provided `craftingQueueIds`.
             // if the length of the filtered array is not equal to the length of the provided `craftingQueueIds`, then one or more of the provided IDs are invalid. we throw an error.
-
             const filteredClaimableCraftingQueues = claimableCraftingQueues.filter(queue => craftingQueueIds.includes(queue._id));
 
             if (filteredClaimableCraftingQueues.length !== craftingQueueIds.length) {
@@ -1077,7 +1076,9 @@ export const claimCraftedAssets = async (
 
             // get the total weight of the assets to claim
             const finalizedTotalWeight = filteredClaimableCraftingQueues.reduce((acc, queue) => {
-                return acc + queue.craftedAssetData.totalWeight;
+                // because the total weight depends on the claimable amount per each queue, we will need to calculate the weight for each asset (craftedAssetData.totalWeight / craftedAssetData.amount)
+                // and then multiply it by the claimable amount.
+                return acc + (queue.craftedAssetData.totalWeight / queue.craftedAssetData.amount * queue.claimData.claimableAmount);
             }, 0);
 
             // check if the user's inventory weight + the totalWeight of the assets to claim exceeds the limit
@@ -1090,7 +1091,13 @@ export const claimCraftedAssets = async (
 
             // claim the assets
             for (const queue of filteredClaimableCraftingQueues) {
-                const { asset, amount, assetType, totalWeight } = queue.craftedAssetData;
+                const { asset, assetType, totalWeight } = queue.craftedAssetData;
+                const claimableAmount = queue.claimData.claimableAmount;
+
+                // skip if claimableAmount is 0
+                if (claimableAmount === 0) {
+                    continue;
+                }
 
                 if (assetType === 'item') {
                     // check if the user owns this asset in their inventory
@@ -1100,12 +1107,12 @@ export const claimCraftedAssets = async (
                     if (itemIndex === -1) {
                         userUpdateOperations.$push['inventory.items'].$each.push({
                             type: asset,
-                            amount,
+                            amount: claimableAmount,
                             totalAmountConsumed: 0,
                             weeklyAmountConsumed: 0
                         })
                     } else {
-                        userUpdateOperations.$inc[`inventory.items.${itemIndex}.amount`] = amount;
+                        userUpdateOperations.$inc[`inventory.items.${itemIndex}.amount`] = claimableAmount;
                     }
                 } else if (assetType === 'food') {
                     // check if the user owns the food in their inventory
@@ -1115,10 +1122,10 @@ export const claimCraftedAssets = async (
                     if (foodIndex === -1) {
                         userUpdateOperations.$push['inventory.foods'].$each.push({
                             type: asset,
-                            amount
+                            amount: claimableAmount
                         })
                     } else {
-                        userUpdateOperations.$inc[`inventory.foods.${foodIndex}.amount`] = amount;
+                        userUpdateOperations.$inc[`inventory.foods.${foodIndex}.amount`] = claimableAmount;
                     }
                 } else if (assetType === 'resource') {
                     // get the resource data.
@@ -1138,23 +1145,28 @@ export const claimCraftedAssets = async (
                     if (resourceIndex === -1) {
                         userUpdateOperations.$push['inventory.resources'].$each.push({
                             ...resourceData,
-                            amount,
+                            amount: claimableAmount,
                             origin: ExtendedResourceOrigin.NORMAL
                         })
                     } else {
-                        userUpdateOperations.$inc[`inventory.resources.${resourceIndex}.amount`] = amount;
+                        userUpdateOperations.$inc[`inventory.resources.${resourceIndex}.amount`] = claimableAmount;
                     }
                 }
 
                 // add the crafting queue ID to the fullyClaimedCraftingQueueIDs array
                 fullyClaimedCraftingQueueIDs.push(queue._id);
 
-                // update the crafting queue status to `CLAIMED`
+                // do two things to the crafting queue:
+                // 1. reduce the `claimData.claimableAmount` by the `claimableAmount` via $inc
+                // 2. if `claimData.claimedAmount` + `claimData.claimableAmount` === `craftedAssetData.amount`, update the status to `CLAIMED`. else, update the status to `ONGOING`.
                 craftingQueueUpdateOperations.push({
                     queueId: queue._id,
                     updateOperations: {
+                        $inc: {
+                            'claimData.claimableAmount': -claimableAmount
+                        },
                         $set: {
-                            status: CraftingQueueStatus.CLAIMED
+                            status: queue.claimData.claimedAmount + claimableAmount === queue.craftedAssetData.amount ? CraftingQueueStatus.CLAIMED : CraftingQueueStatus.ONGOING
                         }
                     }
                 });
@@ -1164,9 +1176,9 @@ export const claimCraftedAssets = async (
             }
         // if auto, we need to do the following:
         // 1. check if ALL claimable assets can be claimed based on the user's inventory weight. if yes, then we can just simply claim everything.
-        // 2. we will prioritize older crafting queues first, and then attempt to claim all assets from each queue.
-        // 2a. for example, if a crafting queue has 8 of Item A and only 5 can be claimed because of weight limitations, then:
-        // we will simply claim those 5, and update the crafting queue asset amount to 3 while leaving it under the `CLAIMABLE` status.
+        // 2. we will prioritize older crafting queues first, and then attempt to claim all the claimable amount of assets from each queue.
+        // 2a. for example, if a crafting queue has 8 of Asset A claimable and only 5 can be claimed because of weight limitations, then:
+        // we will simply claim those 5, and update the claimable amount to 3 while leaving it under the `CLAIMABLE` status.
         } else {
             let finalizedTotalWeight = 0;
 
@@ -1179,26 +1191,109 @@ export const claimCraftedAssets = async (
             // if the limit is exceeded, check how many assets can be claimed based on the user's inventory weight.
             // then, we will break the loop (i.e. other crafting queues won't be handled) and claim the assets that can be claimed.
             for (const queue of claimableCraftingQueues) {
-                const { asset, amount, assetType, totalWeight: queueTotalWeight } = queue.craftedAssetData;
+                const { asset, assetType, totalWeight, amount: craftedAmount } = queue.craftedAssetData;
+                const claimableAmount = queue.claimData.claimableAmount;
+
+                // skip if claimableAmount is 0
+                if (claimableAmount === 0) {
+                    continue;
+                }
+
+                // calculate the total weight of the assets to claim
+                const queueTotalWeight = totalWeight / queue.craftedAssetData.amount * claimableAmount;
 
                 // check if the user's inventory weight + the totalWeight of the assets to claim exceeds the limit
                 if (user.inventory.weight + finalizedTotalWeight + queueTotalWeight > user.inventory.maxWeight) {
                     // calculate how many assets can be claimed.
-                    // for example, say this queue has `amount` = 10 and `queueTotalWeight` = 100. this means that 1 of this asset = 10kg.
+                    // for example, say this queue has `claimableAmount` = 10 and `queueTotalWeight` = 100. this means that 1 of this asset = 10kg.
                     // say the user's inventory weight now is 95 and the limit is 100. this means that the user CANNOT claim any asset, because claiming one will exceed the inventory weight limit (105kg > 100kg).
                     // if, however, say, the user's inventory weight is 85, then the user can claim 1 asset (85 + 10 = 95kg < 100kg).
-                    const claimableAmount = Math.floor((user.inventory.maxWeight - user.inventory.weight - finalizedTotalWeight) / (queueTotalWeight / amount));
+                    const finalizedClaimableAmount = Math.floor((user.inventory.maxWeight - user.inventory.weight - finalizedTotalWeight) / (queueTotalWeight / craftedAmount));
 
-                    // if claimableAmount is 0, we can't claim any assets from this queue. break the loop.
-                    if (claimableAmount === 0) {
+                    // if finalizedClaimableAmount is 0, we can't claim any assets from this queue. break the loop.
+                    if (finalizedClaimableAmount === 0) {
                         break;
                     }
 
-                    // if claimableAmount > 0, we can claim some assets from this queue.
+                    // if finalizedClaimableAmount > 0, we can claim some assets from this queue.
                     // 1. add the claimable assets to the user's inventory.
                     // 2. update the crafting queue asset amount to the remaining amount.
                     // 3. increase the user's weight.
                     // 4. add the crafting queue ID to the partialClaimedCraftingQueueIDs array.
+                    if (assetType === 'item') {
+                        // check if the user owns this asset in their inventory
+                        const itemIndex = (user.inventory?.items as Item[]).findIndex(item => item.type === asset);
+
+                        // if not found, add the item to the user's inventory (along with the amount). if found, increment the amount.
+                        if (itemIndex === -1) {
+                            userUpdateOperations.$push['inventory.items'].$each.push({
+                                type: asset,
+                                amount: finalizedClaimableAmount,
+                                totalAmountConsumed: 0,
+                                weeklyAmountConsumed: 0
+                            })
+                        } else {
+                            userUpdateOperations.$inc[`inventory.items.${itemIndex}.amount`] = finalizedClaimableAmount;
+                        }
+                    } else if (assetType === 'food') {
+                        // check if the user owns the food in their inventory
+                        const foodIndex = (user.inventory?.foods as Food[]).findIndex(food => food.type === asset);
+
+                        // if not found, add the food to the user's inventory (along with the amount). if found, increment the amount.
+                        if (foodIndex === -1) {
+                            userUpdateOperations.$push['inventory.foods'].$each.push({
+                                type: asset,
+                                amount: finalizedClaimableAmount
+                            })
+                        } else {
+                            userUpdateOperations.$inc[`inventory.foods.${foodIndex}.amount`] = finalizedClaimableAmount;
+                        }
+                    } else if (assetType === 'resource') {
+                        // get the resource data.
+                        const resourceData = resources.find(resource => resource.type === asset);
+
+                        if (!resourceData) {
+                            return {
+                                status: Status.ERROR,
+                                message: `(claimCraftedAssets) Resource data not found for ${asset}.`
+                            }
+                        }
+
+                        // check if the user owns the resource in their inventory
+                        const resourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(resource => resource.type === asset);
+
+                        // if not found, add the resource to the user's inventory (along with the amount). if found, increment the amount.
+                        if (resourceIndex === -1) {
+                            userUpdateOperations.$push['inventory.resources'].$each.push({
+                                ...resourceData,
+                                amount: finalizedClaimableAmount,
+                                origin: ExtendedResourceOrigin.NORMAL
+                            })
+                        } else {
+                            userUpdateOperations.$inc[`inventory.resources.${resourceIndex}.amount`] = finalizedClaimableAmount;
+                        }
+                    }
+
+                    // reduce the claimable amount by `finalizedClaimableAmount`
+                    craftingQueueUpdateOperations.push({
+                        queueId: queue._id,
+                        updateOperations: {
+                            $inc: {
+                                'claimData.claimableAmount': -finalizedClaimableAmount
+                            }
+                        }
+                    });
+
+
+                    // update the `finalizedTotalWeight`
+                    finalizedTotalWeight += queueTotalWeight / craftedAmount * finalizedClaimableAmount;
+
+                    // add the crafting queue ID to the partialClaimedCraftingQueueIDs array.
+                    partialClaimedCraftingQueueIDs.push(queue._id);
+
+                    break;
+                // if the user's inventory weight + the totalWeight of the assets to claim does not exceed the limit, we can claim all `claimableAmount` of assets from this queue.
+                } else {
                     if (assetType === 'item') {
                         // check if the user owns this asset in their inventory
                         const itemIndex = (user.inventory?.items as Item[]).findIndex(item => item.type === asset);
@@ -1253,88 +1348,19 @@ export const claimCraftedAssets = async (
                         }
                     }
 
-                    // update the crafting queue asset amount to the remaining amount.
-                    craftingQueueUpdateOperations.push({
-                        queueId: queue._id,
-                        updateOperations: {
-                            $set: {
-                                'craftedAssetData.amount': amount - claimableAmount
-                            }
-                        }
-                    });
-
-                    // update the `finalizedTotalWeight`
-                    finalizedTotalWeight += queueTotalWeight / amount * claimableAmount;
-
-                    // add the crafting queue ID to the partialClaimedCraftingQueueIDs array.
-                    partialClaimedCraftingQueueIDs.push(queue._id);
-
-                    break;
-                // if the user's inventory weight + the totalWeight of the assets to claim does not exceed the limit, we can claim all assets from this queue.
-                } else {
-                    if (assetType === 'item') {
-                        // check if the user owns this asset in their inventory
-                        const itemIndex = (user.inventory?.items as Item[]).findIndex(item => item.type === asset);
-
-                        // if not found, add the item to the user's inventory (along with the amount). if found, increment the amount.
-                        if (itemIndex === -1) {
-                            userUpdateOperations.$push['inventory.items'].$each.push({
-                                type: asset,
-                                amount,
-                                totalAmountConsumed: 0,
-                                weeklyAmountConsumed: 0
-                            })
-                        } else {
-                            userUpdateOperations.$inc[`inventory.items.${itemIndex}.amount`] = amount;
-                        }
-                    } else if (assetType === 'food') {
-                        // check if the user owns the food in their inventory
-                        const foodIndex = (user.inventory?.foods as Food[]).findIndex(food => food.type === asset);
-
-                        // if not found, add the food to the user's inventory (along with the amount). if found, increment the amount.
-                        if (foodIndex === -1) {
-                            userUpdateOperations.$push['inventory.foods'].$each.push({
-                                type: asset,
-                                amount
-                            })
-                        } else {
-                            userUpdateOperations.$inc[`inventory.foods.${foodIndex}.amount`] = amount;
-                        }
-                    } else if (assetType === 'resource') {
-                        // get the resource data.
-                        const resourceData = resources.find(resource => resource.type === asset);
-
-                        if (!resourceData) {
-                            return {
-                                status: Status.ERROR,
-                                message: `(claimCraftedAssets) Resource data not found for ${asset}.`
-                            }
-                        }
-
-                        // check if the user owns the resource in their inventory
-                        const resourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(resource => resource.type === asset);
-
-                        // if not found, add the resource to the user's inventory (along with the amount). if found, increment the amount.
-                        if (resourceIndex === -1) {
-                            userUpdateOperations.$push['inventory.resources'].$each.push({
-                                ...resourceData,
-                                amount,
-                                origin: ExtendedResourceOrigin.NORMAL
-                            })
-                        } else {
-                            userUpdateOperations.$inc[`inventory.resources.${resourceIndex}.amount`] = amount;
-                        }
-                    }
-
                     // add the crafting queue ID to the fullyClaimedCraftingQueueIDs array
                     fullyClaimedCraftingQueueIDs.push(queue._id);
 
-                    // update the crafting queue status to `CLAIMED`
+                    // 1. reduce the claimableAmount by the `claimableAmount`
+                    // 2. if `claimData.claimedAmount` + `claimData.claimableAmount` === `craftedAssetData.amount`, update the status to `CLAIMED`. else, update the status to `ONGOING`.
                     craftingQueueUpdateOperations.push({
                         queueId: queue._id,
                         updateOperations: {
+                            $inc: {
+                                'claimData.claimableAmount': -claimableAmount
+                            },
                             $set: {
-                                status: CraftingQueueStatus.CLAIMED
+                                status: queue.claimData.claimedAmount + claimableAmount === queue.craftedAssetData.amount ? CraftingQueueStatus.CLAIMED : CraftingQueueStatus.ONGOING
                             }
                         }
                     });
@@ -1369,7 +1395,7 @@ export const claimCraftedAssets = async (
 
         return {
             status: Status.SUCCESS,
-            message: `(claimCraftedAssets) Successfully claimed crafted assets. ${partialClaimedCraftingQueueIDs.length > 0 ? `Some assets from crafting queues could not be claimed fully due to inventory weight limitations.` : ``}`,
+            message: `(claimCraftedAssets) Successfully claimed claimable crafted assets. ${partialClaimedCraftingQueueIDs.length > 0 ? `Some assets from crafting queues could not be claimed fully due to inventory weight limitations.` : ``}`,
             data: {
                 fullyClaimedCraftingQueueIDs,
                 partialClaimedCraftingQueueIDs
