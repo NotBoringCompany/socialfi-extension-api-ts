@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "jest --forceExit"
+    "test": "jest --forceExit",
+    "test:mail": "jest ./tests/mail.test.ts --forceExit"
   },
   "keywords": [],
   "author": "",
@@ -55,6 +56,7 @@
     "@types/supertest": "^6.0.2",
     "@types/uuid": "^9.0.8",
     "jest": "^29.7.0",
+    "mongodb-memory-server": "^10.0.1",
     "supertest": "^7.0.0",
     "ts-jest": "^29.2.5"
   }
