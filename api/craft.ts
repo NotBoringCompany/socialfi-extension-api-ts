@@ -1419,15 +1419,16 @@ export const cancelCraft = async (twitterId: string, craftingQueueId: string): P
         // get all current queues
         const currentQueues = await CRAFT_QUEUE.getJobs(['waiting', 'active', 'delayed']);
 
-        // find the queue that matches the craftingQueueId
-        const queueToRemove = currentQueues.find(queue => queue.data.craftingQueueId === craftingQueueId);
+        // find the queue(s) that matches the craftingQueueId
+        // note that because there can be multiple queues for a CraftingQueue instance based on the amount being crafted, we need to filter the queues.
+        const queuesToRemove = currentQueues.filter(queue => queue.data.craftingQueueId === craftingQueueId);
 
-        console.log(`(cancelCraft) queueToRemove: ${JSON.stringify(queueToRemove, null, 2)}`);
+        console.log(`(cancelCraft) queuesToRemove: ${JSON.stringify(queuesToRemove, null, 2)}`);
 
-        if (!queueToRemove) {
+        if (!queuesToRemove || queuesToRemove.length === 0) {
             return {
                 status: Status.ERROR,
-                message: `(cancelCraft) Crafting queue not found.`
+                message: `(cancelCraft) Crafting queue(s) in Bull not found.`
             }
         }
 
@@ -1461,8 +1462,9 @@ export const cancelCraft = async (twitterId: string, craftingQueueId: string): P
         }
 
         // check if the user has the xCookies required to remove the queue
-        // this is multiplied by the amount of the asset being crafted
-        const xCookiesRequired = CANCEL_CRAFT_X_COOKIES_COST(rarity) * craftingQueue.craftedAssetData.amount;
+        // in order to get the final amount, we need to check how many of the asset is being crafted (by checking how many queues are left in Bull)
+        // for instance, say the user crafts 10 of the asset, and already has claimed 6. then, the user will need to pay the xCookies required to cancel 4 of the asset.
+        const xCookiesRequired = CANCEL_CRAFT_X_COOKIES_COST(rarity) * queuesToRemove.length;
 
         if (user.inventory.xCookieData.currentXCookies < xCookiesRequired) {
             return {
@@ -1512,7 +1514,14 @@ export const cancelCraft = async (twitterId: string, craftingQueueId: string): P
 
             const requiredAssetCategory = asset.assetCategory;
             const requiredAssetType = asset.specificAsset;
-            const requiredAssetAmount = asset.amount;
+
+            // note that `requiredAssetAmount` needs to take into account the following:
+            // the base `asset.amount` is the total amount of this asset required to craft `craftedAssetData.amount` of the asset.
+            // let's say that the user has crafted 10 of an asset, i.e. `craftedAssetData.amount` = 10.
+            // the user has claimed 5 of this asset, i.e. `claimData.claimedAmount` = 5, and currently there is 1 claimable instance, i.e.`claimData.claimableAmount` = 1.
+            // this means that so far, 6 of the 10 assets have been produced, meaning that the user will only be refunded for the remaining 4 assets.
+            // to calculate the refundable amount, we need to subtract the claimed amount and the claimable amount (i.e. produced) from the crafted amount, and then divide it by the crafted amount, then multiply it by the `asset.amount`.
+            const refundableAmount = (craftingQueue.craftedAssetData.amount - craftingQueue.claimData.claimedAmount - craftingQueue.claimData.claimableAmount) / craftingQueue.craftedAssetData.amount * asset.amount;
 
             if (requiredAssetCategory === 'resource') {
                 const resourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(resource => resource.type === requiredAssetType);
@@ -1520,45 +1529,45 @@ export const cancelCraft = async (twitterId: string, craftingQueueId: string): P
                 console.log(`(cancelCraft) resourceIndex: ${resourceIndex}`);
 
                 if (resourceIndex !== -1) {
-                    userUpdateOperations.$inc[`inventory.resources.${resourceIndex}.amount`] = requiredAssetAmount;
+                    userUpdateOperations.$inc[`inventory.resources.${resourceIndex}.amount`] = refundableAmount;
                 // if not found, create a new entry
                 } else {
                     const resource = resources.find(resource => resource.type === requiredAssetType);
                     userUpdateOperations.$push['inventory.resources'].$each.push({
                         ...resource,
-                        amount: requiredAssetAmount,
+                        amount: refundableAmount,
                         origin: ExtendedResourceOrigin.NORMAL
                     })
                 }
 
                 // calculate the weight to increase
-                totalWeightToIncrease += requiredAssetAmount * resources.find(resource => resource.type === requiredAssetType).weight;
+                totalWeightToIncrease += refundableAmount * resources.find(resource => resource.type === requiredAssetType).weight;
             } else if (requiredAssetCategory === 'food') {
                 const foodIndex = (user.inventory?.foods as Food[]).findIndex(food => food.type === requiredAssetType);
 
                 if (foodIndex !== -1) {
-                    userUpdateOperations.$inc[`inventory.foods.${foodIndex}.amount`] = requiredAssetAmount;
+                    userUpdateOperations.$inc[`inventory.foods.${foodIndex}.amount`] = refundableAmount;
                 // if not found, create a new entry
                 } else {
                     userUpdateOperations.$push['inventory.foods'].$each.push({
                         type: requiredAssetType,
-                        amount: requiredAssetAmount
+                        amount: refundableAmount
                     })
                 }
 
                 // calculate the weight to increase
                 // for now, food has no weight, so put 0
-                totalWeightToIncrease += requiredAssetAmount * 0;
+                totalWeightToIncrease += refundableAmount * 0;
             } else if (requiredAssetCategory === 'item') {
                 const itemIndex = (user.inventory?.items as Item[]).findIndex(item => item.type === requiredAssetType);
 
                 if (itemIndex !== -1) {
-                    userUpdateOperations.$inc[`inventory.items.${itemIndex}.amount`] = requiredAssetAmount;
+                    userUpdateOperations.$inc[`inventory.items.${itemIndex}.amount`] = refundableAmount;
                 // if not found, create a new entry
                 } else {
                     userUpdateOperations.$push['inventory.items'].$each.push({
                         type: requiredAssetType,
-                        amount: requiredAssetAmount,
+                        amount: refundableAmount,
                         totalAmountConsumed: 0,
                         weeklyAmountConsumed: 0
                     })
@@ -1566,15 +1575,15 @@ export const cancelCraft = async (twitterId: string, craftingQueueId: string): P
 
                 // calculate the weight to increase
                 // for now, items have no weight, so put 0
-                totalWeightToIncrease += requiredAssetAmount * 0;
+                totalWeightToIncrease += refundableAmount * 0;
             }
         }
 
         // increase the user's weight
         userUpdateOperations.$inc['inventory.weight'] = totalWeightToIncrease;
 
-        // remove the crafting queue
-        await queueToRemove.remove();
+        // remove all crafting queues from Bull
+        await Promise.all(queuesToRemove.map(queue => queue.remove()));
 
         console.log(`(cancelCraft) User update operations: ${JSON.stringify(userUpdateOperations, null, 2)}`);
 
@@ -1586,7 +1595,8 @@ export const cancelCraft = async (twitterId: string, craftingQueueId: string): P
             }),
             CraftingQueueModel.updateOne({ _id: craftingQueueId }, {
                 $set: {
-                    status: CraftingQueueStatus.CANCELLED
+                    // if some assets have been produced (i.e. claimableAmount + claimedAmount > 0), then the status should be `PARTIALLY_CANCELLED`. else, it should be `CANCELLED`.
+                    status: craftingQueue.claimData.claimableAmount + craftingQueue.claimData.claimedAmount > 0 ? CraftingQueueStatus.PARTIALLY_CANCELLED : CraftingQueueStatus.CANCELLED
                 }
             })
         ]);

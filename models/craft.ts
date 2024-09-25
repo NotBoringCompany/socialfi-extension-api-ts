@@ -257,6 +257,8 @@ export enum CraftingQueueStatus {
     ONGOING = 'Ongoing',
     CLAIMABLE = 'Claimable',
     CLAIMED = 'Claimed',
+    // partially cancelled is used when a portion of the craft is cancelled, but some of the assets have already been produced and claimable/claimed.
+    PARTIALLY_CANCELLED = 'Partially Cancelled',
     CANCELLED = 'Cancelled',
 }
 
