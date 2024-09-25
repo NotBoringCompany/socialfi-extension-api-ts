@@ -951,7 +951,8 @@ export const fetchCraftingQueues = async (userId: string): Promise<ReturnValue> 
                 ongoingCraftingQueues: craftingQueues.filter(queue => queue.status === CraftingQueueStatus.ONGOING) ?? null,
                 claimableCraftingQueues: craftingQueues.filter(queue => queue.status === CraftingQueueStatus.CLAIMABLE) ?? null,
                 claimedCraftingQueues: craftingQueues.filter(queue => queue.status === CraftingQueueStatus.CLAIMED) ?? null,
-                cancelledCraftingQueues: craftingQueues.filter(queue => queue.status === CraftingQueueStatus.CANCELLED) ?? null
+                cancelledCraftingQueues: craftingQueues.filter(queue => queue.status === CraftingQueueStatus.CANCELLED) ?? null,
+                partiallyCancelledCraftingQueues: craftingQueues.filter(queue => queue.status === CraftingQueueStatus.PARTIALLY_CANCELLED) ?? null
             }
         }
     } catch (err: any) {
