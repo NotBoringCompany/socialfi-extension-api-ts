@@ -190,10 +190,24 @@ export interface CraftingQueue {
     craftedAssetData: CraftingQueueAssetData;
     /** the assets used to craft the recipe for this CraftingQueue instance */
     assetsUsed: CraftingQueueUsedAssetData;
+    /** claiming data for this CraftingQueue instance */
+    claimData: CraftingQueueClaimData;
     /** when the recipe was crafted */
     craftingStart: number;
     /** when the crafting will be completed; the user will receive the asset then */
     craftingEnd: number;
+}
+
+/**
+ * Represents the claiming data for a CraftingQueue instance.
+ * 
+ * Used to show how many of the crafted asset the user can currently claim and how many has been claimed.
+ */
+export interface CraftingQueueClaimData {
+    /** the amount of the crafted asset that the user can claim (now) */
+    claimableAmount: number;
+    /** the amount of the crafted asset that the user has claimed so far */
+    claimedAmount: number;
 }
 
 /**

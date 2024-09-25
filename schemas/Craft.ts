@@ -35,6 +35,10 @@ export const CraftingQueueSchema = new mongoose.Schema({
         }],
         _id: false
     },
+    claimData: {
+        claimableAmount: Number,
+        claimedAmount: Number,
+    },
     craftingStart: Number,
     craftingEnd: Number
 })

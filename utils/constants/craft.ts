@@ -53,15 +53,23 @@ export const CRAFT_QUEUE = new Bull('craftQueue', {
 });
 
 /**
- * Process all crafting queues upon completion to convert the CraftingQueue instance from 'ONGOING' to 'CLAIMABLE'.
+ * Each time a crafting queue is complete, process the queue and increment the `claimData.claimableAmount` by 1.
+ * This is to allow users to claim their crafted assets each time a crafting queue is complete.
+ * 
+ * Furthermore, update the `status` of the crafting queue from 'ONGOING' to 'CLAIMABLE'.
  */
 CRAFT_QUEUE.process('completeCraft', async (job) => {
     const { craftingQueueId } = job.data;
 
     try {
+        // increment `claimData.claimableAmount` by 1 and update the status of the crafting queue to 'CLAIMABLE'.
         const craftingQueue = await CraftingQueueModel.findOneAndUpdate(
-            { _id: craftingQueueId, status: CraftingQueueStatus.ONGOING }, 
-            { status: CraftingQueueStatus.CLAIMABLE }
+            { _id: craftingQueueId },
+            {
+                $inc: { 'claimData.claimableAmount': 1 },
+                status: CraftingQueueStatus.CLAIMABLE
+            },
+            { new: true }
         );
 
         // check if the `craftingQueue` instance is modified.
@@ -70,11 +78,11 @@ CRAFT_QUEUE.process('completeCraft', async (job) => {
             return;
         }
 
-        console.log(`(CRAFT_QUEUE, completeCraft) CraftingQueue ${craftingQueueId} completed.`);
+        console.log(`(CRAFT_QUEUE, completeCraft) CraftingQueue ${craftingQueueId} updated.`);
     } catch (err: any) {
         console.error(`(CRAFT_QUEUE, completeCraft) Error processing crafting queue for CraftingQueue ${craftingQueueId}: ${err.message}`);
     }
-})
+});
 
 /**
  * Gets the cost in xCookies to cancel a pending crafting queue.

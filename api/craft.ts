@@ -895,6 +895,10 @@ export const craftAsset = async (
                 requiredAssets: requiredAssets.map(asset => ({ ...asset, amount: asset.amount * amount })),
                 chosenFlexibleRequiredAssets
             },
+            claimData: {
+                claimableAmount: 0,
+                claimedAmount: 0
+            },
             craftingStart: Math.floor(Date.now() / 1000),
             // craftingEnd should only take into account the amount of successfulCrafts, not the base `amount`.
             // e.g. if a user successfully crafts 5 out of 10 of the asset, the craftingEnd should be the base crafting duration * 5.
@@ -903,22 +907,25 @@ export const craftAsset = async (
 
         await newCraftingQueue.save();
 
-        // add the ongoing craft to the queue to change the CraftingQueue status to `CLAIMABLE` after the crafting duration has passed.
-        CRAFT_QUEUE.add(
-            'completeCraft', 
-            {
-                craftingQueueId: newCraftingQueue._id
-            }, 
-            // time it takes to fully craft the asset depends on the `successfulCrafts` amount being crafted as well, NOT the base amount.
-            // for example, say 1 of the asset takes 1 minute to craft. if the user successfully crafts 5 (instead of the base amount of 10), then they will need to wait 5 minutes.
-            { delay: (craftingRecipe.craftingDuration * 1000) * successfulCrafts}
-        );
+        // for each `amount` being crafted, create a new `completeCraft` task in the queue to increment the `claimData.claimableAmount` by 1 each time the queue is completed.
+        // for example, if the user crafts 10 of asset A and each craft takes 1 minute, 10 queues will be created, each with a 1 minute delay. each time the queue is completed, the `claimData.claimableAmount` will be incremented by 1.
+        // queue 1 will be completed after 1 minute, queue 2 after 2 minutes, and so on.
+        // NOTE: we use `i < successfulCrafts` because the `successfulCrafts` amount is the amount of the asset that the user successfully crafted, NOT the base amount.
+        for (let i = 0; i < successfulCrafts; i++) {
+            CRAFT_QUEUE.add(
+                'completeCraft', 
+                {
+                    craftingQueueId: newCraftingQueue._id
+                }, 
+                { delay: (craftingRecipe.craftingDuration * 1000) * (i + 1) }
+            );
+        }
 
-        console.log(`(craftAsset) Added ${obtainedAssetCount}x ${assetToCraft} to the crafting queue.`);
+        console.log(`(craftAsset) Added ${successfulCrafts}x ${assetToCraft} to the crafting queue.`);
 
         return {
             status: Status.SUCCESS,
-            message: `(craftAsset) Added ${obtainedAssetCount}x ${assetToCraft} to the crafting queue.`
+            message: `(craftAsset) Added ${successfulCrafts}x ${assetToCraft} to the crafting queue.`
         }
     } catch (err: any) {
         console.error(`(craftAsset) ${err.message}`);
