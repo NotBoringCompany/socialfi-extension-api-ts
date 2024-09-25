@@ -1428,7 +1428,8 @@ export const cancelCraft = async (twitterId: string, craftingQueueId: string): P
         }
 
         // check if the user has the xCookies required to remove the queue
-        const xCookiesRequired = CANCEL_CRAFT_X_COOKIES_COST(rarity);
+        // this is multiplied by the amount of the asset being crafted
+        const xCookiesRequired = CANCEL_CRAFT_X_COOKIES_COST(rarity) * craftingQueue.craftedAssetData.amount;
 
         if (user.inventory.xCookieData.currentXCookies < xCookiesRequired) {
             return {
