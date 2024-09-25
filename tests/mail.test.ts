@@ -37,22 +37,20 @@ describe('Mail unit test', () => {
     // define models
     MailModel = mongoose.model('Mail', MailSchema, 'Mail');
     UserModel = mongoose.model('User', UserSchema, 'User');
-    // setup users
-    const createUsersPromise = new Array(3).fill(null).map(async(_, i) => {
-      const createUser = new UserModel({
-        createdTimestamp: 0,
-        inGameData: {},
-        inventory: [],
-        twitterId: `twitter${i}`,
-        twitterUsername: "test",
-        userId: `userId${i}`,
-        discordProfile: {},
-        inviteCodeData: {},
-        openedTweetIdsToday: [],
-      })
-      await createUser.save()
+
+    const createUser = new UserModel({
+      createdTimestamp: 0,
+      inGameData: {},
+      inventory: [],
+      twitterId: `twitter123`,
+      twitterUsername: "test",
+      userId: `userId123`,
+      discordProfile: {},
+      inviteCodeData: {},
+      openedTweetIdsToday: [],
     })
-    await Promise.all(createUsersPromise);
+    await createUser.save()
+
     const getUsers = await UserModel.find().lean();
     // transform users into mailStatus setup
     const setupUsers = getUsers.map((user) => {
