@@ -110,7 +110,9 @@ export const craftAsset = async (
         }
 
         // fetch all ongoing OR claimable crafting queues because these occupy the user's crafting slots.
-        const craftingQueues = await CraftingQueueModel.find({ userId: user._id, status: { $in: [CraftingQueueStatus.ONGOING, CraftingQueueStatus.CLAIMABLE] } }).lean();
+        // NOTE: partially cancelled crafting queues MAY also occupy the user's crafting slots IF there are claimable assets to be claimed.
+        // this will be checked further down.
+        const craftingQueues = await CraftingQueueModel.find({ userId: user._id, status: { $in: [CraftingQueueStatus.ONGOING, CraftingQueueStatus.CLAIMABLE, CraftingQueueStatus.PARTIALLY_CANCELLED] } }).lean();
 
         // check if the user is in the right POI to craft assets and if they have reached the limit to craft the asset.
         const requiredPOI = REQUIRED_POI_FOR_CRAFTING_LINE(craftingRecipe.craftingRecipeLine);
@@ -144,8 +146,13 @@ export const craftAsset = async (
 
         console.log(`User ${user.twitterUsername} has ${craftingSlots} crafting slots and can craft ${craftablePerSlot} of ${assetToCraft} per slot for line ${craftingRecipe.craftingRecipeLine}.`);
 
+        // instead of checking for `craftingQueues.length`, because this includes partially cancelled queues which may NOT have claimable assets anymore,
+        // we need to check for any queue that's PARTIALLY CANCELLED and check if the claimableAmount > 0. if yes, it is counted as having used a slot. if not, it is not counted.
+        // therefore, any queue that is ONGOING or CLAIMABLE will be counted as having used a slot (i.e. increment counter by 1), any partially cancelled that has claimableAmount > 0 will also be counted (i.e. increment counter by 1).
+        const usedCraftingSlots = craftingQueues.filter(queue => queue.status === CraftingQueueStatus.ONGOING || queue.status === CraftingQueueStatus.CLAIMABLE || (queue.status === CraftingQueueStatus.PARTIALLY_CANCELLED && queue.claimData.claimableAmount > 0)).length;
+
         // throw IF craftingQueues >= craftingSlots
-        if (craftingQueues.length >= craftingSlots) {
+        if (usedCraftingSlots >= craftingSlots) {
             console.log(`(craftAsset) User has reached the crafting slots limit for ${craftingRecipe.craftingRecipeLine}.`);
 
             return {
