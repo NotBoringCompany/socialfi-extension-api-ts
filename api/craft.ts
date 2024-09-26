@@ -125,7 +125,7 @@ export const craftAsset = async (
         }
 
         // check their crafting slots for this particular crafting line (via their mastery data)
-        const masteryData = user.inGameData.mastery.crafting[craftingRecipe.craftingRecipeLine.toLowerCase()] as CraftingMasteryStats ?? null;
+        const masteryData = user.inGameData.mastery?.crafting?.[craftingRecipe.craftingRecipeLine.toLowerCase()] as CraftingMasteryStats ?? null;
 
         let craftingSlots = 0;
         let craftablePerSlot = 0;

@@ -120,6 +120,12 @@ router.get('/get_mails/:userId', async (req, res) => {
 // todo check user has an email
 router.post('/read_mail', async (req, res) => {
   const { mailId, userId } = req.body;
+  if (!mailId || !userId) {
+    return res.status(Status.BAD_REQUEST).json({
+      status: Status.BAD_REQUEST,
+      message: '(readMail) Error: mailId and userId are required'
+    })
+  }
   try {
 
     const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'read_mail');
@@ -139,7 +145,7 @@ router.post('/read_mail', async (req, res) => {
   } catch (err: any) {
     return res.status(500).json({
       status: 500,
-      message: err.message
+      message:`(readMail) Error: ${err.message}` 
     })
   }
 })
@@ -147,6 +153,14 @@ router.post('/read_mail', async (req, res) => {
 // delete mail
 router.post('/delete_mail', async (req, res) => {
   const { mailId, userId } = req.body;
+
+  if (!mailId || !userId) {
+    return res.status(Status.BAD_REQUEST).json({
+      status: Status.BAD_REQUEST,
+      message: '(deleteMail) Error: mailId and userId are required'
+    })
+  }
+
   try {
 
     const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'delete_mail');
@@ -164,9 +178,9 @@ router.post('/delete_mail', async (req, res) => {
       message
     });
   } catch (err: any) {
-    return res.status(500).json({
-      status: 500,
-      message: err.message
+    return res.status(Status.ERROR).json({
+      status: Status.ERROR,
+      message: `(deleteMail) Error: ${err.message}`
     })
   }
 })
@@ -174,6 +188,14 @@ router.post('/delete_mail', async (req, res) => {
 // claim mail
 router.post('/claim_mail', async (req, res) => {
   const { mailId, userId } = req.body;
+
+  if (!mailId || !userId) {
+    return res.status(Status.BAD_REQUEST).json({
+      status: Status.BAD_REQUEST,
+      message: '(claimMail) Error: mailId and userId are required'
+    })
+  }
+
   try {
 
     const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'claim_mail');
@@ -193,7 +215,7 @@ router.post('/claim_mail', async (req, res) => {
   } catch (err: any) {
     return res.status(500).json({
       status: 500,
-      message: err.message
+      message: `(claimMail) Error: ${err.message}`
     })
   }
 })

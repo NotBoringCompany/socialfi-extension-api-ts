@@ -349,6 +349,22 @@ export const updateMailStatus = async (mailId: string, userId: string, mailStatu
 // update mail isRead status in receiverIds
 export const readMail = async (mailId: string, userId: string): Promise<ReturnValue> => {
   try {
+    const mail = await MailModel.findOne({ _id: mailId }).lean();
+    if (!mail) {
+      return {
+        status: Status.ERROR,
+        message: `(readMail) mail with id ${mailId} not found!`
+      }
+    }
+    const userHasRead = mail.receiverIds.find((receiver) => receiver._id === userId).isRead.status;
+    // in this case, the user has already read the mail
+    // avoid updating the isRead status
+    if (userHasRead) {
+      return {
+        status: Status.SUCCESS,
+        message: `(readMail) Successfully updated mail status`
+      }
+    }
     await MailModel.updateOne({
       _id: mailId, 
       receiverIds: { $elemMatch: { _id: userId } } 
@@ -358,6 +374,7 @@ export const readMail = async (mailId: string, userId: string): Promise<ReturnVa
         "receiverIds.$.isRead.timestamp": Math.floor(Date.now() / 1000),
       }
     })
+
     return {
       status: Status.SUCCESS,
       message: `(readMail) Successfully updated mail status`,
@@ -375,16 +392,29 @@ export const deleteMail = async (mailId: string, userId: string): Promise<Return
   try {
     const mail = await MailModel.findOne({ _id: mailId }).lean();
     if (!mail) {
-      console.error(`(deleteMail) mail with id ${mailId} not found!`);
       return {
         status: Status.ERROR,
         message: `(deleteMail) mail with id ${mailId} not found!`
       }
     }
-
-    const userHasClaimed = mail.receiverIds.find((receiver) => receiver._id === userId).isClaimed.status;
-    if (!userHasClaimed && mail.attachments.length > 0) {
-      console.error(`(deleteMail) user didn't claim rewards inside mail with id ${mailId}!`);
+    const userMailStatus = mail.receiverIds.find((receiver) => receiver._id === userId);
+    // user not found
+    if (!userMailStatus) {
+      return {
+        status: Status.ERROR,
+        // this message is look like user have one email for one user
+        message: `(deleteMail) Error: email not found with id ${mailId}!`
+      }
+    }
+    // user already deleted the mail
+    if (userMailStatus.isDeleted.status) {
+      return {
+        status: Status.ERROR,
+        message: `(deleteMail) Error: mail with id ${mailId} already deleted!`
+      }
+    }
+    // user didn't claim rewards
+    if (!userMailStatus.isClaimed.status && mail.attachments.length > 0) {
       return {
         status: Status.ERROR,
         message: `(deleteMail) user didn't claim rewards inside mail with id ${mailId}!`
