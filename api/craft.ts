@@ -1016,7 +1016,8 @@ export const claimCraftedAssets = async (
         }
 
         // find all claimable crafting queues for a user given the crafting line (which can be queried under `craftingRecipeLine`)
-        const claimableCraftingQueues = await CraftingQueueModel.find({ userId: user._id, status: CraftingQueueStatus.CLAIMABLE, craftingRecipeLine: craftingLine }).lean();
+        // NOTE: partially cancelled queues may also be claimable, so we can check either for CLAIMABLE or PARTIALLY_CANCELLED queues.
+        const claimableCraftingQueues = await CraftingQueueModel.find({ userId: user._id, craftingRecipeLine: craftingLine, status: { $in: [CraftingQueueStatus.CLAIMABLE, CraftingQueueStatus.PARTIALLY_CANCELLED] } }).lean();
 
         if (claimableCraftingQueues.length === 0) {
             return {
