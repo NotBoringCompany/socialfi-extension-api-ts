@@ -24,6 +24,10 @@ export interface CraftingMastery {
      */
     blacksmithing: CraftingMasteryStats;
     /**
+     * Anything refining/purification of ore resources related
+     */
+    smelting: CraftingMasteryStats;
+    /**
      * Anything consumables/basic assets related.
      */
     synthesizing: CraftingMasteryStats;
