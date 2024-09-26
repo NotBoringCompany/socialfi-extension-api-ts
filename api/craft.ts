@@ -868,6 +868,8 @@ export const craftAsset = async (
             userUpdateOperations.$set[`inGameData.mastery.crafting.${craftingRecipe.craftingRecipeLine.toLowerCase()}.craftablePerSlot`] = BASE_CRAFTABLE_PER_SLOT;
         }
 
+        console.log(`(craftAsset) User update operations: ${JSON.stringify(userUpdateOperations, null, 2)}`);
+
         // update the user's inventory, leaderboard, squad and squad leaderboard.
         // divide $set and $inc, then $push and pull.
         await Promise.all([
