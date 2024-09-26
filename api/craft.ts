@@ -406,25 +406,6 @@ export const craftAsset = async (
             }
         }
 
-        // // if weight > 0, check if the user's inventory can still hold the crafted asset (x the amount).
-        // // because assets will be removed, we need to check if the user's inventory weight + the crafted asset(s) - the total weight to reduce will exceed the user's max weight.
-        // if (craftingRecipe.weight > 0) {
-        //     const userWeight = user.inventory.weight;
-        //     const maxWeight = user.inventory.maxWeight;
-        //     const totalWeight = craftingRecipe.weight * amount;
-
-        //     const userWeightAfterCraft = userWeight + totalWeight - totalWeightToReduce;
-
-        //     if (userWeightAfterCraft > maxWeight) {
-        //         console.log(`(craftAsset) User inventory weight limit exceeded. Cannot craft ${amount}x ${assetToCraft}`);
-
-        //         return {
-        //             status: Status.ERROR,
-        //             message: `(craftAsset) User inventory weight limit exceeded. Cannot craft ${amount}x ${assetToCraft}`
-        //         }
-        //     }
-        // }
-
         // now, loop through the non-flexible required assets. because non-flexible required assets will require a specific asset,
         // we just need to check if the user owns at least the required amount of the specific asset.
         for (const requiredAsset of requiredAssets) {
@@ -973,11 +954,11 @@ export const craftAsset = async (
 }
 
 /**
- * Fetches the crafting queues of a user.
+ * Fetches the last 100 crafting queues of a user.
  */
 export const fetchCraftingQueues = async (userId: string): Promise<ReturnValue> => {
     try {
-        const craftingQueues = await CraftingQueueModel.find({ userId }).lean();
+        const craftingQueues = await CraftingQueueModel.find({ userId }).sort({ craftingStart: -1 }).limit(100).lean();
 
         return {
             status: Status.SUCCESS,
