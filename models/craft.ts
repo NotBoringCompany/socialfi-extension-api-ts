@@ -1,6 +1,6 @@
 import { AssetType } from './asset';
 import { FoodType } from './food';
-import { ContinuumRelicItem, EnergyTotemItem, PotionItem, RestorationItem, TransmutationItem } from './item';
+import { ContinuumRelicItem, EnergyTotemItem, IngotItem, PotionItem, RestorationItem, TransmutationItem } from './item';
 import { BarrenResource, ExtendedResource, FruitResource, LiquidResource, OreResource, Resource, ResourceRarity, ResourceType, SimplifiedResource } from "./resource";
 
 /**
@@ -104,6 +104,8 @@ export interface CraftedAssetData {
 export enum CraftingRecipeLine {
     /** related to consumables or any basic assets */
     SYNTHESIZING = 'Synthesizing',
+    /** related to refining/purification of ore resources */
+    SMELTING = 'Smelting',
     BLACKSMITHING = 'Blacksmithing',
     COOKING = 'Cooking',
     TAILORING = 'Tailoring'
@@ -265,4 +267,4 @@ export enum CraftingQueueStatus {
 /**
  * Represents a craftable asset.
  */
-export type CraftableAsset = RestorationItem | TransmutationItem | EnergyTotemItem | ContinuumRelicItem | PotionItem;
+export type CraftableAsset = RestorationItem | TransmutationItem | EnergyTotemItem | ContinuumRelicItem | PotionItem | IngotItem;

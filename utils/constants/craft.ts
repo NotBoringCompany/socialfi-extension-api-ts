@@ -19,10 +19,17 @@ export const BASE_CRAFTABLE_PER_SLOT = 10;
 
 // the required energy costs to craft a specific rarity of craftable assets.
 export const BASE_ENERGY_COST_COMMON = 50;
-export const BASE_ENERGY_COST_UNCOMMON = 50;
-export const BASE_ENERGY_COST_RARE = 100;
-export const BASE_ENERGY_COST_EPIC = 100;
-export const BASE_ENERGY_COST_LEGENDARY = 200;
+export const BASE_ENERGY_COST_UNCOMMON = 100;
+export const BASE_ENERGY_COST_RARE = 150;
+export const BASE_ENERGY_COST_EPIC = 250;
+export const BASE_ENERGY_COST_LEGENDARY = 400;
+
+// the required energy costs to craft a specific rarity of INGOT ITEMS.
+export const BASE_ENERGY_COST_COMMON_INGOT = 5;
+export const BASE_ENERGY_COST_UNCOMMON_INGOT = 10;
+export const BASE_ENERGY_COST_RARE_INGOT = 15;
+export const BASE_ENERGY_COST_EPIC_INGOT = 25;
+export const BASE_ENERGY_COST_LEGENDARY_INGOT = 40;
 
 // the base crafting duration to craft a specific rarity of craftable assets.
 export const BASE_CRAFTING_DURATION_COMMON = 60;
@@ -30,6 +37,12 @@ export const BASE_CRAFTING_DURATION_UNCOMMON = 600;
 export const BASE_CRAFTING_DURATION_RARE = 14400;
 export const BASE_CRAFTING_DURATION_EPIC = 43200;
 export const BASE_CRAFTING_DURATION_LEGENDARY = 86400;
+
+// the base crafting duration to craft a specific rarity of INGOT ITEMS.
+export const BASE_CRAFTING_DURATION_COMMON_INGOT = 1;
+export const BASE_CRAFTING_DURATION_UNCOMMON_INGOT = 5;
+export const BASE_CRAFTING_DURATION_RARE_INGOT = 10;
+export const BASE_CRAFTING_DURATION_EPIC_INGOT = 15;
 
 // the required crafting level to craft a specific rarity of craftable assets.
 export const REQUIRED_CRAFTING_LEVEL_COMMON = 1;
@@ -44,6 +57,13 @@ export const EARNED_XP_UNCOMMON = 100;
 export const EARNED_XP_RARE = 300;
 export const EARNED_XP_EPIC = 600;
 export const EARNED_XP_LEGENDARY = 1000;
+
+// the amount of XP earned upon crafting a specific rarity of INGOT ITEMS.
+export const EARNED_XP_COMMON_INGOT = 2.5;
+export const EARNED_XP_UNCOMMON_INGOT = 5;
+export const EARNED_XP_RARE_INGOT = 15;
+export const EARNED_XP_EPIC_INGOT = 30;
+export const EARNED_XP_LEGENDARY_INGOT = 50;
 
 /**
  * Creates a new Bull instance for crafting assets to be queued.
@@ -112,7 +132,7 @@ export const REQUIRED_POI_FOR_CRAFTING_LINE = (craftingRecipeLine: CraftingRecip
     switch (craftingRecipeLine) {
         case CraftingRecipeLine.SYNTHESIZING:
             return POIName.HOME;
-        case CraftingRecipeLine.BLACKSMITHING:
+        case CraftingRecipeLine.SMELTING:
             return POIName.EVERGREEN_VILLAGE;
         // by default just throw an error
         default:
@@ -884,4 +904,132 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
                 }
             ]
         },
+        {
+            craftedAssetData: {
+                asset: IngotItem.COPPER_INGOT,
+                assetType: 'item',
+                assetDescription: `A refined slab of copper.`,
+                assetRarity: CraftedAssetRarity.COMMON,
+                assetEffectDuration: 'none'
+            },
+            craftingRecipeLine: CraftingRecipeLine.SMELTING,
+            craftingDuration: BASE_CRAFTING_DURATION_COMMON_INGOT,
+            baseEnergyRequired: BASE_ENERGY_COST_COMMON_INGOT,
+            baseSuccessChance: 10000,
+            baseCritChance: 0,
+            obtainedPoints: 0,
+            requiredXCookies: 0,
+            requiredLevel: 1,
+            requiredCraftingLevel: REQUIRED_CRAFTING_LEVEL_COMMON,
+            earnedXP: EARNED_XP_COMMON_INGOT,
+            weight: 0,
+            requiredAssetGroups: [
+                {
+                    requiredAssets: [
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: OreResource.COPPER,
+                            requiredRarity: 'none',
+                            amount: 2
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            craftedAssetData: {
+                asset: IngotItem.IRON_INGOT,
+                assetType: 'item',
+                assetDescription: `A refined slab of iron.`,
+                assetRarity: CraftedAssetRarity.UNCOMMON,
+                assetEffectDuration: 'none'
+            },
+            craftingRecipeLine: CraftingRecipeLine.SMELTING,
+            craftingDuration: BASE_CRAFTING_DURATION_UNCOMMON_INGOT,
+            baseEnergyRequired: BASE_ENERGY_COST_UNCOMMON_INGOT,
+            baseSuccessChance: 10000,
+            baseCritChance: 0,
+            obtainedPoints: 0,
+            requiredXCookies: 0,
+            requiredLevel: 1,
+            requiredCraftingLevel: REQUIRED_CRAFTING_LEVEL_UNCOMMON,
+            earnedXP: EARNED_XP_UNCOMMON_INGOT,
+            weight: 0,
+            requiredAssetGroups: [
+                {
+                    requiredAssets: [
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: OreResource.IRON,
+                            requiredRarity: 'none',
+                            amount: 2
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            craftedAssetData: {
+                asset: IngotItem.SILVER_INGOT,
+                assetType: 'item',
+                assetDescription: `A refined slab of silver.`,
+                assetRarity: CraftedAssetRarity.RARE,
+                assetEffectDuration: 'none'
+            },
+            craftingRecipeLine: CraftingRecipeLine.SMELTING,
+            craftingDuration: BASE_CRAFTING_DURATION_RARE_INGOT,
+            baseEnergyRequired: BASE_ENERGY_COST_RARE_INGOT,
+            baseSuccessChance: 10000,
+            baseCritChance: 0,
+            obtainedPoints: 0,
+            requiredXCookies: 0,
+            requiredLevel: 1,
+            requiredCraftingLevel: REQUIRED_CRAFTING_LEVEL_RARE,
+            earnedXP: EARNED_XP_RARE_INGOT,
+            weight: 0,
+            requiredAssetGroups: [
+                {
+                    requiredAssets: [
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: OreResource.SILVER,
+                            requiredRarity: 'none',
+                            amount: 2
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            craftedAssetData: {
+                asset: IngotItem.GOLD_INGOT,
+                assetType: 'item',
+                assetDescription: `A refined slab of gold.`,
+                assetRarity: CraftedAssetRarity.EPIC,
+                assetEffectDuration: 'none'
+            },
+            craftingRecipeLine: CraftingRecipeLine.SMELTING,
+            craftingDuration: BASE_CRAFTING_DURATION_EPIC_INGOT,
+            baseEnergyRequired: BASE_ENERGY_COST_EPIC_INGOT,
+            baseSuccessChance: 10000,
+            baseCritChance: 0,
+            obtainedPoints: 0,
+            requiredXCookies: 0,
+            requiredLevel: 1,
+            requiredCraftingLevel: REQUIRED_CRAFTING_LEVEL_EPIC,
+            earnedXP: EARNED_XP_EPIC_INGOT,
+            weight: 0,
+            requiredAssetGroups: [
+                {
+                    requiredAssets: [
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: OreResource.GOLD,
+                            requiredRarity: 'none',
+                            amount: 2
+                        }
+                    ]
+                }
+            ]
+        }
     ];
