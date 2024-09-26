@@ -17,6 +17,11 @@ export const BASE_CRAFTING_SLOTS = 1;
  */
 export const BASE_CRAFTABLE_PER_SLOT = 10;
 
+/**
+ * this is the base amount of the craftable amount of an asset per crafting slot for smelting only.
+ */
+export const BASE_CRAFTABLE_PER_SLOT_SMELTING = 50;
+
 // the required energy costs to craft a specific rarity of craftable assets.
 export const BASE_ENERGY_COST_COMMON = 50;
 export const BASE_ENERGY_COST_UNCOMMON = 100;

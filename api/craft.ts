@@ -6,7 +6,7 @@ import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderbo
 import { CraftingMasteryStats } from '../models/mastery';
 import { POIName } from '../models/poi';
 import { BarrenResource, ExtendedResource, ExtendedResourceOrigin, FruitResource, LiquidResource, OreResource, ResourceType, SimplifiedResource } from "../models/resource";
-import { BASE_CRAFTABLE_PER_SLOT, BASE_CRAFTING_SLOTS, CANCEL_CRAFT_X_COOKIES_COST, CRAFT_QUEUE, CRAFTING_RECIPES, GET_CRAFTING_LEVEL, REQUIRED_POI_FOR_CRAFTING_LINE } from '../utils/constants/craft';
+import { BASE_CRAFTABLE_PER_SLOT, BASE_CRAFTABLE_PER_SLOT_SMELTING, BASE_CRAFTING_SLOTS, CANCEL_CRAFT_X_COOKIES_COST, CRAFT_QUEUE, CRAFTING_RECIPES, GET_CRAFTING_LEVEL, REQUIRED_POI_FOR_CRAFTING_LINE } from '../utils/constants/craft';
 import { LeaderboardModel, CraftingQueueModel, SquadLeaderboardModel, SquadModel, UserModel } from "../utils/constants/db";
 import { CARPENTING_MASTERY_LEVEL, COOKING_MASTERY_LEVEL, SMELTING_MASTERY_LEVEL, TAILORING_MASTERY_LEVEL } from "../utils/constants/mastery";
 import { getResource, getResourceWeight, resources } from "../utils/constants/resource";
@@ -740,7 +740,8 @@ export const craftAsset = async (
                 xp: craftingRecipe.earnedXP * amount,
                 // instantiate craftingSlots AND craftablePerSlot to the base values.
                 craftingSlots: BASE_CRAFTING_SLOTS,
-                craftablePerSlot: BASE_CRAFTABLE_PER_SLOT
+                // smelting has different base values for craftablePerSlot
+                craftablePerSlot: craftingRecipe.craftingRecipeLine === CraftingRecipeLine.SMELTING ? BASE_CRAFTABLE_PER_SLOT_SMELTING : BASE_CRAFTABLE_PER_SLOT
             }
         }
 
