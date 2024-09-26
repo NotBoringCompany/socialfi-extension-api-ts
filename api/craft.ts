@@ -859,14 +859,14 @@ export const craftAsset = async (
             }
         }
 
-        // if the mastery data's `craftingSlots` or `craftablePerSlot` is undefined now, we set it.
-        if (userUpdateOperations.$set[`inGameData.mastery.crafting.${craftingRecipe.craftingRecipeLine.toLowerCase()}.craftingSlots`] === undefined) {
-            userUpdateOperations.$set[`inGameData.mastery.crafting.${craftingRecipe.craftingRecipeLine.toLowerCase()}.craftingSlots`] = BASE_CRAFTING_SLOTS;
-        }
+        // // if the mastery data's `craftingSlots` or `craftablePerSlot` is undefined now, we set it.
+        // if (userUpdateOperations.$set[`inGameData.mastery.crafting.${craftingRecipe.craftingRecipeLine.toLowerCase()}.craftingSlots`] === undefined) {
+        //     userUpdateOperations.$set[`inGameData.mastery.crafting.${craftingRecipe.craftingRecipeLine.toLowerCase()}.craftingSlots`] = BASE_CRAFTING_SLOTS;
+        // }
 
-        if (userUpdateOperations.$set[`inGameData.mastery.crafting.${craftingRecipe.craftingRecipeLine.toLowerCase()}.craftablePerSlot`] === undefined) {
-            userUpdateOperations.$set[`inGameData.mastery.crafting.${craftingRecipe.craftingRecipeLine.toLowerCase()}.craftablePerSlot`] = BASE_CRAFTABLE_PER_SLOT;
-        }
+        // if (userUpdateOperations.$set[`inGameData.mastery.crafting.${craftingRecipe.craftingRecipeLine.toLowerCase()}.craftablePerSlot`] === undefined) {
+        //     userUpdateOperations.$set[`inGameData.mastery.crafting.${craftingRecipe.craftingRecipeLine.toLowerCase()}.craftablePerSlot`] = BASE_CRAFTABLE_PER_SLOT;
+        // }
 
         console.log(`(craftAsset) User update operations: ${JSON.stringify(userUpdateOperations, null, 2)}`);
 
