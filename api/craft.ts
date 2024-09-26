@@ -869,12 +869,44 @@ export const craftAsset = async (
         }
 
         // update the user's inventory, leaderboard, squad and squad leaderboard.
+        // divide $set and $inc, then $push and pull.
         await Promise.all([
-            UserModel.updateOne({ twitterId }, userUpdateOperations),
-            LeaderboardModel.updateOne({ name: 'Season 0' }, leaderboardUpdateOperations),
-            SquadModel.updateOne({ _id: user.inGameData.squadId }, squadUpdateOperations),
-            SquadLeaderboardModel.updateOne({ week: squadLeaderboardWeek }, squadLeaderboardUpdateOperations)
+            UserModel.updateOne({ twitterId }, {
+                $set: userUpdateOperations.$set,
+                $inc: userUpdateOperations.$inc
+            }),
+            LeaderboardModel.updateOne({ name: 'Season 0' }, {
+                $set: leaderboardUpdateOperations.$push,
+                $inc: leaderboardUpdateOperations.$inc
+            }),
+            SquadModel.updateOne({ _id: user.inGameData.squadId }, {
+                $set: squadUpdateOperations.updateOperations.$set,
+                $inc: squadUpdateOperations.updateOperations.$inc
+            }),
+            SquadLeaderboardModel.updateOne({ week: squadLeaderboardWeek }, {
+                $set: squadLeaderboardUpdateOperations.$set,
+                $inc: squadLeaderboardUpdateOperations.$inc
+            })
         ]);
+
+        await Promise.all([
+            UserModel.updateOne({ twitterId, }, {
+                $push: userUpdateOperations.$push,
+                $pull: userUpdateOperations.$pull
+            }),
+            LeaderboardModel.updateOne({ name: 'Season 0' }, {
+                $push: leaderboardUpdateOperations.$push,
+                $pull: leaderboardUpdateOperations.$pull
+            }),
+            SquadModel.updateOne({ _id: user.inGameData.squadId }, {
+                $push: squadUpdateOperations.updateOperations.$push,
+                $pull: squadUpdateOperations.updateOperations.$pull
+            }),
+            SquadLeaderboardModel.updateOne({ week: squadLeaderboardWeek }, {
+                $push: squadLeaderboardUpdateOperations.$push,
+                $pull: squadLeaderboardUpdateOperations.$pull
+            })
+        ])
 
         // create a new ongoing craft instance in the database.
         const newCraftingQueue = new CraftingQueueModel({
