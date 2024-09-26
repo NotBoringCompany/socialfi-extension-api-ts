@@ -1189,14 +1189,16 @@ export const claimCraftedAssets = async (
                 // add the crafting queue ID to the fullyClaimedCraftingQueueIDs array
                 fullyClaimedCraftingQueueIDs.push(queue._id);
 
-                // do two things to the crafting queue:
+                // do three things to the crafting queue:
                 // 1. reduce the `claimData.claimableAmount` by the `claimableAmount` via $inc
-                // 2. if `claimData.claimedAmount` + `claimData.claimableAmount` === `craftedAssetData.amount`, update the status to `CLAIMED`. else, update the status to `ONGOING`.
+                // 2. increase the `claimData.claimedAmount` by the `claimableAmount` via $inc
+                // 3. if `claimData.claimedAmount` + `claimData.claimableAmount` === `craftedAssetData.amount`, update the status to `CLAIMED`. else, update the status to `ONGOING`.
                 craftingQueueUpdateOperations.push({
                     queueId: queue._id,
                     updateOperations: {
                         $inc: {
-                            'claimData.claimableAmount': -claimableAmount
+                            'claimData.claimableAmount': -claimableAmount,
+                            'claimData.claimedAmount': claimableAmount
                         },
                         $set: {
                             status: queue.claimData.claimedAmount + claimableAmount === queue.craftedAssetData.amount ? CraftingQueueStatus.CLAIMED : CraftingQueueStatus.ONGOING
@@ -1385,12 +1387,14 @@ export const claimCraftedAssets = async (
                     fullyClaimedCraftingQueueIDs.push(queue._id);
 
                     // 1. reduce the claimableAmount by the `claimableAmount`
-                    // 2. if `claimData.claimedAmount` + `claimData.claimableAmount` === `craftedAssetData.amount`, update the status to `CLAIMED`. else, update the status to `ONGOING`.
+                    // 2. increase the claimedAmount by the `claimableAmount`
+                    // 3. if `claimData.claimedAmount` + `claimData.claimableAmount` === `craftedAssetData.amount`, update the status to `CLAIMED`. else, update the status to `ONGOING`.
                     craftingQueueUpdateOperations.push({
                         queueId: queue._id,
                         updateOperations: {
                             $inc: {
-                                'claimData.claimableAmount': -claimableAmount
+                                'claimData.claimableAmount': -claimableAmount,
+                                'claimData.claimedAmount': claimableAmount
                             },
                             $set: {
                                 status: queue.claimData.claimedAmount + claimableAmount === queue.craftedAssetData.amount ? CraftingQueueStatus.CLAIMED : CraftingQueueStatus.ONGOING
