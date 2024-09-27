@@ -2,13 +2,12 @@ import express from 'express';
 import { completeTutorial, getTutorials, skipTutorial } from '../api/tutorial';
 import { Status } from '../utils/retVal';
 import { validateRequestAuth } from '../utils/auth';
-import mixpanel from 'mixpanel';
 import { UserWallet } from '../models/user';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { TUTORIAL_COMPLETED_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { getMainWallet } from '../api/user';
 import { incrementEventCounterInContract } from '../api/web3';
-import { allowMixpanel } from '../utils/mixpanel';
+import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 
 const router = express.Router();
 
