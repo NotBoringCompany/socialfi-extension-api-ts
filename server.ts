@@ -12,7 +12,6 @@ import { checkMaintenance } from './middlewares/maintenance';
 dotenv.config();
 
 const app = express();
-const server = http.createServer(app);
 const port = process.env.PORT!;
 const mongoUri = process.env.MONGODB_URI!;
 
@@ -97,11 +96,11 @@ app.use('/collab', checkMaintenance, collabV2);
 app.use('/web3', checkMaintenance, web3);
 app.use('/chat', checkMaintenance, chat);
 
-/** socket io listener */
-initializeSocket(server);
-
-app.listen(port, async () => {
+const server = app.listen(port, async () => {
     console.log(`Server running on port: ${port}`);
 
     // await schedulers();
 });
+
+// initialize socket io
+initializeSocket(server);

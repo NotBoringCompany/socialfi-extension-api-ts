@@ -1,29 +1,41 @@
 import { Server, Socket } from 'socket.io';
-import { sendDirectMessage } from '../api/chat';
+import { sendDirectMessage, sendMessage } from '../api/chat';
 import { Status } from '../utils/retVal';
+import { sendDirectMessageDTO, SendDirectMessageDTO, sendMessageDTO, SendMessageDTO } from '../validations/chat';
 
 export enum ChatEvent {
-    /** send direct message */
-    DIRECT_MESSAGE = 'direct_message',
+    /** send message */
+    SEND_MESSAGE = 'send_message',
+    /** send message */
+    SEND_DIRECT_MESSAGE = 'send_direct_message',
     /** listener for a new message */
     NEW_MESSAGE = 'new_message',
+    /** user joined a new channel */
+    NEW_CHANNEL = 'new_channel',
 }
 
 export const handleChatEvents = (socket: Socket, io: Server) => {
-    socket.on(ChatEvent.DIRECT_MESSAGE, async (receiverId: string, message: string) => {
+    socket.on(ChatEvent.SEND_MESSAGE, async (request: SendMessageDTO) => {
         const senderId = socket.data.userId;
+        const validation = sendMessageDTO.validate(request);
 
-        const result = await sendDirectMessage(senderId, receiverId, message);
+        if (validation.status !== Status.SUCCESS) throw new Error('Invalid Payload');
+
+        const result = await sendMessage(senderId, validation.data.chatroomId, validation.data.message);
         if (result.status !== Status.SUCCESS) throw new Error('Failed to send the message');
 
-        socket.to('').emit(ChatEvent.DIRECT_MESSAGE, result.data.chat);
+        io.to(result.data.chatroom._id).emit(ChatEvent.NEW_MESSAGE, result.data);
     });
 
-    // Group Chat (only people in a specific group)
-    socket.on('join group', (groupId: string) => {});
+    socket.on(ChatEvent.SEND_DIRECT_MESSAGE, async (request: SendDirectMessageDTO) => {
+        const senderId = socket.data.userId;
+        const validation = sendDirectMessageDTO.validate(request);
 
-    socket.on('group chat', (groupId: string, msg: string) => {});
+        if (validation.status !== Status.SUCCESS) throw new Error('Invalid Payload');
 
-    // Private Chat (1-to-1 chat)
-    socket.on('private chat', (receiverId: string, msg: string) => {});
+        const result = await sendDirectMessage(senderId, validation.data.receiverId, validation.data.message);
+        if (result.status !== Status.SUCCESS) throw new Error('Failed to send the message');
+
+        io.to(result.data.chatroom._id).emit(ChatEvent.NEW_MESSAGE, result.data);
+    });
 };

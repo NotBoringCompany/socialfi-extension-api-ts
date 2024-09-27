@@ -52,24 +52,21 @@ export const getChatMessages = async (query: ChatMessageQuery): Promise<ReturnVa
             };
         }
 
-        const chatroom = await ChatroomModel.findById(query.chatroom);
-        if (!chatroom) {
+        // user's participated chatroom
+        const chatrooms = await ChatroomModel.find({ 'participants.user': user._id }).lean();
+
+        // check if the chatrooms empty or didn't exist in the list
+        if (!chatrooms || !chatrooms.find(({ _id }) => _id === query.chatroom)) {
             return {
-                status: Status.ERROR,
-                message: `(getChatroomChatrooms) Chatroom not found.`,
+                status: Status.SUCCESS,
+                message: `(getChatroomChatrooms) Chat messages fetched.`,
+                data: {
+                    chats: [],
+                },
             };
         }
 
-        // check if the user parcipated in the chatroom
-        if (!chatroom.participants.find((participant) => participant.user === user._id)) {
-            return {
-                status: Status.ERROR,
-                message: `(getChatroomChatrooms) You're not participated in this chatroom.`,
-            };
-        }
-
-        // Initialize the query object
-        const chatQuery = ChatModel.find().where('chatroom').equals(chatroom._id);
+        const chatQuery = ChatModel.find();
 
         if (query.startTimestamp) {
             chatQuery.where('createdTimestamp').gte(query.startTimestamp);
@@ -79,14 +76,17 @@ export const getChatMessages = async (query: ChatMessageQuery): Promise<ReturnVa
             chatQuery.where('createdTimestamp').lte(query.endTimestamp);
         }
 
-        const chats = await chatQuery.sort({ createdTimestamp: -1 }).limit(query.limit).exec();
+        if (query.chatroom) {
+            chatQuery.where('chatroom').equals(query.chatroom);
+        }
+
+        const chats = await chatQuery.sort({ createdTimestamp: -1 }).populate('sender').limit(query.limit).exec();
 
         return {
             status: Status.SUCCESS,
             message: `(getChatroomChatrooms) Chat messages fetched.`,
             data: {
                 chats,
-                chatroom,
             },
         };
     } catch (err: any) {
@@ -155,9 +155,10 @@ export const sendMessage = async (senderId: string, chatroomId: string, message:
 
         return {
             status: Status.SUCCESS,
-            message: `(sendMessage) Chatrooms fetched.`,
+            message: `(sendMessage) Message sent.`,
             data: {
                 chat,
+                chatroom,
             },
         };
     } catch (err: any) {
@@ -262,6 +263,7 @@ export const sendDirectMessage = async (
             message: `(sendDirectMessage) Direct message sent.`,
             data: {
                 chat,
+                chatroom,
             },
         };
     } catch (err: any) {
