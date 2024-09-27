@@ -82,6 +82,7 @@ export const DAILY_BONUS_RESOURCES_GATHERABLE = (type: IslandType) => {
     case IslandType.VERDANT_ISLES:
       return 3;
     case IslandType.EXOTIC_ISLES:
+    case IslandType.XTERIO_ISLES:
       return 4;
     case IslandType.CRYSTAL_ISLES:
       return 5;
@@ -156,6 +157,7 @@ export const GET_TOTAL_COOKIE_CRUMBS_EARNABLE = (type: IslandType) => {
     case IslandType.VERDANT_ISLES:
       return 0;
     case IslandType.EXOTIC_ISLES:
+    case IslandType.XTERIO_ISLES:
       return 0;
     case IslandType.CRYSTAL_ISLES:
       return 0;
@@ -224,6 +226,7 @@ export const ISLAND_EVOLUTION_COST = (
         };
       }
     case IslandType.EXOTIC_ISLES:
+    case IslandType.XTERIO_ISLES:
       if (currentLevel === 1) {
         return {
           xCookies: 40,
@@ -278,6 +281,7 @@ export const DEFAULT_RESOURCE_CAP = (type: IslandType) => {
     case IslandType.VERDANT_ISLES:
       return 1250;
     case IslandType.EXOTIC_ISLES:
+    case IslandType.XTERIO_ISLES:
       return 2500;
     case IslandType.CRYSTAL_ISLES:
       return 2500;
@@ -415,6 +419,7 @@ export const BIT_PLACEMENT_MIN_RARITY_REQUIREMENT = (
     case IslandType.VERDANT_ISLES:
       return BitRarity.COMMON;
     case IslandType.EXOTIC_ISLES:
+    case IslandType.XTERIO_ISLES:
       return BitRarity.COMMON;
     case IslandType.CRYSTAL_ISLES:
       return BitRarity.UNCOMMON;
@@ -602,6 +607,7 @@ export const X_COOKIE_TAX = (
         );
       }
     case IslandType.EXOTIC_ISLES:
+    case IslandType.XTERIO_ISLES:
       if (activeIslands >= 1 && activeIslands <= 2) {
         return 0;
       } else if (activeIslands >= 3 && activeIslands <= 10) {
