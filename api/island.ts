@@ -3747,8 +3747,10 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
             }
         }
 
-        // Initialize currentTappingData information
-        const { caressEnergyMeter, currentMilestone, milestoneReward } = island.islandTappingData as IslandTappingData;
+        // Destructure currentEnergy
+        const { currentEnergy } = user.inGameData.energy as PlayerEnergy;
+        // Destructure islandTappingData
+        const { caressEnergyMeter, currentCaressEnergyMeter, currentMilestone, milestoneReward } = island.islandTappingData as IslandTappingData;
         const islandTappingLimit = ISLAND_TAPPING_MILESTONE_LIMIT(island.type as IslandType);
         const boosterPercentage = milestoneReward.boosterReward;
         let resourcesDropped: number = 0;
@@ -3765,10 +3767,8 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
             };
         }
 
-        // Deduct User Energy after applying IslandTapping
-        // initialize user current energy & calculate energy required to apply island tapping
-        const { currentEnergy } = user.inGameData.energy as PlayerEnergy;
-        const energyRequired = Math.ceil(caressEnergyMeter / BASE_CARESS_PER_TAPPING) * BASE_ENERGY_PER_TAPPING;
+        // Calculate actual Energy Required from Math.ceil((Island caressEnergyMeter - Island currentCaressEnergyMeter) / BASE_CARESS_PER_TAPPING) * BASE_ENERGY_PER_TAPPING
+        const energyRequired = Math.ceil((caressEnergyMeter - currentCaressEnergyMeter) / BASE_CARESS_PER_TAPPING) * BASE_ENERGY_PER_TAPPING;
 
         // Check user currentEnergy is >= energyRequired
         if (currentEnergy >= energyRequired) {
@@ -4172,7 +4172,7 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
             data: {
                 islandId: island.islandId,
                 islandType: island.type,
-                energyConsumed: energyRequired,
+                energyConsumed: Math.ceil(caressEnergyMeter / BASE_CARESS_PER_TAPPING) * BASE_ENERGY_PER_TAPPING,
                 currentMilestone: currentMilestone,
                 currentReward: milestoneReward,
                 chosenBonus: bonus === 'First' ?
