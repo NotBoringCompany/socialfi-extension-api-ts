@@ -270,3 +270,14 @@ export enum CraftingQueueStatus {
  * Represents a craftable asset.
  */
 export type CraftableAsset = RestorationItem | TransmutationItem | EnergyTotemItem | ContinuumRelicItem | PotionItem | IngotItem;
+
+/**
+ * A list of different Synthesizing item groups.
+ */
+export enum SynthesizingItemGroup {
+    RESTORATION_ITEM = 'Restoration Item',
+    TRANSMUTATION_ITEM = 'Transmutation Item',
+    ENERGY_TOTEM_ITEM = 'Energy Totem Item',
+    CONTINUUM_RELIC_ITEM = 'Continuum Relic Item',
+    POTION_ITEM = 'Potion Item',
+}

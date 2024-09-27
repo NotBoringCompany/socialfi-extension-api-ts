@@ -394,33 +394,6 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
                 asset: TransmutationItem.WAND_OF_TRANSMUTATION,
                 assetType: 'item',
                 assetDescription: `Select an Isle (Verdant rarity or below) and transmute the Isle's current resource line into another line.`,
-                assetRarity: CraftedAssetRarity.COMMON,
-                assetEffectDuration: 'none'
-            },
-            craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
-            craftingDuration: BASE_CRAFTING_DURATION_COMMON,
-            baseEnergyRequired: BASE_ENERGY_COST_COMMON,
-            baseSuccessChance: 10000,
-            baseCritChance: 0,
-            obtainedPoints: 0,
-            requiredXCookies: 0,
-            requiredLevel: 1,
-            requiredCraftingLevel: REQUIRED_CRAFTING_LEVEL_COMMON,
-            earnedXP: EARNED_XP_COMMON,
-            weight: 0,
-            requiredAssetGroups: [
-                {
-                    requiredAssets: [
-                        // to be added
-                    ]
-                }
-            ]
-        },
-        {
-            craftedAssetData: {
-                asset: TransmutationItem.STAFF_OF_TRANSMUTATION,
-                assetType: 'item',
-                assetDescription: `Select an Isle (Exotic rarity or below) and transmute the Isle's current resource line into another line.`,
                 assetRarity: CraftedAssetRarity.UNCOMMON,
                 assetEffectDuration: 'none'
             },
@@ -438,7 +411,56 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
             requiredAssetGroups: [
                 {
                     requiredAssets: [
-                        // to be added
+                        {
+                            assetCategory: 'item',
+                            specificAsset: RestorationItem.SCROLL_OF_RESTORATION,
+                            requiredRarity: 'none',
+                            amount: 3,
+                        },
+                        {
+                            assetCategory: 'item',
+                            specificAsset: IngotItem.IRON_INGOT,
+                            requiredRarity: 'none',
+                            amount: 5
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            craftedAssetData: {
+                asset: TransmutationItem.STAFF_OF_TRANSMUTATION,
+                assetType: 'item',
+                assetDescription: `Select an Isle (Exotic rarity or below) and transmute the Isle's current resource line into another line.`,
+                assetRarity: CraftedAssetRarity.RARE,
+                assetEffectDuration: 'none'
+            },
+            craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
+            craftingDuration: BASE_CRAFTING_DURATION_RARE,
+            baseEnergyRequired: BASE_ENERGY_COST_RARE,
+            baseSuccessChance: 10000,
+            baseCritChance: 0,
+            obtainedPoints: 0,
+            requiredXCookies: 0,
+            requiredLevel: 1,
+            requiredCraftingLevel: REQUIRED_CRAFTING_LEVEL_RARE,
+            earnedXP: EARNED_XP_RARE,
+            weight: 0,
+            requiredAssetGroups: [
+                {
+                    requiredAssets: [
+                        {
+                            assetCategory: 'item',
+                            specificAsset: RestorationItem.TOME_OF_RESTORATION,
+                            requiredRarity: 'none',
+                            amount: 3,
+                        },
+                        {
+                            assetCategory: 'item',
+                            specificAsset: IngotItem.SILVER_INGOT,
+                            requiredRarity: 'none',
+                            amount: 5
+                        }
                     ]
                 }
             ]
@@ -467,16 +489,16 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
                 {
                     requiredAssets: [
                         {
-                            assetCategory: 'resource',
-                            specificAsset: 'any',
-                            requiredRarity: ResourceRarity.RARE,
-                            amount: 30
+                            assetCategory: 'item',
+                            specificAsset: RestorationItem.ANCIENT_SCROLL_OF_RESTORATION,
+                            requiredRarity: 'none',
+                            amount: 3,
                         },
                         {
-                            assetCategory: 'resource',
-                            specificAsset: 'any',
-                            requiredRarity: ResourceRarity.EPIC,
-                            amount: 15
+                            assetCategory: 'item',
+                            specificAsset: IngotItem.GOLD_INGOT,
+                            requiredRarity: 'none',
+                            amount: 5
                         }
                     ]
                 }

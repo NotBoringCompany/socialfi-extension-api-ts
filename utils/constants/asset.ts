@@ -1,5 +1,6 @@
 import { Asset } from '../../models/asset';
-import { BitOrbType, Item, TerraCapsulatorType } from '../../models/item';
+import { SynthesizingItemGroup } from '../../models/craft';
+import { BitOrbType, ContinuumRelicItem, EnergyTotemItem, Item, PotionItem, RestorationItem, TerraCapsulatorType, TransmutationItem } from '../../models/item';
 import { BarrenResource, FruitResource, LiquidResource, OreResource } from '../../models/resource';
 
 /**
@@ -95,3 +96,30 @@ export const assets: Asset[] = [
         description: 'A shiny orb that holds the power of your own companion. Highest chances of getting higher rarity Bits.'
     }
 ]
+
+/**
+ * Gets the enum type of `item`. For example, if inputted `Parchment of Restoration`, it will return `Restoration Item`.
+ */
+export const GET_SYNTHESIZING_ITEM_TYPE = (item: string): SynthesizingItemGroup | undefined => {
+    if (Object.values(RestorationItem).includes(item as RestorationItem)) {
+        return SynthesizingItemGroup.RESTORATION_ITEM;
+    }
+
+    if (Object.values(TransmutationItem).includes(item as TransmutationItem)) {
+        return SynthesizingItemGroup.TRANSMUTATION_ITEM;
+    }
+
+    if (Object.values(EnergyTotemItem).includes(item as EnergyTotemItem)) {
+        return SynthesizingItemGroup.ENERGY_TOTEM_ITEM;
+    }
+
+    if (Object.values(ContinuumRelicItem).includes(item as ContinuumRelicItem)) {
+        return SynthesizingItemGroup.CONTINUUM_RELIC_ITEM;
+    }
+
+    if (Object.values(PotionItem).includes(item as PotionItem)) {
+        return SynthesizingItemGroup.POTION_ITEM;
+    }
+
+    return undefined;
+}

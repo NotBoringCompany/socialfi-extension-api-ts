@@ -238,6 +238,7 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
                 inGameData: {
                     level: 1,
                     energy: newEnergy,
+                    usedAssetData: [],
                     mastery: {
                         tapping: {
                             level: 1,
@@ -2300,6 +2301,7 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
             inGameData: {
                 level: 1,
                 energy: newEnergy,
+                usedAssetData: [],
                 mastery: {
                     tapping: {
                         level: 1,
@@ -2734,6 +2736,7 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                 inGameData: {
                     level: 1,
                     energy: newEnergy,
+                    usedAssetData: [],
                     mastery: {
                         tapping: {
                             level: 1,
