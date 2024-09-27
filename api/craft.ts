@@ -1179,7 +1179,6 @@ export const claimCraftedAssets = async (
                 // do three things to the crafting queue:
                 // 1. reduce the `claimData.claimableAmount` by the `claimableAmount` via $inc
                 // 2. increase the `claimData.claimedAmount` by the `claimableAmount` via $inc
-                // 3. if `claimData.claimedAmount` + `claimData.claimableAmount` === `craftedAssetData.amount`, update the status to `CLAIMED`. else, update the status to `ONGOING`.
                 craftingQueueUpdateOperations.push({
                     queueId: queue._id,
                     updateOperations: {
@@ -1188,7 +1187,14 @@ export const claimCraftedAssets = async (
                             'claimData.claimedAmount': claimableAmount
                         },
                         $set: {
-                            status: queue.claimData.claimedAmount + claimableAmount === queue.craftedAssetData.amount ? CraftingQueueStatus.CLAIMED : CraftingQueueStatus.ONGOING
+                            // 1. check if the previous status was `PARTIALLY_CANCELLED_CLAIMABLE`. if yes, check the following:
+                                // a. if the `claimableAmount` < `claimData.claimableAmount`, keep the status as `PARTIALLY_CANCELLED_CLAIMABLE`. else,
+                                // b. if the `claimableAmount` === `claimData.claimableAmount`, set the status to `PARTIALLY_CANCELLED`. else,
+                                // 2. check if `claimData.claimedAmount` + `claimData.claimableAmount` === `craftedAssetData.amount`. if yes, set the status to `CLAIMED`. else, set the status to `ONGOING`.
+                                status: 
+                                    queue.status === CraftingQueueStatus.PARTIALLY_CANCELLED_CLAIMABLE ? 
+                                        claimableAmount < queue.claimData.claimableAmount ? CraftingQueueStatus.PARTIALLY_CANCELLED_CLAIMABLE : CraftingQueueStatus.PARTIALLY_CANCELLED : 
+                                        queue.claimData.claimedAmount + claimableAmount === queue.craftedAssetData.amount ? CraftingQueueStatus.CLAIMED : CraftingQueueStatus.ONGOING
                         }
                     }
                 });
@@ -1375,7 +1381,6 @@ export const claimCraftedAssets = async (
 
                     // 1. reduce the claimableAmount by the `claimableAmount`
                     // 2. increase the claimedAmount by the `claimableAmount`
-                    // 3. if `claimData.claimedAmount` + `claimData.claimableAmount` === `craftedAssetData.amount`, update the status to `CLAIMED`. else, update the status to `ONGOING`.
                     craftingQueueUpdateOperations.push({
                         queueId: queue._id,
                         updateOperations: {
@@ -1384,14 +1389,14 @@ export const claimCraftedAssets = async (
                                 'claimData.claimedAmount': claimableAmount
                             },
                             $set: {
-                                // 1. check if the previous status was `PARTIALLY_CANCELLED_CLAIMABLE`. if yes, set the status to `PARTIALLY_CANCELLED`.
-                                // 2. if not, check if `claimData.claimedAmount` + `claimData.claimableAmount` === `craftedAssetData.amount`. if yes, set the status to `CLAIMED`. else, set the status to `ONGOING`.
+                                // 1. check if the previous status was `PARTIALLY_CANCELLED_CLAIMABLE`. if yes, check the following:
+                                // a. if the `claimableAmount` < `claimData.claimableAmount`, keep the status as `PARTIALLY_CANCELLED_CLAIMABLE`. else,
+                                // b. if the `claimableAmount` === `claimData.claimableAmount`, set the status to `PARTIALLY_CANCELLED`. else,
+                                // 2. check if `claimData.claimedAmount` + `claimData.claimableAmount` === `craftedAssetData.amount`. if yes, set the status to `CLAIMED`. else, set the status to `ONGOING`.
                                 status: 
-                                    queue.status === CraftingQueueStatus.PARTIALLY_CANCELLED_CLAIMABLE 
-                                        ? CraftingQueueStatus.PARTIALLY_CANCELLED 
-                                        : queue.claimData.claimedAmount + claimableAmount === queue.craftedAssetData.amount 
-                                            ? CraftingQueueStatus.CLAIMED 
-                                            : CraftingQueueStatus.ONGOING
+                                    queue.status === CraftingQueueStatus.PARTIALLY_CANCELLED_CLAIMABLE ? 
+                                        claimableAmount < queue.claimData.claimableAmount ? CraftingQueueStatus.PARTIALLY_CANCELLED_CLAIMABLE : CraftingQueueStatus.PARTIALLY_CANCELLED : 
+                                        queue.claimData.claimedAmount + claimableAmount === queue.craftedAssetData.amount ? CraftingQueueStatus.CLAIMED : CraftingQueueStatus.ONGOING
                             }
                         }
                     });
