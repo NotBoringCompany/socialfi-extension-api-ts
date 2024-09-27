@@ -110,9 +110,8 @@ export const craftAsset = async (
         }
 
         // fetch all ongoing OR claimable crafting queues because these occupy the user's crafting slots.
-        // NOTE: partially cancelled crafting queues MAY also occupy the user's crafting slots IF there are claimable assets to be claimed.
-        // this will be checked further down.
-        const craftingQueues = await CraftingQueueModel.find({ userId: user._id, status: { $in: [CraftingQueueStatus.ONGOING, CraftingQueueStatus.CLAIMABLE, CraftingQueueStatus.PARTIALLY_CANCELLED] } }).lean();
+        // NOTE: partially cancelled claimable queues also occupy a slot, so we need to include them in the query.
+        const craftingQueues = await CraftingQueueModel.find({ userId: user._id, status: { $in: [CraftingQueueStatus.ONGOING, CraftingQueueStatus.CLAIMABLE, CraftingQueueStatus.PARTIALLY_CANCELLED_CLAIMABLE] } }).lean();
 
         // check if the user is in the right POI to craft assets and if they have reached the limit to craft the asset.
         const requiredPOI = REQUIRED_POI_FOR_CRAFTING_LINE(craftingRecipe.craftingRecipeLine);
@@ -146,13 +145,8 @@ export const craftAsset = async (
 
         console.log(`User ${user.twitterUsername} has ${craftingSlots} crafting slots and can craft ${craftablePerSlot} of ${assetToCraft} per slot for line ${craftingRecipe.craftingRecipeLine}.`);
 
-        // instead of checking for `craftingQueues.length`, because this includes partially cancelled queues which may NOT have claimable assets anymore,
-        // we need to check for any queue that's PARTIALLY CANCELLED and check if the claimableAmount > 0. if yes, it is counted as having used a slot. if not, it is not counted.
-        // therefore, any queue that is ONGOING or CLAIMABLE will be counted as having used a slot (i.e. increment counter by 1), any partially cancelled that has claimableAmount > 0 will also be counted (i.e. increment counter by 1).
-        const usedCraftingSlots = craftingQueues.filter(queue => queue.status === CraftingQueueStatus.ONGOING || queue.status === CraftingQueueStatus.CLAIMABLE || (queue.status === CraftingQueueStatus.PARTIALLY_CANCELLED && queue.claimData.claimableAmount > 0)).length;
-
         // throw IF craftingQueues >= craftingSlots
-        if (usedCraftingSlots >= craftingSlots) {
+        if (craftingQueues.length >= craftingSlots) {
             console.log(`(craftAsset) User has reached the crafting slots limit for ${craftingRecipe.craftingRecipeLine}.`);
 
             return {
@@ -972,10 +966,11 @@ export const fetchCraftingQueues = async (userId: string): Promise<ReturnValue> 
             message: `(fetchCraftingQueues) Fetched crafting queues.`,
             data: {
                 ongoingCraftingQueues: craftingQueues.filter(queue => queue.status === CraftingQueueStatus.ONGOING) ?? null,
-                claimableCraftingQueues: craftingQueues.filter(queue => queue.status === CraftingQueueStatus.CLAIMABLE) ?? null,
+                // note: because `PARTIALLY_CANCELLED_CLAIMABLE` also include claimable assets, we need to include them in the claimableCraftingQueues array.
+                claimableCraftingQueues: craftingQueues.filter(queue => queue.status === CraftingQueueStatus.CLAIMABLE || queue.status === CraftingQueueStatus.PARTIALLY_CANCELLED_CLAIMABLE) ?? null,
                 claimedCraftingQueues: craftingQueues.filter(queue => queue.status === CraftingQueueStatus.CLAIMED) ?? null,
                 cancelledCraftingQueues: craftingQueues.filter(queue => queue.status === CraftingQueueStatus.CANCELLED) ?? null,
-                partiallyCancelledCraftingQueues: craftingQueues.filter(queue => queue.status === CraftingQueueStatus.PARTIALLY_CANCELLED) ?? null
+                partiallyCancelledCraftingQueues: craftingQueues.filter(queue => queue.status === CraftingQueueStatus.PARTIALLY_CANCELLED) ?? null,
             }
         }
     } catch (err: any) {
@@ -1023,8 +1018,8 @@ export const claimCraftedAssets = async (
         }
 
         // find all claimable crafting queues for a user given the crafting line (which can be queried under `craftingRecipeLine`)
-        // NOTE: partially cancelled queues may also be claimable, so we can check either for CLAIMABLE or PARTIALLY_CANCELLED queues.
-        const claimableCraftingQueues = await CraftingQueueModel.find({ userId: user._id, craftingRecipeLine: craftingLine, status: { $in: [CraftingQueueStatus.CLAIMABLE, CraftingQueueStatus.PARTIALLY_CANCELLED] } }).lean();
+        // NOTE: `PARTIALLY_CANCELLED_CLAIMABLE` queues also have to be included because the user can still claim the assets before the queue was cancelled.
+        const claimableCraftingQueues = await CraftingQueueModel.find({ userId: user._id, craftingRecipeLine: craftingLine, status: { $in: [CraftingQueueStatus.CLAIMABLE, CraftingQueueStatus.PARTIALLY_CANCELLED_CLAIMABLE] } }).lean();
 
         if (claimableCraftingQueues.length === 0) {
             return {
@@ -1389,7 +1384,14 @@ export const claimCraftedAssets = async (
                                 'claimData.claimedAmount': claimableAmount
                             },
                             $set: {
-                                status: queue.claimData.claimedAmount + claimableAmount === queue.craftedAssetData.amount ? CraftingQueueStatus.CLAIMED : CraftingQueueStatus.ONGOING
+                                // 1. check if the previous status was `PARTIALLY_CANCELLED_CLAIMABLE`. if yes, set the status to `PARTIALLY_CANCELLED`.
+                                // 2. if not, check if `claimData.claimedAmount` + `claimData.claimableAmount` === `craftedAssetData.amount`. if yes, set the status to `CLAIMED`. else, set the status to `ONGOING`.
+                                status: 
+                                    queue.status === CraftingQueueStatus.PARTIALLY_CANCELLED_CLAIMABLE 
+                                        ? CraftingQueueStatus.PARTIALLY_CANCELLED 
+                                        : queue.claimData.claimedAmount + claimableAmount === queue.craftedAssetData.amount 
+                                            ? CraftingQueueStatus.CLAIMED 
+                                            : CraftingQueueStatus.ONGOING
                             }
                         }
                     });
@@ -1624,8 +1626,16 @@ export const cancelCraft = async (twitterId: string, craftingQueueId: string): P
             }),
             CraftingQueueModel.updateOne({ _id: craftingQueueId }, {
                 $set: {
-                    // if some assets have been produced (i.e. claimableAmount + claimedAmount > 0), then the status should be `PARTIALLY_CANCELLED`. else, it should be `CANCELLED`.
-                    status: craftingQueue.claimData.claimableAmount + craftingQueue.claimData.claimedAmount > 0 ? CraftingQueueStatus.PARTIALLY_CANCELLED : CraftingQueueStatus.CANCELLED
+                    // if some assets have been produced (i.e. claimableAmount + claimedAmount > 0), check the following:
+                    // 1. if claimableAmount > 0, set to `PARTIALLY_CANCELLED_CLAIMABLE`.
+                    // 2. if claimableAmount === 0, set to `PARTIALLY_CANCELLED`.
+                    // if no assets have been produced, set to `CANCELLED`.
+                    status: 
+                        craftingQueue.claimData.claimableAmount + craftingQueue.claimData.claimedAmount > 0 
+                            ? craftingQueue.claimData.claimableAmount > 0 
+                                ? CraftingQueueStatus.PARTIALLY_CANCELLED_CLAIMABLE 
+                                : CraftingQueueStatus.PARTIALLY_CANCELLED 
+                            : CraftingQueueStatus.CANCELLED
                 }
             })
         ]);
