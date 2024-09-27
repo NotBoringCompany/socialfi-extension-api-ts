@@ -13,7 +13,6 @@ import {Server} from 'socket.io'
 dotenv.config();
 
 const app = express();
-const server = http.createServer(app);
 const port = process.env.PORT!;
 const mongoUri = process.env.MONGODB_URI!;
 
@@ -104,18 +103,18 @@ app.use('/weekly_mvp_reward', checkMaintenance, weeklyMVPReward);
 app.use('/collab', checkMaintenance, collabV2);
 app.use('/web3', checkMaintenance, web3);
 app.use('/chat', checkMaintenance, chat);
-
-/** socket io listener */
-initializeSocket(server);
 app.use('/bans', checkMaintenance, ban);
 app.use('/mail', checkMaintenance, mail);
 app.use('/upgrade', checkMaintenance, upgrade);
 app.use('/gacha', checkMaintenance, gacha);
 app.use('/cosmetic', checkMaintenance, cosmetic);
+
 // both protocol and socket.io
 const httpServer = http.createServer(app);
 // Sockets init
 initSocket(httpServer);
+/** socket io listener */
+initializeSocket(httpServer);
 
 httpServer.listen(port, async () => {
     console.log(`Server running on port: ${port}`);
