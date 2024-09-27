@@ -117,3 +117,8 @@ export enum IngotItem {
     SILVER_INGOT = 'Silver Ingot',
     GOLD_INGOT = 'Gold Ingot'
 }
+
+/**
+ * Represents items that are made via the Synthesizing crafting line.
+ */
+export type SynthesizingItem = RestorationItem | TransmutationItem | EnergyTotemItem | ContinuumRelicItem | PotionItem;
