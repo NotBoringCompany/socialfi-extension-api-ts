@@ -4,7 +4,7 @@ import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { ExtendedProfile } from '../utils/types';
 import { allowMixpanel, mixpanel } from '../utils/mixpanel';
-import { CLAIM_BEGINNER_REWARDS_MIXPANEL_EVENT_HASH, CLAIM_DAILY_REWARDS_MIXPANEL_EVENT_HASH, LINK_INVITE_CODE_MIXPANEL_EVENT_HASH, REMOVE_RESOURCES_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
+import { CLAIM_BEGINNER_REWARDS_MIXPANEL_EVENT_HASH, CLAIM_DAILY_REWARDS_MIXPANEL_EVENT_HASH, CONSUME_ENERGY_POTION_MIXPANEL_EVENT_HASH, LINK_INVITE_CODE_MIXPANEL_EVENT_HASH, REMOVE_RESOURCES_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { UserWallet } from '../models/user';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { incrementEventCounterInContract } from '../api/web3';
@@ -171,7 +171,7 @@ router.post('/claim_daily_rewards', async (req, res) => {
         if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Claim Daily Rewards', {
                 distinct_id: validateData?.twitterId,
-                '_rewards': data?.dailyLoginRewards,
+                '_data': data,
             });
 
             incrementEventCounterInContract(validateData?.twitterId, CLAIM_DAILY_REWARDS_MIXPANEL_EVENT_HASH);
@@ -263,7 +263,7 @@ router.post('/claim_beginner_rewards', async (req, res) => {
         if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Claim Beginner Rewards', {
                 distinct_id: validateData?.twitterId,
-                '_rewards': data?.rewards,
+                '_data': data,
             });
 
             incrementEventCounterInContract(validateData?.twitterId, CLAIM_BEGINNER_REWARDS_MIXPANEL_EVENT_HASH);
@@ -402,6 +402,15 @@ router.post('/consume_energy_potion', async (req, res) => {
         }
 
         const { status, message, data } = await consumeEnergyPotion(validateData?.twitterId, tappingProgress);
+
+        if (status === Status.SUCCESS && allowMixpanel) {
+            mixpanel.track('Consume Energy Potion', {
+                distinct_id: validateData?.twitterId,
+                '_data': data,
+            });
+
+            incrementEventCounterInContract(validateData?.twitterId, CONSUME_ENERGY_POTION_MIXPANEL_EVENT_HASH);
+        }
         
         return res.status(status).json({
             status,

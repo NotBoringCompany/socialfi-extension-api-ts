@@ -45,3 +45,4 @@ export const CLAIM_REFERRAL_REWARDS_MIXPANEL_EVENT_HASH = convertToBytes32('Clai
 export const CLAIM_INDIRECT_REFERRAL_REWARDS_MIXPANEL_EVENT_HASH = convertToBytes32('Claim Indirect Referral Rewards');
 export const CLAIM_SQUAD_REWARDS_MIXPANEL_EVENT_HASH = convertToBytes32('Claim Squad Rewards');
 export const CLAIM_WEEKLY_MVP_REWARDS_MIXPANEL_EVENT_HASH = convertToBytes32('Claim Weekly MVP Rewards');
+export const CONSUME_ENERGY_POTION_MIXPANEL_EVENT_HASH = convertToBytes32('Consume Energy Potion');

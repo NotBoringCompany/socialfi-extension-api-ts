@@ -47,7 +47,7 @@ router.post('/complete_tutorial', async (req, res) => {
                 distinct_id: validateData?.twitterId,
             });
 
-            incrementEventCounterInContract(validateData?.twitterId, COMPLETE_QUEST_MIXPANEL_EVENT_HASH);
+            incrementEventCounterInContract(validateData?.twitterId, TUTORIAL_COMPLETED_MIXPANEL_EVENT_HASH);
         }
 
         return res.status(status).json({
@@ -76,7 +76,7 @@ router.post('/skip_tutorial', async (req, res) => {
 
         const { status, message, data } = await skipTutorial(validateData?.twitterId);
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Tutorial Skipped', {
                 distinct_id: validateData?.twitterId,
             });

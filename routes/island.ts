@@ -133,7 +133,7 @@ router.post('/remove_island', async (req, res) => {
         if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Remove Island', {
                 distinct_id: validateData?.twitterId,
-                '_islandId': islandId,
+                '_island': data?.island,
             });
 
             incrementEventCounterInContract(validateData?.twitterId, REMOVE_ISLAND_MIXPANEL_EVENT_HASH);
@@ -225,12 +225,12 @@ router.post('/claim_xcookies_and_crumbs', async (req, res) => {
 
         const { status, message, data } = await claimXCookiesAndCrumbs(validateData?.twitterId, islandId);
         
-        if (status === Status.SUCCESS && allowMixpanel) {
-            mixpanel.track('Claim Cookies & Crumbs', {
-                distinct_id: validateData?.twitterId,
-                '_data': data,
-            });
-        }
+        // if (status === Status.SUCCESS && allowMixpanel) {
+        //     mixpanel.track('Claim Cookies & Crumbs', {
+        //         distinct_id: validateData?.twitterId,
+        //         '_data': data,
+        //     });
+        // }
 
         return res.status(status).json({
             status,
@@ -497,7 +497,6 @@ router.post('/apply_gathering_progress_booster', async (req, res) => {
         if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Apply Gathering Booster', {
                 distinct_id: validateData?.twitterId,
-                '_isandId': islandId,
                 '_data': data,
             });
 

@@ -4,7 +4,7 @@ import { Status } from '../utils/retVal';
 import { acceptPendingSquadMember, addCoLeader, checkSquadCreationMethodAndCost, createSquad, declinePendingSquadMember, delegateLeadership, demoteCoLeader, getAllSquadData, getLatestSquadWeeklyRanking, getSquadData, getSquadMemberData, kickMember, leaveSquad, renameSquad, requestToJoinSquad, squadKOSData, upgradeSquadLimit } from '../api/squad';
 import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 import { authMiddleware } from '../middlewares/auth';
-import { ADD_SQUAD_CO_LEADER_EVENT_HASH, CREATE_SQUAD_MIXPANEL_EVENT_HASH, DEMOTE_SQUAD_CO_LEADER_EVENT_HASH, GET_CURRENT_USER_SQUAD_MIXPANEL_EVENT_HASH, JOIN_SQUAD_MIXPANEL_EVENT_HASH, KICK_SQUAD_MEMBER_MIXPANEL_EVENT_HASH, LEAVE_SQUAD_MIXPANEL_EVENT_HASH, RENAME_SQUAD_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
+import { ADD_SQUAD_CO_LEADER_EVENT_HASH, CREATE_SQUAD_MIXPANEL_EVENT_HASH, DELEGATE_SQUAD_LEADER_EVENT_HASH, DEMOTE_SQUAD_CO_LEADER_EVENT_HASH, GET_CURRENT_USER_SQUAD_MIXPANEL_EVENT_HASH, JOIN_SQUAD_MIXPANEL_EVENT_HASH, KICK_SQUAD_MEMBER_MIXPANEL_EVENT_HASH, LEAVE_SQUAD_MIXPANEL_EVENT_HASH, RENAME_SQUAD_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { incrementEventCounterInContract } from '../api/web3';
 
 const router = express.Router();
@@ -246,7 +246,7 @@ router.post('/leave_squad', async (req, res) => {
             mixpanel.track('Squad Member', {
                 distinct_id: validateData?.twitterId,
                 '_type': 'Leave',
-                '_currentMembers': data?.currentMembers,
+                '_data': data,
             });
 
             incrementEventCounterInContract(validateData?.twitterId, LEAVE_SQUAD_MIXPANEL_EVENT_HASH);
@@ -305,6 +305,16 @@ router.post('/delegate_leadership', async (req, res) => {
         }
 
         const { status, message, data } = await delegateLeadership(validateData?.twitterId, newLeaderTwitterId, newLeaderUserId);
+
+        if (status === Status.SUCCESS && allowMixpanel) {
+            mixpanel.track('Squad Member', {
+                distinct_id: validateData?.twitterId,
+                '_type': 'Delegate Leadership',
+                '_data': data,
+            });
+
+            incrementEventCounterInContract(validateData?.twitterId, DELEGATE_SQUAD_LEADER_EVENT_HASH);
+        }
 
         return res.status(status).json({
             status,

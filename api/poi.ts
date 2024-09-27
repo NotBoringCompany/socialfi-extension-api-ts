@@ -182,7 +182,13 @@ export const travelToPOI = async (
 
         return {
             status: Status.SUCCESS,
-            message: `(travelToPOI) Travelling to ${destination}. Arrival in ${timeToTravel} seconds.`
+            message: `(travelToPOI) Travelling to ${destination}. Arrival in ${timeToTravel} seconds.`,
+            data: {
+                destination,
+                raftId: raft._id,
+                raftLevel: raft.currentLevel,
+                raftSpeed
+            }
         }
     } catch (err: any) {
         return {
@@ -283,6 +289,7 @@ export const applyTravelBooster = async (
                 status: Status.SUCCESS,
                 message: `(applyTravelBooster) User arrived at ${user.inGameData.travellingTo} instantly due to booster effect.`,
                 data: {
+                    destination: user.inGameData.travellingTo,
                     newDestinationArrival: 0,
                     booster
                 }
@@ -306,6 +313,7 @@ export const applyTravelBooster = async (
                 status: Status.SUCCESS,
                 message: `(applyTravelBooster) Booster ${booster} applied.`,
                 data: {
+                    destination: user.inGameData.travellingTo,
                     newDestinationArrival: destinationArrival - boosterSeconds,
                     booster
                 }
@@ -1252,6 +1260,8 @@ export const sellItemsInPOIShop = async (
             status: Status.SUCCESS,
             message: `(sellItemsInPOIShop) Items sold. Leaderboard points added.`,
             data: {
+                poi: data.currentPOI.name,
+                items,
                 leaderboardPoints
             }
         }
@@ -1580,6 +1590,8 @@ export const buyItemsInPOIShop = async (
             status: Status.SUCCESS,
             message: `(buyItemsInPOIShop) Items bought.`,
             data: {
+                poi: data.currentPOI.name,
+                items,
                 totalPaid: totalPayment,
                 paymentChoice: paymentChoice
             }

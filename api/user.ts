@@ -34,7 +34,7 @@ import { Modifier } from '../models/modifier';
 import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
 import { FoodType } from '../models/food';
 import { BoosterItem } from '../models/booster';
-import { ISLAND_TAPPING_REQUIREMENT, randomizeIslandTraits } from '../utils/constants/island';
+import { BASE_CARESS_PER_TAPPING, BASE_ENERGY_PER_TAPPING, ISLAND_TAPPING_REQUIREMENT, randomizeIslandTraits } from '../utils/constants/island';
 import { Signature, recoverMessageAddress } from 'viem';
 import { joinReferrerSquad, requestToJoinSquad } from './squad';
 import { ExtendedDiscordProfile, ExtendedProfile } from '../utils/types';
@@ -1182,6 +1182,7 @@ export const claimDailyRewards = async (twitterId: string, leaderboardName: stri
             status: Status.SUCCESS,
             message: `(claimDailyRewards) Daily rewards claimed.`,
             data: {
+                consecutiveDaysClaimed,
                 dailyLoginRewards,
             },
         };
@@ -1343,6 +1344,12 @@ export const linkInviteCode = async (twitterId: string, code: string): Promise<R
             return {
                 status: Status.SUCCESS,
                 message: `(linkInviteCode) Starter code linked.`,
+                data: {
+                    codeType: starterCode ? 'Starter' : 'Referrer',
+                    starterCode,
+                    referrerId: referrer._id,
+                    referrerTwId: referrer.twitterId,
+                }
             };
         } else if (referrer) {
             // check if the user already has a referral code.
@@ -1405,6 +1412,12 @@ export const linkInviteCode = async (twitterId: string, code: string): Promise<R
                     return {
                         status: Status.SUCCESS,
                         message: `(linkInviteCode) Referral code linked. Extra error message from joinReferrerSquad: ${message}`,
+                        data: {
+                            codeType: starterCode ? 'Starter' : 'Referrer',
+                            starterCode,
+                            referrerId: referrer._id,
+                            referrerTwId: referrer.twitterId,
+                        }
                     };
                 }
             }
@@ -1413,6 +1426,10 @@ export const linkInviteCode = async (twitterId: string, code: string): Promise<R
                 status: Status.SUCCESS,
                 message: `(linkInviteCode) Referral code linked. Extra success message from joinReferrerSquad: ${message}`,
                 data: {
+                    codeType: starterCode ? 'Starter' : 'Referrer',
+                    starterCode,
+                    referrerId: referrer._id,
+                    referrerTwId: referrer.twitterId,
                     squadId: data.squadId,
                 },
             };
@@ -1647,6 +1664,7 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
             status: Status.SUCCESS,
             message: `(claimBeginnerRewards) Beginner rewards claimed for day ${nextDayToClaim}.`,
             data: {
+                claimedDay: nextDayToClaim,
                 rewards,
             },
         };
@@ -2562,6 +2580,7 @@ export const consumeEnergyPotion = async (
         };
 
         let bulkWriteIslandOps: any[] = [];
+        let totalTappingProgressEnergyRequired: number = 0;
 
         const user = await UserModel.findOne({ twitterId }).lean();
 
@@ -2589,40 +2608,52 @@ export const consumeEnergyPotion = async (
             }
         }
 
+        // If tappingProgress is passed, update islands' current tapping progress
+        if (tappingProgress) {
+            const islandIds = tappingProgress.map((progress) => progress.islandId);
+            const islands = await IslandModel.find({ islandId: { $in: islandIds }, owner: user._id });
+
+            // Calculate the total energy required for tapping progress
+            totalTappingProgressEnergyRequired = tappingProgress.reduce((total, progress) => {
+                return total + Math.ceil(progress.currentCaressEnergyMeter / BASE_CARESS_PER_TAPPING) * BASE_ENERGY_PER_TAPPING;
+            }, 0);
+
+            // Check if the current energy is enough for the tapping progress
+            if (totalTappingProgressEnergyRequired > currentEnergy) {
+                console.warn(`(consumeEnergyPotion) User ${user._id} doesn't have enough energy for tappingProgress: ${totalTappingProgressEnergyRequired} > ${currentEnergy}`);
+            } else {
+                // Prepare bulk write operations for the islands
+                bulkWriteIslandOps = tappingProgress.map((progress) => {
+                    const island = islands.find((island) => island.islandId === progress.islandId);
+
+                    if (island) {
+                        const { caressEnergyMeter, currentCaressEnergyMeter } = island.islandTappingData;
+                        const newCurrentCaressEnergyMeter = Math.min(currentCaressEnergyMeter + progress.currentCaressEnergyMeter, caressEnergyMeter);
+
+                        return {
+                            updateOne: {
+                                filter: { islandId: progress.islandId, owner: user._id },
+                                update: { $set: { 'islandTappingData.currentCaressEnergyMeter': newCurrentCaressEnergyMeter } }
+                            },
+                        };
+                    } else {
+                        console.warn(`(consumeEnergyPotion) Island with ID ${progress.islandId} not found for User ID: ${user._id}, Username: ${user.twitterUsername}`);
+                        return null;
+                    }
+                }).filter((op) => op !== null);  // Remove null operations
+            }
+        }
+
         // Calculate new current energy and new energy potion count
-        const newCurrentEnergy = Math.min(maxEnergy, currentEnergy + 1000);
+        const energyAfterTapping = currentEnergy >= totalTappingProgressEnergyRequired ? 
+            currentEnergy - totalTappingProgressEnergyRequired : 
+            currentEnergy;
+        const newCurrentEnergy = Math.min(maxEnergy, energyAfterTapping + 1000);
         const newEnergyPotionCount = Math.max(dailyEnergyPotion - 1, 0);
 
         // Set the new current energy and daily energy potion count in the update operations
         userUpdateOperations.$set['inGameData.energy.currentEnergy'] = newCurrentEnergy;
         userUpdateOperations.$set['inGameData.energy.dailyEnergyPotion'] = newEnergyPotionCount;
-
-        // If tappingProgress is passed, update islands' current tapping progress
-        if (tappingProgress) {
-            const islandIds = tappingProgress.map(progress => progress.islandId);
-            // Get all islands that need to be udpated
-            const islands = await IslandModel.find({ islandId: { $in: islandIds }, owner: user._id });
-
-            // Prepare bulk write operations for the islands
-            bulkWriteIslandOps = tappingProgress.map(progress => {
-                const island = islands.find(island => island.islandId === progress.islandId);
-
-                if (island) {
-                    const { caressEnergyMeter, currentCaressEnergyMeter } = island.islandTappingData;
-                    const newCurrentCaressEnergyMeter = Math.min(currentCaressEnergyMeter + progress.currentCaressEnergyMeter, caressEnergyMeter);
-
-                    return {
-                        updateOne: {
-                            filter: { islandId: progress.islandId, owner: user._id },
-                            update: { $set: { 'islandTappingData.currentCaressEnergyMeter': newCurrentCaressEnergyMeter } }
-                        }
-                    };
-                } else {
-                    console.warn(`(consumeEnergyPotion) Island with ID ${progress.islandId} not found for User ID: ${user._id}, Username: ${user.twitterUsername}`);
-                    return null;
-                }
-            }).filter(op => op !== null);
-        }
 
         // Update the user document in the database and islands if there are operations
         const operations: Promise<any>[] = [UserModel.updateOne({ twitterId }, userUpdateOperations)];
@@ -2636,7 +2667,12 @@ export const consumeEnergyPotion = async (
         // Return success status and message
         return {
             status: Status.SUCCESS,
-            message: `(consumeEnergyPotion) Energy Potion consumed successfully.`
+            message: `(consumeEnergyPotion) Energy Potion consumed successfully.`,
+            data: {
+                previousEnergy: energyAfterTapping,
+                newEnergy: newCurrentEnergy,
+                potionCount: newEnergyPotionCount,
+            }
         };
     } catch (err: any) {
         console.error('(consumeEnergyPotion), Error: ', err.message);

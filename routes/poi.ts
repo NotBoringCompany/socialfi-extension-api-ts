@@ -50,12 +50,12 @@ router.post('/travel_to_poi', async (req, res) => {
             });
         }
 
-        const { status, message } = await travelToPOI(validateData?.twitterId, destination);
+        const { status, message, data } = await travelToPOI(validateData?.twitterId, destination);
 
         if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Travel to Poi', {
                 distinct_id: validateData?.twitterId,
-                '_destination': destination,
+                '_data': data
             });
 
             // increment the event counter in the wonderbits contract.
@@ -243,9 +243,8 @@ router.post('/sell_items_in_poi_shop', async (req, res) => {
         if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Points Earned (POI Shop)', {
                 distinct_id: validateData?.twitterId,
-                '_items': items,
                 '_leaderboardName': leaderboardName,
-                '_earnedPoints': data?.leaderboardPoints,
+                '_data': data,
             });
 
             // increment the event counter in the wonderbits contract.
