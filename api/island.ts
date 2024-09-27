@@ -355,7 +355,10 @@ export const removeIsland = async (twitterId: string, islandId: number): Promise
 
         return {
             status: Status.SUCCESS,
-            message: `(deleteIsland) Island with ID ${islandId} successfully deleted.`
+            message: `(deleteIsland) Island with ID ${islandId} successfully deleted.`,
+            data: {
+                island
+            }
         }
     } catch (err: any) {
         return {
@@ -532,7 +535,7 @@ export const evolveIsland = async (twitterId: string, islandId: number, choice: 
             status: Status.SUCCESS,
             message: `(evolveIsland) Island with ID ${islandId} successfully evolved.`,
             data: {
-                islandId: islandId,
+                island,
                 currentLevel: island.currentLevel,
                 nextLevel: island.currentLevel + 1,
                 totalPaid,
@@ -874,8 +877,8 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
             status: Status.SUCCESS,
             message: `(placeBit) Bit placed on the island.`,
             data: {
-                bitId,
-                islandId
+                bit,
+                island
             }
         }
     } catch (err: any) {
@@ -1073,8 +1076,8 @@ export const unplaceBit = async (twitterId: string, bitId: number): Promise<Retu
             status: Status.SUCCESS,
             message: `(unplaceBit) Bit unplaced from the island.`,
             data: {
-                bitId,
-                islandId
+                bit,
+                island
             }
         }
     } catch (err: any) {
@@ -2135,12 +2138,16 @@ export const applyGatheringProgressBooster = async (
                     status: Status.SUCCESS,
                     message: `(applyGatheringProgressBooster) Gathering Progress Booster applied successfully for Island ID ${islandId}.`,
                     data: {
+                        island,
                         gatheringProgressData: {
                             prevGatheringProgress: gatheringProgress,
                             finalGatheringProgress,
                             resourcesDropped: 1
                         },
-                        firstBooster
+                        boosters: {
+                            type: firstBooster,
+                            amount: boosters.length
+                        }
                     }
                 }
                 // if not, just increment the gathering progress by the booster percentage and deduct the booster from the user's inventory.
@@ -2162,11 +2169,16 @@ export const applyGatheringProgressBooster = async (
                     status: Status.SUCCESS,
                     message: `(applyGatheringProgressBooster) Gathering Progress Booster applied successfully for Island ID ${islandId}.`,
                     data: {
+                        island,
                         gatheringProgressData: {
                             prevGatheringProgress: gatheringProgress,
-                            finalGatheringProgress: gatheringProgress + boosterPercentage
+                            finalGatheringProgress: gatheringProgress + boosterPercentage,
+                            resourcesDropped: 0,
                         },
-                        firstBooster
+                        boosters: {
+                            type: firstBooster,
+                            amount: boosters.length
+                        }
                     }
                 }
             }
@@ -2226,12 +2238,16 @@ export const applyGatheringProgressBooster = async (
                 status: Status.SUCCESS,
                 message: `(applyGatheringProgressBooster) Gathering Progress Booster applied successfully for Island ID ${islandId}.`,
                 data: {
+                    island,
                     gatheringProgressData: {
                         prevGatheringProgress: gatheringProgress,
                         finalGatheringProgress: finalNonModuloGatheringProgress % 100,
                         resourcesDropped: resourcesToDrop
                     },
-                    firstBooster
+                    boosters: {
+                        type: firstBooster,
+                        amount: boosters.length
+                    }
                 }
             }
         }
@@ -4154,6 +4170,9 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
             status: Status.SUCCESS,
             message: returnMessage,
             data: {
+                islandId: island.islandId,
+                islandType: island.type,
+                energyConsumed: energyRequired,
                 currentMilestone: currentMilestone,
                 currentReward: milestoneReward,
                 chosenBonus: bonus === 'First' ?
@@ -4232,7 +4251,7 @@ export const rerollBonusMilestoneReward = async (twitterId: string, islandId: nu
             status: Status.SUCCESS,
             message: `(rerollBonusMilestoneReward) Successfully updated bonus milestone reward.`,
             data: {
-                islandId: islandId,
+                island,
                 currentMilestone: currentMilestone,
                 tappingLevel: tapping.level,
                 newMilestoneBonusReward: newMilestoneBonusReward,

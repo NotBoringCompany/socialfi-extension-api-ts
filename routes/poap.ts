@@ -95,7 +95,7 @@ router.post('/redeem_poap', async (req, res) => {
         if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Redeem POAP', {
                 distinct_id: validateData?.twitterId,
-                '_code': code,
+                '_poap': data?.poap
             });
 
             // increment the event counter in the wonderbits contract.

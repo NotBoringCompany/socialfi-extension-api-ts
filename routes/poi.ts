@@ -50,18 +50,16 @@ router.post('/travel_to_poi', async (req, res) => {
             });
         }
 
-        const { status, message } = await travelToPOI(validateData?.twitterId, destination);
+        const { status, message, data } = await travelToPOI(validateData?.twitterId, destination);
 
-        if (status === Status.SUCCESS) {
-            if (allowMixpanel) {
-                mixpanel.track('Travel to Poi', {
-                    distinct_id: validateData?.twitterId,
-                    '_destination': destination,
-                });
-    
-                // increment the event counter in the wonderbits contract.
-                incrementEventCounterInContract(validateData?.twitterId, TRAVEL_TO_POI_MIXPANEL_EVENT_HASH);
-            }
+        if (status === Status.SUCCESS && allowMixpanel) {
+            mixpanel.track('Travel to Poi', {
+                distinct_id: validateData?.twitterId,
+                '_data': data
+            });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, TRAVEL_TO_POI_MIXPANEL_EVENT_HASH);
 
             incrementProgressionByType(QuestRequirementType.TRAVEL_POI, validateData?.twitterId, 1);
         }
@@ -244,18 +242,15 @@ router.post('/sell_items_in_poi_shop', async (req, res) => {
 
         const { status, message, data } = await sellItemsInPOIShop(validateData?.twitterId, items, leaderboardName);
 
-        if (status === Status.SUCCESS) {
-            if (allowMixpanel) {
-                mixpanel.track('Points Earned (POI Shop)', {
-                    distinct_id: validateData?.twitterId,
-                    '_items': items,
-                    '_leaderboardName': leaderboardName,
-                    '_earnedPoints': data.leaderboardPoints,
-                });
-    
-                // increment the event counter in the wonderbits contract.
-                incrementEventCounterInContract(validateData?.twitterId, SELL_ITEMS_IN_POI_SHOP_MIXPANEL_EVENT_HASH);
-            }
+        if (status === Status.SUCCESS && allowMixpanel) {
+            mixpanel.track('Points Earned (POI Shop)', {
+                distinct_id: validateData?.twitterId,
+                '_leaderboardName': leaderboardName,
+                '_data': data,
+            });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, SELL_ITEMS_IN_POI_SHOP_MIXPANEL_EVENT_HASH);
 
             const amount = (items as POIShopActionItemData[]).reduce((total, currentItem) => total + currentItem?.amount ?? 0, 0);
             const item = (items as POIShopActionItemData[])[0].item;

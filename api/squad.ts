@@ -780,6 +780,7 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
                     status: Status.SUCCESS,
                     message: `(leaveSquad) Disbanded squad successfully.`,
                     data: {
+                        squadId: squad._id,
                         currentMembers: 0,
                     }
                 }
@@ -857,6 +858,7 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
                         status: Status.SUCCESS,
                         message: `(leaveSquad) Left squad successfully.`,
                         data: {
+                            squadId: squad._id,
                             currentMembers: squad.members.length,
                         }
                     }
@@ -888,6 +890,7 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
                 status: Status.SUCCESS,
                 message: `(leaveSquad) Left squad successfully.`,
                 data: {
+                    squadId: squad._id,
                     currentMembers: squad.members.length,
                 }
             }

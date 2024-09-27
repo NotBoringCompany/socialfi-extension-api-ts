@@ -8,6 +8,7 @@ import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { TUTORIAL_COMPLETED_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { getMainWallet } from '../api/user';
 import { incrementEventCounterInContract } from '../api/web3';
+import { allowMixpanel } from '../utils/mixpanel';
 
 const router = express.Router();
 
@@ -43,7 +44,7 @@ router.post('/complete_tutorial', async (req, res) => {
 
         const { status, message, data } = await completeTutorial(validateData?.twitterId, tutorialId);
 
-        if (status === Status.SUCCESS && tutorialId === 11) {
+        if (status === Status.SUCCESS && tutorialId === 11 && allowMixpanel) {
             mixpanel.track('Tutorial Completed', {
                 distinct_id: validateData?.twitterId,
             });
@@ -78,7 +79,7 @@ router.post('/skip_tutorial', async (req, res) => {
 
         const { status, message, data } = await skipTutorial(validateData?.twitterId);
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Tutorial Skipped', {
                 distinct_id: validateData?.twitterId,
             });

@@ -176,7 +176,7 @@ router.post('/leave_squad', async (req, res) => {
             mixpanel.track('Squad Member', {
                 distinct_id: validateData?.twitterId,
                 '_type': 'Leave',
-                '_currentMembers': data.currentMembers,
+                '_data': data,
             });
 
             // increment the event counter in the wonderbits contract.
