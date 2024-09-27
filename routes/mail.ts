@@ -14,7 +14,7 @@ import {
   getAllMailsByUserIdWithPagination,
 } from '../api/mail';
 import { Status } from '../utils/retVal';
-import { validateRequestAuth } from '../utils/auth';
+import { validateRequestAuthV2 } from '../middlewares/validateRequest';
 const router = express.Router();
 
 // notify users
@@ -52,18 +52,9 @@ router.post('/notify_specific_user', authMiddleware(3), async (req, res) => {
 })
 
 // get all unread mails by user id
-router.get('/get_unread_mails/:userId', async (req, res) => {
+router.get('/get_unread_mails/:userId', validateRequestAuthV2('get_unread_mails'), async (req, res) => {
   const { userId } = req.params;
   try {
-
-    const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'get_unread_mails');
-
-    if (validateStatus !== Status.SUCCESS) {
-      return res.status(validateStatus).json({
-        status: validateStatus,
-        message: validateMessage
-      })
-    }
 
     const { status, message, data } = await getAllMailsByUserId(userId);
     return res.status(status).json({
@@ -83,24 +74,13 @@ router.get('/get_unread_mails/:userId', async (req, res) => {
  * get all mails with pagination
  * @example get_mails/:userId?page=1&limit=10
 */
-router.get('/get_mails/:userId', async (req, res) => {
+router.get('/get_mails/:userId', validateRequestAuthV2('get_mails'), async (req, res) => {
   const { userId } = req.params;
 
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 10;
 
   try {
-
-    const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'get_mails');
-
-    if (validateStatus !== Status.SUCCESS) {
-      return res.status(validateStatus).json({
-        status: validateStatus,
-        message: validateMessage
-      })
-    }
-
-
     const { status, message, data, meta } = await getAllMailsByUserIdWithPagination(userId, page, limit);
     return res.status(status).json({
       status,
@@ -111,14 +91,14 @@ router.get('/get_mails/:userId', async (req, res) => {
   } catch (err: any) {
     return res.status(500).json({
       status: 500,
-      message: err.message
+      message: `(getMails) Error: ${err.message}`
     })
   }
 })
 
 // read mail 
 // todo check user has an email
-router.post('/read_mail', async (req, res) => {
+router.post('/read_mail', validateRequestAuthV2('read_mail'), async (req, res) => {
   const { mailId, userId } = req.body;
   if (!mailId || !userId) {
     return res.status(Status.BAD_REQUEST).json({
@@ -127,15 +107,6 @@ router.post('/read_mail', async (req, res) => {
     })
   }
   try {
-
-    const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'read_mail');
-
-    if (validateStatus !== Status.SUCCESS) {
-      return res.status(validateStatus).json({
-        status: validateStatus,
-        message: validateMessage
-      })
-    }
 
     const { status, message } = await readMail(mailId, userId);
     return res.status(status).json({
@@ -151,7 +122,7 @@ router.post('/read_mail', async (req, res) => {
 })
 
 // delete mail
-router.post('/delete_mail', async (req, res) => {
+router.post('/delete_mail', validateRequestAuthV2('delete_mail'), async (req, res) => {
   const { mailId, userId } = req.body;
 
   if (!mailId || !userId) {
@@ -162,15 +133,6 @@ router.post('/delete_mail', async (req, res) => {
   }
 
   try {
-
-    const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'delete_mail');
-
-    if (validateStatus !== Status.SUCCESS) {
-      return res.status(validateStatus).json({
-        status: validateStatus,
-        message: validateMessage
-      })
-    }
 
     const { status, message } = await deleteMail(mailId, userId);
     return res.status(status).json({
@@ -186,7 +148,7 @@ router.post('/delete_mail', async (req, res) => {
 })
 
 // claim mail
-router.post('/claim_mail', async (req, res) => {
+router.post('/claim_mail',validateRequestAuthV2('claim_mail'), async (req, res) => {
   const { mailId, userId } = req.body;
 
   if (!mailId || !userId) {
@@ -197,15 +159,6 @@ router.post('/claim_mail', async (req, res) => {
   }
 
   try {
-
-    const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'claim_mail');
-
-    if (validateStatus !== Status.SUCCESS) {
-      return res.status(validateStatus).json({
-        status: validateStatus,
-        message: validateMessage
-      })
-    }
 
     const { status, message } = await claimMail(mailId, userId);
     return res.status(status).json({
@@ -221,18 +174,9 @@ router.post('/claim_mail', async (req, res) => {
 })
 
 // read all mail
-router.post('/read_all_mail', async (req, res) => {
+router.post('/read_all_mail',validateRequestAuthV2('read_all_mail'), async (req, res) => {
   const { userId } = req.body;
   try {
-
-    const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'read_all_mail');
-
-    if (validateStatus !== Status.SUCCESS) {
-      return res.status(validateStatus).json({
-        status: validateStatus,
-        message: validateMessage
-      })
-    }
 
     const { status, message } = await readAllMails(userId);
     return res.status(status).json({
@@ -248,18 +192,9 @@ router.post('/read_all_mail', async (req, res) => {
 })
 
 // claim all mail
-router.post('/claim_all_mail', async (req, res) => {
+router.post('/claim_all_mail',validateRequestAuthV2('claim_all_mail'), async (req, res) => {
   const { userId } = req.body;
   try {
-
-    const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'claim_all_mail');
-
-    if (validateStatus !== Status.SUCCESS) {
-      return res.status(validateStatus).json({
-        status: validateStatus,
-        message: validateMessage
-      })
-    }
 
     const { status, message } = await claimAllMails(userId);
     return res.status(status).json({
@@ -275,18 +210,9 @@ router.post('/claim_all_mail', async (req, res) => {
 })
 
 // delete all mail
-router.post('/delete_all_mail', async (req, res) => {
+router.post('/delete_all_mail', validateRequestAuthV2('delete_all_mail'), async (req, res) => {
   const { userId } = req.body;
   try {
-
-    const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'delete_all_mail');
-
-    if (validateStatus !== Status.SUCCESS) {
-      return res.status(validateStatus).json({
-        status: validateStatus,
-        message: validateMessage
-      })
-    }
 
     const { status, message } = await readAllMails(userId);
     return res.status(status).json({

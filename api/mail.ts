@@ -349,6 +349,14 @@ export const updateMailStatus = async (mailId: string, userId: string, mailStatu
 // update mail isRead status in receiverIds
 export const readMail = async (mailId: string, userId: string): Promise<ReturnValue> => {
   try {
+    const isUserExists = await UserModel.exists({ _id: userId });
+    if (!isUserExists) {
+      return {
+        status: Status.ERROR,
+        message: `(readMail) user with id ${userId} not found!`
+      }
+    }
+
     const mail = await MailModel.findOne({ _id: mailId }).lean();
     if (!mail) {
       return {

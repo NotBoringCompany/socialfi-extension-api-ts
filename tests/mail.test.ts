@@ -217,6 +217,25 @@ describe('Mail unit test', () => {
           message: "(readMail) Error: Cannot destructure property 'status' of '(intermediate value)' as it is undefined."
         })
       })
+
+      it('should error if user does not have mail', async () => {
+        mockValidateRequestAuth.mockResolvedValueOnce({
+          status: Status.SUCCESS,
+          message: 'Token Valid',
+          data: {
+            twiterId: '123'
+          }
+        })
+        const response = await request(app).post('/mail/read_mail').set('Authorization', `Bearer ${validToken}`).send({
+          mailId: 'd2afa51f57f1d044283882ba78d73d34',
+          userId: '123'
+        })
+        // expect(response.status).toBe(500)
+        expect(response.body).toEqual({
+          status: Status.ERROR,
+          message: "(readMail) Error: Cannot destructure property 'status'."
+        })
+      })
     })
 
     describe('Delete Mail', () => {
