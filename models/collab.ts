@@ -12,6 +12,8 @@ export enum CollabRewardType {
     BIT_ORB_III = 'Bit Orb (III)',
     TERRA_CAPSULATOR_I = 'Terra Capsulator (I)',
     TERRA_CAPSULATOR_II = 'Terra Capsulator (II)',
+    XTERIO_BIT = 'Xterio Bit',
+    XTERIO_ISLAND = 'Xterio Island',
 }
 
 /**

@@ -54,7 +54,6 @@ export const CollabParticipantSchema = new mongoose.Schema({
     },
     discordId: {
         type: String,
-        required: true,
     },
     basket: {
         type: CollabBasketSchema,

@@ -5,6 +5,8 @@ import { CollabBasketModel, CollabParticipantModel, TutorialModel, UserModel } f
 import { generateObjectId } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
 import { appendData, readSheet, readSheetObject } from '../utils/sheet';
+import { giftXterioBit } from './bit';
+import { giftXterioIsland } from './island';
 
 /**
  * Adds a participant to the database.
@@ -504,6 +506,12 @@ export const claimCollabReward = async (twitterId: string): Promise<ReturnValue>
                             };
                         }
                         break;
+                    case CollabRewardType.XTERIO_BIT:
+                        await giftXterioBit(user.twitterId);
+                        break;
+                    case CollabRewardType.XTERIO_ISLAND:
+                        await giftXterioIsland(user.twitterId);
+                        break;
                 }
             }
 
@@ -631,6 +639,131 @@ export const collabWinnerChange = async (
         return {
             status: Status.ERROR,
             message: `(collabWinnerChange) ${err.message}`,
+        };
+    }
+};
+
+/**
+ * Custom Import format for the collab participant
+ */
+export const customImport = async (rows: string[]): Promise<ReturnValue> => {
+    try {
+        for (const row of rows) {
+            let basket = await CollabBasketModel.findOne({ name: 'Xterio Gift' });
+
+            if (!basket) {
+                basket = new CollabBasketModel({
+                    _id: generateObjectId(),
+                    name: 'Xterio Gift',
+                    rewards: [],
+                });
+                await basket.save();
+            }
+
+            const existingParticipant = await CollabParticipantModel.findOne({
+                twitterUsername: row,
+                community: 'Xterio',
+            });
+
+            if (existingParticipant) {
+                await CollabParticipantModel.updateOne(
+                    { twitterUsername: row },
+                    {
+                        $set: {
+                            name: row,
+                            discordId: null,
+                            community: 'Xterio',
+                            basket: basket,
+                            approved: true,
+                            claimable: true,
+                        },
+                    }
+                );
+            } else {
+                const newParticipant = new CollabParticipantModel({
+                    _id: generateObjectId(),
+                    name: row,
+                    code: 'Xterio',
+                    role: 'Member',
+                    community: 'Xterio',
+                    twitterUsername: row,
+                    discordId: null,
+                    basket,
+                    claimable: true,
+                    approved: true,
+                });
+
+                await newParticipant.save();
+            }
+        }
+
+        const twitterHandles = rows;
+        const uniqueTwitterHandles = Array.from(new Set(twitterHandles));
+
+        const orConditions = uniqueTwitterHandles.map((handle) => ({
+            twitterUsername: { $regex: new RegExp(`^${handle}$`, 'i') },
+        }));
+
+        const registeredUsers = await UserModel.find({
+            $or: orConditions,
+            method: { $ne: 'telegram' },
+        }).lean();
+
+        // Create a Set of registered Twitter usernames for fast lookup
+        const registeredUsernames = new Set(registeredUsers.map((user) => user.twitterUsername.toLowerCase()));
+
+        // Filter out unregistered users and ensure uniqueness
+        const unregisteredUsers = rows.filter((item) => {
+            return item && !registeredUsernames.has(item.toLowerCase());
+        });
+
+        // Ensure unique unregistered users based on Twitter Handle
+        const uniqueUnregisteredUsers = Array.from(
+            new Set(unregisteredUsers)
+        ).map((handle) => unregisteredUsers.find((user) => user === handle));
+
+        // Handle pre-register user
+        await UserModel.insertMany(
+            uniqueUnregisteredUsers.map((user) => ({
+                _id: generateObjectId(),
+                twitterId: null,
+                twitterUsername: user,
+                inviteCodeData: {
+                    usedStarterCode: 'Xterio',
+                    usedReferralCode: null,
+                    referrerId: null,
+                },
+                inventory: {
+                    xCookieData: {
+                        currentXCookies: 0,
+                        extendedXCookieData: [],
+                    },
+                },
+            }))
+        );
+        // handle auto-claim when registered user already completed the tutorial
+        const tutorialCount = await TutorialModel.countDocuments();
+
+        // get registered user who already completed the tutorial
+        const completedTutorialUsers = registeredUsers.filter(
+            ({ twitterId, inGameData }) =>
+                !!twitterId && (inGameData as InGameData).completedTutorialIds.length === tutorialCount
+        );
+
+        // auto-claim the reward
+        await Promise.all(completedTutorialUsers.map((user) => claimCollabReward(user.twitterId)));
+
+        return {
+            status: Status.SUCCESS,
+            message: `(importParticipants) Participants imported`,
+        };
+    } catch (err: any) {
+        console.log(err);
+        
+        
+        return {
+            status: Status.ERROR,
+            message: `(importParticipants) ${err.message}`,
         };
     }
 };
