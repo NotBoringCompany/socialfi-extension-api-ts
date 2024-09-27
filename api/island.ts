@@ -61,8 +61,7 @@ export const giftXterioIsland = async (
 
         const islandType = IslandType.XTERIO_ISLES;
 
-        // xterio isles share similar stats to `Verdant Isles`
-        const baseResourceCap = randomizeBaseResourceCap(IslandType.VERDANT_ISLES);
+        const baseResourceCap = randomizeBaseResourceCap(islandType);
         const traits = randomizeIslandTraits();
         const totalXCookiesEarnable = 0;
         const totalCookieCrumbsEarnable = 0;
