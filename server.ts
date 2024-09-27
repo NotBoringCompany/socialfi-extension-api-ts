@@ -64,6 +64,7 @@ import web3 from './routes/web3';
 import { schedulers } from './schedulers/schedulers';
 import ban from './routes/ban';
 import mail from './routes/mail';
+import { startRest } from './api/sauna';
 
 app.use('/auth/twitter', checkMaintenance, twitterAuth);
 app.use('/auth/discord', checkMaintenance, discordAuth);
@@ -110,7 +111,7 @@ io.on('connection', (socket) => {
 
     socket.on("start_rest", (msg)=>{
         const {userId} = msg
-        console.log('start rest', userId)
+        startRest(socket, userId)
     })
     
     socket.on('disconnect', () => {
