@@ -64,7 +64,7 @@ import web3 from './routes/web3';
 import { schedulers } from './schedulers/schedulers';
 import ban from './routes/ban';
 import mail from './routes/mail';
-import { startRest } from './api/sauna';
+import { socketHandler } from './socket';
 
 app.use('/auth/twitter', checkMaintenance, twitterAuth);
 app.use('/auth/discord', checkMaintenance, discordAuth);
@@ -106,18 +106,7 @@ const io = new Server(httpServer, {
     },
 });
 
-io.on('connection', (socket) => {
-    console.log('a user connected');
-
-    socket.on("start_rest", (msg)=>{
-        const {userId} = msg
-        startRest(socket, userId)
-    })
-    
-    socket.on('disconnect', () => {
-        console.log('user disconnected');
-    });
-});
+io.on('connection', socketHandler);
 
 httpServer.listen(port, async () => {
     console.log(`Server running on port: ${port}`);
