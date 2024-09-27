@@ -59,9 +59,9 @@ export const giftXterioBit = async (twitterId: string): Promise<ReturnValue> => 
 
         // get the latest bit id
         const latestBitId = data?.latestBitId as number;
-
-        // xterio bits are always uncommon due to the logic from the game mechanics
-        const rarity = BitRarity.UNCOMMON;
+        
+        // Xterio bits always has Rare rarity
+        const rarity = BitRarity.RARE;
 
         const gender = RANDOMIZE_GENDER();
 
