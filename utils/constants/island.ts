@@ -321,6 +321,7 @@ export const RESOURCE_DROP_CHANCES = (type: IslandType): ResourceDropChance => {
         legendary: 0,
       };
     case IslandType.EXOTIC_ISLES:
+    case IslandType.XTERIO_ISLES:
       return {
         common: 50,
         uncommon: 33.745,
@@ -379,6 +380,7 @@ export const RESOURCE_DROP_CHANCES_LEVEL_DIFF = (
         legendary: 0,
       };
     case IslandType.EXOTIC_ISLES:
+    case IslandType.XTERIO_ISLES:
       return {
         common: -0.44825,
         uncommon: 0.175,
