@@ -58,6 +58,8 @@ export const giftXterioIsland = async (
         // get the latest island id
         const latestIslandId = data?.latestIslandId as number;
 
+        const { tapping } = user.inGameData.mastery as PlayerMastery;
+
         const islandType = IslandType.XTERIO_ISLES;
 
         // xterio isles share similar stats to `Verdant Isles`
@@ -164,7 +166,8 @@ export const giftXterioIsland = async (
                 crumbsEarningEnd: 0,
                 lastClaimed: 0,
             },
-            islandStatsModifiers
+            islandStatsModifiers,
+            islandTappingData: ISLAND_TAPPING_REQUIREMENT(1, tapping.level),
         });
 
         // save the island to the database
