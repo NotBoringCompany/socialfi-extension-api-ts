@@ -316,6 +316,7 @@ export const RESOURCE_DROP_CHANCES = (type: IslandType): ResourceDropChance => {
         legendary: 0,
       };
     case IslandType.EXOTIC_ISLES:
+    case IslandType.XTERIO_ISLES:
       return {
         common: 50,
         uncommon: 33.745,
@@ -374,6 +375,7 @@ export const RESOURCE_DROP_CHANCES_LEVEL_DIFF = (
         legendary: 0,
       };
     case IslandType.EXOTIC_ISLES:
+    case IslandType.XTERIO_ISLES:
       return {
         common: -0.44825,
         uncommon: 0.175,
@@ -456,6 +458,7 @@ export const RARITY_DEVIATION_REDUCTIONS = (
       }
     // for exotic isles, only common and uncommon bits will get reductions.
     case IslandType.EXOTIC_ISLES:
+    case IslandType.XTERIO_ISLES:
       switch (rarity) {
         case BitRarity.COMMON:
           return {
@@ -518,18 +521,6 @@ export const RARITY_DEVIATION_REDUCTIONS = (
             gatheringRateReduction: 0,
           };
       }
-    // same like verdant isles
-    case IslandType.XTERIO_ISLES:
-      switch (rarity) {
-        case BitRarity.COMMON:
-          return {
-            gatheringRateReduction: 2,
-          };
-        default:
-          return {
-            gatheringRateReduction: 0,
-          };
-      }
   }
 };
 
@@ -545,14 +536,12 @@ export const ISLAND_RARITY_DEVIATION_MODIFIERS = (type: IslandType): number => {
     case IslandType.VERDANT_ISLES:
       return 2;
     case IslandType.EXOTIC_ISLES:
+    case IslandType.XTERIO_ISLES:
       return 1;
     case IslandType.CRYSTAL_ISLES:
       return 1;
     case IslandType.CELESTIAL_ISLES:
       return 1;
-    // similar to verdant isles, but the modifier is 3 instead of 2.
-    case IslandType.XTERIO_ISLES:
-      return 3;
   }
 };
 
@@ -737,9 +726,9 @@ export const ISLAND_TAPPING_MILESTONE_LIMIT = (type: IslandType): number => {
     case IslandType.PRIMAL_ISLES:
       return 5;
     case IslandType.VERDANT_ISLES:
-    case IslandType.XTERIO_ISLES:
       return 10;
     case IslandType.EXOTIC_ISLES:
+    case IslandType.XTERIO_ISLES:
       return 15;
     case IslandType.CRYSTAL_ISLES:
       return 20;
