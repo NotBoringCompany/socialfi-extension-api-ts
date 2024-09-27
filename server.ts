@@ -7,6 +7,8 @@ import mongoose from 'mongoose';
 import session from 'express-session';
 import MongoStore from 'connect-mongo';
 import { checkMaintenance } from './middlewares/maintenance';
+import {Server} from 'socket.io'
+import http from 'http';
 
 dotenv.config();
 
@@ -93,10 +95,31 @@ app.use('/collab', checkMaintenance, collabV2);
 app.use('/web3', checkMaintenance, web3);
 app.use('/bans', checkMaintenance, ban);
 app.use('/mail', checkMaintenance, mail);
+// both protocol and socket.io
+const httpServer = http.createServer(app);
+// Sockets init
+const io = new Server(httpServer, {
+    cors: {
+        origin: '*',
+        methods: ['GET', 'POST']
+    },
+});
 
-app.listen(port, async () => {
+io.on('connection', (socket) => {
+    console.log('a user connected');
+
+    socket.on("start_rest", (msg)=>{
+        const {userId} = msg
+        console.log('start rest', userId)
+    })
+    
+    socket.on('disconnect', () => {
+        console.log('user disconnected');
+    });
+});
+
+httpServer.listen(port, async () => {
     console.log(`Server running on port: ${port}`);
-
     // await schedulers();
 });
 
