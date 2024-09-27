@@ -2398,14 +2398,6 @@ export const consumeEnergyPotion = async (
             }
         }
 
-        // Calculate new current energy and new energy potion count
-        const newCurrentEnergy = Math.min(maxEnergy, currentEnergy + ENERGY_POTION_RECOVERY);
-        const newEnergyPotionCount = Math.max(dailyEnergyPotion - 1, 0);
-
-        // Set the new current energy and daily energy potion count in the update operations
-        userUpdateOperations.$set['inGameData.energy.currentEnergy'] = newCurrentEnergy;
-        userUpdateOperations.$set['inGameData.energy.dailyEnergyPotion'] = newEnergyPotionCount;
-
         // If tappingProgress is passed, update islands' current tapping progress
         if (tappingProgress) {
             const islandIds = tappingProgress.map((progress) => progress.islandId);
