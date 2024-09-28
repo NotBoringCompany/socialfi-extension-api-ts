@@ -1329,6 +1329,7 @@ export const getOwnedKeyIDs = async (twitterId: string): Promise<ReturnValue> =>
                 status: Status.SUCCESS,
                 message: `(getOwnedKeys) No owned Key of Salvation IDs found.`,
                 data: {
+                    ownedKeyCount: 0,
                     ownedKeyIDs: []
                 }
             };
@@ -1357,6 +1358,7 @@ export const getOwnedKeyIDs = async (twitterId: string): Promise<ReturnValue> =>
             status: Status.SUCCESS,
             message: `(getOwnedKeys) Successfully retrieved owned Key of Salvation IDs.`,
             data: {
+                ownedKeyCount: keyIDs.length,
                 ownedKeyIDs: keyIDs
             }
         };
@@ -1392,6 +1394,7 @@ export const getOwnedKeychainIDs = async (twitterId: string): Promise<ReturnValu
                 status: Status.SUCCESS,
                 message: `(getOwnedKeys) No owned Key of Salvation IDs found.`,
                 data: {
+                    ownedKeychainCount: 0,
                     ownedKeyIDs: []
                 }
             };
@@ -1420,6 +1423,7 @@ export const getOwnedKeychainIDs = async (twitterId: string): Promise<ReturnValu
             status: Status.SUCCESS,
             message: `(getOwnedKeychainIDs) Successfully retrieved owned Keychain IDs.`,
             data: {
+                ownedKeychainCount: keychainIDs.length,
                 ownedKeychainIDs: keychainIDs
             }
         };
@@ -1455,7 +1459,8 @@ export const getOwnedSuperiorKeychainIDs = async (twitterId: string): Promise<Re
                 status: Status.SUCCESS,
                 message: `(getOwnedKeys) No owned Key of Salvation IDs found.`,
                 data: {
-                    ownedKeyIDs: []
+                    ownedSuperiorKeychainCount: 0,
+                    ownedSuperiorKeychainIDs: []
                 }
             };
         }
@@ -1483,6 +1488,7 @@ export const getOwnedSuperiorKeychainIDs = async (twitterId: string): Promise<Re
             status: Status.SUCCESS,
             message: `(getOwnedSuperiorKeychainIDs) Successfully retrieved owned Superior Keychain IDs.`,
             data: {
+                ownedSuperiorKeychainCount: superiorKeychainIDs.length,
                 ownedSuperiorKeychainIDs: superiorKeychainIDs
             }
         };

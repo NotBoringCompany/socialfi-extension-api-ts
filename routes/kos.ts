@@ -15,8 +15,7 @@ router.get('/get_owned_key_ids/:twitterId', async (req, res) => {
         if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('User Owned Key', {
                 distinct_id: twitterId,
-                '_ownedKey': data?.ownedKeyIDs.length,
-                '_ownedKeyIds': data?.ownedKeyIDs,
+                '_data': data
             });
         }
 
@@ -41,8 +40,7 @@ router.get('/get_owned_keychain_ids/:twitterId', async (req, res) => {
         if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('User Owned Keychain', {
                 distinct_id: twitterId,
-                '_ownedKeychain': data?.ownedKeychainIDs.length,
-                '_ownedKeychainIds': data?.ownedKeychainIDs,
+                '_data': data
             });
         }
 
@@ -67,9 +65,7 @@ router.get('/get_owned_superior_keychain_ids/:twitterId', async (req, res) => {
         if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('User Owned Superior Keychain', {
                 distinct_id: twitterId,
-                '_data': data,
-                '_ownedSuperiorKeychain': data?.ownedSuperiorKeychainIDs.length,
-                '_ownedSuperiorKeychainIds': data?.ownedSuperiorKeychainIDs,
+                '_data': data
             });
         }
 
@@ -102,7 +98,7 @@ router.post('/claim_daily_kos_rewards', async (req, res) => {
         if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Claim Daily KOS', {
                 distinct_id: validateData?.twitterId,
-                '_data': data,
+                '_data': data
             });
         }
 
@@ -135,7 +131,7 @@ router.post('/claim_weekly_kos_rewards', async (req, res) => {
         if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Claim Weekly KOS', {
                 distinct_id: validateData?.twitterId,
-                '_data': data,
+                '_data': data
             });
         }
 

@@ -58,8 +58,7 @@ router.post('/rename_bit', async (req, res) => {
         if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Rename Bit', {
                 distinct_id: validateData?.twitterId,
-                '_bitId': bitId,
-                '_newName': newName,
+                '_data': data,
             });
 
             incrementEventCounterInContract(validateData?.twitterId, RENAME_BIT_MIXPANEL_EVENT_HASH);
@@ -96,7 +95,7 @@ router.post('/release_bit', async (req, res) => {
         if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Release Bit', {
                 distinct_id: validateData?.twitterId,
-                '_bitId': bitId,
+                '_data': data,
             });
 
             incrementEventCounterInContract(validateData?.twitterId, RELEASE_BIT_MIXPANEL_EVENT_HASH);
@@ -171,8 +170,7 @@ router.post('/feed_bit', async (req, res) => {
         if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Feed Bit', {
                 distinct_id: validateData?.twitterId,
-                '_bitId': bitId,
-                '_foodType': foodType,
+                '_data': data
             });
 
             // increment the event counter in the wonderbits contract.

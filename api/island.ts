@@ -361,7 +361,9 @@ export const removeIsland = async (twitterId: string, islandId: number): Promise
             status: Status.SUCCESS,
             message: `(deleteIsland) Island with ID ${islandId} successfully deleted.`,
             data: {
-                island
+                islandId: islandId,
+                islandType: island.type,
+                islandTraits: island.traits
             }
         }
     } catch (err: any) {
@@ -2122,7 +2124,7 @@ export const applyGatheringProgressBooster = async (
                     status: Status.SUCCESS,
                     message: `(applyGatheringProgressBooster) Gathering Progress Booster applied successfully for Island ID ${islandId}.`,
                     data: {
-                        island,
+                        island: island,
                         gatheringProgressData: {
                             prevGatheringProgress: gatheringProgress,
                             finalGatheringProgress,
@@ -2771,6 +2773,7 @@ export const claimResources = async (
                         status: Status.SUCCESS,
                         message: returnMessage,
                         data: {
+                            claimType: claimType,
                             claimedResources: claimType === 'manual' ? chosenResources : claimedResources,
                         }
                     };
@@ -4145,7 +4148,7 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
                 chosenBonus: bonus === 'First' ?
                     milestoneReward.bonusReward.firstOptionReward :
                     milestoneReward.bonusReward.secondOptionReward,
-                resourcesDropped,
+                resourcesDropped: resourcesDropped,
             }
         };
     } catch (err: any) {
@@ -4218,7 +4221,8 @@ export const rerollBonusMilestoneReward = async (twitterId: string, islandId: nu
             status: Status.SUCCESS,
             message: `(rerollBonusMilestoneReward) Successfully updated bonus milestone reward.`,
             data: {
-                island,
+                islandId: island.islandId,
+                IslandType: island.type,
                 currentMilestone: currentMilestone,
                 tappingLevel: tapping.level,
                 newMilestoneBonusReward: newMilestoneBonusReward,
