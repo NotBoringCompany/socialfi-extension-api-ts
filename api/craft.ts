@@ -1680,6 +1680,7 @@ export const cancelCraft = async (twitterId: string, craftingQueueId: string): P
             data: {
                 craftedAsset: craftingQueue.craftedAssetData.asset,
                 cancelledAmount: (craftingQueue.craftedAssetData.amount - craftingQueue.claimData.claimedAmount - craftingQueue.claimData.claimableAmount),
+                cancelledCost: xCookiesRequired,
                 requiredAssetsPerQuantity: allRequiredAssets
             }
         }

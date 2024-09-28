@@ -24,7 +24,7 @@ router.post('/craft_asset', async (req, res) => {
 
         const { status, message, data } = await craftAsset(validateData?.twitterId, assetToCraft, amount, chosenAssetGroup, chosenFlexibleRequiredAssets);
         
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Craft Asset', {
                 distinct_id: validateData?.twitterId,
                 '_data': data,
@@ -62,7 +62,7 @@ router.post('/cancel_craft', async (req, res) => {
 
         const { status, message, data } = await cancelCraft(validateData?.twitterId, craftingQueueId);
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Currency Tracker', {
                 distinct_id: validateData?.twitterId,
                 '_type': 'Cancel Crafting Queue',
@@ -155,7 +155,7 @@ router.post('/claim_crafted_assets', async (req, res) => {
 
         const { status, message, data } = await claimCraftedAssets(validateData?.twitterId, claimType, craftingLine, craftingQueueIds);
 
-        if (status === Status.SUCCESS) {
+        if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Claim Crafted Asset', {
                 distinct_id: validateData?.twitterId,
                 '_data': data,
