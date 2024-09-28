@@ -158,11 +158,32 @@ export const updateUserIslandIds = async (): Promise<void> => {
         for (const user of users) {
             const ownedIslands = islands.filter(island => island.owner === user._id);
 
-            // check if `user.inventory.islandIds` is an array. some users don't have full data, so we skip if it's not an array
-            if (!Array.isArray(user.inventory.islandIds)) {
-                console.error(`(updateUserIslandIds) User ${user._id} does not have an array for islandIds`);
+            // some users may not have islands or they don't have full data. in this case, skip the user
+            if (ownedIslands.length === 0 || user.inventory?.islandIds === undefined) {
+                console.error(`(updateUserIslandIds) User ${user._id} does not own any islands or has undefined islandIds`);
                 continue;
             }
+
+            // // check if `user.inventory.islandIds` is an array. some users may have accidentally switched the type to an object, so we need to set it back.
+            // if (!Array.isArray(user.inventory.islandIds)) {
+            //     console.error(`(updateUserIslandIds) User ${user._id} does not have an array for islandIds`);
+            //     mismatches++;
+                
+            //     // update the user's `inventory.islandIds` array
+            //     const ownedIslandIds = new Set(ownedIslands.map(island => island.islandId));
+
+            //     userUpdateOperations.push({
+            //         id: user._id,
+            //         updateOperations: {
+            //             $set: {
+            //                 // `ownedIslandIds` is the true source of truth for the islands owned.
+            //                 // convert `ownedIslandIds` to an array
+            //                 'inventory.islandIds': [...ownedIslandIds]
+            //             }
+            //         }
+            //     });
+            //     continue;
+            // }
 
             // check if the contents of `ownedIslandIds` matches `user.inventory.islandIds` (don't care about the order)
             // if it does not, update the `inventory.islandIds` array
