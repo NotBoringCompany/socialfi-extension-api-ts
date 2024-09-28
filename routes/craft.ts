@@ -3,6 +3,9 @@ import { Status } from '../utils/retVal';
 import { validateRequestAuth } from '../utils/auth';
 import { cancelCraft, claimCraftedAssets, craftAsset, fetchCraftingQueues } from '../api/craft';
 import { CRAFTING_RECIPES } from '../utils/constants/craft';
+import { allowMixpanel, mixpanel } from '../utils/mixpanel';
+import { incrementEventCounterInContract } from '../api/web3';
+import { CANCEL_CRAFTING_QUEUE_MIXPANEL_EVENT_HASH, CLAIM_CRAFTED_ASSET_MIXPANEL_EVENT_HASH, CRAFT_ASSET_MIXPANEL_EVENT_HASH, OPEN_CHEST_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 
 const router = express.Router();
 
@@ -21,6 +24,16 @@ router.post('/craft_asset', async (req, res) => {
 
         const { status, message, data } = await craftAsset(validateData?.twitterId, assetToCraft, amount, chosenAssetGroup, chosenFlexibleRequiredAssets);
         
+        if (status === Status.SUCCESS && allowMixpanel) {
+            mixpanel.track('Craft Asset', {
+                distinct_id: validateData?.twitterId,
+                '_data': data,
+            });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, CRAFT_ASSET_MIXPANEL_EVENT_HASH);
+        }
+
         return res.status(status).json({
             status,
             message,
@@ -48,6 +61,17 @@ router.post('/cancel_craft', async (req, res) => {
         }
 
         const { status, message, data } = await cancelCraft(validateData?.twitterId, craftingQueueId);
+
+        if (status === Status.SUCCESS && allowMixpanel) {
+            mixpanel.track('Currency Tracker', {
+                distinct_id: validateData?.twitterId,
+                '_type': 'Cancel Crafting Queue',
+                '_data': data,
+            });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, CANCEL_CRAFTING_QUEUE_MIXPANEL_EVENT_HASH);
+        }
         
         return res.status(status).json({
             status,
@@ -130,6 +154,16 @@ router.post('/claim_crafted_assets', async (req, res) => {
         }
 
         const { status, message, data } = await claimCraftedAssets(validateData?.twitterId, claimType, craftingLine, craftingQueueIds);
+
+        if (status === Status.SUCCESS && allowMixpanel) {
+            mixpanel.track('Claim Crafted Asset', {
+                distinct_id: validateData?.twitterId,
+                '_data': data,
+            });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, CLAIM_CRAFTED_ASSET_MIXPANEL_EVENT_HASH);
+        }
 
         return res.status(status).json({
             status,

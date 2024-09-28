@@ -942,7 +942,11 @@ export const craftAsset = async (
 
         return {
             status: Status.SUCCESS,
-            message: `(craftAsset) Added ${successfulCrafts}x ${assetToCraft} to the crafting queue.`
+            message: `(craftAsset) Added ${successfulCrafts}x ${assetToCraft} to the crafting queue.`,
+            data: {
+                craftingQueue: newCraftingQueue,
+                energyConsumed: energyRequired,
+            }
         }
     } catch (err: any) {
         console.error(`(craftAsset) ${err.message}`);
@@ -1055,8 +1059,16 @@ export const claimCraftedAssets = async (
             }
         }> = [];
         
-        const fullyClaimedCraftingQueueIDs: string[] = [];
-        const partialClaimedCraftingQueueIDs: string[] = [];
+        const fullyClaimedCraftingData: {
+            queueId: string,
+            craftedAsset: string,
+            claimedAmount: number,
+        }[] = [];
+        const partiallyClaimedCraftingData: {
+            queueId: string,
+            craftedAsset: string,
+            claimedAmount: number,
+        }[] = [];
 
         // initialize $each on the user's inventory items, foods and/or resources.
         if (!userUpdateOperations.$push['inventory.items']) {
@@ -1173,8 +1185,12 @@ export const claimCraftedAssets = async (
                     }
                 }
 
-                // add the crafting queue ID to the fullyClaimedCraftingQueueIDs array
-                fullyClaimedCraftingQueueIDs.push(queue._id);
+                // add the crafting queue data into fullyClaimedCraftingData
+                fullyClaimedCraftingData.push({
+                    queueId: queue._id,
+                    craftedAsset: queue.craftedAssetData.asset,
+                    claimedAmount: queue.craftedAssetData.amount,
+                })
 
                 // do three things to the crafting queue:
                 // 1. reduce the `claimData.claimableAmount` by the `claimableAmount` via $inc
@@ -1316,8 +1332,12 @@ export const claimCraftedAssets = async (
                     // update the `finalizedTotalWeight`
                     finalizedTotalWeight += queueTotalWeight / craftedAmount * finalizedClaimableAmount;
 
-                    // add the crafting queue ID to the partialClaimedCraftingQueueIDs array.
-                    partialClaimedCraftingQueueIDs.push(queue._id);
+                    // add the crafting queue data into partiallyClaimedCraftingData
+                    partiallyClaimedCraftingData.push({
+                        queueId: queue._id,
+                        craftedAsset: queue.craftedAssetData.asset,
+                        claimedAmount: queue.craftedAssetData.amount,
+                    })
 
                     break;
                 // if the user's inventory weight + the totalWeight of the assets to claim does not exceed the limit, we can claim all `claimableAmount` of assets from this queue.
@@ -1376,8 +1396,12 @@ export const claimCraftedAssets = async (
                         }
                     }
 
-                    // add the crafting queue ID to the fullyClaimedCraftingQueueIDs array
-                    fullyClaimedCraftingQueueIDs.push(queue._id);
+                    // add the crafting queue data into fullyClaimedCraftingData
+                    fullyClaimedCraftingData.push({
+                        queueId: queue._id,
+                        craftedAsset: queue.craftedAssetData.asset,
+                        claimedAmount: queue.craftedAssetData.amount,
+                    })
 
                     // 1. reduce the claimableAmount by the `claimableAmount`
                     // 2. increase the claimedAmount by the `claimableAmount`
@@ -1431,10 +1455,10 @@ export const claimCraftedAssets = async (
 
         return {
             status: Status.SUCCESS,
-            message: `(claimCraftedAssets) Successfully claimed claimable crafted assets. ${partialClaimedCraftingQueueIDs.length > 0 ? `Some assets from crafting queues could not be claimed fully due to inventory weight limitations.` : ``}`,
+            message: `(claimCraftedAssets) Successfully claimed claimable crafted assets. ${partiallyClaimedCraftingData.length > 0 ? `Some assets from crafting queues could not be claimed fully due to inventory weight limitations.` : ``}`,
             data: {
-                fullyClaimedCraftingQueueIDs,
-                partialClaimedCraftingQueueIDs
+                fullyClaimedCraftingData,
+                partiallyClaimedCraftingData
             }
         }
     } catch (err: any) {
@@ -1652,7 +1676,13 @@ export const cancelCraft = async (twitterId: string, craftingQueueId: string): P
 
         return {
             status: Status.SUCCESS,
-            message: `(cancelCraft) Successfully cancelled the crafting queue. Assets have been refunded.`
+            message: `(cancelCraft) Successfully cancelled the crafting queue. Assets have been refunded.`,
+            data: {
+                craftedAsset: craftingQueue.craftedAssetData.asset,
+                cancelledAmount: (craftingQueue.craftedAssetData.amount - craftingQueue.claimData.claimedAmount - craftingQueue.claimData.claimableAmount),
+                cancelledCost: xCookiesRequired,
+                requiredAssetsPerQuantity: allRequiredAssets
+            }
         }
     } catch (err: any) {
         return {
