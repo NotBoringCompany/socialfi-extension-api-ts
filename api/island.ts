@@ -130,6 +130,7 @@ export const giftXterioIsland = async (
         userUpdateOperations.$push['inventory.islandIds'] = latestIslandId + 1;
 
         const island = new IslandModel({
+            _id: generateObjectId(),
             islandId: latestIslandId + 1,
             type: islandType,
             owner: user._id,
