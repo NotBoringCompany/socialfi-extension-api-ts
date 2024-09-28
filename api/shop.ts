@@ -633,15 +633,15 @@ export const purchaseShopAsset = async (
             status: Status.SUCCESS,
             message: `(purchaseShopAsset) Asset purchased successfully.`,
             data: {
-                twitterId,
-                asset,
-                amount,
-                totalCost: !(payment in ShopAssetIGCPaymentMethod) ? txPayload?.cost : totalCost,
-                payment: !(payment in ShopAssetIGCPaymentMethod) ? txPayload?.curr : payment,
-                address,
-                chain,
-                txHash,
-                txPayload
+                twitterId: twitterId,
+                asset: asset,
+                amount: amount,
+                totalPaid: !(payment in ShopAssetIGCPaymentMethod) ? txPayload?.cost : totalCost,
+                paymentChoice: !(payment in ShopAssetIGCPaymentMethod) ? txPayload?.curr : payment,
+                address: address,
+                chain: chain,
+                txHash: txHash,
+                txPayload: txPayload
             }
         }
     } catch (err: any) {

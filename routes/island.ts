@@ -136,7 +136,7 @@ router.post('/remove_island', async (req, res) => {
         if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Remove Island', {
                 distinct_id: validateData?.twitterId,
-                '_island': data?.island,
+                '_data': data
             });
 
             // increment the event counter in the wonderbits contract.
@@ -273,8 +273,7 @@ router.post('/claim_resources', async (req, res) => {
         if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Claim Resources', {
                 distinct_id: validateData?.twitterId,
-                '_claimType': claimType,
-                '_claimedResources': data?.claimedResources,
+                '_data': data,
             });
 
             // increment the event counter in the wonderbits contract.
