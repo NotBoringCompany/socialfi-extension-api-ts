@@ -46,3 +46,6 @@ export const CLAIM_INDIRECT_REFERRAL_REWARDS_MIXPANEL_EVENT_HASH = convertToByte
 export const CLAIM_SQUAD_REWARDS_MIXPANEL_EVENT_HASH = convertToBytes32('Claim Squad Rewards');
 export const CLAIM_WEEKLY_MVP_REWARDS_MIXPANEL_EVENT_HASH = convertToBytes32('Claim Weekly MVP Rewards');
 export const CONSUME_ENERGY_POTION_MIXPANEL_EVENT_HASH = convertToBytes32('Consume Energy Potion');
+export const CRAFT_ASSET_MIXPANEL_EVENT_HASH = convertToBytes32('Craft Asset');
+export const CANCEL_CRAFTING_QUEUE_MIXPANEL_EVENT_HASH = convertToBytes32('Cancel Crafting Queue');
+export const CLAIM_CRAFTED_ASSET_MIXPANEL_EVENT_HASH = convertToBytes32('Claim Crafted Asset');
