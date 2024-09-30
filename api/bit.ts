@@ -393,7 +393,9 @@ export const releaseBit = async (twitterId: string, bitId: number): Promise<Retu
             status: Status.SUCCESS,
             message: `(releaseBit) Bit released.`,
             data: {
-                bitId: bitId
+                bitId: bitId,
+                bitRarity: bit.rarity,
+                bitTraits: bit.traits,
             }
         }
     } catch (err: any) {
@@ -560,7 +562,8 @@ export const feedBit = async (twitterId: string, bitId: number, foodType: FoodTy
             status: Status.SUCCESS,
             message: `(feedBit) Bit fed and energy replenished.`,
             data: {
-                bitId: bitId
+                bitId: bitId,
+                foodType: foodType,
             }
         }
     } catch (err: any) {
@@ -947,8 +950,8 @@ export const evolveBit = async (
                 bitId: bitId,
                 currentLevel: bit.currentFarmingLevel,
                 nextLevel: bit.currentFarmingLevel + 1,
-                totalPaid,
-                paymentChoice,
+                totalPaid: totalPaid,
+                paymentChoice: paymentChoice,
             },
         };
     } catch (err: any) {

@@ -429,7 +429,7 @@ export const claimWeeklySquadMemberRewards = async (twitterId: string): Promise<
             status: Status.SUCCESS,
             message: 'Successfully claimed weekly squad member rewards.',
             data: {
-                rewards
+                rewards: rewards
             }
         }
 
