@@ -619,8 +619,8 @@ export const purchaseShopAsset = async (
             $pull: userUpdateOperations.$pull
         });
 
-        console.log(`(purchaseShopAsset) total paid: ${!(payment in ShopAssetIGCPaymentMethod) ? txPayload?.cost : totalCost}`);
-        console.log(`(purchaseShopAsset) payment choice: ${!(payment in ShopAssetIGCPaymentMethod) ? txPayload?.curr : payment}`);
+        console.log(`(purchaseShopAsset) total paid: ${totalCost}`);
+        console.log(`(purchaseShopAsset) payment choice: ${payment}`);
 
         return {
             status: Status.SUCCESS,
@@ -629,8 +629,8 @@ export const purchaseShopAsset = async (
                 twitterId: twitterId,
                 asset: asset,
                 amount: amount,
-                totalPaid: !(payment in ShopAssetIGCPaymentMethod) ? txPayload?.cost : totalCost,
-                paymentChoice: !(payment in ShopAssetIGCPaymentMethod) ? txPayload?.curr : payment,
+                totalPaid: totalCost,
+                paymentChoice: payment,
                 address: address ?? null,
                 chain: chain ?? null,
                 txHash: txHash ?? null,
