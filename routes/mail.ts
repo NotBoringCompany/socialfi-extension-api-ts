@@ -1,4 +1,4 @@
-// import express from 'express';
+import express from 'express';
 // import { authMiddleware } from '../middlewares/auth';
 // import {
 //   readMail,
@@ -15,7 +15,7 @@
 // } from '../api/mail';
 // import { Status } from '../utils/retVal';
 // import { validateRequestAuthV2 } from '../middlewares/validateRequest';
-// const router = express.Router();
+const router = express.Router();
 
 // // notify users
 // router.post('/notify_users', authMiddleware(3), async (req, res) => {
@@ -228,4 +228,4 @@
 // })
 
 
-export default router
+export default router;
