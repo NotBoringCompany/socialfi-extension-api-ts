@@ -83,9 +83,17 @@ export interface Mail {
   type: MailType;
 }
 
+/**
+ * Represents an attachment to a mail.
+ * 
+ * Attachments usually are some forms of rewards or forms of assets that are sent along with the mail.
+ */
 export interface Attachment {
+  /** the attachment type */
+  type: 'food' | 'item';
+  /** the name of the attachment */
   name: ItemType | FoodType;
-  type: 'Food' | 'Item';
+  /** the amount of the attachment sent */
   quantity: number;
 }
 
