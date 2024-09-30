@@ -1,38 +1,9 @@
-import { Attachment, Mail, MailDTO, MailType, ReceiverStatus } from '../models/mail';
+import { Attachment, CreateMailParams, Mail, MailDTO, MailType, ReceiverStatus } from '../models/mail';
 import { UserInventory } from '../models/user';
 import { MailModel, UserModel } from '../utils/constants/db';
 import { mailTransformHelper } from '../utils/mail';
 import { ReturnValue, ReturnWithPagination, Status } from '../utils/retVal';
 import { ClientSession } from 'mongoose';
-
-interface CreateMailParams {
-  /**
-   * The list of receivers of the mail.
-   * Each receiver is represented by an object with the following properties:
-   * - `_id`: the ID of the receiver user
-   * - `isRead`: whether the mail has been read by the receiver
-   * - `isClaimed`: whether the mail has been claimed by the receiver
-   * - `isDeleted`: whether the mail has been deleted by the receiver
-   */
-  receivers: ReceiverStatus[];
-  /**
-   * The subject of the mail
-   */
-  subject: string;
-  /**
-   * The body of the mail
-   */
-  body: string;
-  /**
-   * The items attached to the mail
-   */
-  attachments: Attachment[];
-  /**
-   * The type of mail
-   */
-  type: MailType;
-  expiredDate?: number;
-}
 
 const createMail = async (
   { receivers, subject, body, attachments, type, expiredDate }: CreateMailParams,
