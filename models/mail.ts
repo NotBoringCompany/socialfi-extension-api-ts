@@ -1,3 +1,4 @@
+import { AssetType } from './asset';
 import { FoodType } from "./food";
 import { ItemType } from "./item";
 
@@ -92,7 +93,7 @@ export interface Attachment {
   /** the attachment type */
   type: 'food' | 'item';
   /** the name of the attachment */
-  name: ItemType | FoodType;
+  name: AssetType;
   /** the amount of the attachment sent */
   quantity: number;
 }
