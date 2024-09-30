@@ -257,25 +257,25 @@ export const updateMailStatus = async (mailId: string, userId: string, mailStatu
         // Destructure user Inventory data
         const { foods, items } = user.inventory as UserInventory;
         mail.attachments.forEach((attachment) => {
-          if (attachment.type === 'Food') {
+          if (attachment.type === 'food') {
             // add the food to the user's inventory
             const existingFoodIndex = foods.findIndex(f => f.type === attachment.name);
 
             if (existingFoodIndex !== -1) {
-              userUpdateOperations.$inc[`inventory.foods.${existingFoodIndex}.amount`] = attachment.quantity;
+              userUpdateOperations.$inc[`inventory.foods.${existingFoodIndex}.amount`] = attachment.amount;
             } else {
-              userUpdateOperations.$push['inventory.foods'] = { type: attachment.name, amount: attachment.quantity };
+              userUpdateOperations.$push['inventory.foods'] = { type: attachment.name, amount: attachment.amount };
             }
-          } else if (attachment.type === 'Item') {
+          } else if (attachment.type === 'item') {
             // add the item to the user's inventory
             const existingItemIndex = items.findIndex(i => i.type === attachment.name);
 
             if (existingItemIndex !== -1) {
-              userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = attachment.quantity;
+              userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = attachment.amount;
             } else {
               userUpdateOperations.$push['inventory.items'] = {
                 type: attachment.name,
-                amount: attachment.quantity,
+                amount: attachment.amount,
                 totalAmountConsumed: 0,
                 weeklyAmountConsumed: 0
               };
@@ -463,25 +463,25 @@ export const claimMail = async (mailId: string, userId: string): Promise<ReturnV
       // Destructure user Inventory data
       const { foods, items } = user.inventory as UserInventory;
       mail.attachments.forEach((attachment) => {
-        if (attachment.type === 'Food') {
+        if (attachment.type === 'food') {
           // add the food to the user's inventory
           const existingFoodIndex = foods.findIndex(f => f.type === attachment.name);
 
           if (existingFoodIndex !== -1) {
-            userUpdateOperations.$inc[`inventory.foods.${existingFoodIndex}.amount`] = attachment.quantity;
+            userUpdateOperations.$inc[`inventory.foods.${existingFoodIndex}.amount`] = attachment.amount;
           } else {
-            userUpdateOperations.$push['inventory.foods'] = { type: attachment.name, amount: attachment.quantity };
+            userUpdateOperations.$push['inventory.foods'] = { type: attachment.name, amount: attachment.amount };
           }
-        } else if (attachment.type === 'Item') {
+        } else if (attachment.type === 'item') {
           // add the item to the user's inventory
           const existingItemIndex = items.findIndex(i => i.type === attachment.name);
 
           if (existingItemIndex !== -1) {
-            userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = attachment.quantity;
+            userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = attachment.amount;
           } else {
             userUpdateOperations.$push['inventory.items'] = {
               type: attachment.name,
-              amount: attachment.quantity,
+              amount: attachment.amount,
               totalAmountConsumed: 0,
               weeklyAmountConsumed: 0
             };

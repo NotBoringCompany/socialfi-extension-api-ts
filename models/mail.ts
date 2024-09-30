@@ -95,7 +95,7 @@ export interface Attachment {
   /** the name of the attachment */
   name: AssetType;
   /** the amount of the attachment sent */
-  quantity: number;
+  amount: number;
 }
 
 export enum MailType {
