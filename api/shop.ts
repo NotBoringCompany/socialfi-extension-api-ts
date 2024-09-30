@@ -619,6 +619,9 @@ export const purchaseShopAsset = async (
             $pull: userUpdateOperations.$pull
         });
 
+        console.log(`(purchaseShopAsset) total paid: ${!(payment in ShopAssetIGCPaymentMethod) ? txPayload?.cost : totalCost}`);
+        console.log(`(purchaseShopAsset) payment choice: ${!(payment in ShopAssetIGCPaymentMethod) ? txPayload?.curr : payment}`);
+
         return {
             status: Status.SUCCESS,
             message: `(purchaseShopAsset) Asset purchased successfully.`,
@@ -628,10 +631,10 @@ export const purchaseShopAsset = async (
                 amount: amount,
                 totalPaid: !(payment in ShopAssetIGCPaymentMethod) ? txPayload?.cost : totalCost,
                 paymentChoice: !(payment in ShopAssetIGCPaymentMethod) ? txPayload?.curr : payment,
-                address: address,
-                chain: chain,
-                txHash: txHash,
-                txPayload: txPayload
+                address: address ?? null,
+                chain: chain ?? null,
+                txHash: txHash ?? null,
+                txPayload: txPayload ?? null
             }
         }
     } catch (err: any) {
