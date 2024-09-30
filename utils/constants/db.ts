@@ -24,7 +24,7 @@ import { CollabBasketSchema, CollabParticipantSchema } from '../../schemas/Colla
 import { ShopAssetPurchaseSchema, ShopAssetSchema } from '../../schemas/Shop';
 import { CraftingQueueSchema } from '../../schemas/Craft';
 import { BanSchema } from '../../schemas/Ban';
-import { MailSchema } from '../../schemas/Mail';
+import { MailReceiverDataSchema, MailSchema } from '../../schemas/Mail';
 
 
 const TEST_DATABASE = process.env.MONGODB_URI!;
@@ -101,3 +101,4 @@ export const ShopAssetPurchaseModel = TEST_CONNECTION.model('ShopAssetPurchases'
 export const CraftingQueueModel = TEST_CONNECTION.model('CraftingQueues', CraftingQueueSchema, 'CraftingQueues');
 export const BanModel = TEST_CONNECTION.model('Bans', BanSchema, 'Bans');
 export const MailModel = TEST_CONNECTION.model('Mails', MailSchema, 'Mails');
+export const MailReceiverDataModel = TEST_CONNECTION.model('MailReceiverData', MailReceiverDataSchema, 'MailReceiverData');

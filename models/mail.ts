@@ -1,6 +1,6 @@
 import { AssetType } from './asset';
-import { FoodType } from "./food";
-import { ItemType } from "./item";
+import { FoodType } from './food';
+import { ItemType } from './item';
 
 /**
  * Represents a mail sent between users.
@@ -23,7 +23,7 @@ export interface CreateMailParams {
    * - `isClaimed`: whether the mail has been claimed by the receiver
    * - `isDeleted`: whether the mail has been deleted by the receiver
    */
-  receivers: ReceiverStatus[];
+  receivers: MailReceiverData[];
   /**
    * The subject of the mail
    */
@@ -43,20 +43,23 @@ export interface CreateMailParams {
   expiredDate?: number;
 }
 
+/**
+ * Represents a mail instance sent to users via the mailing system.
+ */
 export interface Mail {
   /**
    * The unique ID of the mail.
    */
   _id: string;
   /**
-   * The user ID of the receiver.
-   * this receiver ids, it is represented by user id, and a bit state isRead, isClaimed, isDeleted
-   * this approach is for optimization storage, for example if we have 1000 users, and we want to send mail to 1000 users,
-   * we can use this approach.
-   * the strategies is to use the user id as the key and statuses as the state value
-   * so we just need to create one email for each user
+   * The type of mail.
    */
-  receiverIds: ReceiverStatus[];
+  mailType: MailType;
+  // /**
+  //  * The receivers of this mail.
+  //  * Each receiver requires tracking to check whether they've read, claimed and/or deleted the mail.
+  //  */
+  // receiverData: ReceiverStatus[];
   /**
    * The subject of the mail.
    */
@@ -72,16 +75,11 @@ export interface Mail {
   /**
    * The timestamp when the mail was sent.
    */
-  timestamp: number;
+  sentTimestamp: number;
   /**
-   * the expired date of the mail
-   * the expired date is for cronjob to make easier to filter and purge the mail
+   * when the mail expires. this is used for purging old mails from the database.
    */
-  expiredDate: number;
-  /**
-   * The type of mail.
-   */
-  type: MailType;
+  expiryTimestamp: number;
 }
 
 /**
@@ -91,57 +89,67 @@ export interface Mail {
  */
 export interface Attachment {
   /** the attachment type */
-  type: 'food' | 'item';
+  type: 'food' | 'item' | 'resource' | 'xCookies';
   /** the name of the attachment */
-  name: AssetType;
+  name: AssetType | 'xCookies';
   /** the amount of the attachment sent */
   amount: number;
 }
 
+/**
+ * Represents a mail type.
+ */
 export enum MailType {
   /**
    * Maintenance mail.
    */
-  MAINTENANCE = "Maintenance",
+  MAINTENANCE = 'Maintenance',
   /**
    * Update mail.
    */
-  UPDATES = "Updates",
+  UPDATE = 'Update',
   /**
-   * Reward mail.
+   * Rewards mail.
    */
   REWARDS = 'Rewards',
   /**
    * Notice mail.
    */
-  NOTICES = 'Notices',
+  NOTICE = 'Notice',
 }
 
-export interface ReceiverStatus {
+/**
+ * Represents the status of a receiver of a mail.
+ */
+export interface MailReceiverData {
   /**
-   * The unique ID of the receiver.
-   * it should user _id
-   * @type {string}
+   * the user's database ID.
    */
-  _id: string;
+  userId: string;
   /**
-   * Whether the mail has been read.
+   * the mail's read status
    */
-  isRead: StatusEmail;
+  readStatus: MailStatus;
   /**
-   * Whether the mail has been claimed.
+   * the mail's claimed status
    */
-  isClaimed: StatusEmail;
+  claimedStatus: MailStatus;
   /**
-   * Whether the mail has been deleted.
+   * the mail's deleted status
    */
-  isDeleted: StatusEmail;
+  deletedStatus: MailStatus;
 }
 
-export interface StatusEmail {
+/**
+ * Represents the status of a mail.
+ */
+export interface MailStatus {
+  /** the status of the mail (e.g. for `readStatus`, a status of `true` means that the mail has been read by the receiver) */
   status: boolean;
+  /** the timestamp when the status turned `true`. if still `false`, timestamp will be `0`. */
   timestamp: number;
 }
+
 /**
  * the MailDTO is for return value
  *  so this interface different from Mail models
