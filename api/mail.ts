@@ -1,30 +1,59 @@
-// import { Attachment, CreateMailParams, Mail, MailDTO, MailType, ReceiverStatus } from '../models/mail';
-// import { UserInventory } from '../models/user';
-// import { MailModel, UserModel } from '../utils/constants/db';
-// import { mailTransformHelper } from '../utils/mail';
-// import { ReturnValue, ReturnWithPagination, Status } from '../utils/retVal';
-// import { ClientSession } from 'mongoose';
+import { ClientSession } from 'mongoose';
+import { MailAttachment, MailType } from '../models/mail';
+import { MailModel } from '../utils/constants/db';
+import { generateObjectId } from '../utils/crypto';
+import { ReturnValue, Status } from '../utils/retVal';
 
-// const createMail = async (
-//   { receivers, subject, body, attachments, type, expiredDate }: CreateMailParams,
-//   session?: ClientSession
-// ): Promise<boolean> => {
-//   try {
-//     const newMail = new MailModel({
-//       receiverIds: receivers,
-//       subject,
-//       body,
-//       attachments,
-//       timestamp: Math.floor(Date.now() / 1000),
-//       type,
-//       expiredDate,
-//     });
-//     await newMail.save();
-//     return true;
-//   } catch (err: any) {
-//     return false;
-//   }
-// };
+/**
+ * Creates a mail instance and saves it to the database.
+ */
+export const createMail = async (
+  /** the type of mail */
+  type: MailType,
+  /** whether the mail is sent to all users or specific users */
+  receivers: 'all' | 'specific',
+  /** if this mail should be sent to newly registered users (before the mail expires) */
+  includeNewUsers: boolean,
+  /** the subject of the mail */
+  subject: string,
+  /** the body of the mail */
+  body: string,
+  /** the attachments of the mail */
+  attachments: MailAttachment[],
+  /**  when the mail expires (unless never) */
+  expiryTimestamp: number | 'never',
+  /** IF `receivers` is 'specific', this field is required */
+  receiverIds?: string[],
+  session?: ClientSession
+): Promise<ReturnValue> => {
+  try {
+    const newMail = new MailModel({
+      _id: generateObjectId(),
+      mailType: type,
+      receiverOptions: {
+        receivers,
+        includeNewUsers
+      },
+      subject,
+      body,
+      attachments,
+      sentTimestamp: Math.floor(Date.now() / 1000),
+      expiryTimestamp
+    });
+
+    await newMail.save();
+
+    return {
+      status: Status.SUCCESS,
+      message: '(createMail) Successfully added new mail to database',
+    }
+  } catch (err: any) {
+    return {
+      status: Status.ERROR,
+      message: `(createMail) Error: ${err.message}`,
+    }
+  }
+};
 
 // /**
 //  * Notify all users with a new mail.

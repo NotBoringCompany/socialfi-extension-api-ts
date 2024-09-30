@@ -14,34 +14,34 @@ import { ItemType } from './item';
  * @property {Date} timestamp - The timestamp when the mail was sent.
  * @property {MailType} type - The type of mail.
  */
-export interface CreateMailParams {
-  /**
-   * The list of receivers of the mail.
-   * Each receiver is represented by an object with the following properties:
-   * - `_id`: the ID of the receiver user
-   * - `isRead`: whether the mail has been read by the receiver
-   * - `isClaimed`: whether the mail has been claimed by the receiver
-   * - `isDeleted`: whether the mail has been deleted by the receiver
-   */
-  receivers: MailReceiverData[];
-  /**
-   * The subject of the mail
-   */
-  subject: string;
-  /**
-   * The body of the mail
-   */
-  body: string;
-  /**
-   * The items attached to the mail
-   */
-  attachments: Attachment[];
-  /**
-   * The type of mail
-   */
-  type: MailType;
-  expiredDate?: number;
-}
+// export interface CreateMailParams {
+//   /**
+//    * The list of receivers of the mail.
+//    * Each receiver is represented by an object with the following properties:
+//    * - `_id`: the ID of the receiver user
+//    * - `isRead`: whether the mail has been read by the receiver
+//    * - `isClaimed`: whether the mail has been claimed by the receiver
+//    * - `isDeleted`: whether the mail has been deleted by the receiver
+//    */
+//   receivers: MailReceiverData[];
+//   /**
+//    * The subject of the mail
+//    */
+//   subject: string;
+//   /**
+//    * The body of the mail
+//    */
+//   body: string;
+//   /**
+//    * The items attached to the mail
+//    */
+//   attachments: Attachment[];
+//   /**
+//    * The type of mail
+//    */
+//   type: MailType;
+//   expiredDate?: number;
+// }
 
 /**
  * Represents a mail instance sent to users via the mailing system.
@@ -55,11 +55,15 @@ export interface Mail {
    * The type of mail.
    */
   mailType: MailType;
-  // /**
-  //  * The receivers of this mail.
-  //  * Each receiver requires tracking to check whether they've read, claimed and/or deleted the mail.
-  //  */
-  // receiverData: ReceiverStatus[];
+  /**
+   * the options with regards to receivers.
+   * 
+   * a mail can be sent only to specific users, or to all users.
+   * then, a mail can also be given to new users or only existing users.
+   * 
+   * for example, if a mail can be given to only existing users, new users who register after a mail instance was sent will NOT receive the mail.
+   */
+  receiverOptions: MailReceiverOptions;
   /**
    * The subject of the mail.
    */
@@ -71,23 +75,45 @@ export interface Mail {
   /**
    * The attached data to the mail.
    */
-  attachments: Attachment[];
+  attachments: MailAttachment[];
   /**
    * The timestamp when the mail was sent.
    */
   sentTimestamp: number;
   /**
    * when the mail expires. this is used for purging old mails from the database.
+   * 
+   * if the expiry timestamp is set to `never`, then the mail will never expire.
    */
-  expiryTimestamp: number;
+  expiryTimestamp: number | 'never';
 }
+
+/**
+ * Represents the options for the mail receiver.
+ */
+export interface MailReceiverOptions {
+  /** 
+   * if this mail is meant to all users or only to specific users. 
+   * 
+   * NOTE: the user IDs will NOT be stored within the mail, but can be queried by checking the `MailReceiverData` collection and querying the mail ID.
+   * this is purely to track whether the mail is meant for all users or only specific users.
+   */
+  receivers: 'all' | 'specific';
+  /**
+   * if this mail is meant for new users or only existing users.
+   * 
+   * if `true`, then all newly registered users who register before the mail's `expiryTimestamp` will receive the mail.
+   */
+  includeNewUsers: boolean;
+}
+
 
 /**
  * Represents an attachment to a mail.
  * 
  * Attachments usually are some forms of rewards or forms of assets that are sent along with the mail.
  */
-export interface Attachment {
+export interface MailAttachment {
   /** the attachment type */
   type: 'food' | 'item' | 'resource' | 'xCookies';
   /** the name of the attachment */
@@ -183,7 +209,7 @@ export interface MailDTO {
    * so we can use this attachments to store food and items to the user
    * and for claiming method we create some endpoints to claim food and items with POST method mail/claim_mail and body {mailId, userId}
    */
-  attachments: Attachment[];
+  attachments: MailAttachment[];
   timestamp: number;
   /**
    * in previous deleted status we already know the mail is not truly deleted right ?

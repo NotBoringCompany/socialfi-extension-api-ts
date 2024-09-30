@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { Attachment, Mail, MailReceiverData } from "../models/mail";
+import { MailAttachment, Mail, MailReceiverData, MailReceiverOptions } from "../models/mail";
 import { generateObjectId } from "../utils/crypto";
 
 /**
@@ -24,12 +24,20 @@ export const MailReceiverDataSchema = new mongoose.Schema<MailReceiverData>({
 })
 
 /**
- * Attachment schema. Represents closely to the `Attachment` interface in `models/mail.ts`.
+ * MailAttachment schema. Represents closely to the `Attachment` interface in `models/mail.ts`.
  */
-const AttachmentSchema = new mongoose.Schema<Attachment>({
+const MailAttachmentSchema = new mongoose.Schema<MailAttachment>({
   type: String,
   name: String,
   amount: Number
+});
+
+/**
+ * MailReceiverOptions schema. Represents closely to the `MailReceiverOptions` interface in `models/mail.ts`.
+ */
+const MailReceiverOptionsSchema = new mongoose.Schema<MailReceiverOptions>({
+  receivers: String,
+  includeNewUsers: Boolean,
 })
 
 /**
@@ -45,10 +53,11 @@ export const MailSchema = new mongoose.Schema<Mail>({
     required: true,
     index: true
   },
+  receiverOptions: { type: MailReceiverOptionsSchema },
   subject: String,
   body: String,
-  attachments: { type: [AttachmentSchema] },
+  attachments: { type: [MailAttachmentSchema] },
   sentTimestamp: Number,
-  expiryTimestamp: Number
+  expiryTimestamp: mongoose.Schema.Types.Mixed,
 })
 
