@@ -298,7 +298,7 @@ export const applyTravelBooster = async (
                 data: {
                     destination: user.inGameData.travellingTo,
                     newDestinationArrival: 0,
-                    booster
+                    booster: booster
                 }
             }
             // otherwise
@@ -322,7 +322,7 @@ export const applyTravelBooster = async (
                 data: {
                     destination: user.inGameData.travellingTo,
                     newDestinationArrival: destinationArrival - boosterSeconds,
-                    booster
+                    booster: booster
                 }
             }
         }
@@ -1172,8 +1172,8 @@ export const sellItemsInPOIShop = async (
             message: `(sellItemsInPOIShop) Items sold. Leaderboard points added.`,
             data: {
                 poi: data.currentPOI.name,
-                items,
-                leaderboardPoints
+                items: items,
+                points: leaderboardPoints
             }
         }
     } catch (err: any) {
@@ -1495,7 +1495,7 @@ export const buyItemsInPOIShop = async (
             message: `(buyItemsInPOIShop) Items bought.`,
             data: {
                 poi: data.currentPOI.name,
-                items,
+                items: items,
                 totalPaid: totalPayment,
                 paymentChoice: paymentChoice
             }
