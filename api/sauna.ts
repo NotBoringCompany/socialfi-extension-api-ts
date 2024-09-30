@@ -1,12 +1,16 @@
 import { Socket } from "socket.io";
 import { SAUNA_LIST } from "../utils/constants/sauna";
 import { SaunaUserDetail } from "../models/sauna";
-import Bull from "bull";
 import { Status } from "../utils/retVal";
+import redisDb from "../utils/constants/redisDb";
+import { saunaQueue } from "../schedulers/sauna";
 
-const saunaQueue = new Bull('saunaQueue', {
-  redis: process.env.REDIS_URL
-});
+enum RedisKey {
+  USERS = "userList",
+  CONNECTED = "connected"
+}
+
+
 
 const DUMMY_DATA = new Array(3).fill(null).map((_, i) => ({
   id: (i + 1).toString(),
@@ -19,17 +23,17 @@ const DUMMY_DATA = new Array(3).fill(null).map((_, i) => ({
     }
   }
 }));
-
+// save this to redis
 const userSockets = new Map<string, Socket>();
 
-export const startRest = (socket: Socket, data: SaunaUserDetail) => {
+export const startRest = async (socket: Socket, data: SaunaUserDetail) => {
   console.log('new user start rest', data);
   const { userId } = data;
   const user = DUMMY_DATA.find((user) => user.id === userId);
 
   if (!user) {
     socket.emit('server_response', {
-      status:Status.BAD_REQUEST, 
+      status: Status.BAD_REQUEST,
       message: "user not found"
     });
     return;
@@ -38,17 +42,8 @@ export const startRest = (socket: Socket, data: SaunaUserDetail) => {
   // Avoid if user already full of energy
   if (user.inGameData.energy.currentEnergy === user.inGameData.energy.maxEnergy) {
     socket.emit('server_response', {
-      status:Status.BAD_REQUEST,
-      message:"user has max energy"
-    });
-    return;
-  }
-
-  // Avoid same user id in the list
-  if (SAUNA_LIST.userDetail.find((user) => user.userId === userId)) {
-    socket.emit('server_response', {
-      status:Status.BAD_REQUEST, 
-      message:"user already connected"
+      status: Status.BAD_REQUEST,
+      message: "user has max energy"
     });
     return;
   }
@@ -62,54 +57,74 @@ export const startRest = (socket: Socket, data: SaunaUserDetail) => {
   const timeToMaxEnergyInMiliSecond = timeToMaxEnergy * 1000;
 
   userSockets.set(userId, socket);
+  console.log('time to max energy', (timeToMaxEnergyInMiliSecond / 60) / 1000);
 
-  saunaQueue.add({
-    userId,
-    maxEnergy,
-    timeToMaxEnergyInMiliSecond
-  }, {
-    jobId:userId,
-    delay: timeToMaxEnergyInMiliSecond // Delay job execution based on time to max energy
-  });
-
-  socket.on('disconnect', async () => {
+  socket.on('stop_rest', async () => {
     const getJobId = await saunaQueue.getJob(userId)
-    if(getJobId){
+    if (getJobId) {
       getJobId.remove()
-      console.log('job remove with socket id', socket.id)
-      console.log('user id', userId)
-      socket.emit('server_response',{
-        status:Status.SUCCESS, 
-        message:"Succes disconnect from sauna"
-      })
+      removeUserFromRoom(userId)
     }
-    userSockets.delete(userId);
-    SAUNA_LIST.userConnected -= 1;
-    SAUNA_LIST.userDetail = SAUNA_LIST.userDetail.filter((user) => user.userId !== userId);
   });
 
-  SAUNA_LIST.userConnected += 1;
-  SAUNA_LIST.userDetail.push({ userId: userId, timestamp: Math.floor(Date.now() / 1000) });
+  addUserToRoom(userId, socket.id, timeToMaxEnergyInMiliSecond);
 
   socket.emit('server_response', {
-    status:Status.SUCCESS,
-    message:"Succes connected to sauna", 
-    data:SAUNA_LIST
+    status: Status.SUCCESS,
+    message: "Succes connected to sauna",
   });
 };
 
-saunaQueue.process(async (job) => {
-  const { userId } = job.data;
-  const user = DUMMY_DATA.find((user) => user.id === userId);
+const addUserToRoom = async (userId: string, socketId: string, timeToMaxEnergyInMiliSecond: number) => {
+  try {
+    const isUserAlreadyInRoom = await isUserInRoom(userId)
 
-  if (user) {
-    user.inGameData.energy.currentEnergy = user.inGameData.energy.maxEnergy;
-    const userSocket = userSockets.get(userId);
-    if (userSocket) {
-      userSocket.emit('server_response', {
-        message: `Energy fully recovered for user ${userId}`,
-        user
-      });
+    if (isUserAlreadyInRoom) {
+      console.log('user already in room', userId);
+      return;
     }
+
+    await redisDb.set(`userSocket:${userId}`, socketId)
+    await redisDb.set(RedisKey.CONNECTED, Number(await redisDb.get(RedisKey.CONNECTED)) + 1)
+    await saunaQueue.add({
+      userId,
+
+    }, {
+      jobId: userId,
+      delay: timeToMaxEnergyInMiliSecond // Delay job execution based on time to max energy
+    })
+
+  } catch (e) {
+    console.log(e)
+  } finally {
+    console.log('add user to room finally', userId);
+    console.log(await redisDb.get(RedisKey.CONNECTED));
   }
-});
+}
+
+const removeUserFromRoom = async (userId: string) => {
+  try {
+    await redisDb.del(`userSocket:${userId}`)
+    await redisDb.set(RedisKey.CONNECTED, Number(await redisDb.get(RedisKey.CONNECTED)) - 1)
+  } catch (e) {
+    console.log(e)
+  } finally {
+    console.log('remove user from room finally', userId);
+    console.log(await redisDb.get(RedisKey.CONNECTED));
+  }
+}
+
+const isUserInRoom = async (userId: string) => {
+  try {
+    const socketId = await redisDb.get(`userSocket:${userId}`)
+    if (socketId) {
+      return true
+    }
+    return false
+  } catch (e) {
+    console.log(e)
+    return false
+  }
+}
+
+
