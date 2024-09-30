@@ -946,6 +946,7 @@ export const craftAsset = async (
             data: {
                 craftingQueue: newCraftingQueue,
                 energyConsumed: energyRequired,
+                poi: user.inGameData.location,
             }
         }
     } catch (err: any) {
@@ -1457,8 +1458,9 @@ export const claimCraftedAssets = async (
             status: Status.SUCCESS,
             message: `(claimCraftedAssets) Successfully claimed claimable crafted assets. ${partiallyClaimedCraftingData.length > 0 ? `Some assets from crafting queues could not be claimed fully due to inventory weight limitations.` : ``}`,
             data: {
-                fullyClaimedCraftingData,
-                partiallyClaimedCraftingData
+                fullyClaimedCraftingData: fullyClaimedCraftingData,
+                partiallyClaimedCraftingData: partiallyClaimedCraftingData,
+                poi: user.inGameData.location,
             }
         }
     } catch (err: any) {
@@ -1681,7 +1683,8 @@ export const cancelCraft = async (twitterId: string, craftingQueueId: string): P
                 craftedAsset: craftingQueue.craftedAssetData.asset,
                 cancelledAmount: (craftingQueue.craftedAssetData.amount - craftingQueue.claimData.claimedAmount - craftingQueue.claimData.claimableAmount),
                 cancelledCost: xCookiesRequired,
-                requiredAssetsPerQuantity: allRequiredAssets
+                requiredAssetsPerQuantity: allRequiredAssets,
+                poi: user.inGameData.location
             }
         }
     } catch (err: any) {
