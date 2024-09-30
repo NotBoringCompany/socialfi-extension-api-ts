@@ -578,7 +578,7 @@ export const purchaseShopAsset = async (
             }
         }
 
-        console.log(`(purchaseShopAsset) User ${twitterId} update opeartions: ${JSON.stringify(userUpdateOperations, null, 2)}`);
+        console.log(`(purchaseShopAsset) User ${twitterId} update operations: ${JSON.stringify(userUpdateOperations, null, 2)}`);
 
         // update the user's inventory and add the purchase to the ShopAssetPurchases collection
         // divide the update operations into $set + $inc and $push and $pull for UserModel
@@ -597,9 +597,13 @@ export const purchaseShopAsset = async (
                     baseCost: totalCost,
                     baseCurrency: payment in ShopAssetIGCPaymentMethod ? 'xCookies' : 'usd',
                     // include the txPayload cost only if payment is NOT via an in-game currency.
-                    actualCost: !(payment in ShopAssetIGCPaymentMethod) ? txPayload?.cost : totalCost,
-                    // include the txPayload currency only if payment is NOT via an in-game currency, else set equal to baseCurrency.
-                    actualCurrency: !(payment in ShopAssetIGCPaymentMethod) ? txPayload?.curr : payment
+                    actualCost: typeof payment === 'string' && Object.values(ShopAssetIGCPaymentMethod).includes(payment as ShopAssetIGCPaymentMethod)
+                        ? totalCost
+                        : txPayload?.cost,
+                    // include the txPayload currency only if payment is NOT via an in-game currency, else set equal to the in-game currency.
+                    actualCurrency: typeof payment === 'string' && Object.values(ShopAssetIGCPaymentMethod).includes(payment as ShopAssetIGCPaymentMethod)
+                        ? payment
+                        : txPayload?.curr
                 },
                 blockchainData: {
                     address,
@@ -619,9 +623,6 @@ export const purchaseShopAsset = async (
             $pull: userUpdateOperations.$pull
         });
 
-        console.log(`(purchaseShopAsset) total paid: ${totalCost}`);
-        console.log(`(purchaseShopAsset) payment choice: ${payment}`);
-
         return {
             status: Status.SUCCESS,
             message: `(purchaseShopAsset) Asset purchased successfully.`,
@@ -629,8 +630,12 @@ export const purchaseShopAsset = async (
                 twitterId: twitterId,
                 asset: asset,
                 amount: amount,
-                totalPaid: totalCost,
-                paymentChoice: payment,
+                totalPaid: typeof payment === 'string' && Object.values(ShopAssetIGCPaymentMethod).includes(payment as ShopAssetIGCPaymentMethod)
+                    ? totalCost
+                    : txPayload?.cost,
+                paymentChoice: typeof payment === 'string' && Object.values(ShopAssetIGCPaymentMethod).includes(payment as ShopAssetIGCPaymentMethod)
+                    ? payment
+                    : txPayload?.curr,
                 address: address ?? null,
                 chain: chain ?? null,
                 txHash: txHash ?? null,
