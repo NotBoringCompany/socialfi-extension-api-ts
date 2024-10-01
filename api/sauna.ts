@@ -1,5 +1,4 @@
 import { Socket } from "socket.io";
-import { SAUNA_LIST } from "../utils/constants/sauna";
 import { SaunaUserDetail } from "../models/sauna";
 import { Status } from "../utils/retVal";
 import redisDb from "../utils/constants/redisDb";
@@ -67,7 +66,7 @@ export const startRest = async (socket: Socket, data: SaunaUserDetail) => {
     }
   });
 
-  addUserToRoom(userId, socket.id, timeToMaxEnergyInMiliSecond);
+  addUserToRoom(userId, socket.id, timeToMaxEnergyInMiliSecond, lack);
 
   socket.emit('server_response', {
     status: Status.SUCCESS,
@@ -75,7 +74,7 @@ export const startRest = async (socket: Socket, data: SaunaUserDetail) => {
   });
 };
 
-const addUserToRoom = async (userId: string, socketId: string, timeToMaxEnergyInMiliSecond: number) => {
+const addUserToRoom = async (userId: string, socketId: string, timeToMaxEnergyInMiliSecond: number, getTotalEnergy: number) => {
   try {
     const isUserAlreadyInRoom = await isUserInRoom(userId)
 
@@ -88,7 +87,7 @@ const addUserToRoom = async (userId: string, socketId: string, timeToMaxEnergyIn
     await redisDb.set(RedisKey.CONNECTED, Number(await redisDb.get(RedisKey.CONNECTED)) + 1)
     await saunaQueue.add({
       userId,
-
+      getTotalEnergy
     }, {
       jobId: userId,
       delay: timeToMaxEnergyInMiliSecond // Delay job execution based on time to max energy
