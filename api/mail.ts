@@ -116,27 +116,50 @@ export const getAllUserMails = async (userId: string): Promise<ReturnValue> => {
   }
 }
 
-// /**
-//  * Retrieves a mail by its ID.
-//  *
-//  * @param {string} mailId - The ID of the mail to retrieve.
-//  * @returns {Promise<ReturnValue<Mail>>} A promise that resolves with the retrieved mail.
-//  */
-// export const getEmailById = async (mailId: string): Promise<ReturnValue<Mail>> => {
-//   try {
-//     const mail = await MailModel.findOne({ _id: mailId }).lean();
-//     return {
-//       status: Status.SUCCESS,
-//       message: '(getEmailById) Successfully retrieved mail',
-//       data: mail,
-//     };
-//   } catch (err: any) {
-//     return {
-//       status: Status.ERROR,
-//       message: `(getEmailById) Error: ${err.message}`,
-//     };
-//   }
-// };
+/**
+ * Deletes a mail for a specific user.
+ * 
+ * NOTE: This doesn't notify the users to claim any existing rewards (in attachments) in the mail if they haven't already.
+ */
+export const deleteMail = async (mailId: string, userId: string): Promise<ReturnValue> => {
+  try {
+    const mail = await MailReceiverDataModel.findOne({ mailId, userId }).lean();
+
+    if (!mail) {
+      return {
+        status: Status.ERROR,
+        message: `(deleteMail) Mail ID ${mailId} not found for user with ID ${userId}`,
+      }
+    }
+
+    // if the mail is already deleted, return an error
+    if (mail.deletedStatus.status) {
+      return {
+        status: Status.ERROR,
+        message: `(deleteMail) Mail ID ${mailId} already deleted for user with ID ${userId}`,
+      }
+    }
+
+    // instead of deleting the data from the database, we just mark it as deleted.
+    // the mail will be purged eventually.
+    await MailReceiverDataModel.updateOne({ mailId, userId }, {
+      $set: {
+        'deletedStatus.status': true,
+        'deletedStatus.timestamp': Math.floor(Date.now() / 1000)
+      }
+    });
+
+    return {
+      status: Status.SUCCESS,
+      message: '(deleteMail) Successfully marked mail as deleted.',
+    }
+  } catch (err: any) {
+    return {
+      status: Status.ERROR,
+      message: `(deleteMail) Error: ${err.message}`,
+    }
+  }
+}
 
 // /**
 //  * @deprecated use readMail, claimMail, or deleteMail instead
