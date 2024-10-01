@@ -379,6 +379,223 @@ export const readMail = async (mailId: string, userId: string): Promise<ReturnVa
   }
 }
 
+/**
+ * Finds all unclaimed and unread mails for a specific user and claim any rewards, also marking them as read.
+ */
+export const readAndClaimAllMails = async (userId: string): Promise<ReturnValue> => {
+  try {
+    // we will find those marked unread (because claimed mails will automatically be marked as read)
+    const [mailReceiverData, user] = await Promise.all([
+      MailReceiverDataModel.find({ userId, 'readStatus.status': false }).lean(),
+      UserModel.findOne({ _id: userId }).lean()
+    ]);
+
+    if (!user) {
+      return {
+        status: Status.ERROR,
+        message: `(readAndClaimAllMails) User with ID ${userId} not found`,
+      }
+    }
+
+    if (mailReceiverData.length === 0) {
+      return {
+        status: Status.SUCCESS,
+        message: '(readAndClaimAllMails) No unread mails found.',
+      }
+    }
+
+    const mailIds = mailReceiverData.map(mail => mail.mailId);
+
+    const mails = await MailModel.find({ _id: { $in: mailIds } }).lean();
+
+    const userUpdateOperations = {
+      $pull: {},
+      $inc: {},
+      $set: {},
+      $push: {}
+    };
+
+    const mailReceiverDataUpdateOperations: Array<{
+      id: string,
+      updateOperations: {
+        $set: {}
+      }
+    }> = [];
+
+    // initialize $each on the user's inventory items, foods and/or resources.
+    if (!userUpdateOperations.$push['inventory.items']) {
+      userUpdateOperations.$push['inventory.items'] = { $each: [] }
+    }
+
+    if (!userUpdateOperations.$push['inventory.foods']) {
+      userUpdateOperations.$push['inventory.foods'] = { $each: [] }
+    }
+
+    if (!userUpdateOperations.$push['inventory.resources']) {
+      userUpdateOperations.$push['inventory.resources'] = { $each: [] }
+    }
+
+    for (const mail of mails) {
+      // we will check if this mail has attachments. if not, we will just set it as read.
+      if (mail.attachments.length === 0) {
+        mailReceiverDataUpdateOperations.push({
+          id: mail._id,
+          updateOperations: {
+            $set: {
+              'readStatus.status': true,
+              'readStatus.timestamp': Math.floor(Date.now() / 1000)
+            }
+          }
+        });
+        continue;
+      } else {
+        // if there are attachments, we will claim the mail and give the user the rewards.
+        for (const attachment of mail.attachments) {
+          const type = attachment.type;
+
+          if (type === 'food') {
+            // add the food to the user's inventory
+            // firstly, check if the food to be added already exists in the update operations (so we don't override)
+            const existingFoodIndexInOps = userUpdateOperations.$push['inventory.foods'].$each.findIndex((food: Food) => food.type === attachment.name);
+
+            // if the food already exists in the update operations, increment the amount (in the update operations, NOT the database)
+            if (existingFoodIndexInOps !== -1) {
+              userUpdateOperations.$push['inventory.foods'].$each[existingFoodIndexInOps].amount += attachment.amount;
+            } else {
+              // if not found, then we check if the food already exists in the user's inventory
+              const existingFoodIndex = (user.inventory?.foods as Food[]).findIndex((food) => food.type === attachment.name);
+
+              // if the food already exists in the user's inventory, increment the amount
+              if (existingFoodIndex !== -1) {
+                userUpdateOperations.$inc[`inventory.foods.${existingFoodIndex}.amount`] = attachment.amount;
+              } else {
+                // else, push the new food to the update operations
+                userUpdateOperations.$push['inventory.foods'].$each.push({ 
+                  type: attachment.name, 
+                  amount: attachment.amount 
+                });
+              }
+            }
+          } else if (type === 'item') {
+            // add the item to the user's inventory
+            // firstly, check if the item to be added already exists in the update operations (so we don't override)
+            const existingItemIndexInOps = userUpdateOperations.$push['inventory.items'].$each.findIndex((item: Item) => item.type === attachment.name);
+
+            // if the item already exists in the update operations, increment the amount (in the update operations, NOT the database)
+            if (existingItemIndexInOps !== -1) {
+              userUpdateOperations.$push['inventory.items'].$each[existingItemIndexInOps].amount += attachment.amount;
+            } else {
+              // if not found, then we check if the item already exists in the user's inventory
+              const existingItemIndex = (user.inventory?.items as Item[]).findIndex((item) => item.type === attachment.name);
+
+              // if the item already exists in the user's inventory, increment the amount
+              if (existingItemIndex !== -1) {
+                userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = attachment.amount;
+              } else {
+                // else, push the new item to the update operations
+                userUpdateOperations.$push['inventory.items'].$each.push({ 
+                  type: attachment.name, 
+                  amount: attachment.amount,
+                  totalAmountConsumed: 0,
+                  weeklyAmountConsumed: 0
+                });
+              }
+            }
+          } else if (type === 'resource') {
+            // get the resource data
+            const resourceData = resources.find((resource) => resource.type === attachment.name);
+
+            if (!resourceData) {
+              return {
+                status: Status.ERROR,
+                message: `(readAndClaimAllMails) Resource ${attachment.name} not found in resources list`,
+              }
+            }
+
+            // check if the resource to be added already exists in the update operations (so we don't override)
+            const existingResourceIndexInOps = userUpdateOperations.$push['inventory.resources'].$each.findIndex((resource: ExtendedResource) => resource.type === attachment.name);
+
+            // if the resource already exists in the update operations, increment the amount (in the update operations, NOT the database)
+            if (existingResourceIndexInOps !== -1) {
+              userUpdateOperations.$push['inventory.resources'].$each[existingResourceIndexInOps].amount += attachment.amount;
+            } else {
+              // if not found, then we check if the resource already exists in the user's inventory
+              const existingResourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex((resource) => resource.type === attachment.name);
+
+              // if the resource already exists in the user's inventory, increment the amount
+              if (existingResourceIndex !== -1) {
+                userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = attachment.amount;
+              } else {
+                // else, push the new resource to the update operations
+                userUpdateOperations.$push['inventory.resources'].$each.push({ 
+                  ...resourceData,
+                  amount: attachment.amount,
+                  origin: ExtendedResourceOrigin.NORMAL
+                });
+              }
+            }
+          } else if (type === 'xCookies') {
+            // check if the xCookies to be added already exists in the update operations (so we don't override)
+            const existingXCookiesInOps = userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'];
+
+            // if the xCookies already exists in the update operations, increment the amount (in the update operations, NOT the database)
+            if (existingXCookiesInOps) {
+              userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] += attachment.amount;
+            } else {
+              // if not found, then increment the xCookies in the update operations
+              userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = attachment.amount;
+            }
+          } else {
+            // unknown attachment type for now. simply skip this attachment.
+            continue;
+          }
+        }
+      }
+
+      // mark the mail as read. if there are attachments, mark it also as claimed.
+      mailReceiverDataUpdateOperations.push({
+        id: mail._id,
+        updateOperations: {
+          $set: {
+            'readStatus.status': true,
+            'readStatus.timestamp': Math.floor(Date.now() / 1000),
+            'claimedStatus.status': mail.attachments.length > 0,
+            'claimedStatus.timestamp': mail.attachments.length > 0 ? Math.floor(Date.now() / 1000) : 0
+          }
+        }
+      });
+    }
+
+    const mailBatchUpdateOps = mailReceiverDataUpdateOperations.map(async ({ id, updateOperations }) => {
+      return MailReceiverDataModel.updateOne({ mailId: id, userId }, updateOperations);
+    })
+
+    // simultaneously, update the user's inventory with the rewards (divide $inc + $set and $push + $pull operations)
+    await Promise.all([
+      UserModel.updateOne({ _id: userId }, {
+        $set: userUpdateOperations.$set,
+        $inc: userUpdateOperations.$inc,
+      }),
+      ...mailBatchUpdateOps
+    ]);
+
+    await UserModel.updateOne({ _id: userId }, {
+      $push: userUpdateOperations.$push,
+      $pull: userUpdateOperations.$pull
+    });
+
+    return {
+      status: Status.SUCCESS,
+      message: '(readAndClaimAllMails) Successfully claimed and read all mails and added rewards to user inventory.',
+    }
+  } catch (err: any) {
+    return {
+      status: Status.ERROR,
+      message: `(readAndClaimAllMails) Error: ${err.message}`,
+    }
+  }
+}
+
 // /**
 //  * @deprecated use readMail, claimMail, or deleteMail instead
 //  * Updates the status of a mail for a specific user.
