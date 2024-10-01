@@ -9,8 +9,6 @@ enum RedisKey {
   CONNECTED = "connected"
 }
 
-
-
 const DUMMY_DATA = new Array(3).fill(null).map((_, i) => ({
   id: (i + 1).toString(),
   createdTimestamp: Math.floor(Date.now() / 1000),
@@ -22,108 +20,116 @@ const DUMMY_DATA = new Array(3).fill(null).map((_, i) => ({
     }
   }
 }));
-// save this to redis
-const userSockets = new Map<string, Socket>();
+// todo : save this to redis
 
 export const startRest = async (socket: Socket, data: SaunaUserDetail) => {
-  console.log('new user start rest', data);
-  const { userId } = data;
-  const user = DUMMY_DATA.find((user) => user.id === userId);
+  try {
+    const { userId } = data;
+    const user = DUMMY_DATA.find((user) => user.id === userId);
 
-  if (!user) {
-    socket.emit('server_response', {
-      status: Status.BAD_REQUEST,
-      message: "user not found"
-    });
-    return;
-  }
-
-  // Avoid if user already full of energy
-  if (user.inGameData.energy.currentEnergy === user.inGameData.energy.maxEnergy) {
-    socket.emit('server_response', {
-      status: Status.BAD_REQUEST,
-      message: "user has max energy"
-    });
-    return;
-  }
-
-  const currentEnergy = user.inGameData.energy.currentEnergy;
-  const maxEnergy = user.inGameData.energy.maxEnergy;
-  const percentage = maxEnergy * 0.2; // 20%
-  const energyPotionPerSecond = percentage / 60; // 20% per second
-  const lack = Math.abs(maxEnergy - currentEnergy); // How much energy is rest
-  const timeToMaxEnergy = lack / energyPotionPerSecond; // how long the Time to recover to max
-  const timeToMaxEnergyInMiliSecond = timeToMaxEnergy * 1000;
-
-  userSockets.set(userId, socket);
-  console.log('time to max energy', (timeToMaxEnergyInMiliSecond / 60) / 1000);
-
-  socket.on('stop_rest', async () => {
-    const getJobId = await saunaQueue.getJob(userId)
-    if (getJobId) {
-      getJobId.remove()
-      removeUserFromRoom(userId)
+    // Avoid if user not found
+    if (!user) {
+      return socket.emit('server_response', {
+        status: Status.BAD_REQUEST,
+        message: "user not found"
+      });
     }
-  });
 
-  addUserToRoom(userId, socket.id, timeToMaxEnergyInMiliSecond, lack);
+    // Avoid if user already full of energy
+    if (user.inGameData.energy.currentEnergy === user.inGameData.energy.maxEnergy) {
+      return socket.emit('server_response', {
+        status: Status.BAD_REQUEST,
+        message: "user has max energy"
+      });
+    }
 
-  socket.emit('server_response', {
-    status: Status.SUCCESS,
-    message: "Succes connected to sauna",
-  });
+    const currentEnergy = user.inGameData.energy.currentEnergy;
+    const maxEnergy = user.inGameData.energy.maxEnergy;
+    const percentage = maxEnergy * 0.2;
+    const energyPotionPerSecond = percentage / 60;
+    const lack = Math.abs(maxEnergy - currentEnergy);
+    const timeToMaxEnergy = lack / energyPotionPerSecond;
+    const timeToMaxEnergyInMiliSecond = timeToMaxEnergy * 1000;
+
+    console.log('time to max energy', (timeToMaxEnergyInMiliSecond / 60) / 1000);
+
+    addUserToRoom(userId, socket.id, timeToMaxEnergyInMiliSecond, lack);
+
+    return socket.emit('server_response', {
+      status: Status.SUCCESS,
+      message: "Succes connected to sauna",
+    });
+  } catch (error) {
+    return socket.emit('server_response', {
+      status: Status.ERROR,
+      message: `(startRest) ${error.message}`,
+    });
+  }
 };
 
+/**
+ * Add user to room and set delay to queue
+ * @param userId user id
+ * @param socketId socket id
+ * @param timeToMaxEnergyInMiliSecond time to max energy in milisecond
+ * @param getTotalEnergy total energy to add
+ */
 const addUserToRoom = async (userId: string, socketId: string, timeToMaxEnergyInMiliSecond: number, getTotalEnergy: number) => {
+  // get user already in room
+  const isUserAlreadyInRoom = await isUserInRoom(userId)
+  // throw error if user already in room
+  if (isUserAlreadyInRoom) throw new Error('User already in room')
+  // get total connected
+  const userConnected = await redisDb.get(RedisKey.CONNECTED)
+  //redis multi set
+  const redisMulti = redisDb.multi()
   try {
-    const isUserAlreadyInRoom = await isUserInRoom(userId)
-
-    if (isUserAlreadyInRoom) {
-      console.log('user already in room', userId);
-      return;
-    }
-
-    await redisDb.set(`userSocket:${userId}`, socketId)
-    await redisDb.set(RedisKey.CONNECTED, Number(await redisDb.get(RedisKey.CONNECTED)) + 1)
-    await saunaQueue.add({
-      userId,
-      getTotalEnergy
-    }, {
-      jobId: userId,
-      delay: timeToMaxEnergyInMiliSecond // Delay job execution based on time to max energy
-    })
-
-  } catch (e) {
-    console.log(e)
-  } finally {
-    console.log('add user to room finally', userId);
-    console.log(await redisDb.get(RedisKey.CONNECTED));
+    // pin user to room
+    redisMulti.set(`userSocket:${userId}`, socketId)
+    // increment total connected
+    redisMulti.set(RedisKey.CONNECTED, Number(userConnected) + 1)
+    // add user to queue and set delay
+    await saunaQueue.add(
+      { userId, socketId, getTotalEnergy },
+      { jobId: userId, delay: timeToMaxEnergyInMiliSecond }
+    )
+    // exectute redis multi
+    await redisMulti.exec()
+  } catch (error) {
+    throw new Error(`(addUserToRoom) ${error.message}`)
   }
 }
 
+/**
+ * Remove user from room
+ * @param userId user id
+ */
 const removeUserFromRoom = async (userId: string) => {
+  // get total connected
+  const userConnected = await redisDb.get(RedisKey.CONNECTED)
+  // redis multi set
+  const redisMulti = redisDb.multi()
   try {
-    await redisDb.del(`userSocket:${userId}`)
-    await redisDb.set(RedisKey.CONNECTED, Number(await redisDb.get(RedisKey.CONNECTED)) - 1)
-  } catch (e) {
-    console.log(e)
-  } finally {
-    console.log('remove user from room finally', userId);
-    console.log(await redisDb.get(RedisKey.CONNECTED));
+    // decrement total connected
+    redisMulti.set(RedisKey.CONNECTED, Number(userConnected) - 1)
+    // remove user from room
+    redisMulti.del(`userSocket:${userId}`)
+    // remove user from queue
+    await saunaQueue.removeJobs(userId)
+    // exect redis multi
+    await redisMulti.exec()
+  } catch (error) {
+    throw new Error(`(removeUserFromRoom) ${error.message}`)
   }
 }
 
 const isUserInRoom = async (userId: string) => {
-  try {
-    const socketId = await redisDb.get(`userSocket:${userId}`)
-    if (socketId) {
-      return true
-    }
-    return false
-  } catch (e) {
-    console.log(e)
-    return false
-  }
+  // check if user already in room
+  const socketId = await redisDb.get(`userSocket:${userId}`)
+  // if user not in room return false
+  if (!socketId) return false
+  // if user in room return true
+  return true
 }
 
 
