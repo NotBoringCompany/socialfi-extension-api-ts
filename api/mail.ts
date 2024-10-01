@@ -337,6 +337,48 @@ export const claimMail = async (mailId: string, userId: string): Promise<ReturnV
   }
 }
 
+/**
+ * Marks a mail as read for a specific user.
+ */
+export const readMail = async (mailId: string, userId: string): Promise<ReturnValue> => {
+  try {
+    const mail = await MailReceiverDataModel.findOne({ mailId, userId }).lean();
+
+    if (!mail) {
+      return {
+        status: Status.ERROR,
+        message: `(readMail) Mail ID ${mailId} not found for user with ID ${userId}`,
+      }
+    }
+
+    // if the mail is already read, return an error
+    if (mail.readStatus.status) {
+      return {
+        status: Status.ERROR,
+        message: `(readMail) Mail ID ${mailId} already read for user with ID ${userId}`,
+      }
+    }
+
+    // mark the mail as read
+    await MailReceiverDataModel.updateOne({ mailId, userId }, {
+      $set: {
+        'readStatus.status': true,
+        'readStatus.timestamp': Math.floor(Date.now() / 1000)
+      }
+    });
+
+    return {
+      status: Status.SUCCESS,
+      message: '(readMail) Successfully marked mail as read.',
+    }
+  } catch (err: any) {
+    return {
+      status: Status.ERROR,
+      message: `(readMail) Error: ${err.message}`,
+    }
+  }
+}
+
 // /**
 //  * @deprecated use readMail, claimMail, or deleteMail instead
 //  * Updates the status of a mail for a specific user.
