@@ -1,6 +1,6 @@
 import { ClientSession } from 'mongoose';
 import { MailAttachment, MailType } from '../models/mail';
-import { MailModel } from '../utils/constants/db';
+import { MailModel, MailReceiverDataModel, UserModel } from '../utils/constants/db';
 import { generateObjectId } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
 
@@ -43,9 +43,25 @@ export const createMail = async (
 
     await newMail.save();
 
+    // if receivers is `all`, fetch all users and get their IDs. else, use the provided IDs
+    const finalReceiverIds = 
+      receivers === 'all' 
+        ? (await UserModel.find().lean()).map((user) => user._id)
+        : receiverIds;
+
+    const mailReceiverData = finalReceiverIds.map(userId => ({
+      userId,
+      mailId: newMail._id,
+      readStatus: { status: false, timestamp: 0 },
+      claimedStatus: { status: false, timestamp: 0 },
+      deletedStatus: { status: false, timestamp: 0 }
+    }))
+
+    await MailReceiverDataModel.insertMany(mailReceiverData);
+
     return {
       status: Status.SUCCESS,
-      message: '(createMail) Successfully added new mail to database',
+      message: '(createMail) Successfully added new mail to database and sent to users in MailReceiverData.',
     }
   } catch (err: any) {
     return {
@@ -53,7 +69,7 @@ export const createMail = async (
       message: `(createMail) Error: ${err.message}`,
     }
   }
-};
+}
 
 // /**
 //  * Notify all users with a new mail.

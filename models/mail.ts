@@ -153,6 +153,10 @@ export interface MailReceiverData {
    */
   userId: string;
   /**
+   * the ID of the mail this receiver data is associated with.
+   */
+  mailId: string;
+  /**
    * the mail's read status
    */
   readStatus: MailStatus;

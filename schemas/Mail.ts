@@ -18,6 +18,11 @@ export const MailReceiverDataSchema = new mongoose.Schema<MailReceiverData>({
     type: String,
     required: true
   },
+  mailId: {
+    type: String,
+    required: true,
+    index: true
+  },
   readStatus: { type: StatusEmailSchema },
   claimedStatus: { type: StatusEmailSchema },
   deletedStatus: { type: StatusEmailSchema }
