@@ -78,18 +78,20 @@ export const createMail = async (
 }
 
 /**
- * Retrieves all mails sent to a specific user.
+ * Retrieves all mails sent to a specific user with pagination (sorted by sent timestamp).
  * 
- * We don't worry about limiting size because most mails will be deleted eventually.
+ * NOTE: `limit` CANNOT be greater than 20 per page.
+ * 
+ * Usage: Say `page` is 2 and `limit` is 20. This means that the function will skip the first 20 mails and return the next 20 mails.
  */
-export const getAllUserMails = async (userId: string): Promise<ReturnValue> => {
+export const getAllUserMails = async (userId: string, page: number, limit: number): Promise<ReturnValue> => {
   try {
     const mailReceiverData = await MailReceiverDataModel.find({ userId }).lean();
 
     // fetch the mails using the mail IDs
     const mailIds = mailReceiverData.map(mail => mail.mailId);
 
-    const mails = await MailModel.find({ _id: { $in: mailIds } }).lean();
+    const mails = await MailModel.find({ _id: { $in: mailIds } }).sort({ sentTimestamp: -1 }).skip((page - 1) * limit).limit(limit).lean();
 
     const mailDTOs: MailDTO[] = mails.map(mail => ({
       _id: mail._id,
@@ -649,107 +651,3 @@ export const purgeExpiredMails = async (): Promise<void> => {
     console.error(`(purgeExpiredMails) Error: ${err.message}`);
   }
 }
-
-// /**
-//  * get all email with pagination
-//  * Gets all emails for a specific user with pagination.
-//  *
-//  * @param {string} userId
-//  * @param {number} page
-//  * @param {number} limit
-//  * @returns {Promise<ReturnWithPagination<Mail[]>>} A promise that resolves with the retrieved mails.
-//  * @example getAllMailsByUserId(userId, page, limit): Promise<MailPaginationDTO> => {
-//  *  return {
-//  *    status: Status.SUCCESS,
-//  *    message: '(getAllMailsByUserId) Successfully retrieved mails',
-//  *    data: mails,
-//  *    meta: {
-//  *      totalPage:20,
-//  *      pageSize: 5,
-//  *      currentPage: 1,
-//  *      totalDocument: 100
-//  *    }
-//  * }
-//  */
-// export const getAllMailsByUserIdWithPagination = async (userId: string, page: number, limit: number): Promise<ReturnWithPagination<MailDTO[]>> => {
-//   try {
-//     // get total mails whose related with the user
-//     const totalMails = await MailModel.countDocuments({ receiverIds: { $elemMatch: { _id: userId } } });
-//    /**
-//     * totalMail = 100
-//     * limit = 5
-//     * totalPage = totalMail / limit = 20
-//     * now we we have 20 pages and 5 mails per page
-//     */
-//     const totalPage = Math.ceil(totalMails / limit);
-//     const pageSize = limit;
-//     const isHasNext = page < totalPage;
-
-//     console.log(`(getAllMailsByUserIdWithPagination) totalMails: ${totalMails}, totalPage: ${totalPage}, pageSize: ${pageSize}, currentPage: ${page}, isHasNext: ${isHasNext}`);
-
-//     const mails = await MailModel
-//       .find({
-//         receiverIds: { $elemMatch: { _id: userId } }
-//       })
-//       // the latest mail first
-//       .sort({ timestamp: -1 })
-//       // skip the previous page's documents
-//       // example: if page = 2 and limit = 5, we will skip the first 5 documents
-//       // then we will get the next 5 documents which is the second page
-//       .skip((page - 1) * limit)
-//       .limit(limit)
-//       .lean();
-//     const transForm = mailTransformHelper(mails, userId);
-//     return {
-//       status: Status.SUCCESS,
-//       message: '(getAllMailsByUserIdWithPagination) Successfully retrieved mails',
-//       data: transForm,
-//       meta: {
-//         totalPage,
-//         pageSize,
-//         currentPage: page,
-//         totalItems: totalMails,
-//         isHasNext
-//       }
-//     };
-//   } catch (err: any) {
-//     return {
-//       status: Status.ERROR,
-//       message: `(getAllMailsByUserIdWithPagination) Error: ${err.message}`,
-//     };
-//   }
-// }
-
-// /**
-//  * Purges all expired mails.
-//  *
-//  * @param {number} currentDate - The current date.
-//  * @returns {Promise<void>} A promise that resolves when the mails are purged.
-//  * @example purgeExpiredMails(currentDate): Promise<void> => {
-//  * //if expired date is less than current date, delete the mail
-//  *    await MailModel.deleteMany({ expiredDate: { $lt: currentDate } });
-//  * }
-//  */
-// export const purgeExpiredMails = async (currentDate: number): Promise<void> => {
-//   try {
-//     // if expired date is less than current date, delete the mail
-//     await MailModel.deleteMany({ expiredDate: { $lt: currentDate } });
-//   } catch (err) {
-//     console.error(`(purgeExpiredMails) Error: ${err.message}`);
-//   }
-// }
-
-// // const getmails = async () => {
-// //   const mails = await MailModel.find().lean();
-// //   console.log(mails);
-// // }
-
-// // // getmails().catch((err) => console.error(err)).then(() => console.log("done")).finally(() => process.exit(1))
-
-// // notifyUsers("rewards mail test", "Lorem ipsum dolor sit amet, consectetur adipiscing elit", [{
-// //   name: FoodType.BURGER,
-// //   quantity: 1
-// // }, {
-// //   name: FoodType.CANDY,
-// //   quantity: 1
-// // }], MailType.REWARDS, Math.floor(Date.now() / 1000)).catch((err) => console.error(err)).then(() => console.log("done")).finally(() => getmails().catch((err) => console.error(err)).then(() => console.log("done")).finally(() => process.exit(1)))
