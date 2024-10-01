@@ -2441,7 +2441,7 @@ export const consumeEnergyPotion = async (
         const energyAfterTapping = currentEnergy >= totalTappingProgressEnergyRequired ? 
             currentEnergy - totalTappingProgressEnergyRequired : 
             currentEnergy;
-        const newCurrentEnergy = Math.min(maxEnergy, energyAfterTapping + 1000);
+        const newCurrentEnergy = Math.min(maxEnergy, energyAfterTapping + ENERGY_POTION_RECOVERY);
         const newEnergyPotionCount = Math.max(dailyEnergyPotion - 1, 0);
 
         // Set the new current energy and daily energy potion count in the update operations
