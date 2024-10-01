@@ -53,7 +53,7 @@ export const startRest = async (socket: Socket, data: SaunaUserDetail) => {
 
     console.log('time to max energy', (timeToMaxEnergyInMiliSecond / 60) / 1000);
 
-    addUserToRoom(userId, socket.id, timeToMaxEnergyInMiliSecond, lack);
+    await addUserToRoom(userId, socket.id, timeToMaxEnergyInMiliSecond, lack);
 
     return socket.emit('server_response', {
       status: Status.SUCCESS,
@@ -63,6 +63,22 @@ export const startRest = async (socket: Socket, data: SaunaUserDetail) => {
     return socket.emit('server_response', {
       status: Status.ERROR,
       message: `(startRest) ${error.message}`,
+    });
+  }
+};
+
+export const stopRest = async (socket: Socket, data: SaunaUserDetail) => {
+  try {
+    const { userId } = data;
+    await removeUserFromRoom(userId);
+    return socket.emit('server_response', {
+      status: Status.SUCCESS,
+      message: "Succes disconnected from sauna",
+    });
+  } catch (error) {
+    return socket.emit('server_response', {
+      status: Status.ERROR,
+      message: `(stopRest) ${error.message}`,
     });
   }
 };
@@ -91,12 +107,12 @@ const addUserToRoom = async (userId: string, socketId: string, timeToMaxEnergyIn
     // add user to queue and set delay
     await saunaQueue.add(
       { userId, socketId, getTotalEnergy },
-      { jobId: userId, delay: timeToMaxEnergyInMiliSecond }
+      { jobId: userId, delay: timeToMaxEnergyInMiliSecond, removeOnComplete: true }
     )
     // exectute redis multi
     await redisMulti.exec()
   } catch (error) {
-    throw new Error(`(addUserToRoom) ${error.message}`)
+    throw new Error(`${error.message}`)
   }
 }
 
@@ -105,6 +121,10 @@ const addUserToRoom = async (userId: string, socketId: string, timeToMaxEnergyIn
  * @param userId user id
  */
 const removeUserFromRoom = async (userId: string) => {
+  // user exist in room
+  const isUserExistInRoom = await isUserInRoom(userId)
+  // throw error if user not in room
+  if (!isUserExistInRoom) throw new Error('User not in room')
   // get total connected
   const userConnected = await redisDb.get(RedisKey.CONNECTED)
   // redis multi set
@@ -114,12 +134,10 @@ const removeUserFromRoom = async (userId: string) => {
     redisMulti.set(RedisKey.CONNECTED, Number(userConnected) - 1)
     // remove user from room
     redisMulti.del(`userSocket:${userId}`)
-    // remove user from queue
-    await saunaQueue.removeJobs(userId)
     // exect redis multi
     await redisMulti.exec()
   } catch (error) {
-    throw new Error(`(removeUserFromRoom) ${error.message}`)
+    throw new Error(`${error.message}`)
   }
 }
 

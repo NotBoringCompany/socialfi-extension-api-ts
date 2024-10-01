@@ -3,6 +3,5 @@ export interface Sauna {
   userDetail:SaunaUserDetail[]
 }
 export interface SaunaUserDetail {
-  userId: string;
-  timestamp: number;
+  userId: string
 }
