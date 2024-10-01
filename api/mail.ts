@@ -3,6 +3,10 @@ import { MailAttachment, MailDTO, MailType } from '../models/mail';
 import { MailModel, MailReceiverDataModel, UserModel } from '../utils/constants/db';
 import { generateObjectId } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
+import { Food } from '../models/food';
+import { Item } from '../models/item';
+import { resources } from '../utils/constants/resource';
+import { ExtendedResource, ExtendedResourceOrigin } from '../models/resource';
 
 /**
  * Creates a mail instance and saves it to the database.
@@ -157,6 +161,178 @@ export const deleteMail = async (mailId: string, userId: string): Promise<Return
     return {
       status: Status.ERROR,
       message: `(deleteMail) Error: ${err.message}`,
+    }
+  }
+}
+
+/**
+ * Claims a mail for a specific user. If not yet marked as `read`, it will be marked as `read`.
+ * 
+ * This will only be possible if the mail has attachments.
+ */
+export const claimMail = async (mailId: string, userId: string): Promise<ReturnValue> => {
+  try {
+    const [mail, user] = await Promise.all([
+      MailReceiverDataModel.findOne({ mailId, userId }).lean(),
+      UserModel.findOne({ _id: userId }).lean()
+    ])
+
+    if (!mail) {
+      return {
+        status: Status.ERROR,
+        message: `(claimMail) Mail ID ${mailId} not found for user with ID ${userId}`,
+      }
+    }
+
+    if (!user) {
+      return {
+        status: Status.ERROR,
+        message: `(claimMail) User with ID ${userId} not found`,
+      }
+    }
+
+    // if the mail is already claimed, return an error
+    if (mail.claimedStatus.status) {
+      return {
+        status: Status.ERROR,
+        message: `(claimMail) Mail ID ${mailId} already claimed for user with ID ${userId}`,
+      }
+    }
+
+    // if the mail has no attachments, return an error
+    const mailData = await MailModel.findOne({ _id: mailId }).lean();
+
+    if (!mailData.attachments.length) {
+      return {
+        status: Status.ERROR,
+        message: `(claimMail) Mail ID ${mailId} has no attachments to claim for user with ID ${userId}`,
+      }
+    }
+
+    const userUpdateOperations = {
+      $pull: {},
+      $inc: {},
+      $set: {},
+      $push: {}
+    };
+
+    const mailReceiverDataUpdateOperations = {
+      $set: {}
+    }
+
+    // initialize $each on the user's inventory items, foods and/or resources.
+    if (!userUpdateOperations.$push['inventory.items']) {
+      userUpdateOperations.$push['inventory.items'] = { $each: [] }
+  }
+
+  if (!userUpdateOperations.$push['inventory.foods']) {
+      userUpdateOperations.$push['inventory.foods'] = { $each: [] }
+  }
+
+  if (!userUpdateOperations.$push['inventory.resources']) {
+      userUpdateOperations.$push['inventory.resources'] = { $each: [] }
+  }
+
+    // claim the mail and give the user the rewards.
+    for (const attachment of mailData.attachments) {
+      const type = attachment.type;
+
+      if (type === 'food') {
+        // add the food to the user's inventory
+        // firstly, check if the food already exists in the user's inventory
+        const existingFoodIndex = (user.inventory?.foods as Food[]).findIndex((food) => food.type === attachment.name);
+
+        if (existingFoodIndex !== -1) {
+          userUpdateOperations.$inc[`inventory.foods.${existingFoodIndex}.amount`] = attachment.amount;
+        } else {
+          userUpdateOperations.$push['inventory.foods'].$each.push({ 
+            type: attachment.name, 
+            amount: attachment.amount 
+          });
+        }
+      } else if (type === 'item') {
+        // add the item to the user's inventory
+        // firstly, check if the item already exists in the user's inventory
+        const existingItemIndex = (user.inventory?.items as Item[]).findIndex((item) => item.type === attachment.name);
+
+        if (existingItemIndex !== -1) {
+          userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = attachment.amount;
+        } else {
+          userUpdateOperations.$push['inventory.items'].$each.push({ 
+            type: attachment.name, 
+            amount: attachment.amount,
+            totalAmountConsumed: 0,
+            weeklyAmountConsumed: 0
+          });
+        }
+      } else if (type === 'resource') {
+        // get the resource data
+        const resourceData = resources.find((resource) => resource.type === attachment.name);
+
+        if (!resourceData) {
+          return {
+            status: Status.ERROR,
+            message: `(claimMail) Resource ${attachment.name} not found in resources list`,
+          }
+        }
+
+        // check if the resource already exists in the user's inventory
+        const existingResourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex((resource) => resource.type === attachment.name);
+
+        // if the resource already exists, increment the amount
+        if (existingResourceIndex !== -1) {
+          userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = attachment.amount;
+        } else {
+          // else, push the new resource to the user's inventory
+          userUpdateOperations.$push['inventory.resources'].$each.push({ 
+            ...resourceData,
+            amount: attachment.amount,
+            origin: ExtendedResourceOrigin.NORMAL
+          });
+        }
+      } else if (type === 'xCookies') {
+        // increment the user's xCookies via inventory.xCookieData.currentXCookies
+        userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = attachment.amount;
+      } else {
+        // unknown attachment type for now. throw an error.
+        return {
+          status: Status.ERROR,
+          message: `(claimMail) Unknown attachment type: ${type}`,
+        }
+      }
+    }
+
+    // mark the mail as claimed. if not yet read somehow, mark it as read.
+    mailReceiverDataUpdateOperations.$set['claimedStatus.status'] = true;
+    mailReceiverDataUpdateOperations.$set['claimedStatus.timestamp'] = Math.floor(Date.now() / 1000);
+
+    if (!mail.readStatus.status) {
+      mailReceiverDataUpdateOperations.$set['readStatus.status'] = true;
+      mailReceiverDataUpdateOperations.$set['readStatus.timestamp'] = Math.floor(Date.now() / 1000);
+    }
+
+    // simultaneously, update the user's inventory with the rewards (divide $inc + $set and $push + $pull operations)
+    await Promise.all([
+      UserModel.updateOne({ _id: userId }, {
+        $set: userUpdateOperations.$set,
+        $inc: userUpdateOperations.$inc,
+      }),
+      MailReceiverDataModel.updateOne({ mailId, userId }, mailReceiverDataUpdateOperations)
+    ]);
+
+    await UserModel.updateOne({ _id: userId }, {
+      $push: userUpdateOperations.$push,
+      $pull: userUpdateOperations.$pull
+    });
+
+    return {
+      status: Status.SUCCESS,
+      message: '(claimMail) Successfully claimed mail and added rewards to user inventory.',
+    }
+  } catch (err: any) {
+    return {
+      status: Status.ERROR,
+      message: `(claimMail) Error: ${err.message}`,
     }
   }
 }
