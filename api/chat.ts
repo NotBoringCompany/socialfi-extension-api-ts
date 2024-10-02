@@ -56,7 +56,7 @@ export const getChatMessages = async (query: ChatMessageQuery): Promise<ReturnVa
         const chatrooms = await ChatroomModel.find({ 'participants.user': user._id }).lean();
 
         // check if the chatrooms empty or didn't exist in the list
-        if (!chatrooms || !chatrooms.find(({ _id }) => _id === query.chatroom)) {
+        if (!chatrooms || (query.chatroom && !chatrooms.find(({ _id }) => _id === query.chatroom))) {
             return {
                 status: Status.SUCCESS,
                 message: `(getChatroomChatrooms) Chat messages fetched.`,
@@ -69,18 +69,22 @@ export const getChatMessages = async (query: ChatMessageQuery): Promise<ReturnVa
         const chatQuery = ChatModel.find();
 
         if (query.startTimestamp) {
-            chatQuery.where('createdTimestamp').gte(query.startTimestamp);
+            chatQuery.where('createdTimestamp').gte(Number(query.startTimestamp));
         }
 
         if (query.endTimestamp) {
-            chatQuery.where('createdTimestamp').lte(query.endTimestamp);
+            chatQuery.where('createdTimestamp').lte(Number(query.endTimestamp));
         }
 
         if (query.chatroom) {
             chatQuery.where('chatroom').equals(query.chatroom);
         }
 
-        const chats = await chatQuery.sort({ createdTimestamp: -1 }).populate('sender').limit(query.limit).exec();
+        const chats = await chatQuery
+            .sort({ createdTimestamp: 1 })
+            .populate('sender')
+            .limit(Number(query.limit))
+            .exec();
 
         return {
             status: Status.SUCCESS,
@@ -105,7 +109,7 @@ export const sendMessage = async (senderId: string, chatroomId: string, message:
     session.startTransaction();
 
     try {
-        const user = await UserModel.findOne({ twitterId: senderId });
+        const user = await UserModel.findOne({ $or: [{ twitterId: senderId }, { _id: senderId }] });
         if (!user) {
             throw new Error('User not found.');
         }
@@ -118,7 +122,7 @@ export const sendMessage = async (senderId: string, chatroomId: string, message:
         const currentTimestamp = dayjs().unix();
 
         // create a new chat messsage
-        const chat = await ChatModel.create(
+        const chats = await ChatModel.create(
             [
                 {
                     _id: generateObjectId(),
@@ -133,7 +137,7 @@ export const sendMessage = async (senderId: string, chatroomId: string, message:
         );
 
         // check if the chat message have been created
-        if (!chat) {
+        if (!chats) {
             throw new Error('Failed to send the message.');
         }
 
@@ -153,11 +157,13 @@ export const sendMessage = async (senderId: string, chatroomId: string, message:
         await session.commitTransaction();
         session.endSession();
 
+        const newMessage = await ChatModel.findById(chats[0]._id).populate('sender');
+
         return {
             status: Status.SUCCESS,
             message: `(sendMessage) Message sent.`,
             data: {
-                chat,
+                chat: newMessage,
                 chatroom,
             },
         };

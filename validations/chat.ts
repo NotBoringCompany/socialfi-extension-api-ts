@@ -1,18 +1,18 @@
 import { z } from 'zod';
 
 export interface ChatMessageQuery {
-    limit?: number;
-    startTimestamp?: number;
-    endTimestamp?: number;
+    limit?: number | string;
+    startTimestamp?: number | string;
+    endTimestamp?: number | string;
     user?: string; // Users.twitterId
     chatroom?: string; // Chatroom._id
 }
 
 export const chatMessageQuery = z.object({
     chatroom: z.string().optional(),
-    limit: z.number().optional(),
-    startTimestamp: z.number().optional(),
-    endTimestamp: z.number().optional(),
+    limit: z.union([z.string(), z.number()]).optional(),
+    startTimestamp: z.union([z.string(), z.number()]).optional(),
+    endTimestamp: z.union([z.string(), z.number()]).optional(),
 });
 
 export interface ChatroomCreateDTO {
