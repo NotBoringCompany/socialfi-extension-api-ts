@@ -1,14 +1,14 @@
 export interface Sauna {
-  userConnected:number;
-  userDetail:SaunaUserDetail[]
+  userConnected: number;
+  userDetail: SaunaUserDetail[]
 }
 export interface SaunaUserDetail {
   userId: string
 }
 // global event
 export enum EventSauna {
-  USER_CONNECTED = "userConnected",
-  CONNECTED = "connected",
+  USER_COUNT = "userCount",
+  USER_JOIN = "userJoin",
   START_REST = "startRest",
   STOP_REST = "stopRest",
 }

@@ -1,5 +1,5 @@
 import { Socket } from "socket.io";
-import { SaunaUserDetail } from "../models/sauna";
+import { EventSauna, SaunaUserDetail } from "../models/sauna";
 import { Status } from "../utils/retVal";
 import redisDb from "../utils/constants/redisDb";
 import { saunaQueue } from "../schedulers/sauna";
@@ -54,16 +54,11 @@ export const startRest = async (socket: Socket, data: SaunaUserDetail) => {
     console.log('time to max energy', (timeToMaxEnergyInMiliSecond / 60) / 1000);
 
     await addUserToRoom(userId, socket.id, timeToMaxEnergyInMiliSecond, lack);
-
-    return socket.emit('server_response', {
-      status: Status.SUCCESS,
-      message: "Succes connected to sauna",
-    });
+    const getConnected = await redisDb.get(RedisKey.CONNECTED)
+    socket.emit(EventSauna.USER_COUNT, getConnected);
+    socket.emit(`complete_rest:${userId}`, timeToMaxEnergyInMiliSecond);
   } catch (error) {
-    return socket.emit('server_response', {
-      status: Status.ERROR,
-      message: `(startRest) ${error.message}`,
-    });
+    console.log(`(startRest) ${error.message}`);
   }
 };
 
@@ -71,15 +66,11 @@ export const stopRest = async (socket: Socket, data: SaunaUserDetail) => {
   try {
     const { userId } = data;
     await removeUserFromRoom(userId);
-    return socket.emit('server_response', {
-      status: Status.SUCCESS,
-      message: "Succes disconnected from sauna",
-    });
+    const getConnected = await redisDb.get(RedisKey.CONNECTED)
+    socket.emit(EventSauna.USER_COUNT, getConnected);
+    socket.emit(`complete_rest:${userId}`, 0);
   } catch (error) {
-    return socket.emit('server_response', {
-      status: Status.ERROR,
-      message: `(stopRest) ${error.message}`,
-    });
+    console.log(`(stopRest) ${error.message}`);
   }
 };
 
