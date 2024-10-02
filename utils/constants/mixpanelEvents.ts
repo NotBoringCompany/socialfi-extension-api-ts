@@ -5,6 +5,7 @@ export const RENAME_BIT_MIXPANEL_EVENT_HASH = convertToBytes32('Rename Bit');
 export const RELEASE_BIT_MIXPANEL_EVENT_HASH = convertToBytes32('Release Bit');
 export const EVOLVE_BIT_MIXPANEL_EVENT_HASH = convertToBytes32('Evolve Bit');
 export const FEED_BIT_MIXPANEL_EVENT_HASH = convertToBytes32('Feed Bit');
+export const BULK_FEED_BIT_MIXPANEL_EVENT_HASH = convertToBytes32('Bulk Feed Bit');
 export const CONSUME_BIT_ORB_MIXPANEL_EVENT_HASH = convertToBytes32('Consume Bit Orb');
 export const OPEN_CHEST_MIXPANEL_EVENT_HASH = convertToBytes32('Open Chest');
 export const PLACE_BIT_MIXPANEL_EVENT_HASH = convertToBytes32('Place Bit');
