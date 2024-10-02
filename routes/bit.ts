@@ -1,5 +1,5 @@
 import express from 'express';
-import { calcBitCurrentRate, evolveBit, feedBit, getBits, giftXterioBit, releaseBit, renameBit } from '../api/bit';
+import { bulkFeedBit, calcBitCurrentRate, evolveBit, feedBit, getBits, giftXterioBit, releaseBit, renameBit } from '../api/bit';
 import { FoodType } from '../models/food';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
@@ -184,6 +184,34 @@ router.post('/feed_bit', async (req, res) => {
 
             incrementProgressionByType(QuestRequirementType.FEED_BIT, validateData?.twitterId, 1);
         }
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+});
+
+router.post('/bulk_feed_bit', async (req, res) => {
+    const { userId, foodType, minThreshold } = req.body;
+
+    try {
+        const { status: validateStatus, message: validateMessage } = await validateRequestAuth(req, res, 'bulk_feed_bit');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
+        const { status, message, data } = await bulkFeedBit(userId, foodType, minThreshold);
 
         return res.status(status).json({
             status,

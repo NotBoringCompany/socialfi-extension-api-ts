@@ -576,6 +576,156 @@ export const feedBit = async (twitterId: string, bitId: number, foodType: FoodTy
 }
 
 /**
+ * Bulk feeds all working bits owned by User and replenishes bits energy.
+ * minThreshold will be used to fetch user workingBits with currentEnergy <= minThreshold
+ */
+export const bulkFeedBit = async (userId: string, foodType: FoodType, minThreshold: number = 100): Promise<ReturnValue> => {
+    try {
+        if (minThreshold <= 0 || minThreshold > 100) {
+            return {
+                status: Status.ERROR,
+                message: `(bulkFeedBit) mininum theshold isn't valid. It must be between 0 and 100 (inclusive).`
+            }
+        }
+
+        const [user, workingBits] = await Promise.all([
+            UserModel.findOne({ _id: userId }).lean(),
+            BitModel.find({ 
+                owner: userId, 
+                placedIslandId: { $ne: 0 },
+                'farmingStats.currentEnergy': { $lte: minThreshold }
+            }).lean()
+        ]);
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(bulkFeedBit) User not found.`
+            }
+        }
+
+        if (!workingBits || workingBits.length <= 0) {
+            return {
+                status: Status.ERROR,
+                message: `(bulkFeedBit) workingBits not found/valid.`
+            }
+        }
+
+        // Check user owned foodType by comparing the amount and workingBits.length
+        const userFood = (user.inventory?.foods as Food[]).find(food => food.type === foodType);
+        if (!userFood || userFood.amount < workingBits.length) {
+            return {
+                status: Status.ERROR,
+                message: `(bulkFeedBit) User does not have enough ${foodType}. Required ${workingBits.length} Quantity`
+            }
+        }
+
+        // get based Energy to replenish from foodType
+        const baseToReplenish = FOOD_ENERGY_REPLENISHMENT(foodType);
+
+        // Prepare bulk write operations to feed bits
+        const bulkWriteFeedOps = workingBits.map((bit) => {
+            // check if the bit has any modifiers that impact food consumption efficiency
+            const foodConsumptionModifiers = bit.bitStatsModifiers?.foodConsumptionEfficiencyModifiers as Modifier[];
+            const foodConsumptionMultiplier = foodConsumptionModifiers.reduce((acc, modifier) => acc * modifier.value, 1);
+
+            const toReplenish = baseToReplenish * foodConsumptionMultiplier;
+
+            // if the amount of energy to replenish is more than the amount of energy needed to reach 100, set the amount to replenish to the amount needed to reach 100
+            const energyNeededToReach100 = 100 - bit.farmingStats?.currentEnergy;
+            const actualToReplenish = Math.min(toReplenish, energyNeededToReach100);
+
+            // Increment bit's current energy by `actualToReplenish`
+            const bitUpdateOps: any = {
+                $inc: { 'farmingStats.currentEnergy': actualToReplenish }
+            };
+
+            // check if the current energy is above the thresholds defined by `ENERGY_THRESHOLD_REDUCTIONS`. if so, check for prev. negative modifiers and update them.
+            // here, we assume that `currentEnergy` is still the same because it was called before updating it, so we use `currentEnergy` instead of `currentEnergy + actualToReplenish`
+            const currentEnergy: number = bit.farmingStats?.currentEnergy + actualToReplenish;
+            const { gatheringRateReduction, earningRateReduction } = ENERGY_THRESHOLD_REDUCTIONS(currentEnergy);
+
+            // update the modifiers of the bit regardless based on the energy thresholds
+            const gatheringRateModifier: Modifier = {
+                origin: 'Energy Threshold Reduction',
+                value: 1 - (gatheringRateReduction / 100)
+            }
+
+            const earningRateModifier: Modifier = {
+                origin: 'Energy Threshold Reduction',
+                value: 1 - (earningRateReduction / 100)
+            }
+
+            // update the bit's `statsModifiers` with the new modifiers. check first if the `bitStatsModifiers` already has modifiers called `Energy Threshold Reduction`
+            const gatheringRateModifiers = bit.bitStatsModifiers?.gatheringRateModifiers;
+            const earningRateModifiers = bit.bitStatsModifiers?.earningRateModifiers;
+
+            // check if the `gatheringRateModifiers` already has a modifier called `Energy Threshold Reduction`
+            const gatheringRateModifierIndex = gatheringRateModifiers?.findIndex((modifier: Modifier) => modifier.origin === 'Energy Threshold Reduction');
+            const earningRateModifierIndex = earningRateModifiers?.findIndex((modifier: Modifier) => modifier.origin === 'Energy Threshold Reduction');
+
+            // if the modifier exists, update it; if not, push it
+            if (gatheringRateModifierIndex !== -1) {
+                // if the new gathering rate modifier is 1, remove the modifier
+                if (gatheringRateModifier.value === 1) {
+                    bitUpdateOps.$pull = { ...bitUpdateOps.$pull, 'bitStatsModifiers.gatheringRateModifiers': { origin: 'Energy Threshold Reduction' } };
+                } else {
+                    bitUpdateOps.$set = { ...bitUpdateOps.$set, 'bitStatsModifiers.gatheringRateModifiers.$[elem].value': gatheringRateModifier.value };
+                }
+            } else {
+                bitUpdateOps.$push = { ...bitUpdateOps.$push, 'bitStatsModifiers.gatheringRateModifiers': gatheringRateModifier };
+            }
+
+            if (earningRateModifierIndex !== -1) {
+                // if the new earning rate modifier is 1, remove the modifier
+                if (earningRateModifier.value === 1) {
+                    bitUpdateOps.$pull = { ...bitUpdateOps.$pull, 'bitStatsModifiers.earningRateModifiers': { origin: 'Energy Threshold Reduction' } };
+                } else {
+                    bitUpdateOps.$set = { ...bitUpdateOps.$set, 'bitStatsModifiers.earningRateModifiers.$[elem].value': earningRateModifier.value };
+                }
+            } else {
+                bitUpdateOps.$push = { ...bitUpdateOps.$push, 'bitStatsModifiers.earningRateModifiers': earningRateModifier };
+            }
+
+            return {
+                updateOne: {
+                    filter: { bitId: bit.bitId },
+                    update: bitUpdateOps,
+                    arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }]
+                }
+            };
+        })
+
+        // Update the user's food amount (reduce by number of bits fed)
+        const userUpdateOperation = {
+            $inc: { 'inventory.foods.$.amount': -workingBits.length }
+        };
+
+        // execute update operations
+        await Promise.all([
+            UserModel.updateOne({ _id: userId, 'inventory.foods.type': foodType}, userUpdateOperation),
+            BitModel.bulkWrite(bulkWriteFeedOps)
+        ]);
+        
+        return {
+            status: Status.SUCCESS,
+            message: `(bulkFeedBit) Successfully fed ${workingBits.length} bits.`,
+            data: {
+                fedBits: workingBits.map(bit => bit.bitId),
+                foodType: foodType,
+                foodUsed: workingBits.length
+            }
+        };
+    } catch (err: any) {
+        console.log(`(bulkFeedBit) Error for user ${userId}: ${err.message}`);
+        return {
+            status: Status.ERROR,
+            message: `(bulkFeedBit) Error: ${err.message}`
+        }
+    }
+}
+
+/**
  * Depletes all bits' energies by calculating their energy depletion rate.
  *
  * Called by a scheduler every 15 minutes.
