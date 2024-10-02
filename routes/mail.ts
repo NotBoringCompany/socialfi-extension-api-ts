@@ -1,7 +1,7 @@
 import express from 'express';
 import { authMiddleware } from '../middlewares/auth';
 import { Status } from '../utils/retVal';
-import { claimMail, createMail, deleteAllMails, deleteMail, getAllUserMails, readAndClaimAllMails, readMail } from '../api/mail';
+import { claimMail, createMail, deleteAllReadAndClaimedMails, deleteMail, getAllUserMails, readAndClaimAllMails, readMail } from '../api/mail';
 import { validateRequestAuth } from '../utils/auth';
 const router = express.Router();
 
@@ -185,7 +185,7 @@ router.post('/read_and_claim_all_mails', async (req, res) => {
     }
 })
 
-router.post('/delete_all_mails', async (req, res) => {
+router.post('/delete_all_read_and_claimed_mails', async (req, res) => {
     try {
         const {
             status: validateStatus,
@@ -200,7 +200,7 @@ router.post('/delete_all_mails', async (req, res) => {
             });
         }
 
-        const { status, message } = await deleteAllMails(validateData?.twitterId);
+        const { status, message } = await deleteAllReadAndClaimedMails(validateData?.twitterId);
 
         return res.status(status).json({
             status,

@@ -666,9 +666,11 @@ export const readAndClaimAllMails = async (twitterId: string): Promise<ReturnVal
 }
 
 /**
- * Marks all mails as deleted for a specific user.
+ * Marks all mails that have been read and claimed as deleted for a specific user.
+ * 
+ * NOTE: For `read` mails, if they have unclaimed rewards, they will NOT be deleted. Only `read` mails without attachments AND `claimed` mails will be deleted.
  */
-export const deleteAllMails = async (twitterId: string): Promise<ReturnValue> => {
+export const deleteAllReadAndClaimedMails = async (twitterId: string): Promise<ReturnValue> => {
   try {
     const user = await UserModel.findOne({ twitterId }).lean();
 
@@ -681,7 +683,8 @@ export const deleteAllMails = async (twitterId: string): Promise<ReturnValue> =>
 
     const userId = user._id;
 
-    const mailReceiverData = await MailReceiverDataModel.find({ userId }).lean();
+    // find those marked read first.
+    const mailReceiverData = await MailReceiverDataModel.find({ userId, 'readStatus.status': true }).lean();
 
     if (mailReceiverData.length === 0) {
       return {
@@ -690,8 +693,29 @@ export const deleteAllMails = async (twitterId: string): Promise<ReturnValue> =>
       }
     }
 
-    // mark all mails as deleted (NOTE: this doesn't automatically claim the rewards)
-    await MailReceiverDataModel.updateMany({ userId }, {
+    // then, among these, check which ones have attachments.
+    const mailIds = mailReceiverData.map(mail => mail.mailId);
+
+    const mails = await MailModel.find({ _id: { $in: mailIds } }).lean();
+
+    // only delete these:
+    // 1. mails that have no attachments and are read (which is the default search query)
+    // 2. mails that have attachments and have been claimed.
+    // mails that have attachments but have not been claimed will not be deleted (will be skipped)
+    const mailsToDelete = mails.filter(mail => {
+      const mailData = mailReceiverData.find(data => data.mailId === mail._id);
+
+      if (!mail.attachments.length) {
+        return true;
+      } else {
+        return mailData.claimedStatus.status;
+      }
+    });
+
+    const mailIdsToDelete = mailsToDelete.map(mail => mail._id);
+
+    // mark all mails as deleted
+    await MailReceiverDataModel.updateMany({ mailId: { $in: mailIdsToDelete }, userId }, {
       $set: {
         'deletedStatus.status': true,
         'deletedStatus.timestamp': Math.floor(Date.now() / 1000)
@@ -700,7 +724,7 @@ export const deleteAllMails = async (twitterId: string): Promise<ReturnValue> =>
 
     return {
       status: Status.SUCCESS,
-      message: '(deleteAllMails) Successfully marked all mails as deleted.',
+      message: '(deleteAllMails) Successfully marked all read and claimed mails as deleted.',
     }
   } catch (err: any) {
     return {
