@@ -1,5 +1,5 @@
 import express from 'express';
-import { bulkFeedBit, calcBitCurrentRate, evolveBit, feedBit, getBits, giftXterioBit, releaseBit, renameBit } from '../api/bit';
+import { bulkFeedBits, calcBitCurrentRate, evolveBit, feedBit, getBits, giftXterioBit, releaseBit, renameBit } from '../api/bit';
 import { FoodType } from '../models/food';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
@@ -198,11 +198,11 @@ router.post('/feed_bit', async (req, res) => {
     }
 });
 
-router.post('/bulk_feed_bit', async (req, res) => {
+router.post('/bulk_feed_bits', async (req, res) => {
     const { userId, foodType, minThreshold } = req.body;
 
     try {
-        const { status: validateStatus, message: validateMessage } = await validateRequestAuth(req, res, 'bulk_feed_bit');
+        const { status: validateStatus, message: validateMessage } = await validateRequestAuth(req, res, 'bulk_feed_bits');
 
         if (validateStatus !== Status.SUCCESS) {
             return res.status(validateStatus).json({
@@ -211,7 +211,7 @@ router.post('/bulk_feed_bit', async (req, res) => {
             })
         }
 
-        const { status, message, data } = await bulkFeedBit(userId, foodType, minThreshold);
+        const { status, message, data } = await bulkFeedBits(userId, foodType, minThreshold);
 
         return res.status(status).json({
             status,

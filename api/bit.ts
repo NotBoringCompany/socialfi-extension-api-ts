@@ -579,7 +579,7 @@ export const feedBit = async (twitterId: string, bitId: number, foodType: FoodTy
  * Bulk feeds all working bits owned by User and replenishes bits energy.
  * minThreshold will be used to fetch user workingBits with currentEnergy <= minThreshold
  */
-export const bulkFeedBit = async (userId: string, foodType: FoodType, minThreshold: number = 100): Promise<ReturnValue> => {
+export const bulkFeedBits = async (userId: string, foodType: FoodType, minThreshold: number = 100): Promise<ReturnValue> => {
     try {
         if (minThreshold <= 0 || minThreshold > 100) {
             return {
@@ -668,12 +668,12 @@ export const bulkFeedBit = async (userId: string, foodType: FoodType, minThresho
             if (gatheringRateModifierIndex !== -1) {
                 // if the new gathering rate modifier is 1, remove the modifier
                 if (gatheringRateModifier.value === 1) {
-                    bitUpdateOps.$pull = { ...bitUpdateOps.$pull, 'bitStatsModifiers.gatheringRateModifiers': { origin: 'Energy Threshold Reduction' } };
+                    bitUpdateOps.$pull = { 'bitStatsModifiers.gatheringRateModifiers': { origin: 'Energy Threshold Reduction' } };
                 } else {
-                    bitUpdateOps.$set = { ...bitUpdateOps.$set, 'bitStatsModifiers.gatheringRateModifiers.$[elem].value': gatheringRateModifier.value };
+                    bitUpdateOps.$set = { 'bitStatsModifiers.gatheringRateModifiers.$[gatheringElem].value': gatheringRateModifier.value };
                 }
             } else {
-                bitUpdateOps.$push = { ...bitUpdateOps.$push, 'bitStatsModifiers.gatheringRateModifiers': gatheringRateModifier };
+                bitUpdateOps.$push = { 'bitStatsModifiers.gatheringRateModifiers': gatheringRateModifier };
             }
 
             if (earningRateModifierIndex !== -1) {
@@ -681,7 +681,7 @@ export const bulkFeedBit = async (userId: string, foodType: FoodType, minThresho
                 if (earningRateModifier.value === 1) {
                     bitUpdateOps.$pull = { ...bitUpdateOps.$pull, 'bitStatsModifiers.earningRateModifiers': { origin: 'Energy Threshold Reduction' } };
                 } else {
-                    bitUpdateOps.$set = { ...bitUpdateOps.$set, 'bitStatsModifiers.earningRateModifiers.$[elem].value': earningRateModifier.value };
+                    bitUpdateOps.$set = { ...bitUpdateOps.$set, 'bitStatsModifiers.earningRateModifiers.$[earningElem].value': earningRateModifier.value };
                 }
             } else {
                 bitUpdateOps.$push = { ...bitUpdateOps.$push, 'bitStatsModifiers.earningRateModifiers': earningRateModifier };
@@ -691,7 +691,10 @@ export const bulkFeedBit = async (userId: string, foodType: FoodType, minThresho
                 updateOne: {
                     filter: { bitId: bit.bitId },
                     update: bitUpdateOps,
-                    arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }]
+                    arrayFilters: [
+                        { 'gatheringElem.origin': 'Energy Threshold Reduction' },
+                        { 'earningElem.origin': 'Energy Threshold Reduction' }
+                    ]
                 }
             };
         })
