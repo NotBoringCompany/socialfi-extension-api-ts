@@ -7,6 +7,7 @@ import { Food } from '../models/food';
 import { Item } from '../models/item';
 import { resources } from '../utils/constants/resource';
 import { ExtendedResource, ExtendedResourceOrigin } from '../models/resource';
+import { MAIL_PURGE_QUEUE } from '../utils/mail';
 
 /**
  * Creates a mail instance and saves it to the database.
@@ -65,6 +66,15 @@ export const createMail = async (
 
     await MailReceiverDataModel.insertMany(mailReceiverData);
 
+    // if mail has an expiry timestamp, add it to the queue for purging
+    if (expiryTimestamp !== 'never') {
+      await MAIL_PURGE_QUEUE.add(
+        'purgeMail', 
+        { mailId: newMail._id }, 
+        { delay: expiryTimestamp * 1000 - Date.now() }
+      );
+    }
+
     return {
       status: Status.SUCCESS,
       message: '(createMail) Successfully added new mail to database and sent to users in MailReceiverData.',
@@ -84,9 +94,34 @@ export const createMail = async (
  * 
  * Usage: Say `page` is 2 and `limit` is 20. This means that the function will skip the first 20 mails and return the next 20 mails.
  */
-export const getAllUserMails = async (userId: string, page: number, limit: number): Promise<ReturnValue> => {
+export const getAllUserMails = async (twitterId: string, page: number, limit: number): Promise<ReturnValue> => {
+  // if page is NaN or less than 1, throw an error.
+  // if limit is NaN or less than 1 OR greater than 20, throw an error.
+  if (isNaN(page) || page < 1) {
+    return {
+      status: Status.ERROR,
+      message: '(getAllUserMails) Page must be a number greater than 0.',
+    }
+  }
+
+  if (isNaN(limit) || limit < 1 || limit > 20) {
+    return {
+      status: Status.ERROR,
+      message: '(getAllUserMails) Limit must be a number between 1 and 20.',
+    }
+  }
+  
   try {
-    const mailReceiverData = await MailReceiverDataModel.find({ userId }).lean();
+    const user = await UserModel.findOne({ twitterId }).lean();
+
+    if (!user) {
+      return {
+        status: Status.ERROR,
+        message: `(getAllUserMails) User with Twitter ID ${twitterId} not found`,
+      }
+    }
+
+    const mailReceiverData = await MailReceiverDataModel.find({ userId: user._id }).lean();
 
     // fetch the mails using the mail IDs
     const mailIds = mailReceiverData.map(mail => mail.mailId);
@@ -127,8 +162,19 @@ export const getAllUserMails = async (userId: string, page: number, limit: numbe
  * 
  * NOTE: This doesn't notify the users to claim any existing rewards (in attachments) in the mail if they haven't already.
  */
-export const deleteMail = async (mailId: string, userId: string): Promise<ReturnValue> => {
+export const deleteMail = async (mailId: string, twitterId: string): Promise<ReturnValue> => {
   try {
+    const user = await UserModel.findOne({ twitterId }).lean();
+
+    if (!user) {
+      return {
+        status: Status.ERROR,
+        message: `(deleteMail) User with Twitter ID ${twitterId} not found`,
+      }
+    }
+
+    const userId = user._id;
+
     const mail = await MailReceiverDataModel.findOne({ mailId, userId }).lean();
 
     if (!mail) {
@@ -172,12 +218,20 @@ export const deleteMail = async (mailId: string, userId: string): Promise<Return
  * 
  * This will only be possible if the mail has attachments.
  */
-export const claimMail = async (mailId: string, userId: string): Promise<ReturnValue> => {
+export const claimMail = async (mailId: string, twitterId: string): Promise<ReturnValue> => {
   try {
-    const [mail, user] = await Promise.all([
-      MailReceiverDataModel.findOne({ mailId, userId }).lean(),
-      UserModel.findOne({ _id: userId }).lean()
-    ])
+    const user = await UserModel.findOne({ twitterId }).lean();
+
+    if (!user) {
+      return {
+        status: Status.ERROR,
+        message: `(claimMail) User with Twitter ID ${twitterId} not found`,
+      }
+    }
+
+    const userId = user._id;
+
+    const mail = await MailReceiverDataModel.findOne({ mailId, userId }).lean();
 
     if (!mail) {
       return {
@@ -342,8 +396,19 @@ export const claimMail = async (mailId: string, userId: string): Promise<ReturnV
 /**
  * Marks a mail as read for a specific user.
  */
-export const readMail = async (mailId: string, userId: string): Promise<ReturnValue> => {
+export const readMail = async (mailId: string, twitterId: string): Promise<ReturnValue> => {
   try {
+    const user = await UserModel.findOne({ twitterId }).lean();
+
+    if (!user) {
+      return {
+        status: Status.ERROR,
+        message: `(readMail) User with Twitter ID ${twitterId} not found`,
+      }
+    }
+
+    const userId = user._id;
+
     const mail = await MailReceiverDataModel.findOne({ mailId, userId }).lean();
 
     if (!mail) {
@@ -384,20 +449,21 @@ export const readMail = async (mailId: string, userId: string): Promise<ReturnVa
 /**
  * Finds all unclaimed and unread mails for a specific user and claim any rewards, also marking them as read.
  */
-export const readAndClaimAllMails = async (userId: string): Promise<ReturnValue> => {
+export const readAndClaimAllMails = async (twitterId: string): Promise<ReturnValue> => {
   try {
-    // we will find those marked unread (because claimed mails will automatically be marked as read)
-    const [mailReceiverData, user] = await Promise.all([
-      MailReceiverDataModel.find({ userId, 'readStatus.status': false }).lean(),
-      UserModel.findOne({ _id: userId }).lean()
-    ]);
+    const user = await UserModel.findOne({ twitterId }).lean();
 
     if (!user) {
       return {
         status: Status.ERROR,
-        message: `(readAndClaimAllMails) User with ID ${userId} not found`,
+        message: `(readAndClaimAllMails) User with Twitter ID ${twitterId} not found`,
       }
     }
+
+    const userId = user._id;
+
+    // we will find those marked unread (because claimed mails will automatically be marked as read)
+    const mailReceiverData = await MailReceiverDataModel.find({ userId, 'readStatus.status': false }).lean();
 
     if (mailReceiverData.length === 0) {
       return {
@@ -601,8 +667,19 @@ export const readAndClaimAllMails = async (userId: string): Promise<ReturnValue>
 /**
  * Marks all mails as deleted for a specific user.
  */
-export const deleteAllMails = async (userId: string): Promise<ReturnValue> => {
+export const deleteAllMails = async (twitterId: string): Promise<ReturnValue> => {
   try {
+    const user = await UserModel.findOne({ twitterId }).lean();
+
+    if (!user) {
+      return {
+        status: Status.ERROR,
+        message: `(deleteAllMails) User with Twitter ID ${twitterId} not found`,
+      }
+    }
+
+    const userId = user._id;
+
     const mailReceiverData = await MailReceiverDataModel.find({ userId }).lean();
 
     if (mailReceiverData.length === 0) {

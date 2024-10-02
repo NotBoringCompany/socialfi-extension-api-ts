@@ -1,6 +1,4 @@
 import { AssetType } from './asset';
-import { FoodType } from './food';
-import { ItemType } from './item';
 
 /**
  * Represents a mail instance sent to users via the mailing system.
