@@ -624,7 +624,7 @@ export const bulkFeedBits = async (userId: string, foodType: FoodType, minThresh
         const baseToReplenish = FOOD_ENERGY_REPLENISHMENT(foodType);
 
         // Prepare bulk write operations to feed bits
-        const bulkWriteFeedOps = workingBits.map((bit) => {
+        const bulkWriteOpsPromises = workingBits.map(async (bit) => {
             // check if the bit has any modifiers that impact food consumption efficiency
             const foodConsumptionModifiers = bit.bitStatsModifiers?.foodConsumptionEfficiencyModifiers as Modifier[];
             const foodConsumptionMultiplier = foodConsumptionModifiers.reduce((acc, modifier) => acc * modifier.value, 1);
@@ -635,15 +635,13 @@ export const bulkFeedBits = async (userId: string, foodType: FoodType, minThresh
             const energyNeededToReach100 = 100 - bit.farmingStats?.currentEnergy;
             const actualToReplenish = Math.min(toReplenish, energyNeededToReach100);
 
-            // Increment bit's current energy by `actualToReplenish`
-            const bitUpdateOps: any = {
-                $inc: { 'farmingStats.currentEnergy': actualToReplenish }
-            };
-
             // check if the current energy is above the thresholds defined by `ENERGY_THRESHOLD_REDUCTIONS`. if so, check for prev. negative modifiers and update them.
             // here, we assume that `currentEnergy` is still the same because it was called before updating it, so we use `currentEnergy` instead of `currentEnergy + actualToReplenish`
             const currentEnergy: number = bit.farmingStats?.currentEnergy + actualToReplenish;
             const { gatheringRateReduction, earningRateReduction } = ENERGY_THRESHOLD_REDUCTIONS(currentEnergy);
+
+            // Initialize updateOperations
+            let updateOperations = [];
 
             // update the modifiers of the bit regardless based on the energy thresholds
             const gatheringRateModifier: Modifier = {
@@ -657,8 +655,8 @@ export const bulkFeedBits = async (userId: string, foodType: FoodType, minThresh
             }
 
             // update the bit's `statsModifiers` with the new modifiers. check first if the `bitStatsModifiers` already has modifiers called `Energy Threshold Reduction`
-            const gatheringRateModifiers = bit.bitStatsModifiers?.gatheringRateModifiers;
-            const earningRateModifiers = bit.bitStatsModifiers?.earningRateModifiers;
+            const gatheringRateModifiers = bit.bitStatsModifiers?.gatheringRateModifiers || [];
+            const earningRateModifiers = bit.bitStatsModifiers?.earningRateModifiers || [];
 
             // check if the `gatheringRateModifiers` already has a modifier called `Energy Threshold Reduction`
             const gatheringRateModifierIndex = gatheringRateModifiers?.findIndex((modifier: Modifier) => modifier.origin === 'Energy Threshold Reduction');
@@ -668,33 +666,122 @@ export const bulkFeedBits = async (userId: string, foodType: FoodType, minThresh
             if (gatheringRateModifierIndex !== -1) {
                 // if the new gathering rate modifier is 1, remove the modifier
                 if (gatheringRateModifier.value === 1) {
-                    bitUpdateOps.$pull['bitStatsModifiers.gatheringRateModifiers'] = { origin: 'Energy Threshold Reduction' };
+                    updateOperations.push({
+                        updateOne: {
+                            filter: { bitId: bit.bitId },
+                            update: {
+                                $inc: { 'farmingStats.currentEnergy': actualToReplenish },
+                                $pull: {
+                                    'bitStatsModifiers.gatheringRateModifiers': {
+                                        origin: 'Energy Threshold Reduction',
+                                    },
+                                },
+                            },
+                        },
+                    });
+                // if the new gathering rate modifier is not 1, push the modifier
                 } else {
-                    bitUpdateOps.$set[`bitStatsModifiers.gatheringRateModifiers.$[elem].value`] = gatheringRateModifier.value;
+                    updateOperations.push({
+                        updateOne: {
+                            filter: { bitId: bit.bitId },
+                            update: {
+                                $set: {
+                                    'bitStatsModifiers.gatheringRateModifiers.$[elem].value':
+                                        gatheringRateModifier.value,
+                                },
+                                $inc: { 'farmingStats.currentEnergy': actualToReplenish },
+                            },
+                            arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }],
+                        },
+                    });
                 }
             } else {
-                bitUpdateOps.$push['bitStatsModifiers.gatheringRateModifiers'] = gatheringRateModifier;
+                // if the new gathering rate modifier is 1, only update the energy and don't push the modifier
+                if (gatheringRateModifier.value === 1) {
+                    updateOperations.push({
+                        updateOne: {
+                            filter: { bitId: bit.bitId },
+                            update: {
+                                $inc: { 'farmingStats.currentEnergy': actualToReplenish },
+                            },
+                        },
+                    });
+                // if the new gathering rate modifier is not 1, push the modifier
+                } else {
+                    updateOperations.push({
+                        updateOne: {
+                            filter: { bitId: bit.bitId },
+                            update: {
+                                $inc: { 'farmingStats.currentEnergy': actualToReplenish },
+                                $push: {
+                                    'bitStatsModifiers.gatheringRateModifiers':
+                                        gatheringRateModifier,
+                                },
+                            },
+                        },
+                    });
+                }
             }
 
+            // at this point, we've already updated the gathering rate modifier AND the energy. We don't need to update the energy anymore.
             if (earningRateModifierIndex !== -1) {
                 // if the new earning rate modifier is 1, remove the modifier
                 if (earningRateModifier.value === 1) {
-                    bitUpdateOps.$pull['bitStatsModifiers.earningRateModifiers'] = { origin: 'Energy Threshold Reduction' };
+                    updateOperations.push({
+                        updateOne: {
+                            filter: { bitId: bit.bitId },
+                            update: {
+                                $pull: {
+                                    'bitStatsModifiers.earningRateModifiers': {
+                                        origin: 'Energy Threshold Reduction',
+                                    },
+                                },
+                            },
+                        },
+                    });
+                // if the new earning rate modifier is not 1, update it
                 } else {
-                    bitUpdateOps.$set[`bitStatsModifiers.earningRateModifiers.$[elem].value`] = earningRateModifier.value;
+                    updateOperations.push({
+                        updateOne: {
+                            filter: { bitId: bit.bitId },
+                            update: {
+                                $set: {
+                                    'bitStatsModifiers.earningRateModifiers.$[elem].value':
+                                        earningRateModifier.value,
+                                },
+                            },
+                            arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }],
+                        },
+                    });
                 }
             } else {
-                bitUpdateOps.$push['bitStatsModifiers.earningRateModifiers'] = earningRateModifier;
+                // if the new earning rate modifier is not 1, push the modifier, else, do nothing (since energy is already updated)
+                if (earningRateModifier.value !== 1) {
+                    updateOperations.push({
+                        updateOne: {
+                            filter: { bitId: bit.bitId },
+                            update: {
+                                $push: {
+                                    'bitStatsModifiers.earningRateModifiers':
+                                        earningRateModifier,
+                                },
+                            },
+                        },
+                    });
+                }
             }
 
-            return {
-                updateOne: {
-                    filter: { bitId: bit.bitId },
-                    update: bitUpdateOps,
-                    arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }]
-                }
-            };
+            return updateOperations;
         })
+
+        const bulkWriteOpsArrays = await Promise.all(bulkWriteOpsPromises);
+
+        const bulkWriteFeedOps = bulkWriteOpsArrays.flat().filter(op => op);
+
+        if (bulkWriteFeedOps.length === 0) {
+            console.log(`(bulkFeedBits) No bits to update.`);
+            return;
+        }
 
         // Update the user's food amount (reduce by number of bits fed)
         const userUpdateOperation = {
