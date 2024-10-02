@@ -14,7 +14,7 @@ import { authMiddleware } from '../middlewares/auth';
 import { DEPLOYER_WALLET, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
 import { getMainWallet } from '../api/user';
 import { UserWallet } from '../models/user';
-import { EVOLVE_BIT_MIXPANEL_EVENT_HASH, FEED_BIT_MIXPANEL_EVENT_HASH, RELEASE_BIT_MIXPANEL_EVENT_HASH, RENAME_BIT_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
+import { BULK_FEED_BIT_MIXPANEL_EVENT_HASH, EVOLVE_BIT_MIXPANEL_EVENT_HASH, FEED_BIT_MIXPANEL_EVENT_HASH, RELEASE_BIT_MIXPANEL_EVENT_HASH, RENAME_BIT_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { generateHashSalt, generateWonderbitsDataHash } from '../utils/crypto';
 import { ethers } from 'ethers';
 import { incrementEventCounterInContract } from '../api/web3';
@@ -202,7 +202,7 @@ router.post('/bulk_feed_bits', async (req, res) => {
     const { userId, foodType, minThreshold } = req.body;
 
     try {
-        const { status: validateStatus, message: validateMessage } = await validateRequestAuth(req, res, 'bulk_feed_bits');
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'bulk_feed_bits');
 
         if (validateStatus !== Status.SUCCESS) {
             return res.status(validateStatus).json({
@@ -212,6 +212,18 @@ router.post('/bulk_feed_bits', async (req, res) => {
         }
 
         const { status, message, data } = await bulkFeedBits(userId, foodType, minThreshold);
+
+        if (status === Status.SUCCESS && allowMixpanel) {
+            mixpanel.track('Bulk Feed Bit', {
+                distinct_id: validateData?.twitterId,
+                '_data': data
+            });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, BULK_FEED_BIT_MIXPANEL_EVENT_HASH);
+
+            incrementProgressionByType(QuestRequirementType.FEED_BIT, validateData?.twitterId, data?.foodUsed ?? 1);
+        }
 
         return res.status(status).json({
             status,
