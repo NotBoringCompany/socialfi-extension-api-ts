@@ -1,24 +1,8 @@
 import express from 'express';
 import { authMiddleware } from '../middlewares/auth';
 import { Status } from '../utils/retVal';
-import { createMail, getAllUserMails } from '../api/mail';
+import { claimMail, createMail, deleteAllMails, deleteMail, getAllUserMails, readAndClaimAllMails, readMail } from '../api/mail';
 import { validateRequestAuth } from '../utils/auth';
-// import { authMiddleware } from '../middlewares/auth';
-// import {
-//   readMail,
-//   claimMail,
-//   deleteMail,
-//   notifyUsers,
-//   getEmailById,
-//   readAllMails,
-//   claimAllMails,
-//   updateMailStatus,
-//   notifySpecificUser,
-//   getAllMailsByUserId,
-//   getAllMailsByUserIdWithPagination,
-// } from '../api/mail';
-// import { Status } from '../utils/retVal';
-// import { validateRequestAuthV2 } from '../middlewares/validateRequest';
 const router = express.Router();
 
 router.post('/create_mail', authMiddleware(3), async (req, res) => {
@@ -77,6 +61,157 @@ router.get('/get_all_user_mails/:twitterId/:page/:limit', async (req, res) => {
             message: err.message
         })
     }
+});
+
+router.post('/delete_mail', async (req, res) => {
+    const { mailId } = req.body;
+
+    try {
+        const {
+            status: validateStatus,
+            message: validateMessage,
+            data: validateData,
+        } = await validateRequestAuth(req, res, 'delete_mail');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage,
+            });
+        }
+
+        const { status, message } = await deleteMail(mailId, validateData?.twitterId);
+
+        return res.status(status).json({
+            status,
+            message
+        });
+    } catch (err: any) {
+        return res.status(Status.ERROR).json({
+            status: Status.ERROR,
+            message: err.message
+        })
+    }
+});
+
+router.post('/claim_mail', async (req, res) => {
+    const { mailId } = req.body;
+
+    try {
+        const {
+            status: validateStatus,
+            message: validateMessage,
+            data: validateData,
+        } = await validateRequestAuth(req, res, 'claim_mail');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage,
+            });
+        }
+
+        const { status, message } = await claimMail(mailId, validateData?.twitterId);
+
+        return res.status(status).json({
+            status,
+            message
+        });
+    } catch (err: any) {
+        return res.status(Status.ERROR).json({
+            status: Status.ERROR,
+            message: err.message
+        })
+    }
 })
+
+router.post('/read_mail', async (req, res) => {
+    const { mailId } = req.body;
+
+    try {
+        const {
+            status: validateStatus,
+            message: validateMessage,
+            data: validateData,
+        } = await validateRequestAuth(req, res, 'read_mail');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage,
+            });
+        }
+
+        const { status, message } = await readMail(mailId, validateData?.twitterId);
+
+        return res.status(status).json({
+            status,
+            message
+        });
+    } catch (err: any) {
+        return res.status(Status.ERROR).json({
+            status: Status.ERROR,
+            message: err.message
+        })
+    }
+});
+
+router.post('/read_and_claim_all_mails', async (req, res) => {
+    try {
+        const {
+            status: validateStatus,
+            message: validateMessage,
+            data: validateData,
+        } = await validateRequestAuth(req, res, 'read_and_claim_all_mails');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage,
+            });
+        }
+
+        const { status, message } = await readAndClaimAllMails(validateData?.twitterId);
+
+        return res.status(status).json({
+            status,
+            message
+        });
+    } catch (err: any) {
+        return res.status(Status.ERROR).json({
+            status: Status.ERROR,
+            message: err.message
+        })
+    }
+})
+
+router.post('/delete_all_mails', async (req, res) => {
+    try {
+        const {
+            status: validateStatus,
+            message: validateMessage,
+            data: validateData,
+        } = await validateRequestAuth(req, res, 'delete_all_mails');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage,
+            });
+        }
+
+        const { status, message } = await deleteAllMails(validateData?.twitterId);
+
+        return res.status(status).json({
+            status,
+            message
+        });
+    } catch (err: any) {
+        return res.status(Status.ERROR).json({
+            status: Status.ERROR,
+            message: err.message
+        })
+    }
+});
 
 export default router;
