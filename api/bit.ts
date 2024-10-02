@@ -668,33 +668,30 @@ export const bulkFeedBits = async (userId: string, foodType: FoodType, minThresh
             if (gatheringRateModifierIndex !== -1) {
                 // if the new gathering rate modifier is 1, remove the modifier
                 if (gatheringRateModifier.value === 1) {
-                    bitUpdateOps.$pull = { 'bitStatsModifiers.gatheringRateModifiers': { origin: 'Energy Threshold Reduction' } };
+                    bitUpdateOps.$pull['bitStatsModifiers.gatheringRateModifiers'] = { origin: 'Energy Threshold Reduction' };
                 } else {
-                    bitUpdateOps.$set = { 'bitStatsModifiers.gatheringRateModifiers.$[gatheringElem].value': gatheringRateModifier.value };
+                    bitUpdateOps.$set[`bitStatsModifiers.gatheringRateModifiers.$[elem].value`] = gatheringRateModifier.value;
                 }
             } else {
-                bitUpdateOps.$push = { 'bitStatsModifiers.gatheringRateModifiers': gatheringRateModifier };
+                bitUpdateOps.$push['bitStatsModifiers.gatheringRateModifiers'] = gatheringRateModifier;
             }
 
             if (earningRateModifierIndex !== -1) {
                 // if the new earning rate modifier is 1, remove the modifier
                 if (earningRateModifier.value === 1) {
-                    bitUpdateOps.$pull = { ...bitUpdateOps.$pull, 'bitStatsModifiers.earningRateModifiers': { origin: 'Energy Threshold Reduction' } };
+                    bitUpdateOps.$pull['bitStatsModifiers.earningRateModifiers'] = { origin: 'Energy Threshold Reduction' };
                 } else {
-                    bitUpdateOps.$set = { ...bitUpdateOps.$set, 'bitStatsModifiers.earningRateModifiers.$[earningElem].value': earningRateModifier.value };
+                    bitUpdateOps.$set[`bitStatsModifiers.earningRateModifiers.$[elem].value`] = earningRateModifier.value;
                 }
             } else {
-                bitUpdateOps.$push = { ...bitUpdateOps.$push, 'bitStatsModifiers.earningRateModifiers': earningRateModifier };
+                bitUpdateOps.$push['bitStatsModifiers.earningRateModifiers'] = earningRateModifier;
             }
 
             return {
                 updateOne: {
                     filter: { bitId: bit.bitId },
                     update: bitUpdateOps,
-                    arrayFilters: [
-                        { 'gatheringElem.origin': 'Energy Threshold Reduction' },
-                        { 'earningElem.origin': 'Energy Threshold Reduction' }
-                    ]
+                    arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }]
                 }
             };
         })
@@ -720,7 +717,7 @@ export const bulkFeedBits = async (userId: string, foodType: FoodType, minThresh
             }
         };
     } catch (err: any) {
-        console.log(`(bulkFeedBit) Error for user ${userId}: ${err.message}`);
+        console.error(`(bulkFeedBit) Error for user ${userId}: ${err.message}`);
         return {
             status: Status.ERROR,
             message: `(bulkFeedBit) Error: ${err.message}`
