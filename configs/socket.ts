@@ -49,6 +49,8 @@ export const initializeSocket = (server: http.Server) => {
     io.on('connection', async (socket) => {
         const userId = socket.data.userId as string;
 
+        console.log(socket.data);
+
         // if the userId didn't exist then return authentication error
         if (!userId) throw new Error('Authentication error');
 

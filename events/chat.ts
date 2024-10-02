@@ -14,15 +14,39 @@ export enum ChatEvent {
     NEW_CHANNEL = 'new_channel',
 }
 
+interface CallbackResponse {
+    success?: boolean;
+    error?: string;
+    message?: string;
+}
+
+type CallbackEvent = (response: CallbackResponse) => void;
+
 export const handleChatEvents = (socket: Socket, io: Server) => {
-    socket.on(ChatEvent.SEND_MESSAGE, async (request: SendMessageDTO) => {
+    socket.on(ChatEvent.SEND_MESSAGE, async (request: SendMessageDTO, callback?: CallbackEvent) => {
         const senderId = socket.data.userId;
+
         const validation = sendMessageDTO.validate(request);
 
-        if (validation.status !== Status.SUCCESS) throw new Error('Invalid Payload');
+        if (validation.status !== Status.SUCCESS) {
+            if (callback) {
+                return callback({ error: 'Invalid Payload' });
+            }
+
+            return;
+        }
 
         const result = await sendMessage(senderId, validation.data.chatroomId, validation.data.message);
-        if (result.status !== Status.SUCCESS) throw new Error('Failed to send the message');
+        if (result.status !== Status.SUCCESS) {
+            if (callback) {
+                return callback({ error: result.message });
+            }
+            return;
+        }
+
+        if (callback) {
+            callback({ success: true, message: 'Message sent' });
+        }
 
         io.to(result.data.chatroom._id).emit(ChatEvent.NEW_MESSAGE, result.data);
     });
