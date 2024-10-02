@@ -110,7 +110,7 @@ export const getAllUserMails = async (twitterId: string, page: number, limit: nu
       message: '(getAllUserMails) Limit must be a number between 1 and 20.',
     }
   }
-  
+
   try {
     const user = await UserModel.findOne({ twitterId }).lean();
 
@@ -726,5 +726,54 @@ export const purgeExpiredMails = async (): Promise<void> => {
     console.log('(purgeExpiredMails) Successfully purged all expired mails.');
   } catch (err: any) {
     console.error(`(purgeExpiredMails) Error: ${err.message}`);
+  }
+}
+
+/**
+ * Upon account registration, create a `MailReceiverData` for all active mails that have the `receiverOptions.receivers === 'all'` option for the user.
+ */
+export const sendMailsToNewUser = async (twitterId: string): Promise<ReturnValue> => {
+  try {
+    const user = await UserModel.findOne({ twitterId }).lean();
+
+    if (!user) {
+      return {
+        status: Status.ERROR,
+        message: `(sendMailsToNewUser) User with Twitter ID ${twitterId} not found`,
+      }
+    }
+
+    const userId = user._id;
+
+    // find all mails that are meant for all users with the `includeNewUsers` option set to `true`.
+    // NOTE: even if `receivers` is set to `specific`, we will still send the mail to the new user if the `includeNewUsers` option is `true`.
+    const mails = await MailModel.find({ 'receiverOptions.includeNewUsers': true }).lean();
+
+    if (mails.length === 0) {
+      return {
+        status: Status.SUCCESS,
+        message: '(sendMailsToNewUser) No mails found to send to new user.',
+      }
+    }
+
+    const mailReceiverData = mails.map(mail => ({
+      userId,
+      mailId: mail._id,
+      readStatus: { status: false, timestamp: 0 },
+      claimedStatus: { status: false, timestamp: 0 },
+      deletedStatus: { status: false, timestamp: 0 }
+    }));
+
+    await MailReceiverDataModel.insertMany(mailReceiverData);
+
+    return {
+      status: Status.SUCCESS,
+      message: '(sendMailsToNewUser) Successfully added all mails to new user in MailReceiverData.',
+    }
+  } catch (err: any) {
+    return {
+      status: Status.ERROR,
+      message: `(sendMailsToNewUser) Error: ${err.message}`,
+    }
   }
 }
