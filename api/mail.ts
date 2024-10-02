@@ -88,7 +88,7 @@ export const createMail = async (
 }
 
 /**
- * Retrieves all mails sent to a specific user with pagination (sorted by sent timestamp).
+ * Retrieves all mails that are NOT marked deleted sent to a specific user with pagination (sorted by sent timestamp).
  * 
  * NOTE: `limit` CANNOT be greater than 20 per page.
  * 
@@ -121,7 +121,8 @@ export const getAllUserMails = async (twitterId: string, page: number, limit: nu
       }
     }
 
-    const mailReceiverData = await MailReceiverDataModel.find({ userId: user._id }).lean();
+    // find those not marked deleted
+    const mailReceiverData = await MailReceiverDataModel.find({ userId: user._id, 'deletedStatus.status': false }).lean();
 
     // fetch the mails using the mail IDs
     const mailIds = mailReceiverData.map(mail => mail.mailId);
