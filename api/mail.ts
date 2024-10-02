@@ -161,7 +161,7 @@ export const getAllUserMails = async (twitterId: string, page: number, limit: nu
 /**
  * Deletes a mail for a specific user.
  * 
- * NOTE: This doesn't notify the users to claim any existing rewards (in attachments) in the mail if they haven't already.
+ * NOTE: If this mail still has claimable attachments/rewards, an error will be thrown.
  */
 export const deleteMail = async (mailId: string, twitterId: string): Promise<ReturnValue> => {
   try {
@@ -190,6 +190,16 @@ export const deleteMail = async (mailId: string, twitterId: string): Promise<Ret
       return {
         status: Status.ERROR,
         message: `(deleteMail) Mail ID ${mailId} already deleted for user with ID ${userId}`,
+      }
+    }
+
+    // if the mail has attachments and has NOT been claimed, return an error
+    const mailData = await MailModel.findOne({ _id: mailId }).lean();
+
+    if (mailData.attachments.length && !mail.claimedStatus.status) {
+      return {
+        status: Status.ERROR,
+        message: `(deleteMail) Mail ID ${mailId} has attachments and has not been claimed for user with ID ${userId}`,
       }
     }
 
