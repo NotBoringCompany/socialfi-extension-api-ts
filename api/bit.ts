@@ -26,6 +26,7 @@ import { BarrenResource, ExtendedResource } from '../models/resource';
 import { generateObjectId } from '../utils/crypto';
 import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
 import { ObtainMethod } from '../models/obtainMethod';
+import { redis } from '../utils/constants/redis';
 
 /**
  * Gifts a user from Xterio an Xterio bit.
@@ -1053,17 +1054,28 @@ export const addBitToDatabase = async (bit: Bit): Promise<ReturnValue> => {
  */
 export const getLatestBitId = async (): Promise<ReturnValue> => {
     try {
-        // sort the bit ids in descending order and get the first one
-        const latestBit = await BitModel.findOne().sort({ bitId: -1 }).lean();
+        const bitId = await redis.get('counter.bitId');
+
+        // check if the bitId was already set in Redis
+        if (!bitId) {
+            // sort the bit ids in descending order and get the first one
+            const latestBit = await BitModel.findOne().sort({ bitId: -1 }).lean();
+
+            // set the counter to the latest bit, also add expiration time to make sure the value up to date
+            await redis.set('counter.bitId', latestBit?.bitId ?? 0, 'EX', 3600);
+        }
+
+        // increment the bit id counter
+        const nextBitId = await redis.incr('counter.bitId');
 
         return {
             status: Status.SUCCESS,
             message: `(getLatestBitId) Latest bit id fetched.`,
             data: {
-                latestBitId: latestBit ? latestBit.bitId : 0,
+                latestBitId: nextBitId ?? 0,
             },
         };
-    } catch (err: any) {
+    } catch (err: any) {        
         return {
             status: Status.ERROR,
             message: `(getLatestBitId) Error: ${err.message}`,
