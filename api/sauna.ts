@@ -55,10 +55,17 @@ export const startRest = async (socket: Socket, data: SaunaUserDetail) => {
 
     await addUserToRoom(userId, socket.id, timeToMaxEnergyInMiliSecond, lack);
     const getConnected = await redisDb.get(RedisKey.CONNECTED)
-    socket.emit(EventSauna.USER_COUNT, getConnected);
-    socket.emit(`complete_rest:${userId}`, timeToMaxEnergyInMiliSecond);
+    socket.broadcast.emit(EventSauna.USER_COUNT, getConnected);
+    return socket.emit('server_response', {
+      status: Status.BAD_REQUEST,
+      message: `(startRest) user ${userId} has started rest`
+    });
   } catch (error) {
-    console.log(`(startRest) ${error.message}`);
+    console.log(error.message);
+    return socket.emit('server_response', {
+      status: Status.BAD_REQUEST,
+      message: `(startRest) ${error.message}`
+    });
   }
 };
 
@@ -67,10 +74,17 @@ export const stopRest = async (socket: Socket, data: SaunaUserDetail) => {
     const { userId } = data;
     await removeUserFromRoom(userId);
     const getConnected = await redisDb.get(RedisKey.CONNECTED)
-    socket.emit(EventSauna.USER_COUNT, getConnected);
-    socket.emit(`complete_rest:${userId}`, 0);
+    socket.broadcast.emit(EventSauna.USER_COUNT, getConnected);
+    return socket.emit('server_response', {
+      status: Status.BAD_REQUEST,
+      message: `(stopRest) user ${userId} has stopped rest`
+    });
   } catch (error) {
-    console.log(`(stopRest) ${error.message}`);
+    console.log(error.message);
+    return socket.emit('server_response', {
+      status: Status.BAD_REQUEST,
+      message: `(stopRest) ${error.message}`
+    });
   }
 };
 
