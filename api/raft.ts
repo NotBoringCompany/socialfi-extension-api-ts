@@ -2,6 +2,7 @@ import { ReturnValue, Status } from '../utils/retVal';
 import { generateObjectId } from '../utils/crypto';
 import { ACTUAL_RAFT_SPEED, RAFT_BASE_SPEED, RAFT_EVOLUTION_COST } from '../utils/constants/raft';
 import { BitModel, RaftModel, UserModel } from '../utils/constants/db';
+import { redis } from '../utils/constants/redis';
 
 /**
  * Creates a new Raft for new users.
@@ -50,21 +51,32 @@ export const createRaft = async (userId: string): Promise<ReturnValue> => {
  */
 export const getLatestRaftId = async (): Promise<ReturnValue> => {
     try {
-        // get the latest Raft ID by sorting the collection in descending order and getting the first document
-        const latestRaft = await RaftModel.findOne().sort({ raftId: -1 }).lean();
+        const raftId = await redis.get('counter.raftId');
+
+        // check if the raftId was already set in Redis
+        if (!raftId) {
+            // sort the raft ids in descending order and get the first one
+            const latestRaft = await RaftModel.findOne().sort({ raftId: -1 }).lean();
+
+            // set the counter to the latest raft, also add expiration time to make sure the value up to date
+            await redis.set('counter.raftId', latestRaft?.raftId ?? 0, 'EX', 3600);
+        }
+
+        // increment the raft id counter
+        const nextRaftId = await redis.incr('counter.raftId');
 
         return {
             status: Status.SUCCESS,
-            message: `(getLatestRaftId) Successfully retrieved latest raft ID.`,
-            data: { 
-                latestRaftId: latestRaft ? latestRaft.raftId : 0
-            }
-        }
-    } catch (err: any) {
+            message: `(getLatestRaftId) Latest raft id fetched.`,
+            data: {
+                latestRaftId: nextRaftId ?? 0,
+            },
+        };
+    } catch (err: any) {        
         return {
             status: Status.ERROR,
-            message: `(getLatestRaftId) ${err.message}`
-        }
+            message: `(getLatestRaftId) Error: ${err.message}`,
+        };
     }
 }
 
