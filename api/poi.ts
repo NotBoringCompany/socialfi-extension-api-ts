@@ -1334,7 +1334,8 @@ export const buyItemsInPOIShop = async (
         const poiShop = data.currentPOI.shop as POIShop;
 
         // get the total payment the user has to make.
-        let totalPayment = 0;
+        let currentCurrency: number = 0;
+        let totalPayment: number = 0;
 
         // check if:
         // 1. 1 or more items are not available in the POI shop (cannot be found)
@@ -1571,10 +1572,12 @@ export const buyItemsInPOIShop = async (
             // if payment choice is xCookies, deduct from `user.inventory.xCookieData.currentXCookies`
             // also increment `totalXCookiesSpent` and `weeklyXCookiesSpent` by the total payment.
             if (paymentChoice === 'xCookies') {
+                currentCurrency = user.inventory.xCookieData.currentXCookies;
                 userUpdateOperations.$inc[`inventory.xCookieData.currentXCookies`] = -totalPayment;
                 userUpdateOperations.$inc[`inventory.xCookieData.totalXCookiesSpent`] = totalPayment;
                 userUpdateOperations.$inc[`inventory.xCookieData.weeklyXCookiesSpent`] = totalPayment;
             } else if (paymentChoice === 'cookieCrumbs') {
+                currentCurrency = user.inventory.cookieCrumbs;
                 userUpdateOperations.$inc[`inventory.cookieCrumbs`] = -totalPayment;
                 // to do later: increment `totalCookieCrumbsSpent` and `weeklyCookieCrumbsSpent` by the total payment (not implemented yet).
             }
@@ -1593,7 +1596,11 @@ export const buyItemsInPOIShop = async (
                 poi: data.currentPOI.name,
                 items: items,
                 totalPaid: totalPayment,
-                paymentChoice: paymentChoice
+                paymentChoice: paymentChoice,
+                userCurrency: {
+                    currentValue: currentCurrency,
+                    updatedValue: Math.max(currentCurrency - totalPayment, 0),
+                }
             }
         }
     } catch (err: any) {
