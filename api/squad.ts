@@ -517,6 +517,10 @@ export const renameSquad = async (twitterId: string, newSquadName: string): Prom
                 squadName: newSquadName,
                 totalPaid: cost,
                 paymentChoice: 'xCookies',
+                userCurrency: {
+                    currentValue: user.inventory.xCookieData.currentXCookies,
+                    updatedValue: Math.max(user.inventory.xCookieData.currentXCookies - cost, 0),
+                }
             }
         }
     } catch (err: any) {
@@ -710,6 +714,10 @@ export const createSquad = async (twitterId: string, squadName: string): Promise
                 squadName,
                 totalPaid: cost,
                 paymentChoice: 'xCookies',
+                userCurrency: {
+                    currentValue: user.inventory.xCookieData.currentXCookies,
+                    updatedValue: Math.max(user.inventory.xCookieData.currentXCookies - cost, 0),
+                }
             }
         }
     } catch (err: any) {

@@ -299,8 +299,10 @@ export const purchaseShopAsset = async (
         // fetch user's xCookies
         const userXCookies = user.inventory?.xCookieData.currentXCookies;
 
+        // Initialize currentCurrenct value. This will be used to store which current Currency value in used as payment choice
+        let currentCurrency: number = 0;
         // to store the total cost of the asset(s).
-        let totalCost = 0;
+        let totalCost: number = 0;
 
         // tx payload for blockchain transactions done if payment === 'usd'.
         // used to store the parsed message body of the transaction in the purchase instance.
@@ -314,6 +316,8 @@ export const purchaseShopAsset = async (
                 }
             }
 
+            // Set currentCurrency with xCookies value
+            currentCurrency = userXCookies;
             // check if the user has enough xCookies to purchase the asset
             totalCost = shopAsset.price.finalXCookies * amount;
 
@@ -651,7 +655,11 @@ export const purchaseShopAsset = async (
                 address: address ?? null,
                 chain: chain ?? null,
                 txHash: txHash ?? null,
-                txPayload: txPayload ?? null
+                txPayload: txPayload ?? null,
+                userCurrency: typeof payment === 'string' && Object.values(ShopAssetIGCPaymentMethod).includes(payment as ShopAssetIGCPaymentMethod) ? {
+                    currentValue: currentCurrency,
+                    updatedValue: Math.max(currentCurrency - totalCost, 0),
+                } : null
             }
         }
     } catch (err: any) {
