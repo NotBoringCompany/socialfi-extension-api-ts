@@ -478,7 +478,7 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
             status: Status.SUCCESS,
             message: `(completeQuest) Quest completed. Rewards received and added to user's inventory.`,
             data: {
-                questId,
+                questId: questId,
                 rewards: obtainedRewards,
             },
         };
