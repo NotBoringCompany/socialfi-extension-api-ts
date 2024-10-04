@@ -1,7 +1,9 @@
 /****************
  * ITEM-RELATED MODELS
  ****************/
+import { BitRarity } from './bit';
 import { BoosterItem } from './booster';
+import { IslandType } from './island';
 
 /**
  * Represents an item.
@@ -122,3 +124,84 @@ export enum IngotItem {
  * Represents items that are made via the Synthesizing crafting line.
  */
 export type SynthesizingItem = AugmentationItem | TransmutationItem | EnergyTotemItem | ContinuumRelicItem | PotionItem;
+
+/**
+ * Represents the data for synthesizing items crafted via the Synthesizing crafting line, such as its effects.
+ */
+export interface SynthesizingItemData {
+    /**
+     * the item's name.
+     */
+    name: SynthesizingItem;
+    /**
+     * the item's description.
+     */
+    description: string;
+    /**
+     * if the item requires a minimum rarity to be used on an island or a bit.
+     */
+    minimumRarity: IslandType | BitRarity | null;
+    /**
+     * the item's limitations (e.g. the max limit of this item usable on an island, etc.)
+     */
+    limitations: SynthesizingItemLimitations;
+    /** 
+     * the effect values.
+     */
+    effectValues: SynthesizingItemEffectValues;
+}
+
+/**
+ * Represents the limitations of a synthesizing item.
+ */
+export interface SynthesizingItemLimitations {
+    /** if this item has a usage limit per island (i.e. how many of this item can be used on a single island) */
+    singleIslandUsage: SynthesizingItemLimitationNumerical;
+    /**
+     * how many of this item can be used on multiple islands concurrently. for example, if the limit is 5, and the `islandUsage.limit` is 1,
+     * then the item can be used UP TO 5 islands at the same time, but only 1 on each island.
+     */
+    concurrentIslandsUsage: SynthesizingItemLimitationNumerical;
+    /** if this item has a usage limit per bit (i.e. how many of this item can be used on a single bit) */
+    singleBitUsage: SynthesizingItemLimitationNumerical;
+    /**
+     * how many of this item can be used on multiple bits concurrently. for example, if the limit is 5, and the `bitUsage.limit` is 1,
+     * then the item can be used UP TO 5 bits at the same time, but only 1 on each bit.
+     */
+    concurrentBitsUsage: SynthesizingItemLimitationNumerical;
+    /** if this item can be used while another of the same item is currently active (used) */
+    usableWhenAnotherSameItemActive: boolean;
+}
+
+/**
+ * Represents a numerical limitation instance of a synthesizing item.
+ */
+export interface SynthesizingItemLimitationNumerical {
+    /** if the limitation is active. if not, this limitation does NOT apply to the item. */
+    active: boolean;
+    /** the limit of the item's usage */
+    limit: number | null;
+}
+
+/**
+ * Represents the effect values of a synthesizing item.
+ */
+export interface SynthesizingItemEffectValues {
+    /** which asset is affected by the synthesizing item upon consumption */
+    affectedAsset: 'bit' | 'island';
+    /** the increase in resource cap of this island.
+     * 
+     * if `type` is `percentage`, then the `amount` is a percentage increase of the current res cap. 
+     * (e.g. if the item gives 5%, and the current res cap is 1000, it will be increased to 1050.)
+     * 
+     * if type is `fixed`, then the `amount` is a fixed increase of the current res cap.
+     * 
+     * if this item is not meant for islands and thus have no resource cap increase effect, `type` will be null and amount will be set to 0.
+     */
+    resourceCapIncrease: {
+        /** the type of increase */
+        type: 'percentage' | 'fixed' | null;
+        /** the amount of increase */
+        amount: number;
+    }
+}

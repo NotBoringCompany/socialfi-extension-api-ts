@@ -35,8 +35,7 @@ export const consumeSynthesizingItem = async (
 
         const synthesizingItemType = GET_SYNTHESIZING_ITEM_TYPE(item);
 
-        // augmentation items increase x% of an island's total resources.
-        // NOTE: each island can only use 1 augmentation item at a time.
+        // augmentation items increases the island's `baseResourceCap` by x%.
         if (synthesizingItemType === SynthesizingItemGroup.AUGMENTATION_ITEM) {
             if (!islandId || islandId < 1) {
                 return {
