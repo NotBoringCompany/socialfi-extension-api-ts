@@ -5,18 +5,6 @@ import redisDb from "../utils/constants/redisDb";
 import { saunaQueue } from "../schedulers/sauna";
 import { UserModel } from "../utils/constants/db";
 
-const DUMMY_DATA = new Array(3).fill(null).map((_, i) => ({
-  id: (i + 1).toString(),
-  createdTimestamp: Math.floor(Date.now() / 1000),
-  inGameData: {
-    energy: {
-      currentEnergy: Math.floor(Math.random() * 100),
-      maxEnergy: 100,
-      dailyEnergyPotion: Math.floor(Math.random() * 5),
-    }
-  }
-}));
-// todo : save this to redis
 
 export const startRest = async (socket: Socket, data: SaunaUserDetail) => {
   try {
