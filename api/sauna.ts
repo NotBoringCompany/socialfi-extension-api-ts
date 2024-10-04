@@ -1,13 +1,8 @@
 import { Socket } from "socket.io";
-import { EventSauna, SaunaUserDetail } from "../models/sauna";
+import { EventSauna, SaunaGlobalKey, SaunaUserDetail } from "../models/sauna";
 import { Status } from "../utils/retVal";
 import redisDb from "../utils/constants/redisDb";
 import { saunaQueue } from "../schedulers/sauna";
-
-enum RedisKey {
-  USERS = "userList",
-  CONNECTED = "connected"
-}
 
 const DUMMY_DATA = new Array(3).fill(null).map((_, i) => ({
   id: (i + 1).toString(),
@@ -54,10 +49,11 @@ export const startRest = async (socket: Socket, data: SaunaUserDetail) => {
     console.log('time to max energy', (timeToMaxEnergyInMiliSecond / 60) / 1000);
 
     await addUserToRoom(userId, socket.id, timeToMaxEnergyInMiliSecond, lack);
-    const getConnected = await redisDb.get(RedisKey.CONNECTED)
+    const getConnected = await redisDb.get(SaunaGlobalKey.CONNECTED)
     socket.broadcast.emit(EventSauna.USER_COUNT, getConnected);
+    socket.emit(EventSauna.USER_COUNT, getConnected);
     return socket.emit('server_response', {
-      status: Status.BAD_REQUEST,
+      status: Status.SUCCESS,
       message: `(startRest) user ${userId} has started rest`
     });
   } catch (error) {
@@ -73,10 +69,11 @@ export const stopRest = async (socket: Socket, data: SaunaUserDetail) => {
   try {
     const { userId } = data;
     await removeUserFromRoom(userId);
-    const getConnected = await redisDb.get(RedisKey.CONNECTED)
+    const getConnected = await redisDb.get(SaunaGlobalKey.CONNECTED)
     socket.broadcast.emit(EventSauna.USER_COUNT, getConnected);
+    socket.emit(EventSauna.USER_COUNT, getConnected);
     return socket.emit('server_response', {
-      status: Status.BAD_REQUEST,
+      status: Status.SUCCESS,
       message: `(stopRest) user ${userId} has stopped rest`
     });
   } catch (error) {
@@ -101,14 +98,14 @@ const addUserToRoom = async (userId: string, socketId: string, timeToMaxEnergyIn
   // throw error if user already in room
   if (isUserAlreadyInRoom) throw new Error('User already in room')
   // get total connected
-  const userConnected = await redisDb.get(RedisKey.CONNECTED)
+  const userConnected = await redisDb.get(SaunaGlobalKey.CONNECTED)
   //redis multi set
   const redisMulti = redisDb.multi()
   try {
     // pin user to room
     redisMulti.set(`userSocket:${userId}`, socketId)
     // increment total connected
-    redisMulti.set(RedisKey.CONNECTED, Number(userConnected) + 1)
+    redisMulti.set(SaunaGlobalKey.CONNECTED, Number(userConnected) + 1)
     // add user to queue and set delay
     await saunaQueue.add(
       { userId, socketId, getTotalEnergy },
@@ -131,12 +128,12 @@ const removeUserFromRoom = async (userId: string) => {
   // throw error if user not in room
   if (!isUserExistInRoom) throw new Error('User not in room')
   // get total connected
-  const userConnected = await redisDb.get(RedisKey.CONNECTED)
+  const userConnected = await redisDb.get(SaunaGlobalKey.CONNECTED)
   // redis multi set
   const redisMulti = redisDb.multi()
   try {
     // decrement total connected
-    redisMulti.set(RedisKey.CONNECTED, Number(userConnected) - 1)
+    redisMulti.set(SaunaGlobalKey.CONNECTED, Number(userConnected) - 1)
     // remove user from room
     redisMulti.del(`userSocket:${userId}`)
     // exect redis multi

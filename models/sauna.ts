@@ -12,3 +12,8 @@ export enum EventSauna {
   START_REST = "startRest",
   STOP_REST = "stopRest",
 }
+
+export enum  SaunaGlobalKey {
+  USERS = "userList",
+  CONNECTED = "connected"
+}
