@@ -747,9 +747,9 @@ export const deleteAllReadAndClaimedMails = async (twitterId: string): Promise<R
       const mailData = mailReceiverData.find(data => data.mailId === mail._id);
 
       if (!mail.attachments.length) {
-        return true;
+        return mailData.readStatus.status;
       } else {
-        return mailData.claimedStatus.status;
+        return mailData.readStatus.status && mailData.claimedStatus.status;
       }
     });
 
