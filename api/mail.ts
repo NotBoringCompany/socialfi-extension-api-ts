@@ -678,6 +678,8 @@ export const readAndClaimAllMails = async (twitterId: string): Promise<ReturnVal
       });
     }
 
+    console.log('(readAndClaimAllMails) claimedAttachments: ', JSON.stringify(claimedAttachments));
+
     const mailBatchUpdateOps = mailReceiverDataUpdateOperations.map(async ({ id, updateOperations }) => {
       return MailReceiverDataModel.updateOne({ mailId: id, userId }, updateOperations);
     })
