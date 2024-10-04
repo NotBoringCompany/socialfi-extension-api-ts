@@ -488,10 +488,16 @@ export const readAndClaimAllMails = async (twitterId: string): Promise<ReturnVal
     // we will find those marked unread (because claimed mails will automatically be marked as read)
     const mailReceiverData = await MailReceiverDataModel.find({ userId, 'readStatus.status': false }).lean();
 
+    // initialize claimedAttachments data
+    const claimedAttachments: MailAttachment[] = [];
+
     if (mailReceiverData.length === 0) {
       return {
         status: Status.SUCCESS,
         message: '(readAndClaimAllMails) No unread mails found.',
+        data: {
+          claimedAttachments: claimedAttachments
+        }
       }
     }
 
@@ -526,9 +532,6 @@ export const readAndClaimAllMails = async (twitterId: string): Promise<ReturnVal
       userUpdateOperations.$push['inventory.resources'] = { $each: [] }
     }
 
-    // initialize claimedAttachments data
-    const claimedAttachments: MailAttachment[] = [];
-
     for (const mail of mails) {
       // we will check if this mail has attachments. if not, we will just set it as read.
       if (mail.attachments.length === 0) {
@@ -550,9 +553,11 @@ export const readAndClaimAllMails = async (twitterId: string): Promise<ReturnVal
           );
     
           if (existingAttachmentIndex !== -1) {
+            console.log('(readAndClaimAllMails) adding attachments amount');
             // If the attachment already exists, increment the amount
             claimedAttachments[existingAttachmentIndex].amount += attachment.amount;
           } else {
+            console.log('(readAndClaimAllMails) pushing new attachments');
             // If it doesn't exist, push the new attachment
             claimedAttachments.push({ ...attachment });
           }
