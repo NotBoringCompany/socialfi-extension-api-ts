@@ -474,6 +474,9 @@ export const readMail = async (mailId: string, twitterId: string): Promise<Retur
  */
 export const readAndClaimAllMails = async (twitterId: string): Promise<ReturnValue> => {
   try {
+    // initialize claimedAttachments data
+    const claimedAttachments: MailAttachment[] = [];
+    
     const user = await UserModel.findOne({ twitterId }).lean();
 
     if (!user) {
@@ -485,16 +488,13 @@ export const readAndClaimAllMails = async (twitterId: string): Promise<ReturnVal
 
     const userId = user._id;
 
-    // we will find those marked unread (because claimed mails will automatically be marked as read)
-    const mailReceiverData = await MailReceiverDataModel.find({ userId, 'readStatus.status': false }).lean();
-
-    // initialize claimedAttachments data
-    const claimedAttachments: MailAttachment[] = [];
+    // fetch all unclaimed and undeleted mailReceiverData based on userId
+    const mailReceiverData = await MailReceiverDataModel.find({ userId, $or: [ { "claimedStatus.status": false }, { "deletedStatus.status": false } ] }).lean();
 
     if (mailReceiverData.length === 0) {
       return {
         status: Status.SUCCESS,
-        message: '(readAndClaimAllMails) No unread mails found.',
+        message: '(readAndClaimAllMails) no Mails available to be found',
         data: {
           claimedAttachments: claimedAttachments
         }
@@ -504,6 +504,32 @@ export const readAndClaimAllMails = async (twitterId: string): Promise<ReturnVal
     const mailIds = mailReceiverData.map(mail => mail.mailId);
 
     const mails = await MailModel.find({ _id: { $in: mailIds } }).lean();
+
+    // Filter mails data with this requirements:
+    // 1. for mails without attachment, check unread status.
+    // 2. for mails with attachment, check unclaimed status regardless of read state.
+    const filteredMails = mails.filter(mail => {
+      const mailData = mailReceiverData.find(data => data.mailId === mail._id);
+
+      // For mails without attachments, return if the mail is unread
+      if (!mail.attachments.length) {
+        return !mailData.readStatus.status;
+      } 
+      // For mails with attachments, return if the mail is unclaimed
+      else {
+        return !mailData.claimedStatus.status;
+      }
+    });
+
+    if (filteredMails.length === 0) {
+      return {
+        status: Status.SUCCESS,
+        message: '(readAndClaimAllMails) no Mails found to read or claim',
+        data: {
+          claimedAttachments: claimedAttachments
+        }
+      }
+    }
 
     const userUpdateOperations = {
       $pull: {},
@@ -532,7 +558,7 @@ export const readAndClaimAllMails = async (twitterId: string): Promise<ReturnVal
       userUpdateOperations.$push['inventory.resources'] = { $each: [] }
     }
 
-    for (const mail of mails) {
+    for (const mail of filteredMails) {
       // we will check if this mail has attachments. if not, we will just set it as read.
       if (mail.attachments.length === 0) {
         mailReceiverDataUpdateOperations.push({
@@ -662,7 +688,7 @@ export const readAndClaimAllMails = async (twitterId: string): Promise<ReturnVal
         }
       }
 
-      // mark the mail as read. if there are attachments, mark it also as claimed.
+      // Update read & claim status into true as well as updating each state timestamp.
       mailReceiverDataUpdateOperations.push({
         id: mail._id,
         updateOperations: {
