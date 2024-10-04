@@ -526,6 +526,9 @@ export const readAndClaimAllMails = async (twitterId: string): Promise<ReturnVal
       userUpdateOperations.$push['inventory.resources'] = { $each: [] }
     }
 
+    // initialize claimedAttachments data
+    const claimedAttachments: MailAttachment[] = [];
+
     for (const mail of mails) {
       // we will check if this mail has attachments. if not, we will just set it as read.
       if (mail.attachments.length === 0) {
@@ -542,6 +545,19 @@ export const readAndClaimAllMails = async (twitterId: string): Promise<ReturnVal
       } else {
         // if there are attachments, we will claim the mail and give the user the rewards.
         for (const attachment of mail.attachments) {
+          const existingAttachmentIndex = claimedAttachments.findIndex(
+            (claimed) => claimed.name === attachment.name
+          );
+    
+          if (existingAttachmentIndex !== -1) {
+            // If the attachment already exists, increment the amount
+            claimedAttachments[existingAttachmentIndex].amount += attachment.amount;
+          } else {
+            // If it doesn't exist, push the new attachment
+            claimedAttachments.push({ ...attachment });
+          }
+
+          // Check attachment type
           const type = attachment.type;
 
           if (type === 'food') {
@@ -678,6 +694,9 @@ export const readAndClaimAllMails = async (twitterId: string): Promise<ReturnVal
     return {
       status: Status.SUCCESS,
       message: '(readAndClaimAllMails) Successfully claimed and read all mails and added rewards to user inventory.',
+      data: {
+        claimedAttachments: claimedAttachments
+      }
     }
   } catch (err: any) {
     return {
