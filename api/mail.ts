@@ -494,7 +494,7 @@ export const readAndClaimAllMails = async (twitterId: string): Promise<ReturnVal
     if (mailReceiverData.length === 0) {
       return {
         status: Status.SUCCESS,
-        message: '(readAndClaimAllMails) no Mails available to be found',
+        message: '(readAndClaimAllMails) No available mails to read and/or claim.',
         data: {
           claimedAttachments: claimedAttachments
         }
@@ -505,17 +505,17 @@ export const readAndClaimAllMails = async (twitterId: string): Promise<ReturnVal
 
     const mails = await MailModel.find({ _id: { $in: mailIds } }).lean();
 
-    // Filter mails data with this requirements:
+    // filter the data with these requirements:
     // 1. for mails without attachment, check unread status.
     // 2. for mails with attachment, check unclaimed status regardless of read state.
     const filteredMails = mails.filter(mail => {
       const mailData = mailReceiverData.find(data => data.mailId === mail._id);
 
-      // For mails without attachments, return if the mail is unread
-      if (!mail.attachments.length) {
+      // for mails without attachments, return if the mail is unread
+      if (!mail.attachments || mail.attachments.length === 0) {
         return !mailData.readStatus.status;
       } 
-      // For mails with attachments, return if the mail is unclaimed
+      // for mails with attachments, return if the mail is unclaimed
       else {
         return !mailData.claimedStatus.status;
       }
@@ -524,7 +524,7 @@ export const readAndClaimAllMails = async (twitterId: string): Promise<ReturnVal
     if (filteredMails.length === 0) {
       return {
         status: Status.SUCCESS,
-        message: '(readAndClaimAllMails) no Mails found to read or claim',
+        message: '(readAndClaimAllMails) No available filtered mails to read and/or claim.',
         data: {
           claimedAttachments: claimedAttachments
         }
