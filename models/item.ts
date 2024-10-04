@@ -29,7 +29,7 @@ BoosterItem |
 BitOrbType | 
 TerraCapsulatorType | 
 WonderArtefactItem | 
-RestorationItem | 
+AugmentationItem | 
 TransmutationItem | 
 EnergyTotemItem | 
 ContinuumRelicItem | 
@@ -62,14 +62,14 @@ export enum WonderArtefactItem {
 }
 
 /**
- * A list of different Restoration items.
+ * A list of different Augmentation items.
  */
-export enum RestorationItem {
-    PARCHMENT_OF_RESTORATION = 'Parchment of Restoration',
-    SCROLL_OF_RESTORATION = 'Scroll of Restoration',
-    TOME_OF_RESTORATION = 'Tome of Restoration',
-    ANCIENT_SCROLL_OF_RESTORATION = 'Ancient Scroll of Restoration',
-    ANCIENT_TOME_OF_RESTORATION = 'Ancient Tome of Restoration',
+export enum AugmentationItem {
+    PARCHMENT_OF_AUGMENTATION = 'Parchment of Augmentation',
+    SCROLL_OF_AUGMENTATION = 'Scroll of Augmentation',
+    TOME_OF_AUGMENTATION = 'Tome of Augmentation',
+    ANCIENT_SCROLL_OF_AUGMENTATION = 'Ancient Scroll of Augmentation',
+    ANCIENT_TOME_OF_AUGMENTATION = 'Ancient Tome of Augmentation',
 }
 
 /**
@@ -121,4 +121,4 @@ export enum IngotItem {
 /**
  * Represents items that are made via the Synthesizing crafting line.
  */
-export type SynthesizingItem = RestorationItem | TransmutationItem | EnergyTotemItem | ContinuumRelicItem | PotionItem;
+export type SynthesizingItem = AugmentationItem | TransmutationItem | EnergyTotemItem | ContinuumRelicItem | PotionItem;

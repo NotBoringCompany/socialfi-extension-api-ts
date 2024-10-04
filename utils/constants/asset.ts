@@ -1,6 +1,8 @@
 import { Asset } from '../../models/asset';
+import { BitRarity } from '../../models/bit';
 import { SynthesizingItemGroup } from '../../models/craft';
-import { BitOrbType, ContinuumRelicItem, EnergyTotemItem, Item, PotionItem, RestorationItem, TerraCapsulatorType, TransmutationItem } from '../../models/item';
+import { IslandType } from '../../models/island';
+import { AugmentationItem, BitOrbType, ContinuumRelicItem, EnergyTotemItem, Item, PotionItem, SynthesizingItem, TerraCapsulatorType, TransmutationItem } from '../../models/item';
 import { BarrenResource, FruitResource, LiquidResource, OreResource } from '../../models/resource';
 
 /**
@@ -101,8 +103,8 @@ export const assets: Asset[] = [
  * Gets the enum type of `item`. For example, if inputted `Parchment of Restoration`, it will return `Restoration Item`.
  */
 export const GET_SYNTHESIZING_ITEM_TYPE = (item: string): SynthesizingItemGroup | undefined => {
-    if (Object.values(RestorationItem).includes(item as RestorationItem)) {
-        return SynthesizingItemGroup.RESTORATION_ITEM;
+    if (Object.values(AugmentationItem).includes(item as AugmentationItem)) {
+        return SynthesizingItemGroup.AUGMENTATION_ITEM;
     }
 
     if (Object.values(TransmutationItem).includes(item as TransmutationItem)) {
@@ -122,4 +124,81 @@ export const GET_SYNTHESIZING_ITEM_TYPE = (item: string): SynthesizingItemGroup 
     }
 
     return undefined;
+}
+
+/**
+ * Represents the data for synthesizing items crafted via the Synthesizing crafting line, such as its effects.
+ */
+export interface SynthesizingItemData {
+    /**
+     * the item's name.
+     */
+    name: SynthesizingItem;
+    /**
+     * the item's description.
+     */
+    description: string;
+    /**
+     * if the item requires a minimum rarity to be used on an island or a bit.
+     */
+    minimumRarity: IslandType | BitRarity | null;
+    /**
+     * the item's limitations (e.g. the max limit of this item usable on an island, etc.)
+     */
+    limitations: SynthesizingItemLimitations;
+    /** 
+     * the effect values.
+     */
+    effectValues: SynthesizingItemEffectValues;
+}
+
+/**
+ * Represents a numerical limitation instance of a synthesizing item.
+ */
+export interface SynthesizingItemLimitationNumerical {
+    /** if the limitation is active. if not, this limitation does NOT apply to the item. */
+    active: boolean;
+    /** the limit of the item's usage */
+    limit: number | null;
+}
+
+/**
+ * Represents the limitations of a synthesizing item.
+ */
+export interface SynthesizingItemLimitations {
+    /** if this item has a usage limit per island (i.e. how many of this item can be used on a single island) */
+    singleIslandUsage: SynthesizingItemLimitationNumerical;
+    /**
+     * how many of this item can be used on multiple islands concurrently. for example, if the limit is 5, and the `islandUsage.limit` is 1,
+     * then the item can be used UP TO 5 islands at the same time, but only 1 on each island.
+     */
+    concurrentIslandsUsage: SynthesizingItemLimitationNumerical;
+    /** if this item has a usage limit per bit (i.e. how many of this item can be used on a single bit) */
+    singleBitUsage: SynthesizingItemLimitationNumerical;
+    /**
+     * how many of this item can be used on multiple bits concurrently. for example, if the limit is 5, and the `bitUsage.limit` is 1,
+     * then the item can be used UP TO 5 bits at the same time, but only 1 on each bit.
+     */
+    concurrentBitsUsage: SynthesizingItemLimitationNumerical;
+    /** if this item can be used while another of the same item is currently active (used) */
+    usableWhenAnotherSameItemActive: boolean;
+}
+
+/**
+ * Represents the effect values of a synthesizing item.
+ */
+export interface SynthesizingItemEffectValues {
+    /** which asset is affected by the synthesizing item upon consumption */
+    affectedAsset: 'bit' | 'island';
+    /** the increase in resource cap of this island.
+     * 
+     * if `type` is `percentage`, then the `amount` is a percentage increase of the current res cap. 
+     * (e.g. if the item gives 5%, and the current res cap is 1000, it will be increased to 1050.)
+     * 
+     * if type is `fixed`, then the `amount` is a fixed increase of the current res cap.
+     */
+    resourceCapIncrease: {
+        type: 'percentage' | 'fixed';
+        amount: number;
+    }
 }

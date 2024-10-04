@@ -1,7 +1,7 @@
 import { AssetType } from '../models/asset';
 import { CraftableAsset, CraftingRecipe, CraftingRecipeRequiredAssetData, CraftingQueueStatus, CraftedAssetData, CraftingRecipeLine, CraftingQueueUsedAssetData } from "../models/craft";
 import { Food } from '../models/food';
-import { Item, RestorationItem } from '../models/item';
+import { Item } from '../models/item';
 import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
 import { CraftingMasteryStats } from '../models/mastery';
 import { POIName } from '../models/poi';

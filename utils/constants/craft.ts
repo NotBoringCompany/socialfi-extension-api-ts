@@ -1,7 +1,7 @@
 import Bull from 'bull';
 import { AssetType } from '../../models/asset';
 import { CraftedAssetData, CraftedAssetRarity, CraftingQueueStatus, CraftingRecipe, CraftingRecipeLine } from "../../models/craft";
-import { ContinuumRelicItem, EnergyTotemItem, IngotItem, Item, PotionItem, RestorationItem, TransmutationItem, WonderArtefactItem } from '../../models/item';
+import { ContinuumRelicItem, EnergyTotemItem, IngotItem, Item, PotionItem, AugmentationItem, TransmutationItem, WonderArtefactItem } from '../../models/item';
 import { BarrenResource, CombinedResources, ExtendedResource, FruitResource, LiquidResource, OreResource, ResourceRarity, ResourceType, SimplifiedResource } from "../../models/resource";
 import { FoodType } from '../../models/food';
 import { CraftingQueueModel, UserModel } from './db';
@@ -178,7 +178,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
     [
         {
             craftedAssetData: {
-                asset: RestorationItem.PARCHMENT_OF_RESTORATION,
+                asset: AugmentationItem.PARCHMENT_OF_AUGMENTATION,
                 assetType: 'item',
                 assetDescription: `Select an Isle (Exotic rarity or below) and instantly restore 1% of total resources.`,
                 assetRarity: CraftedAssetRarity.COMMON,
@@ -218,7 +218,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
         },
         {
             craftedAssetData: {
-                asset: RestorationItem.SCROLL_OF_RESTORATION,
+                asset: AugmentationItem.SCROLL_OF_AUGMENTATION,
                 assetType: 'item',
                 assetDescription: `Select an Isle (Exotic rarity or below) and instantly restore 3% of total resources.`,
                 assetRarity: CraftedAssetRarity.UNCOMMON,
@@ -256,7 +256,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
         },
         {
             craftedAssetData: {
-                asset: RestorationItem.TOME_OF_RESTORATION,
+                asset: AugmentationItem.TOME_OF_AUGMENTATION,
                 assetType: 'item',
                 assetDescription: `Select an Isle (Exotic rarity or below) and instantly restore 7% of total resources.`,
                 assetRarity: CraftedAssetRarity.RARE,
@@ -301,7 +301,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
         },
         {
             craftedAssetData: {
-                asset: RestorationItem.ANCIENT_SCROLL_OF_RESTORATION,
+                asset: AugmentationItem.ANCIENT_SCROLL_OF_AUGMENTATION,
                 assetType: 'item',
                 assetDescription: `Select an Isle (any rarity) and instantly restore 10% of total resources.`,
                 assetRarity: CraftedAssetRarity.EPIC,
@@ -340,7 +340,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
         },
         {
             craftedAssetData: {
-                asset: RestorationItem.ANCIENT_TOME_OF_RESTORATION,
+                asset: AugmentationItem.ANCIENT_TOME_OF_AUGMENTATION,
                 assetType: 'item',
                 assetDescription: `Select an Isle (any rarity) and instantly restore 20% of total resources.`,
                 assetRarity: CraftedAssetRarity.LEGENDARY,
@@ -413,7 +413,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
                     requiredAssets: [
                         {
                             assetCategory: 'item',
-                            specificAsset: RestorationItem.SCROLL_OF_RESTORATION,
+                            specificAsset: AugmentationItem.SCROLL_OF_AUGMENTATION,
                             requiredRarity: 'none',
                             amount: 3,
                         },
@@ -451,7 +451,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
                     requiredAssets: [
                         {
                             assetCategory: 'item',
-                            specificAsset: RestorationItem.TOME_OF_RESTORATION,
+                            specificAsset: AugmentationItem.TOME_OF_AUGMENTATION,
                             requiredRarity: 'none',
                             amount: 3,
                         },
@@ -490,7 +490,7 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
                     requiredAssets: [
                         {
                             assetCategory: 'item',
-                            specificAsset: RestorationItem.ANCIENT_SCROLL_OF_RESTORATION,
+                            specificAsset: AugmentationItem.ANCIENT_SCROLL_OF_AUGMENTATION,
                             requiredRarity: 'none',
                             amount: 3,
                         },
