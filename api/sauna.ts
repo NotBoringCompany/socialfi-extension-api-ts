@@ -3,6 +3,7 @@ import { EventSauna, SaunaGlobalKey, SaunaUserDetail } from "../models/sauna";
 import { Status } from "../utils/retVal";
 import redisDb from "../utils/constants/redisDb";
 import { saunaQueue } from "../schedulers/sauna";
+import { UserModel } from "../utils/constants/db";
 
 const DUMMY_DATA = new Array(3).fill(null).map((_, i) => ({
   id: (i + 1).toString(),
@@ -20,7 +21,7 @@ const DUMMY_DATA = new Array(3).fill(null).map((_, i) => ({
 export const startRest = async (socket: Socket, data: SaunaUserDetail) => {
   try {
     const { userId } = data;
-    const user = DUMMY_DATA.find((user) => user.id === userId);
+    const user = await UserModel.findOne({ twitterId: userId });
 
     // Avoid if user not found
     if (!user) {
@@ -40,7 +41,7 @@ export const startRest = async (socket: Socket, data: SaunaUserDetail) => {
 
     const currentEnergy = user.inGameData.energy.currentEnergy;
     const maxEnergy = user.inGameData.energy.maxEnergy;
-    const percentage = maxEnergy * 0.2;
+    const percentage = maxEnergy * 0.1;
     const energyPotionPerSecond = percentage / 60;
     const lack = Math.abs(maxEnergy - currentEnergy);
     const timeToMaxEnergy = lack / energyPotionPerSecond;
@@ -65,10 +66,10 @@ export const startRest = async (socket: Socket, data: SaunaUserDetail) => {
   }
 };
 
-export const stopRest = async (socket: Socket, data: SaunaUserDetail) => {
+export const stopRest = async (socket: Socket) => {
   try {
-    const { userId } = data;
-    await removeUserFromRoom(userId);
+    const userId = await redisDb.get(socket.id);
+    await removeUserFromRoom(socket.id);
     const getConnected = await redisDb.get(SaunaGlobalKey.CONNECTED)
     socket.broadcast.emit(EventSauna.USER_COUNT, getConnected);
     socket.emit(EventSauna.USER_COUNT, getConnected);
@@ -77,7 +78,6 @@ export const stopRest = async (socket: Socket, data: SaunaUserDetail) => {
       message: `(stopRest) user ${userId} has stopped rest`
     });
   } catch (error) {
-    console.log(error.message);
     return socket.emit('server_response', {
       status: Status.BAD_REQUEST,
       message: `(stopRest) ${error.message}`
@@ -104,6 +104,8 @@ const addUserToRoom = async (userId: string, socketId: string, timeToMaxEnergyIn
   try {
     // pin user to room
     redisMulti.set(`userSocket:${userId}`, socketId)
+    // pin user to socketId
+    redisMulti.set(socketId, userId)
     // increment total connected
     redisMulti.set(SaunaGlobalKey.CONNECTED, Number(userConnected) + 1)
     // add user to queue and set delay
@@ -122,7 +124,9 @@ const addUserToRoom = async (userId: string, socketId: string, timeToMaxEnergyIn
  * Remove user from room
  * @param userId user id
  */
-const removeUserFromRoom = async (userId: string) => {
+const removeUserFromRoom = async (socketId: string) => {
+  // get userId from socket id
+  const userId = await redisDb.get(socketId)
   // user exist in room
   const isUserExistInRoom = await isUserInRoom(userId)
   // throw error if user not in room
@@ -136,10 +140,25 @@ const removeUserFromRoom = async (userId: string) => {
     redisMulti.set(SaunaGlobalKey.CONNECTED, Number(userConnected) - 1)
     // remove user from room
     redisMulti.del(`userSocket:${userId}`)
+    // remove user from socket
+    redisMulti.del(socketId)
     // exect redis multi
     await redisMulti.exec()
   } catch (error) {
     throw new Error(`${error.message}`)
+  }
+}
+
+export const saunaInit = async (socket: Socket) => {
+  try {
+    const userConnected = await redisDb.get(SaunaGlobalKey.CONNECTED)
+    socket.broadcast.emit(EventSauna.USER_COUNT, userConnected ? Number(userConnected) : 0)
+    socket.emit(EventSauna.USER_COUNT, userConnected ? Number(userConnected) : 0)
+  } catch (error) {
+    socket.emit('server_response', {
+      status: Status.ERROR,
+      message: `(saunaInit) ${error.message}`
+    })
   }
 }
 
@@ -150,6 +169,20 @@ const isUserInRoom = async (userId: string) => {
   if (!socketId) return false
   // if user in room return true
   return true
+}
+
+export const energyRecover = async (userId: string) => {
+  const isUserExistInRoom = await isUserInRoom(userId)
+  if (!isUserExistInRoom) throw new Error('User not in room')
+
+  const isUserExist = await UserModel.exists({ _id: userId })
+  if (!isUserExist) throw new Error('User not found')
+
+  await UserModel.updateOne(
+    { _id: userId },
+    { $set: { 'inGameData.energy.currentEnergy': 'inGameData.energy.maxEnergy' } }
+  )
+
 }
 
 

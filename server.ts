@@ -64,7 +64,7 @@ import web3 from './routes/web3';
 import { schedulers } from './schedulers/schedulers';
 import ban from './routes/ban';
 import mail from './routes/mail';
-import { socketHandler } from './socket';
+import { initSocket } from './socket';
 
 app.use('/auth/twitter', checkMaintenance, twitterAuth);
 app.use('/auth/discord', checkMaintenance, discordAuth);
@@ -99,14 +99,7 @@ app.use('/mail', checkMaintenance, mail);
 // both protocol and socket.io
 const httpServer = http.createServer(app);
 // Sockets init
-const io = new Server(httpServer, {
-    cors: {
-        origin: '*',
-        methods: ['GET', 'POST']
-    },
-});
-
-io.on('connection', socketHandler);
+initSocket(httpServer);
 
 httpServer.listen(port, async () => {
     console.log(`Server running on port: ${port}`);

@@ -1,11 +1,14 @@
 import Bull from "bull";
-
+import { energyRecover } from "../api/sauna";
+import { getSocket } from "../socket";
+import { Status } from "../utils/retVal";
 export const saunaQueue = new Bull('saunaQueue', {
   redis: process.env.REDIS_URL
 });
 
 saunaQueue.process(async (job) => {
-  const { userId } = job.data;
-  console.log('sauna queue process the job', userId);
- // TODO add energy to user and remove from queue job
+  const { userId, socketId, getTotalEnergy } = job.data;
+  await energyRecover(userId);
+  const io = getSocket();
+  io.emit('server_response', { status: Status.SUCCESS, message: `(energyRecover) user ${userId} recover ${getTotalEnergy} energy` });
 });
