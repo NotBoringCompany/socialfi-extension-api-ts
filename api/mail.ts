@@ -124,6 +124,9 @@ export const getAllUserMails = async (twitterId: string, page: number, limit: nu
     // find those not marked deleted
     const mailReceiverData = await MailReceiverDataModel.find({ userId: user._id, 'deletedStatus.status': false }).lean();
 
+    // fetch total mail count for pagination calculation
+    const totalCount = await MailModel.countDocuments({ _id: { $in: mailReceiverData.map(mail => mail.mailId) } });
+
     // fetch the mails using the mail IDs
     const mailIds = mailReceiverData.map(mail => mail.mailId);
 
@@ -143,11 +146,20 @@ export const getAllUserMails = async (twitterId: string, page: number, limit: nu
       deletedStatus: mailReceiverData.find(data => data.mailId === mail._id)?.deletedStatus
     }));
 
+    // Calculate next page
+    const totalPages = Math.ceil(totalCount / limit);
+    const nextPage = page < totalPages ? page + 1 : null;
+
     return {
       status: Status.SUCCESS,
       message: '(getAllUserMails) Successfully retrieved mails.',
       data: {
-        mailDTOs
+        mailDTOs: mailDTOs,
+        mailInfo: {
+          totalCount: totalCount,
+          totalPages: totalPages,
+          nextPage: nextPage,
+        }
       }
     }
   } catch (err: any) {
