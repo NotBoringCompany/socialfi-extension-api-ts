@@ -1,7 +1,7 @@
 import { SynthesizingItemGroup } from '../models/craft';
-import { Item, RestorationItem, SynthesizingItem } from '../models/item';
+import { Item, SynthesizingItem } from '../models/item';
 import { GET_SYNTHESIZING_ITEM_TYPE } from '../utils/constants/asset';
-import { UserModel } from '../utils/constants/db';
+import { IslandModel, UserModel } from '../utils/constants/db';
 import { ReturnValue, Status } from '../utils/retVal';
 
 /**
@@ -35,8 +35,8 @@ export const consumeSynthesizingItem = async (
 
         const synthesizingItemType = GET_SYNTHESIZING_ITEM_TYPE(item);
 
-        // restoration items restore x% of an island's total resources.
-        if (synthesizingItemType === SynthesizingItemGroup.RESTORATION_ITEM) {
+        // augmentation items increases the island's `baseResourceCap` by x%.
+        if (synthesizingItemType === SynthesizingItemGroup.AUGMENTATION_ITEM) {
             if (!islandId || islandId < 1) {
                 return {
                     status: Status.ERROR,
@@ -44,7 +44,17 @@ export const consumeSynthesizingItem = async (
                 }
             }
 
+            // check if the user owns the island
+            const island = await IslandModel.findOne({ islandId, owner: user._id }).lean();
 
+            if (!island) {
+                return {
+                    status: Status.ERROR,
+                    message: `(consumeSynthesizingItem) User does not own the island.`
+                }
+            }
+
+            // 
         }
     } catch (err: any) {
         return {

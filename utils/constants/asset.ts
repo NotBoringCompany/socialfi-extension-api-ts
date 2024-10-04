@@ -1,6 +1,8 @@
 import { Asset } from '../../models/asset';
+import { BitRarity } from '../../models/bit';
 import { SynthesizingItemGroup } from '../../models/craft';
-import { BitOrbType, ContinuumRelicItem, EnergyTotemItem, Item, PotionItem, RestorationItem, TerraCapsulatorType, TransmutationItem } from '../../models/item';
+import { IslandType } from '../../models/island';
+import { AugmentationItem, BitOrbType, ContinuumRelicItem, EnergyTotemItem, Item, PotionItem, SynthesizingItem, TerraCapsulatorType, TransmutationItem } from '../../models/item';
 import { BarrenResource, FruitResource, LiquidResource, OreResource } from '../../models/resource';
 
 /**
@@ -101,8 +103,8 @@ export const assets: Asset[] = [
  * Gets the enum type of `item`. For example, if inputted `Parchment of Restoration`, it will return `Restoration Item`.
  */
 export const GET_SYNTHESIZING_ITEM_TYPE = (item: string): SynthesizingItemGroup | undefined => {
-    if (Object.values(RestorationItem).includes(item as RestorationItem)) {
-        return SynthesizingItemGroup.RESTORATION_ITEM;
+    if (Object.values(AugmentationItem).includes(item as AugmentationItem)) {
+        return SynthesizingItemGroup.AUGMENTATION_ITEM;
     }
 
     if (Object.values(TransmutationItem).includes(item as TransmutationItem)) {
@@ -123,3 +125,7 @@ export const GET_SYNTHESIZING_ITEM_TYPE = (item: string): SynthesizingItemGroup 
 
     return undefined;
 }
+
+// export const SYNTHESIZING_ITEM_DATA = () => {
+
+// }

@@ -1,6 +1,6 @@
 import { AssetType } from './asset';
 import { FoodType } from './food';
-import { ContinuumRelicItem, EnergyTotemItem, IngotItem, PotionItem, RestorationItem, TransmutationItem } from './item';
+import { ContinuumRelicItem, EnergyTotemItem, IngotItem, PotionItem, AugmentationItem, TransmutationItem } from './item';
 import { BarrenResource, ExtendedResource, FruitResource, LiquidResource, OreResource, Resource, ResourceRarity, ResourceType, SimplifiedResource } from "./resource";
 
 /**
@@ -269,13 +269,13 @@ export enum CraftingQueueStatus {
 /**
  * Represents a craftable asset.
  */
-export type CraftableAsset = RestorationItem | TransmutationItem | EnergyTotemItem | ContinuumRelicItem | PotionItem | IngotItem;
+export type CraftableAsset = AugmentationItem | TransmutationItem | EnergyTotemItem | ContinuumRelicItem | PotionItem | IngotItem;
 
 /**
  * A list of different Synthesizing item groups.
  */
 export enum SynthesizingItemGroup {
-    RESTORATION_ITEM = 'Restoration Item',
+    AUGMENTATION_ITEM = 'Augmentation Item',
     TRANSMUTATION_ITEM = 'Transmutation Item',
     ENERGY_TOTEM_ITEM = 'Energy Totem Item',
     CONTINUUM_RELIC_ITEM = 'Continuum Relic Item',

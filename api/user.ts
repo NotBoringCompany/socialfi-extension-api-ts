@@ -45,6 +45,7 @@ import { DEPLOYER_WALLET, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from
 import { parseTelegramData, TelegramAuthData, validateTelegramData } from '../utils/telegram';
 import { sendKICKUponRegistration, updatePointsInContract } from './web3';
 import { ethers } from 'ethers';
+import { sendMailsToNewUser } from './mail';
 
 dotenv.config();
 
@@ -273,6 +274,9 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
             // give the user some KICK tokens
             const { status: kickStatus, message: kickMessage } = await sendKICKUponRegistration(address);
 
+            // send any necessary mails to the new user (mails with `includeNewUsers` set to true)
+            await sendMailsToNewUser(twitterId);
+
             return {
                 status: Status.SUCCESS,
                 message: `(handleTwitterLogin) New user created.`,
@@ -380,8 +384,6 @@ export const getWalletDetails = async (twitterId: string): Promise<ReturnValue> 
         };
     }
 };
-
-getWalletDetails('1462755469102137357');
 
 /**
  * Gets the user's in-game data.
@@ -2334,6 +2336,9 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
         // give the user some KICK tokens
         const { status: kickStatus, message: kickMessage } = await sendKICKUponRegistration(address);
 
+        // send any necessary mails to the new user (mails with `includeNewUsers` set to true)
+        await sendMailsToNewUser(twitterId);
+
         return {
             status: Status.SUCCESS,
             message: `(handlePreRegister) New user created and free Rafting Bit added to raft.`,
@@ -2441,7 +2446,7 @@ export const consumeEnergyPotion = async (
         const energyAfterTapping = currentEnergy >= totalTappingProgressEnergyRequired ? 
             currentEnergy - totalTappingProgressEnergyRequired : 
             currentEnergy;
-        const newCurrentEnergy = Math.min(maxEnergy, energyAfterTapping + 1000);
+        const newCurrentEnergy = Math.min(maxEnergy, energyAfterTapping + ENERGY_POTION_RECOVERY);
         const newEnergyPotionCount = Math.max(dailyEnergyPotion - 1, 0);
 
         // Set the new current energy and daily energy potion count in the update operations
@@ -2767,6 +2772,12 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
             });
 
             await newUser.save();
+
+            // give the user some KICK tokens
+            const { status: kickStatus, message: kickMessage } = await sendKICKUponRegistration(address);
+
+            // send any necessary mails to the new user (mails with `includeNewUsers` set to true)
+            await sendMailsToNewUser(String(telegramUser.id));
 
             return {
                 status: Status.SUCCESS,

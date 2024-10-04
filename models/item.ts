@@ -1,7 +1,10 @@
 /****************
  * ITEM-RELATED MODELS
  ****************/
+import { BitRarity } from './bit';
 import { BoosterItem } from './booster';
+import { IslandType } from './island';
+import { ResourceLine } from './resource';
 
 /**
  * Represents an item.
@@ -29,7 +32,7 @@ BoosterItem |
 BitOrbType | 
 TerraCapsulatorType | 
 WonderArtefactItem | 
-RestorationItem | 
+AugmentationItem | 
 TransmutationItem | 
 EnergyTotemItem | 
 ContinuumRelicItem | 
@@ -62,14 +65,14 @@ export enum WonderArtefactItem {
 }
 
 /**
- * A list of different Restoration items.
+ * A list of different Augmentation items.
  */
-export enum RestorationItem {
-    PARCHMENT_OF_RESTORATION = 'Parchment of Restoration',
-    SCROLL_OF_RESTORATION = 'Scroll of Restoration',
-    TOME_OF_RESTORATION = 'Tome of Restoration',
-    ANCIENT_SCROLL_OF_RESTORATION = 'Ancient Scroll of Restoration',
-    ANCIENT_TOME_OF_RESTORATION = 'Ancient Tome of Restoration',
+export enum AugmentationItem {
+    PARCHMENT_OF_AUGMENTATION = 'Parchment of Augmentation',
+    SCROLL_OF_AUGMENTATION = 'Scroll of Augmentation',
+    TOME_OF_AUGMENTATION = 'Tome of Augmentation',
+    ANCIENT_SCROLL_OF_AUGMENTATION = 'Ancient Scroll of Augmentation',
+    ANCIENT_TOME_OF_AUGMENTATION = 'Ancient Tome of Augmentation',
 }
 
 /**
@@ -121,4 +124,165 @@ export enum IngotItem {
 /**
  * Represents items that are made via the Synthesizing crafting line.
  */
-export type SynthesizingItem = RestorationItem | TransmutationItem | EnergyTotemItem | ContinuumRelicItem | PotionItem;
+export type SynthesizingItem = AugmentationItem | TransmutationItem | EnergyTotemItem | ContinuumRelicItem | PotionItem;
+
+/**
+ * Represents the data for synthesizing items crafted via the Synthesizing crafting line, such as its effects.
+ */
+export interface SynthesizingItemData {
+    /**
+     * the item's name.
+     */
+    name: SynthesizingItem;
+    /**
+     * the item's description.
+     */
+    description: string;
+    /**
+     * if the item to be used has a minimum rarity requirement for the island or bit it is used on.
+     */
+    minimumRarity: IslandType | BitRarity | null;
+    /**
+     * if the item to be used has a maximum rarity requirement for the island or bit it is used on.
+     */
+    maximumRarity: IslandType | BitRarity | null;
+    /**
+     * the item's limitations (e.g. the max limit of this item usable on an island, etc.)
+     */
+    limitations: SynthesizingItemLimitations;
+    /** 
+     * the effect values.
+     */
+    effectValues: SynthesizingItemEffectValues;
+}
+
+/**
+ * Represents the limitations of a synthesizing item.
+ */
+export interface SynthesizingItemLimitations {
+    /** if this item has a usage limit per island (i.e. how many of this item can be used on a single island) */
+    singleIslandUsage: SynthesizingItemLimitationNumerical;
+    /**
+     * how many of this item can be used on multiple islands concurrently. for example, if the limit is 5, and the `islandUsage.limit` is 1,
+     * then the item can be used UP TO 5 islands at the same time, but only 1 on each island.
+     */
+    concurrentIslandsUsage: SynthesizingItemLimitationNumerical;
+    /** if this item has a usage limit per bit (i.e. how many of this item can be used on a single bit) */
+    singleBitUsage: SynthesizingItemLimitationNumerical;
+    /**
+     * how many of this item can be used on multiple bits concurrently. for example, if the limit is 5, and the `bitUsage.limit` is 1,
+     * then the item can be used UP TO 5 bits at the same time, but only 1 on each bit.
+     */
+    concurrentBitsUsage: SynthesizingItemLimitationNumerical;
+    /** if this item can be used while another of the same item is currently active (used) */
+    usableWhenAnotherSameItemActive: boolean;
+}
+
+/**
+ * Represents a numerical limitation instance of a synthesizing item.
+ */
+export interface SynthesizingItemLimitationNumerical {
+    /** if the limitation is active. if not, this limitation does NOT apply to the item. */
+    active: boolean;
+    /** the limit of the item's usage */
+    limit: number | null;
+}
+
+/**
+ * Represents the effect values of a synthesizing item.
+ */
+export interface SynthesizingItemEffectValues {
+    /** which asset is affected by the synthesizing item upon consumption */
+    affectedAsset: 'bit' | 'island';
+    /** the increase OR decrease in resource cap of this island.
+     * 
+     * if `type` is `percentage`, then the `value` is a percentage increase/decrease of the current res cap. 
+     * (e.g. if the item gives 5%, and the current res cap is 1000, it will be increased to 1050. similarly, if -5%, then it will be decreased to 950).
+     * 
+     * if type is `fixed`, then the `value` is a fixed increase of the current res cap.
+     * 
+     * if this item is not meant for islands and thus have no resource cap increase effect, `type` will be null and value will be set to 0.
+     */
+    resourceCapModifier: {
+        /** if this effect is active on this item */
+        active: boolean;
+        /** the type of increase */
+        type: 'percentage' | 'fixed' | null;
+        /** the value to increase or decrease by */
+        value: number;
+    }
+    /**
+     * if the item transmutes a resource line of an island, this will be the data for the transmutation.
+     * 
+     * transmuting a resource line means converting the current resource line to another resource line of their choice.
+     * 
+     * NOTE: they CANNOT transmute to the same resource line.
+     */
+    resourceLineTransmutation: {
+        /** if this effect is active on this item */
+        active: boolean;
+    }
+    /**
+     * increases OR decreases the gathering rate of an island (%), depending on the value specified.
+     */
+    gatheringRateModifier: {
+        /** if this effect is active on this item */
+        active: boolean;
+        /** the value to increase or decrease by */
+        value: number;
+    }
+    /**
+     * increases OR decreases the earning rate of an island (%), depending on the value specified.
+     */
+    earningRateModifier: {
+        /** if this effect is active on this item */
+        active: boolean;
+        /** the value to increase or decrease by */
+        value: number;
+    }
+    /**
+     * increases OR decreases the energy depletion rate of ALL BITS placed within an island (%), depending on the value specified.
+     * 
+     * if the value is positive, this will increase the depletion rate, making the bits lose energy faster, and vice versa.
+     */
+    placedBitsEnergyDepletionRateModifier: {
+        /** if this effect is active on this item */
+        active: boolean;
+        /** the value to increase or decrease by */
+        value: number;
+    }
+    /**
+     * if this item allows a bit to be transferred to another Season (instead of being 'burned').
+     */
+    bitTransferrableBetweenSeasons: {
+        /** if this effect is active on this item */
+        active: boolean;
+        /** the season which this bit is allowed to be transferred into (currently it will be 1) */
+        season: number;
+    }
+    /**
+     * if this item allows one or more of a bit's traits to be rerolled.
+     */
+    rerollBitTraits: {
+        /** if this effect is active on this item */
+        active: boolean;
+        /**
+         * the type of rerolling.
+         * 
+         * if `chosen`, the user can choose `amount` of traits to reroll.
+         * if `random`, the system will reroll `amount` of traits randomly.
+         */
+        type: 'chosen' | 'random';
+        /**
+         * the result of the reroll(s).
+         * 
+         * if `onlyPositive`, then the traits being rerolled will ONLY result in positive traits.
+         * if `onlyNegative`, then the traits being rerolled will ONLY result in negative traits.
+         * if `random`, then the traits being rerolled will result in random traits (can be positive or negative).
+         */
+        result: 'onlyPositive' | 'onlyNegative' | 'random';
+        /** the amount of traits that can be rerolled. if 'all', all of the bits traits will be rerolled. */
+        amount: number | 'all';
+    }
+
+}

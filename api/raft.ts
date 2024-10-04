@@ -255,6 +255,10 @@ export const evolveRaft = async (twitterId: string): Promise<ReturnValue> => {
                 nextLevel: raft.currentLevel + 1,
                 totalPaid: upgradeCost,
                 paymentChoice: 'xCookies',
+                userCurrency: {
+                    currentValue: user.inventory.xCookieData.currentXCookies,
+                    updatedValue: Math.max(user.inventory.xCookieData.currentXCookies - upgradeCost, 0),
+                }
             }
         }
     } catch (err: any) {

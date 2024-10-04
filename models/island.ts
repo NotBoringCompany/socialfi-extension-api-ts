@@ -62,6 +62,18 @@ export enum IslandType {
     XTERIO_ISLES = 'Xterio Isles',
 }
 
+/** Numeric representation of `IslandType` (numerical instance for rarity comparison) */
+export const IslandRarityNumeric: { [key in IslandType]: number } = {
+    [IslandType.BARREN]: 0,
+    [IslandType.PRIMAL_ISLES]: 1,
+    [IslandType.VERDANT_ISLES]: 2,
+    // xterio isles = verdant isles in terms of rarity
+    [IslandType.XTERIO_ISLES]: 2,
+    [IslandType.EXOTIC_ISLES]: 3,
+    [IslandType.CRYSTAL_ISLES]: 4,
+    [IslandType.CELESTIAL_ISLES]: 5
+}
+
 /**
  * Represents the trait of an island.
  */

@@ -22,6 +22,7 @@ import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderbo
 import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
 import { TappingMastery } from '../models/mastery';
 import { updateReferredUsersData } from './user';
+import { redis } from '../utils/constants/redis';
 
 /**
  * Gifts an Xterio user an Xterio island.
@@ -419,7 +420,8 @@ export const evolveIsland = async (twitterId: string, islandId: number, choice: 
         }
 
         // Track consumed Currency
-        let totalPaid: number;
+        let currentCurrency: number = 0;
+        let totalPaid: number = 0;
         let paymentChoice: 'xCookies' | 'cookieCrumbs';
 
         if (!user) {
@@ -463,6 +465,7 @@ export const evolveIsland = async (twitterId: string, islandId: number, choice: 
         if (choice === 'xCookies') {
             // check if the user has enough xCookies
             const userXCookies: number = user.inventory?.xCookieData.currentXCookies;
+            currentCurrency = userXCookies;
 
             // calculate the cost to evolve the island based on its current level
             const { xCookies: requiredXCookies } = ISLAND_EVOLUTION_COST(<IslandType>island.type, island.currentLevel);
@@ -504,6 +507,7 @@ export const evolveIsland = async (twitterId: string, islandId: number, choice: 
             // if choice to evolve is using cookie crumbs
         } else {
             const userCookieCrumbs: number = user.inventory?.cookieCrumbs;
+            currentCurrency = userCookieCrumbs;
 
             // calculate the cost to evolve the island based on its current level
             const { cookieCrumbs: requiredCookieCrumbs } = ISLAND_EVOLUTION_COST(<IslandType>island.type, island.currentLevel);
@@ -542,6 +546,10 @@ export const evolveIsland = async (twitterId: string, islandId: number, choice: 
                 nextLevel: island.currentLevel + 1,
                 totalPaid,
                 paymentChoice,
+                userCurrency: {
+                    currentValue: currentCurrency,
+                    updatedValue: Math.max(currentCurrency - totalPaid, 0),
+                }
             }
         }
     } catch (err: any) {
@@ -3491,21 +3499,32 @@ export const addIslandToDatabase = async (island: Island): Promise<ReturnValue> 
  */
 export const getLatestIslandId = async (): Promise<ReturnValue> => {
     try {
-        // sort by islandId in descending order and get the first document
-        const latestIsland = await IslandModel.findOne().sort({ islandId: -1 }).lean();
+        const islandId = await redis.get('counter.islandId');
+
+        // check if the islandId was already set in Redis
+        if (!islandId) {
+            // sort the island ids in descending order and get the first one
+            const latestIsland = await IslandModel.findOne().sort({ islandId: -1 }).lean();
+
+            // set the counter to the latest island, also add expiration time to make sure the value up to date
+            await redis.set('counter.islandId', latestIsland?.islandId ?? 0, 'EX', 3600);
+        }
+
+        // increment the island id counter
+        const nextIslandId = await redis.incr('counter.islandId');
 
         return {
             status: Status.SUCCESS,
             message: `(getLatestIslandId) Latest island id fetched.`,
             data: {
-                latestIslandId: latestIsland ? latestIsland.islandId : 0
-            }
-        }
-    } catch (err: any) {
+                latestIslandId: nextIslandId ?? 0,
+            },
+        };
+    } catch (err: any) {        
         return {
             status: Status.ERROR,
-            message: `(getLatestIslandId) Error: ${err.message}`
-        }
+            message: `(getLatestIslandId) Error: ${err.message}`,
+        };
     }
 }
 

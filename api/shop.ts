@@ -299,8 +299,10 @@ export const purchaseShopAsset = async (
         // fetch user's xCookies
         const userXCookies = user.inventory?.xCookieData.currentXCookies;
 
+        // Initialize currentCurrenct value. This will be used to store which current Currency value in used as payment choice
+        let currentCurrency: number = 0;
         // to store the total cost of the asset(s).
-        let totalCost = 0;
+        let totalCost: number = 0;
 
         // tx payload for blockchain transactions done if payment === 'usd'.
         // used to store the parsed message body of the transaction in the purchase instance.
@@ -314,6 +316,8 @@ export const purchaseShopAsset = async (
                 }
             }
 
+            // Set currentCurrency with xCookies value
+            currentCurrency = userXCookies;
             // check if the user has enough xCookies to purchase the asset
             totalCost = shopAsset.price.finalXCookies * amount;
 
@@ -588,7 +592,7 @@ export const purchaseShopAsset = async (
             }
         }
 
-        console.log(`(purchaseShopAsset) User ${twitterId} update opeartions: ${JSON.stringify(userUpdateOperations, null, 2)}`);
+        console.log(`(purchaseShopAsset) User ${twitterId} update operations: ${JSON.stringify(userUpdateOperations, null, 2)}`);
 
         // update the user's inventory and add the purchase to the ShopAssetPurchases collection
         // divide the update operations into $set + $inc and $push and $pull for UserModel
@@ -605,11 +609,17 @@ export const purchaseShopAsset = async (
                 amount,
                 totalCost: {
                     baseCost: totalCost,
-                    baseCurrency: payment in ShopAssetIGCPaymentMethod ? 'xCookies' : 'usd',
+                    baseCurrency: typeof payment === 'string' && Object.values(ShopAssetIGCPaymentMethod).includes(payment as ShopAssetIGCPaymentMethod)
+                        ? 'xCookies' 
+                        : 'usd',
                     // include the txPayload cost only if payment is NOT via an in-game currency.
-                    actualCost: !(payment in ShopAssetIGCPaymentMethod) ? txPayload?.cost : totalCost,
-                    // include the txPayload currency only if payment is NOT via an in-game currency, else set equal to baseCurrency.
-                    actualCurrency: !(payment in ShopAssetIGCPaymentMethod) ? txPayload?.curr : payment
+                    actualCost: typeof payment === 'string' && Object.values(ShopAssetIGCPaymentMethod).includes(payment as ShopAssetIGCPaymentMethod)
+                        ? totalCost
+                        : txPayload?.cost,
+                    // include the txPayload currency only if payment is NOT via an in-game currency, else set equal to the in-game currency.
+                    actualCurrency: typeof payment === 'string' && Object.values(ShopAssetIGCPaymentMethod).includes(payment as ShopAssetIGCPaymentMethod)
+                        ? payment
+                        : txPayload?.curr
                 },
                 blockchainData: {
                     address,
@@ -636,12 +646,20 @@ export const purchaseShopAsset = async (
                 twitterId: twitterId,
                 asset: asset,
                 amount: amount,
-                totalPaid: !(payment in ShopAssetIGCPaymentMethod) ? txPayload?.cost : totalCost,
-                paymentChoice: !(payment in ShopAssetIGCPaymentMethod) ? txPayload?.curr : payment,
-                address: address,
-                chain: chain,
-                txHash: txHash,
-                txPayload: txPayload
+                totalPaid: typeof payment === 'string' && Object.values(ShopAssetIGCPaymentMethod).includes(payment as ShopAssetIGCPaymentMethod)
+                    ? totalCost
+                    : txPayload?.cost,
+                paymentChoice: typeof payment === 'string' && Object.values(ShopAssetIGCPaymentMethod).includes(payment as ShopAssetIGCPaymentMethod)
+                    ? payment
+                    : txPayload?.curr,
+                address: address ?? null,
+                chain: chain ?? null,
+                txHash: txHash ?? null,
+                txPayload: txPayload ?? null,
+                userCurrency: typeof payment === 'string' && Object.values(ShopAssetIGCPaymentMethod).includes(payment as ShopAssetIGCPaymentMethod) ? {
+                    currentValue: currentCurrency,
+                    updatedValue: Math.max(currentCurrency - totalCost, 0),
+                } : null
             }
         }
     } catch (err: any) {
