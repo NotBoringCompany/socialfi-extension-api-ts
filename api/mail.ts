@@ -553,11 +553,9 @@ export const readAndClaimAllMails = async (twitterId: string): Promise<ReturnVal
           );
     
           if (existingAttachmentIndex !== -1) {
-            console.log('(readAndClaimAllMails) adding attachments amount');
             // If the attachment already exists, increment the amount
             claimedAttachments[existingAttachmentIndex].amount += attachment.amount;
           } else {
-            console.log('(readAndClaimAllMails) pushing new attachments');
             // If it doesn't exist, push the new attachment
             claimedAttachments.push({ ...attachment });
           }
@@ -677,8 +675,6 @@ export const readAndClaimAllMails = async (twitterId: string): Promise<ReturnVal
         }
       });
     }
-
-    console.log('(readAndClaimAllMails) claimedAttachments: ', JSON.stringify(claimedAttachments));
 
     const mailBatchUpdateOps = mailReceiverDataUpdateOperations.map(async ({ id, updateOperations }) => {
       return MailReceiverDataModel.updateOne({ mailId: id, userId }, updateOperations);

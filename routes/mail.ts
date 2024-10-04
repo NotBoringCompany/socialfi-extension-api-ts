@@ -171,11 +171,12 @@ router.post('/read_and_claim_all_mails', async (req, res) => {
             });
         }
 
-        const { status, message } = await readAndClaimAllMails(validateData?.twitterId);
+        const { status, message, data } = await readAndClaimAllMails(validateData?.twitterId);
 
         return res.status(status).json({
             status,
-            message
+            message,
+            data
         });
     } catch (err: any) {
         return res.status(Status.ERROR).json({
@@ -204,7 +205,7 @@ router.post('/delete_all_read_and_claimed_mails', async (req, res) => {
 
         return res.status(status).json({
             status,
-            message
+            message,
         });
     } catch (err: any) {
         return res.status(Status.ERROR).json({
