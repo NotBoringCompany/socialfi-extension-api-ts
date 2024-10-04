@@ -9,8 +9,7 @@ import { UserModel } from "../utils/constants/db";
 export const startRest = async (socket: Socket, data: SaunaUserDetail) => {
   try {
     const { userId } = data;
-    const user = await UserModel.findOne({ twitterId: userId });
-
+    const user = await UserModel.findOne({ _id: userId }).lean();
     // Avoid if user not found
     if (!user) {
       return socket.emit('server_response', {
