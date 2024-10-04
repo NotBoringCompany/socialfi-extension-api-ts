@@ -4,6 +4,7 @@
 import { BitRarity } from './bit';
 import { BoosterItem } from './booster';
 import { IslandType } from './island';
+import { ResourceLine } from './resource';
 
 /**
  * Represents an item.
@@ -138,9 +139,13 @@ export interface SynthesizingItemData {
      */
     description: string;
     /**
-     * if the item requires a minimum rarity to be used on an island or a bit.
+     * if the item to be used has a minimum rarity requirement for the island or bit it is used on.
      */
     minimumRarity: IslandType | BitRarity | null;
+    /**
+     * if the item to be used has a maximum rarity requirement for the island or bit it is used on.
+     */
+    maximumRarity: IslandType | BitRarity | null;
     /**
      * the item's limitations (e.g. the max limit of this item usable on an island, etc.)
      */
@@ -189,19 +194,95 @@ export interface SynthesizingItemLimitationNumerical {
 export interface SynthesizingItemEffectValues {
     /** which asset is affected by the synthesizing item upon consumption */
     affectedAsset: 'bit' | 'island';
-    /** the increase in resource cap of this island.
+    /** the increase OR decrease in resource cap of this island.
      * 
-     * if `type` is `percentage`, then the `amount` is a percentage increase of the current res cap. 
-     * (e.g. if the item gives 5%, and the current res cap is 1000, it will be increased to 1050.)
+     * if `type` is `percentage`, then the `value` is a percentage increase/decrease of the current res cap. 
+     * (e.g. if the item gives 5%, and the current res cap is 1000, it will be increased to 1050. similarly, if -5%, then it will be decreased to 950).
      * 
-     * if type is `fixed`, then the `amount` is a fixed increase of the current res cap.
+     * if type is `fixed`, then the `value` is a fixed increase of the current res cap.
      * 
-     * if this item is not meant for islands and thus have no resource cap increase effect, `type` will be null and amount will be set to 0.
+     * if this item is not meant for islands and thus have no resource cap increase effect, `type` will be null and value will be set to 0.
      */
-    resourceCapIncrease: {
+    resourceCapModifier: {
+        /** if this effect is active on this item */
+        active: boolean;
         /** the type of increase */
         type: 'percentage' | 'fixed' | null;
-        /** the amount of increase */
-        amount: number;
+        /** the value to increase or decrease by */
+        value: number;
     }
+    /**
+     * if the item transmutes a resource line of an island, this will be the data for the transmutation.
+     * 
+     * transmuting a resource line means converting the current resource line to another resource line of their choice.
+     * 
+     * NOTE: they CANNOT transmute to the same resource line.
+     */
+    resourceLineTransmutation: {
+        /** if this effect is active on this item */
+        active: boolean;
+    }
+    /**
+     * increases OR decreases the gathering rate of an island (%), depending on the value specified.
+     */
+    gatheringRateModifier: {
+        /** if this effect is active on this item */
+        active: boolean;
+        /** the value to increase or decrease by */
+        value: number;
+    }
+    /**
+     * increases OR decreases the earning rate of an island (%), depending on the value specified.
+     */
+    earningRateModifier: {
+        /** if this effect is active on this item */
+        active: boolean;
+        /** the value to increase or decrease by */
+        value: number;
+    }
+    /**
+     * increases OR decreases the energy depletion rate of ALL BITS placed within an island (%), depending on the value specified.
+     * 
+     * if the value is positive, this will increase the depletion rate, making the bits lose energy faster, and vice versa.
+     */
+    placedBitsEnergyDepletionRateModifier: {
+        /** if this effect is active on this item */
+        active: boolean;
+        /** the value to increase or decrease by */
+        value: number;
+    }
+    /**
+     * if this item allows a bit to be transferred to another Season (instead of being 'burned').
+     */
+    bitTransferrableBetweenSeasons: {
+        /** if this effect is active on this item */
+        active: boolean;
+        /** the season which this bit is allowed to be transferred into (currently it will be 1) */
+        season: number;
+    }
+    /**
+     * if this item allows one or more of a bit's traits to be rerolled.
+     */
+    rerollBitTraits: {
+        /** if this effect is active on this item */
+        active: boolean;
+        /**
+         * the type of rerolling.
+         * 
+         * if `chosen`, the user can choose `amount` of traits to reroll.
+         * if `random`, the system will reroll `amount` of traits randomly.
+         */
+        type: 'chosen' | 'random';
+        /**
+         * the result of the reroll(s).
+         * 
+         * if `onlyPositive`, then the traits being rerolled will ONLY result in positive traits.
+         * if `onlyNegative`, then the traits being rerolled will ONLY result in negative traits.
+         * if `random`, then the traits being rerolled will result in random traits (can be positive or negative).
+         */
+        result: 'onlyPositive' | 'onlyNegative' | 'random';
+        /** the amount of traits that can be rerolled. if 'all', all of the bits traits will be rerolled. */
+        amount: number | 'all';
+    }
+
 }

@@ -125,3 +125,7 @@ export const GET_SYNTHESIZING_ITEM_TYPE = (item: string): SynthesizingItemGroup 
 
     return undefined;
 }
+
+// export const SYNTHESIZING_ITEM_DATA = () => {
+
+// }
