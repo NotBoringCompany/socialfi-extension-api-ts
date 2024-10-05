@@ -42,7 +42,10 @@ export const startRest = async (socket: Socket, data: SaunaUserDetail) => {
     socket.emit(EventSauna.USER_COUNT, getConnected);
     return socket.emit('server_response', {
       status: Status.SUCCESS,
-      message: `(startRest) user ${userId} has started rest`
+      message: `(startRest) user ${userId} has started rest`,
+      data: {
+        timeToMaxEnergyInMiliSecond
+      }
     });
   } catch (error) {
     console.log(error.message);
@@ -82,8 +85,13 @@ export const stopRest = async (socket: Socket) => {
 const addUserToRoom = async (userId: string, socketId: string, timeToMaxEnergyInMiliSecond: number, getTotalEnergy: number) => {
   // get user already in room
   const isUserAlreadyInRoom = await isUserInRoom(userId)
-  // throw error if user already in room
-  if (isUserAlreadyInRoom) throw new Error('User already in room')
+  // socket id same as user id
+  const getCurrentSocketId = await redisDb.get(`userSocket:${userId}`)
+  const isSocketIdSameAsUserId = getCurrentSocketId === socketId
+  // if user already in room but socket different, remove old socket and set new socket
+  if (isUserAlreadyInRoom && !isSocketIdSameAsUserId) {
+    await removeUserFromRoom(getCurrentSocketId)
+  }
   // get total connected
   const userConnected = await redisDb.get(SaunaGlobalKey.CONNECTED)
   //redis multi set
@@ -158,7 +166,7 @@ const isUserInRoom = async (userId: string) => {
   return true
 }
 
-export const energyRecover = async (userId: string) => {
+export const energyRecover = async (userId: string, energyRecover:number) => {
   const isUserExistInRoom = await isUserInRoom(userId)
   if (!isUserExistInRoom) throw new Error('User not in room')
 
@@ -167,9 +175,9 @@ export const energyRecover = async (userId: string) => {
 
   await UserModel.updateOne(
     { _id: userId },
-    { $set: { 'inGameData.energy.currentEnergy': 'inGameData.energy.maxEnergy' } }
+    { $inc: { 'inGameData.energy.currentEnergy': energyRecover } }
   )
 
+  console.log(`(energyRecover) User ${userId} energy recovered.`);
+
 }
-
-

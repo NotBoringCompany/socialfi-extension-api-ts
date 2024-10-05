@@ -7,8 +7,13 @@ export const saunaQueue = new Bull('saunaQueue', {
 });
 
 saunaQueue.process(async (job) => {
-  const { userId, socketId, getTotalEnergy } = job.data;
-  await energyRecover(userId);
-  const io = getSocket();
-  io.emit('server_response', { status: Status.SUCCESS, message: `(energyRecover) user ${userId} recover ${getTotalEnergy} energy` });
+  try {
+    const { userId, socketId, getTotalEnergy } = job.data;
+    const io = getSocket();
+    await energyRecover(userId, getTotalEnergy);
+    console.log(`(saunaQueue) user ${userId} recover ${getTotalEnergy} energy`);
+    io.to(socketId).emit('server_response', { status: Status.SUCCESS, message: `(saunaQueue) user ${userId} recover ${getTotalEnergy} energy` })
+  } catch (error) {
+    console.error(error);
+  }
 });
