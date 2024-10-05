@@ -166,18 +166,19 @@ const isUserInRoom = async (userId: string) => {
   return true
 }
 
-export const energyRecover = async (userId: string, energyRecover:number) => {
-  const isUserExistInRoom = await isUserInRoom(userId)
-  if (!isUserExistInRoom) throw new Error('User not in room')
+export const energyRecover = async (userId: string, energyRecover: number) => {
+  try {
+    const isUserExistInRoom = await isUserInRoom(userId)
+    if (!isUserExistInRoom) throw new Error('User not in room')
 
-  const isUserExist = await UserModel.exists({ _id: userId })
-  if (!isUserExist) throw new Error('User not found')
+    const isUserExist = await UserModel.exists({ _id: userId })
+    if (!isUserExist) throw new Error('User not found')
 
-  await UserModel.updateOne(
-    { _id: userId },
-    { $inc: { 'inGameData.energy.currentEnergy': energyRecover } }
-  )
-
-  console.log(`(energyRecover) User ${userId} energy recovered.`);
-
+    await UserModel.updateOne(
+      { _id: userId },
+      { $inc: { 'inGameData.energy.currentEnergy': energyRecover } }
+    )
+  } catch (error) {
+    throw new Error(`${error.message}`)
+  }
 }
