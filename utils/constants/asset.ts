@@ -2,7 +2,7 @@ import { Asset } from '../../models/asset';
 import { BitRarity } from '../../models/bit';
 import { SynthesizingItemGroup } from '../../models/craft';
 import { IslandType } from '../../models/island';
-import { AugmentationItem, BitOrbType, ContinuumRelicItem, EnergyTotemItem, Item, PotionItem, SynthesizingItem, TerraCapsulatorType, TransmutationItem } from '../../models/item';
+import { AugmentationItem, BitOrbType, ContinuumRelicItem, EnergyTotemItem, Item, PotionItem, SynthesizingItem, SynthesizingItemData, TerraCapsulatorType, TransmutationItem } from '../../models/item';
 import { BarrenResource, FruitResource, LiquidResource, OreResource } from '../../models/resource';
 
 /**
@@ -126,6 +126,64 @@ export const GET_SYNTHESIZING_ITEM_TYPE = (item: string): SynthesizingItemGroup 
     return undefined;
 }
 
-// export const SYNTHESIZING_ITEM_DATA = () => {
-
-// }
+/**
+ * Returns the data for all synthesizing items, including their effects, limitations and so on.
+ */
+export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
+    {
+        name: AugmentationItem.PARCHMENT_OF_AUGMENTATION,
+        description: `Select an Isle (Exotic rarity or below) and increase its resource cap by 1%.`,
+        minimumRarity: null,
+        maximumRarity: IslandType.EXOTIC_ISLES,
+        limitations: {
+            singleIslandUsage: {
+                active: true,
+                limit: 1
+            },
+            concurrentIslandsUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitUsage: {
+                active: false,
+                limit: null
+            },
+            concurrentBitsUsage: {
+                active: false,
+                limit: null
+            },
+            usableWhenAnotherSameItemActive: false
+        },
+        effectValues: {
+            affectedAsset: 'island',
+            resourceCapModifier: {
+                active: true,
+                type: 'percentage',
+                value: 1
+            },
+            resourceLineTransmutation: false,
+            gatheringRateModifier: {
+                active: false,
+                value: null
+            },
+            earningRateModifier: {
+                active: false,
+                value: null
+            },
+            placedBitsEnergyDepletionRateModifier: {
+                active: false,
+                value: null
+            },
+            bitTransferrableBetweenSeasons: {
+                active: false,
+                value: null
+            },
+            rerollBitTraits: {
+                active: false,
+                type: null,
+                result: null,
+                value: null
+            }
+        }
+    }
+]

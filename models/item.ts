@@ -218,10 +218,7 @@ export interface SynthesizingItemEffectValues {
      * 
      * NOTE: they CANNOT transmute to the same resource line.
      */
-    resourceLineTransmutation: {
-        /** if this effect is active on this item */
-        active: boolean;
-    }
+    resourceLineTransmutation: boolean,
     /**
      * increases OR decreases the gathering rate of an island (%), depending on the value specified.
      */
@@ -229,7 +226,7 @@ export interface SynthesizingItemEffectValues {
         /** if this effect is active on this item */
         active: boolean;
         /** the value to increase or decrease by */
-        value: number;
+        value: number | null;
     }
     /**
      * increases OR decreases the earning rate of an island (%), depending on the value specified.
@@ -238,7 +235,7 @@ export interface SynthesizingItemEffectValues {
         /** if this effect is active on this item */
         active: boolean;
         /** the value to increase or decrease by */
-        value: number;
+        value: number | null;
     }
     /**
      * increases OR decreases the energy depletion rate of ALL BITS placed within an island (%), depending on the value specified.
@@ -249,7 +246,7 @@ export interface SynthesizingItemEffectValues {
         /** if this effect is active on this item */
         active: boolean;
         /** the value to increase or decrease by */
-        value: number;
+        value: number | null;
     }
     /**
      * if this item allows a bit to be transferred to another Season (instead of being 'burned').
@@ -258,7 +255,7 @@ export interface SynthesizingItemEffectValues {
         /** if this effect is active on this item */
         active: boolean;
         /** the season which this bit is allowed to be transferred into (currently it will be 1) */
-        season: number;
+        value: number | null;
     }
     /**
      * if this item allows one or more of a bit's traits to be rerolled.
@@ -272,7 +269,7 @@ export interface SynthesizingItemEffectValues {
          * if `chosen`, the user can choose `amount` of traits to reroll.
          * if `random`, the system will reroll `amount` of traits randomly.
          */
-        type: 'chosen' | 'random';
+        type: 'chosen' | 'random' | null;
         /**
          * the result of the reroll(s).
          * 
@@ -280,9 +277,9 @@ export interface SynthesizingItemEffectValues {
          * if `onlyNegative`, then the traits being rerolled will ONLY result in negative traits.
          * if `random`, then the traits being rerolled will result in random traits (can be positive or negative).
          */
-        result: 'onlyPositive' | 'onlyNegative' | 'random';
+        result: 'onlyPositive' | 'onlyNegative' | 'random' | null;
         /** the amount of traits that can be rerolled. if 'all', all of the bits traits will be rerolled. */
-        amount: number | 'all';
+        value: number | 'all' | null;
     }
 
 }
