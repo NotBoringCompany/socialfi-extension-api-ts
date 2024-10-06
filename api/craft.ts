@@ -109,9 +109,9 @@ export const craftAsset = async (
             }
         }
 
-        // fetch all ongoing OR claimable crafting queues because these occupy the user's crafting slots.
+        // fetch all ongoing OR claimable crafting queues (for the chosen line) because these occupy the user's crafting slots.
         // NOTE: partially cancelled claimable queues also occupy a slot, so we need to include them in the query.
-        const craftingQueues = await CraftingQueueModel.find({ userId: user._id, status: { $in: [CraftingQueueStatus.ONGOING, CraftingQueueStatus.CLAIMABLE, CraftingQueueStatus.PARTIALLY_CANCELLED_CLAIMABLE] } }).lean();
+        const craftingQueues = await CraftingQueueModel.find({ userId: user._id, status: { $in: [CraftingQueueStatus.ONGOING, CraftingQueueStatus.CLAIMABLE, CraftingQueueStatus.PARTIALLY_CANCELLED_CLAIMABLE] }, craftingRecipeLine: craftingRecipe.craftingRecipeLine }).lean();
 
         // check if the user is in the right POI to craft assets and if they have reached the limit to craft the asset.
         const requiredPOI = REQUIRED_POI_FOR_CRAFTING_LINE(craftingRecipe.craftingRecipeLine);
