@@ -58,7 +58,7 @@ export enum IslandType {
     EXOTIC_ISLES = 'Exotic Isles',
     CRYSTAL_ISLES = 'Crystal Isles',
     CELESTIAL_ISLES = 'Celestial Isles',
-    // similar stats as verdant isles, but as a special, standalone type for Xterio users.
+    // similar stats as exotic isles, standalone type for Xterio users.
     XTERIO_ISLES = 'Xterio Isles',
 }
 
@@ -67,9 +67,9 @@ export const IslandRarityNumeric: { [key in IslandType]: number } = {
     [IslandType.BARREN]: 0,
     [IslandType.PRIMAL_ISLES]: 1,
     [IslandType.VERDANT_ISLES]: 2,
-    // xterio isles = verdant isles in terms of rarity
-    [IslandType.XTERIO_ISLES]: 2,
     [IslandType.EXOTIC_ISLES]: 3,
+    // xterio isles = exotic isles in terms of rarity
+    [IslandType.XTERIO_ISLES]: 3,
     [IslandType.CRYSTAL_ISLES]: 4,
     [IslandType.CELESTIAL_ISLES]: 5
 }
