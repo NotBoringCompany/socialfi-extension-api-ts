@@ -8,6 +8,8 @@ saunaQueue.process(async (job) => {
   try {
     const { userId, socketId, getTotalEnergy } = job.data;
     const socket = getSocket();
+    // mybe right here we can send token or something 
+    // todo we should send user token
     socket.to(socketId).emit('check_alive',
       { message: "Are you still there?", userId, socketId, getTotalEnergy }
     );

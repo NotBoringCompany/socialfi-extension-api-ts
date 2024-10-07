@@ -88,9 +88,14 @@ const addUserToRoom = async (userId: string, socketId: string, timeToMaxEnergyIn
   // socket id same as user id
   const getCurrentSocketId = await redisDb.get(`userSocket:${userId}`)
   const isSocketIdSameAsUserId = getCurrentSocketId === socketId
+  // user already in room 
+  if (isUserAlreadyInRoom && isSocketIdSameAsUserId) {
+    throw new Error('user already in room');
+  }
   // if user already in room but socket different, remove old socket and set new socket
   if (isUserAlreadyInRoom && !isSocketIdSameAsUserId) {
-    await removeUserFromRoom(getCurrentSocketId)
+    await removeUserFromRoom(getCurrentSocketId); // Remove socket yang lama
+    console.log(`Socket ID updated for user ${userId}`);
   }
   // get total connected
   const userConnected = await redisDb.get(SaunaGlobalKey.CONNECTED)
@@ -138,6 +143,8 @@ const removeUserFromRoom = async (socketId: string) => {
     // remove user from socket
     redisMulti.del(socketId)
     // exect redis multi
+    const currentJob = await saunaQueue.getJob(userId)
+    if (currentJob) await currentJob.remove()
     await redisMulti.exec()
   } catch (error) {
     throw new Error(`${error.message}`)
