@@ -3475,8 +3475,8 @@ export const getLatestIslandId = async (): Promise<ReturnValue> => {
             // sort the island ids in descending order and get the first one
             const latestIsland = await IslandModel.findOne().sort({ islandId: -1 }).lean();
 
-            // set the counter to the latest island, also add expiration time to make sure the value up to date
-            await redis.set('counter.islandId', latestIsland?.islandId ?? 0, 'EX', 3600);
+            // set the counter to the latest island
+            await redis.set('counter.islandId', latestIsland?.islandId ?? 0);
         }
 
         // increment the island id counter
