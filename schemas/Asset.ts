@@ -7,7 +7,7 @@ import { generateObjectId } from '../utils/crypto';
  */
 export const ConsumedSynthesizingItemSchema = new mongoose.Schema<ConsumedSynthesizingItem>({
     _id: {
-        required: true,
+        type: String,
         default: generateObjectId()
     },
     usedBy: String,
