@@ -277,8 +277,8 @@ export interface SynthesizingItemEffectValues {
         /**
          * the type of rerolling.
          * 
-         * if `chosen`, the user can choose `amount` of traits to reroll.
-         * if `random`, the system will reroll `amount` of traits randomly.
+         * if `chosen`, the user can choose `value` of traits to reroll.
+         * if `random`, the system will reroll `value` of traits randomly.
          */
         type: 'chosen' | 'random' | null;
         /**
