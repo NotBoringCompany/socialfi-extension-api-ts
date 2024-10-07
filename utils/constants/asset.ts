@@ -409,5 +409,173 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 value: null
             }
         }
-    }
+    },
+    {
+        name: TransmutationItem.WAND_OF_TRANSMUTATION,
+        description: `Select an Isle (Verdant rarity or below) and transmute the Isle's current resource line into another line.`,
+        minimumRarity: null,
+        maximumRarity: IslandType.VERDANT_ISLES,
+        limitations: {
+            singleIslandUsage: {
+                active: false,
+                limit: null
+            },
+            concurrentIslandsUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitUsage: {
+                active: false,
+                limit: null
+            },
+            concurrentBitsUsage: {
+                active: false,
+                limit: null
+            },
+            usableWhenAnotherSameItemActive: false
+        },
+        effectValues: {
+            affectedAsset: 'island',
+            resourceCapModifier: {
+                active: false,
+                type: null,
+                value: null
+            },
+            resourceLineTransmutation: true,
+            gatheringRateModifier: {
+                active: false,
+                value: null
+            },
+            earningRateModifier: {
+                active: false,
+                value: null
+            },
+            placedBitsEnergyDepletionRateModifier: {
+                active: false,
+                value: null
+            },
+            bitTransferrableBetweenSeasons: {
+                active: false,
+                value: null
+            },
+            rerollBitTraits: {
+                active: false,
+                type: null,
+                result: null,
+                value: null
+            }
+        }
+    },
+    {
+        name: TransmutationItem.STAFF_OF_TRANSMUTATION,
+        description: `Select an Isle (Exotic rarity or below) and transmute the Isle's current resource line into another line.`,
+        minimumRarity: null,
+        maximumRarity: IslandType.EXOTIC_ISLES,
+        limitations: {
+            singleIslandUsage: {
+                active: false,
+                limit: null
+            },
+            concurrentIslandsUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitUsage: {
+                active: false,
+                limit: null
+            },
+            concurrentBitsUsage: {
+                active: false,
+                limit: null
+            },
+            usableWhenAnotherSameItemActive: false
+        },
+        effectValues: {
+            affectedAsset: 'island',
+            resourceCapModifier: {
+                active: false,
+                type: null,
+                value: null
+            },
+            resourceLineTransmutation: true,
+            gatheringRateModifier: {
+                active: false,
+                value: null
+            },
+            earningRateModifier: {
+                active: false,
+                value: null
+            },
+            placedBitsEnergyDepletionRateModifier: {
+                active: false,
+                value: null
+            },
+            bitTransferrableBetweenSeasons: {
+                active: false,
+                value: null
+            },
+            rerollBitTraits: {
+                active: false,
+                type: null,
+                result: null,
+                value: null
+            }
+        }
+    },
+    {
+        name: TransmutationItem.ROYAL_SCEPTER_OF_TRANSMUTATION,
+        description: `Select an Isle (any rarity) and transmute the Isle's current resource line into another line.`,
+        minimumRarity: null,
+        maximumRarity: null,
+        limitations: {
+            singleIslandUsage: {
+                active: false,
+                limit: null
+            },
+            concurrentIslandsUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitUsage: {
+                active: false,
+                limit: null
+            },
+            concurrentBitsUsage: {
+                active: false,
+                limit: null
+            },
+            usableWhenAnotherSameItemActive: false
+        },
+        effectValues: {
+            affectedAsset: 'island',
+            resourceCapModifier: {
+                active: false,
+                type: null,
+                value: null
+            },
+            resourceLineTransmutation: true,
+            gatheringRateModifier: {
+                active: false,
+                value: null
+            },
+            earningRateModifier: {
+                active: false,
+                value: null
+            },
+            placedBitsEnergyDepletionRateModifier: {
+                active: false,
+                value: null
+            },
+            bitTransferrableBetweenSeasons: {
+                active: false,
+                value: null
+            },
+            rerollBitTraits: {
+                active: false,
+                type: null,
+                result: null,
+                value: null
+            }
+        }
+    },
 ]
