@@ -22,7 +22,7 @@ export const getUserChatrooms = async (twitterId: string): Promise<ReturnValue> 
         // find the chatroom that user participated to, or all the public channel that available
         const chatrooms = await ChatroomModel.find({
             $or: [{ 'participants.user': user._id }, { type: ChatroomType.PUBLIC }],
-        }).populate('lastSender');
+        }).populate('lastSender').populate('participants.user');
 
         return {
             status: Status.SUCCESS,
@@ -287,7 +287,7 @@ export const sendDirectMessage = async (
  * Allows the user to join the specified chatroom, adding them as a participant.
  */
 export const joinChatroom = async (
-    twitterId: string,
+    userId: string,
     chatroomId: string,
     allowPrivate: boolean = false
 ): Promise<ReturnValue> => {
@@ -295,7 +295,7 @@ export const joinChatroom = async (
     session.startTransaction();
 
     try {
-        const user = await UserModel.findOne({ twitterId });
+        const user = await UserModel.findOne({ $or: [{ twitterId: userId }, { _id: userId }] });
         if (!user) {
             throw new Error('User not found.');
         }
@@ -335,6 +335,9 @@ export const joinChatroom = async (
         return {
             status: Status.SUCCESS,
             message: `(joinChatroom) The user joined the chatroom successfully.`,
+            data: {
+                chatroom
+            }
         };
     } catch (err: any) {
         await session.abortTransaction();

@@ -38,3 +38,11 @@ export const sendDirectMessageDTO = z.object({
     receiverId: z.string(),
     message: z.string(),
 });
+
+export interface JoinChatroomDTO {
+    chatroomId: string;
+}
+
+export const joinChatroomDTO = z.object({
+    chatroomId: z.string(),
+});
