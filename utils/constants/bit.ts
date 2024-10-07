@@ -89,21 +89,21 @@ export const randomizeBitTraits = (rarity: BitRarity): BitTraitData[] => {
 
         if (rand <= 80) {
             // filter through common traits
-            const commonTraits = bitTraits.filter(trait => trait.rarity === BitTraitRarity.COMMON);
+            const commonTraits = BIT_TRAITS.filter(trait => trait.rarity === BitTraitRarity.COMMON);
 
             // get a random trait from common traits
             const commonRand = Math.floor(Math.random() * commonTraits.length);
             randomTrait = commonTraits[commonRand];
         } else if (rand <= 95) {
             // filter through uncommon traits
-            const uncommonTraits = bitTraits.filter(trait => trait.rarity === BitTraitRarity.UNCOMMON);
+            const uncommonTraits = BIT_TRAITS.filter(trait => trait.rarity === BitTraitRarity.UNCOMMON);
 
             // get a random trait from uncommon traits
             const uncommonRand = Math.floor(Math.random() * uncommonTraits.length);
             randomTrait = uncommonTraits[uncommonRand];
         } else {
             // filter through rare traits
-            const rareTraits = bitTraits.filter(trait => trait.rarity === BitTraitRarity.RARE);
+            const rareTraits = BIT_TRAITS.filter(trait => trait.rarity === BitTraitRarity.RARE);
 
             // get a random trait from rare traits
             const rareRand = Math.floor(Math.random() * rareTraits.length);
@@ -157,7 +157,7 @@ export const randomizeBitType = (): BitType => {
 /**
  * A list of all bit traits and their respective stats/details.
  */
-export const bitTraits: BitTraitData[] = [
+export const BIT_TRAITS: BitTraitData[] = [
     {
         trait: BitTrait.PRODUCTIVE,
         effect: `+5% working rate to self`,

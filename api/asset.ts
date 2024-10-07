@@ -1,8 +1,9 @@
-import { BitTrait, BitTraitData } from '../models/bit';
+import { BitTrait, BitTraitData, BitTraitRarity } from '../models/bit';
 import { SynthesizingItemGroup } from '../models/craft';
 import { Item, SynthesizingItem } from '../models/item';
 import { ResourceLine } from '../models/resource';
 import { GET_SYNTHESIZING_ITEM_TYPE, SYNTHESIZING_ITEM_DATA } from '../utils/constants/asset';
+import { BIT_TRAITS } from '../utils/constants/bit';
 import { BitModel, ConsumedSynthesizingItemModel, IslandModel, UserModel } from '../utils/constants/db';
 import { ReturnValue, Status } from '../utils/retVal';
 
@@ -166,7 +167,7 @@ export const consumeSynthesizingItem = async (
                 }
             }
 
-            // if `rerollBitTraits` is active, we will check a few things.
+            // if `rerollBitTraits` is active, we will proceed to do the logic to reroll the bit's traits.
             if (synthesizingItemData.effectValues.rerollBitTraits.active) {
                 // check if the type is `chosen`. if it is, we need to check the amount of traits that can be rerolled (the `value`).
                 if (synthesizingItemData.effectValues.rerollBitTraits.type === 'chosen') {
@@ -210,7 +211,77 @@ export const consumeSynthesizingItem = async (
                     const traits: BitTraitData[] = [];
 
                     while (traits.length < traitsToReroll) {
-                        
+                        // the following base rules will apply:
+                        // 1. 80% common, 15% uncommon, 5% rare chance
+                        // 2. for each trait category, there can only be traits of 1 subcategory.
+                        // e.g. category 'Workrate A' has productive, enthusiastic, lazy, uninspired. productive and enthusiastic are positive, lazy and uninspired are negative (subcategory wise).
+                        // that means that if a bit already has a trait 'productive', it can only have 'enthusiastic' as the next trait if the rand number falls within this category
+                        // and not 'lazy' or 'uninspired'.
+                        // 3. no duplicate traits.
+                        // then, these checks will be used to apply the next few rules:
+                        // 1. if `rerollBitTraits.result` is `onlyPositive`, then the rerolled trait must be positive.
+                        // 2. if `rerollBitTraits.result` is `onlyNegative`, then the rerolled trait must be negative.
+                        // 3. if `rerollBitTraits.result` is `any`, then the rerolled trait can be either positive or negative.
+                        const rand = Math.floor(Math.random() * 100) + 1;
+
+                        // randomize the traits from the `bitTraits` array.
+                        let randomTrait: BitTraitData;
+
+                        const rerollResult = synthesizingItemData.effectValues.rerollBitTraits.result;
+
+                        // first, filter the traits by rarity based on the rand. then, filter the subcategory based on the `rerollResult`.
+                        const filteredTraits = BIT_TRAITS.filter(trait => {
+                            if (rand <= 80) {
+                                return trait.rarity === BitTraitRarity.COMMON;
+                            } else if (rand <= 95) {
+                                return trait.rarity === BitTraitRarity.UNCOMMON;
+                            } else {
+                                return trait.rarity === BitTraitRarity.RARE;
+                            }
+                        }).filter(trait => {
+                            if (rerollResult === 'onlyPositive') {
+                                return trait.subcategory === 'Positive';
+                            } else if (rerollResult === 'onlyNegative') {
+                                return trait.subcategory === 'Negative';
+                            } else {
+                                return true;
+                            }
+                        })
+
+                        // this rand will be used to randomize the trait from the filtered traits.
+                        const traitRand = Math.floor(Math.random() * filteredTraits.length);
+
+                        randomTrait = filteredTraits[traitRand];
+
+                        // now, check if the trait already exists in the traits array
+                        if (!traits.includes(randomTrait)) {
+                            // if it doesn't, then the trait is already unique, which is what we want.
+                            // however, we need to check if an existing trait of the opposite subcategory within this category exists.
+                            // if it doesn't, add the trait.
+                            // this won't be an issue if `rerollResult` is `onlyPositive` or `onlyNegative`, but this needs to be checked when `rerollResult` is `random`, because we
+                            // don't want to have a positive and negative trait of the same category as it doesn't make sense.
+                            const traitCategory = randomTrait.category;
+                            const traitSubcategory = randomTrait.subcategory;
+
+                            // check if the trait's category is already in the traits array.
+                            const categoryExists = traits.some(trait => {
+                                return trait.category === traitCategory;
+                            })
+
+                            // if the category exists, check which subcategory the existing trait(s) belong to
+                            // if the subcategory is the same as the random trait's subcategory, add the trait
+                            if (categoryExists) {
+                                const existingSubCategory = traits.find(trait => trait.category === traitCategory)?.subcategory;
+
+                                // if the existing subcategory is the same as the random trait's subcategory, add the trait.
+                                if (existingSubCategory === traitSubcategory) {
+                                    traits.push(randomTrait);
+                                }
+                            } else {
+                                // if the category doesn't exist, add the trait.
+                                traits.push(randomTrait);
+                            }
+                        }
                     }
                 }
             }
