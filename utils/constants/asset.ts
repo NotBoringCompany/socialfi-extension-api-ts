@@ -760,4 +760,176 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
             }
         }
     },
+    {
+        name: ContinuumRelicItem.FADED_CONTINUUM_RELIC,
+        description: `Select a Bit (rare rarity or below) and allow transfer to Season 1.`,
+        minimumRarity: null,
+        maximumRarity: BitRarity.RARE,
+        limitations: {
+            singleIslandUsage: {
+                active: false,
+                limit: null
+            },
+            concurrentIslandsUsage: {
+                active: false,
+                limit: null,
+            },
+            singleBitUsage: {
+                active: true,
+                limit: 1
+            },
+            concurrentBitsUsage: {
+                active: false,
+                limit: null
+            },
+            notUsableWhenAnotherSameItemActive: false
+        },
+        effectValues: {
+            affectedAsset: 'bit',
+            effectDuration: 'oneTime', 
+            resourceCapModifier: {
+                active: false,
+                type: null,
+                value: null
+            },
+            resourceLineTransmutation: false,
+            gatheringRateModifier: {
+                active: false,
+                value: null
+            },
+            earningRateModifier: {
+                active: false,
+                value: null,
+            },
+            placedBitsEnergyDepletionRateModifier: {
+                active: false,
+                value: null,
+            },
+            bitTransferrableBetweenSeasons: {
+                active: true,
+                value: 1
+            },
+            rerollBitTraits: {
+                active: false,
+                type: null,
+                result: null,
+                value: null
+            }
+        }
+    },
+    {
+        name: ContinuumRelicItem.GLEAMING_CONTINUUM_RELIC,
+        description: `Select a Bit (epic rarity or below) and allow transfer to Season 1.`,
+        minimumRarity: null,
+        maximumRarity: BitRarity.EPIC,
+        limitations: {
+            singleIslandUsage: {
+                active: false,
+                limit: null
+            },
+            concurrentIslandsUsage: {
+                active: false,
+                limit: null,
+            },
+            singleBitUsage: {
+                active: true,
+                limit: 1
+            },
+            concurrentBitsUsage: {
+                active: false,
+                limit: null
+            },
+            notUsableWhenAnotherSameItemActive: false
+        },
+        effectValues: {
+            affectedAsset: 'bit',
+            effectDuration: 'oneTime', 
+            resourceCapModifier: {
+                active: false,
+                type: null,
+                value: null
+            },
+            resourceLineTransmutation: false,
+            gatheringRateModifier: {
+                active: false,
+                value: null
+            },
+            earningRateModifier: {
+                active: false,
+                value: null,
+            },
+            placedBitsEnergyDepletionRateModifier: {
+                active: false,
+                value: null,
+            },
+            bitTransferrableBetweenSeasons: {
+                active: true,
+                value: 1
+            },
+            rerollBitTraits: {
+                active: false,
+                type: null,
+                result: null,
+                value: null
+            }
+        }
+    },
+    {
+        name: ContinuumRelicItem.MYTHIC_CONTINUUM_RELIC,
+        description: `Select a Bit (any rarity) and allow transfer to Season 1.`,
+        minimumRarity: null,
+        maximumRarity: null,
+        limitations: {
+            singleIslandUsage: {
+                active: false,
+                limit: null
+            },
+            concurrentIslandsUsage: {
+                active: false,
+                limit: null,
+            },
+            singleBitUsage: {
+                active: true,
+                limit: 1
+            },
+            concurrentBitsUsage: {
+                active: false,
+                limit: null
+            },
+            notUsableWhenAnotherSameItemActive: false
+        },
+        effectValues: {
+            affectedAsset: 'bit',
+            effectDuration: 'oneTime', 
+            resourceCapModifier: {
+                active: false,
+                type: null,
+                value: null
+            },
+            resourceLineTransmutation: false,
+            gatheringRateModifier: {
+                active: false,
+                value: null
+            },
+            earningRateModifier: {
+                active: false,
+                value: null,
+            },
+            placedBitsEnergyDepletionRateModifier: {
+                active: false,
+                value: null,
+            },
+            bitTransferrableBetweenSeasons: {
+                active: true,
+                value: 1
+            },
+            rerollBitTraits: {
+                active: false,
+                type: null,
+                result: null,
+                value: null
+            }
+        }
+    },
+    
 ]
