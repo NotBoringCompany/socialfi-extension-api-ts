@@ -152,10 +152,11 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
-            usableWhenAnotherSameItemActive: false
+            notUsableWhenAnotherSameItemActive: false
         },
         effectValues: {
             affectedAsset: 'island',
+            effectDuration: 'oneTime',
             resourceCapModifier: {
                 active: true,
                 type: 'percentage',
@@ -208,10 +209,11 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
-            usableWhenAnotherSameItemActive: false
+            notUsableWhenAnotherSameItemActive: false
         },
         effectValues: {
             affectedAsset: 'island',
+            effectDuration: 'oneTime',
             resourceCapModifier: {
                 active: true,
                 type: 'percentage',
@@ -264,10 +266,11 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
-            usableWhenAnotherSameItemActive: false
+            notUsableWhenAnotherSameItemActive: false
         },
         effectValues: {
             affectedAsset: 'island',
+            effectDuration: 'oneTime',
             resourceCapModifier: {
                 active: true,
                 type: 'percentage',
@@ -320,10 +323,11 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
-            usableWhenAnotherSameItemActive: false
+            notUsableWhenAnotherSameItemActive: false
         },
         effectValues: {
             affectedAsset: 'island',
+            effectDuration: 'oneTime',
             resourceCapModifier: {
                 active: true,
                 type: 'percentage',
@@ -376,10 +380,11 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
-            usableWhenAnotherSameItemActive: false
+            notUsableWhenAnotherSameItemActive: false
         },
         effectValues: {
             affectedAsset: 'island',
+            effectDuration: 'oneTime',
             resourceCapModifier: {
                 active: true,
                 type: 'percentage',
@@ -432,10 +437,11 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
-            usableWhenAnotherSameItemActive: false
+            notUsableWhenAnotherSameItemActive: false
         },
         effectValues: {
             affectedAsset: 'island',
+            effectDuration: 'oneTime',
             resourceCapModifier: {
                 active: false,
                 type: null,
@@ -488,10 +494,11 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
-            usableWhenAnotherSameItemActive: false
+            notUsableWhenAnotherSameItemActive: false
         },
         effectValues: {
             affectedAsset: 'island',
+            effectDuration: 'oneTime',
             resourceCapModifier: {
                 active: false,
                 type: null,
@@ -544,10 +551,11 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
-            usableWhenAnotherSameItemActive: false
+            notUsableWhenAnotherSameItemActive: false
         },
         effectValues: {
             affectedAsset: 'island',
+            effectDuration: 'oneTime',
             resourceCapModifier: {
                 active: false,
                 type: null,
@@ -565,6 +573,180 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
             placedBitsEnergyDepletionRateModifier: {
                 active: false,
                 value: null
+            },
+            bitTransferrableBetweenSeasons: {
+                active: false,
+                value: null
+            },
+            rerollBitTraits: {
+                active: false,
+                type: null,
+                result: null,
+                value: null
+            }
+        }
+    },
+    {
+        name: EnergyTotemItem.SMALL_TOTEM_OF_ENERGY,
+        description: `Select an Isle and receive +2.5% Isle farming rate & -12.5% energy consumption for all bits there.`,
+        minimumRarity: null,
+        maximumRarity: null,
+        limitations: {
+            singleIslandUsage: {
+                active: false,
+                limit: null
+            },
+            concurrentIslandsUsage: {
+                active: true,
+                limit: 5
+            },
+            singleBitUsage: {
+                active: false,
+                limit: null
+            },
+            concurrentBitsUsage: {
+                active: false,
+                limit: null
+            },
+            notUsableWhenAnotherSameItemActive: true
+        },
+        effectValues: {
+            affectedAsset: 'island',
+            // 1 day
+            effectDuration: 86400, 
+            resourceCapModifier: {
+                active: false,
+                type: null,
+                value: null
+            },
+            resourceLineTransmutation: false,
+            gatheringRateModifier: {
+                active: true,
+                value: 2.5
+            },
+            earningRateModifier: {
+                active: true,
+                value: 2.5
+            },
+            placedBitsEnergyDepletionRateModifier: {
+                active: true,
+                value: -12.5
+            },
+            bitTransferrableBetweenSeasons: {
+                active: false,
+                value: null
+            },
+            rerollBitTraits: {
+                active: false,
+                type: null,
+                result: null,
+                value: null
+            }
+        }
+    },
+    {
+        name: EnergyTotemItem.BIG_TOTEM_OF_ENERGY,
+        description: `Select an Isle and receive +5% Isle farming rate & -25% energy consumption for all bits there.`,
+        minimumRarity: null,
+        maximumRarity: null,
+        limitations: {
+            singleIslandUsage: {
+                active: false,
+                limit: null
+            },
+            concurrentIslandsUsage: {
+                active: true,
+                limit: 5
+            },
+            singleBitUsage: {
+                active: false,
+                limit: null
+            },
+            concurrentBitsUsage: {
+                active: false,
+                limit: null
+            },
+            notUsableWhenAnotherSameItemActive: true
+        },
+        effectValues: {
+            affectedAsset: 'island',
+            // 1 day
+            effectDuration: 86400, 
+            resourceCapModifier: {
+                active: false,
+                type: null,
+                value: null
+            },
+            resourceLineTransmutation: false,
+            gatheringRateModifier: {
+                active: true,
+                value: 5
+            },
+            earningRateModifier: {
+                active: true,
+                value: 5
+            },
+            placedBitsEnergyDepletionRateModifier: {
+                active: true,
+                value: -25
+            },
+            bitTransferrableBetweenSeasons: {
+                active: false,
+                value: null
+            },
+            rerollBitTraits: {
+                active: false,
+                type: null,
+                result: null,
+                value: null
+            }
+        }
+    },
+    {
+        name: EnergyTotemItem.GRAND_TOTEM_OF_ENERGY,
+        description: `Select an Isle and receive +7.5% Isle farming rate & -50% energy consumption for all bits there.`,
+        minimumRarity: null,
+        maximumRarity: null,
+        limitations: {
+            singleIslandUsage: {
+                active: false,
+                limit: null
+            },
+            concurrentIslandsUsage: {
+                active: true,
+                limit: 5
+            },
+            singleBitUsage: {
+                active: false,
+                limit: null
+            },
+            concurrentBitsUsage: {
+                active: false,
+                limit: null
+            },
+            notUsableWhenAnotherSameItemActive: true
+        },
+        effectValues: {
+            affectedAsset: 'island',
+            // 2 days
+            effectDuration: 172800, 
+            resourceCapModifier: {
+                active: false,
+                type: null,
+                value: null
+            },
+            resourceLineTransmutation: false,
+            gatheringRateModifier: {
+                active: true,
+                value: 7.5
+            },
+            earningRateModifier: {
+                active: true,
+                value: 7.5
+            },
+            placedBitsEnergyDepletionRateModifier: {
+                active: true,
+                value: -50
             },
             bitTransferrableBetweenSeasons: {
                 active: false,

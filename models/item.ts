@@ -160,22 +160,22 @@ export interface SynthesizingItemData {
  * Represents the limitations of a synthesizing item.
  */
 export interface SynthesizingItemLimitations {
-    /** if this item has a usage limit per island (i.e. how many of this item can be used on a single island) */
+    /** if this item has a usage limit per island (i.e. how many of this item can be used on a single island) IN TOTAL */
     singleIslandUsage: SynthesizingItemLimitationNumerical;
     /**
      * how many of this item can be used on multiple islands concurrently. for example, if the limit is 5, and the `islandUsage.limit` is 1,
-     * then the item can be used UP TO 5 islands at the same time, but only 1 on each island.
+     * then the item can be used UP TO 5 islands at the same time, but only 1 on each island. (not in total)
      */
     concurrentIslandsUsage: SynthesizingItemLimitationNumerical;
-    /** if this item has a usage limit per bit (i.e. how many of this item can be used on a single bit) */
+    /** if this item has a usage limit per bit (i.e. how many of this item can be used on a single bit) IN TOTAL */
     singleBitUsage: SynthesizingItemLimitationNumerical;
     /**
      * how many of this item can be used on multiple bits concurrently. for example, if the limit is 5, and the `bitUsage.limit` is 1,
-     * then the item can be used UP TO 5 bits at the same time, but only 1 on each bit.
+     * then the item can be used UP TO 5 bits at the same time, but only 1 on each bit. (not in total)
      */
     concurrentBitsUsage: SynthesizingItemLimitationNumerical;
-    /** if this item can be used while another of the same item is currently active (used) */
-    usableWhenAnotherSameItemActive: boolean;
+    /** if this item CANNOT used while another of the same item is currently active (used) */
+    notUsableWhenAnotherSameItemActive: boolean;
 }
 
 /**
@@ -194,6 +194,16 @@ export interface SynthesizingItemLimitationNumerical {
 export interface SynthesizingItemEffectValues {
     /** which asset is affected by the synthesizing item upon consumption */
     affectedAsset: 'bit' | 'island';
+    /** 
+     * the item's effect duration. 
+     * 
+     * if `oneTime`, the item is a one-time use item (i.e. the effect is applied once and once only).
+     * if a number, the item's effect will last for that number of seconds.
+     * 
+     * for example, the small totem of energy can last for 1 day (86400 seconds). the isle the totem is applied to will receive a boost
+     * in farming rate and decreased energy depletion rate for all placed bits for the entire day.
+     */
+    effectDuration: 'oneTime' | number;
     /** the increase OR decrease in resource cap of this island.
      * 
      * if `type` is `percentage`, then the `value` is a percentage increase/decrease of the current res cap. 
