@@ -2,7 +2,7 @@ import { SynthesizingItemGroup } from '../models/craft';
 import { Item, SynthesizingItem } from '../models/item';
 import { ResourceLine } from '../models/resource';
 import { GET_SYNTHESIZING_ITEM_TYPE, SYNTHESIZING_ITEM_DATA } from '../utils/constants/asset';
-import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
+import { BitModel, ConsumedSynthesizingItemModel, IslandModel, UserModel } from '../utils/constants/db';
 import { ReturnValue, Status } from '../utils/retVal';
 
 /**
@@ -74,6 +74,40 @@ export const consumeSynthesizingItem = async (
             }
 
             // check if there are any `singleBitUsage` or `concurrentBitsUsage` limitations for this item.
+            const singleBitUsageLimit = synthesizingItemData.limitations.singleBitUsage.limit;
+            const concurrentBitsUsageLimit = synthesizingItemData.limitations.concurrentBitsUsage.limit;
+
+            const usedItemInstances = await ConsumedSynthesizingItemModel.find({
+                usedBy: user._id,
+                item,
+                affectedAsset,
+            }).lean();
+
+            if (singleBitUsageLimit !== null) {
+                // check if the user has used the item on this bit before.
+                const usedOnThisBitCount = usedItemInstances.filter(i => i.islandOrBitId === islandOrBitId).length;
+
+                if (usedOnThisBitCount >= singleBitUsageLimit) {
+                    return {
+                        status: Status.ERROR,
+                        message: `(consumeSynthesizingItem) Single bit usage limit for this item reached.`
+                    }
+                }
+            }
+
+            if (concurrentBitsUsageLimit !== null) {
+                // we don't need to worry if the item doesn't have an effect duration (i.e. it's a one-time use item).
+                // this is because we want to only search for items whose effectUntil is greater than the current timestamp.
+                // one-time use items will have an effectUntil === consumedTimestamp.
+                const usedOnConcurrentBitsCount = usedItemInstances.filter(i => i.effectUntil > Math.floor(Date.now() / 1000)).length;
+
+                if (usedOnConcurrentBitsCount >= concurrentBitsUsageLimit) {
+                    return {
+                        status: Status.ERROR,
+                        message: `(consumeSynthesizingItem) Concurrent bits usage limit for this item reached.`
+                    }
+                }
+            }
         }
     } catch (err: any) {
         return {

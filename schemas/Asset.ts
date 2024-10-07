@@ -18,5 +18,5 @@ export const ConsumedSynthesizingItemSchema = new mongoose.Schema<ConsumedSynthe
     },
     islandOrBitId: Number,
     consumedTimestamp: Number,
-    effectUntil: mongoose.Schema.Types.Mixed,
+    effectUntil: Number
 });

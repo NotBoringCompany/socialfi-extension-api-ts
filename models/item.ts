@@ -313,8 +313,7 @@ export interface ConsumedSynthesizingItem {
     /**
      * until when the item effect will last.
      * 
-     * NOTE: if the item's `effectDuration` is `oneTime`, this will be set to `never`.
-     * this is only used for items that have a duration-based effect.
+     * NOTE: if the item's `effectDuration` is `oneTime`, this will be the same as `consumedTimestamp`.
      */
-    effectUntil: 'never' | number; 
+    effectUntil: number; 
 }
