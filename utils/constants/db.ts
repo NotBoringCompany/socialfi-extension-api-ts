@@ -102,3 +102,4 @@ export const CraftingQueueModel = TEST_CONNECTION.model('CraftingQueues', Crafti
 export const BanModel = TEST_CONNECTION.model('Bans', BanSchema, 'Bans');
 export const MailModel = TEST_CONNECTION.model('Mails', MailSchema, 'Mails');
 export const MailReceiverDataModel = TEST_CONNECTION.model('MailReceiverData', MailReceiverDataSchema, 'MailReceiverData');
+export const ConsumedSynthesizingItemModel = TEST_CONNECTION.model('ConsumedSynthesizingItems', ConsumedSynthesizingItemSchema, 'ConsumedSynthesizingItems');

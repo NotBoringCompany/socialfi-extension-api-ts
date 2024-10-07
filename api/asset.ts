@@ -1,7 +1,8 @@
 import { SynthesizingItemGroup } from '../models/craft';
 import { Item, SynthesizingItem } from '../models/item';
-import { GET_SYNTHESIZING_ITEM_TYPE } from '../utils/constants/asset';
-import { IslandModel, UserModel } from '../utils/constants/db';
+import { ResourceLine } from '../models/resource';
+import { GET_SYNTHESIZING_ITEM_TYPE, SYNTHESIZING_ITEM_DATA } from '../utils/constants/asset';
+import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
 import { ReturnValue, Status } from '../utils/retVal';
 
 /**
@@ -10,8 +11,14 @@ import { ReturnValue, Status } from '../utils/retVal';
 export const consumeSynthesizingItem = async (
     twitterId: string, 
     item: SynthesizingItem,
-    // only for restoration items
-    islandId?: number
+    /**
+     * the island or bit id that the item will be applied to.
+     */
+    islandOrBitId?: number,
+    /**
+     * the new resource line that will be applied to the island.
+     */
+    newResourceLine?: ResourceLine
 ): Promise<ReturnValue> => {
     try {
         const user = await UserModel.findOne({ twitterId }).lean();
@@ -33,28 +40,40 @@ export const consumeSynthesizingItem = async (
             }
         }
 
-        const synthesizingItemType = GET_SYNTHESIZING_ITEM_TYPE(item);
+        // get the item data with the limitations and effects.
+        // since the data contains dynamic values, we don't need to manually put logic for each item type.
+        const synthesizingItemData = SYNTHESIZING_ITEM_DATA.find(i => i.name === item);
 
-        // augmentation items increases the island's `baseResourceCap` by x%.
-        if (synthesizingItemType === SynthesizingItemGroup.AUGMENTATION_ITEM) {
-            if (!islandId || islandId < 1) {
+        if (!synthesizingItemData) {
+            return {
+                status: Status.ERROR,
+                message: `(consumeSynthesizingItem) Item data not found.`
+            }
+        }
+
+        // check if the item is used in an island or a bit.
+        const affectedAsset = synthesizingItemData.effectValues.affectedAsset;
+
+        if (affectedAsset === 'bit') {
+            // check if the user has the specified bit id
+            const bit = await BitModel.findOne({ bitId: islandOrBitId }).lean();
+
+            if (!bit) {
                 return {
                     status: Status.ERROR,
-                    message: `(consumeSynthesizingItem) Island ID not provided.`
+                    message: `(consumeSynthesizingItem) Bit not found.`
                 }
             }
 
-            // check if the user owns the island
-            const island = await IslandModel.findOne({ islandId, owner: user._id }).lean();
-
-            if (!island) {
+            // check if the user owns the bit
+            if (bit.owner !== user._id) {
                 return {
                     status: Status.ERROR,
-                    message: `(consumeSynthesizingItem) User does not own the island.`
+                    message: `(consumeSynthesizingItem) Bit does not belong to the user.`
                 }
             }
 
-            // 
+            // check if there are any `singleBitUsage` or `concurrentBitsUsage` limitations for this item.
         }
     } catch (err: any) {
         return {

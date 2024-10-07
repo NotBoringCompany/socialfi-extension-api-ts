@@ -292,5 +292,29 @@ export interface SynthesizingItemEffectValues {
         /** the amount of traits that can be rerolled. if 'all', all of the bits traits will be rerolled. */
         value: number | 'all' | null;
     }
+}
 
+/**
+ * Represents the data for a consumed synthesizing item.
+ */
+export interface ConsumedSynthesizingItem {
+    /** the database ID */
+    _id: string;
+    /** the user's database ID (who used this item) */
+    usedBy: string;
+    /** the item name */
+    item: SynthesizingItem;
+    /** the affected asset (bit or island) */
+    affectedAsset: 'bit' | 'island';
+    /** the island or bit id that the item was applied to */
+    islandOrBitId?: number;
+    /** when the item was consumed */
+    consumedTimestamp: number;
+    /**
+     * until when the item effect will last.
+     * 
+     * NOTE: if the item's `effectDuration` is `oneTime`, this will be set to `never`.
+     * this is only used for items that have a duration-based effect.
+     */
+    effectUntil: 'never' | number; 
 }
