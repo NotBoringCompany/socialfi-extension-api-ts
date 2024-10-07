@@ -185,5 +185,229 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 value: null
             }
         }
+    },
+    {
+        name: AugmentationItem.SCROLL_OF_AUGMENTATION,
+        description: `Select an Isle (Exotic rarity or below) and increase its resource cap by 3%.`,
+        minimumRarity: null,
+        maximumRarity: IslandType.EXOTIC_ISLES,
+        limitations: {
+            singleIslandUsage: {
+                active: true,
+                limit: 1
+            },
+            concurrentIslandsUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitUsage: {
+                active: false,
+                limit: null
+            },
+            concurrentBitsUsage: {
+                active: false,
+                limit: null
+            },
+            usableWhenAnotherSameItemActive: false
+        },
+        effectValues: {
+            affectedAsset: 'island',
+            resourceCapModifier: {
+                active: true,
+                type: 'percentage',
+                value: 3
+            },
+            resourceLineTransmutation: false,
+            gatheringRateModifier: {
+                active: false,
+                value: null
+            },
+            earningRateModifier: {
+                active: false,
+                value: null
+            },
+            placedBitsEnergyDepletionRateModifier: {
+                active: false,
+                value: null
+            },
+            bitTransferrableBetweenSeasons: {
+                active: false,
+                value: null
+            },
+            rerollBitTraits: {
+                active: false,
+                type: null,
+                result: null,
+                value: null
+            }
+        }
+    },
+    {
+        name: AugmentationItem.TOME_OF_AUGMENTATION,
+        description: `Select an Isle (Exotic rarity or below) and increase its resource cap by 7%.`,
+        minimumRarity: null,
+        maximumRarity: IslandType.EXOTIC_ISLES,
+        limitations: {
+            singleIslandUsage: {
+                active: true,
+                limit: 1
+            },
+            concurrentIslandsUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitUsage: {
+                active: false,
+                limit: null
+            },
+            concurrentBitsUsage: {
+                active: false,
+                limit: null
+            },
+            usableWhenAnotherSameItemActive: false
+        },
+        effectValues: {
+            affectedAsset: 'island',
+            resourceCapModifier: {
+                active: true,
+                type: 'percentage',
+                value: 7
+            },
+            resourceLineTransmutation: false,
+            gatheringRateModifier: {
+                active: false,
+                value: null
+            },
+            earningRateModifier: {
+                active: false,
+                value: null
+            },
+            placedBitsEnergyDepletionRateModifier: {
+                active: false,
+                value: null
+            },
+            bitTransferrableBetweenSeasons: {
+                active: false,
+                value: null
+            },
+            rerollBitTraits: {
+                active: false,
+                type: null,
+                result: null,
+                value: null
+            }
+        }
+    },
+    {
+        name: AugmentationItem.ANCIENT_SCROLL_OF_AUGMENTATION,
+        description: `Select an Isle (any rarity) and increase its resource cap by 10%.`,
+        minimumRarity: null,
+        maximumRarity: null,
+        limitations: {
+            singleIslandUsage: {
+                active: true,
+                limit: 1
+            },
+            concurrentIslandsUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitUsage: {
+                active: false,
+                limit: null
+            },
+            concurrentBitsUsage: {
+                active: false,
+                limit: null
+            },
+            usableWhenAnotherSameItemActive: false
+        },
+        effectValues: {
+            affectedAsset: 'island',
+            resourceCapModifier: {
+                active: true,
+                type: 'percentage',
+                value: 10
+            },
+            resourceLineTransmutation: false,
+            gatheringRateModifier: {
+                active: false,
+                value: null
+            },
+            earningRateModifier: {
+                active: false,
+                value: null
+            },
+            placedBitsEnergyDepletionRateModifier: {
+                active: false,
+                value: null
+            },
+            bitTransferrableBetweenSeasons: {
+                active: false,
+                value: null
+            },
+            rerollBitTraits: {
+                active: false,
+                type: null,
+                result: null,
+                value: null
+            }
+        }
+    },
+    {
+        name: AugmentationItem.ANCIENT_SCROLL_OF_AUGMENTATION,
+        description: `Select an Isle (any rarity) and increase its resource cap by 20%.`,
+        minimumRarity: null,
+        maximumRarity: null,
+        limitations: {
+            singleIslandUsage: {
+                active: true,
+                limit: 1
+            },
+            concurrentIslandsUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitUsage: {
+                active: false,
+                limit: null
+            },
+            concurrentBitsUsage: {
+                active: false,
+                limit: null
+            },
+            usableWhenAnotherSameItemActive: false
+        },
+        effectValues: {
+            affectedAsset: 'island',
+            resourceCapModifier: {
+                active: true,
+                type: 'percentage',
+                value: 20
+            },
+            resourceLineTransmutation: false,
+            gatheringRateModifier: {
+                active: false,
+                value: null
+            },
+            earningRateModifier: {
+                active: false,
+                value: null
+            },
+            placedBitsEnergyDepletionRateModifier: {
+                active: false,
+                value: null
+            },
+            bitTransferrableBetweenSeasons: {
+                active: false,
+                value: null
+            },
+            rerollBitTraits: {
+                active: false,
+                type: null,
+                result: null,
+                value: null
+            }
+        }
     }
 ]
