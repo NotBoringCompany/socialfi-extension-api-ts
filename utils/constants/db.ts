@@ -25,6 +25,7 @@ import { ShopAssetPurchaseSchema, ShopAssetSchema } from '../../schemas/Shop';
 import { CraftingQueueSchema } from '../../schemas/Craft';
 import { BanSchema } from '../../schemas/Ban';
 import { MailReceiverDataSchema, MailSchema } from '../../schemas/Mail';
+import { ConsumedSynthesizingItemSchema } from '../../schemas/Asset';
 
 
 const TEST_DATABASE = process.env.MONGODB_URI!;
