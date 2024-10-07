@@ -44,10 +44,10 @@ export const BASE_CRAFTING_DURATION_EPIC = 43200;
 export const BASE_CRAFTING_DURATION_LEGENDARY = 86400;
 
 // the base crafting duration to craft a specific rarity of INGOT ITEMS.
-export const BASE_CRAFTING_DURATION_COMMON_INGOT = 1;
-export const BASE_CRAFTING_DURATION_UNCOMMON_INGOT = 5;
-export const BASE_CRAFTING_DURATION_RARE_INGOT = 10;
-export const BASE_CRAFTING_DURATION_EPIC_INGOT = 15;
+export const BASE_CRAFTING_DURATION_COMMON_INGOT = 5;
+export const BASE_CRAFTING_DURATION_UNCOMMON_INGOT = 15;
+export const BASE_CRAFTING_DURATION_RARE_INGOT = 30;
+export const BASE_CRAFTING_DURATION_EPIC_INGOT = 60;
 
 // the required crafting level to craft a specific rarity of craftable assets.
 export const REQUIRED_CRAFTING_LEVEL_COMMON = 1;
