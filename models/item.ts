@@ -108,6 +108,7 @@ export enum ContinuumRelicItem {
 export enum PotionItem {
     POTION_OF_LUCK = 'Potion of Luck',
     POTION_OF_ENLIGHTENMENT = 'Potion of Enlightenment',
+    POTION_OF_UNHOLY_ENLIGHTENMENT = 'Potion of Unholy Enlightenment',
     POTION_OF_DIVINE_ENLIGHTENMENT = 'Potion of Divine Enlightenment',
 }
 

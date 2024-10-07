@@ -931,5 +931,232 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
             }
         }
     },
-    
+    {
+        name: PotionItem.POTION_OF_LUCK,
+        description: `Select a Bit and reroll one trait randomly.`,
+        minimumRarity: null,
+        maximumRarity: null,
+        limitations: {
+            singleIslandUsage: {
+                active: false,
+                limit: null
+            },
+            concurrentIslandsUsage: {
+                active: false,
+                limit: null,
+            },
+            singleBitUsage: {
+                active: true,
+                limit: 1
+            },
+            concurrentBitsUsage: {
+                active: false,
+                limit: null
+            },
+            notUsableWhenAnotherSameItemActive: false
+        },
+        effectValues: {
+            affectedAsset: 'bit',
+            effectDuration: 'oneTime', 
+            resourceCapModifier: {
+                active: false,
+                type: null,
+                value: null
+            },
+            resourceLineTransmutation: false,
+            gatheringRateModifier: {
+                active: false,
+                value: null
+            },
+            earningRateModifier: {
+                active: false,
+                value: null,
+            },
+            placedBitsEnergyDepletionRateModifier: {
+                active: false,
+                value: null,
+            },
+            bitTransferrableBetweenSeasons: {
+                active: false,
+                value: null,
+            },
+            rerollBitTraits: {
+                active: true,
+                type: 'random',
+                result: 'random',
+                value: 1
+            }
+        }
+    },
+    {
+        name: PotionItem.POTION_OF_ENLIGHTENMENT,
+        description: `Select a Bit and reroll all traits randomly.`,
+        minimumRarity: null,
+        maximumRarity: null,
+        limitations: {
+            singleIslandUsage: {
+                active: false,
+                limit: null
+            },
+            concurrentIslandsUsage: {
+                active: false,
+                limit: null,
+            },
+            singleBitUsage: {
+                active: true,
+                limit: 1
+            },
+            concurrentBitsUsage: {
+                active: false,
+                limit: null
+            },
+            notUsableWhenAnotherSameItemActive: false
+        },
+        effectValues: {
+            affectedAsset: 'bit',
+            effectDuration: 'oneTime', 
+            resourceCapModifier: {
+                active: false,
+                type: null,
+                value: null
+            },
+            resourceLineTransmutation: false,
+            gatheringRateModifier: {
+                active: false,
+                value: null
+            },
+            earningRateModifier: {
+                active: false,
+                value: null,
+            },
+            placedBitsEnergyDepletionRateModifier: {
+                active: false,
+                value: null,
+            },
+            bitTransferrableBetweenSeasons: {
+                active: false,
+                value: null,
+            },
+            rerollBitTraits: {
+                active: true,
+                type: 'random',
+                result: 'random',
+                value: 'all'
+            }
+        }
+    },
+    {
+        name: PotionItem.POTION_OF_UNHOLY_ENLIGHTENMENT,
+        description: `Select a Bit and select one trait to reroll randomly. A positive trait is guaranteed.`,
+        minimumRarity: null,
+        maximumRarity: null,
+        limitations: {
+            singleIslandUsage: {
+                active: false,
+                limit: null
+            },
+            concurrentIslandsUsage: {
+                active: false,
+                limit: null,
+            },
+            singleBitUsage: {
+                active: true,
+                limit: 1
+            },
+            concurrentBitsUsage: {
+                active: false,
+                limit: null
+            },
+            notUsableWhenAnotherSameItemActive: false
+        },
+        effectValues: {
+            affectedAsset: 'bit',
+            effectDuration: 'oneTime', 
+            resourceCapModifier: {
+                active: false,
+                type: null,
+                value: null
+            },
+            resourceLineTransmutation: false,
+            gatheringRateModifier: {
+                active: false,
+                value: null
+            },
+            earningRateModifier: {
+                active: false,
+                value: null,
+            },
+            placedBitsEnergyDepletionRateModifier: {
+                active: false,
+                value: null,
+            },
+            bitTransferrableBetweenSeasons: {
+                active: false,
+                value: null,
+            },
+            rerollBitTraits: {
+                active: true,
+                type: 'chosen',
+                result: 'onlyPositive',
+                value: 1
+            }
+        }
+    },
+    {
+        name: PotionItem.POTION_OF_DIVINE_ENLIGHTENMENT,
+        description: `Select a Bit and reroll all traits randomly. Positive traits are guaranteed.`,
+        minimumRarity: null,
+        maximumRarity: null,
+        limitations: {
+            singleIslandUsage: {
+                active: false,
+                limit: null
+            },
+            concurrentIslandsUsage: {
+                active: false,
+                limit: null,
+            },
+            singleBitUsage: {
+                active: true,
+                limit: 1
+            },
+            concurrentBitsUsage: {
+                active: false,
+                limit: null
+            },
+            notUsableWhenAnotherSameItemActive: false
+        },
+        effectValues: {
+            affectedAsset: 'bit',
+            effectDuration: 'oneTime', 
+            resourceCapModifier: {
+                active: false,
+                type: null,
+                value: null
+            },
+            resourceLineTransmutation: false,
+            gatheringRateModifier: {
+                active: false,
+                value: null
+            },
+            earningRateModifier: {
+                active: false,
+                value: null,
+            },
+            placedBitsEnergyDepletionRateModifier: {
+                active: false,
+                value: null,
+            },
+            bitTransferrableBetweenSeasons: {
+                active: false,
+                value: null,
+            },
+            rerollBitTraits: {
+                active: true,
+                type: 'random',
+                result: 'onlyPositive',
+                value: 'all'
+            }
+        }
+    },
 ]

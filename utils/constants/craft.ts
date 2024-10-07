@@ -882,6 +882,57 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
         },
         {
             craftedAssetData: {
+                asset: PotionItem.POTION_OF_UNHOLY_ENLIGHTENMENT,
+                assetType: 'item',
+                assetDescription: `Select a Bit and select one trait to reroll randomly. A positive trait is guaranteed.`,
+                assetRarity: CraftedAssetRarity.LEGENDARY,
+                assetEffectDuration: 'none'
+            },
+            craftingRecipeLine: CraftingRecipeLine.SYNTHESIZING,
+            // 24 hours
+            craftingDuration: BASE_CRAFTING_DURATION_LEGENDARY,
+            baseEnergyRequired: BASE_ENERGY_COST_LEGENDARY,
+            baseSuccessChance: 10000,
+            baseCritChance: 0,
+            obtainedPoints: 0,
+            requiredXCookies: 0,
+            requiredLevel: 1,
+            requiredCraftingLevel: REQUIRED_CRAFTING_LEVEL_LEGENDARY,
+            earnedXP: EARNED_XP_LEGENDARY,
+            weight: 0,
+            requiredAssetGroups: [
+                {
+                    requiredAssets: [
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: LiquidResource.WATER,
+                            requiredRarity: 'none',
+                            amount: 50
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: FruitResource.DRAGON_FRUIT,
+                            requiredRarity: 'none',
+                            amount: 5
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: LiquidResource.PHOENIX_TEAR,
+                            requiredRarity: 'none',
+                            amount: 5
+                        },
+                        {
+                            assetCategory: 'item',
+                            specificAsset: WonderArtefactItem.LIGHT_OF_WONDER,
+                            requiredRarity: 'none',
+                            amount: 2
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            craftedAssetData: {
                 asset: PotionItem.POTION_OF_DIVINE_ENLIGHTENMENT,
                 assetType: 'item',
                 assetDescription: `Select a Bit and reroll all traits randomly. Positive traits are guaranteed.`,
