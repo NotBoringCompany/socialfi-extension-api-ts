@@ -58,8 +58,8 @@ export const getLatestRaftId = async (): Promise<ReturnValue> => {
             // sort the raft ids in descending order and get the first one
             const latestRaft = await RaftModel.findOne().sort({ raftId: -1 }).lean();
 
-            // set the counter to the latest raft, also add expiration time to make sure the value up to date
-            await redis.set('counter.raftId', latestRaft?.raftId ?? 0, 'EX', 3600);
+            // set the counter to the latest raft
+            await redis.set('counter.raftId', latestRaft?.raftId ?? 0);
         }
 
         // increment the raft id counter

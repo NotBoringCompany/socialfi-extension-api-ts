@@ -1246,8 +1246,8 @@ export const getLatestBitId = async (): Promise<ReturnValue> => {
             // sort the bit ids in descending order and get the first one
             const latestBit = await BitModel.findOne().sort({ bitId: -1 }).lean();
 
-            // set the counter to the latest bit, also add expiration time to make sure the value up to date
-            await redis.set('counter.bitId', latestBit?.bitId ?? 0, 'EX', 3600);
+            // set the counter to the latest bit
+            await redis.set('counter.bitId', latestBit?.bitId ?? 0);
         }
 
         // increment the bit id counter
