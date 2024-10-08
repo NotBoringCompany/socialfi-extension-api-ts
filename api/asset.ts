@@ -268,7 +268,10 @@ export const consumeSynthesizingItem = async (
 
                     // if the trait already exists in the bit's current traits, reroll the trait.
                     if (bit.traits.includes(randomTrait)) {
+                        console.log(`Trait ${randomTrait.trait} already exists in the bit's traits. Rerolling...`);
                         continue;
+                    } else {
+                        console.log(`Trait ${randomTrait.trait} is unique.`);
                     }
 
                     // now, check if the trait already exists in the rerolled `traits` array
