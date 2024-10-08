@@ -68,7 +68,7 @@ export const consumeSynthesizingItem = async (
         }> = [];
 
         const islandUpdateOperations: Array<{
-            _id: string,
+            islandId: number,
             updateOperations: {
                 $set: {},
                 $inc: {},
@@ -377,13 +377,13 @@ export const consumeSynthesizingItem = async (
                 // 1. if the bit previously had any of these traits and still have them now, we don't need to do anything.
                 // 2. if the bit previously had any of these traits but now doesn't have them, we need to remove the modifiers from the user's islands.
                 // 3. if the bit didn't have any of these traits but now has them, we need to add the modifiers to the user's islands. 
-                const islands = user.inventory?.islandIds as number[];
+                const islandIds = user.inventory?.islandIds as number[];
 
                 // check if the bit has the infuential, antagonistic, famous or mannerless traits (but not querying `bit.traits`, rather querying the `updatedTraits` array).
-                const hasInfluentialTrait = updatedTraits.some(trait => trait.trait === 'Influential');
-                const hasAntagonisticTrait = updatedTraits.some(trait => trait.trait === 'Antagonistic');
-                const hasFamousTrait = updatedTraits.some(trait => trait.trait === 'Famous');
-                const hasMannerlessTrait = updatedTraits.some(trait => trait.trait === 'Mannerless');
+                const nowHasInfluentialTrait = updatedTraits.some(trait => trait.trait === 'Influential');
+                const nowHasAntagonisticTrait = updatedTraits.some(trait => trait.trait === 'Antagonistic');
+                const nowHasFamousTrait = updatedTraits.some(trait => trait.trait === 'Famous');
+                const nowHasMannerlessTrait = updatedTraits.some(trait => trait.trait === 'Mannerless');
 
                 // if bit has influential trait, add 1% working rate to all islands owned by the user
                 // if bit has antagonistic trait, reduce 1% working rate to all islands owned by the user
@@ -391,6 +391,194 @@ export const consumeSynthesizingItem = async (
                 // if bit has mannerless trait, reduce 0.5% working rate to all islands owned by the user
                 // the bit cannot have all 4, because influential and antagonistic are positive while famous and mannerless are negative of the same category.
                 // at most, the bit can only have influential AND antagonistic OR famous AND mannerless.
+                
+                // we need to check for any changes from the old traits (bit.traits) to the new traits (updatedTraits).
+                // for example, say the user previously had influential and famous and now only has influential.
+                // we need to remove the famous modifier from the user's islands.
+                const oldHasInfluentialTrait = bit.traits.some(trait => trait.trait === 'Influential');
+                const oldHasAntagonisticTrait = bit.traits.some(trait => trait.trait === 'Antagonistic');
+                const oldHasFamousTrait = bit.traits.some(trait => trait.trait === 'Famous');
+                const oldHasMannerlessTrait = bit.traits.some(trait => trait.trait === 'Mannerless');
+
+                for (const islandId of islandIds) {
+                    // if the bit now has the influential trait but didn't have it before, add the modifier.
+                    if (nowHasInfluentialTrait && !oldHasInfluentialTrait) {
+                        islandUpdateOperations.push({
+                            islandId,
+                            updateOperations: {
+                                $push: {
+                                    'islandStatsModifiers.gatheringRateModifiers': {
+                                        bitId: bit.bitId,
+                                        trait: 'Influential',
+                                        value: 1.01
+                                    },
+                                    'islandStatsModifiers.earningRateModifiers': {
+                                        bitId: bit.bitId,
+                                        trait: 'Influential',
+                                        value: 1.01
+                                    }
+                                },
+                                $pull: {},
+                                $set: {},
+                                $inc: {}
+                            }
+                        })
+                    }
+
+                    // if the bit now doesn't have the influential trait but had it before, remove the modifier.
+                    if (!nowHasInfluentialTrait && oldHasInfluentialTrait) {
+                        // a modifier consists of `origin` and `value`.
+                        // find the `origin` that says `Bit ID #{bit.bitId}'s Trait: Influential` and remove that modifier from both gathering and earning rate modifiers.
+                        islandUpdateOperations.push({
+                            islandId,
+                            updateOperations: {
+                                $pull: {
+                                    'islandStatsModifiers.gatheringRateModifiers': {
+                                        origin: `Bit ID #${bit.bitId}'s Trait: Influential`
+                                    },
+                                    'islandStatsModifiers.earningRateModifiers': {
+                                        origin: `Bit ID #${bit.bitId}'s Trait: Influential`
+                                    }
+                                },
+                                $push: {},
+                                $set: {},
+                                $inc: {}
+                            }
+                        })
+                    }
+
+                    // if the bit now has the antagonistic trait but didn't have it before, add the modifier.
+                    if (nowHasAntagonisticTrait && !oldHasAntagonisticTrait) {
+                        islandUpdateOperations.push({
+                            islandId,
+                            updateOperations: {
+                                $push: {
+                                    'islandStatsModifiers.gatheringRateModifiers': {
+                                        bitId: bit.bitId,
+                                        trait: 'Antagonistic',
+                                        value: 0.99
+                                    },
+                                    'islandStatsModifiers.earningRateModifiers': {
+                                        bitId: bit.bitId,
+                                        trait: 'Antagonistic',
+                                        value: 0.99
+                                    }
+                                },
+                                $pull: {},
+                                $set: {},
+                                $inc: {}
+                            }
+                        })
+                    }
+
+                    // if the bit now doesn't have the antagonistic trait but had it before, remove the modifier.
+                    if (!nowHasAntagonisticTrait && oldHasAntagonisticTrait) {
+                        islandUpdateOperations.push({
+                            islandId,
+                            updateOperations: {
+                                $pull: {
+                                    'islandStatsModifiers.gatheringRateModifiers': {
+                                        origin: `Bit ID #${bit.bitId}'s Trait: Antagonistic`
+                                    },
+                                    'islandStatsModifiers.earningRateModifiers': {
+                                        origin: `Bit ID #${bit.bitId}'s Trait: Antagonistic`
+                                    }
+                                },
+                                $push: {},
+                                $set: {},
+                                $inc: {}
+                            }
+                        })
+                    }
+
+                    // if the bit now has the famous trait but didn't have it before, add the modifier.
+                    if (nowHasFamousTrait && !oldHasFamousTrait) {
+                        islandUpdateOperations.push({
+                            islandId,
+                            updateOperations: {
+                                $push: {
+                                    'islandStatsModifiers.gatheringRateModifiers': {
+                                        bitId: bit.bitId,
+                                        trait: 'Famous',
+                                        value: 1.005
+                                    },
+                                    'islandStatsModifiers.earningRateModifiers': {
+                                        bitId: bit.bitId,
+                                        trait: 'Famous',
+                                        value: 1.005
+                                    }
+                                },
+                                $pull: {},
+                                $set: {},
+                                $inc: {}
+                            }
+                        })
+                    }
+
+                    // if the bit now doesn't have the famous trait but had it before, remove the modifier.
+                    if (!nowHasFamousTrait && oldHasFamousTrait) {
+                        islandUpdateOperations.push({
+                            islandId,
+                            updateOperations: {
+                                $pull: {
+                                    'islandStatsModifiers.gatheringRateModifiers': {
+                                        origin: `Bit ID #${bit.bitId}'s Trait: Famous`
+                                    },
+                                    'islandStatsModifiers.earningRateModifiers': {
+                                        origin: `Bit ID #${bit.bitId}'s Trait: Famous`
+                                    }
+                                },
+                                $push: {},
+                                $set: {},
+                                $inc: {}
+                            }
+                        })
+                    }
+
+                    // if the bit now has the mannerless trait but didn't have it before, add the modifier.
+                    if (nowHasMannerlessTrait && !oldHasMannerlessTrait) {
+                        islandUpdateOperations.push({
+                            islandId,
+                            updateOperations: {
+                                $push: {
+                                    'islandStatsModifiers.gatheringRateModifiers': {
+                                        bitId: bit.bitId,
+                                        trait: 'Mannerless',
+                                        value: 0.995
+                                    },
+                                    'islandStatsModifiers.earningRateModifiers': {
+                                        bitId: bit.bitId,
+                                        trait: 'Mannerless',
+                                        value: 0.995
+                                    }
+                                },
+                                $pull: {},
+                                $set: {},
+                                $inc: {}
+                            }
+                        })
+                    }
+
+                    // if the bit now doesn't have the mannerless trait but had it before, remove the modifier.
+                    if (!nowHasMannerlessTrait && oldHasMannerlessTrait) {
+                        islandUpdateOperations.push({
+                            islandId,
+                            updateOperations: {
+                                $pull: {
+                                    'islandStatsModifiers.gatheringRateModifiers': {
+                                        origin: `Bit ID #${bit.bitId}'s Trait: Mannerless`
+                                    },
+                                    'islandStatsModifiers.earningRateModifiers': {
+                                        origin: `Bit ID #${bit.bitId}'s Trait: Mannerless`
+                                    }
+                                },
+                                $push: {},
+                                $set: {},
+                                $inc: {}
+                            }
+                        })
+                    }
+                }
             }
         }
 
@@ -414,6 +602,53 @@ export const consumeSynthesizingItem = async (
         //// TO DO: IF EFFECT DURATION IS NOT ONE TIME, WE NEED TO ADD A BULL QUEUE HERE.
 
         // do the update operations.
+        const islandUpdatePromisesSetInc = islandUpdateOperations.length > 0 && islandUpdateOperations.map(async op => {
+            return IslandModel.updateOne({ islandId: op.islandId }, {
+                $set: op.updateOperations.$set,
+                $inc: op.updateOperations.$inc
+            });
+        });
+
+        const bitUpdatePromisesSetInc = bitUpdateOperations.length > 0 && bitUpdateOperations.map(async op => {
+            return BitModel.updateOne({ _id: op._id }, {
+                $set: op.updateOperations.$set,
+                $inc: op.updateOperations.$inc
+            });
+        });
+
+        const islandUpdatePromisesPushPull = islandUpdateOperations.length > 0 && islandUpdateOperations.map(async op => {
+            return IslandModel.updateOne({ islandId: op.islandId }, {
+                $push: op.updateOperations.$push,
+                $pull: op.updateOperations.$pull
+            });
+        })
+
+        const bitUpdatePromisesPushPull = bitUpdateOperations.length > 0 && bitUpdateOperations.map(async op => {
+            return BitModel.updateOne({ _id: op._id }, {
+                $push: op.updateOperations.$push,
+                $pull: op.updateOperations.$pull
+            });
+        })
+
+        // do the $set and $inc in one operation, and then $push and $pull in another.
+        await Promise.all([
+            UserModel.updateOne({ twitterId }, {
+                $set: userUpdateOperations.$set,
+                $inc: userUpdateOperations.$inc
+            }),
+            ...islandUpdatePromisesSetInc,
+            ...bitUpdatePromisesSetInc
+        ]);
+
+        await Promise.all([
+            ...islandUpdatePromisesPushPull,
+            ...bitUpdatePromisesPushPull
+        ]);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(consumeSynthesizingItem) Successfully consumed the item.`
+        }
     } catch (err: any) {
         return {
             status: Status.ERROR,
