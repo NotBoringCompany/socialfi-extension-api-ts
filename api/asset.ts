@@ -580,6 +580,8 @@ export const consumeSynthesizingItem = async (
                     }
                 }
             }
+
+            
         }
 
         // decrement the item amount in the user's inventory.
