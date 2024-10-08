@@ -3,7 +3,7 @@ import { SynthesizingItemGroup } from '../models/craft';
 import { Item, SynthesizingItem } from '../models/item';
 import { ResourceLine } from '../models/resource';
 import { GET_SYNTHESIZING_ITEM_TYPE, SYNTHESIZING_ITEM_DATA } from '../utils/constants/asset';
-import { BIT_TRAITS } from '../utils/constants/bit';
+import { BIT_TRAITS, getBitStatsModifiersFromTraits } from '../utils/constants/bit';
 import { BitModel, ConsumedSynthesizingItemModel, IslandModel, UserModel } from '../utils/constants/db';
 import { generateObjectId } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
@@ -320,7 +320,7 @@ export const consumeSynthesizingItem = async (
                         }
                     } else {
                         // else, we need to find the indexes of the bit's traits to replace.
-                        while (indexesToReplace.length < traits.length) {
+                        while (indexesToReplace.length < synthesizingItemData.effectValues.rerollBitTraits.value) {
                             const rand = Math.floor(Math.random() * bit.traits.length);
 
                             if (!indexesToReplace.includes(rand)) {
@@ -329,26 +329,40 @@ export const consumeSynthesizingItem = async (
                         }
                     }
                 }
+                // temp index to fetch the traits from the `traits` array.
+                let tempIndex = 0;
 
-                // now, we just need to replace the traits.
-                // for each index in `indexesToReplace`, we will replace the bit's trait with the new trait in an update operation.
-                for (let i = 0; i < indexesToReplace.length; i++) {
-                    const index = indexesToReplace[i];
+                const updatedTraits: BitTraitData[] = bit.traits.map((trait, index) => {
+                    // if the current index is NOT in the `indexesToReplace` array, return the current trait.
+                    // else, return a new trait from the `traits` array (in incrementing index order).
+                    if (!indexesToReplace.includes(index)) {
+                        return trait;
+                    } else {
+                        // return the new trait and increment the tempIndex.
+                        return traits[tempIndex++];
+                    }
+                })
 
-                    bitUpdateOperations.push({
-                        _id: bit._id,
-                        updateOperations: {
-                            $set: {
-                                [`traits.${index}`]: traits[i]
-                            },
-                            $push: {},
-                            $pull: {},
-                            $inc: {}
-                        }
-                    });
-                }
+                // with the new updated traits of the bit, get the bit stats modifiers and just override the existing one (we can do this safely).
+                const newStatsModifiers = getBitStatsModifiersFromTraits(updatedTraits.map(trait => trait.trait));
 
-                // 
+                // we just need to set the new list of traits to the bit.
+                bitUpdateOperations.push({
+                    _id: bit._id,
+                    updateOperations: {
+                        $set: {
+                            traits: updatedTraits,
+                            bitStatsModifiers: newStatsModifiers
+                        },
+                        $inc: {},
+                        $push: {},
+                        $pull: {}
+                    }
+                });
+
+                // now, we need to check if this bit is placed in an island. if yes, we may need to update the island's stats modifiers and other bits' stats modifiers
+                // if the bit has traits to affect the island or the placed bits.
+                //// TO DO!!!!!!!
             }
         }
 
