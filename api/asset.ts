@@ -329,7 +329,7 @@ export const consumeSynthesizingItem = async (
                 if (synthesizingItemData.effectValues.rerollBitTraits.type === 'chosen') {
                     // if the type is `chosen`, we need to find the indexes of the chosen traits in the bit's traits array.
                     chosenBitTraitsToReroll.forEach(trait => {
-                        const index = bit.traits.findIndex(t => t === trait);
+                        const index = (bit.traits as BitTraitData[]).findIndex(t => t.trait === trait);
 
                         console.log(`(consumeSynthesizingItem) Index of ${trait}: ${index}`);
 
@@ -357,7 +357,7 @@ export const consumeSynthesizingItem = async (
                 // temp index to fetch the traits from the `traits` array.
                 let tempIndex = 0;
 
-                const updatedTraits: BitTraitData[] = bit.traits.map((trait, index) => {
+                const updatedTraits: BitTraitData[] = (bit.traits as BitTraitData[]).map((trait, index) => {
                     // if the current index is NOT in the `indexesToReplace` array, return the current trait.
                     // else, return a new trait from the `traits` array (in incrementing index order).
                     if (!indexesToReplace.includes(index)) {
@@ -412,10 +412,10 @@ export const consumeSynthesizingItem = async (
                 // we need to check for any changes from the old traits (bit.traits) to the new traits (updatedTraits).
                 // for example, say the user previously had influential and famous and now only has influential.
                 // we need to remove the famous modifier from the user's islands.
-                const oldHasInfluentialTrait = bit.traits.some(trait => trait.trait === 'Influential');
-                const oldHasAntagonisticTrait = bit.traits.some(trait => trait.trait === 'Antagonistic');
-                const oldHasFamousTrait = bit.traits.some(trait => trait.trait === 'Famous');
-                const oldHasMannerlessTrait = bit.traits.some(trait => trait.trait === 'Mannerless');
+                const oldHasInfluentialTrait = (bit.traits as BitTraitData[]).some(trait => trait.trait === 'Influential');
+                const oldHasAntagonisticTrait = (bit.traits as BitTraitData[]).some(trait => trait.trait === 'Antagonistic');
+                const oldHasFamousTrait = (bit.traits as BitTraitData[]).some(trait => trait.trait === 'Famous');
+                const oldHasMannerlessTrait = (bit.traits as BitTraitData[]).some(trait => trait.trait === 'Mannerless');
 
                 for (const islandId of islandIds) {
                     // if the bit now has the influential trait but didn't have it before, add the modifier.
