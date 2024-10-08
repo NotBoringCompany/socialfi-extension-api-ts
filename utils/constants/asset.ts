@@ -946,8 +946,8 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 limit: null,
             },
             singleBitUsage: {
-                active: true,
-                limit: 1
+                active: false,
+                limit: null
             },
             concurrentBitsUsage: {
                 active: false,
@@ -1003,8 +1003,8 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 limit: null,
             },
             singleBitUsage: {
-                active: true,
-                limit: 1
+                active: false,
+                limit: null
             },
             concurrentBitsUsage: {
                 active: false,
@@ -1060,8 +1060,8 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 limit: null,
             },
             singleBitUsage: {
-                active: true,
-                limit: 1
+                active: false,
+                limit: null
             },
             concurrentBitsUsage: {
                 active: false,
@@ -1117,8 +1117,8 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 limit: null,
             },
             singleBitUsage: {
-                active: true,
-                limit: 1
+                active: false,
+                limit: null
             },
             concurrentBitsUsage: {
                 active: false,
