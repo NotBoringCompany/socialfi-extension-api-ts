@@ -1,6 +1,7 @@
 import { BitTrait, BitTraitData, BitTraitRarity } from '../models/bit';
 import { SynthesizingItemGroup } from '../models/craft';
 import { Item, SynthesizingItem } from '../models/item';
+import { Modifier } from '../models/modifier';
 import { ResourceLine } from '../models/resource';
 import { GET_SYNTHESIZING_ITEM_TYPE, SYNTHESIZING_ITEM_DATA } from '../utils/constants/asset';
 import { BIT_TRAITS, getBitStatsModifiersFromTraits } from '../utils/constants/bit';
@@ -170,6 +171,15 @@ export const consumeSynthesizingItem = async (
 
             // if `rerollBitTraits` is active, we will proceed to do the logic to reroll the bit's traits.
             if (synthesizingItemData.effectValues.rerollBitTraits.active) {
+                // we need to firstly check if the bit is placed in an island. if it is, we throw an error.
+                // the bit NEEDS to be unplaced first before the item can be consumed to reroll the traits.
+                if (bit.placedIslandId !== 0) {
+                    return {
+                        status: Status.ERROR,
+                        message: `(consumeSynthesizingItem) Bit is placed in an island. Please unplace the bit first.`
+                    }
+                }
+
                 // check if the type is `chosen`. if it is, we need to check the amount of traits that can be rerolled (the `value`).
                 if (synthesizingItemData.effectValues.rerollBitTraits.type === 'chosen') {
                     // if value is `null`, then there is an issue with the data.
@@ -360,9 +370,27 @@ export const consumeSynthesizingItem = async (
                     }
                 });
 
-                // now, we need to check if this bit is placed in an island. if yes, we may need to update the island's stats modifiers and other bits' stats modifiers
-                // if the bit has traits to affect the island or the placed bits.
-                //// TO DO!!!!!!!
+                // because this bit isn't placed in an island, we don't need to worry about updating the island's or the placed bit's (in the island) modifiers.
+                // we just need to check if the bit now has either: antagonistic, influential, famous or mannerless traits.
+                // these traits impact ALL of the user's islands' working rates.
+                // the logic is as follows:
+                // 1. if the bit previously had any of these traits and still have them now, we don't need to do anything.
+                // 2. if the bit previously had any of these traits but now doesn't have them, we need to remove the modifiers from the user's islands.
+                // 3. if the bit didn't have any of these traits but now has them, we need to add the modifiers to the user's islands. 
+                const islands = user.inventory?.islandIds as number[];
+
+                // check if the bit has the infuential, antagonistic, famous or mannerless traits (but not querying `bit.traits`, rather querying the `updatedTraits` array).
+                const hasInfluentialTrait = updatedTraits.some(trait => trait.trait === 'Influential');
+                const hasAntagonisticTrait = updatedTraits.some(trait => trait.trait === 'Antagonistic');
+                const hasFamousTrait = updatedTraits.some(trait => trait.trait === 'Famous');
+                const hasMannerlessTrait = updatedTraits.some(trait => trait.trait === 'Mannerless');
+
+                // if bit has influential trait, add 1% working rate to all islands owned by the user
+                // if bit has antagonistic trait, reduce 1% working rate to all islands owned by the user
+                // if bit has famous trait, add 0.5% working rate to all islands owned by the user
+                // if bit has mannerless trait, reduce 0.5% working rate to all islands owned by the user
+                // the bit cannot have all 4, because influential and antagonistic are positive while famous and mannerless are negative of the same category.
+                // at most, the bit can only have influential AND antagonistic OR famous AND mannerless.
             }
         }
 

@@ -88,34 +88,66 @@ export const consumeBitOrb = async (twitterId: string, bitOrbType: BitOrbType): 
         const hasFamousTrait = bit.traits.some(trait => trait.trait === 'Famous');
         const hasMannerlessTrait = bit.traits.some(trait => trait.trait === 'Mannerless');
 
-        // if bit has influential trait, add 1% working rate to all islands owned by the user
-        // if bit has antagonistic trait, reduce 1% working rate to all islands owned by the user
-        // if bit has famous trait, add 0.5% working rate to all islands owned by the user
-        // if bit has mannerless trait, reduce 0.5% working rate to all islands owned by the user
-        if (hasInfluentialTrait || hasAntagonisticTrait || hasFamousTrait || hasMannerlessTrait) {
-            const gatheringRateModifier: Modifier = {
-                origin: `Bit ID #${bit.bitId}'s Trait: ${hasInfluentialTrait ? 'Influential' : hasAntagonisticTrait ? 'Antagonistic' : hasFamousTrait ? 'Famous' : 'Mannerless'}`,
-                value: hasInfluentialTrait ? 1.01 : hasAntagonisticTrait ? 0.99 : hasFamousTrait ? 1.005 : 0.995
-            }
-            const earningRateModifier: Modifier = {
-                origin: `Bit ID #${bit.bitId}'s Trait: ${hasInfluentialTrait ? 'Influential' : hasAntagonisticTrait ? 'Antagonistic' : hasFamousTrait ? 'Famous' : 'Mannerless'}`,
-                value: hasInfluentialTrait ? 1.01 : hasAntagonisticTrait ? 0.99 : hasFamousTrait ? 1.005 : 0.995
-            }
+        const gatheringRateModifiers: Modifier[] = [];
+        const earningRateModifiers: Modifier[] = [];
 
-            for (const islandId of islands) {
-                islandUpdateOperations.push({
-                    islandId,
-                    updateOperations: {
-                        $push: {
-                            'islandStatsModifiers.gatheringRateModifiers': gatheringRateModifier,
-                            'islandStatsModifiers.earningRateModifiers': earningRateModifier
-                        },
-                        $set: {},
-                        $pull: {},
-                        $inc: {}
-                    }
-                });
-            }
+        if (hasInfluentialTrait) {
+            gatheringRateModifiers.push({
+                origin: `Bit ID #${bit.bitId}'s Trait: Influential`,
+                value: 1.01
+            });
+            earningRateModifiers.push({
+                origin: `Bit ID #${bit.bitId}'s Trait: Influential`,
+                value: 1.01
+            });
+        }
+
+        if (hasAntagonisticTrait) {
+            gatheringRateModifiers.push({
+                origin: `Bit ID #${bit.bitId}'s Trait: Antagonistic`,
+                value: 0.99
+            });
+            earningRateModifiers.push({
+                origin: `Bit ID #${bit.bitId}'s Trait: Antagonistic`,
+                value: 0.99
+            });
+        }
+
+        if (hasFamousTrait) {
+            gatheringRateModifiers.push({
+                origin: `Bit ID #${bit.bitId}'s Trait: Famous`,
+                value: 1.005
+            });
+            earningRateModifiers.push({
+                origin: `Bit ID #${bit.bitId}'s Trait: Famous`,
+                value: 1.005
+            });
+        }
+
+        if (hasMannerlessTrait) {
+            gatheringRateModifiers.push({
+                origin: `Bit ID #${bit.bitId}'s Trait: Mannerless`,
+                value: 0.995
+            });
+            earningRateModifiers.push({
+                origin: `Bit ID #${bit.bitId}'s Trait: Mannerless`,
+                value: 0.995
+            });
+        }
+
+        for (const islandId of islands) {
+            islandUpdateOperations.push({
+                islandId,
+                updateOperations: {
+                    $push: {
+                        'islandStatsModifiers.gatheringRateModifiers': { $each: gatheringRateModifiers },
+                        'islandStatsModifiers.earningRateModifiers': { $each: earningRateModifiers }
+                    },
+                    $set: {},
+                    $pull: {},
+                    $inc: {}
+                }
+            });
         }
 
         // add the bit ID to the user's inventory
