@@ -193,6 +193,7 @@ export const consumeSynthesizingItem = async (
                     // if the value is a number, we need to check if the chosenBitTraitsToReroll array has the same amount of elements as the value.
                     if (typeof synthesizingItemData.effectValues.rerollBitTraits.value === 'number') {
                         if (!chosenBitTraitsToReroll || chosenBitTraitsToReroll.length !== synthesizingItemData.effectValues.rerollBitTraits.value) {
+                            console.log(`(consumeSynthesizingItem) Chosen bit traits to reroll array length: ${chosenBitTraitsToReroll.length}, Value: ${synthesizingItemData.effectValues.rerollBitTraits.value}`);
                             return {
                                 status: Status.ERROR,
                                 message: `(consumeSynthesizingItem) User must input the correct amount of traits to reroll.`
@@ -275,9 +276,9 @@ export const consumeSynthesizingItem = async (
                     if (bit.traits.some(trait => trait.trait === randomTrait.trait)) {
                         console.log(`Trait ${randomTrait.trait} already exists in the bit's traits. Rerolling...`);
                         continue;
-                    } else {
-                        console.log(`Trait ${randomTrait.trait} is unique.`);
-                    }
+                    } 
+
+                    console.log(`Trait ${randomTrait.trait} is unique.`);
 
                     // now, check if the trait already exists in the rerolled `traits` array
                     if (!traits.includes(randomTrait)) {
