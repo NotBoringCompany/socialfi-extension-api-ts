@@ -194,6 +194,7 @@ export const consumeSynthesizingItem = async (
                     if (typeof synthesizingItemData.effectValues.rerollBitTraits.value === 'number') {
                         if (!chosenBitTraitsToReroll || chosenBitTraitsToReroll.length !== synthesizingItemData.effectValues.rerollBitTraits.value) {
                             console.log(`(consumeSynthesizingItem) Chosen bit traits to reroll array length: ${chosenBitTraitsToReroll.length}, Value: ${synthesizingItemData.effectValues.rerollBitTraits.value}`);
+                            
                             return {
                                 status: Status.ERROR,
                                 message: `(consumeSynthesizingItem) User must input the correct amount of traits to reroll.`
@@ -201,14 +202,24 @@ export const consumeSynthesizingItem = async (
                         }
 
                         // we need to also check if the chosen traits are valid (i.e. the bit needs to have ALL of the chosen traits).
-                        const bitTraits = bit.traits as BitTrait[];
+                        const bitTraits = bit.traits as BitTraitData[];
 
-                        if (!chosenBitTraitsToReroll.every(trait => bitTraits.includes(trait))) {
+                        // Each `bitTrait` instance in `bitTraits` is of BitTraitData type, while `chosenBitTraitsToReroll` is of BitTrait type.
+                        // we need to fetch the `bitTrait.trait` from each `bitTrait` instance and compare it with the `trait` from each `chosenBitTrait`
+                        // and ensure that the bit has all of the chosen traits to reroll.
+                        if (!chosenBitTraitsToReroll.every(trait => bitTraits.some(t => t.trait === trait))) {
                             return {
                                 status: Status.ERROR,
                                 message: `(consumeSynthesizingItem) Bit does not have all of the chosen traits to reroll.`
                             }
                         }
+
+                        // if (!chosenBitTraitsToReroll.every(trait => bitTraits.includes(trait))) {
+                        //     return {
+                        //         status: Status.ERROR,
+                        //         message: `(consumeSynthesizingItem) Bit does not have all of the chosen traits to reroll.`
+                        //     }
+                        // }
                     }
                 }
 
