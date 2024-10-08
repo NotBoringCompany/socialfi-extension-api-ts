@@ -580,8 +580,6 @@ export const consumeSynthesizingItem = async (
                     }
                 }
             }
-
-            
         }
 
         // decrement the item amount in the user's inventory.
@@ -604,33 +602,33 @@ export const consumeSynthesizingItem = async (
         //// TO DO: IF EFFECT DURATION IS NOT ONE TIME, WE NEED TO ADD A BULL QUEUE HERE.
 
         // do the update operations.
-        const islandUpdatePromisesSetInc = islandUpdateOperations.length > 0 && islandUpdateOperations.map(async op => {
+        const islandUpdatePromisesSetInc = islandUpdateOperations.length > 0 ? islandUpdateOperations.map(async op => {
             return IslandModel.updateOne({ islandId: op.islandId }, {
                 $set: op.updateOperations.$set,
                 $inc: op.updateOperations.$inc
             });
-        });
+        }) : [];
 
-        const bitUpdatePromisesSetInc = bitUpdateOperations.length > 0 && bitUpdateOperations.map(async op => {
+        const bitUpdatePromisesSetInc = bitUpdateOperations.length > 0 ? bitUpdateOperations.map(async op => {
             return BitModel.updateOne({ _id: op._id }, {
                 $set: op.updateOperations.$set,
                 $inc: op.updateOperations.$inc
             });
-        });
+        }) : [];
 
-        const islandUpdatePromisesPushPull = islandUpdateOperations.length > 0 && islandUpdateOperations.map(async op => {
+        const islandUpdatePromisesPushPull = islandUpdateOperations.length > 0 ? islandUpdateOperations.map(async op => {
             return IslandModel.updateOne({ islandId: op.islandId }, {
                 $push: op.updateOperations.$push,
                 $pull: op.updateOperations.$pull
             });
-        })
+        }) : [];
 
-        const bitUpdatePromisesPushPull = bitUpdateOperations.length > 0 && bitUpdateOperations.map(async op => {
+        const bitUpdatePromisesPushPull = bitUpdateOperations.length > 0 ? bitUpdateOperations.map(async op => {
             return BitModel.updateOne({ _id: op._id }, {
                 $push: op.updateOperations.$push,
                 $pull: op.updateOperations.$pull
             });
-        })
+        }) : [];
 
         // do the $set and $inc in one operation, and then $push and $pull in another.
         await Promise.all([
