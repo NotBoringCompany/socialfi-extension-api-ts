@@ -221,6 +221,8 @@ export const consumeSynthesizingItem = async (
                         ? bit.traits.length 
                         : synthesizingItemData.effectValues.rerollBitTraits.value;
 
+                console.log(`(consumeSynthesizingItems) Rerolling ${traitsToReroll} traits...`);
+
                 const traits: BitTraitData[] = [];
 
                 while (traits.length < traitsToReroll) {
@@ -355,6 +357,8 @@ export const consumeSynthesizingItem = async (
                         return traits[tempIndex++];
                     }
                 })
+
+                console.log(`(consumeSynthesizingItem) New traits: ${updatedTraits.map(trait => trait.trait).join(', ')}`);
 
                 // with the new updated traits of the bit, get the bit stats modifiers and just override the existing one (we can do this safely).
                 const newStatsModifiers = getBitStatsModifiersFromTraits(updatedTraits.map(trait => trait.trait));
