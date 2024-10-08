@@ -647,6 +647,9 @@ export const consumeSynthesizingItem = async (
             });
         }) : [];
 
+        console.log(`(consumeSynthesizingItem) island update promises $set and $inc: ${JSON.stringify(islandUpdatePromisesSetInc, null, 2)}`);
+        console.log(`(consumeSynthesizingItem) island update promises $push and $pull: ${JSON.stringify(islandUpdatePromisesPushPull, null, 2)}`);
+
         // do the $set and $inc in one operation, and then $push and $pull in another.
         await Promise.all([
             UserModel.updateOne({ twitterId }, {
