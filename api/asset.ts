@@ -213,13 +213,6 @@ export const consumeSynthesizingItem = async (
                                 message: `(consumeSynthesizingItem) Bit does not have all of the chosen traits to reroll.`
                             }
                         }
-
-                        // if (!chosenBitTraitsToReroll.every(trait => bitTraits.includes(trait))) {
-                        //     return {
-                        //         status: Status.ERROR,
-                        //         message: `(consumeSynthesizingItem) Bit does not have all of the chosen traits to reroll.`
-                        //     }
-                        // }
                     }
                 }
 
@@ -337,6 +330,8 @@ export const consumeSynthesizingItem = async (
                     // if the type is `chosen`, we need to find the indexes of the chosen traits in the bit's traits array.
                     chosenBitTraitsToReroll.forEach(trait => {
                         const index = bit.traits.findIndex(t => t === trait);
+
+                        console.log(`(consumeSynthesizingItem) Index of ${trait}: ${index}`);
 
                         if (index !== -1) {
                             indexesToReplace.push(index);
