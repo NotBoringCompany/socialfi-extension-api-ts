@@ -187,7 +187,7 @@ export const energyRecover = async (userId: string, energyRecover: number) => {
     const isUserExist = await UserModel.exists({ _id: userId })
     if (!isUserExist) throw new Error('User not found')
 
-    await UserModel.updateOne(
+    return await UserModel.updateOne(
       { _id: userId },
       { $inc: { 'inGameData.energy.currentEnergy': energyRecover } }
     )
