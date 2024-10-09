@@ -425,13 +425,11 @@ export const consumeSynthesizingItem = async (
                             updateOperations: {
                                 $push: {
                                     'islandStatsModifiers.gatheringRateModifiers': {
-                                        bitId: bit.bitId,
-                                        trait: 'Influential',
+                                        origin: `Bit ID #${bit.bitId}'s Trait: Influential`,
                                         value: 1.01
                                     },
                                     'islandStatsModifiers.earningRateModifiers': {
-                                        bitId: bit.bitId,
-                                        trait: 'Influential',
+                                        origin: `Bit ID #${bit.bitId}'s Trait: Influential`,
                                         value: 1.01
                                     }
                                 },
@@ -471,13 +469,11 @@ export const consumeSynthesizingItem = async (
                             updateOperations: {
                                 $push: {
                                     'islandStatsModifiers.gatheringRateModifiers': {
-                                        bitId: bit.bitId,
-                                        trait: 'Antagonistic',
+                                        origin: `Bit ID #${bit.bitId}'s Trait: Antagonistic`,
                                         value: 0.99
                                     },
                                     'islandStatsModifiers.earningRateModifiers': {
-                                        bitId: bit.bitId,
-                                        trait: 'Antagonistic',
+                                        origin: `Bit ID #${bit.bitId}'s Trait: Antagonistic`,
                                         value: 0.99
                                     }
                                 },
@@ -515,13 +511,11 @@ export const consumeSynthesizingItem = async (
                             updateOperations: {
                                 $push: {
                                     'islandStatsModifiers.gatheringRateModifiers': {
-                                        bitId: bit.bitId,
-                                        trait: 'Famous',
+                                        origin: `Bit ID #${bit.bitId}'s Trait: Famous`,
                                         value: 1.005
                                     },
                                     'islandStatsModifiers.earningRateModifiers': {
-                                        bitId: bit.bitId,
-                                        trait: 'Famous',
+                                        origin: `Bit ID #${bit.bitId}'s Trait: Famous`,
                                         value: 1.005
                                     }
                                 },
@@ -560,13 +554,11 @@ export const consumeSynthesizingItem = async (
                             updateOperations: {
                                 $push: {
                                     'islandStatsModifiers.gatheringRateModifiers': {
-                                        bitId: bit.bitId,
-                                        trait: 'Mannerless',
+                                        origin: `Bit ID #${bit.bitId}'s Trait: Mannerless`,
                                         value: 0.995
                                     },
                                     'islandStatsModifiers.earningRateModifiers': {
-                                        bitId: bit.bitId,
-                                        trait: 'Mannerless',
+                                        origin: `Bit ID #${bit.bitId}'s Trait: Mannerless`,
                                         value: 0.995
                                     }
                                 },
@@ -586,10 +578,10 @@ export const consumeSynthesizingItem = async (
                             updateOperations: {
                                 $pull: {
                                     'islandStatsModifiers.gatheringRateModifiers': {
-                                        origin: `Bit ID #${bit.bitId}'s Trait: Mannerless`
+                                        trait: `Bit ID #${bit.bitId}'s Trait: Mannerless`
                                     },
                                     'islandStatsModifiers.earningRateModifiers': {
-                                        origin: `Bit ID #${bit.bitId}'s Trait: Mannerless`
+                                        trait: `Bit ID #${bit.bitId}'s Trait: Mannerless`
                                     }
                                 },
                                 $push: {},
