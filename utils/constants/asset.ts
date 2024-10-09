@@ -127,6 +127,34 @@ export const GET_SYNTHESIZING_ITEM_TYPE = (item: string): SynthesizingItemGroup 
 }
 
 /**
+ * Maps each `SynthesizingItemGroup` to its corresponding enum.
+ */
+export const SYNTHESIZING_ITEM_ENUM_MAP: { [ key in SynthesizingItemGroup]: object } = {
+    [SynthesizingItemGroup.AUGMENTATION_ITEM]: AugmentationItem,
+    [SynthesizingItemGroup.TRANSMUTATION_ITEM]: TransmutationItem,
+    [SynthesizingItemGroup.ENERGY_TOTEM_ITEM]: EnergyTotemItem,
+    [SynthesizingItemGroup.CONTINUUM_RELIC_ITEM]: ContinuumRelicItem,
+    [SynthesizingItemGroup.POTION_ITEM]: PotionItem,
+}
+
+
+/**
+ * Fetches all enum members of the item type.
+ * 
+ * For example, if input is `Parchment of Augmentation`, it returns the enum members of `AugmentationItem`.
+ */
+export const GET_SYNTHESIZING_ITEM_MEMBERS = (item: string): string[] | undefined => {
+    const itemType = GET_SYNTHESIZING_ITEM_TYPE(item);
+
+    if (itemType) {
+        const itemEnum = SYNTHESIZING_ITEM_ENUM_MAP[itemType];
+        return Object.values(itemEnum) as string[];
+    }
+
+    return undefined;
+}
+
+/**
  * Returns the data for all synthesizing items, including their effects, limitations and so on.
  */
 export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
@@ -137,14 +165,22 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         maximumRarity: IslandType.EXOTIC_ISLES,
         limitations: {
             singleIslandUsage: {
+                active: false,
+                limit: null
+            },
+            singleIslandCategoryUsage: {
                 active: true,
-                limit: 1
+                limit: 1,
             },
             concurrentIslandsUsage: {
                 active: false,
                 limit: null
             },
             singleBitUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitCategoryUsage: {
                 active: false,
                 limit: null
             },
@@ -162,7 +198,12 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 type: 'percentage',
                 value: 1
             },
-            resourceLineTransmutation: false,
+            rerollIslandTraits: {
+                active: false,
+                type: null,
+                allowDuplicates: true,
+                value: null
+            },
             gatheringRateModifier: {
                 active: false,
                 value: null
@@ -194,14 +235,22 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         maximumRarity: IslandType.EXOTIC_ISLES,
         limitations: {
             singleIslandUsage: {
+                active: false,
+                limit: null
+            },
+            singleIslandCategoryUsage: {
                 active: true,
-                limit: 1
+                limit: 1,
             },
             concurrentIslandsUsage: {
                 active: false,
                 limit: null
             },
             singleBitUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitCategoryUsage: {
                 active: false,
                 limit: null
             },
@@ -219,7 +268,12 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 type: 'percentage',
                 value: 3
             },
-            resourceLineTransmutation: false,
+            rerollIslandTraits: {
+                active: false,
+                type: null,
+                allowDuplicates: true,
+                value: null
+            },
             gatheringRateModifier: {
                 active: false,
                 value: null
@@ -251,14 +305,22 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         maximumRarity: IslandType.EXOTIC_ISLES,
         limitations: {
             singleIslandUsage: {
+                active: false,
+                limit: null
+            },
+            singleIslandCategoryUsage: {
                 active: true,
-                limit: 1
+                limit: 1,
             },
             concurrentIslandsUsage: {
                 active: false,
                 limit: null
             },
             singleBitUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitCategoryUsage: {
                 active: false,
                 limit: null
             },
@@ -276,7 +338,12 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 type: 'percentage',
                 value: 7
             },
-            resourceLineTransmutation: false,
+            rerollIslandTraits: {
+                active: false,
+                type: null,
+                allowDuplicates: true,
+                value: null
+            },
             gatheringRateModifier: {
                 active: false,
                 value: null
@@ -308,14 +375,22 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         maximumRarity: null,
         limitations: {
             singleIslandUsage: {
+                active: false,
+                limit: null
+            },
+            singleIslandCategoryUsage: {
                 active: true,
-                limit: 1
+                limit: 1,
             },
             concurrentIslandsUsage: {
                 active: false,
                 limit: null
             },
             singleBitUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitCategoryUsage: {
                 active: false,
                 limit: null
             },
@@ -333,7 +408,12 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 type: 'percentage',
                 value: 10
             },
-            resourceLineTransmutation: false,
+            rerollIslandTraits: {
+                active: false,
+                type: null,
+                allowDuplicates: true,
+                value: null
+            },
             gatheringRateModifier: {
                 active: false,
                 value: null
@@ -365,14 +445,22 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         maximumRarity: null,
         limitations: {
             singleIslandUsage: {
+                active: false,
+                limit: null
+            },
+            singleIslandCategoryUsage: {
                 active: true,
-                limit: 1
+                limit: 1,
             },
             concurrentIslandsUsage: {
                 active: false,
                 limit: null
             },
             singleBitUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitCategoryUsage: {
                 active: false,
                 limit: null
             },
@@ -390,7 +478,12 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 type: 'percentage',
                 value: 20
             },
-            resourceLineTransmutation: false,
+            rerollIslandTraits: {
+                active: false,
+                type: null,
+                allowDuplicates: true,
+                value: null
+            },
             gatheringRateModifier: {
                 active: false,
                 value: null
@@ -417,11 +510,15 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
     },
     {
         name: TransmutationItem.WAND_OF_TRANSMUTATION,
-        description: `Select an Isle (Verdant rarity or below) and transmute the Isle's current resource line into another line.`,
+        description: `Select an Isle (Exotic rarity or below) and randomly transmute all of the Isle's current traits.`,
         minimumRarity: null,
-        maximumRarity: IslandType.VERDANT_ISLES,
+        maximumRarity: IslandType.EXOTIC_ISLES,
         limitations: {
             singleIslandUsage: {
+                active: false,
+                limit: null
+            },
+            singleIslandCategoryUsage: {
                 active: false,
                 limit: null
             },
@@ -430,6 +527,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 limit: null
             },
             singleBitUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitCategoryUsage: {
                 active: false,
                 limit: null
             },
@@ -447,7 +548,12 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 type: null,
                 value: null
             },
-            resourceLineTransmutation: true,
+            rerollIslandTraits: {
+                active: true,
+                type: 'random',
+                allowDuplicates: true,
+                value: 'all'
+            },
             gatheringRateModifier: {
                 active: false,
                 value: null
@@ -474,11 +580,15 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
     },
     {
         name: TransmutationItem.STAFF_OF_TRANSMUTATION,
-        description: `Select an Isle (Exotic rarity or below) and transmute the Isle's current resource line into another line.`,
+        description: `Select an Isle (any rarity) and randomly transmute all of the Isle's current traits.`,
         minimumRarity: null,
-        maximumRarity: IslandType.EXOTIC_ISLES,
+        maximumRarity: null,
         limitations: {
             singleIslandUsage: {
+                active: false,
+                limit: null
+            },
+            singleIslandCategoryUsage: {
                 active: false,
                 limit: null
             },
@@ -487,6 +597,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 limit: null
             },
             singleBitUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitCategoryUsage: {
                 active: false,
                 limit: null
             },
@@ -504,7 +618,12 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 type: null,
                 value: null
             },
-            resourceLineTransmutation: true,
+            rerollIslandTraits: {
+                active: true,
+                type: 'random',
+                allowDuplicates: true,
+                value: 'all'
+            },
             gatheringRateModifier: {
                 active: false,
                 value: null
@@ -531,11 +650,15 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
     },
     {
         name: TransmutationItem.ROYAL_SCEPTER_OF_TRANSMUTATION,
-        description: `Select an Isle (any rarity) and transmute the Isle's current resource line into another line.`,
+        description: `Select an Isle (any rarity) and choose a trait to transmute all of the Isle's current traits into.`,
         minimumRarity: null,
         maximumRarity: null,
         limitations: {
             singleIslandUsage: {
+                active: false,
+                limit: null
+            },
+            singleIslandCategoryUsage: {
                 active: false,
                 limit: null
             },
@@ -544,6 +667,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 limit: null
             },
             singleBitUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitCategoryUsage: {
                 active: false,
                 limit: null
             },
@@ -561,7 +688,12 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 type: null,
                 value: null
             },
-            resourceLineTransmutation: true,
+            rerollIslandTraits: {
+                active: true,
+                type: 'chosen',
+                allowDuplicates: false,
+                value: 'all'
+            },
             gatheringRateModifier: {
                 active: false,
                 value: null
@@ -596,11 +728,19 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
+            singleIslandCategoryUsage: {
+                active: false,
+                limit: null
+            },
             concurrentIslandsUsage: {
                 active: true,
                 limit: 5
             },
             singleBitUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitCategoryUsage: {
                 active: false,
                 limit: null
             },
@@ -619,7 +759,12 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 type: null,
                 value: null
             },
-            resourceLineTransmutation: false,
+            rerollIslandTraits: {
+                active: false,
+                type: null,
+                allowDuplicates: true,
+                value: null
+            },
             gatheringRateModifier: {
                 active: true,
                 value: 2.5
@@ -654,11 +799,19 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
+            singleIslandCategoryUsage: {
+                active: false,
+                limit: null
+            },
             concurrentIslandsUsage: {
                 active: true,
                 limit: 5
             },
             singleBitUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitCategoryUsage: {
                 active: false,
                 limit: null
             },
@@ -677,7 +830,12 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 type: null,
                 value: null
             },
-            resourceLineTransmutation: false,
+            rerollIslandTraits: {
+                active: false,
+                type: null,
+                allowDuplicates: true,
+                value: null
+            },
             gatheringRateModifier: {
                 active: true,
                 value: 5
@@ -712,11 +870,19 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
+            singleIslandCategoryUsage: {
+                active: false,
+                limit: null
+            },
             concurrentIslandsUsage: {
                 active: true,
                 limit: 5
             },
             singleBitUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitCategoryUsage: {
                 active: false,
                 limit: null
             },
@@ -735,7 +901,12 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 type: null,
                 value: null
             },
-            resourceLineTransmutation: false,
+            rerollIslandTraits: {
+                active: false,
+                type: null,
+                allowDuplicates: true,
+                value: null
+            },
             gatheringRateModifier: {
                 active: true,
                 value: 7.5
@@ -770,11 +941,19 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
+            singleIslandCategoryUsage: {
+                active: false,
+                limit: null
+            },
             concurrentIslandsUsage: {
                 active: false,
                 limit: null,
             },
             singleBitUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitCategoryUsage: {
                 active: true,
                 limit: 1
             },
@@ -792,7 +971,12 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 type: null,
                 value: null
             },
-            resourceLineTransmutation: false,
+            rerollIslandTraits: {
+                active: false,
+                type: null,
+                allowDuplicates: true,
+                value: null
+            },
             gatheringRateModifier: {
                 active: false,
                 value: null
@@ -827,11 +1011,19 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
+            singleIslandCategoryUsage: {
+                active: false,
+                limit: null
+            },
             concurrentIslandsUsage: {
                 active: false,
                 limit: null,
             },
             singleBitUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitCategoryUsage: {
                 active: true,
                 limit: 1
             },
@@ -849,7 +1041,12 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 type: null,
                 value: null
             },
-            resourceLineTransmutation: false,
+            rerollIslandTraits: {
+                active: false,
+                type: null,
+                allowDuplicates: true,
+                value: null
+            },
             gatheringRateModifier: {
                 active: false,
                 value: null
@@ -884,11 +1081,19 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
+            singleIslandCategoryUsage: {
+                active: false,
+                limit: null
+            },
             concurrentIslandsUsage: {
                 active: false,
                 limit: null,
             },
             singleBitUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitCategoryUsage: {
                 active: true,
                 limit: 1
             },
@@ -906,7 +1111,12 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 type: null,
                 value: null
             },
-            resourceLineTransmutation: false,
+            rerollIslandTraits: {
+                active: false,
+                type: null,
+                allowDuplicates: true,
+                value: null
+            },
             gatheringRateModifier: {
                 active: false,
                 value: null
@@ -941,11 +1151,19 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
+            singleIslandCategoryUsage: {
+                active: false,
+                limit: null
+            },
             concurrentIslandsUsage: {
                 active: false,
                 limit: null,
             },
             singleBitUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitCategoryUsage: {
                 active: false,
                 limit: null
             },
@@ -963,7 +1181,12 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 type: null,
                 value: null
             },
-            resourceLineTransmutation: false,
+            rerollIslandTraits: {
+                active: false,
+                type: null,
+                allowDuplicates: true,
+                value: null
+            },
             gatheringRateModifier: {
                 active: false,
                 value: null
@@ -998,11 +1221,19 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
+            singleIslandCategoryUsage: {
+                active: false,
+                limit: null
+            },
             concurrentIslandsUsage: {
                 active: false,
                 limit: null,
             },
             singleBitUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitCategoryUsage: {
                 active: false,
                 limit: null
             },
@@ -1020,7 +1251,12 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 type: null,
                 value: null
             },
-            resourceLineTransmutation: false,
+            rerollIslandTraits: {
+                active: false,
+                type: null,
+                allowDuplicates: true,
+                value: null
+            },
             gatheringRateModifier: {
                 active: false,
                 value: null
@@ -1055,11 +1291,19 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
+            singleIslandCategoryUsage: {
+                active: false,
+                limit: null
+            },
             concurrentIslandsUsage: {
                 active: false,
                 limit: null,
             },
             singleBitUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitCategoryUsage: {
                 active: false,
                 limit: null
             },
@@ -1077,7 +1321,12 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 type: null,
                 value: null
             },
-            resourceLineTransmutation: false,
+            rerollIslandTraits: {
+                active: false,
+                type: null,
+                allowDuplicates: true,
+                value: null
+            },
             gatheringRateModifier: {
                 active: false,
                 value: null
@@ -1112,11 +1361,19 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
+            singleIslandCategoryUsage: {
+                active: false,
+                limit: null
+            },
             concurrentIslandsUsage: {
                 active: false,
                 limit: null,
             },
             singleBitUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitCategoryUsage: {
                 active: false,
                 limit: null
             },
@@ -1134,7 +1391,12 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 type: null,
                 value: null
             },
-            resourceLineTransmutation: false,
+            rerollIslandTraits: {
+                active: false,
+                type: null,
+                allowDuplicates: true,
+                value: null
+            },
             gatheringRateModifier: {
                 active: false,
                 value: null

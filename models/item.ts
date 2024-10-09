@@ -4,7 +4,7 @@
 import { BitRarity } from './bit';
 import { BoosterItem } from './booster';
 import { IslandType } from './island';
-import { ResourceLine } from './resource';
+import { ResourceLine, ResourceRarity } from './resource';
 
 /**
  * Represents an item.
@@ -163,6 +163,15 @@ export interface SynthesizingItemData {
 export interface SynthesizingItemLimitations {
     /** if this item has a usage limit per island (i.e. how many of this item can be used on a single island) IN TOTAL */
     singleIslandUsage: SynthesizingItemLimitationNumerical;
+    /** 
+     * if this item has a usage limit counted towards the item's category/type per island (i.e. how many of ANY item within the item's category (e.g. augmentation, etc) can be used on a single island) IN TOTAL 
+     * 
+     * for instance, say an island allows 2 for `singleIslandCategoryUsage.limit`. The user has already used 1 of CategoryA.ItemA.
+     * the user then can only use 1 more item from CategoryA, regardless if it's ItemA, ItemB, etc.
+     * 
+     * unlike `singleIslandUsage`, this is a category limit, not a single item limit.
+     */
+    singleIslandCategoryUsage: SynthesizingItemLimitationNumerical;
     /**
      * how many of this item can be used on multiple islands concurrently. for example, if the limit is 5, and the `islandUsage.limit` is 1,
      * then the item can be used UP TO 5 islands at the same time, but only 1 on each island. (not in total)
@@ -170,6 +179,15 @@ export interface SynthesizingItemLimitations {
     concurrentIslandsUsage: SynthesizingItemLimitationNumerical;
     /** if this item has a usage limit per bit (i.e. how many of this item can be used on a single bit) IN TOTAL */
     singleBitUsage: SynthesizingItemLimitationNumerical;
+    /**
+     * if this item has a usage limit counted towards the item's category/type per bit (i.e. how many of ANY item within the item's category (e.g. augmentation, etc) can be used on a single bit) IN TOTAL
+     * 
+     * for instance, say a bit allows 2 for `singleBitCategoryUsage.limit`. The user has already used 1 of CategoryA.ItemA.
+     * the user then can only use 1 more item from CategoryA, regardless if it's ItemA, ItemB, etc.
+     * 
+     * unlike `singleBitUsage`, this is a category limit, not a single item limit.
+     */
+    singleBitCategoryUsage: SynthesizingItemLimitationNumerical;
     /**
      * how many of this item can be used on multiple bits concurrently. for example, if the limit is 5, and the `bitUsage.limit` is 1,
      * then the item can be used UP TO 5 bits at the same time, but only 1 on each bit. (not in total)
@@ -223,13 +241,36 @@ export interface SynthesizingItemEffectValues {
         value: number;
     }
     /**
-     * if the item transmutes a resource line of an island, this will be the data for the transmutation.
-     * 
-     * transmuting a resource line means converting the current resource line to another resource line of their choice.
-     * 
-     * NOTE: they CANNOT transmute to the same resource line.
+     * if the item rerolls the traits of an island.
      */
-    resourceLineTransmutation: boolean,
+    rerollIslandTraits: {
+        /** if this effect is active on this item */
+        active: boolean;
+        /** 
+         * the type of reroll.
+         * 
+         * if `type` is `random`, the system will randomly reroll `value` traits.
+         * for example, if `value` is ['Common', 'Uncommon'], the system will randomly reroll the traits for both the common and uncommon resources.
+         * 
+         * if `type` is `chosen`, the user can choose `value` of traits to reroll.
+         * 
+         * 
+         */
+        type: 'random' | 'chosen' | null;
+        /**
+         * if `allowDuplicates` is true, each rerolled trait can be the same as the original trait (meaning that the original trait is added to the pool of possible traits).
+         * 
+         * NOTE: this is only used if `type` is `random`.
+         */
+        allowDuplicates: boolean;
+        /**
+         * the resource rarities to reroll.
+         * 
+         * if `all`, then ALL resource rarities will be rerolled.
+         * if an array of resource rarities, then only those resource rarities will be rerolled.
+         */
+        value: ResourceRarity[] | 'all' | null;
+    },
     /**
      * increases OR decreases the gathering rate of an island (%), depending on the value specified.
      */

@@ -1,10 +1,10 @@
 import { BitRarityNumeric, BitTrait, BitTraitData, BitTraitRarity } from '../models/bit';
 import { SynthesizingItemGroup } from '../models/craft';
-import { IslandRarityNumeric } from '../models/island';
+import { IslandRarityNumeric, IslandTrait } from '../models/island';
 import { Item, SynthesizingItem } from '../models/item';
 import { Modifier } from '../models/modifier';
-import { ResourceLine } from '../models/resource';
-import { GET_SYNTHESIZING_ITEM_TYPE, SYNTHESIZING_ITEM_DATA } from '../utils/constants/asset';
+import { ResourceLine, ResourceRarity } from '../models/resource';
+import { GET_SYNTHESIZING_ITEM_MEMBERS, GET_SYNTHESIZING_ITEM_TYPE, SYNTHESIZING_ITEM_DATA } from '../utils/constants/asset';
 import { BIT_TRAITS, getBitStatsModifiersFromTraits } from '../utils/constants/bit';
 import { BitModel, ConsumedSynthesizingItemModel, IslandModel, UserModel } from '../utils/constants/db';
 import { generateObjectId } from '../utils/crypto';
@@ -21,9 +21,14 @@ export const consumeSynthesizingItem = async (
      */
     islandOrBitId?: number,
     /**
-     * the new resource line that will be applied to the island.
+     * the new traits that will be applied to the island for each resource rarity.
+     * 
+     * NOTE: if `rerollIslandTraits.value` is `all`, then `newTraits` SHOULD contain the new traits for all resource rarities (i.e. common to legendary).
      */
-    newResourceLine?: ResourceLine,
+    newTraits?: Array<{
+        rarity: ResourceRarity,
+        trait: IslandTrait
+    }>,
     /**
      * if the item is to reroll a bit's traits, this array will contain the names of the traits to reroll.
      * for instance, say a bit has 'Trait A' and 'Trait B' and this item allows 1 trait to be rerolled.
@@ -127,16 +132,37 @@ export const consumeSynthesizingItem = async (
 
             // check if there are any `singleBitUsage` or `concurrentBitsUsage` limitations for this item.
             const singleBitUsageLimit = synthesizingItemData.limitations.singleBitUsage.limit;
+            const singleBitCategoryUsageLimit = synthesizingItemData.limitations.singleBitCategoryUsage.limit;
             const concurrentBitsUsageLimit = synthesizingItemData.limitations.concurrentBitsUsage.limit;
+
+            // if `singleBitUsageLimit` OR `concurrentBitsUsageLimit` is not null, we check for any consumed instances of this particular item only.
+            // if `singleBitCategoryUsageLimit` is not null, we check for any consumed instances of ANY item in the same category/type.
+            const itemsToSearch = (): SynthesizingItem | SynthesizingItem[] | string | string[] => {
+                if (singleBitUsageLimit !== null || concurrentBitsUsageLimit !== null) {
+                    return item;
+                }
+
+                if (singleBitCategoryUsageLimit !== null) {
+                    // get all the enum members of the item type/category
+                    // for example, if item is `Parchment of Augmentation`, then return all augmentation item enum members.
+                    const itemTypeMembers = GET_SYNTHESIZING_ITEM_MEMBERS(item);
+
+                    if (!itemTypeMembers) {
+                        return null;
+                    }
+
+                    return itemTypeMembers;
+                }
+            }
 
             const usedItemInstances = await ConsumedSynthesizingItemModel.find({
                 usedBy: user._id,
-                item,
+                item: Array.isArray(itemsToSearch()) ? { $in: itemsToSearch() } : itemsToSearch(),
                 affectedAsset,
             }).lean();
 
-            if (singleBitUsageLimit !== null) {
-                // check if the user has used the item on this bit before.
+            if (singleBitUsageLimit !== null || singleBitCategoryUsageLimit !== null) {
+                // check if the user has used the item (or if `singleBitCategoryUsageLimit`, if ANY item within the item category/type has been used) on this bit before.
                 const usedOnThisBitCount = usedItemInstances.filter(i => i.islandOrBitId === islandOrBitId).length;
 
                 if (usedOnThisBitCount >= singleBitUsageLimit) {
@@ -638,18 +664,39 @@ export const consumeSynthesizingItem = async (
                 }
             }
 
-            // check if the item has a `singleIslandUsage` or `concurrentIslandsUsage` limitation.
+            // check if the item has a `singleIslandUsage`, `singleIslandCategoryUsage` or `concurrentIslandsUsage` limitation.
             const singleIslandUsageLimit = synthesizingItemData.limitations.singleIslandUsage.limit;
+            const singleIslandCategoryUsageLimit = synthesizingItemData.limitations.singleIslandCategoryUsage.limit;
             const concurrentIslandsUsageLimit = synthesizingItemData.limitations.concurrentIslandsUsage.limit;
+
+            // if `singleIslandUsageLimit` OR `concurrentIslandsUsageLimit` is not null, we check for any consumed instances of this particular item only.
+            // if `singleIslandCategoryUsageLimit` is not null, we check for any consumed instances of ANY item in the same category/type.
+            const itemsToSearch = (): SynthesizingItem | SynthesizingItem[] | string | string[] => {
+                if (singleIslandUsageLimit !== null || concurrentIslandsUsageLimit !== null) {
+                    return item;
+                }
+
+                if (singleIslandCategoryUsageLimit !== null) {
+                    // get all the enum members of the item type/category
+                    // for example, if item is `Parchment of Augmentation`, then return all augmentation item enum members.
+                    const itemTypeMembers = GET_SYNTHESIZING_ITEM_MEMBERS(item);
+
+                    if (!itemTypeMembers) {
+                        return null;
+                    }
+
+                    return itemTypeMembers;
+                }
+            }
 
             const usedItemInstances = await ConsumedSynthesizingItemModel.find({
                 usedBy: user._id,
-                item,
+                item: Array.isArray(itemsToSearch()) ? { $in: itemsToSearch() } : itemsToSearch(),
                 affectedAsset,
             }).lean();
 
-            if (singleIslandUsageLimit !== null) {
-                // check if the user has used the item on this island before.
+            if (singleIslandUsageLimit !== null || singleIslandCategoryUsageLimit !== null) {
+                // check if the user has used the item (or, if `singleIslandCategoryUsageLimit`, if ANY item within the item category/type has been used) on this island before.
                 const usedOnThisIslandCount = usedItemInstances.filter(i => i.islandOrBitId === islandOrBitId).length;
 
                 if (usedOnThisIslandCount >= singleIslandUsageLimit) {
@@ -698,7 +745,7 @@ export const consumeSynthesizingItem = async (
                 // if `percentage`, then it will be (100 + value)% of the current resource cap.
                 const newResourceCap = synthesizingItemData.effectValues.resourceCapModifier.type === 'fixed'
                     ? currentResourceCap + synthesizingItemData.effectValues.resourceCapModifier.value
-                    : (currentResourceCap * (100 + synthesizingItemData.effectValues.resourceCapModifier.value) / 100);
+                    : Math.floor(currentResourceCap * (100 + synthesizingItemData.effectValues.resourceCapModifier.value) / 100);
 
                 islandUpdateOperations.push({
                     islandId: island.islandId,
@@ -712,6 +759,29 @@ export const consumeSynthesizingItem = async (
                     }
                 });
             }
+
+            // // check if this item transmutes the traits of the island
+            // if (synthesizingItemData.effectValues.traitTransmutation) {
+            //     // // check if the resource line to transmute to exists and is valid.
+            //     // if (!newResourceLine) {
+            //     //     return {
+            //     //         status: Status.ERROR,
+            //     //         message: `(consumeSynthesizingItem) New resource line not provided.`
+            //     //     }
+            //     // }
+
+            //     // // check if the inputted resource line exists in the ResourceLine enum
+            //     // if (!Object.values(ResourceLine).includes(newResourceLine)) {
+            //     //     return {
+            //     //         status: Status.ERROR,
+            //     //         message: `(consumeSynthesizingItem) New resource line is invalid.`
+            //     //     }
+            //     // }
+
+
+            //     // // get the current resource line of the island
+            //     // const currentResourceLine = island.islan;
+            // }
         }
 
         // decrement the item amount in the user's inventory.
