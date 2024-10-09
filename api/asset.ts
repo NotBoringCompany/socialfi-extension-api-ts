@@ -548,7 +548,6 @@ export const consumeSynthesizingItem = async (
 
                     // if the bit now has the mannerless trait but didn't have it before, add the modifier.
                     if (nowHasMannerlessTrait && !oldHasMannerlessTrait) {
-                        console.log(`(consumeSynthesizingItem) Bit now has mannerless trait!!!`);
                         islandUpdateOperations.push({
                             islandId,
                             updateOperations: {
@@ -571,17 +570,15 @@ export const consumeSynthesizingItem = async (
 
                     // if the bit now doesn't have the mannerless trait but had it before, remove the modifier.
                     if (!nowHasMannerlessTrait && oldHasMannerlessTrait) {
-                        console.log(`(consumeSynthesizingItem) Previously had mannerless trait but now doesn't have it!!!`);
-
                         islandUpdateOperations.push({
                             islandId,
                             updateOperations: {
                                 $pull: {
                                     'islandStatsModifiers.gatheringRateModifiers': {
-                                        trait: `Bit ID #${bit.bitId}'s Trait: Mannerless`
+                                        origin: `Bit ID #${bit.bitId}'s Trait: Mannerless`
                                     },
                                     'islandStatsModifiers.earningRateModifiers': {
-                                        trait: `Bit ID #${bit.bitId}'s Trait: Mannerless`
+                                        origin: `Bit ID #${bit.bitId}'s Trait: Mannerless`
                                     }
                                 },
                                 $push: {},
@@ -592,6 +589,8 @@ export const consumeSynthesizingItem = async (
                     }
                 }
             }
+        } else if (affectedAsset === 'island') {
+
         }
 
         // decrement the item amount in the user's inventory.
