@@ -1,5 +1,6 @@
-import { BitTrait, BitTraitData, BitTraitRarity } from '../models/bit';
+import { BitRarityNumeric, BitTrait, BitTraitData, BitTraitRarity } from '../models/bit';
 import { SynthesizingItemGroup } from '../models/craft';
+import { IslandRarityNumeric } from '../models/island';
 import { Item, SynthesizingItem } from '../models/item';
 import { Modifier } from '../models/modifier';
 import { ResourceLine } from '../models/resource';
@@ -93,7 +94,7 @@ export const consumeSynthesizingItem = async (
 
         if (affectedAsset === 'bit') {
             // check if the user has the specified bit id
-            const bit = await BitModel.findOne({ bitId: islandOrBitId }).lean();
+            const bit = await BitModel.findOne({ bitId: islandOrBitId, owner: user._id }).lean();
 
             if (!bit) {
                 return {
@@ -102,11 +103,25 @@ export const consumeSynthesizingItem = async (
                 }
             }
 
-            // check if the user owns the bit
-            if (bit.owner !== user._id) {
-                return {
-                    status: Status.ERROR,
-                    message: `(consumeSynthesizingItem) Bit does not belong to the user.`
+            // check if the item has a min/max rarity requirement.
+            const minRarity = synthesizingItemData.minimumRarity;
+            const maxRarity = synthesizingItemData.maximumRarity;
+
+            if (minRarity !== null) {
+                if (BitRarityNumeric[bit.rarity] < BitRarityNumeric[minRarity]) {
+                    return {
+                        status: Status.ERROR,
+                        message: `(consumeSynthesizingItem) Bit rarity is below the minimum requirement.`
+                    }
+                }
+            }
+
+            if (maxRarity !== null) {
+                if (BitRarityNumeric[bit.rarity] > BitRarityNumeric[maxRarity]) {
+                    return {
+                        status: Status.ERROR,
+                        message: `(consumeSynthesizingItem) Bit rarity is above the maximum requirement.`
+                    }
                 }
             }
 
@@ -590,7 +605,113 @@ export const consumeSynthesizingItem = async (
                 }
             }
         } else if (affectedAsset === 'island') {
+            // check if the user has the specified island id
+            const island = await IslandModel.findOne({ islandId: islandOrBitId }).lean();
 
+            if (!island) {
+                return {
+                    status: Status.ERROR,
+                    message: `(consumeSynthesizingItem) Island not found.`
+                }
+            }
+
+            // check if the item being consumed has a minimum or maximum rarity requirement.
+            // if it does, we need to check if the island's rarity is within the range.
+            const minRarity = synthesizingItemData.minimumRarity;
+            const maxRarity = synthesizingItemData.maximumRarity;
+
+            if (minRarity !== null) {
+                if (IslandRarityNumeric[island.type] < IslandRarityNumeric[minRarity]) {
+                    return {
+                        status: Status.ERROR,
+                        message: `(consumeSynthesizingItem) Island rarity is below the minimum requirement.`
+                    }
+                }
+            }
+
+            if (maxRarity !== null) {
+                if (IslandRarityNumeric[island.type] > IslandRarityNumeric[maxRarity]) {
+                    return {
+                        status: Status.ERROR,
+                        message: `(consumeSynthesizingItem) Island rarity is above the maximum requirement.`
+                    }
+                }
+            }
+
+            // check if the item has a `singleIslandUsage` or `concurrentIslandsUsage` limitation.
+            const singleIslandUsageLimit = synthesizingItemData.limitations.singleIslandUsage.limit;
+            const concurrentIslandsUsageLimit = synthesizingItemData.limitations.concurrentIslandsUsage.limit;
+
+            const usedItemInstances = await ConsumedSynthesizingItemModel.find({
+                usedBy: user._id,
+                item,
+                affectedAsset,
+            }).lean();
+
+            if (singleIslandUsageLimit !== null) {
+                // check if the user has used the item on this island before.
+                const usedOnThisIslandCount = usedItemInstances.filter(i => i.islandOrBitId === islandOrBitId).length;
+
+                if (usedOnThisIslandCount >= singleIslandUsageLimit) {
+                    return {
+                        status: Status.ERROR,
+                        message: `(consumeSynthesizingItem) Single island usage limit for this item reached.`
+                    }
+                }
+            }
+
+            if (concurrentIslandsUsageLimit !== null) {
+                // we don't need to worry if the item doesn't have an effect duration (i.e. it's a one-time use item).
+                // this is because we want to only search for items whose effectUntil is greater than the current timestamp.
+                // one-time use items will have an effectUntil === consumedTimestamp.
+                const usedOnConcurrentIslandsCount = usedItemInstances.filter(i => i.effectUntil > Math.floor(Date.now() / 1000)).length;
+
+                if (usedOnConcurrentIslandsCount >= concurrentIslandsUsageLimit) {
+                    return {
+                        status: Status.ERROR,
+                        message: `(consumeSynthesizingItem) Concurrent islands usage limit for this item reached.`
+                    }
+                }
+            }
+
+            // check if this item cannot be used when another of the same item is currently active (used).
+            // although this coincides with the logic for `concurrentIslandsUsageLimit` (because the item being used concurrently = is usable when another item is active),
+            // we still need to have this check regardless.
+            if (synthesizingItemData.limitations.notUsableWhenAnotherSameItemActive) {
+                // if true, check if there is an active item already being used.
+                const activeItem = usedItemInstances.find(i => i.effectUntil > Math.floor(Date.now() / 1000));
+
+                if (activeItem) {
+                    return {
+                        status: Status.ERROR,
+                        message: `(consumeSynthesizingItem) Another instance of this is currently active on another island.`
+                    }
+                }
+            }
+
+            // check if this item is to modify the resource cap of the island.
+            if (synthesizingItemData.effectValues.resourceCapModifier.active) {
+                // get the current base resource cap of the island
+                const currentResourceCap = island.islandResourceStats?.baseResourceCap;
+
+                // if type is `fixed`, the new resource cap will just add the value to the current resource cap.
+                // if `percentage`, then it will be (100 + value)% of the current resource cap.
+                const newResourceCap = synthesizingItemData.effectValues.resourceCapModifier.type === 'fixed'
+                    ? currentResourceCap + synthesizingItemData.effectValues.resourceCapModifier.value
+                    : (currentResourceCap * (100 + synthesizingItemData.effectValues.resourceCapModifier.value) / 100);
+
+                islandUpdateOperations.push({
+                    islandId: island.islandId,
+                    updateOperations: {
+                        $set: {
+                            'islandResourceStats.baseResourceCap': newResourceCap
+                        },
+                        $inc: {},
+                        $push: {},
+                        $pull: {}
+                    }
+                });
+            }
         }
 
         // decrement the item amount in the user's inventory.
@@ -640,9 +761,6 @@ export const consumeSynthesizingItem = async (
                 $pull: op.updateOperations.$pull
             });
         }) : [];
-
-        console.log(`(consumeSynthesizingItem) island update promises $set and $inc: ${JSON.stringify(islandUpdatePromisesSetInc, null, 2)}`);
-        console.log(`(consumeSynthesizingItem) island update promises $push and $pull: ${JSON.stringify(islandUpdatePromisesPushPull, null, 2)}`);
 
         // do the $set and $inc in one operation, and then $push and $pull in another.
         await Promise.all([
