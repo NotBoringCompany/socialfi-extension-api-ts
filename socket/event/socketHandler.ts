@@ -12,11 +12,18 @@ export const socketHandler = (socket: Socket) => {
   socket.on("alive", async (msg) => {
     const {socketId, getTotalEnergy, userId, message} = msg;
     console.log(`user ${userId} yep!!!`);
-    await energyRecover(userId, getTotalEnergy);
-    socket.emit("server_response", {
-      status: Status.SUCCESS,
-      message: "Energy recovered successfully"
-    })
+    const response = await energyRecover(userId, getTotalEnergy);
+    if (response) {
+      socket.emit("server_response", {
+        status: Status.SUCCESS,
+        message
+      })
+    } else {
+      socket.emit("server_response", {
+        status: Status.ERROR,
+        message
+      })
+    }
   })
 
   socket.on('disconnect', () => {
