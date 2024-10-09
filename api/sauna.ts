@@ -44,7 +44,9 @@ export const startRest = async (socket: Socket, data: SaunaUserDetail) => {
       status: Status.SUCCESS,
       message: `(startRest) user ${userId} has started rest`,
       data: {
-        timeToMaxEnergyInMiliSecond
+        timeToMaxEnergyInMiliSecond, 
+        energyPotionPerSecond, 
+        isStartRest: true, 
       }
     });
   } catch (error) {
@@ -55,7 +57,11 @@ export const startRest = async (socket: Socket, data: SaunaUserDetail) => {
     });
   }
 };
-
+/**
+ * @deprecated 
+ * @param socket socket
+ * @returns 
+ */
 export const stopRest = async (socket: Socket) => {
   try {
     const userId = await redisDb.get(socket.id);
@@ -159,7 +165,7 @@ export const saunaInit = async (socket: Socket) => {
   } catch (error) {
     socket.emit('server_response', {
       status: Status.ERROR,
-      message: `(saunaInit) ${error.message}`
+      message: `(saunaInit) ${error.message}`,
     })
   }
 }
