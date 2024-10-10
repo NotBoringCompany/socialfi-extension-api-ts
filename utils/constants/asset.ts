@@ -1,9 +1,17 @@
+import Bull from 'bull';
 import { Asset } from '../../models/asset';
 import { BitRarity } from '../../models/bit';
 import { SynthesizingItemGroup } from '../../models/craft';
 import { IslandType } from '../../models/island';
 import { AugmentationItem, BitOrbType, ContinuumRelicItem, EnergyTotemItem, Item, PotionItem, SynthesizingItem, SynthesizingItemData, TerraCapsulatorType, TransmutationItem } from '../../models/item';
 import { BarrenResource, FruitResource, LiquidResource, OreResource } from '../../models/resource';
+
+/**
+ * Creates a new queue to add or remove consumed synthesizing item effects from other assets.
+ */
+export const SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE = new Bull('craftQueue', {
+    redis: process.env.REDIS_URL
+});
 
 /**
  * Represents the list of assets available in our game.
@@ -725,8 +733,8 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         maximumRarity: null,
         limitations: {
             singleIslandUsage: {
-                active: false,
-                limit: null
+                active: true,
+                limit: 1
             },
             singleIslandCategoryUsage: {
                 active: false,
@@ -796,8 +804,8 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         maximumRarity: null,
         limitations: {
             singleIslandUsage: {
-                active: false,
-                limit: null
+                active: true,
+                limit: 1
             },
             singleIslandCategoryUsage: {
                 active: false,
@@ -867,8 +875,8 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         maximumRarity: null,
         limitations: {
             singleIslandUsage: {
-                active: false,
-                limit: null
+                active: true,
+                limit: 1
             },
             singleIslandCategoryUsage: {
                 active: false,

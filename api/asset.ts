@@ -4,7 +4,7 @@ import { IslandRarityNumeric, IslandTrait } from '../models/island';
 import { Item, SynthesizingItem } from '../models/item';
 import { Modifier } from '../models/modifier';
 import { ResourceLine, ResourceRarity, ResourceRarityNumeric } from '../models/resource';
-import { GET_SYNTHESIZING_ITEM_MEMBERS, GET_SYNTHESIZING_ITEM_TYPE, SYNTHESIZING_ITEM_DATA } from '../utils/constants/asset';
+import { GET_SYNTHESIZING_ITEM_MEMBERS, GET_SYNTHESIZING_ITEM_TYPE, SYNTHESIZING_ITEM_DATA, SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE } from '../utils/constants/asset';
 import { BIT_TRAITS, getBitStatsModifiersFromTraits } from '../utils/constants/bit';
 import { BitModel, ConsumedSynthesizingItemModel, IslandModel, UserModel } from '../utils/constants/db';
 import { generateObjectId } from '../utils/crypto';
@@ -64,7 +64,7 @@ export const consumeSynthesizingItem = async (
         }
 
         const bitUpdateOperations: Array<{
-            _id: string,
+            bitId: number,
             updateOperations: {
                 $set: {},
                 $inc: {},
@@ -93,6 +93,9 @@ export const consumeSynthesizingItem = async (
                 message: `(consumeSynthesizingItem) Item data not found.`
             }
         }
+
+        // generate a random id for consumed items that impact modifiers or require bull queue.
+        const randomId = generateObjectId();
 
         // check if the item is used in an island or a bit.
         const affectedAsset = synthesizingItemData.effectValues.affectedAsset;
@@ -417,7 +420,7 @@ export const consumeSynthesizingItem = async (
 
                 // we just need to set the new list of traits to the bit.
                 bitUpdateOperations.push({
-                    _id: bit._id,
+                    bitId: bit.bitId,
                     updateOperations: {
                         $set: {
                             traits: updatedTraits,
@@ -923,6 +926,113 @@ export const consumeSynthesizingItem = async (
                     }
                 });
             }
+
+            if (synthesizingItemData.effectValues.gatheringRateModifier.active) {
+                // because the `value` is in %, we need to divide it by 100 and add 1 to get the multiplier.
+                const modifierValue = 1 + (synthesizingItemData.effectValues.earningRateModifier.value / 100);
+
+                // add the gathering rate modifier to the island.
+                islandUpdateOperations.push({
+                    islandId: island.islandId,
+                    updateOperations: {
+                        $push: {
+                            'islandStatsModifiers.gatheringRateModifiers': {
+                                origin: `Synthesizing Item: ${item}. Rand ID: ${randomId}`,
+                                value: modifierValue
+                            }
+                        },
+                        $pull: {},
+                        $set: {},
+                        $inc: {}
+                    }
+                });
+
+                // if there is an effect duration, we need to add a bull queue to remove the modifier after the effect duration.
+                if (synthesizingItemData.effectValues.effectDuration !== 'oneTime') {
+                    SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE.add(
+                        'removeIslandGatheringRateModifier',
+                        {
+                            islandId: island.islandId,
+                            origin: `Synthesizing Item: ${item}. Rand ID: ${randomId}`,
+                        },
+                        { delay: synthesizingItemData.effectValues.effectDuration as number * 1000 }
+                    )
+                }
+            }
+
+            if (synthesizingItemData.effectValues.earningRateModifier.active) {
+                // because the `value` is in %, we need to divide it by 100 and add 1 to get the multiplier.
+                const modifierValue = 1 + (synthesizingItemData.effectValues.earningRateModifier.value / 100);
+
+                // add the earning rate modifier to the island.
+                islandUpdateOperations.push({
+                    islandId: island.islandId,
+                    updateOperations: {
+                        $push: {
+                            'islandStatsModifiers.earningRateModifiers': {
+                                origin: `Synthesizing Item: ${item}. Rand ID: ${randomId}`,
+                                value: modifierValue
+                            }
+                        },
+                        $pull: {},
+                        $set: {},
+                        $inc: {}
+                    }
+                });
+
+                // if there is an effect duration, we need to add a bull queue to remove the modifier after the effect duration.
+                if (synthesizingItemData.effectValues.effectDuration !== 'oneTime') {
+                    SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE.add(
+                        'removeIslandEarningRateModifier',
+                        {
+                            islandId: island.islandId,
+                            origin: `Synthesizing Item: ${item}. Rand ID: ${randomId}`,
+                        },
+                        { delay: synthesizingItemData.effectValues.effectDuration as number * 1000 }
+                    )
+                }
+            }
+
+            if (synthesizingItemData.effectValues.placedBitsEnergyDepletionRateModifier.active) {
+                // check the island's `placedBitIds` array to get all the placed bits.
+                const placedBitIds = island.placedBitIds as number[];
+
+                // if the island has no placed bits, we don't need to do anything.
+                // if the island has placed bits, we need to update the energy depletion rate of each placed bit.
+                if (placedBitIds.length > 0) {
+                    const energyDepletionRateModifier = 1 + (synthesizingItemData.effectValues.placedBitsEnergyDepletionRateModifier.value / 100);
+
+                    // loop through each placed bit and update the energy depletion rate.
+                    placedBitIds.forEach(bitId => {
+                        bitUpdateOperations.push({
+                            bitId,
+                            updateOperations: {
+                                $push: {
+                                    'bitStatsModifiers.energyRateModifiers': {
+                                        origin: `Synthesizing Item: ${item}. Rand ID: ${randomId}`,
+                                        value: energyDepletionRateModifier
+                                    }
+                                },
+                                $pull: {},
+                                $set: {},
+                                $inc: {}
+                            }
+                        });
+
+                        // if there is an effect duration, we need to add a bull queue to remove the modifier after the effect duration.
+                        if (synthesizingItemData.effectValues.effectDuration !== 'oneTime') {
+                            SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE.add(
+                                'removeBitEnergyDepletionRateModifier',
+                                {
+                                    bitId,
+                                    origin: `Synthesizing Item: ${item}. Rand ID: ${randomId}`,
+                                },
+                                { delay: synthesizingItemData.effectValues.effectDuration as number * 1000 }
+                            )
+                        }
+                    })
+                }
+            }
         }
 
         // decrement the item amount in the user's inventory.
@@ -946,28 +1056,28 @@ export const consumeSynthesizingItem = async (
 
         // do the update operations.
         const islandUpdatePromisesSetInc = islandUpdateOperations.length > 0 ? islandUpdateOperations.map(async op => {
-            return IslandModel.updateOne({ islandId: op.islandId }, {
+            return IslandModel.updateOne({ islandId: op.islandId, owner: user._id }, {
                 $set: op.updateOperations.$set,
                 $inc: op.updateOperations.$inc
             });
         }) : [];
 
         const bitUpdatePromisesSetInc = bitUpdateOperations.length > 0 ? bitUpdateOperations.map(async op => {
-            return BitModel.updateOne({ _id: op._id }, {
+            return BitModel.updateOne({ bitId: op.bitId, owner: user._id }, {
                 $set: op.updateOperations.$set,
                 $inc: op.updateOperations.$inc
             });
         }) : [];
 
         const islandUpdatePromisesPushPull = islandUpdateOperations.length > 0 ? islandUpdateOperations.map(async op => {
-            return IslandModel.updateOne({ islandId: op.islandId }, {
+            return IslandModel.updateOne({ islandId: op.islandId, owner: user._id }, {
                 $push: op.updateOperations.$push,
                 $pull: op.updateOperations.$pull
             });
         }) : [];
 
         const bitUpdatePromisesPushPull = bitUpdateOperations.length > 0 ? bitUpdateOperations.map(async op => {
-            return BitModel.updateOne({ _id: op._id }, {
+            return BitModel.updateOne({ bitId: op.bitId, owner: user._id }, {
                 $push: op.updateOperations.$push,
                 $pull: op.updateOperations.$pull
             });
