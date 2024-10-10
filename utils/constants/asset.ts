@@ -439,7 +439,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         }
     },
     {
-        name: AugmentationItem.ANCIENT_SCROLL_OF_AUGMENTATION,
+        name: AugmentationItem.ANCIENT_TOME_OF_AUGMENTATION,
         description: `Select an Isle (any rarity) and increase its resource cap by 20%.`,
         minimumRarity: null,
         maximumRarity: null,
