@@ -955,6 +955,7 @@ export const consumeSynthesizingItem = async (
                             islandId: island.islandId,
                             owner: user._id,
                             origin: `Synthesizing Item: ${item}. Rand ID: ${randomId}`,
+                            endTimestamp: Math.floor(Date.now() / 1000) + synthesizingItemData.effectValues.effectDuration
                         },
                         { delay: synthesizingItemData.effectValues.effectDuration as number * 1000 }
                     )
@@ -989,6 +990,7 @@ export const consumeSynthesizingItem = async (
                             islandId: island.islandId,
                             owner: user._id,
                             origin: `Synthesizing Item: ${item}. Rand ID: ${randomId}`,
+                            endTimestamp: Math.floor(Date.now() / 1000) + synthesizingItemData.effectValues.effectDuration
                         },
                         { delay: synthesizingItemData.effectValues.effectDuration as number * 1000 }
                     )
@@ -1029,6 +1031,7 @@ export const consumeSynthesizingItem = async (
                                     bitId,
                                     owner: user._id,
                                     origin: `Synthesizing Item: ${item}. Rand ID: ${randomId}`,
+                                    endTimestamp: Math.floor(Date.now() / 1000) + synthesizingItemData.effectValues.effectDuration
                                 },
                                 { delay: synthesizingItemData.effectValues.effectDuration as number * 1000 }
                             )

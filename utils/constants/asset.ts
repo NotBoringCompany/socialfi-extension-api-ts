@@ -19,7 +19,7 @@ export const SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE = new Bull('craftQueue', {
  * Remove any expired gathering rate modifier effects from a consumed synthesizing item.
  */
 SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE.process('removeIslandGatheringRateModifier', async (job) => {
-    const { islandId, owner, origin } = job.data;
+    const { islandId, owner, origin, endTimestamp } = job.data;
 
     try {
         // directly remove gathering rate modifier with the given `origin` from the island
@@ -41,7 +41,7 @@ SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE.process('removeIslandGatheringRateModifie
  * Remove any expired earning rate modifier effects from a consumed synthesizing item.
  */
 SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE.process('removeIslandEarningRateModifier', async (job) => {
-    const { islandId, owner, origin } = job.data;
+    const { islandId, owner, origin, endTimestamp } = job.data;
 
     try {
         // directly remove earning rate modifier with the given `origin` from the island
@@ -64,7 +64,7 @@ SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE.process('removeIslandEarningRateModifier'
  * Remove any expired energy rate modifier effects for placed bits from a consumed synthesizing item.
  */
 SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE.process('removePlacedBitsEnergyDepletionRateModifier', async (job) => {
-    const { bitId, owner, origin } = job.data;
+    const { bitId, owner, origin, endTimestamp } = job.data;
 
     try {
         // directly remove energy depletion rate modifier with the given `origin` from the bit
@@ -249,6 +249,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: true,
                 limit: 1,
             },
+            singleIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
             concurrentIslandsUsage: {
                 active: false,
                 limit: null
@@ -258,6 +262,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 limit: null
             },
             singleBitCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitConcurrentUsage: {
                 active: false,
                 limit: null
             },
@@ -321,6 +329,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: true,
                 limit: 1,
             },
+            singleIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
             concurrentIslandsUsage: {
                 active: false,
                 limit: null
@@ -330,6 +342,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 limit: null
             },
             singleBitCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitConcurrentUsage: {
                 active: false,
                 limit: null
             },
@@ -393,6 +409,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: true,
                 limit: 1,
             },
+            singleIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
             concurrentIslandsUsage: {
                 active: false,
                 limit: null
@@ -402,6 +422,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 limit: null
             },
             singleBitCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitConcurrentUsage: {
                 active: false,
                 limit: null
             },
@@ -465,6 +489,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: true,
                 limit: 1,
             },
+            singleIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
             concurrentIslandsUsage: {
                 active: false,
                 limit: null
@@ -474,6 +502,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 limit: null
             },
             singleBitCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitConcurrentUsage: {
                 active: false,
                 limit: null
             },
@@ -537,6 +569,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: true,
                 limit: 1,
             },
+            singleIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
             concurrentIslandsUsage: {
                 active: false,
                 limit: null
@@ -546,6 +582,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 limit: null
             },
             singleBitCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitConcurrentUsage: {
                 active: false,
                 limit: null
             },
@@ -609,6 +649,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
+            singleIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
             concurrentIslandsUsage: {
                 active: false,
                 limit: null
@@ -618,6 +662,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 limit: null
             },
             singleBitCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitConcurrentUsage: {
                 active: false,
                 limit: null
             },
@@ -681,6 +729,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
+            singleIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
             concurrentIslandsUsage: {
                 active: false,
                 limit: null
@@ -690,6 +742,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 limit: null
             },
             singleBitCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitConcurrentUsage: {
                 active: false,
                 limit: null
             },
@@ -753,6 +809,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
+            singleIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
             concurrentIslandsUsage: {
                 active: false,
                 limit: null
@@ -762,6 +822,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 limit: null
             },
             singleBitCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitConcurrentUsage: {
                 active: false,
                 limit: null
             },
@@ -818,12 +882,16 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         maximumRarity: null,
         limitations: {
             singleIslandUsage: {
-                active: true,
-                limit: 1
+                active: false,
+                limit: null
             },
             singleIslandCategoryUsage: {
                 active: false,
                 limit: null
+            },
+            singleIslandConcurrentUsage: {
+                active: true,
+                limit: 1
             },
             concurrentIslandsUsage: {
                 active: true,
@@ -834,6 +902,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 limit: null
             },
             singleBitCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitConcurrentUsage: {
                 active: false,
                 limit: null
             },
@@ -891,12 +963,16 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         maximumRarity: null,
         limitations: {
             singleIslandUsage: {
-                active: true,
-                limit: 1
+                active: false,
+                limit: null
             },
             singleIslandCategoryUsage: {
                 active: false,
                 limit: null
+            },
+            singleIslandConcurrentUsage: {
+                active: true,
+                limit: 1
             },
             concurrentIslandsUsage: {
                 active: true,
@@ -907,6 +983,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 limit: null
             },
             singleBitCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitConcurrentUsage: {
                 active: false,
                 limit: null
             },
@@ -964,12 +1044,16 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         maximumRarity: null,
         limitations: {
             singleIslandUsage: {
-                active: true,
-                limit: 1
+                active: false,
+                limit: null
             },
             singleIslandCategoryUsage: {
                 active: false,
                 limit: null
+            },
+            singleIslandConcurrentUsage: {
+                active: true,
+                limit: 1
             },
             concurrentIslandsUsage: {
                 active: true,
@@ -980,6 +1064,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 limit: null
             },
             singleBitCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitConcurrentUsage: {
                 active: false,
                 limit: null
             },
@@ -1044,6 +1132,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
+            singleIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
             concurrentIslandsUsage: {
                 active: false,
                 limit: null,
@@ -1055,6 +1147,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
             singleBitCategoryUsage: {
                 active: true,
                 limit: 1
+            },
+            singleBitConcurrentUsage: {
+                active: false,
+                limit: null
             },
             concurrentBitsUsage: {
                 active: false,
@@ -1116,6 +1212,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
+            singleIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
             concurrentIslandsUsage: {
                 active: false,
                 limit: null,
@@ -1127,6 +1227,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
             singleBitCategoryUsage: {
                 active: true,
                 limit: 1
+            },
+            singleBitConcurrentUsage: {
+                active: false,
+                limit: null
             },
             concurrentBitsUsage: {
                 active: false,
@@ -1188,6 +1292,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
+            singleIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
             concurrentIslandsUsage: {
                 active: false,
                 limit: null,
@@ -1199,6 +1307,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
             singleBitCategoryUsage: {
                 active: true,
                 limit: 1
+            },
+            singleBitConcurrentUsage: {
+                active: false,
+                limit: null
             },
             concurrentBitsUsage: {
                 active: false,
@@ -1260,6 +1372,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
+            singleIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
             concurrentIslandsUsage: {
                 active: false,
                 limit: null,
@@ -1269,6 +1385,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 limit: null
             },
             singleBitCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitConcurrentUsage: {
                 active: false,
                 limit: null
             },
@@ -1332,6 +1452,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
+            singleIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
             concurrentIslandsUsage: {
                 active: false,
                 limit: null,
@@ -1341,6 +1465,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 limit: null
             },
             singleBitCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitConcurrentUsage: {
                 active: false,
                 limit: null
             },
@@ -1404,6 +1532,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
+            singleIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
             concurrentIslandsUsage: {
                 active: false,
                 limit: null,
@@ -1413,6 +1545,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 limit: null
             },
             singleBitCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitConcurrentUsage: {
                 active: false,
                 limit: null
             },
@@ -1476,6 +1612,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
+            singleIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
             concurrentIslandsUsage: {
                 active: false,
                 limit: null,
@@ -1485,6 +1625,10 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 limit: null
             },
             singleBitCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitConcurrentUsage: {
                 active: false,
                 limit: null
             },

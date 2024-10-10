@@ -161,7 +161,9 @@ export interface SynthesizingItemData {
  * Represents the limitations of a synthesizing item.
  */
 export interface SynthesizingItemLimitations {
-    /** if this item has a usage limit per island (i.e. how many of this item can be used on a single island) IN TOTAL */
+    /** 
+     * if this item has a usage limit per island (i.e. how many of this item can be used on a single island) IN TOTAL
+     */
     singleIslandUsage: SynthesizingItemLimitationNumerical;
     /** 
      * if this item has a usage limit counted towards the item's category/type per island (i.e. how many of ANY item within the item's category (e.g. augmentation, etc) can be used on a single island) IN TOTAL 
@@ -173,7 +175,19 @@ export interface SynthesizingItemLimitations {
      */
     singleIslandCategoryUsage: SynthesizingItemLimitationNumerical;
     /**
-     * how many of this item can be used on multiple islands concurrently. for example, if the limit is 5, and the `islandUsage.limit` is 1,
+     * how many of this item can be used on this island concurrently.
+     * 
+     * this is used for items that have effect durations that last for a certain amount of time (because otherwise they won't be "concurrently used").
+     * 
+     * for instance, if the limit is 5, then the user can use up to 5 of this item on the same island at the same time.
+     */
+    singleIslandConcurrentUsage: SynthesizingItemLimitationNumerical;
+    /**
+     * how many of this item can be used on multiple islands concurrently.
+     * 
+     * this is used for items that have effect durations that last for a certain amount of time (because otherwise they won't be "concurrently used").
+     * 
+     * for example, if the limit is 5, and the `singleIslandConcurrentUsage.limit` is 1,
      * then the item can be used UP TO 5 islands at the same time, but only 1 on each island. (not in total)
      */
     concurrentIslandsUsage: SynthesizingItemLimitationNumerical;
@@ -188,6 +202,14 @@ export interface SynthesizingItemLimitations {
      * unlike `singleBitUsage`, this is a category limit, not a single item limit.
      */
     singleBitCategoryUsage: SynthesizingItemLimitationNumerical;
+    /**
+     * how many of this item can be used on this bit concurrently.
+     * 
+     * this is used for items that have effect durations that last for a certain amount of time (because otherwise they won't be "concurrently used").
+     * 
+     * for instance, if the limit is 5, then the user can use up to 5 of this item on the same bit at the same time.
+     */
+    singleBitConcurrentUsage: SynthesizingItemLimitationNumerical;
     /**
      * how many of this item can be used on multiple bits concurrently. for example, if the limit is 5, and the `bitUsage.limit` is 1,
      * then the item can be used UP TO 5 bits at the same time, but only 1 on each bit. (not in total)
