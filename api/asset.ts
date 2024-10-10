@@ -3,7 +3,7 @@ import { SynthesizingItemGroup } from '../models/craft';
 import { IslandRarityNumeric, IslandTrait } from '../models/island';
 import { Item, SynthesizingItem } from '../models/item';
 import { Modifier } from '../models/modifier';
-import { ResourceLine, ResourceRarity } from '../models/resource';
+import { ResourceLine, ResourceRarity, ResourceRarityNumeric } from '../models/resource';
 import { GET_SYNTHESIZING_ITEM_MEMBERS, GET_SYNTHESIZING_ITEM_TYPE, SYNTHESIZING_ITEM_DATA } from '../utils/constants/asset';
 import { BIT_TRAITS, getBitStatsModifiersFromTraits } from '../utils/constants/bit';
 import { BitModel, ConsumedSynthesizingItemModel, IslandModel, UserModel } from '../utils/constants/db';
@@ -821,49 +821,49 @@ export const consumeSynthesizingItem = async (
                             message: `(consumeSynthesizingItem) One or more inputted new island traits are invalid.`
                         }
                     }
+                }
 
-                    // get the current traits
-                    const currentTraits: IslandTrait[] = island?.traits;
-                    // this will be used to insert the new traits into the island's traits array.
-                    const updatedTraits: IslandTrait[] = [];
+                // get the current traits
+                const currentTraits: IslandTrait[] = island?.traits;
+                // this will be used to insert the new traits into the island's traits array.
+                const updatedTraits: IslandTrait[] = [];
 
-                    // fetch all rarities in ascending order from `ResourceRarity`.
-                    // we will use this to loop through each rarity to input to `updatedTraits`.
-                    const resourceRarities: ResourceRarity[] = Object.values(ResourceRarity);
+                // fetch all rarities in ascending order from `ResourceRarity`.
+                // we will use this to loop through each rarity to input to `updatedTraits`.
+                const resourceRarities: ResourceRarity[] = Object.values(ResourceRarity);
 
-                    if (rerollType === 'chosen' || rerollType === 'chosenSame') {
-                        // if reroll type is 'chosen' or 'chosenSame' we will replace the existing traits with the new traits.
-                        // if `value` is all, we simply input the new traits into the `updatedTraits` array.
-                        // if `value` is an array of resource rarities, we will need to replace the traits of those resource rarities only and keep the other traits.
-                        if (synthesizingItemData.effectValues.rerollIslandTraits.value === 'all') {
-                            resourceRarities.forEach(rarity => {
-                                // fetch the trait in the `newIslandTraits` array that has the same rarity as the current rarity.
-                                const trait = newIslandTraits.find(t => t.rarity === rarity)?.trait ?? null;
+                if (rerollType === 'chosen' || rerollType === 'chosenSame') {
+                    // if reroll type is 'chosen' or 'chosenSame' we will replace the existing traits with the new traits.
+                    // if `value` is all, we simply input the new traits into the `updatedTraits` array.
+                    // if `value` is an array of resource rarities, we will need to replace the traits of those resource rarities only and keep the other traits.
+                    if (synthesizingItemData.effectValues.rerollIslandTraits.value === 'all') {
+                        resourceRarities.forEach(rarity => {
+                            // fetch the trait in the `newIslandTraits` array that has the same rarity as the current rarity.
+                            const trait = newIslandTraits.find(t => t.rarity === rarity)?.trait ?? null;
 
-                                // if the trait exists, add it to the `updatedTraits` array.
-                                // no need to check for `else`, because we already checked if all traits existed.
-                                if (trait !== null) {
-                                    updatedTraits.push(trait);
-                                }
-                            })
-                        }
+                            // if the trait exists, add it to the `updatedTraits` array.
+                            // no need to check for `else`, because we already checked if all traits existed.
+                            if (trait !== null) {
+                                updatedTraits.push(trait);
+                            }
+                        })
+                    }
 
-                        if (Array.isArray(synthesizingItemData.effectValues.rerollIslandTraits.value)) {
-                            synthesizingItemData.effectValues.rerollIslandTraits.value.forEach((rarity, index) => {
-                                // fetch the trait in the `newIslandTraits` array that has the same rarity as the current rarity.
-                                const trait = newIslandTraits.find(t => t.rarity === rarity)?.trait ?? null;
+                    if (Array.isArray(synthesizingItemData.effectValues.rerollIslandTraits.value)) {
+                        synthesizingItemData.effectValues.rerollIslandTraits.value.forEach((rarity, index) => {
+                            // fetch the trait in the `newIslandTraits` array that has the same rarity as the current rarity.
+                            const trait = newIslandTraits.find(t => t.rarity === rarity)?.trait ?? null;
 
-                                // if the trait exists, add it to the `updatedTraits` array.
-                                if (trait !== null) {
-                                    updatedTraits.push(trait);
-                                } else {
-                                    // here, because we might not replace some of the traits for specific resource rarities,
-                                    // we will need to add the existing trait for that rarity.
-                                    // since the order is preserved, we can just fetch the trait at the same index as the current rarity.
-                                    updatedTraits.push(currentTraits[index]);
-                                }
-                            })
-                        }
+                            // if the trait exists, add it to the `updatedTraits` array.
+                            if (trait !== null) {
+                                updatedTraits.push(trait);
+                            } else {
+                                // here, because we might not replace some of the traits for specific resource rarities,
+                                // we will need to add the existing trait for that rarity.
+                                // since the order is preserved, we can just fetch the trait at the same index as the current rarity.
+                                updatedTraits.push(currentTraits[index]);
+                            }
+                        })
                     }
                 }
 
@@ -874,8 +874,54 @@ export const consumeSynthesizingItem = async (
                     // 3. if `allowDuplicates` is true, then we can reroll the same trait multiple times. this means that for each loop, we will include the current trait into the pool of traits obtainable.
                     // if false, then we will exclude the current trait from the pool of traits obtainable.
 
-                    ////////////// TO DO!!!!!!!!!!!!!!!!!!!!!
+                    const allowDuplicates = synthesizingItemData.effectValues.rerollIslandTraits.allowDuplicates;
+
+                    if (synthesizingItemData.effectValues.rerollIslandTraits.value === 'all') {
+                        // loop through each existing trait and reroll the trait.
+                        currentTraits.forEach((trait) => {
+                            // if `allowDuplicates` is false, we need to exclude the current trait from the pool of traits obtainable.
+                            const pool = allowDuplicates ? Object.values(IslandTrait) : Object.values(IslandTrait).filter(t => t !== trait);
+
+                            // randomize the trait from the `pool` array.
+                            const rand = Math.floor(Math.random() * pool.length);
+
+                            updatedTraits.push(pool[rand]);
+                        });
+                    // if an array of resource rarities
+                    } else {
+                        // fetch the ResourceRarityNumeric of the resource rarities in the `value` array. this will be used as the index to fetch the trait from the `currentTraits` array.
+                        const rarityIndexes = synthesizingItemData.effectValues.rerollIslandTraits.value.map(rarity => ResourceRarityNumeric[rarity]);
+
+                        // now, loop through `currentTraits`. if the `index` is in the `rarityIndexes` array, reroll the trait.
+                        // if not, keep the trait.
+                        currentTraits.forEach((trait, index) => {
+                            if (rarityIndexes.includes(index)) {
+                                // if `allowDuplicates` is false, we need to exclude the current trait from the pool of traits obtainable.
+                                const pool = allowDuplicates ? Object.values(IslandTrait) : Object.values(IslandTrait).filter(t => t !== trait);
+
+                                // randomize the trait from the `pool` array.
+                                const rand = Math.floor(Math.random() * pool.length);
+
+                                updatedTraits.push(pool[rand]);
+                            } else {
+                                updatedTraits.push(trait);
+                            }
+                        });
+                    }
                 }
+                
+                // now, we just need to update the island's traits with the new traits.
+                islandUpdateOperations.push({
+                    islandId: island.islandId,
+                    updateOperations: {
+                        $set: {
+                            traits: updatedTraits
+                        },
+                        $inc: {},
+                        $push: {},
+                        $pull: {}
+                    }
+                });
             }
         }
 
