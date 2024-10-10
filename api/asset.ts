@@ -633,7 +633,7 @@ export const consumeSynthesizingItem = async (
             }
         } else if (affectedAsset === 'island') {
             // check if the user has the specified island id
-            const island = await IslandModel.findOne({ islandId: islandOrBitId }).lean();
+            const island = await IslandModel.findOne({ islandId: islandOrBitId, owner: user._id }).lean();
 
             if (!island) {
                 return {
