@@ -690,7 +690,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
             },
             rerollIslandTraits: {
                 active: true,
-                type: 'chosen',
+                type: 'chosenSame',
                 allowDuplicates: false,
                 value: 'all'
             },

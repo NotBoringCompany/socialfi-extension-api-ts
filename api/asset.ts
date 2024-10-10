@@ -25,7 +25,7 @@ export const consumeSynthesizingItem = async (
      * 
      * NOTE: if `rerollIslandTraits.value` is `all`, then `newTraits` SHOULD contain the new traits for all resource rarities (i.e. common to legendary).
      */
-    newTraits?: Array<{
+    newIslandTraits?: Array<{
         rarity: ResourceRarity,
         trait: IslandTrait
     }>,
@@ -164,11 +164,12 @@ export const consumeSynthesizingItem = async (
             if (singleBitUsageLimit !== null || singleBitCategoryUsageLimit !== null) {
                 // check if the user has used the item (or if `singleBitCategoryUsageLimit`, if ANY item within the item category/type has been used) on this bit before.
                 const usedOnThisBitCount = usedItemInstances.filter(i => i.islandOrBitId === islandOrBitId).length;
+                const limit = singleBitUsageLimit !== null ? singleBitUsageLimit : singleBitCategoryUsageLimit;
 
-                if (usedOnThisBitCount >= singleBitUsageLimit) {
+                if (usedOnThisBitCount >= limit) {
                     return {
                         status: Status.ERROR,
-                        message: `(consumeSynthesizingItem) Single bit usage limit for this item reached.`
+                        message: `(consumeSynthesizingItem) ${singleBitUsageLimit !== null ? 'Single bit' : 'Single bit category'} usage limit for this item reached.`
                     }
                 }
             }
@@ -695,14 +696,17 @@ export const consumeSynthesizingItem = async (
                 affectedAsset,
             }).lean();
 
+            console.log(`(consumeSynthesizingItem) Used item instances: ${JSON.stringify(usedItemInstances, null, 2)}`);
+
             if (singleIslandUsageLimit !== null || singleIslandCategoryUsageLimit !== null) {
                 // check if the user has used the item (or, if `singleIslandCategoryUsageLimit`, if ANY item within the item category/type has been used) on this island before.
                 const usedOnThisIslandCount = usedItemInstances.filter(i => i.islandOrBitId === islandOrBitId).length;
+                const limit = singleIslandUsageLimit !== null ? singleIslandUsageLimit : singleIslandCategoryUsageLimit;
 
-                if (usedOnThisIslandCount >= singleIslandUsageLimit) {
+                if (usedOnThisIslandCount >= limit) {
                     return {
                         status: Status.ERROR,
-                        message: `(consumeSynthesizingItem) Single island usage limit for this item reached.`
+                        message: `(consumeSynthesizingItem) ${singleIslandUsageLimit !== null ? 'Single island usage' : 'Single island usage category'} limit for this item reached.`
                     }
                 }
             }
@@ -760,28 +764,119 @@ export const consumeSynthesizingItem = async (
                 });
             }
 
-            // // check if this item transmutes the traits of the island
-            // if (synthesizingItemData.effectValues.traitTransmutation) {
-            //     // // check if the resource line to transmute to exists and is valid.
-            //     // if (!newResourceLine) {
-            //     //     return {
-            //     //         status: Status.ERROR,
-            //     //         message: `(consumeSynthesizingItem) New resource line not provided.`
-            //     //     }
-            //     // }
+            // check if this item transmutes the traits of the island
+            if (synthesizingItemData.effectValues.rerollIslandTraits.active) {
+                // check if the type is `chosen`, `chosenSame` or `random`.
+                // if `chosen` or `chosenSame`, we need to ensure the following:
+                // 1. the `newIslandTraits` array is NOT empty.
+                // 2. if `rerollIslandTraits.value` is an array of resource rarities, then the `newIslandTraits` array must ONLY have the rarities specified in the `rerollIslandTraits.value` array.
+                //  for `chosenSame`, each trait in the `newIslandTraits` array MUST be the exact same. for `chosen`, each trait in the `newIslandTraits` array can be different.
+                // if `random`, we just need to randomly `value` amount of traits from the island.
+                // we also then need to check if the inputted traits are valid traits (that exist).
+                // NOTE: if `allowDuplicates` is true (for `random` only), then the rerolled trait MAY be the same as the existing trait for each resource rarity.
+                const rerollType = synthesizingItemData.effectValues.rerollIslandTraits.type;
 
-            //     // // check if the inputted resource line exists in the ResourceLine enum
-            //     // if (!Object.values(ResourceLine).includes(newResourceLine)) {
-            //     //     return {
-            //     //         status: Status.ERROR,
-            //     //         message: `(consumeSynthesizingItem) New resource line is invalid.`
-            //     //     }
-            //     // }
+                if (rerollType === 'chosen' || rerollType === 'chosenSame') {
+                    if (!newIslandTraits || newIslandTraits.length === 0) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(consumeSynthesizingItem) New island traits not provided.`
+                        }
+                    }
 
+                    // check if `the rerollIslandTraits.value` is an array of resource rarities or 'all'.
+                    // if an array of resource rarities, check that each element in the `newIslandTraits` array contains the rarities specified in the `rerollIslandTraits.value` array.
+                    // if 'all', we need to check if the `newIslandTraits` array contains all of rarities (from common to legendary).
+                    if (Array.isArray(synthesizingItemData.effectValues.rerollIslandTraits.value)) {
+                        if (!synthesizingItemData.effectValues.rerollIslandTraits.value.every(rarity => newIslandTraits.some(trait => trait.rarity === rarity))) {
+                            return {
+                                status: Status.ERROR,
+                                message: `(consumeSynthesizingItem) New island traits must contain the specified resource rarities.`
+                            }
+                        }
+                    } else if (synthesizingItemData.effectValues.rerollIslandTraits.value === 'all') {
+                        if (!newIslandTraits.every(trait => Object.values(ResourceRarity).includes(trait.rarity))) {
+                            return {
+                                status: Status.ERROR,
+                                message: `(consumeSynthesizingItem) New island traits must contain all resource rarities.`
+                            }
+                        }
+                    }
 
-            //     // // get the current resource line of the island
-            //     // const currentResourceLine = island.islan;
-            // }
+                    // if `chosenSame`, we need to check if all of the traits in the `newIslandTraits` array are the same.
+                    if (rerollType === 'chosenSame') {
+                        // we just take the first trait in the `newIslandTraits` array and check if all of the traits are the same.
+                        if (!newIslandTraits.every(trait => trait.trait === newIslandTraits[0].trait)) {
+                            return {
+                                status: Status.ERROR,
+                                message: `(consumeSynthesizingItem) New island traits must be the same.`
+                            }
+                        }
+                    }
+
+                    // check, for each trait in the `newIslandTraits` array, if the trait exists in the `IslandTrait` enum.
+                    if (!newIslandTraits.every(trait => Object.values(IslandTrait).includes(trait.trait))) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(consumeSynthesizingItem) One or more inputted new island traits are invalid.`
+                        }
+                    }
+
+                    // get the current traits
+                    const currentTraits: IslandTrait[] = island?.traits;
+                    // this will be used to insert the new traits into the island's traits array.
+                    const updatedTraits: IslandTrait[] = [];
+
+                    // fetch all rarities in ascending order from `ResourceRarity`.
+                    // we will use this to loop through each rarity to input to `updatedTraits`.
+                    const resourceRarities: ResourceRarity[] = Object.values(ResourceRarity);
+
+                    if (rerollType === 'chosen' || rerollType === 'chosenSame') {
+                        // if reroll type is 'chosen' or 'chosenSame' we will replace the existing traits with the new traits.
+                        // if `value` is all, we simply input the new traits into the `updatedTraits` array.
+                        // if `value` is an array of resource rarities, we will need to replace the traits of those resource rarities only and keep the other traits.
+                        if (synthesizingItemData.effectValues.rerollIslandTraits.value === 'all') {
+                            resourceRarities.forEach(rarity => {
+                                // fetch the trait in the `newIslandTraits` array that has the same rarity as the current rarity.
+                                const trait = newIslandTraits.find(t => t.rarity === rarity)?.trait ?? null;
+
+                                // if the trait exists, add it to the `updatedTraits` array.
+                                // no need to check for `else`, because we already checked if all traits existed.
+                                if (trait !== null) {
+                                    updatedTraits.push(trait);
+                                }
+                            })
+                        }
+
+                        if (Array.isArray(synthesizingItemData.effectValues.rerollIslandTraits.value)) {
+                            synthesizingItemData.effectValues.rerollIslandTraits.value.forEach((rarity, index) => {
+                                // fetch the trait in the `newIslandTraits` array that has the same rarity as the current rarity.
+                                const trait = newIslandTraits.find(t => t.rarity === rarity)?.trait ?? null;
+
+                                // if the trait exists, add it to the `updatedTraits` array.
+                                if (trait !== null) {
+                                    updatedTraits.push(trait);
+                                } else {
+                                    // here, because we might not replace some of the traits for specific resource rarities,
+                                    // we will need to add the existing trait for that rarity.
+                                    // since the order is preserved, we can just fetch the trait at the same index as the current rarity.
+                                    updatedTraits.push(currentTraits[index]);
+                                }
+                            })
+                        }
+                    }
+                }
+
+                if (rerollType === 'random') {
+                    // if reroll type is random:
+                    // 1. if `value` is 'all', we will loop through each existing trait and throw a dice to see which trait to obtain.
+                    // 2. if `value` is an array of resource rarities, we will only reroll the traits of those resource rarities.
+                    // 3. if `allowDuplicates` is true, then we can reroll the same trait multiple times. this means that for each loop, we will include the current trait into the pool of traits obtainable.
+                    // if false, then we will exclude the current trait from the pool of traits obtainable.
+
+                    ////////////// TO DO!!!!!!!!!!!!!!!!!!!!!
+                }
+            }
         }
 
         // decrement the item amount in the user's inventory.

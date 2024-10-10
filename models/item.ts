@@ -252,11 +252,14 @@ export interface SynthesizingItemEffectValues {
          * if `type` is `random`, the system will randomly reroll `value` traits.
          * for example, if `value` is ['Common', 'Uncommon'], the system will randomly reroll the traits for both the common and uncommon resources.
          * 
-         * if `type` is `chosen`, the user can choose `value` of traits to reroll.
+         * if `type` is `chosen`, the user can choose `value` of traits to reroll. Each trait can be different than another.
+         * for example, if `value` is ['Common', 'Uncommon'], then the user can choose to reroll to Aquifer for common resources and Fertile for uncommon, or Mineral Rich and Aquifer, etc. (free choice)
          * 
+         * if `type `is `chosenSame`, the user can choose `value` of traits to reroll BUT all traits to reroll MUST be the same.
+         * for example, if `value` is ['Common', 'Uncommon'], then the user can ONLY choose to reroll to Aquifer, Fertile OR Mineral Rich for both common and uncommon resources.
          * 
          */
-        type: 'random' | 'chosen' | null;
+        type: 'random' | 'chosen' | 'chosenSame' | null;
         /**
          * if `allowDuplicates` is true, each rerolled trait can be the same as the original trait (meaning that the original trait is added to the pool of possible traits).
          * 
