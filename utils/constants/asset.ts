@@ -5,12 +5,81 @@ import { SynthesizingItemGroup } from '../../models/craft';
 import { IslandType } from '../../models/island';
 import { AugmentationItem, BitOrbType, ContinuumRelicItem, EnergyTotemItem, Item, PotionItem, SynthesizingItem, SynthesizingItemData, TerraCapsulatorType, TransmutationItem } from '../../models/item';
 import { BarrenResource, FruitResource, LiquidResource, OreResource } from '../../models/resource';
+import { BitModel, IslandModel } from './db';
+import { Modifier } from '../../models/modifier';
 
 /**
  * Creates a new queue to add or remove consumed synthesizing item effects from other assets.
  */
 export const SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE = new Bull('craftQueue', {
     redis: process.env.REDIS_URL
+});
+
+/**
+ * Remove any expired gathering rate modifier effects from a consumed synthesizing item.
+ */
+SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE.process('removeIslandGatheringRateModifier', async (job) => {
+    const { islandId, owner, origin } = job.data;
+
+    try {
+        // directly remove gathering rate modifier with the given `origin` from the island
+        const result = await IslandModel.updateOne({ islandId, owner }, {
+            $pull: {
+                'islandStatsModifiers.gatheringRateModifiers': { origin }
+            }
+        });
+
+        if (result.modifiedCount === 0) {
+            throw new Error(`No gathering rate modifier found for island ${islandId} from ${origin}`);
+        }
+    } catch (err: any) {
+        console.error(`Error removing gathering rate modifier effect from island ${islandId} from ${origin}: ${err.message}`);
+    }
+});
+
+/**
+ * Remove any expired earning rate modifier effects from a consumed synthesizing item.
+ */
+SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE.process('removeIslandEarningRateModifier', async (job) => {
+    const { islandId, owner, origin } = job.data;
+
+    try {
+        // directly remove earning rate modifier with the given `origin` from the island
+        const result = await IslandModel.updateOne({ islandId, owner }, {
+            $pull: {
+                'islandStatsModifiers.earningRateModifiers': { origin }
+            }
+        });
+
+        if (result.modifiedCount === 0) {
+            throw new Error(`No earning rate modifier found for island ${islandId} from ${origin}`);
+        }
+    
+    } catch (err: any) {
+        console.error(`Error removing earning rate modifier effect from island ${islandId} from ${origin}: ${err.message}`);
+    }
+});
+
+/**
+ * Remove any expired energy rate modifier effects for placed bits from a consumed synthesizing item.
+ */
+SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE.process('removePlacedBitsEnergyDepletionRateModifier', async (job) => {
+    const { bitId, owner, origin } = job.data;
+
+    try {
+        // directly remove energy depletion rate modifier with the given `origin` from the bit
+        const result = await BitModel.updateOne({ bitId, owner }, {
+            $pull: {
+                'bitStatsModifiers.energyRateModifiers': { origin }
+            }
+        });
+
+        if (result.modifiedCount === 0) {
+            throw new Error(`No energy depletion rate modifier found for bit ${bitId} from ${origin}`);
+        }
+    } catch (err: any) {
+        console.error(`Error removing energy depletion rate modifier effect from bit ${bitId} from ${origin}: ${err.message}`);
+    }
 });
 
 /**

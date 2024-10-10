@@ -953,6 +953,7 @@ export const consumeSynthesizingItem = async (
                         'removeIslandGatheringRateModifier',
                         {
                             islandId: island.islandId,
+                            owner: user._id,
                             origin: `Synthesizing Item: ${item}. Rand ID: ${randomId}`,
                         },
                         { delay: synthesizingItemData.effectValues.effectDuration as number * 1000 }
@@ -986,6 +987,7 @@ export const consumeSynthesizingItem = async (
                         'removeIslandEarningRateModifier',
                         {
                             islandId: island.islandId,
+                            owner: user._id,
                             origin: `Synthesizing Item: ${item}. Rand ID: ${randomId}`,
                         },
                         { delay: synthesizingItemData.effectValues.effectDuration as number * 1000 }
@@ -1025,6 +1027,7 @@ export const consumeSynthesizingItem = async (
                                 'removeBitEnergyDepletionRateModifier',
                                 {
                                     bitId,
+                                    owner: user._id,
                                     origin: `Synthesizing Item: ${item}. Rand ID: ${randomId}`,
                                 },
                                 { delay: synthesizingItemData.effectValues.effectDuration as number * 1000 }
