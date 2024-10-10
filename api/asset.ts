@@ -141,12 +141,9 @@ export const consumeSynthesizingItem = async (
 
             // if `singleBitUsageLimit` OR `concurrentBitsUsageLimit` is not null, we check for any consumed instances of this particular item only.
             // if `singleBitCategoryUsageLimit` is not null, we check for any consumed instances of ANY item in the same category/type.
+            // NOTE: no need to check for `singleBitConcurrentUsageLimit` because it doesn't count towards the limit of using the item or items from the item category on a single bit.
             const itemsToSearch = (): SynthesizingItem | SynthesizingItem[] | string | string[] => {
-                // if (singleBitUsageLimit !== null || concurrentBitsUsageLimit !== null) {
-                //     return item;
-                // }
-
-                if (singleBitUsageLimit !== null) {
+                if (singleBitUsageLimit !== null || concurrentBitsUsageLimit !== null) {
                     return item;
                 }
 
@@ -695,12 +692,9 @@ export const consumeSynthesizingItem = async (
 
             // if `singleIslandUsageLimit` OR `concurrentIslandsUsageLimit` is not null, we check for any consumed instances of this particular item only.
             // if `singleIslandCategoryUsageLimit` is not null, we check for any consumed instances of ANY item in the same category/type.
+            // NOTE: no need to check for `singleIslandConcurrentUsageLimit` because it doesn't count towards the limit of using the item or items from the item category on a single island.
             const itemsToSearch = (): SynthesizingItem | SynthesizingItem[] | string | string[] => {
-                // if (singleIslandUsageLimit !== null || concurrentIslandsUsageLimit !== null) {
-                //     return item;
-                // }
-
-                if (singleIslandUsageLimit !== null) {
+                if (singleIslandUsageLimit !== null || concurrentIslandsUsageLimit !== null) {
                     return item;
                 }
 

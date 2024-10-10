@@ -175,7 +175,7 @@ export interface SynthesizingItemLimitations {
      */
     singleIslandCategoryUsage: SynthesizingItemLimitationNumerical;
     /**
-     * how many of this item can be used on this island concurrently.
+     * how many of this item can be used on THIS island concurrently.
      * 
      * this is used for items that have effect durations that last for a certain amount of time (because otherwise they won't be "concurrently used").
      * 
@@ -203,7 +203,7 @@ export interface SynthesizingItemLimitations {
      */
     singleBitCategoryUsage: SynthesizingItemLimitationNumerical;
     /**
-     * how many of this item can be used on this bit concurrently.
+     * how many of this item can be used on THIS bit concurrently.
      * 
      * this is used for items that have effect durations that last for a certain amount of time (because otherwise they won't be "concurrently used").
      * 
