@@ -291,6 +291,8 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
             },
             placedBitsEnergyDepletionRateModifier: {
                 active: false,
+                allowLaterPlacedBitsToObtainEffect: true,
+                allowLaterUnplacedBitsToLoseEffect: true,
                 value: null
             },
             bitTransferrableBetweenSeasons: {
@@ -361,6 +363,8 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
             },
             placedBitsEnergyDepletionRateModifier: {
                 active: false,
+                allowLaterPlacedBitsToObtainEffect: true,
+                allowLaterUnplacedBitsToLoseEffect: true,
                 value: null
             },
             bitTransferrableBetweenSeasons: {
@@ -431,6 +435,8 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
             },
             placedBitsEnergyDepletionRateModifier: {
                 active: false,
+                allowLaterPlacedBitsToObtainEffect: true,
+                allowLaterUnplacedBitsToLoseEffect: true,
                 value: null
             },
             bitTransferrableBetweenSeasons: {
@@ -501,6 +507,8 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
             },
             placedBitsEnergyDepletionRateModifier: {
                 active: false,
+                allowLaterPlacedBitsToObtainEffect: true,
+                allowLaterUnplacedBitsToLoseEffect: true,
                 value: null
             },
             bitTransferrableBetweenSeasons: {
@@ -571,6 +579,8 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
             },
             placedBitsEnergyDepletionRateModifier: {
                 active: false,
+                allowLaterPlacedBitsToObtainEffect: true,
+                allowLaterUnplacedBitsToLoseEffect: true,
                 value: null
             },
             bitTransferrableBetweenSeasons: {
@@ -641,6 +651,8 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
             },
             placedBitsEnergyDepletionRateModifier: {
                 active: false,
+                allowLaterPlacedBitsToObtainEffect: true,
+                allowLaterUnplacedBitsToLoseEffect: true,
                 value: null
             },
             bitTransferrableBetweenSeasons: {
@@ -711,6 +723,8 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
             },
             placedBitsEnergyDepletionRateModifier: {
                 active: false,
+                allowLaterPlacedBitsToObtainEffect: true,
+                allowLaterUnplacedBitsToLoseEffect: true,
                 value: null
             },
             bitTransferrableBetweenSeasons: {
@@ -781,6 +795,8 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
             },
             placedBitsEnergyDepletionRateModifier: {
                 active: false,
+                allowLaterPlacedBitsToObtainEffect: true,
+                allowLaterUnplacedBitsToLoseEffect: true,
                 value: null
             },
             bitTransferrableBetweenSeasons: {
@@ -852,6 +868,8 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
             },
             placedBitsEnergyDepletionRateModifier: {
                 active: true,
+                allowLaterPlacedBitsToObtainEffect: true,
+                allowLaterUnplacedBitsToLoseEffect: true,
                 value: -12.5
             },
             bitTransferrableBetweenSeasons: {
@@ -923,6 +941,8 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
             },
             placedBitsEnergyDepletionRateModifier: {
                 active: true,
+                allowLaterPlacedBitsToObtainEffect: true,
+                allowLaterUnplacedBitsToLoseEffect: true,
                 value: -25
             },
             bitTransferrableBetweenSeasons: {
@@ -994,6 +1014,8 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
             },
             placedBitsEnergyDepletionRateModifier: {
                 active: true,
+                allowLaterPlacedBitsToObtainEffect: true,
+                allowLaterUnplacedBitsToLoseEffect: true,
                 value: -50
             },
             bitTransferrableBetweenSeasons: {
@@ -1064,6 +1086,8 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
             },
             placedBitsEnergyDepletionRateModifier: {
                 active: false,
+                allowLaterPlacedBitsToObtainEffect: true,
+                allowLaterUnplacedBitsToLoseEffect: true,
                 value: null,
             },
             bitTransferrableBetweenSeasons: {
@@ -1134,6 +1158,8 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
             },
             placedBitsEnergyDepletionRateModifier: {
                 active: false,
+                allowLaterPlacedBitsToObtainEffect: true,
+                allowLaterUnplacedBitsToLoseEffect: true,
                 value: null,
             },
             bitTransferrableBetweenSeasons: {
@@ -1204,6 +1230,8 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
             },
             placedBitsEnergyDepletionRateModifier: {
                 active: false,
+                allowLaterPlacedBitsToObtainEffect: true,
+                allowLaterUnplacedBitsToLoseEffect: true,
                 value: null,
             },
             bitTransferrableBetweenSeasons: {
@@ -1274,6 +1302,8 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
             },
             placedBitsEnergyDepletionRateModifier: {
                 active: false,
+                allowLaterPlacedBitsToObtainEffect: true,
+                allowLaterUnplacedBitsToLoseEffect: true,
                 value: null,
             },
             bitTransferrableBetweenSeasons: {
@@ -1344,6 +1374,8 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
             },
             placedBitsEnergyDepletionRateModifier: {
                 active: false,
+                allowLaterPlacedBitsToObtainEffect: true,
+                allowLaterUnplacedBitsToLoseEffect: true,
                 value: null,
             },
             bitTransferrableBetweenSeasons: {
@@ -1414,6 +1446,8 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
             },
             placedBitsEnergyDepletionRateModifier: {
                 active: false,
+                allowLaterPlacedBitsToObtainEffect: true,
+                allowLaterUnplacedBitsToLoseEffect: true,
                 value: null,
             },
             bitTransferrableBetweenSeasons: {
@@ -1484,6 +1518,8 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
             },
             placedBitsEnergyDepletionRateModifier: {
                 active: false,
+                allowLaterPlacedBitsToObtainEffect: true,
+                allowLaterUnplacedBitsToLoseEffect: true,
                 value: null,
             },
             bitTransferrableBetweenSeasons: {

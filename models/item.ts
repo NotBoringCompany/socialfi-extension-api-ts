@@ -300,6 +300,16 @@ export interface SynthesizingItemEffectValues {
     placedBitsEnergyDepletionRateModifier: {
         /** if this effect is active on this item */
         active: boolean;
+        /**
+         * if this is `true`, any bits that are placed on the island AFTER this item is used will also obtain the effect.
+         * otherwise, only bits that are placed BEFORE this item is used will obtain the effect.
+         */
+        allowLaterPlacedBitsToObtainEffect: boolean;
+        /**
+         * if this is `true`, any bits that are unplaced from the island AFTER this item is used will lose the effect.
+         * otherwise, they will retain the effect until the item's effect duration is over (or permanently, depending on the item's `effectDuration`).
+         */
+        allowLaterUnplacedBitsToLoseEffect: boolean;
         /** the value to increase or decrease by */
         value: number | null;
     }
