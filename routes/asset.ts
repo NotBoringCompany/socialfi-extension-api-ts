@@ -24,7 +24,7 @@ router.get('/get_asset_descriptions', async (req, res) => {
 });
 
 router.post('/consume_synthesizing_item', async (req, res) => {
-    const { item, islandOrBitId, newResourceLine, chosenBitTraitsToReroll } = req.body;
+    const { item, islandOrBitId, newIslandTraits, chosenBitTraitsToReroll } = req.body;
 
     try {
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'consume_synthesizing_item');
@@ -36,7 +36,7 @@ router.post('/consume_synthesizing_item', async (req, res) => {
             })
         }
 
-        const { status, message, data } = await consumeSynthesizingItem(validateData?.twitterId, item, islandOrBitId, newResourceLine, chosenBitTraitsToReroll);
+        const { status, message, data } = await consumeSynthesizingItem(validateData?.twitterId, item, islandOrBitId, newIslandTraits, chosenBitTraitsToReroll);
 
         return res.status(status).json({
             status,
