@@ -34,9 +34,7 @@ export const startRest = async (socket: Socket, data: SaunaUserDetail) => {
     const timeToMaxEnergy = lack / energyPotionPerSecond;
     const timeToMaxEnergyInMiliSecond = timeToMaxEnergy * 1000;
 
-    console.log('time to max energy', (timeToMaxEnergyInMiliSecond / 60) / 1000);
-
-    await addUserToRoom(userId, socket.id, timeToMaxEnergyInMiliSecond, lack);
+    await addUserToRoom(userId, socket.id, energyPotionPerSecond);
     const getConnected = await redisDb.get(SaunaGlobalKey.CONNECTED)
     socket.broadcast.emit(EventSauna.USER_COUNT, getConnected);
     socket.emit(EventSauna.USER_COUNT, getConnected);
@@ -44,9 +42,9 @@ export const startRest = async (socket: Socket, data: SaunaUserDetail) => {
       status: Status.SUCCESS,
       message: `(startRest) user ${userId} has started rest`,
       data: {
-        timeToMaxEnergyInMiliSecond, 
-        energyPotionPerSecond, 
-        isStartRest: true, 
+        timeToMaxEnergyInMiliSecond,
+        energyPotionPerSecond,
+        isStartRest: true,
       }
     });
   } catch (error) {
@@ -65,6 +63,26 @@ export const startRest = async (socket: Socket, data: SaunaUserDetail) => {
 export const stopRest = async (socket: Socket) => {
   try {
     const userId = await redisDb.get(socket.id);
+    const isUserAlreadyInRoom = await isUserInRoom(userId);
+    if (!isUserAlreadyInRoom) {
+      return socket.emit('server_response', {
+        status: Status.BAD_REQUEST,
+        message: `(stopRest) user ${userId} is not in room`
+      });
+    }
+    // get user energy potion per second
+    const getEnergyPotionPerSecond = await redisDb.get(`energyPotionPerSecond:${userId}`);
+    // get user when user join
+    const getTimeUserJoin = await redisDb.get(`timeStamp:${userId}`);
+    // calculate total energy
+    const dateNowInSeconds = Math.floor(Date.now() / 1000);
+    // calculate total time rest
+    const userGetRestTime = Math.abs(dateNowInSeconds - Number(getTimeUserJoin));
+    // calculate total energy
+    const getTotalEnergy = userGetRestTime * Number(getEnergyPotionPerSecond);
+
+    await energyRecover(userId, getTotalEnergy);
+
     await removeUserFromRoom(socket.id);
     const getConnected = await redisDb.get(SaunaGlobalKey.CONNECTED)
     socket.broadcast.emit(EventSauna.USER_COUNT, getConnected);
@@ -85,10 +103,10 @@ export const stopRest = async (socket: Socket) => {
  * Add user to room and set delay to queue
  * @param userId user id
  * @param socketId socket id
- * @param timeToMaxEnergyInMiliSecond time to max energy in milisecond
+ * @param energyInSecond time to max energy in milisecond
  * @param getTotalEnergy total energy to add
  */
-const addUserToRoom = async (userId: string, socketId: string, timeToMaxEnergyInMiliSecond: number, getTotalEnergy: number) => {
+const addUserToRoom = async (userId: string, socketId: string, energyInSecond: number) => {
   // get user already in room
   const isUserAlreadyInRoom = await isUserInRoom(userId)
   // socket id same as user id
@@ -100,7 +118,7 @@ const addUserToRoom = async (userId: string, socketId: string, timeToMaxEnergyIn
   }
   // if user already in room but socket different, remove old socket and set new socket
   if (isUserAlreadyInRoom && !isSocketIdSameAsUserId) {
-    await removeUserFromRoom(getCurrentSocketId); // Remove socket yang lama
+    await removeUserFromRoom(getCurrentSocketId); // Remove old socket
     console.log(`Socket ID updated for user ${userId}`);
   }
   // get total connected
@@ -110,15 +128,14 @@ const addUserToRoom = async (userId: string, socketId: string, timeToMaxEnergyIn
   try {
     // pin user to room
     redisMulti.set(`userSocket:${userId}`, socketId)
-    // pin user to socketId
+    // pin user when user connected
+    redisMulti.set(`timeStamp:${userId}`, Math.floor(Date.now() / 1000))
+    // set user energy potion per second
+    redisMulti.set(`energyPotionPerSecond:${userId}`, energyInSecond)
+    // pin user to socketid
     redisMulti.set(socketId, userId)
     // increment total connected
     redisMulti.set(SaunaGlobalKey.CONNECTED, Number(userConnected) + 1)
-    // add user to queue and set delay
-    await saunaQueue.add(
-      { userId, socketId, getTotalEnergy },
-      { jobId: userId, delay: timeToMaxEnergyInMiliSecond, removeOnComplete: true }
-    )
     // exectute redis multi
     await redisMulti.exec()
   } catch (error) {
@@ -146,11 +163,13 @@ const removeUserFromRoom = async (socketId: string) => {
     redisMulti.set(SaunaGlobalKey.CONNECTED, Number(userConnected) - 1)
     // remove user from room
     redisMulti.del(`userSocket:${userId}`)
+    // remove user timestamp
+    redisMulti.del(`timeStamp:${userId}`)
+    // remove user energy potion per second
+    redisMulti.del(`energyPotionPerSecond:${userId}`)
     // remove user from socket
     redisMulti.del(socketId)
-    // exect redis multi
-    const currentJob = await saunaQueue.getJob(userId)
-    if (currentJob) await currentJob.remove()
+    // exectute redis multi
     await redisMulti.exec()
   } catch (error) {
     throw new Error(`${error.message}`)
@@ -179,14 +198,28 @@ const isUserInRoom = async (userId: string) => {
   return true
 }
 
-export const energyRecover = async (userId: string, energyRecover: number) => {
+/**
+ * Add energy to user's current energy
+ * @param userId user id
+ * @param energyRecover energy to add
+ * @returns Promise of updateOne result
+ */
+export const energyRecover = async (userId: string, energyRecover: number): Promise<any> => {
   try {
+    // check if user already in room
     const isUserExistInRoom = await isUserInRoom(userId)
     if (!isUserExistInRoom) throw new Error('User not in room')
-
-    const isUserExist = await UserModel.exists({ _id: userId })
-    if (!isUserExist) throw new Error('User not found')
-
+    // check user exist
+    const user = await UserModel.findOne({ _id: userId })
+    if (!user) throw new Error('User not found')
+    // check if energy to greater than max energy set it to max energy
+    if (user.inGameData.energy.currentEnergy + energyRecover > user.inGameData.energy.maxEnergy) {
+      return await UserModel.updateOne(
+        { _id: userId },
+        { $set: { 'inGameData.energy.currentEnergy': user.inGameData.energy.maxEnergy } }
+      )
+    }
+    // update user energy with energy to add
     return await UserModel.updateOne(
       { _id: userId },
       { $inc: { 'inGameData.energy.currentEnergy': energyRecover } }
