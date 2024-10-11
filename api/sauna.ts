@@ -80,11 +80,12 @@ export const stopRest = async (socket: Socket) => {
     const userGetRestTime = Math.abs(dateNowInSeconds - Number(getTimeUserJoin));
     // calculate total energy
     const getTotalEnergy = userGetRestTime * Number(getEnergyPotionPerSecond);
-
+    // recover energy
     await energyRecover(userId, getTotalEnergy);
-
+    // remove user from room
     await removeUserFromRoom(socket.id);
     const getConnected = await redisDb.get(SaunaGlobalKey.CONNECTED)
+    // broadcast to all user
     socket.broadcast.emit(EventSauna.USER_COUNT, getConnected);
     socket.emit(EventSauna.USER_COUNT, getConnected);
     return socket.emit('server_response', {
