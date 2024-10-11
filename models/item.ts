@@ -425,6 +425,12 @@ export interface SynthesizingItemEffectValues {
          * if `random`, then the traits being rerolled will result in random traits (can be positive or negative).
          */
         result: 'onlyPositive' | 'onlyNegative' | 'random' | null;
+        /**
+         * if `allowDuplicates` is true, each rerolled trait can be the same as the original trait (meaning that the original trait is added to the pool of possible traits).
+         * 
+         * NOTE: this is only used if `type` is `random`.
+         */
+        allowDuplicates: boolean;
         /** the amount of traits that can be rerolled. if 'all', all of the bits traits will be rerolled. */
         value: number | 'all' | null;
     }

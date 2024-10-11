@@ -342,6 +342,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 type: null,
                 result: null,
+                allowDuplicates: true,
                 value: null
             }
         }
@@ -453,6 +454,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 type: null,
                 result: null,
+                allowDuplicates: true,
                 value: null
             }
         }
@@ -564,6 +566,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 type: null,
                 result: null,
+                allowDuplicates: true,
                 value: null
             }
         }
@@ -675,6 +678,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 type: null,
                 result: null,
+                allowDuplicates: true,
                 value: null
             }
         }
@@ -786,6 +790,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 type: null,
                 result: null,
+                allowDuplicates: true,
                 value: null
             }
         }
@@ -897,6 +902,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 type: null,
                 result: null,
+                allowDuplicates: true,
                 value: null
             }
         }
@@ -1008,6 +1014,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 type: null,
                 result: null,
+                allowDuplicates: true,
                 value: null
             }
         }
@@ -1119,6 +1126,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 type: null,
                 result: null,
+                allowDuplicates: true,
                 value: null
             }
         }
@@ -1231,6 +1239,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 type: null,
                 result: null,
+                allowDuplicates: true,
                 value: null
             }
         }
@@ -1343,6 +1352,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 type: null,
                 result: null,
+                allowDuplicates: true,
                 value: null
             }
         }
@@ -1455,6 +1465,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 type: null,
                 result: null,
+                allowDuplicates: true,
                 value: null
             }
         }
@@ -1566,6 +1577,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 type: null,
                 result: null,
+                allowDuplicates: true,
                 value: null
             }
         }
@@ -1677,6 +1689,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 type: null,
                 result: null,
+                allowDuplicates: true,
                 value: null
             }
         }
@@ -1788,6 +1801,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 type: null,
                 result: null,
+                allowDuplicates: true,
                 value: null
             }
         }
@@ -1899,6 +1913,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: true,
                 type: 'random',
                 result: 'random',
+                allowDuplicates: true,
                 value: 1
             }
         }
@@ -2010,13 +2025,14 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: true,
                 type: 'random',
                 result: 'random',
+                allowDuplicates: true,
                 value: 'all'
             }
         }
     },
     {
         name: PotionItem.POTION_OF_UNHOLY_ENLIGHTENMENT,
-        description: `Select a Bit and select one trait to reroll randomly. A positive trait is guaranteed.`,
+        description: `Select a Bit and select one trait to reroll randomly. A positive trait and no duplicate guaranteed.`,
         minimumRarity: null,
         maximumRarity: null,
         limitations: {
@@ -2121,13 +2137,14 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: true,
                 type: 'chosen',
                 result: 'onlyPositive',
+                allowDuplicates: false,
                 value: 1
             }
         }
     },
     {
         name: PotionItem.POTION_OF_DIVINE_ENLIGHTENMENT,
-        description: `Select a Bit and reroll all traits randomly. Positive traits are guaranteed.`,
+        description: `Select a Bit and reroll all traits randomly. Positive traits and no duplicates guaranteed.`,
         minimumRarity: null,
         maximumRarity: null,
         limitations: {
@@ -2232,6 +2249,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: true,
                 type: 'random',
                 result: 'onlyPositive',
+                allowDuplicates: false,
                 value: 'all'
             }
         }

@@ -397,18 +397,36 @@ export const consumeSynthesizingItem = async (
 
                     // if the value is a number, we need to check if the chosenBitTraitsToReroll array has the same amount of elements as the value.
                     if (typeof synthesizingItemData.effectValues.rerollBitTraits.value === 'number') {
-                        if (!chosenBitTraitsToReroll || chosenBitTraitsToReroll.length !== synthesizingItemData.effectValues.rerollBitTraits.value) {
-                            console.log(`(consumeSynthesizingItem) Chosen bit traits to reroll array length: ${chosenBitTraitsToReroll.length}, Value: ${synthesizingItemData.effectValues.rerollBitTraits.value}`);
-                            
+                        if (!chosenBitTraitsToReroll) {
                             return {
                                 status: Status.ERROR,
-                                message: `(consumeSynthesizingItem) User must input the correct amount of traits to reroll.`
+                                message: `(consumeSynthesizingItem) Chosen bit traits to reroll array is null.`
+                            }
+                        }
+
+                        // there is a case where, for example, the item allows, say, 3 traits to be rerolled, but the bit only has 2 traits.
+                        // in this case, we will check the following:
+                        // 1. if the bit has less traits than the value, if the length of the `chosenBitTraitsToReroll` array is not equal to the bit.traits length, we throw an error.
+                        // 2. if the bit has equal or more traits than the value, we simply throw an error if the length of the `chosenBitTraitsToReroll` array is not equal to the value.
+                        const bitTraits = bit.traits as BitTraitData[];
+
+                        if (bitTraits.length < synthesizingItemData.effectValues.rerollBitTraits.value) {
+                            if (chosenBitTraitsToReroll.length !== bitTraits.length) {
+                                return {
+                                    status: Status.ERROR,
+                                    message: `(consumeSynthesizingItem) Bit does not have the correct amount of traits to reroll.`
+                                }
+                            }
+                        } else {
+                            if (chosenBitTraitsToReroll.length !== synthesizingItemData.effectValues.rerollBitTraits.value) {
+                                return {
+                                    status: Status.ERROR,
+                                    message: `(consumeSynthesizingItem) User must input the correct amount of traits to reroll.`
+                                }
                             }
                         }
 
                         // we need to also check if the chosen traits are valid (i.e. the bit needs to have ALL of the chosen traits).
-                        const bitTraits = bit.traits as BitTraitData[];
-
                         // Each `bitTrait` instance in `bitTraits` is of BitTraitData type, while `chosenBitTraitsToReroll` is of BitTrait type.
                         // we need to fetch the `bitTrait.trait` from each `bitTrait` instance and compare it with the `trait` from each `chosenBitTrait`
                         // and ensure that the bit has all of the chosen traits to reroll.
@@ -424,19 +442,155 @@ export const consumeSynthesizingItem = async (
                 // at this point, we should be done with the checks for `chosen` type. 
                 // if the type is `random`, we don't need to do any checks as the logic will simply just reroll the traits.
                 // we now need to just handle the logic to reroll the traits.
-                // firstly, check the amount of traits to reroll. if `all`, we set `traitsToReroll` to the bit's traits data length.
-                // if it's a number, we set `traitsToReroll` to the `rerollBitTraits.value`.
+                // firstly, check the amount of traits to reroll. 
+                // if `all`, we set `traitsToReroll` to the bit's traits data length.
+                // if it's a number, we need to check if the number is > the bit's traits data length. if it is, we set it to the bit's traits data length.
+                // if it's a number and <= the bit's traits data length, we set it to the number.
                 const traitsToReroll = 
-                    synthesizingItemData.effectValues.rerollBitTraits.value === 'all' 
-                        ? bit.traits.length 
-                        : synthesizingItemData.effectValues.rerollBitTraits.value;
+                    synthesizingItemData.effectValues.rerollBitTraits.value === 'all' ? 
+                    bit.traits.length :
+                    synthesizingItemData.effectValues.rerollBitTraits.value > bit.traits.length ?
+                    bit.traits.length :
+                    synthesizingItemData.effectValues.rerollBitTraits.value;
 
                 console.log(`(consumeSynthesizingItems) Rerolling ${traitsToReroll} traits...`);
 
-                const traits: BitTraitData[] = [];
+                const bitTraits = bit.traits as BitTraitData[];
 
-                while (traits.length < traitsToReroll) {
-                    // the following base rules will apply:
+                // get the indexes of the traits to reroll from the `bit.traits` array.
+                // if `traitsToReroll` === bit.traits.length, we just need to get all indexes.
+                // if `traitsToReroll` < bit.traits.length, we will randomize the indexes to get the traits to reroll.
+                // for example, say `traitsToReroll` is 2 and the bit has 3 traits. we will randomize 2 indexes from 0-2 and reroll those traits.
+                const indexesToReroll: number[] = [];
+
+                if (traitsToReroll === bitTraits.length) {
+                    for (let i = 0; i < bitTraits.length; i++) {
+                        indexesToReroll.push(i);
+                    }
+                } else {
+                    while (indexesToReroll.length < traitsToReroll) {
+                        const rand = Math.floor(Math.random() * bitTraits.length);
+
+                        if (!indexesToReroll.includes(rand)) {
+                            indexesToReroll.push(rand);
+                        }
+                    }
+                }
+
+                console.log(`(consumeSynthesizingItems) Indexes to reroll: ${indexesToReroll.join(', ')}`);
+
+                // now, we need to randomize the new traits for the bit.
+                // we will set `updatedTraits` to initially be the same as `bitTraits`.
+                const updatedTraits: BitTraitData[] = bitTraits;
+
+                // loop through each trait in the bit's traits array.
+                // if the index is in the `indexesToReroll` array, we will reroll the trait.
+                // if it's not, we will keep the trait as is.
+                bitTraits.forEach((trait, index) => {
+                    // if the index is not in the `indexesToReroll` array, we keep the trait as is.
+                    if (!indexesToReroll.includes(index)) {
+                        return;
+                    // if it is included, we will reroll the trait.
+                    } else {
+                        let randomTrait: BitTraitData | null = null;
+
+                        while (!randomTrait) {
+                            // the following base rules will apply:
+                            // 1. 80% common, 15% uncommon, 5% rare chance
+                            // 2. for each trait category, there can only be traits of 1 subcategory.
+                            // e.g. category 'Workrate A' has productive, enthusiastic, lazy, uninspired. productive and enthusiastic are positive, lazy and uninspired are negative (subcategory wise).
+                            // that means that if a bit already has a trait 'productive', it can only have 'enthusiastic' as the next trait if the rand number falls within this category
+                            // and not 'lazy' or 'uninspired'.
+                            // then, these checks will be used to apply the next few rules/filters:
+                            // 1. if `rerollBitTraits.result` is `onlyPositive`, then the rerolled trait must be positive.
+                            // 2. if `rerollBitTraits.result` is `onlyNegative`, then the rerolled trait must be negative.
+                            // 3. if `rerollBitTraits.result` is `any`, then the rerolled trait can be either positive or negative.
+                            // 4. if `allowDuplicates` is false, then the rerolled trait cannot be the same as the old trait.
+                            // if true, the rerolled trait can be the exact same as the old trait (if the user is unlucky enough to roll the same trait).
+                            const rand = Math.floor(Math.random() * 100) + 1;
+
+                            const rerollResult = synthesizingItemData.effectValues.rerollBitTraits.result;
+                            const allowDuplicates = synthesizingItemData.effectValues.rerollBitTraits.allowDuplicates;
+
+                            // first, filter the traits by rarity based on the rand.
+                            // then, filter based on `allowDuplicates`.
+                            // then, filter the subcategory based on the `rerollResult`.
+                            const filteredTraits = BIT_TRAITS
+                            .filter(trait => {
+                                if (rand <= 80) {
+                                    return trait.rarity === BitTraitRarity.COMMON;
+                                } else if (rand <= 95) {
+                                    return trait.rarity === BitTraitRarity.UNCOMMON;
+                                } else {
+                                    return trait.rarity === BitTraitRarity.RARE;
+                                }
+                            })
+                            .filter(trait => {
+                                if (!allowDuplicates) {
+                                    // not allowing duplicates means that the trait cannot be the same as ANY traits in the `updatedTraits` array.
+                                    // after each loop, this `some` filter will recheck the new "allowed" list of traits anyway.
+                                    // for example, initially it's [A, B, C, D, E].
+                                    // A gets changed to F (because it isn't a duplicate), making it [F, B, C, D, E].
+                                    // on the next loop (1st index), A will technically be allowed again to be rerolled into.
+                                    return !updatedTraits.some(t => t.trait === trait.trait);
+                                } else {
+                                    return true;
+                                }
+                            })
+                            .filter(trait => {
+                                if (rerollResult === 'onlyPositive') {
+                                    return trait.subcategory === 'Positive';
+                                } else if (rerollResult === 'onlyNegative') {
+                                    return trait.subcategory === 'Negative';
+                                } else {
+                                    return true;
+                                }
+                            });
+
+                            // this rand will be used to randomize the trait from the filtered traits.
+                            const traitRand = Math.floor(Math.random() * filteredTraits.length);
+
+                            const rolledRandomTrait = filteredTraits[traitRand];
+
+                            // because we already check for duplicates on the filter above, now we just need to check the following:
+                            // 1. if an existing trait of the opposite subcategory within this category exists.
+                            // if it doesn't, add the trait. otherwise, reroll.
+                            const traitCategory = rolledRandomTrait.category;
+                            const traitSubcategory = rolledRandomTrait.subcategory;
+
+                            // check if the trait's category is already in the `updatedTraits` array.
+                            const categoryExists = updatedTraits.some(trait => {
+                                return trait.category === traitCategory;
+                            })
+
+                            // if the category exists, check which subcategory the existing trait(s) in the `updatedTraits` array belong to.
+                            // if the subcategory is the same as the random trait's subcategory, add the trait.
+                            if (categoryExists) {
+                                const existingSubCategory = updatedTraits.find(trait => trait.category === traitCategory)?.subcategory;
+
+                                // if the existing subcategory is the same as the random trait's subcategory, add the trait.
+                                if (existingSubCategory === traitSubcategory) {
+                                    randomTrait = rolledRandomTrait;
+                                } else {
+                                    console.log(
+                                        `(consumeSynthesizingItem) Trait ${rolledRandomTrait.trait} is of the opposite subcategory of the existing trait in the category. 
+                                        Existing trait: ${trait}. Rerolling...`);
+                                }
+                            } else {
+                                // if the category doesn't exist, add the trait.
+                                randomTrait = rolledRandomTrait;
+                            }
+                        }
+
+                        // update the `updatedTraits` array with the new trait.
+                        updatedTraits[index] = randomTrait;
+                    }
+                })
+
+                // const traits: BitTraitData[] = [];
+
+                // while (traits.length < traitsToReroll) {
+                //     // the following base rules will apply:
                     // 1. 80% common, 15% uncommon, 5% rare chance
                     // 2. for each trait category, there can only be traits of 1 subcategory.
                     // e.g. category 'Workrate A' has productive, enthusiastic, lazy, uninspired. productive and enthusiastic are positive, lazy and uninspired are negative (subcategory wise).
@@ -447,133 +601,139 @@ export const consumeSynthesizingItem = async (
                     // 1. if `rerollBitTraits.result` is `onlyPositive`, then the rerolled trait must be positive.
                     // 2. if `rerollBitTraits.result` is `onlyNegative`, then the rerolled trait must be negative.
                     // 3. if `rerollBitTraits.result` is `any`, then the rerolled trait can be either positive or negative.
-                    const rand = Math.floor(Math.random() * 100) + 1;
+                //     const rand = Math.floor(Math.random() * 100) + 1;
 
-                    // randomize the traits from the `bitTraits` array.
-                    let randomTrait: BitTraitData;
+                //     // randomize the traits from the `bitTraits` array.
+                //     let randomTrait: BitTraitData;
 
-                    const rerollResult = synthesizingItemData.effectValues.rerollBitTraits.result;
+                //     const rerollResult = synthesizingItemData.effectValues.rerollBitTraits.result;
 
-                    // first, filter the traits by rarity based on the rand. then, filter the subcategory based on the `rerollResult`.
-                    const filteredTraits = BIT_TRAITS.filter(trait => {
-                        if (rand <= 80) {
-                            return trait.rarity === BitTraitRarity.COMMON;
-                        } else if (rand <= 95) {
-                            return trait.rarity === BitTraitRarity.UNCOMMON;
-                        } else {
-                            return trait.rarity === BitTraitRarity.RARE;
-                        }
-                    }).filter(trait => {
-                        if (rerollResult === 'onlyPositive') {
-                            return trait.subcategory === 'Positive';
-                        } else if (rerollResult === 'onlyNegative') {
-                            return trait.subcategory === 'Negative';
-                        } else {
-                            return true;
-                        }
-                    })
+                //     // first, filter the traits by rarity based on the rand. then, filter the subcategory based on the `rerollResult`.
+                //     // we don't filter for `allowDuplicates` here because that would mean excluding up to 5 traits (if the bit has 5 traits) if no dupes are allowed.
+                //     // rerolling a trait should technically include the old trait into the pool afterwards, which wouldn't be the case if `allowDuplicates` is searched here.
+                //     // instead, we will allow all traits to be in the pool and then check for duplicates later.
+                //     const filteredTraits = BIT_TRAITS.filter(trait => {
+                //         if (rand <= 80) {
+                //             return trait.rarity === BitTraitRarity.COMMON;
+                //         } else if (rand <= 95) {
+                //             return trait.rarity === BitTraitRarity.UNCOMMON;
+                //         } else {
+                //             return trait.rarity === BitTraitRarity.RARE;
+                //         }
+                //     }).filter(trait => {
+                //         if (rerollResult === 'onlyPositive') {
+                //             return trait.subcategory === 'Positive';
+                //         } else if (rerollResult === 'onlyNegative') {
+                //             return trait.subcategory === 'Negative';
+                //         } else {
+                //             return true;
+                //         }
+                //     })
 
-                    // this rand will be used to randomize the trait from the filtered traits.
-                    const traitRand = Math.floor(Math.random() * filteredTraits.length);
+                //     // this rand will be used to randomize the trait from the filtered traits.
+                //     const traitRand = Math.floor(Math.random() * filteredTraits.length);
 
-                    randomTrait = filteredTraits[traitRand];
+                //     randomTrait = filteredTraits[traitRand];
 
-                    // if the trait already exists in the bit's current traits, reroll the trait.
-                    // we check this by searching for the `trait` in each instance in the traits array and see if it matches randomTrait.trait
-                    // if it does, we reroll the trait.
-                    // if it doesn't, we add the trait to the traits array.
-                    if (bit.traits.some(trait => trait.trait === randomTrait.trait)) {
-                        console.log(`Trait ${randomTrait.trait} already exists in the bit's traits. Rerolling...`);
-                        continue;
-                    } 
+                //     // now, check `allowDuplicates`. if false, 
 
-                    console.log(`Trait ${randomTrait.trait} is unique.`);
+                //     // // if the trait already exists in the bit's current traits, reroll the trait.
+                //     // // we check this by searching for the `trait` in each instance in the traits array and see if it matches randomTrait.trait
+                //     // // if it does, we reroll the trait.
+                //     // // if it doesn't, we add the trait to the traits array.
+                //     // if (bit.traits.some(trait => trait.trait === randomTrait.trait)) {
+                //     //     console.log(`Trait ${randomTrait.trait} already exists in the bit's traits. Rerolling...`);
+                //     //     continue;
+                //     // } 
 
-                    // now, check if the trait already exists in the rerolled `traits` array
-                    if (!traits.includes(randomTrait)) {
-                        // if it doesn't, then the trait is already unique, which is what we want.
-                        // however, we need to check if an existing trait of the opposite subcategory within this category exists.
-                        // if it doesn't, add the trait.
-                        // this won't be an issue if `rerollResult` is `onlyPositive` or `onlyNegative`, but this needs to be checked when `rerollResult` is `random`, because we
-                        // don't want to have a positive and negative trait of the same category as it doesn't make sense.
-                        const traitCategory = randomTrait.category;
-                        const traitSubcategory = randomTrait.subcategory;
+                //     // console.log(`Trait ${randomTrait.trait} is unique.`);
 
-                        // check if the trait's category is already in the traits array.
-                        const categoryExists = traits.some(trait => {
-                            return trait.category === traitCategory;
-                        })
+                //     // // now, check if the trait already exists in the rerolled `traits` array
+                //     // if (!traits.includes(randomTrait)) {
+                //     //     // if it doesn't, then the trait is already unique, which is what we want.
+                //     //     // however, we need to check if an existing trait of the opposite subcategory within this category exists.
+                //     //     // if it doesn't, add the trait.
+                //     //     // this won't be an issue if `rerollResult` is `onlyPositive` or `onlyNegative`, but this needs to be checked when `rerollResult` is `random`, because we
+                //     //     // don't want to have a positive and negative trait of the same category as it doesn't make sense.
+                //     //     const traitCategory = randomTrait.category;
+                //     //     const traitSubcategory = randomTrait.subcategory;
 
-                        // if the category exists, check which subcategory the existing trait(s) belong to
-                        // if the subcategory is the same as the random trait's subcategory, add the trait
-                        if (categoryExists) {
-                            const existingSubCategory = traits.find(trait => trait.category === traitCategory)?.subcategory;
+                //     //     // check if the trait's category is already in the traits array.
+                //     //     const categoryExists = traits.some(trait => {
+                //     //         return trait.category === traitCategory;
+                //     //     })
 
-                            // if the existing subcategory is the same as the random trait's subcategory, add the trait.
-                            if (existingSubCategory === traitSubcategory) {
-                                traits.push(randomTrait);
-                            }
-                        } else {
-                            // if the category doesn't exist, add the trait.
-                            traits.push(randomTrait);
-                        }
-                    }
-                }
+                //     //     // if the category exists, check which subcategory the existing trait(s) belong to
+                //     //     // if the subcategory is the same as the random trait's subcategory, add the trait
+                //     //     if (categoryExists) {
+                //     //         const existingSubCategory = traits.find(trait => trait.category === traitCategory)?.subcategory;
 
-                // now, we just need to update the bit's traits with the new traits.
-                // if the `type` is `chosen`, then we will update the traits the user has selected (the `chosenBitTraitsToReroll` array) with the new traits.
-                // for example, say the user wants to reroll 'Trait A' and 'Trait B' such that the `chosenBitTraitsToReroll` array is ['Trait A', 'Trait B'].
-                // then, the `traits` array (which contains the rerolled traits) contains ['Trait C', 'Trait D'].
-                // Trait C will replace Trait A and Trait D will replace Trait B.
-                // however, if the type is `random`, then we will randomly replace `rerollBitTraits.value` amount of the bit's traits with the new traits.
-                // for example, say the item rerolls one trait randomly. the bit has 'Trait A', 'Trait B', 'Trait C', 'Trait D'. we will just roll a dice from 1-4 and replace one of the traits with the new trait.
-                // if the dice rolls 3, then 'Trait C' will be replaced with the new trait.
-                // if the item rerolls all traits, then all of the bit's traits will be replaced with the new traits.
-                const indexesToReplace: number[] = [];
+                //     //         // if the existing subcategory is the same as the random trait's subcategory, add the trait.
+                //     //         if (existingSubCategory === traitSubcategory) {
+                //     //             traits.push(randomTrait);
+                //     //         }
+                //     //     } else {
+                //     //         // if the category doesn't exist, add the trait.
+                //     //         traits.push(randomTrait);
+                //     //     }
+                //     // }
+                // }
 
-                if (synthesizingItemData.effectValues.rerollBitTraits.type === 'chosen') {
-                    // if the type is `chosen`, we need to find the indexes of the chosen traits in the bit's traits array.
-                    chosenBitTraitsToReroll.forEach(trait => {
-                        const index = (bit.traits as BitTraitData[]).findIndex(t => t.trait === trait);
+                // // now, we just need to update the bit's traits with the new traits.
+                // // if the `type` is `chosen`, then we will update the traits the user has selected (the `chosenBitTraitsToReroll` array) with the new traits.
+                // // for example, say the user wants to reroll 'Trait A' and 'Trait B' such that the `chosenBitTraitsToReroll` array is ['Trait A', 'Trait B'].
+                // // then, the `traits` array (which contains the rerolled traits) contains ['Trait C', 'Trait D'].
+                // // Trait C will replace Trait A and Trait D will replace Trait B.
+                // // however, if the type is `random`, then we will randomly replace `rerollBitTraits.value` amount of the bit's traits with the new traits.
+                // // for example, say the item rerolls one trait randomly. the bit has 'Trait A', 'Trait B', 'Trait C', 'Trait D'. we will just roll a dice from 1-4 and replace one of the traits with the new trait.
+                // // if the dice rolls 3, then 'Trait C' will be replaced with the new trait.
+                // // if the item rerolls all traits, then all of the bit's traits will be replaced with the new traits.
+                // const indexesToReplace: number[] = [];
 
-                        console.log(`(consumeSynthesizingItem) Index of ${trait}: ${index}`);
+                // if (synthesizingItemData.effectValues.rerollBitTraits.type === 'chosen') {
+                //     // if the type is `chosen`, we need to find the indexes of the chosen traits in the bit's traits array.
+                //     chosenBitTraitsToReroll.forEach(trait => {
+                //         const index = (bit.traits as BitTraitData[]).findIndex(t => t.trait === trait);
 
-                        if (index !== -1) {
-                            indexesToReplace.push(index);
-                        }
-                    })
-                } else {
-                    // if the type is `random` and `value` is `all`, we simply add all indexes to the array.
-                    if (synthesizingItemData.effectValues.rerollBitTraits.value === 'all') {
-                        for (let i = 0; i < bit.traits.length; i++) {
-                            indexesToReplace.push(i);
-                        }
-                    } else {
-                        // else, we need to find the indexes of the bit's traits to replace.
-                        while (indexesToReplace.length < synthesizingItemData.effectValues.rerollBitTraits.value) {
-                            const rand = Math.floor(Math.random() * bit.traits.length);
+                //         console.log(`(consumeSynthesizingItem) Index of ${trait}: ${index}`);
 
-                            if (!indexesToReplace.includes(rand)) {
-                                indexesToReplace.push(rand);
-                            }
-                        }
-                    }
-                }
-                // temp index to fetch the traits from the `traits` array.
-                let tempIndex = 0;
+                //         if (index !== -1) {
+                //             indexesToReplace.push(index);
+                //         }
+                //     })
+                // } else {
+                //     // if the type is `random` and `value` is `all`, we simply add all indexes to the array.
+                //     if (synthesizingItemData.effectValues.rerollBitTraits.value === 'all') {
+                //         for (let i = 0; i < bit.traits.length; i++) {
+                //             indexesToReplace.push(i);
+                //         }
+                //     } else {
+                //         // else, we need to find the indexes of the bit's traits to replace.
+                //         while (indexesToReplace.length < synthesizingItemData.effectValues.rerollBitTraits.value) {
+                //             const rand = Math.floor(Math.random() * bit.traits.length);
 
-                const updatedTraits: BitTraitData[] = (bit.traits as BitTraitData[]).map((trait, index) => {
-                    // if the current index is NOT in the `indexesToReplace` array, return the current trait.
-                    // else, return a new trait from the `traits` array (in incrementing index order).
-                    if (!indexesToReplace.includes(index)) {
-                        return trait;
-                    } else {
-                        // return the new trait and increment the tempIndex.
-                        return traits[tempIndex++];
-                    }
-                })
+                //             if (!indexesToReplace.includes(rand)) {
+                //                 indexesToReplace.push(rand);
+                //             }
+                //         }
+                //     }
+                // }
+                // // temp index to fetch the traits from the `traits` array.
+                // let tempIndex = 0;
+
+                // const updatedTraits: BitTraitData[] = (bit.traits as BitTraitData[]).map((trait, index) => {
+                //     // if the current index is NOT in the `indexesToReplace` array, return the current trait.
+                //     // else, return a new trait from the `traits` array (in incrementing index order).
+                //     if (!indexesToReplace.includes(index)) {
+                //         return trait;
+                //     } else {
+                //         // return the new trait and increment the tempIndex.
+                //         return traits[tempIndex++];
+                //     }
+                // })
 
                 console.log(`(consumeSynthesizingItem) New traits: ${updatedTraits.map(trait => trait.trait).join(', ')}`);
+                console.log(`(consumeSynthesizingItem) Bit's old traits: ${bit.traits.map(trait => trait.trait).join(', ')}`);
 
                 // with the new updated traits of the bit, get the bit stats modifiers and just override the existing one (we can do this safely).
                 const newStatsModifiers = getBitStatsModifiersFromTraits(updatedTraits.map(trait => trait.trait));
@@ -1375,8 +1535,6 @@ export const consumeSynthesizingItem = async (
         });
 
         await consumedSynthesizingItem.save();
-
-        //// TO DO: IF EFFECT DURATION IS NOT ONE TIME, WE NEED TO ADD A BULL QUEUE HERE.
 
         // do the update operations.
         const islandUpdatePromisesSetInc = islandUpdateOperations.length > 0 ? islandUpdateOperations.map(async op => {
