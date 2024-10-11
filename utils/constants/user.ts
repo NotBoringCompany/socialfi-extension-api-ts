@@ -14,7 +14,7 @@ export const MAX_ENERGY_CAP = 4000;
 export const MAX_ENERGY_POTION_CAP = 4;
 
 /** Energy Potion recovery value when consumed */
-export const ENERGY_POTION_RECOVERY = 500;
+export const ENERGY_POTION_RECOVERY = 250;
 
 /** Base number of reroll milestone chance */
 export const BASE_REROLL_BONUS_MILESTONE = 6;
