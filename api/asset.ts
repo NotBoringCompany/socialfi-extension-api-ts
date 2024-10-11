@@ -582,6 +582,11 @@ export const consumeSynthesizingItem = async (
                             }
                         }
 
+                        // if the new trait is the exact same as the old trait, log it.
+                        if (trait.trait === randomTrait.trait) {
+                            console.log(`(consumeSynthesizingItem) Rerolled trait is the same as the old trait!`);
+                        }
+
                         // update the `updatedTraits` array with the new trait.
                         updatedTraits[index] = randomTrait;
                     }
