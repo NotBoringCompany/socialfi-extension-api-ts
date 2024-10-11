@@ -2,7 +2,6 @@ import { Socket } from "socket.io";
 import { EventSauna, SaunaGlobalKey, SaunaUserDetail } from "../models/sauna";
 import { Status } from "../utils/retVal";
 import redisDb from "../utils/constants/redisDb";
-import { saunaQueue } from "../schedulers/sauna";
 import { UserModel } from "../utils/constants/db";
 
 
@@ -26,25 +25,39 @@ export const startRest = async (socket: Socket, data: SaunaUserDetail) => {
       });
     }
 
+    // setup requirement rest
+    const maximumEnergyToFarm = 1000;
+    const energyPotionPerSecond = 25;
+    const maxTimeToRest = maximumEnergyToFarm / energyPotionPerSecond; // 40 minute
+    const maxTimeToRestInMiliSecond = (maxTimeToRest * 60) * 1000;  // 2400000 mili second
+
+    // setup user time needed energy
     const currentEnergy = user.inGameData.energy.currentEnergy;
     const maxEnergy = user.inGameData.energy.maxEnergy;
-    const percentage = maxEnergy * 0.1;
-    const energyPotionPerSecond = percentage / 60;
     const lack = Math.abs(maxEnergy - currentEnergy);
-    const timeToMaxEnergy = lack / energyPotionPerSecond;
-    const timeToMaxEnergyInMiliSecond = timeToMaxEnergy * 1000;
 
-    await addUserToRoom(userId, socket.id, energyPotionPerSecond);
+    // how much user need to rest 
+    const timeNeededEnergy = lack / energyPotionPerSecond;
+    const timeNeededEnergyInMiliSecond = (timeNeededEnergy * 60) * 1000;
+
+    // rest time 
+    const restTime = timeNeededEnergyInMiliSecond > maxTimeToRestInMiliSecond ? maxTimeToRestInMiliSecond : timeNeededEnergyInMiliSecond;
+    const startTime = Math.floor(Date.now() / 1000);
+
+    await addUserToRoom(userId, socket.id, energyPotionPerSecond, startTime, maximumEnergyToFarm);
     const getConnected = await redisDb.get(SaunaGlobalKey.CONNECTED)
+    // emit to all user connected
     socket.broadcast.emit(EventSauna.USER_COUNT, getConnected);
+    // emit to user
     socket.emit(EventSauna.USER_COUNT, getConnected);
     return socket.emit('server_response', {
       status: Status.SUCCESS,
       message: `(startRest) user ${userId} has started rest`,
       data: {
-        timeToMaxEnergyInMiliSecond,
+        timeToMaxEnergyInMiliSecond: restTime,
         energyPotionPerSecond,
         isStartRest: true,
+        startTimestamp: startTime
       }
     });
   } catch (error) {
@@ -104,10 +117,11 @@ export const stopRest = async (socket: Socket) => {
  * Add user to room and set delay to queue
  * @param userId user id
  * @param socketId socket id
- * @param energyInSecond time to max energy in milisecond
- * @param getTotalEnergy total energy to add
+ * @param energyInSecond time to max energy in second
+ * @param startTime start time in milisecond
+ * @param maximumEnergy maximum energy of user
  */
-const addUserToRoom = async (userId: string, socketId: string, energyInSecond: number) => {
+const addUserToRoom = async (userId: string, socketId: string, energyInSecond: number, startTime: number, maximumEnergy: number) => {
   // get user already in room
   const isUserAlreadyInRoom = await isUserInRoom(userId)
   // socket id same as user id
@@ -124,13 +138,19 @@ const addUserToRoom = async (userId: string, socketId: string, energyInSecond: n
   }
   // get total connected
   const userConnected = await redisDb.get(SaunaGlobalKey.CONNECTED)
+  // get max energy
+  const getMaxEnergy = await redisDb.get(`maximumEnergy:${userId}`)
   //redis multi set
   const redisMulti = redisDb.multi()
   try {
+    if (!getMaxEnergy) {
+      // set user max energy
+      redisMulti.set(`maximumEnergy:${userId}`, maximumEnergy, 'EX', getExpiredTime())
+    }
     // pin user to room
     redisMulti.set(`userSocket:${userId}`, socketId)
     // pin user when user connected
-    redisMulti.set(`timeStamp:${userId}`, Math.floor(Date.now() / 1000))
+    redisMulti.set(`timeStamp:${userId}`, startTime)
     // set user energy potion per second
     redisMulti.set(`energyPotionPerSecond:${userId}`, energyInSecond)
     // pin user to socketid
@@ -210,9 +230,19 @@ export const energyRecover = async (userId: string, energyRecover: number): Prom
     // check if user already in room
     const isUserExistInRoom = await isUserInRoom(userId)
     if (!isUserExistInRoom) throw new Error('User not in room')
+
     // check user exist
     const user = await UserModel.findOne({ _id: userId })
     if (!user) throw new Error('User not found')
+
+    // get user max energy can recover
+    const remainingEnergy =await redisDb.get(`maximumEnergy:${userId}`)
+    if (!remainingEnergy) throw new Error('no remaining energy')
+    if (Number(remainingEnergy) < energyRecover) throw new Error('no remaining energy')
+
+    // update remaining energy
+    await redisDb.set(`maximumEnergy:${userId}`, Number(remainingEnergy) - energyRecover)
+
     // check if energy to greater than max energy set it to max energy
     if (user.inGameData.energy.currentEnergy + energyRecover > user.inGameData.energy.maxEnergy) {
       return await UserModel.updateOne(
@@ -220,7 +250,8 @@ export const energyRecover = async (userId: string, energyRecover: number): Prom
         { $set: { 'inGameData.energy.currentEnergy': user.inGameData.energy.maxEnergy } }
       )
     }
-    // update user energy with energy to add
+
+    // update user energy
     return await UserModel.updateOne(
       { _id: userId },
       { $inc: { 'inGameData.energy.currentEnergy': energyRecover } }
@@ -228,4 +259,13 @@ export const energyRecover = async (userId: string, energyRecover: number): Prom
   } catch (error) {
     throw new Error(`${error.message}`)
   }
+}
+
+// the function return expired time until midnight
+const getExpiredTime = () => {
+  const now = new Date();
+  const midnight = new Date();
+  midnight.setHours(0, 0, 0, 0);
+  const timeUntilMidnight = midnight.getTime() - now.getTime();
+  return Math.floor(timeUntilMidnight / 1000);
 }
