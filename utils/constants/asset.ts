@@ -241,27 +241,35 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: IslandType.EXOTIC_ISLES,
         limitations: {
-            singleIslandUsage: {
-                active: false,
-                limit: null
-            },
-            singleIslandCategoryUsage: {
-                active: true,
-                limit: 1,
-            },
             singleIslandConcurrentUsage: {
                 active: false,
                 limit: null
             },
-            concurrentIslandsUsage: {
+            singleIslandConcurrentCategoryUsage: {
                 active: false,
                 limit: null
             },
-            singleBitUsage: {
+            singleIslandTotalUsage: {
                 active: false,
                 limit: null
             },
-            singleBitCategoryUsage: {
+            singleIslandTotalCategoryUsage: {
+                active: true,
+                limit: 1
+            },
+            multiIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandConcurrentCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandTotalCategoryUsage: {
                 active: false,
                 limit: null
             },
@@ -269,11 +277,34 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
-            concurrentBitsUsage: {
+            singleBitConcurrentCategoryUsage: {
                 active: false,
                 limit: null
             },
-            notUsableWhenAnotherSameItemActive: false
+            singleBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitConcurrentCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
         },
         effectValues: {
             affectedAsset: 'island',
@@ -321,27 +352,35 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: IslandType.EXOTIC_ISLES,
         limitations: {
-            singleIslandUsage: {
-                active: false,
-                limit: null
-            },
-            singleIslandCategoryUsage: {
-                active: true,
-                limit: 1,
-            },
             singleIslandConcurrentUsage: {
                 active: false,
                 limit: null
             },
-            concurrentIslandsUsage: {
+            singleIslandConcurrentCategoryUsage: {
                 active: false,
                 limit: null
             },
-            singleBitUsage: {
+            singleIslandTotalUsage: {
                 active: false,
                 limit: null
             },
-            singleBitCategoryUsage: {
+            singleIslandTotalCategoryUsage: {
+                active: true,
+                limit: 1
+            },
+            multiIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandConcurrentCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandTotalCategoryUsage: {
                 active: false,
                 limit: null
             },
@@ -349,11 +388,34 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
-            concurrentBitsUsage: {
+            singleBitConcurrentCategoryUsage: {
                 active: false,
                 limit: null
             },
-            notUsableWhenAnotherSameItemActive: false
+            singleBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitConcurrentCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
         },
         effectValues: {
             affectedAsset: 'island',
@@ -401,27 +463,35 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: IslandType.EXOTIC_ISLES,
         limitations: {
-            singleIslandUsage: {
-                active: false,
-                limit: null
-            },
-            singleIslandCategoryUsage: {
-                active: true,
-                limit: 1,
-            },
             singleIslandConcurrentUsage: {
                 active: false,
                 limit: null
             },
-            concurrentIslandsUsage: {
+            singleIslandConcurrentCategoryUsage: {
                 active: false,
                 limit: null
             },
-            singleBitUsage: {
+            singleIslandTotalUsage: {
                 active: false,
                 limit: null
             },
-            singleBitCategoryUsage: {
+            singleIslandTotalCategoryUsage: {
+                active: true,
+                limit: 1
+            },
+            multiIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandConcurrentCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandTotalCategoryUsage: {
                 active: false,
                 limit: null
             },
@@ -429,11 +499,34 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
-            concurrentBitsUsage: {
+            singleBitConcurrentCategoryUsage: {
                 active: false,
                 limit: null
             },
-            notUsableWhenAnotherSameItemActive: false
+            singleBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitConcurrentCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
         },
         effectValues: {
             affectedAsset: 'island',
@@ -481,27 +574,35 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: null,
         limitations: {
-            singleIslandUsage: {
-                active: false,
-                limit: null
-            },
-            singleIslandCategoryUsage: {
-                active: true,
-                limit: 1,
-            },
             singleIslandConcurrentUsage: {
                 active: false,
                 limit: null
             },
-            concurrentIslandsUsage: {
+            singleIslandConcurrentCategoryUsage: {
                 active: false,
                 limit: null
             },
-            singleBitUsage: {
+            singleIslandTotalUsage: {
                 active: false,
                 limit: null
             },
-            singleBitCategoryUsage: {
+            singleIslandTotalCategoryUsage: {
+                active: true,
+                limit: 1
+            },
+            multiIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandConcurrentCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandTotalCategoryUsage: {
                 active: false,
                 limit: null
             },
@@ -509,11 +610,34 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
-            concurrentBitsUsage: {
+            singleBitConcurrentCategoryUsage: {
                 active: false,
                 limit: null
             },
-            notUsableWhenAnotherSameItemActive: false
+            singleBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitConcurrentCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
         },
         effectValues: {
             affectedAsset: 'island',
@@ -561,27 +685,35 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: null,
         limitations: {
-            singleIslandUsage: {
-                active: false,
-                limit: null
-            },
-            singleIslandCategoryUsage: {
-                active: true,
-                limit: 1,
-            },
             singleIslandConcurrentUsage: {
                 active: false,
                 limit: null
             },
-            concurrentIslandsUsage: {
+            singleIslandConcurrentCategoryUsage: {
                 active: false,
                 limit: null
             },
-            singleBitUsage: {
+            singleIslandTotalUsage: {
                 active: false,
                 limit: null
             },
-            singleBitCategoryUsage: {
+            singleIslandTotalCategoryUsage: {
+                active: true,
+                limit: 1
+            },
+            multiIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandConcurrentCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandTotalCategoryUsage: {
                 active: false,
                 limit: null
             },
@@ -589,11 +721,34 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
-            concurrentBitsUsage: {
+            singleBitConcurrentCategoryUsage: {
                 active: false,
                 limit: null
             },
-            notUsableWhenAnotherSameItemActive: false
+            singleBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitConcurrentCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
         },
         effectValues: {
             affectedAsset: 'island',
@@ -641,27 +796,35 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: IslandType.EXOTIC_ISLES,
         limitations: {
-            singleIslandUsage: {
-                active: false,
-                limit: null
-            },
-            singleIslandCategoryUsage: {
-                active: false,
-                limit: null
-            },
             singleIslandConcurrentUsage: {
                 active: false,
                 limit: null
             },
-            concurrentIslandsUsage: {
+            singleIslandConcurrentCategoryUsage: {
                 active: false,
                 limit: null
             },
-            singleBitUsage: {
+            singleIslandTotalUsage: {
                 active: false,
                 limit: null
             },
-            singleBitCategoryUsage: {
+            singleIslandTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandConcurrentCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandTotalCategoryUsage: {
                 active: false,
                 limit: null
             },
@@ -669,11 +832,34 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
-            concurrentBitsUsage: {
+            singleBitConcurrentCategoryUsage: {
                 active: false,
                 limit: null
             },
-            notUsableWhenAnotherSameItemActive: false
+            singleBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitConcurrentCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
         },
         effectValues: {
             affectedAsset: 'island',
@@ -721,27 +907,35 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: null,
         limitations: {
-            singleIslandUsage: {
-                active: false,
-                limit: null
-            },
-            singleIslandCategoryUsage: {
-                active: false,
-                limit: null
-            },
             singleIslandConcurrentUsage: {
                 active: false,
                 limit: null
             },
-            concurrentIslandsUsage: {
+            singleIslandConcurrentCategoryUsage: {
                 active: false,
                 limit: null
             },
-            singleBitUsage: {
+            singleIslandTotalUsage: {
                 active: false,
                 limit: null
             },
-            singleBitCategoryUsage: {
+            singleIslandTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandConcurrentCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandTotalCategoryUsage: {
                 active: false,
                 limit: null
             },
@@ -749,11 +943,34 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
-            concurrentBitsUsage: {
+            singleBitConcurrentCategoryUsage: {
                 active: false,
                 limit: null
             },
-            notUsableWhenAnotherSameItemActive: false
+            singleBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitConcurrentCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
         },
         effectValues: {
             affectedAsset: 'island',
@@ -801,27 +1018,35 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: null,
         limitations: {
-            singleIslandUsage: {
-                active: false,
-                limit: null
-            },
-            singleIslandCategoryUsage: {
-                active: false,
-                limit: null
-            },
             singleIslandConcurrentUsage: {
                 active: false,
                 limit: null
             },
-            concurrentIslandsUsage: {
+            singleIslandConcurrentCategoryUsage: {
                 active: false,
                 limit: null
             },
-            singleBitUsage: {
+            singleIslandTotalUsage: {
                 active: false,
                 limit: null
             },
-            singleBitCategoryUsage: {
+            singleIslandTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandConcurrentCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandTotalCategoryUsage: {
                 active: false,
                 limit: null
             },
@@ -829,11 +1054,34 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
-            concurrentBitsUsage: {
+            singleBitConcurrentCategoryUsage: {
                 active: false,
                 limit: null
             },
-            notUsableWhenAnotherSameItemActive: false
+            singleBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitConcurrentCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
         },
         effectValues: {
             affectedAsset: 'island',
@@ -881,27 +1129,35 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: null,
         limitations: {
-            singleIslandUsage: {
-                active: false,
-                limit: null
-            },
-            singleIslandCategoryUsage: {
-                active: false,
-                limit: null
-            },
             singleIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            singleIslandConcurrentCategoryUsage: {
                 active: true,
                 limit: 1
             },
-            concurrentIslandsUsage: {
-                active: true,
-                limit: 5
-            },
-            singleBitUsage: {
+            singleIslandTotalUsage: {
                 active: false,
                 limit: null
             },
-            singleBitCategoryUsage: {
+            singleIslandTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandConcurrentCategoryUsage: {
+                active: true,
+                limit: 5
+            },
+            multiIslandTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandTotalCategoryUsage: {
                 active: false,
                 limit: null
             },
@@ -909,11 +1165,34 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
-            concurrentBitsUsage: {
+            singleBitConcurrentCategoryUsage: {
                 active: false,
                 limit: null
             },
-            notUsableWhenAnotherSameItemActive: true
+            singleBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitConcurrentCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
         },
         effectValues: {
             affectedAsset: 'island',
@@ -962,27 +1241,35 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: null,
         limitations: {
-            singleIslandUsage: {
-                active: false,
-                limit: null
-            },
-            singleIslandCategoryUsage: {
-                active: false,
-                limit: null
-            },
             singleIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            singleIslandConcurrentCategoryUsage: {
                 active: true,
                 limit: 1
             },
-            concurrentIslandsUsage: {
-                active: true,
-                limit: 5
-            },
-            singleBitUsage: {
+            singleIslandTotalUsage: {
                 active: false,
                 limit: null
             },
-            singleBitCategoryUsage: {
+            singleIslandTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandConcurrentCategoryUsage: {
+                active: true,
+                limit: 5
+            },
+            multiIslandTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandTotalCategoryUsage: {
                 active: false,
                 limit: null
             },
@@ -990,11 +1277,34 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
-            concurrentBitsUsage: {
+            singleBitConcurrentCategoryUsage: {
                 active: false,
                 limit: null
             },
-            notUsableWhenAnotherSameItemActive: true
+            singleBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitConcurrentCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
         },
         effectValues: {
             affectedAsset: 'island',
@@ -1043,27 +1353,35 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: null,
         limitations: {
-            singleIslandUsage: {
-                active: false,
-                limit: null
-            },
-            singleIslandCategoryUsage: {
-                active: false,
-                limit: null
-            },
             singleIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            singleIslandConcurrentCategoryUsage: {
                 active: true,
                 limit: 1
             },
-            concurrentIslandsUsage: {
-                active: true,
-                limit: 5
-            },
-            singleBitUsage: {
+            singleIslandTotalUsage: {
                 active: false,
                 limit: null
             },
-            singleBitCategoryUsage: {
+            singleIslandTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandConcurrentCategoryUsage: {
+                active: true,
+                limit: 5
+            },
+            multiIslandTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandTotalCategoryUsage: {
                 active: false,
                 limit: null
             },
@@ -1071,11 +1389,34 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
-            concurrentBitsUsage: {
+            singleBitConcurrentCategoryUsage: {
                 active: false,
                 limit: null
             },
-            notUsableWhenAnotherSameItemActive: true
+            singleBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitConcurrentCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
         },
         effectValues: {
             affectedAsset: 'island',
@@ -1124,39 +1465,70 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: BitRarity.RARE,
         limitations: {
-            singleIslandUsage: {
-                active: false,
-                limit: null
-            },
-            singleIslandCategoryUsage: {
-                active: false,
-                limit: null
-            },
             singleIslandConcurrentUsage: {
                 active: false,
                 limit: null
             },
-            concurrentIslandsUsage: {
+            singleIslandConcurrentCategoryUsage: {
                 active: false,
                 limit: null,
             },
-            singleBitUsage: {
+            singleIslandTotalUsage: {
                 active: false,
                 limit: null
             },
-            singleBitCategoryUsage: {
-                active: true,
-                limit: 1
+            singleIslandTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandConcurrentCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandTotalCategoryUsage: {
+                active: false,
+                limit: null
             },
             singleBitConcurrentUsage: {
                 active: false,
                 limit: null
             },
-            concurrentBitsUsage: {
+            singleBitConcurrentCategoryUsage: {
                 active: false,
                 limit: null
             },
-            notUsableWhenAnotherSameItemActive: false
+            singleBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitTotalCategoryUsage: {
+                active: true,
+                limit: 1
+            },
+            multiBitConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitConcurrentCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
         },
         effectValues: {
             affectedAsset: 'bit',
@@ -1204,39 +1576,70 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: BitRarity.EPIC,
         limitations: {
-            singleIslandUsage: {
-                active: false,
-                limit: null
-            },
-            singleIslandCategoryUsage: {
-                active: false,
-                limit: null
-            },
             singleIslandConcurrentUsage: {
                 active: false,
                 limit: null
             },
-            concurrentIslandsUsage: {
+            singleIslandConcurrentCategoryUsage: {
                 active: false,
                 limit: null,
             },
-            singleBitUsage: {
+            singleIslandTotalUsage: {
                 active: false,
                 limit: null
             },
-            singleBitCategoryUsage: {
-                active: true,
-                limit: 1
+            singleIslandTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandConcurrentCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandTotalCategoryUsage: {
+                active: false,
+                limit: null
             },
             singleBitConcurrentUsage: {
                 active: false,
                 limit: null
             },
-            concurrentBitsUsage: {
+            singleBitConcurrentCategoryUsage: {
                 active: false,
                 limit: null
             },
-            notUsableWhenAnotherSameItemActive: false
+            singleBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitTotalCategoryUsage: {
+                active: true,
+                limit: 1
+            },
+            multiBitConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitConcurrentCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
         },
         effectValues: {
             affectedAsset: 'bit',
@@ -1284,39 +1687,70 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: null,
         limitations: {
-            singleIslandUsage: {
-                active: false,
-                limit: null
-            },
-            singleIslandCategoryUsage: {
-                active: false,
-                limit: null
-            },
             singleIslandConcurrentUsage: {
                 active: false,
                 limit: null
             },
-            concurrentIslandsUsage: {
+            singleIslandConcurrentCategoryUsage: {
                 active: false,
                 limit: null,
             },
-            singleBitUsage: {
+            singleIslandTotalUsage: {
                 active: false,
                 limit: null
             },
-            singleBitCategoryUsage: {
-                active: true,
-                limit: 1
+            singleIslandTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandConcurrentCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandTotalCategoryUsage: {
+                active: false,
+                limit: null
             },
             singleBitConcurrentUsage: {
                 active: false,
                 limit: null
             },
-            concurrentBitsUsage: {
+            singleBitConcurrentCategoryUsage: {
                 active: false,
                 limit: null
             },
-            notUsableWhenAnotherSameItemActive: false
+            singleBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitTotalCategoryUsage: {
+                active: true,
+                limit: 1
+            },
+            multiBitConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitConcurrentCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
         },
         effectValues: {
             affectedAsset: 'bit',
@@ -1364,27 +1798,35 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: null,
         limitations: {
-            singleIslandUsage: {
-                active: false,
-                limit: null
-            },
-            singleIslandCategoryUsage: {
-                active: false,
-                limit: null
-            },
             singleIslandConcurrentUsage: {
                 active: false,
                 limit: null
             },
-            concurrentIslandsUsage: {
+            singleIslandConcurrentCategoryUsage: {
                 active: false,
                 limit: null,
             },
-            singleBitUsage: {
+            singleIslandTotalUsage: {
                 active: false,
                 limit: null
             },
-            singleBitCategoryUsage: {
+            singleIslandTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandConcurrentCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandTotalCategoryUsage: {
                 active: false,
                 limit: null
             },
@@ -1392,11 +1834,34 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
-            concurrentBitsUsage: {
+            singleBitConcurrentCategoryUsage: {
                 active: false,
                 limit: null
             },
-            notUsableWhenAnotherSameItemActive: false
+            singleBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitConcurrentCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
         },
         effectValues: {
             affectedAsset: 'bit',
@@ -1444,27 +1909,35 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: null,
         limitations: {
-            singleIslandUsage: {
-                active: false,
-                limit: null
-            },
-            singleIslandCategoryUsage: {
-                active: false,
-                limit: null
-            },
             singleIslandConcurrentUsage: {
                 active: false,
                 limit: null
             },
-            concurrentIslandsUsage: {
+            singleIslandConcurrentCategoryUsage: {
                 active: false,
                 limit: null,
             },
-            singleBitUsage: {
+            singleIslandTotalUsage: {
                 active: false,
                 limit: null
             },
-            singleBitCategoryUsage: {
+            singleIslandTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandConcurrentCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandTotalCategoryUsage: {
                 active: false,
                 limit: null
             },
@@ -1472,11 +1945,34 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
-            concurrentBitsUsage: {
+            singleBitConcurrentCategoryUsage: {
                 active: false,
                 limit: null
             },
-            notUsableWhenAnotherSameItemActive: false
+            singleBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitConcurrentCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
         },
         effectValues: {
             affectedAsset: 'bit',
@@ -1524,27 +2020,35 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: null,
         limitations: {
-            singleIslandUsage: {
-                active: false,
-                limit: null
-            },
-            singleIslandCategoryUsage: {
-                active: false,
-                limit: null
-            },
             singleIslandConcurrentUsage: {
                 active: false,
                 limit: null
             },
-            concurrentIslandsUsage: {
+            singleIslandConcurrentCategoryUsage: {
                 active: false,
                 limit: null,
             },
-            singleBitUsage: {
+            singleIslandTotalUsage: {
                 active: false,
                 limit: null
             },
-            singleBitCategoryUsage: {
+            singleIslandTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandConcurrentCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandTotalCategoryUsage: {
                 active: false,
                 limit: null
             },
@@ -1552,11 +2056,34 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
-            concurrentBitsUsage: {
+            singleBitConcurrentCategoryUsage: {
                 active: false,
                 limit: null
             },
-            notUsableWhenAnotherSameItemActive: false
+            singleBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitConcurrentCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
         },
         effectValues: {
             affectedAsset: 'bit',
@@ -1604,27 +2131,35 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: null,
         limitations: {
-            singleIslandUsage: {
-                active: false,
-                limit: null
-            },
-            singleIslandCategoryUsage: {
-                active: false,
-                limit: null
-            },
             singleIslandConcurrentUsage: {
                 active: false,
                 limit: null
             },
-            concurrentIslandsUsage: {
+            singleIslandConcurrentCategoryUsage: {
                 active: false,
                 limit: null,
             },
-            singleBitUsage: {
+            singleIslandTotalUsage: {
                 active: false,
                 limit: null
             },
-            singleBitCategoryUsage: {
+            singleIslandTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandConcurrentCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiIslandTotalCategoryUsage: {
                 active: false,
                 limit: null
             },
@@ -1632,11 +2167,34 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 limit: null
             },
-            concurrentBitsUsage: {
+            singleBitConcurrentCategoryUsage: {
                 active: false,
                 limit: null
             },
-            notUsableWhenAnotherSameItemActive: false
+            singleBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            singleBitTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitConcurrentUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitConcurrentCategoryUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalUsage: {
+                active: false,
+                limit: null
+            },
+            multiBitTotalCategoryUsage: {
+                active: false,
+                limit: null
+            },
         },
         effectValues: {
             affectedAsset: 'bit',

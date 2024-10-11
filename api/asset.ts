@@ -133,91 +133,235 @@ export const consumeSynthesizingItem = async (
                 }
             }
 
-            // check if there are any `singleBitUsage`, `singleBitCategoryUsageLimit`, `singleBitConcurrentUsageLimit` and `concurrentBitsUsage` limitations for this item.
-            const singleBitUsageLimit = synthesizingItemData.limitations.singleBitUsage.limit;
-            const singleBitCategoryUsageLimit = synthesizingItemData.limitations.singleBitCategoryUsage.limit;
-            const singleBitConcurrentUsageLimit = synthesizingItemData.limitations.singleBitConcurrentUsage.limit;
-            const concurrentBitsUsageLimit = synthesizingItemData.limitations.concurrentBitsUsage.limit;
+            // because some items may have limitations that check for category-based usage limits AND item-based usage limits at the same time,
+            // we need to query two instances of the ConsumedSynthesizingItemModel: one for the category-based limits and one for the item-based limits.
+            // this is because the category-based limits will need to check for all items in the same category, while the item-based limits will only need to check for the item itself.
+            const getCategoryBasedUsedItems = () => {
+                const itemTypeMembers = GET_SYNTHESIZING_ITEM_MEMBERS(item);
 
-            // if `singleBitUsageLimit` OR `concurrentBitsUsageLimit` is not null, we check for any consumed instances of this particular item only.
-            // if `singleBitCategoryUsageLimit` is not null, we check for any consumed instances of ANY item in the same category/type.
-            // NOTE: no need to check for `singleBitConcurrentUsageLimit` because it doesn't count towards the limit of using the item or items from the item category on a single bit.
-            const itemsToSearch = (): SynthesizingItem | SynthesizingItem[] | string | string[] => {
-                if (singleBitUsageLimit !== null || concurrentBitsUsageLimit !== null) {
-                    return item;
+                if (!itemTypeMembers) {
+                    return null;
                 }
 
-                if (singleBitCategoryUsageLimit !== null) {
-                    // get all the enum members of the item type/category
-                    // for example, if item is `Parchment of Augmentation`, then return all augmentation item enum members.
-                    const itemTypeMembers = GET_SYNTHESIZING_ITEM_MEMBERS(item);
+                return itemTypeMembers;
+            }
 
-                    if (!itemTypeMembers) {
-                        return null;
-                    }
+            const categoryBasedUsedItems = getCategoryBasedUsedItems();
 
-                    return itemTypeMembers;
+            // if error, return an error message.
+            if (!categoryBasedUsedItems) {
+                return {
+                    status: Status.ERROR,
+                    message: `(consumeSynthesizingItem) Category based used items is null.`
                 }
             }
 
-            const usedItemInstances = await ConsumedSynthesizingItemModel.find({
-                usedBy: user._id,
-                item: Array.isArray(itemsToSearch()) ? { $in: itemsToSearch() } : itemsToSearch(),
-                affectedAsset,
-            }).lean();
+            const [categoryBasedUsedItemInstances, itemBasedUsedItemInstances] = await Promise.all([
+                ConsumedSynthesizingItemModel.find({
+                    usedBy: user._id,
+                    item: { $in: categoryBasedUsedItems },
+                    affectedAsset,
+                }).lean(),
+                ConsumedSynthesizingItemModel.find({
+                    usedBy: user._id,
+                    item,
+                    affectedAsset,
+                }).lean()
+            ]);
 
-            if (singleBitUsageLimit !== null || singleBitCategoryUsageLimit !== null) {
-                // check if the user has used the item (or if `singleBitCategoryUsageLimit`, if ANY item within the item category/type has been used) on this bit before.
-                const usedOnThisBitCount = usedItemInstances.filter(i => i.islandOrBitId === islandOrBitId).length;
-                const limit = singleBitUsageLimit !== null ? singleBitUsageLimit : singleBitCategoryUsageLimit;
+            // now, we need to check and apply the limitations for the item.
+            // for items with 'oneTime' effect durations, we don't need to worry about concurrent usage limits, hence the priority will be as follows:
+            // 1. multiBitTotalCategoryUsage
+            // 2. multiBitTotalUsage
+            // 3. singleBitTotalCategoryUsage
+            // 4. singleBitTotalUsage
+            // however, for items with effect durations, we will check for concurrent usage limits too. priority is as follows:
+            // 1. multiBitTotalCategoryUsage
+            // 2. multiBitTotalUsage
+            // 3. multiBitConcurrentCategoryUsage
+            // 4. multiBitConcurrentUsage
+            // 5. singleBitTotalCategoryUsage
+            // 6. singleBitTotalUsage
+            // 7. singleBitConcurrentCategoryUsage
+            // 8. singleBitConcurrentUsage
+            // NOTE: for category-based usages, we will use `categoryBasedUsedItemInstances` to check for the limits.
+            // for item-based usages, we will use `itemBasedUsedItemInstances` to check for the limits.
+            if (synthesizingItemData.effectValues.effectDuration === 'oneTime') {
+                const multiBitTotalCategoryUsageLimit = synthesizingItemData.limitations.multiBitTotalCategoryUsage.limit;
+                const multiBitTotalUsageLimit = synthesizingItemData.limitations.multiBitTotalUsage.limit;
+                const singleBitTotalCategoryUsageLimit = synthesizingItemData.limitations.singleBitTotalCategoryUsage.limit;
+                const singleBitTotalUsageLimit = synthesizingItemData.limitations.singleBitTotalUsage.limit;
 
-                if (usedOnThisBitCount >= limit) {
-                    return {
-                        status: Status.ERROR,
-                        message: `(consumeSynthesizingItem) ${singleBitUsageLimit !== null ? 'Single bit' : 'Single bit category'} usage limit for this item reached.`
+                if (multiBitTotalCategoryUsageLimit !== null) {
+                    // because `categoryBasedUsedItemInstances` contains all instances of the item used across all bits, and this is a total category usage limit,
+                    // we just return the total length and check if it's greater than or equal to the limit.
+                    const usedTotalCategoryCount = categoryBasedUsedItemInstances.length;
+
+                    if (usedTotalCategoryCount >= multiBitTotalCategoryUsageLimit) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(consumeSynthesizingItem) Multi bit total category usage limit for this item reached.`
+                        }
                     }
                 }
-            }
 
-            if (singleBitConcurrentUsageLimit !== null) {
-                // check for any instances FOR THIS BIT whose effectUntil is greater than the current timestamp.
-                // this is because we want to only search for items whose effectUntil is greater than the current timestamp.
-                // one-time use items will have an effectUntil === consumedTimestamp.
-                const usedOnThisBitConcurrentCount = usedItemInstances.filter(i => i.islandOrBitId === islandOrBitId && i.effectUntil > Math.floor(Date.now() / 1000)).length;
+                if (multiBitTotalUsageLimit !== null) {
+                    // because `itemBasedUsedItemInstances` contains all instances of the item used across all bits, and this is a total usage limit,
+                    // we just return the total length and check if it's greater than or equal to the limit.
+                    const usedTotalCount = itemBasedUsedItemInstances.length;
 
-                if (usedOnThisBitConcurrentCount >= singleBitConcurrentUsageLimit) {
-                    return {
-                        status: Status.ERROR,
-                        message: `(consumeSynthesizingItem) Single bit concurrent usage limit for this item reached.`
+                    if (usedTotalCount >= multiBitTotalUsageLimit) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(consumeSynthesizingItem) Multi bit total usage limit for this item reached.`
+                        }
                     }
                 }
-            }
 
-            if (concurrentBitsUsageLimit !== null) {
-                // we don't need to worry if the item doesn't have an effect duration (i.e. it's a one-time use item).
-                // this is because we want to only search for items whose effectUntil is greater than the current timestamp.
-                // one-time use items will have an effectUntil === consumedTimestamp.
-                const usedOnConcurrentBitsCount = usedItemInstances.filter(i => i.effectUntil > Math.floor(Date.now() / 1000)).length;
+                if (singleBitTotalCategoryUsageLimit !== null) {
+                    // because `categoryBasedUsedItemInstances` doesn't filter out for only a single bit, we need to filter out the instances that are used on this bit.
+                    const usedTotalCount = categoryBasedUsedItemInstances.filter(i => i.islandOrBitId === islandOrBitId).length;
 
-                if (usedOnConcurrentBitsCount >= concurrentBitsUsageLimit) {
-                    return {
-                        status: Status.ERROR,
-                        message: `(consumeSynthesizingItem) Concurrent bits usage limit for this item reached.`
+                    if (usedTotalCount >= singleBitTotalCategoryUsageLimit) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(consumeSynthesizingItem) Single bit total category usage limit for this item reached.`
+                        }
                     }
                 }
-            }
 
-            // check if this item cannot be used when another of the same item is currently active (used).
-            // although this coincides with the logic for `concurrentBitsUsageLimit` (because the item being used concurrently = is usable when another item is active),
-            // we still need to have this check regardless.
-            if (synthesizingItemData.limitations.notUsableWhenAnotherSameItemActive) {
-                // if true, check if there is an active item already being used.
-                const activeItem = usedItemInstances.find(i => i.effectUntil > Math.floor(Date.now() / 1000));
+                if (singleBitTotalUsageLimit !== null) {
+                    // because `itemBasedUsedItemInstances` doesn't filter out for only a single bit, we need to filter out the instances that are used on this bit.
+                    const usedTotalCount = itemBasedUsedItemInstances.filter(i => i.islandOrBitId === islandOrBitId).length;
 
-                if (activeItem) {
-                    return {
-                        status: Status.ERROR,
-                        message: `(consumeSynthesizingItem) Another instance of this is currently active on another bit.`
+                    if (usedTotalCount >= singleBitTotalUsageLimit) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(consumeSynthesizingItem) Single bit total usage limit for this item reached.`
+                        }
+                    }
+                }
+            } else {
+                const multiBitTotalCategoryUsageLimit = synthesizingItemData.limitations.multiBitTotalCategoryUsage.limit;
+                const multiBitTotalUsageLimit = synthesizingItemData.limitations.multiBitTotalUsage.limit;
+                const multiBitConcurrentCategoryUsageLimit = synthesizingItemData.limitations.multiBitConcurrentCategoryUsage.limit;
+                const multiBitConcurrentUsageLimit = synthesizingItemData.limitations.multiBitConcurrentUsage.limit;
+                const singleBitTotalCategoryUsageLimit = synthesizingItemData.limitations.singleBitTotalCategoryUsage.limit;
+                const singleBitTotalUsageLimit = synthesizingItemData.limitations.singleBitTotalUsage.limit;
+                const singleBitConcurrentCategoryUsageLimit = synthesizingItemData.limitations.singleBitConcurrentCategoryUsage.limit;
+                const singleBitConcurrentUsageLimit = synthesizingItemData.limitations.singleBitConcurrentUsage.limit;
+
+                if (multiBitTotalCategoryUsageLimit !== null) {
+                    // because `categoryBasedUsedItemInstances` contains all instances of the item used across all bits, and this is a total category usage limit,
+                    // we just return the total length and check if it's greater than or equal to the limit.
+                    const usedTotalCategoryCount = categoryBasedUsedItemInstances.length;
+
+                    if (usedTotalCategoryCount >= multiBitTotalCategoryUsageLimit) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(consumeSynthesizingItem) Multi bit total category usage limit for this item reached.`
+                        }
+                    }
+                }
+
+                if (multiBitTotalUsageLimit !== null) {
+                    // because `itemBasedUsedItemInstances` contains all instances of the item used across all bits, and this is a total usage limit,
+                    // we just return the total length and check if it's greater than or equal to the limit.
+                    const usedTotalCount = itemBasedUsedItemInstances.length;
+
+                    if (usedTotalCount >= multiBitTotalUsageLimit) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(consumeSynthesizingItem) Multi bit total usage limit for this item reached.`
+                        }
+                    }
+                }
+
+                if (multiBitConcurrentCategoryUsageLimit !== null) {
+                    // we don't need to worry if the item doesn't have an effect duration (i.e. it's a one-time use item).
+                    // this is because we want to only search for items whose effectUntil is greater than the current timestamp.
+                    // one-time use items will have an effectUntil === consumedTimestamp.
+                    const usedConcurrentCategoryCount = categoryBasedUsedItemInstances.filter(i => i.effectUntil > Math.floor(Date.now() / 1000)).length;
+
+                    if (usedConcurrentCategoryCount >= multiBitConcurrentCategoryUsageLimit) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(consumeSynthesizingItem) Multi bit concurrent category usage limit for this item reached.`
+                        }
+                    }
+                }
+
+                if (multiBitConcurrentUsageLimit !== null) {
+                    // we don't need to worry if the item doesn't have an effect duration (i.e. it's a one-time use item).
+                    // this is because we want to only search for items whose effectUntil is greater than the current timestamp.
+                    // one-time use items will have an effectUntil === consumedTimestamp.
+                    const usedConcurrentCount = itemBasedUsedItemInstances.filter(i => i.effectUntil > Math.floor(Date.now() / 1000)).length;
+
+                    if (usedConcurrentCount >= multiBitConcurrentUsageLimit) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(consumeSynthesizingItem) Multi bit concurrent usage limit for this item reached.`
+                        }
+                    }
+                }
+
+                if (singleBitTotalCategoryUsageLimit !== null) {
+                    // because `categoryBasedUsedItemInstances` doesn't filter out for only a single bit, we need to filter out the instances that are used on this bit.
+                    const usedTotalCount = categoryBasedUsedItemInstances.filter(i => i.islandOrBitId === islandOrBitId).length;
+
+                    if (usedTotalCount >= singleBitTotalCategoryUsageLimit) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(consumeSynthesizingItem) Single bit total category usage limit for this item reached.`
+                        }
+                    }
+                }
+
+                if (singleBitTotalUsageLimit !== null) {
+                    // because `itemBasedUsedItemInstances` doesn't filter out for only a single bit, we need to filter out the instances that are used on this bit.
+                    const usedTotalCount = itemBasedUsedItemInstances.filter(i => i.islandOrBitId === islandOrBitId).length;
+
+                    if (usedTotalCount >= singleBitTotalUsageLimit) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(consumeSynthesizingItem) Single bit total usage limit for this item reached.`
+                        }
+                    }
+                }
+
+                if (singleBitConcurrentCategoryUsageLimit !== null) {
+                    // we don't need to worry if the item doesn't have an effect duration (i.e. it's a one-time use item).
+                    // this is because we want to only search for items whose effectUntil is greater than the current timestamp.
+                    // one-time use items will have an effectUntil === consumedTimestamp.
+                    // NOTE: because this is also only specific to a single bit, we also only need to filter out the instances that are used on this bit.
+                    const usedConcurrentCategoryCount = 
+                        categoryBasedUsedItemInstances
+                            .filter(i => i.islandOrBitId === islandOrBitId && i.effectUntil > Math.floor(Date.now() / 1000))
+                            .length;
+
+                    if (usedConcurrentCategoryCount >= singleBitConcurrentCategoryUsageLimit) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(consumeSynthesizingItem) Single bit concurrent category usage limit for this item reached.`
+                        }
+                    }
+                }
+
+                if (singleBitConcurrentUsageLimit !== null) {
+                    // we don't need to worry if the item doesn't have an effect duration (i.e. it's a one-time use item).
+                    // this is because we want to only search for items whose effectUntil is greater than the current timestamp.
+                    // one-time use items will have an effectUntil === consumedTimestamp.
+                    // NOTE: because this is also only specific to a single bit, we also only need to filter out the instances that are used on this bit.
+                    const usedConcurrentCount = 
+                        itemBasedUsedItemInstances
+                            .filter(i => i.islandOrBitId === islandOrBitId && i.effectUntil > Math.floor(Date.now() / 1000))
+                            .length;
+
+                    if (usedConcurrentCount >= singleBitConcurrentUsageLimit) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(consumeSynthesizingItem) Single bit concurrent usage limit for this item reached.`
+                        }
                     }
                 }
             }
@@ -684,96 +828,235 @@ export const consumeSynthesizingItem = async (
                 }
             }
 
-            // check if the item has a `singleIslandUsage`, `singleIslandCategoryUsage`, `singleIslandConcurrentUsageLimit` and `concurrentIslandsUsage` limitation.
-            const singleIslandUsageLimit = synthesizingItemData.limitations.singleIslandUsage.limit;
-            const singleIslandCategoryUsageLimit = synthesizingItemData.limitations.singleIslandCategoryUsage.limit;
-            const singleIslandConcurrentUsageLimit = synthesizingItemData.limitations.concurrentIslandsUsage.limit;
-            const concurrentIslandsUsageLimit = synthesizingItemData.limitations.concurrentIslandsUsage.limit;
+            // because some items may have limitations that check for category-based usage limits AND item-based usage limits at the same time,
+            // we need to query two instances of the ConsumedSynthesizingItemModel: one for the category-based limits and one for the item-based limits.
+            // this is because the category-based limits will need to check for all items in the same category, while the item-based limits will only need to check for the item itself.
+            const getCategoryBasedUsedItems = () => {
+                const itemTypeMembers = GET_SYNTHESIZING_ITEM_MEMBERS(item);
 
-            // if `singleIslandUsageLimit` OR `concurrentIslandsUsageLimit` is not null, we check for any consumed instances of this particular item only.
-            // if `singleIslandCategoryUsageLimit` is not null, we check for any consumed instances of ANY item in the same category/type.
-            // NOTE: no need to check for `singleIslandConcurrentUsageLimit` because it doesn't count towards the limit of using the item or items from the item category on a single island.
-            const itemsToSearch = (): SynthesizingItem | SynthesizingItem[] | string | string[] => {
-                if (singleIslandUsageLimit !== null || concurrentIslandsUsageLimit !== null) {
-                    return item;
+                if (!itemTypeMembers) {
+                    return null;
                 }
 
-                if (singleIslandCategoryUsageLimit !== null) {
-                    // get all the enum members of the item type/category
-                    // for example, if item is `Parchment of Augmentation`, then return all augmentation item enum members.
-                    const itemTypeMembers = GET_SYNTHESIZING_ITEM_MEMBERS(item);
+                return itemTypeMembers;
+            }
 
-                    if (!itemTypeMembers) {
-                        return null;
-                    }
+            const categoryBasedUsedItems = getCategoryBasedUsedItems();
 
-                    return itemTypeMembers;
+            // if error, return an error message.
+            if (!categoryBasedUsedItems) {
+                return {
+                    status: Status.ERROR,
+                    message: `(consumeSynthesizingItem) Category based used items is null.`
                 }
             }
 
-            const usedItemInstances = await ConsumedSynthesizingItemModel.find({
-                usedBy: user._id,
-                item: Array.isArray(itemsToSearch()) ? { $in: itemsToSearch() } : itemsToSearch(),
-                affectedAsset,
-            }).lean();
+            const [categoryBasedUsedItemInstances, itemBasedUsedItemInstances] = await Promise.all([
+                ConsumedSynthesizingItemModel.find({
+                    usedBy: user._id,
+                    item: { $in: categoryBasedUsedItems },
+                    affectedAsset,
+                }).lean(),
+                ConsumedSynthesizingItemModel.find({
+                    usedBy: user._id,
+                    item,
+                    affectedAsset,
+                }).lean()
+            ]);
 
-            console.log(`(consumeSynthesizingItem) Used item instances: ${JSON.stringify(usedItemInstances, null, 2)}`);
+            // now, we need to check and apply the limitations for the item.
+            // for items with 'oneTime' effect durations, we don't need to worry about concurrent usage limits, hence the priority will be as follows:
+            // 1. multiIslandTotalCategoryUsage
+            // 2. multiIslandTotalUsage
+            // 3. singleIslandTotalCategoryUsage
+            // 4. singleIslandTotalUsage
+            // however, for items with effect durations, we will check for concurrent usage limits too. priority is as follows:
+            // 1. multiIslandTotalCategoryUsage
+            // 2. multiIslandTotalUsage
+            // 3. multiIslandConcurrentCategoryUsage
+            // 4. multiIslandConcurrentUsage
+            // 5. singleIslandTotalCategoryUsage
+            // 6. singleIslandTotalUsage
+            // 7. singleIslandConcurrentCategoryUsage
+            // 8. singleIslandConcurrentUsage
+            // NOTE: for category-based usages, we will use `categoryBasedUsedItemInstances` to check for the limits.
+            // for item-based usages, we will use `itemBasedUsedItemInstances` to check for the limits.
+            if (synthesizingItemData.effectValues.effectDuration === 'oneTime') {
+                const multiIslandTotalCategoryUsageLimit = synthesizingItemData.limitations.multiIslandTotalCategoryUsage.limit;
+                const multiIslandTotalUsageLimit = synthesizingItemData.limitations.multiIslandTotalUsage.limit;
+                const singleIslandTotalCategoryUsageLimit = synthesizingItemData.limitations.singleIslandTotalCategoryUsage.limit;
+                const singleIslandTotalUsageLimit = synthesizingItemData.limitations.singleIslandTotalUsage.limit;
 
-            if (singleIslandUsageLimit !== null || singleIslandCategoryUsageLimit !== null) {
-                // check if the user has used the item (or, if `singleIslandCategoryUsageLimit`, if ANY item within the item category/type has been used) on this island before.
-                const usedOnThisIslandCount = usedItemInstances.filter(i => i.islandOrBitId === islandOrBitId).length;
-                const limit = singleIslandUsageLimit !== null ? singleIslandUsageLimit : singleIslandCategoryUsageLimit;
+                if (multiIslandTotalCategoryUsageLimit !== null) {
+                    // because `categoryBasedUsedItemInstances` contains all instances of the item used across all islands, and this is a total category usage limit,
+                    // we just return the total length and check if it's greater than or equal to the limit.
+                    const usedTotalCategoryCount = categoryBasedUsedItemInstances.length;
 
-                if (usedOnThisIslandCount >= limit) {
-                    return {
-                        status: Status.ERROR,
-                        message: `(consumeSynthesizingItem) ${singleIslandUsageLimit !== null ? 'Single island usage' : 'Single island usage category'} limit for this item reached.`
+                    if (usedTotalCategoryCount >= multiIslandTotalCategoryUsageLimit) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(consumeSynthesizingItem) Multi island total category usage limit for this item reached.`
+                        }
                     }
                 }
-            }
 
-            if (singleIslandConcurrentUsageLimit !== null) {
-                // check for any instances FOR THIS ISLAND whose effectUntil is greater than the current timestamp.
-                // this is because we want to only search for items whose effectUntil is greater than the current timestamp.
-                // one-time use items will have an effectUntil === consumedTimestamp.
-                const usedOnThisIslandCount = usedItemInstances.filter(i => {
-                    return i.islandOrBitId === islandOrBitId && i.effectUntil > Math.floor(Date.now() / 1000);
-                }).length;
+                if (multiIslandTotalUsageLimit !== null) {
+                    // because `itemBasedUsedItemInstances` contains all instances of the item used across all Islands, and this is a total usage limit,
+                    // we just return the total length and check if it's greater than or equal to the limit.
+                    const usedTotalCount = itemBasedUsedItemInstances.length;
+
+                    if (usedTotalCount >= multiIslandTotalUsageLimit) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(consumeSynthesizingItem) Multi island total usage limit for this item reached.`
+                        }
+                    }
+                }
+
+                if (singleIslandTotalCategoryUsageLimit !== null) {
+                    // because `categoryBasedUsedItemInstances` doesn't filter out for only a single Island, we need to filter out the instances that are used on this Island.
+                    const usedTotalCount = categoryBasedUsedItemInstances.filter(i => i.islandOrBitId === islandOrBitId).length;
+
+                    if (usedTotalCount >= singleIslandTotalCategoryUsageLimit) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(consumeSynthesizingItem) Single island total category usage limit for this item reached.`
+                        }
+                    }
+                }
+
+                if (singleIslandTotalUsageLimit !== null) {
+                    // because `itemBasedUsedItemInstances` doesn't filter out for only a single Island, we need to filter out the instances that are used on this Island.
+                    const usedTotalCount = itemBasedUsedItemInstances.filter(i => i.islandOrBitId === islandOrBitId).length;
+
+                    if (usedTotalCount >= singleIslandTotalUsageLimit) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(consumeSynthesizingItem) Single island total usage limit for this item reached.`
+                        }
+                    }
+                }
+            } else {
+                const multiIslandTotalCategoryUsageLimit = synthesizingItemData.limitations.multiIslandTotalCategoryUsage.limit;
+                const multiIslandTotalUsageLimit = synthesizingItemData.limitations.multiIslandTotalUsage.limit;
+                const multiIslandConcurrentCategoryUsageLimit = synthesizingItemData.limitations.multiIslandConcurrentCategoryUsage.limit;
+                const multiIslandConcurrentUsageLimit = synthesizingItemData.limitations.multiIslandConcurrentUsage.limit;
+                const singleIslandTotalCategoryUsageLimit = synthesizingItemData.limitations.singleIslandTotalCategoryUsage.limit;
+                const singleIslandTotalUsageLimit = synthesizingItemData.limitations.singleIslandTotalUsage.limit;
+                const singleIslandConcurrentCategoryUsageLimit = synthesizingItemData.limitations.singleIslandConcurrentCategoryUsage.limit;
+                const singleIslandConcurrentUsageLimit = synthesizingItemData.limitations.singleIslandConcurrentUsage.limit;
+
+                if (multiIslandTotalCategoryUsageLimit !== null) {
+                    // because `categoryBasedUsedItemInstances` contains all instances of the item used across all islands, and this is a total category usage limit,
+                    // we just return the total length and check if it's greater than or equal to the limit.
+                    const usedTotalCategoryCount = categoryBasedUsedItemInstances.length;
+
+                    if (usedTotalCategoryCount >= multiIslandTotalCategoryUsageLimit) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(consumeSynthesizingItem) Multi island total category usage limit for this item reached.`
+                        }
+                    }
+                }
+
+                if (multiIslandTotalUsageLimit !== null) {
+                    // because `itemBasedUsedItemInstances` contains all instances of the item used across all Islands, and this is a total usage limit,
+                    // we just return the total length and check if it's greater than or equal to the limit.
+                    const usedTotalCount = itemBasedUsedItemInstances.length;
+
+                    if (usedTotalCount >= multiIslandTotalUsageLimit) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(consumeSynthesizingItem) Multi island total usage limit for this item reached.`
+                        }
+                    }
+                }
+
+                if (multiIslandConcurrentCategoryUsageLimit !== null) {
+                    // we don't need to worry if the item doesn't have an effect duration (i.e. it's a one-time use item).
+                    // this is because we want to only search for items whose effectUntil is greater than the current timestamp.
+                    // one-time use items will have an effectUntil === consumedTimestamp.
+                    const usedConcurrentCategoryCount = categoryBasedUsedItemInstances.filter(i => i.effectUntil > Math.floor(Date.now() / 1000)).length;
+
+                    if (usedConcurrentCategoryCount >= multiIslandConcurrentCategoryUsageLimit) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(consumeSynthesizingItem) Multi island concurrent category usage limit for this item reached.`
+                        }
+                    }
+                }
                 
-                if (usedOnThisIslandCount >= singleIslandConcurrentUsageLimit) {
-                    return {
-                        status: Status.ERROR,
-                        message: `(consumeSynthesizingItem) Single island usage category limit for this item reached.`
+                if (multiIslandConcurrentUsageLimit !== null) {
+                    // we don't need to worry if the item doesn't have an effect duration (i.e. it's a one-time use item).
+                    // this is because we want to only search for items whose effectUntil is greater than the current timestamp.
+                    // one-time use items will have an effectUntil === consumedTimestamp.
+                    const usedConcurrentCount = itemBasedUsedItemInstances.filter(i => i.effectUntil > Math.floor(Date.now() / 1000)).length;
+
+                    if (usedConcurrentCount >= multiIslandConcurrentUsageLimit) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(consumeSynthesizingItem) Multi island concurrent usage limit for this item reached.`
+                        }
                     }
                 }
-            }
 
-            if (concurrentIslandsUsageLimit !== null) {
-                // we don't need to worry if the item doesn't have an effect duration (i.e. it's a one-time use item).
-                // this is because we want to only search for items whose effectUntil is greater than the current timestamp.
-                // one-time use items will have an effectUntil === consumedTimestamp.
-                // NOTE: if an island uses more than 1 item concurrently, this will NOT be counted as a single usage, so we don't need to filter that out.
-                const usedOnConcurrentIslandsCount = usedItemInstances.filter(i => i.effectUntil > Math.floor(Date.now() / 1000)).length;
+                if (singleIslandTotalCategoryUsageLimit !== null) {
+                    // because `categoryBasedUsedItemInstances` doesn't filter out for only a single Island, we need to filter out the instances that are used on this Island.
+                    const usedTotalCount = categoryBasedUsedItemInstances.filter(i => i.islandOrBitId === islandOrBitId).length;
 
-                if (usedOnConcurrentIslandsCount >= concurrentIslandsUsageLimit) {
-                    return {
-                        status: Status.ERROR,
-                        message: `(consumeSynthesizingItem) Concurrent islands usage limit for this item reached.`
+                    if (usedTotalCount >= singleIslandTotalCategoryUsageLimit) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(consumeSynthesizingItem) Single island total category usage limit for this item reached.`
+                        }
                     }
                 }
-            }
 
-            // check if this item cannot be used when another of the same item is currently active (used).
-            // although this coincides with the logic for `concurrentIslandsUsageLimit` (because the item being used concurrently = is usable when another item is active),
-            // we still need to have this check regardless.
-            if (synthesizingItemData.limitations.notUsableWhenAnotherSameItemActive) {
-                // if true, check if there is an active item already being used.
-                const activeItem = usedItemInstances.find(i => i.effectUntil > Math.floor(Date.now() / 1000));
+                if (singleIslandTotalUsageLimit !== null) {
+                    // because `itemBasedUsedItemInstances` doesn't filter out for only a single Island, we need to filter out the instances that are used on this Island.
+                    const usedTotalCount = itemBasedUsedItemInstances.filter(i => i.islandOrBitId === islandOrBitId).length;
 
-                if (activeItem) {
-                    return {
-                        status: Status.ERROR,
-                        message: `(consumeSynthesizingItem) Another instance of this is currently active on another island.`
+                    if (usedTotalCount >= singleIslandTotalUsageLimit) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(consumeSynthesizingItem) Single island total usage limit for this item reached.`
+                        }
+                    }
+                }
+
+                if (singleIslandConcurrentCategoryUsageLimit !== null) {
+                    // we don't need to worry if the item doesn't have an effect duration (i.e. it's a one-time use item).
+                    // this is because we want to only search for items whose effectUntil is greater than the current timestamp.
+                    // one-time use items will have an effectUntil === consumedTimestamp.
+                    // NOTE: because this is also only specific to a single island, we also only need to filter out the instances that are used on this island.
+                    const usedConcurrentCategoryCount = 
+                        categoryBasedUsedItemInstances
+                            .filter(i => i.islandOrBitId === islandOrBitId && i.effectUntil > Math.floor(Date.now() / 1000))
+                            .length;
+
+                    if (usedConcurrentCategoryCount >= singleIslandConcurrentCategoryUsageLimit) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(consumeSynthesizingItem) Single island concurrent category usage limit for this item reached.`
+                        }
+                    }
+                }
+
+                if (singleIslandConcurrentUsageLimit !== null) {
+                    // we don't need to worry if the item doesn't have an effect duration (i.e. it's a one-time use item).
+                    // this is because we want to only search for items whose effectUntil is greater than the current timestamp.
+                    // one-time use items will have an effectUntil === consumedTimestamp.
+                    // NOTE: because this is also only specific to a single island, we also only need to filter out the instances that are used on this island.
+                    const usedConcurrentCount = 
+                        itemBasedUsedItemInstances
+                            .filter(i => i.islandOrBitId === islandOrBitId && i.effectUntil > Math.floor(Date.now() / 1000))
+                            .length;
+
+                    if (usedConcurrentCount >= singleIslandConcurrentUsageLimit) {
+                        return {
+                            status: Status.ERROR,
+                            message: `(consumeSynthesizingItem) Single island concurrent usage limit for this item reached.`
+                        }
                     }
                 }
             }
