@@ -25,8 +25,9 @@ export const startRest = async (socket: Socket, data: SaunaUserDetail) => {
       });
     }
 
-    // setup requirement rest
-    const maximumEnergyToFarm = 1000;
+    // get rest maximum energy
+    const getRestMaximumEnergy = await redisDb.get(`maximumEnergy:${userId}`);
+    const maximumEnergyToFarm = getRestMaximumEnergy ? Number(getRestMaximumEnergy) : 1000;
     const energyPotionPerMinute = 25;
     const energyPotionPerSecond = energyPotionPerMinute / 60;
     const maxTimeToRest = maximumEnergyToFarm / energyPotionPerMinute; // 40 minute
