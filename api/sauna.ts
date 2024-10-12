@@ -102,7 +102,7 @@ export const stopRest = async (socket: Socket) => {
     // broadcast to all user
     socket.broadcast.emit(EventSauna.USER_COUNT, getConnected);
     socket.emit(EventSauna.USER_COUNT, getConnected);
-    return socket.emit('stop_rest', {
+    return socket.emit('server_response', {
       status: Status.SUCCESS,
       message: `(stopRest) user ${userId} has stopped rest`,
       data: {
@@ -234,39 +234,46 @@ const isUserInRoom = async (userId: string) => {
  */
 export const energyRecover = async (userId: string, energyRecover: number): Promise<any> => {
   try {
-    // check if user already in room
-    const isUserExistInRoom = await isUserInRoom(userId)
-    if (!isUserExistInRoom) throw new Error('User not in room')
+    // Check if user is in the room
+    const isUserExistInRoom = await isUserInRoom(userId);
+    if (!isUserExistInRoom) throw new Error('User not in room');
 
-    // check user exist
-    const user = await UserModel.findOne({ _id: userId })
-    if (!user) throw new Error('User not found')
+    // Check if user exists
+    const user = await UserModel.findOne({ _id: userId });
+    if (!user) throw new Error('User not found');
 
-    // get user max energy can recover
-    const remainingEnergy = await redisDb.get(`maximumEnergy:${userId}`)
-    if (!remainingEnergy) throw new Error('no remaining energy')
-    if (Number(remainingEnergy) < energyRecover) throw new Error('no remaining energy')
+    // Get user's remaining energy from Redis
+    const remainingEnergy = await redisDb.get(`maximumEnergy:${userId}`);
+    if (!remainingEnergy) throw new Error('No remaining energy');
 
-    // update remaining energy
-    await redisDb.set(`maximumEnergy:${userId}`, Number(remainingEnergy) - energyRecover)
+    const remainingEnergyValue = Number(remainingEnergy);
+    if (remainingEnergyValue <= 0) throw new Error('No remaining energy');
 
-    // check if energy to greater than max energy set it to max energy
-    if (user.inGameData.energy.currentEnergy + energyRecover > user.inGameData.energy.maxEnergy) {
-      return await UserModel.updateOne(
-        { _id: userId },
-        { $set: { 'inGameData.energy.currentEnergy': user.inGameData.energy.maxEnergy } }
-      )
-    }
+    // Limit energy recovery to remaining energy
+    const energyToRecover = Math.min(energyRecover, remainingEnergyValue);
 
-    // update user energy
+    // Calculate the user's maximum possible energy recovery
+    const maxEnergyRecoverable = user.inGameData.energy.maxEnergy - user.inGameData.energy.currentEnergy;
+
+    // Check if recovered energy exceeds maximum energy
+    const finalEnergyRecover = Math.min(energyToRecover, maxEnergyRecoverable);
+
+    // If user has no room to recover more energy
+    if (finalEnergyRecover <= 0) throw new Error('user has max energy');
+
+    // Update Redis for the remaining energy to recover
+    await redisDb.set(`maximumEnergy:${userId}`, remainingEnergyValue - finalEnergyRecover);
+
+    // Update user's energy in the database
     return await UserModel.updateOne(
       { _id: userId },
-      { $inc: { 'inGameData.energy.currentEnergy': energyRecover } }
-    )
+      { $inc: { 'inGameData.energy.currentEnergy': finalEnergyRecover } }
+    );
   } catch (error) {
-    throw new Error(`${error.message}`)
+    throw new Error(`${error.message}`);
   }
-}
+};
+
 
 // the function return expired time until midnight
 const getExpiredTime = () => {
