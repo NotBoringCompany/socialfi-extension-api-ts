@@ -27,8 +27,9 @@ export const startRest = async (socket: Socket, data: SaunaUserDetail) => {
 
     // setup requirement rest
     const maximumEnergyToFarm = 1000;
-    const energyPotionPerSecond = 25;
-    const maxTimeToRest = maximumEnergyToFarm / energyPotionPerSecond; // 40 minute
+    const energyPotionPerMinute = 25;
+    const energyPotionPerSecond = energyPotionPerMinute / 60;
+    const maxTimeToRest = maximumEnergyToFarm / energyPotionPerMinute; // 40 minute
     const maxTimeToRestInMiliSecond = (maxTimeToRest * 60) * 1000;  // 2400000 mili second
 
     // setup user time needed energy
@@ -236,7 +237,7 @@ export const energyRecover = async (userId: string, energyRecover: number): Prom
     if (!user) throw new Error('User not found')
 
     // get user max energy can recover
-    const remainingEnergy =await redisDb.get(`maximumEnergy:${userId}`)
+    const remainingEnergy = await redisDb.get(`maximumEnergy:${userId}`)
     if (!remainingEnergy) throw new Error('no remaining energy')
     if (Number(remainingEnergy) < energyRecover) throw new Error('no remaining energy')
 
