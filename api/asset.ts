@@ -53,7 +53,7 @@ export const consumeSynthesizingItem = async (
 
         if (!itemAmount || itemAmount < 1) {
             console.log(`(consumeSynthesizingItem) Not enough of the item to consume.`);
-            
+
             return {
                 status: Status.ERROR,
                 message: `(consumeSynthesizingItem) Not enough of the item to consume.`
@@ -532,12 +532,9 @@ export const consumeSynthesizingItem = async (
                             })
                             .filter(trait => {
                                 if (!allowDuplicates) {
-                                    // not allowing duplicates means that the trait cannot be the same as ANY traits in the `updatedTraits` array.
-                                    // after each loop, this `some` filter will recheck the new "allowed" list of traits anyway.
-                                    // for example, initially it's [A, B, C, D, E].
-                                    // A gets changed to F (because it isn't a duplicate), making it [F, B, C, D, E].
-                                    // on the next loop (1st index), A will technically be allowed again to be rerolled into.
-                                    return !updatedTraits.some(t => t.trait === trait.trait);
+                                    // not allowing duplicates means that the bit CANNOT have any of the traits from `bitTraits` in the `updatedTraits` array.
+                                    // for example, if the original traits of the bit were [A, B, C, D], then each rerolled trait CANNOT be A, B, C or D.
+                                    return !bitTraits.some(t => t.trait === trait.trait);
                                 } else {
                                     return true;
                                 }
