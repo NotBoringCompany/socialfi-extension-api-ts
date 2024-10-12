@@ -103,7 +103,13 @@ export const stopRest = async (socket: Socket) => {
     socket.emit(EventSauna.USER_COUNT, getConnected);
     return socket.emit('stop_rest', {
       status: Status.SUCCESS,
-      message: `(stopRest) user ${userId} has stopped rest`
+      message: `(stopRest) user ${userId} has stopped rest`,
+      data: {
+        timeToMaxEnergyInMiliSecond: 0,
+        energyPotionPerSecond: 0,
+        isStartRest: false,
+        startTimestamp: 0,
+      }
     });
   } catch (error) {
     return socket.emit('server_response', {
