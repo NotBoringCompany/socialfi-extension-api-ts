@@ -52,6 +52,8 @@ export const consumeSynthesizingItem = async (
         const itemAmount = (user.inventory?.items as Item[]).find(i => i.type === item)?.amount;
 
         if (!itemAmount || itemAmount < 1) {
+            console.log(`(consumeSynthesizingItem) Not enough of the item to consume.`);
+            
             return {
                 status: Status.ERROR,
                 message: `(consumeSynthesizingItem) Not enough of the item to consume.`
