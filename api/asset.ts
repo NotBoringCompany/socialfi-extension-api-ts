@@ -1,7 +1,7 @@
 import { BitRarityNumeric, BitTrait, BitTraitData, BitTraitRarity } from '../models/bit';
 import { SynthesizingItemGroup } from '../models/craft';
 import { IslandRarityNumeric, IslandTrait } from '../models/island';
-import { Item, SynthesizingItem } from '../models/item';
+import { Item, PotionItem, SynthesizingItem } from '../models/item';
 import { Modifier } from '../models/modifier';
 import { ResourceLine, ResourceRarity, ResourceRarityNumeric } from '../models/resource';
 import { GET_SYNTHESIZING_ITEM_MEMBERS, GET_SYNTHESIZING_ITEM_TYPE, SYNTHESIZING_ITEM_DATA, SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE } from '../utils/constants/asset';
@@ -37,6 +37,8 @@ export const consumeSynthesizingItem = async (
     chosenBitTraitsToReroll?: BitTrait[]
 ): Promise<ReturnValue> => {
     try {
+        console.log(`(consumeSynthesizingItem) Consuming item ${item}...`);
+
         const user = await UserModel.findOne({ twitterId }).lean();
 
         if (!user) {
@@ -481,7 +483,8 @@ export const consumeSynthesizingItem = async (
 
                 // now, we need to randomize the new traits for the bit.
                 // we will set `updatedTraits` to initially be the same as `bitTraits`.
-                const updatedTraits: BitTraitData[] = bitTraits;
+                // we need to do a deep copy of `bitTraits` because we will be modifying the array.
+                const updatedTraits: BitTraitData[] = JSON.parse(JSON.stringify(bitTraits));
 
                 // loop through each trait in the bit's traits array.
                 // if the index is in the `indexesToReroll` array, we will reroll the trait.
@@ -1596,3 +1599,11 @@ export const consumeSynthesizingItem = async (
         }
     }
 }
+
+consumeSynthesizingItem(
+    '1462755469102137357',
+    PotionItem.POTION_OF_ENLIGHTENMENT,
+    18,
+    null,
+    [BitTrait.FIT, BitTrait.PRODUCTIVE]
+);
