@@ -70,7 +70,6 @@ export const startRest = async (socket: Socket, data: SaunaUserDetail) => {
   }
 };
 /**
- * @deprecated 
  * @param socket socket
  * @returns 
  */
@@ -102,7 +101,7 @@ export const stopRest = async (socket: Socket) => {
     // broadcast to all user
     socket.broadcast.emit(EventSauna.USER_COUNT, getConnected);
     socket.emit(EventSauna.USER_COUNT, getConnected);
-    return socket.emit('server_response', {
+    return socket.emit('stop_rest', {
       status: Status.SUCCESS,
       message: `(stopRest) user ${userId} has stopped rest`
     });
