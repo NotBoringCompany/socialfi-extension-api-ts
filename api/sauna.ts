@@ -266,7 +266,7 @@ export const energyRecover = async (userId: string, energyRecover: number): Prom
 const getExpiredTime = () => {
   const now = new Date();
   const midnight = new Date();
-  midnight.setHours(0, 0, 0, 0);
+  midnight.setHours(23, 59, 59, 999);
   const timeUntilMidnight = midnight.getTime() - now.getTime();
   return Math.floor(timeUntilMidnight / 1000);
 }

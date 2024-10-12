@@ -9,6 +9,10 @@ export const socketHandler = (socket: Socket) => {
     startRest(socket, msg)
   })
 
+  socket.on("stop_rest", (msg) => {
+    stopRest(socket)
+  })
+
   socket.on("alive", async (msg) => {
     const {socketId, getTotalEnergy, userId, message} = msg;
     console.log(`user ${userId} yep!!!`);
@@ -27,6 +31,7 @@ export const socketHandler = (socket: Socket) => {
   })
 
   socket.on('disconnect', () => {
+    // user with accidentally disconnected
     stopRest(socket);
   });
 }
