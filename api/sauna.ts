@@ -93,6 +93,7 @@ export const stopRest = async (socket: Socket) => {
     const userGetRestTime = Math.abs(dateNowInSeconds - Number(getTimeUserJoin));
     // calculate total energy
     const getTotalEnergy = Math.floor(userGetRestTime * Number(getEnergyPotionPerSecond));
+    console.log(`${userId} energy restored: ${getTotalEnergy}`);
     // recover energy
     await energyRecover(userId, getTotalEnergy);
     // remove user from room
