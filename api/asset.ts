@@ -534,7 +534,8 @@ export const consumeSynthesizingItem = async (
                                 if (!allowDuplicates) {
                                     // not allowing duplicates means that the bit CANNOT have any of the traits from `bitTraits` in the `updatedTraits` array.
                                     // for example, if the original traits of the bit were [A, B, C, D], then each rerolled trait CANNOT be A, B, C or D.
-                                    return !bitTraits.some(t => t.trait === trait.trait);
+                                    // note that the trait cannot also already exist in the `updatedTraits`
+                                    return !bitTraits.some(t => t.trait === trait.trait) && !updatedTraits.some(t => t.trait === trait.trait);
                                 } else {
                                     return true;
                                 }
