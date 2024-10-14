@@ -552,9 +552,13 @@ export const consumeSynthesizingItem = async (
                                     // note that the trait cannot also already exist in the `updatedTraits`
                                     return !bitTraits.some(t => t.trait === trait.trait) && !updatedTraits.some(t => t.trait === trait.trait);
                                 } else {
-                                    // if `allowDuplicates`, we just need to make sure that the trait doesn't already exist in the `updatedTraits` array.
-                                    // we simply allow the new trait to be an old trait (i.e. the same trait can be rerolled).
-                                    return !updatedTraits.some(t => t.trait === trait.trait);
+                                    // if `allowDuplicates`, we just need to make sure that the trait doesn't already exist in the `updatedTraits` array
+                                    // as well as on the other indexes in `bitTraits` that are NOT the indexes to reroll.
+                                    // for example, let's say a bit has traits [0, 1, 2, 3] (index-wise) and the trait to reroll is 1.
+                                    // the user is now at index 1. if it's only `!updatedTraits.some(t => t.trait === trait.trait)`, then it will only check for traits that are < index 1 (i.e. index 0), meaning that indexes 2 and 3 are addable to the pool
+                                    // and can be rolled in index 1, which is what we don't want.
+                                    // we will need to check for the traits in the `bitTraits` array that are NOT in the `indexesToReroll` array.
+                                    return !updatedTraits.some(t => t.trait === trait.trait) && !bitTraits.filter((_, i) => !indexesToReroll.includes(i)).some(t => t.trait === trait.trait);
                                 }
                             })
                             .filter(trait => {
