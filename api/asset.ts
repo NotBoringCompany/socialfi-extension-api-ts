@@ -569,7 +569,7 @@ export const consumeSynthesizingItem = async (
                             // if the category exists, check which subcategory the existing trait(s) in the `updatedTraits` array belong to.
                             // if the subcategory is the same as the random trait's subcategory, add the trait.
                             if (categoryExists) {
-                                const existingSubCategory = updatedTraits.find(trait => trait.category === traitCategory)?.subcategory;
+                                const existingSubCategory = updatedTraits.length > 0 ? updatedTraits.find(trait => trait.category === traitCategory)?.subcategory : null;
 
                                 // if the existing subcategory is the same as the random trait's subcategory, add the trait.
                                 if (existingSubCategory === traitSubcategory) {
