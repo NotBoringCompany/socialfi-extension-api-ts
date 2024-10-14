@@ -550,7 +550,7 @@ export const consumeSynthesizingItem = async (
                                     // for example, say the original traits are [A, B, C, D] and the rerolled index is 2, which is C.
                                     // C will be added to the rollable traits pool, while A, B and D will be excluded (because that will be a 'true duplicate').
                                     // get all the traits in `updatedTraits` that are NOT in the current index's trait and filter them out.
-                                    return updatedTraits[index].trait === trait.trait || 
+                                    return updatedTraits[index].trait === trait.trait && 
                                     !updatedTraits.some((t, idx) => t.trait === trait.trait && idx !== index);
                                 }
                             })
