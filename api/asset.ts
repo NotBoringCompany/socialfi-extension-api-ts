@@ -851,6 +851,14 @@ export const consumeSynthesizingItem = async (
                 }
             }
 
+            // check if the item can be applied on an empty island (i.e. an island without placed bits).
+            if (!synthesizingItemData.limitations.applicableOnEmptyIsland && island.placedBitIds.length === 0) {
+                return {
+                    status: Status.ERROR,
+                    message: `(consumeSynthesizingItem) Item cannot be applied on an empty island.`
+                }
+            }
+
             // because some items may have limitations that check for category-based usage limits AND item-based usage limits at the same time,
             // we need to query two instances of the ConsumedSynthesizingItemModel: one for the category-based limits and one for the item-based limits.
             // this is because the category-based limits will need to check for all items in the same category, while the item-based limits will only need to check for the item itself.

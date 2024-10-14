@@ -241,6 +241,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: IslandType.EXOTIC_ISLES,
         limitations: {
+            applicableOnEmptyIsland: true,
             singleIslandConcurrentUsage: {
                 active: false,
                 limit: null
@@ -353,6 +354,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: IslandType.EXOTIC_ISLES,
         limitations: {
+            applicableOnEmptyIsland: true,
             singleIslandConcurrentUsage: {
                 active: false,
                 limit: null
@@ -465,6 +467,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: IslandType.EXOTIC_ISLES,
         limitations: {
+            applicableOnEmptyIsland: true,
             singleIslandConcurrentUsage: {
                 active: false,
                 limit: null
@@ -577,6 +580,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: null,
         limitations: {
+            applicableOnEmptyIsland: true,
             singleIslandConcurrentUsage: {
                 active: false,
                 limit: null
@@ -689,6 +693,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: null,
         limitations: {
+            applicableOnEmptyIsland: true,
             singleIslandConcurrentUsage: {
                 active: false,
                 limit: null
@@ -801,6 +806,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: IslandType.EXOTIC_ISLES,
         limitations: {
+            applicableOnEmptyIsland: true,
             singleIslandConcurrentUsage: {
                 active: false,
                 limit: null
@@ -913,6 +919,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: null,
         limitations: {
+            applicableOnEmptyIsland: true,
             singleIslandConcurrentUsage: {
                 active: false,
                 limit: null
@@ -1025,6 +1032,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: null,
         limitations: {
+            applicableOnEmptyIsland: true,
             singleIslandConcurrentUsage: {
                 active: false,
                 limit: null
@@ -1137,6 +1145,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: null,
         limitations: {
+            applicableOnEmptyIsland: false,
             singleIslandConcurrentUsage: {
                 active: false,
                 limit: null
@@ -1250,6 +1259,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: null,
         limitations: {
+            applicableOnEmptyIsland: false,
             singleIslandConcurrentUsage: {
                 active: false,
                 limit: null
@@ -1363,6 +1373,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: null,
         limitations: {
+            applicableOnEmptyIsland: false,
             singleIslandConcurrentUsage: {
                 active: false,
                 limit: null
@@ -1476,6 +1487,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: BitRarity.RARE,
         limitations: {
+            applicableOnEmptyIsland: true,
             singleIslandConcurrentUsage: {
                 active: false,
                 limit: null
@@ -1588,6 +1600,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: BitRarity.EPIC,
         limitations: {
+            applicableOnEmptyIsland: true,
             singleIslandConcurrentUsage: {
                 active: false,
                 limit: null
@@ -1700,6 +1713,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: null,
         limitations: {
+            applicableOnEmptyIsland: true,
             singleIslandConcurrentUsage: {
                 active: false,
                 limit: null
@@ -1812,6 +1826,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: null,
         limitations: {
+            applicableOnEmptyIsland: true,
             singleIslandConcurrentUsage: {
                 active: false,
                 limit: null
@@ -1924,6 +1939,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: null,
         limitations: {
+            applicableOnEmptyIsland: true,
             singleIslandConcurrentUsage: {
                 active: false,
                 limit: null
@@ -2036,6 +2052,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: null,
         limitations: {
+            applicableOnEmptyIsland: true,
             singleIslandConcurrentUsage: {
                 active: false,
                 limit: null
@@ -2148,6 +2165,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         minimumRarity: null,
         maximumRarity: null,
         limitations: {
+            applicableOnEmptyIsland: true,
             singleIslandConcurrentUsage: {
                 active: false,
                 limit: null

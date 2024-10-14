@@ -162,6 +162,12 @@ export interface SynthesizingItemData {
  */
 export interface SynthesizingItemLimitations {
     /**
+     * if this item can be applied on an empty island.
+     * 
+     * only applicable for items that have effects on islands (otherwise it SHOULD be set to true anyway).
+     */
+    applicableOnEmptyIsland: boolean;
+    /**
      * how many of THIS item can be used in a single island CONCURRENTLY.
      * 
      * for example, if the limit is 5, then the user can use up to 5 of this item on the same island at the same time.

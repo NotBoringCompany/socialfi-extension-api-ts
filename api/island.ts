@@ -874,7 +874,7 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
 
         // now, check if this island has any synthesizing items applied with `placedBitsEnergyDepletionRateModifier.active` set to true and `allowLaterPlacedBitsToObtainEffect` set to true.
         // if yes, we need to update the bit's energy rate modifiers to include the synthesizing items' effects.
-        const bitStatsModifiersFromConsumedSynthesizingItems = await placedBitModifiersFromConsumedSynthesizingItems(
+        const bitStatsModifiersFromConsumedSynthesizingItems = await addPlacedBitModifiersFromConsumedSynthesizingItems(
             user._id,
             bitId,
             island as Island
@@ -917,10 +917,10 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
 }
 
 /**
- * Updates a placed bit's modifiers based on one or multiple consumed synthesizing items that have an effect on them even when placed after
+ * Adds a placed bit's modifiers based on one or multiple consumed synthesizing items that have an effect on them even when placed after
  * the synthesizing items were consumed.
  */
-export const placedBitModifiersFromConsumedSynthesizingItems = async (userId: string, bitId: number, island: Island): Promise<BitStatsModifiers> => {
+export const addPlacedBitModifiersFromConsumedSynthesizingItems = async (userId: string, bitId: number, island: Island): Promise<BitStatsModifiers> => {
     try {
         // loop through the ConsumedSynthesizingItems where `effectUntil` is greater than the current timestamp
         const consumedSynthesizingItems = await ConsumedSynthesizingItemModel.find({ usedBy: userId, affectedAsset: 'island', islandOrBitId: island.islandId, effectUntil: { $gt: Math.floor(Date.now() / 1000) } }).lean();
