@@ -575,6 +575,11 @@ export const consumeSynthesizingItem = async (
                                 }
                             })
 
+                            if (filteredTraits.length === 0) {
+                                // if there are no traits that can be rerolled, redo the while loop.
+                                continue;
+                            }
+
                             console.log(`(consumeSynthesizingItem) Filtered traits for index ${index}: ${filteredTraits.map(trait => trait.trait).join(', ')}`);
 
                             // this rand will be used to randomize the trait from the filtered traits.
