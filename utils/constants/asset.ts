@@ -11,7 +11,7 @@ import { Modifier } from '../../models/modifier';
 /**
  * Creates a new queue to add or remove consumed synthesizing item effects from other assets.
  */
-export const SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE = new Bull('craftQueue', {
+export const SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE = new Bull('synthesizingItemEffectRemovalQueue', {
     redis: process.env.REDIS_URL
 });
 
@@ -63,8 +63,8 @@ SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE.process('removeIslandEarningRateModifier'
 /**
  * Remove any expired energy rate modifier effects for placed bits from a consumed synthesizing item.
  */
-SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE.process('removePlacedBitsEnergyDepletionRateModifier', async (job) => {
-    const { bitId, owner, origin, endTimestamp } = job.data;
+SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE.process('removeBitEnergyDepletionRateModifier', async (job) => {
+    const { bitId, islandId, owner, origin, endTimestamp } = job.data;
 
     try {
         // directly remove energy depletion rate modifier with the given `origin` from the bit

@@ -1415,6 +1415,7 @@ export const consumeSynthesizingItem = async (
                                 'removeBitEnergyDepletionRateModifier',
                                 {
                                     bitId,
+                                    islandId: island.islandId,
                                     owner: user._id,
                                     origin: `Synthesizing Item: ${item}. Rand ID: ${randomId}`,
                                     endTimestamp: Math.floor(Date.now() / 1000) + synthesizingItemData.effectValues.effectDuration

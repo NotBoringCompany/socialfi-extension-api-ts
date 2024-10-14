@@ -1099,6 +1099,19 @@ export const unplaceBit = async (twitterId: string, bitId: number): Promise<Retu
             ...bitUpdatePromises
         ]);
 
+        // check if there are synthesizing items (or other items) that impact the bit's modifiers.
+        // if yes, do the updates.
+        const { $pull, $inc, $set, $push } = await removePlacedBitModifiersFromConsumedSynthesizingItems(bit as Bit, islandId, user._id);
+        
+        // check, for each object, if there are any keys. if yes, execute the update operation.
+        if (Object.keys($pull).length > 0 || Object.keys($push).length > 0) {
+            await BitModel.updateOne({ bitId }, { $pull, $push });
+        }
+
+        if (Object.keys($inc).length > 0 || Object.keys($set).length > 0) {
+            await BitModel.updateOne({ bitId }, { $inc, $set });
+        }
+
         return {
             status: Status.SUCCESS,
             message: `(unplaceBit) Bit unplaced from the island.`,
@@ -1160,7 +1173,7 @@ export const addPlacedBitModifiersFromConsumedSynthesizingItems = async (userId:
                 const bullQueueData = await SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE.getJobs(['waiting', 'active', 'delayed']);
 
                 // find any bull queues that have the `origin` starting with `Synthesizing Item: ${itemData.name}. Rand ID: ${consumedItem._id}` and `bitId` is in the `placedBits`
-                const relevantBullQueueData = bullQueueData.filter(queue => (queue.data.origin as string).startsWith(`Synthesizing Item: ${itemData.name}. Rand ID: ${consumedItem._id}`) && placedBits.includes(queue.data.bitId));
+                const relevantBullQueueData = bullQueueData.filter(queue => queue.name === 'removeBitEnergyDepletionRateModifier' && (queue.data.origin as string).startsWith(`Synthesizing Item: ${itemData.name}. Rand ID: ${consumedItem._id}`) && placedBits.includes(queue.data.bitId));
 
                 console.log(`relevantBullQueueData: `, relevantBullQueueData[0]);
 
@@ -1187,14 +1200,19 @@ export const addPlacedBitModifiersFromConsumedSynthesizingItems = async (userId:
                     'removeBitEnergyDepletionRateModifier',
                     {
                         bitId,
+                        islandId: island.islandId,
                         owner: userId,
                         origin: `Synthesizing Item: ${itemData.name}. Rand ID: ${consumedItem._id}`,
                         // for the end timestamp, we will match it with the `relevantBullQueueDataFirst`'s endTimestamp
                         // because we don't want it to last longer than the other bits.
                         endTimestamp: relevantBullQueueDataFirst.data.endTimestamp
-                    }
+                    },
+                    // make it so the delay is the difference between the endTimestamp and the current timestamp 
+                    { delay: (relevantBullQueueDataFirst.data.endTimestamp - Math.floor(Date.now() / 1000)) * 1000 }
                 );
             }
+
+            // TO DO: when other synthesizing items are added, add their effects here.
         }
 
         return bitStatsModifiers;
@@ -1210,9 +1228,82 @@ export const addPlacedBitModifiersFromConsumedSynthesizingItems = async (userId:
     }
 }
 
-// export const removePlacedBitModifiersFromConsumedSynthesizingItems = async (bitId: number, userId: string): Promise<void> => {
+/**
+ * Removes any 
+ */
+export const removePlacedBitModifiersFromConsumedSynthesizingItems = async (bit: Bit, islandId: number, userId: string): Promise<
+{
+    bitId: number,
+    $pull: {},
+    $inc: {},
+    $set: {},
+    $push: {}
+}> => {
+    try {
+        const bullQueueData = await SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE.getJobs(['waiting', 'active', 'delayed']);
 
-// }
+        // find any bull queues that have the `origin` starting with `Synthesizing Item: ${itemData.name}. Rand ID: ${consumedItem._id}` and `bitId` is in the `placedBits`
+        const relevantBullQueueData = bullQueueData.filter(queue => queue.name === 'removeBitEnergyDepletionRateModifier' && queue.data.bitId === bit.bitId && queue.data.owner === userId);
+
+        // if there are no relevant bull queue data, return an empty object
+        if (relevantBullQueueData.length === 0) {
+            return {
+                bitId: bit.bitId,
+                $pull: {},
+                $inc: {},
+                $set: {},
+                $push: {}
+            }
+        }
+
+        const updateOperations: {
+            bitId: number,
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        } = {
+            bitId: bit.bitId,
+            $pull: {},
+            $inc: {},
+            $set: {},
+            $push: {}
+        }
+
+        const consumedItems = await ConsumedSynthesizingItemModel.find({ usedBy: userId, affectedAsset: 'island', islandOrBitId: islandId }).lean();
+
+        if (!consumedItems || consumedItems.length === 0) {
+            return updateOperations;
+        }
+
+        // loop through each relevant bull queue data and remove any modifiers that have the origin of the synthesizing item
+        for (const queueData of relevantBullQueueData) {
+            // for each modifier, check the origin.
+            const origin = queueData.data.origin as string;
+
+            // find the consumed item that matches the origin
+            const consumedItem = consumedItems.find(item => `Synthesizing Item: ${item.item}. Rand ID: ${item._id}` === origin);
+
+            // check if this item has 'allowLaterUnplacedBitsToLoseEffect' set to true. if yes, remove the modifier.
+            const itemData = SYNTHESIZING_ITEM_DATA.find(item => item.name === consumedItem.item);
+
+            if (!itemData) {
+                continue;
+            }
+
+            if (itemData.effectValues.placedBitsEnergyDepletionRateModifier.allowLaterPlacedBitsToObtainEffect) {
+                // remove the modifier from the bit's energy rate modifiers
+                updateOperations.$pull['bitStatsModifiers.energyRateModifiers'] = { origin };
+            }
+
+            // TO DO: when other synthesizing items are added, add their effects here.
+        }
+
+        return updateOperations;
+    } catch (err: any) {
+        console.error(`(removePlacedBitModifiersFromConsumedSynthesizingItems) Error: ${err.message}`);
+    }
+}
 
 /**
  * Update an island's modifiers or all other bits' (within this island) modifiers based on a bit's trait.
