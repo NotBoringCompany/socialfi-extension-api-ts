@@ -1598,10 +1598,10 @@ export const consumeSynthesizingItem = async (
     }
 }
 
-consumeSynthesizingItem(
-    '1462755469102137357',
-    PotionItem.POTION_OF_ENLIGHTENMENT,
-    18,
-    null,
-    [BitTrait.FIT, BitTrait.PRODUCTIVE]
-);
+// consumeSynthesizingItem(
+//     '1462755469102137357',
+//     PotionItem.POTION_OF_ENLIGHTENMENT,
+//     18,
+//     null,
+//     [BitTrait.FIT, BitTrait.PRODUCTIVE]
+// );
