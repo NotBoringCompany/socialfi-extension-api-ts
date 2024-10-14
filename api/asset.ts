@@ -484,9 +484,7 @@ export const consumeSynthesizingItem = async (
                 console.log(`(consumeSynthesizingItems) Indexes to reroll: ${indexesToReroll.join(', ')}`);
 
                 // now, we need to randomize the new traits for the bit.
-                // we will set `updatedTraits` to initially be the same as `bitTraits`.
-                // we need to do a deep copy of `bitTraits` because we will be modifying the array.
-                const updatedTraits: BitTraitData[] = JSON.parse(JSON.stringify(bitTraits));
+                const updatedTraits: BitTraitData[] = [];
 
                 // loop through each trait in the bit's traits array.
                 // if the index is in the `indexesToReroll` array, we will reroll the trait.
@@ -494,7 +492,7 @@ export const consumeSynthesizingItem = async (
                 bitTraits.forEach((trait, index) => {
                     // if the index is not in the `indexesToReroll` array, we keep the trait as is.
                     if (!indexesToReroll.includes(index)) {
-                        return;
+                        updatedTraits[index] = trait;
                     // if it is included, we will reroll the trait.
                     } else {
                         let randomTrait: BitTraitData | null = null;
