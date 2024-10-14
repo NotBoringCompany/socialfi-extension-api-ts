@@ -536,15 +536,6 @@ export const consumeSynthesizingItem = async (
                             // then, filter based on `allowDuplicates`.
                             // then, filter the subcategory based on the `rerollResult`.
                             const filteredTraits = BIT_TRAITS
-                            .filter(trait => {
-                                if (rand <= 80) {
-                                    return trait.rarity === BitTraitRarity.COMMON;
-                                } else if (rand <= 95) {
-                                    return trait.rarity === BitTraitRarity.UNCOMMON;
-                                } else {
-                                    return trait.rarity === BitTraitRarity.RARE;
-                                }
-                            })
                             .filter((trait, filterIndex) => {
                                 if (!allowDuplicates) {
                                     // not allowing duplicates means that the bit CANNOT have any of the traits from `bitTraits` in the `updatedTraits` array.
@@ -573,7 +564,16 @@ export const consumeSynthesizingItem = async (
                                 } else {
                                     return true;
                                 }
-                            });
+                            })
+                            .filter(trait => {
+                                if (rand <= 80) {
+                                    return trait.rarity === BitTraitRarity.COMMON;
+                                } else if (rand <= 95) {
+                                    return trait.rarity === BitTraitRarity.UNCOMMON;
+                                } else {
+                                    return trait.rarity === BitTraitRarity.RARE;
+                                }
+                            })
 
                             console.log(`(consumeSynthesizingItem) Filtered traits for index ${index}: ${filteredTraits.map(trait => trait.trait).join(', ')}`);
 
