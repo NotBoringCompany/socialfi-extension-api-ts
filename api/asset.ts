@@ -506,7 +506,7 @@ export const consumeSynthesizingItem = async (
                 // if it's not, we will keep the trait as is.
                 bitTraits.forEach((trait, index) => {
                     console.log(`(consumeSynthesizingItem) Current updatedTraits array: ${updatedTraits.map(trait => trait.trait).join(', ')}`);
-                    
+
                     // if the index is not in the `indexesToReroll` array, we keep the trait as is.
                     if (!indexesToReroll.includes(index)) {
                         updatedTraits[index] = trait;
@@ -604,7 +604,7 @@ export const consumeSynthesizingItem = async (
 
                         // if the new trait is the exact same as the old trait, log it.
                         if (trait.trait === randomTrait.trait) {
-                            console.log(`(consumeSynthesizingItem) Rerolled trait is the same as the old trait!`);
+                            console.log(`(consumeSynthesizingItem) Rerolled trait ${randomTrait.trait} is the same as the old trait ${trait.trait}.`);
                         }
 
                         // update the `updatedTraits` array with the new trait.
