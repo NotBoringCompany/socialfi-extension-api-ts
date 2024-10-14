@@ -581,7 +581,13 @@ export const consumeSynthesizingItem = async (
                                 continue;
                             }
 
+                            // get all traits that are not in `filteredTraits` but are in `BIT_TRAITS`.
+                            const excludedTraitsForIndex = BIT_TRAITS.filter(trait => {
+                                return !filteredTraits.some(t => t.trait === trait.trait);
+                            })
+
                             console.log(`(consumeSynthesizingItem) Filtered traits (excluding subcategory filter) for index ${index}: ${filteredTraits.map(trait => trait.trait).join(', ')}`);
+                            console.log(`(consumeSynthesizingItem) Excluded traits (excluding subcategory filter) for this index: ${excludedTraitsForIndex.map(trait => trait.trait).join(', ')}`);
 
                             // this rand will be used to randomize the trait from the filtered traits.
                             const traitRand = Math.floor(Math.random() * filteredTraits.length);
