@@ -1210,6 +1210,10 @@ export const addPlacedBitModifiersFromConsumedSynthesizingItems = async (userId:
     }
 }
 
+// export const removePlacedBitModifiersFromConsumedSynthesizingItems = async (bitId: number, userId: string): Promise<void> => {
+
+// }
+
 /**
  * Update an island's modifiers or all other bits' (within this island) modifiers based on a bit's trait.
  * 
