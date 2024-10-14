@@ -567,6 +567,8 @@ export const consumeSynthesizingItem = async (
                                 }
                             });
 
+                            console.log(`(consumeSynthesizingItem) Filtered traits for index ${index}: ${filteredTraits.map(trait => trait.trait).join(', ')}`);
+
                             // this rand will be used to randomize the trait from the filtered traits.
                             const traitRand = Math.floor(Math.random() * filteredTraits.length);
 

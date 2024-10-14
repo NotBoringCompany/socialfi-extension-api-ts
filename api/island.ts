@@ -1210,8 +1210,6 @@ export const addPlacedBitModifiersFromConsumedSynthesizingItems = async (userId:
     }
 }
 
-
-
 /**
  * Update an island's modifiers or all other bits' (within this island) modifiers based on a bit's trait.
  * 
