@@ -463,20 +463,35 @@ export const consumeSynthesizingItem = async (
 
                 // get the indexes of the traits to reroll from the `bit.traits` array.
                 // if `traitsToReroll` === bit.traits.length, we just need to get all indexes.
-                // if `traitsToReroll` < bit.traits.length, we will randomize the indexes to get the traits to reroll.
-                // for example, say `traitsToReroll` is 2 and the bit has 3 traits. we will randomize 2 indexes from 0-2 and reroll those traits.
+                // if `traitsToReroll` < bit.traits.length, we will check the following:
+                // if `rerollBitTraits.type` is `chosen`, we will get the indexes of the chosen traits.
+                // else, if `rerollBitTraits.type` is `random`, we will randomize the indexes to get the traits to reroll.
+                // for random, for example, say `traitsToReroll` is 2 and the bit has 3 traits. we will randomize 2 indexes from 0-2 and reroll those traits.
                 const indexesToReroll: number[] = [];
 
                 if (traitsToReroll === bitTraits.length) {
+                    // reroll all traits regardless (because `traitsToReroll` is equal to the bit's traits length).
                     for (let i = 0; i < bitTraits.length; i++) {
                         indexesToReroll.push(i);
                     }
                 } else {
-                    while (indexesToReroll.length < traitsToReroll) {
-                        const rand = Math.floor(Math.random() * bitTraits.length);
+                    // if the type is `chosen`, we will get the indexes of the chosen traits.
+                    if (synthesizingItemData.effectValues.rerollBitTraits.type === 'chosen') {
+                        chosenBitTraitsToReroll.forEach(trait => {
+                            const index = bitTraits.findIndex(t => t.trait === trait);
 
-                        if (!indexesToReroll.includes(rand)) {
-                            indexesToReroll.push(rand);
+                            if (index !== -1) {
+                                indexesToReroll.push(index);
+                            }
+                        });
+                    } else {
+                        // if the type is `random`, we will randomize the indexes to reroll.
+                        while (indexesToReroll.length < traitsToReroll) {
+                            const rand = Math.floor(Math.random() * bitTraits.length);
+
+                            if (!indexesToReroll.includes(rand)) {
+                                indexesToReroll.push(rand);
+                            }
                         }
                     }
                 }
