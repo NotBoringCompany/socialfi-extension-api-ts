@@ -917,101 +917,6 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
 }
 
 /**
- * Adds a placed bit's modifiers based on one or multiple consumed synthesizing items that have an effect on them even when placed after
- * the synthesizing items were consumed.
- */
-export const addPlacedBitModifiersFromConsumedSynthesizingItems = async (userId: string, bitId: number, island: Island): Promise<BitStatsModifiers> => {
-    try {
-        // loop through the ConsumedSynthesizingItems where `effectUntil` is greater than the current timestamp
-        const consumedSynthesizingItems = await ConsumedSynthesizingItemModel.find({ usedBy: userId, affectedAsset: 'island', islandOrBitId: island.islandId, effectUntil: { $gt: Math.floor(Date.now() / 1000) } }).lean();
-
-        // if there are no consumed synthesizing items, return an empty object
-        if (consumedSynthesizingItems.length === 0) {
-            return {
-                gatheringRateModifiers: [],
-                earningRateModifiers: [],
-                energyRateModifiers: [],
-                foodConsumptionEfficiencyModifiers: []
-            }
-        }
-
-        const bitStatsModifiers: BitStatsModifiers = {
-            gatheringRateModifiers: [],
-            earningRateModifiers: [],
-            energyRateModifiers: [],
-            foodConsumptionEfficiencyModifiers: []
-        }
-
-        // for each consumed item, fetch the synthesizing item data and check if they have the `allowLaterPlacedBitsToObtainEffect` set to true.
-        // if yes, based on what the item does, update the bit's modifiers.
-        for (const consumedItem of consumedSynthesizingItems) {
-            const itemData = SYNTHESIZING_ITEM_DATA.find(item => item.name === consumedItem.item);
-
-            if (!itemData) {
-                continue;
-            }
-
-            // if the synthesizing item has `placedBitsEnergyDepletionRateModifier.active` set to true and `allowLaterPlacedBitsToObtainEffect` set to true,
-            // we need to update the bit's energy rate modifiers to include the synthesizing item's effects.
-            if (itemData.effectValues.placedBitsEnergyDepletionRateModifier.active && itemData.effectValues.placedBitsEnergyDepletionRateModifier.allowLaterPlacedBitsToObtainEffect) {
-                // get the placed bits of the island
-                const placedBits = island.placedBitIds;
-
-                // fetch the bull queue data for this item (if there are multiple, fetch the first one)
-                const bullQueueData = await SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE.getJobs(['waiting', 'active', 'delayed']);
-
-                // find any bull queues that have the `origin` starting with `Synthesizing Item: ${itemData.name}. Rand ID: ${consumedItem._id}` and `bitId` is in the `placedBits`
-                const relevantBullQueueData = bullQueueData.filter(queue => (queue.data.origin as string).startsWith(`Synthesizing Item: ${itemData.name}. Rand ID: ${consumedItem._id}`) && placedBits.includes(queue.data.bitId));
-
-                console.log(`relevantBullQueueData: `, relevantBullQueueData[0]);
-
-                // get the first data (because we just care about the endTimestamp)
-                const relevantBullQueueDataFirst = relevantBullQueueData[0];
-
-                // create the modifier
-                const energyRateModifier: Modifier = {
-                    origin: `Synthesizing Item: ${itemData.name}. Rand ID: ${consumedItem._id}`,
-                    value: itemData.effectValues.placedBitsEnergyDepletionRateModifier.value
-                }
-
-                // if data isn't found, then there is an issue or the queue simply doesn't exist. just return.
-                if (!relevantBullQueueDataFirst) {
-                    console.error(`(updatePlacedBitModifiersFromConsumedSynthesizingItems) relevantBullQueueDataFirst not found.`);
-                    continue;
-                }
-
-                // push the modifier to the bit's energy rate modifiers
-                bitStatsModifiers.energyRateModifiers.push(energyRateModifier);
-
-                // add the bit to the queue
-                await SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE.add(
-                    'removeBitEnergyDepletionRateModifier',
-                    {
-                        bitId,
-                        owner: userId,
-                        origin: `Synthesizing Item: ${itemData.name}. Rand ID: ${consumedItem._id}`,
-                        // for the end timestamp, we will match it with the `relevantBullQueueDataFirst`'s endTimestamp
-                        // because we don't want it to last longer than the other bits.
-                        endTimestamp: relevantBullQueueDataFirst.data.endTimestamp
-                    }
-                );
-            }
-        }
-
-        return bitStatsModifiers;
-    } catch (err: any) {
-        console.error(`(updatePlacedBitModifiersFromConsumedSynthesizingItems) Error: ${err.message}`);
-        
-        return {
-            gatheringRateModifiers: [],
-            earningRateModifiers: [],
-            energyRateModifiers: [],
-            foodConsumptionEfficiencyModifiers: []
-        }
-    }
-}
-
-/**
  * *User) Unplaces a bit from an island.
  * 
  * NOTE: Requires `twitterId` which is fetched via `req.user`, automatically giving us the user's Twitter ID. This will check if the user who calls this function owns the twitter ID that owns the island and the bit ID.
@@ -1209,6 +1114,103 @@ export const unplaceBit = async (twitterId: string, bitId: number): Promise<Retu
         }
     }
 }
+
+/**
+ * Adds a placed bit's modifiers based on one or multiple consumed synthesizing items that have an effect on them even when placed after
+ * the synthesizing items were consumed.
+ */
+export const addPlacedBitModifiersFromConsumedSynthesizingItems = async (userId: string, bitId: number, island: Island): Promise<BitStatsModifiers> => {
+    try {
+        // loop through the ConsumedSynthesizingItems where `effectUntil` is greater than the current timestamp
+        const consumedSynthesizingItems = await ConsumedSynthesizingItemModel.find({ usedBy: userId, affectedAsset: 'island', islandOrBitId: island.islandId, effectUntil: { $gt: Math.floor(Date.now() / 1000) } }).lean();
+
+        // if there are no consumed synthesizing items, return an empty object
+        if (consumedSynthesizingItems.length === 0) {
+            return {
+                gatheringRateModifiers: [],
+                earningRateModifiers: [],
+                energyRateModifiers: [],
+                foodConsumptionEfficiencyModifiers: []
+            }
+        }
+
+        const bitStatsModifiers: BitStatsModifiers = {
+            gatheringRateModifiers: [],
+            earningRateModifiers: [],
+            energyRateModifiers: [],
+            foodConsumptionEfficiencyModifiers: []
+        }
+
+        // for each consumed item, fetch the synthesizing item data and check if they have the `allowLaterPlacedBitsToObtainEffect` set to true.
+        // if yes, based on what the item does, update the bit's modifiers.
+        for (const consumedItem of consumedSynthesizingItems) {
+            const itemData = SYNTHESIZING_ITEM_DATA.find(item => item.name === consumedItem.item);
+
+            if (!itemData) {
+                continue;
+            }
+
+            // if the synthesizing item has `placedBitsEnergyDepletionRateModifier.active` set to true and `allowLaterPlacedBitsToObtainEffect` set to true,
+            // we need to update the bit's energy rate modifiers to include the synthesizing item's effects.
+            if (itemData.effectValues.placedBitsEnergyDepletionRateModifier.active && itemData.effectValues.placedBitsEnergyDepletionRateModifier.allowLaterPlacedBitsToObtainEffect) {
+                // get the placed bits of the island
+                const placedBits = island.placedBitIds;
+
+                // fetch the bull queue data for this item (if there are multiple, fetch the first one)
+                const bullQueueData = await SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE.getJobs(['waiting', 'active', 'delayed']);
+
+                // find any bull queues that have the `origin` starting with `Synthesizing Item: ${itemData.name}. Rand ID: ${consumedItem._id}` and `bitId` is in the `placedBits`
+                const relevantBullQueueData = bullQueueData.filter(queue => (queue.data.origin as string).startsWith(`Synthesizing Item: ${itemData.name}. Rand ID: ${consumedItem._id}`) && placedBits.includes(queue.data.bitId));
+
+                console.log(`relevantBullQueueData: `, relevantBullQueueData[0]);
+
+                // get the first data (because we just care about the endTimestamp)
+                const relevantBullQueueDataFirst = relevantBullQueueData[0];
+
+                // create the modifier
+                const energyRateModifier: Modifier = {
+                    origin: `Synthesizing Item: ${itemData.name}. Rand ID: ${consumedItem._id}`,
+                    value: itemData.effectValues.placedBitsEnergyDepletionRateModifier.value
+                }
+
+                // if data isn't found, then there is an issue or the queue simply doesn't exist. just return.
+                if (!relevantBullQueueDataFirst) {
+                    console.error(`(updatePlacedBitModifiersFromConsumedSynthesizingItems) relevantBullQueueDataFirst not found.`);
+                    continue;
+                }
+
+                // push the modifier to the bit's energy rate modifiers
+                bitStatsModifiers.energyRateModifiers.push(energyRateModifier);
+
+                // add the bit to the queue
+                await SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE.add(
+                    'removeBitEnergyDepletionRateModifier',
+                    {
+                        bitId,
+                        owner: userId,
+                        origin: `Synthesizing Item: ${itemData.name}. Rand ID: ${consumedItem._id}`,
+                        // for the end timestamp, we will match it with the `relevantBullQueueDataFirst`'s endTimestamp
+                        // because we don't want it to last longer than the other bits.
+                        endTimestamp: relevantBullQueueDataFirst.data.endTimestamp
+                    }
+                );
+            }
+        }
+
+        return bitStatsModifiers;
+    } catch (err: any) {
+        console.error(`(updatePlacedBitModifiersFromConsumedSynthesizingItems) Error: ${err.message}`);
+        
+        return {
+            gatheringRateModifiers: [],
+            earningRateModifiers: [],
+            energyRateModifiers: [],
+            foodConsumptionEfficiencyModifiers: []
+        }
+    }
+}
+
+
 
 /**
  * Update an island's modifiers or all other bits' (within this island) modifiers based on a bit's trait.

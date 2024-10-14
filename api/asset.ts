@@ -505,6 +505,8 @@ export const consumeSynthesizingItem = async (
                 // if the index is in the `indexesToReroll` array, we will reroll the trait.
                 // if it's not, we will keep the trait as is.
                 bitTraits.forEach((trait, index) => {
+                    console.log(`(consumeSynthesizingItem) Current updatedTraits array: ${updatedTraits.map(trait => trait.trait).join(', ')}`);
+                    
                     // if the index is not in the `indexesToReroll` array, we keep the trait as is.
                     if (!indexesToReroll.includes(index)) {
                         updatedTraits[index] = trait;
