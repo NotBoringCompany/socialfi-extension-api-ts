@@ -499,7 +499,8 @@ export const consumeSynthesizingItem = async (
                 console.log(`(consumeSynthesizingItems) Indexes to reroll: ${indexesToReroll.join(', ')}`);
 
                 // now, we need to randomize the new traits for the bit.
-                const updatedTraits: BitTraitData[] = [];
+                // we will initially set this to the bit's traits data.
+                const updatedTraits: BitTraitData[] = bitTraits;
 
                 // loop through each trait in the bit's traits array.
                 // if the index is in the `indexesToReroll` array, we will reroll the trait.
@@ -509,7 +510,7 @@ export const consumeSynthesizingItem = async (
 
                     // if the index is not in the `indexesToReroll` array, we keep the trait as is.
                     if (!indexesToReroll.includes(index)) {
-                        updatedTraits[index] = trait;
+                        return;
                     // if it is included, we will reroll the trait.
                     } else {
                         let randomTrait: BitTraitData | null = null;
@@ -549,16 +550,16 @@ export const consumeSynthesizingItem = async (
                                 if (!allowDuplicates) {
                                     // not allowing duplicates means that the bit CANNOT have any of the traits from `bitTraits` in the `updatedTraits` array.
                                     // for example, if the original traits of the bit were [A, B, C, D], then each rerolled trait CANNOT be A, B, C or D.
-                                    // note that the trait cannot also already exist in the `updatedTraits`
+                                    // let's say the rerolled indexes are 1, 2, and 3.
+                                    // so far, indexes 1 and 2 are rerolled, such that updatedTraits is now [A, E, F, D]. (index 0 is kept as A because it's not rerolled, and index 3 is about to be rerolled).
+                                    // the new trait for index 3 CANNOT be A, B, C, D, E or F.
                                     return !bitTraits.some(t => t.trait === trait.trait) && !updatedTraits.some(t => t.trait === trait.trait);
                                 } else {
-                                    // if `allowDuplicates`, we just need to make sure that the trait doesn't already exist in the `updatedTraits` array
-                                    // as well as on the other indexes in `bitTraits` that are NOT the indexes to reroll.
-                                    // for example, let's say a bit has traits [0, 1, 2, 3] (index-wise) and the trait to reroll is 1.
-                                    // the user is now at index 1. if it's only `!updatedTraits.some(t => t.trait === trait.trait)`, then it will only check for traits that are < index 1 (i.e. index 0), meaning that indexes 2 and 3 are addable to the pool
-                                    // and can be rolled in index 1, which is what we don't want.
-                                    // we will need to check for the traits in the `bitTraits` array that are NOT in the `indexesToReroll` array.
-                                    return !updatedTraits.some(t => t.trait === trait.trait) && !bitTraits.filter((_, i) => !indexesToReroll.includes(i)).some(t => t.trait === trait.trait);
+                                    // if `allowDuplicates`, we need to make sure that the trait is not already in the `updatedTraits` array.
+                                    // with the same example above, say the original traits are [A, B, C, D], and the rerolled indexes are 1, 2, and 3.
+                                    // at index 1 (currently B), B will be added to the rollable traits pool, but A, C and D CANNOT be added to the pool (because this will be an actual "duplicate" trait in the array, not an old -> new duplicate).
+                                    // this means that the rollable traits pool will include only the current index's trait but exclude the other traits within the `updatedTraits` array.
+                                    return !updatedTraits.some(t => t.trait === trait.trait);
                                 }
                             })
                             .filter(trait => {
@@ -592,6 +593,7 @@ export const consumeSynthesizingItem = async (
                             // if the category exists, check which subcategory the existing trait(s) in the `updatedTraits` array belong to.
                             // if the subcategory is the same as the random trait's subcategory, add the trait.
                             if (categoryExists) {
+
                                 const existingSubCategory = updatedTraits.length > 0 ? updatedTraits.find(trait => trait.category === traitCategory)?.subcategory : null;
 
                                 // if the existing subcategory is the same as the random trait's subcategory, add the trait.
@@ -600,7 +602,8 @@ export const consumeSynthesizingItem = async (
                                 } else {
                                     console.log(
                                         `(consumeSynthesizingItem) Trait ${rolledRandomTrait.trait} is of the opposite subcategory of the existing trait in the category. 
-                                        Existing trait: ${trait}. Rerolling...`);
+                                        Existing trait: ${trait}. Rerolling...`
+                                    );
                                 }
                             } else {
                                 // if the category doesn't exist, add the trait.
