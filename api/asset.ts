@@ -547,7 +547,7 @@ export const consumeSynthesizingItem = async (
                                     return trait.rarity === BitTraitRarity.RARE;
                                 }
                             })
-                            .filter(trait => {
+                            .filter((trait, filterIndex) => {
                                 if (!allowDuplicates) {
                                     // not allowing duplicates means that the bit CANNOT have any of the traits from `bitTraits` in the `updatedTraits` array.
                                     // for example, if the original traits of the bit were [A, B, C, D], then each rerolled trait CANNOT be A, B, C or D.
@@ -560,7 +560,12 @@ export const consumeSynthesizingItem = async (
                                     // with the same example above, say the original traits are [A, B, C, D], and the rerolled indexes are 1, 2, and 3.
                                     // at index 1 (currently B), B will be added to the rollable traits pool, but A, C and D CANNOT be added to the pool (because this will be an actual "duplicate" trait in the array, not an old -> new duplicate).
                                     // this means that the rollable traits pool will include only the current index's trait but exclude the other traits within the `updatedTraits` array.
-                                    return !updatedTraits.some(t => t.trait === trait.trait);
+                                    // therefore, include ONLY the current index's trait in the rollable traits pool.
+                                    if (index === filterIndex) {
+                                        return true;
+                                    } else {
+                                        return !updatedTraits.some(t => t.trait === trait.trait);
+                                    }
                                 }
                             })
                             .filter(trait => {
