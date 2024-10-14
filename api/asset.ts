@@ -576,6 +576,7 @@ export const consumeSynthesizingItem = async (
                             })
 
                             if (filteredTraits.length === 0) {
+                                console.log(`(consumeSynthesizingItem) No traits to reroll for index ${index}.`);
                                 // if there are no traits that can be rerolled, redo the while loop.
                                 continue;
                             }
