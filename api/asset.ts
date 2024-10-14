@@ -543,7 +543,7 @@ export const consumeSynthesizingItem = async (
                                     // let's say the rerolled indexes are 1, 2, and 3.
                                     // so far, indexes 1 and 2 are rerolled, such that `updatedTraits` is now [A, E, F, D] (A, index 0, is NOT rerolled, and index 3 is not rerolled yet, so it stays at D).
                                     // this means that A, B, C, E, F and D are NOT allowed in the rollable traits pool when index 3 is rerolled (when D is rerolled).
-                                    return !bitTraits.some(t => t.trait === trait.trait) && !updatedTraits.some(t => t.trait === trait.trait);
+                                    return !bitTraits.some(t => t.trait === trait.trait) || !updatedTraits.some(t => t.trait === trait.trait);
                                 } else {
                                     // if `allowDuplicates`, we will just check if the trait is not already in the `updatedTraits` array.
                                     // however, we will exclude the current index's trait from the check, because they can reroll the same trait.
