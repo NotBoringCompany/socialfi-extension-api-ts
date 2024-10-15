@@ -869,8 +869,8 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
         // update the bit to include `placedIslandId`
         bitUpdateOperations.$set['placedIslandId'] = islandId;
 
-        // set the lastRelocationTimestamp of the relocated bit to now (regardless of whether the bit was relocated or just placed since that will also trigger the cooldown)
-        bitUpdateOperations.$set['lastRelocationTimestamp'] = Math.floor(Date.now() / 1000);
+        // // set the lastRelocationTimestamp of the relocated bit to now (regardless of whether the bit was relocated or just placed since that will also trigger the cooldown)
+        // bitUpdateOperations.$set['lastRelocationTimestamp'] = Math.floor(Date.now() / 1000);
 
         // now, check if this island has any synthesizing items applied with `placedBitsEnergyDepletionRateModifier.active` set to true and `allowLaterPlacedBitsToObtainEffect` set to true.
         // if yes, we need to update the bit's energy rate modifiers to include the synthesizing items' effects.
