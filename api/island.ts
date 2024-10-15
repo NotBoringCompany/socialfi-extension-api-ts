@@ -869,8 +869,8 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
         // update the bit to include `placedIslandId`
         bitUpdateOperations.$set['placedIslandId'] = islandId;
 
-        // // set the lastRelocationTimestamp of the relocated bit to now (regardless of whether the bit was relocated or just placed since that will also trigger the cooldown)
-        // bitUpdateOperations.$set['lastRelocationTimestamp'] = Math.floor(Date.now() / 1000);
+        // set the lastRelocationTimestamp of the relocated bit to now (regardless of whether the bit was relocated or just placed since that will also trigger the cooldown)
+        bitUpdateOperations.$set['lastRelocationTimestamp'] = Math.floor(Date.now() / 1000);
 
         // now, check if this island has any synthesizing items applied with `placedBitsEnergyDepletionRateModifier.active` set to true and `allowLaterPlacedBitsToObtainEffect` set to true.
         // if yes, we need to update the bit's energy rate modifiers to include the synthesizing items' effects.
@@ -1178,10 +1178,14 @@ export const addPlacedBitModifiersFromConsumedSynthesizingItems = async (userId:
                 // fetch the bull queue data for this item (if there are multiple, fetch the first one)
                 const bullQueueData = await SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE.getJobs(['waiting', 'active', 'delayed']);
                 
-                console.log(`(updatePlacedBitModifiersFromConsumedSynthesizingItems) bullQueueData: `, JSON.stringify(bullQueueData, null, 2));
+                console.log(`(updatePlacedBitModifiersFromConsumedSynthesizingItems) origin for bull queue data #0: `, bullQueueData[0].data.origin);
 
                 // find any bull queues that have the `origin` starting with `Synthesizing Item: ${itemData.name}. Rand ID: ${consumedItem._id}` and `bitId` is in the `placedBits`
-                const relevantBullQueueData = bullQueueData.filter(queue => queue.name === 'removeBitEnergyDepletionRateModifier' && (queue.data.origin as string).startsWith(`Synthesizing Item: ${itemData.name}. Rand ID: ${consumedItem._id}`) && placedBits.includes(queue.data.bitId));
+                const relevantBullQueueData = bullQueueData
+                    .filter(queue => queue.name === 'removeBitEnergyDepletionRateModifier')
+                    .filter(queue => queue.data.origin.startsWith(`Synthesizing Item: ${itemData.name}`))
+                    // check if the bit ID is in the placed bits
+                    .filter(queue => placedBits.includes(queue.data.bitId));
 
                 console.log(`relevantBullQueueData: `, relevantBullQueueData[0]);
 
