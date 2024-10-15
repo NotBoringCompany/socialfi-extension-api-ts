@@ -1109,5 +1109,37 @@ export const CRAFTING_RECIPES: CraftingRecipe[] =
                     ]
                 }
             ]
-        }
+        },
+        {
+            craftedAssetData: {
+                asset: IngotItem.SILVER_INGOT,
+                assetType: 'item',
+                assetDescription: `A refined slab of silver.`,
+                assetRarity: CraftedAssetRarity.RARE,
+                assetEffectDuration: 'none'
+            },
+            craftingRecipeLine: CraftingRecipeLine.SMELTING,
+            craftingDuration: BASE_CRAFTING_DURATION_RARE_INGOT,
+            baseEnergyRequired: BASE_ENERGY_COST_RARE_INGOT,
+            baseSuccessChance: 10000,
+            baseCritChance: 0,
+            obtainedPoints: 0,
+            requiredXCookies: 0,
+            requiredLevel: 1,
+            requiredCraftingLevel: REQUIRED_CRAFTING_LEVEL_RARE,
+            earnedXP: EARNED_XP_RARE_INGOT,
+            weight: 0,
+            requiredAssetGroups: [
+                {
+                    requiredAssets: [
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: OreResource.SILVER,
+                            requiredRarity: 'none',
+                            amount: 2
+                        }
+                    ]
+                }
+            ]
+        },
     ];
