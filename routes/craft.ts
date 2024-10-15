@@ -170,7 +170,7 @@ router.post('/claim_crafted_assets', async (req, res) => {
             }
 
             const { fullyClaimedCraftingData, partiallyClaimedCraftingData } = data;
-            const craftingResult: { queueId: string, craftedAsset: string, claimedAmount: number }[] = [...fullyClaimedCraftingData, partiallyClaimedCraftingData];
+            const craftingResult: { queueId: string, craftedAsset: string, claimedAmount: number }[] = [...fullyClaimedCraftingData, ...partiallyClaimedCraftingData];
 
             const craftedTotal = craftingResult
                 .filter(({ craftedAsset }) => !Object.values(IngotItem).includes(craftedAsset as any)) // ignore ingot type
