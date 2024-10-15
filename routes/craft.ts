@@ -6,6 +6,9 @@ import { CRAFTING_RECIPES } from '../utils/constants/craft';
 import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 import { incrementEventCounterInContract } from '../api/web3';
 import { CANCEL_CRAFTING_QUEUE_MIXPANEL_EVENT_HASH, CLAIM_CRAFTED_ASSET_MIXPANEL_EVENT_HASH, CRAFT_ASSET_MIXPANEL_EVENT_HASH, OPEN_CHEST_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
+import { IngotItem } from '../models/item';
+import { incrementProgressionByType } from '../api/quest';
+import { QuestRequirementType } from '../models/quest';
 
 const router = express.Router();
 
@@ -155,14 +158,25 @@ router.post('/claim_crafted_assets', async (req, res) => {
 
         const { status, message, data } = await claimCraftedAssets(validateData?.twitterId, claimType, craftingLine, craftingQueueIds);
 
-        if (status === Status.SUCCESS && allowMixpanel) {
-            mixpanel.track('Claim Crafted Asset', {
-                distinct_id: validateData?.twitterId,
-                '_data': data,
-            });
+        if (status === Status.SUCCESS) {
+            if (allowMixpanel) {
+                mixpanel.track('Claim Crafted Asset', {
+                    distinct_id: validateData?.twitterId,
+                    '_data': data,
+                });
+    
+                // increment the event counter in the wonderbits contract.
+                incrementEventCounterInContract(validateData?.twitterId, CLAIM_CRAFTED_ASSET_MIXPANEL_EVENT_HASH);
+            }
 
-            // increment the event counter in the wonderbits contract.
-            incrementEventCounterInContract(validateData?.twitterId, CLAIM_CRAFTED_ASSET_MIXPANEL_EVENT_HASH);
+            const { fullyClaimedCraftingData, partiallyClaimedCraftingData } = data;
+            const craftingResult: { queueId: string, craftedAsset: string, claimedAmount: number }[] = [...fullyClaimedCraftingData, partiallyClaimedCraftingData];
+
+            const craftedTotal = craftingResult
+                .filter(({ craftedAsset }) => !Object.values(IngotItem).includes(craftedAsset as any)) // ignore ingot type
+                .reduce((prev, curr) => prev + curr.claimedAmount, 0);
+
+            incrementProgressionByType(QuestRequirementType.CRAFT_ITEM, validateData?.twitterId, craftedTotal);
         }
 
         return res.status(status).json({
