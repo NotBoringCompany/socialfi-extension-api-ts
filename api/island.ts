@@ -1187,15 +1187,13 @@ export const addPlacedBitModifiersFromConsumedSynthesizingItems = async (userId:
                     // check if the bit ID is in the placed bits
                     .filter(queue => placedBits.includes(queue.data.bitId));
 
-                console.log(`relevantBullQueueData: `, relevantBullQueueData[0]);
-
                 // get the first data (because we just care about the endTimestamp)
                 const relevantBullQueueDataFirst = relevantBullQueueData[0];
 
                 // create the modifier
                 const energyRateModifier: Modifier = {
                     origin: `Synthesizing Item: ${itemData.name}. Rand ID: ${consumedItem._id}`,
-                    value: itemData.effectValues.placedBitsEnergyDepletionRateModifier.value
+                    value: Math.round(itemData.effectValues.placedBitsEnergyDepletionRateModifier.value * 100) / 100
                 }
 
                 // if data isn't found, then there is an issue or the queue simply doesn't exist. just return.
