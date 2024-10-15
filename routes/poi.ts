@@ -242,17 +242,19 @@ router.post('/sell_items_in_poi_shop', async (req, res) => {
 
         const { status, message, data } = await sellItemsInPOIShop(validateData?.twitterId, items, leaderboardName);
 
-        if (status === Status.SUCCESS && allowMixpanel) {
-            mixpanel.track('Points Earned (POI Shop)', {
-                distinct_id: validateData?.twitterId,
-                '_leaderboardName': leaderboardName,
-                '_data': data,
-            });
+        if (status === Status.SUCCESS) {
+            if (allowMixpanel) {
+                mixpanel.track('Points Earned (POI Shop)', {
+                    distinct_id: validateData?.twitterId,
+                    '_leaderboardName': leaderboardName,
+                    '_data': data,
+                });
+    
+                // increment the event counter in the wonderbits contract.
+                incrementEventCounterInContract(validateData?.twitterId, SELL_ITEMS_IN_POI_SHOP_MIXPANEL_EVENT_HASH);
+            }
 
-            // increment the event counter in the wonderbits contract.
-            incrementEventCounterInContract(validateData?.twitterId, SELL_ITEMS_IN_POI_SHOP_MIXPANEL_EVENT_HASH);
-
-            const amount = (items as POIShopActionItemData[]).reduce((total, currentItem) => total + currentItem?.amount ?? 0, 0);
+            const amount = (items as POIShopActionItemData[]).reduce((total, currentItem) => currentItem?.amount ? total + currentItem.amount : 0, 0);
             const item = (items as POIShopActionItemData[])[0].item;
 
             incrementProgressionByType(QuestRequirementType.SELL_RESOURCE_AMOUNT, validateData?.twitterId, amount);
