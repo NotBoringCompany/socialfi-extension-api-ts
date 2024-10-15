@@ -1065,12 +1065,12 @@ export const claimCraftedAssets = async (
         const fullyClaimedCraftingData: {
             queueId: string,
             craftedAsset: string,
-            claimedAmount: number,
+            claimableAmount: number,
         }[] = [];
         const partiallyClaimedCraftingData: {
             queueId: string,
             craftedAsset: string,
-            claimedAmount: number,
+            claimableAmount: number,
         }[] = [];
 
         // initialize $each on the user's inventory items, foods and/or resources.
@@ -1192,7 +1192,7 @@ export const claimCraftedAssets = async (
                 fullyClaimedCraftingData.push({
                     queueId: queue._id,
                     craftedAsset: queue.craftedAssetData.asset,
-                    claimedAmount: queue.craftedAssetData.amount,
+                    claimableAmount: queue.claimData.claimableAmount,
                 })
 
                 // do three things to the crafting queue:
@@ -1339,7 +1339,7 @@ export const claimCraftedAssets = async (
                     partiallyClaimedCraftingData.push({
                         queueId: queue._id,
                         craftedAsset: queue.craftedAssetData.asset,
-                        claimedAmount: queue.craftedAssetData.amount,
+                        claimableAmount: queue.claimData.claimableAmount,
                     })
 
                     break;
@@ -1403,7 +1403,7 @@ export const claimCraftedAssets = async (
                     fullyClaimedCraftingData.push({
                         queueId: queue._id,
                         craftedAsset: queue.craftedAssetData.asset,
-                        claimedAmount: queue.craftedAssetData.amount,
+                        claimableAmount: queue.claimData.claimableAmount,
                     })
 
                     // 1. reduce the claimableAmount by the `claimableAmount`

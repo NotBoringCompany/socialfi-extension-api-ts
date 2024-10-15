@@ -170,11 +170,11 @@ router.post('/claim_crafted_assets', async (req, res) => {
             }
 
             const { fullyClaimedCraftingData, partiallyClaimedCraftingData } = data;
-            const craftingResult: { queueId: string, craftedAsset: string, claimedAmount: number }[] = [...fullyClaimedCraftingData, ...partiallyClaimedCraftingData];
+            const craftingResult: { queueId: string, craftedAsset: string, claimableAmount: number }[] = [...fullyClaimedCraftingData, ...partiallyClaimedCraftingData];
 
             const craftedTotal = craftingResult
                 .filter(({ craftedAsset }) => !Object.values(IngotItem).includes(craftedAsset as any)) // ignore ingot type
-                .reduce((prev, curr) => prev + curr.claimedAmount, 0);
+                .reduce((prev, curr) => prev + curr.claimableAmount, 0);
 
             incrementProgressionByType(QuestRequirementType.CRAFT_ITEM, validateData?.twitterId, craftedTotal);
         }
