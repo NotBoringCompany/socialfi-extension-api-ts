@@ -1177,6 +1177,8 @@ export const addPlacedBitModifiersFromConsumedSynthesizingItems = async (userId:
 
                 // fetch the bull queue data for this item (if there are multiple, fetch the first one)
                 const bullQueueData = await SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE.getJobs(['waiting', 'active', 'delayed']);
+                
+                console.log(`(updatePlacedBitModifiersFromConsumedSynthesizingItems) bullQueueData: `, JSON.stringify(bullQueueData, null, 2));
 
                 // find any bull queues that have the `origin` starting with `Synthesizing Item: ${itemData.name}. Rand ID: ${consumedItem._id}` and `bitId` is in the `placedBits`
                 const relevantBullQueueData = bullQueueData.filter(queue => queue.name === 'removeBitEnergyDepletionRateModifier' && (queue.data.origin as string).startsWith(`Synthesizing Item: ${itemData.name}. Rand ID: ${consumedItem._id}`) && placedBits.includes(queue.data.bitId));
