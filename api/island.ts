@@ -1101,18 +1101,18 @@ export const unplaceBit = async (twitterId: string, bitId: number): Promise<Retu
             ...bitUpdatePromises
         ]);
 
-        // // check if there are synthesizing items (or other items) that impact the bit's modifiers.
-        // // if yes, do the updates.
-        // const { $pull, $inc, $set, $push } = await removePlacedBitModifiersFromConsumedSynthesizingItems(bit as Bit, islandId, user._id);
+        // check if there are synthesizing items (or other items) that impact the bit's modifiers.
+        // if yes, do the updates.
+        const { $pull, $inc, $set, $push } = await removePlacedBitModifiersFromConsumedSynthesizingItems(bit as Bit, islandId, user._id);
         
-        // // check, for each object, if there are any keys. if yes, execute the update operation.
-        // if (Object.keys($pull).length > 0 || Object.keys($push).length > 0) {
-        //     await BitModel.updateOne({ bitId }, { $pull, $push });
-        // }
+        // check, for each object, if there are any keys. if yes, execute the update operation.
+        if (Object.keys($pull).length > 0 || Object.keys($push).length > 0) {
+            await BitModel.updateOne({ bitId }, { $pull, $push });
+        }
 
-        // if (Object.keys($inc).length > 0 || Object.keys($set).length > 0) {
-        //     await BitModel.updateOne({ bitId }, { $inc, $set });
-        // }
+        if (Object.keys($inc).length > 0 || Object.keys($set).length > 0) {
+            await BitModel.updateOne({ bitId }, { $inc, $set });
+        }
 
         return {
             status: Status.SUCCESS,
@@ -1193,7 +1193,7 @@ export const addPlacedBitModifiersFromConsumedSynthesizingItems = async (userId:
                 // create the modifier
                 const energyRateModifier: Modifier = {
                     origin: `Synthesizing Item: ${itemData.name}. Rand ID: ${consumedItem._id}`,
-                    value: 1 - (itemData.effectValues.placedBitsEnergyDepletionRateModifier.value / 100)
+                    value: 1 + (itemData.effectValues.placedBitsEnergyDepletionRateModifier.value / 100)
                 }
 
                 // if data isn't found, then there is an issue or the queue simply doesn't exist. just return.
