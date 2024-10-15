@@ -1141,6 +1141,8 @@ export const addPlacedBitModifiersFromConsumedSynthesizingItems = async (userId:
 
         // if there are no consumed synthesizing items, return an empty object
         if (consumedSynthesizingItems.length === 0) {
+            console.log(`(updatePlacedBitModifiersFromConsumedSynthesizingItems) No consumed synthesizing items found.`);
+
             return {
                 gatheringRateModifiers: [],
                 earningRateModifiers: [],
@@ -1168,6 +1170,8 @@ export const addPlacedBitModifiersFromConsumedSynthesizingItems = async (userId:
             // if the synthesizing item has `placedBitsEnergyDepletionRateModifier.active` set to true and `allowLaterPlacedBitsToObtainEffect` set to true,
             // we need to update the bit's energy rate modifiers to include the synthesizing item's effects.
             if (itemData.effectValues.placedBitsEnergyDepletionRateModifier.active && itemData.effectValues.placedBitsEnergyDepletionRateModifier.allowLaterPlacedBitsToObtainEffect) {
+                console.log(`(updatePlacedBitModifiersFromConsumedSynthesizingItems) FOUND ITEM WHERE DEPLETION RATE MODIFIER ALLOWS LATER PLACED BITS TO OBTAIN EFFECT: ${itemData.name}`);
+
                 // get the placed bits of the island
                 const placedBits = island.placedBitIds;
 
