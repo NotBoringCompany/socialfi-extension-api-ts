@@ -499,14 +499,17 @@ router.post('/apply_gathering_progress_booster', async (req, res) => {
 
         const { status, message, data } = await applyGatheringProgressBooster(validateData?.twitterId, islandId, boosters);
 
-        if (status === Status.SUCCESS && allowMixpanel) {
-            mixpanel.track('Apply Gathering Booster', {
-                distinct_id: validateData?.twitterId,
-                '_data': data,
-            });
+        if (status === Status.SUCCESS) {
+            if (allowMixpanel) {
+                mixpanel.track('Apply Gathering Booster', {
+                    distinct_id: validateData?.twitterId,
+                    '_data': data,
+                });
 
-            // increment the event counter in the wonderbits contract.
-            incrementEventCounterInContract(validateData?.twitterId, APPLY_GATHERING_BOOSTER_MIXPANEL_EVENT_HASH);
+                // increment the event counter in the wonderbits contract.
+                incrementEventCounterInContract(validateData?.twitterId, APPLY_GATHERING_BOOSTER_MIXPANEL_EVENT_HASH);
+            }
+
             incrementProgressionByType(QuestRequirementType.USE_GATHERING_BOOSTER, validateData?.twitterId, 1);
         }
 
