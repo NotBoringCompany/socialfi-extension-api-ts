@@ -1193,7 +1193,7 @@ export const addPlacedBitModifiersFromConsumedSynthesizingItems = async (userId:
                 // create the modifier
                 const energyRateModifier: Modifier = {
                     origin: `Synthesizing Item: ${itemData.name}. Rand ID: ${consumedItem._id}`,
-                    value: 1 - (itemData.effectValues.placedBitsEnergyDepletionRateModifier.value / 100);
+                    value: 1 - (itemData.effectValues.placedBitsEnergyDepletionRateModifier.value / 100)
                 }
 
                 // if data isn't found, then there is an issue or the queue simply doesn't exist. just return.
