@@ -510,7 +510,7 @@ router.post('/apply_gathering_progress_booster', async (req, res) => {
                 incrementEventCounterInContract(validateData?.twitterId, APPLY_GATHERING_BOOSTER_MIXPANEL_EVENT_HASH);
             }
 
-            incrementProgressionByType(QuestRequirementType.USE_GATHERING_BOOSTER, validateData?.twitterId, 1);
+            incrementProgressionByType(QuestRequirementType.USE_GATHERING_BOOSTER, validateData?.twitterId, boosters?.length ?? 1);
         }
 
         return res.status(status).json({
@@ -682,14 +682,16 @@ router.post('/apply_island_tapping_data', async (req, res) => {
 
         const { status, message, data } = await applyIslandTapping(validateData?.twitterId, parseInt(islandId), parseInt(caressMeter), bonus);
 
-        if (status === Status.SUCCESS && allowMixpanel) {
-            mixpanel.track('Apply Island Milestone', {
-                distinct_id: validateData?.twitterId,
-                '_data': data,
-            });
-
-            // increment the event counter in the wonderbits contract.
-            incrementEventCounterInContract(validateData?.twitterId, APPLY_ISLAND_MILESTONE);
+        if (status === Status.SUCCESS) {
+            if (allowMixpanel) {
+                mixpanel.track('Apply Island Milestone', {
+                    distinct_id: validateData?.twitterId,
+                    '_data': data,
+                });
+    
+                // increment the event counter in the wonderbits contract.
+                incrementEventCounterInContract(validateData?.twitterId, APPLY_ISLAND_MILESTONE);
+            }
 
             incrementProgressionByType(QuestRequirementType.TAPPING_MILESTONE, validateData?.twitterId, 1);
         }
