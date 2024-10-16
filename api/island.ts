@@ -1306,6 +1306,10 @@ export const removePlacedBitModifiersFromConsumedSynthesizingItems = async (bit:
             // find the consumed item that includes the origin
             const consumedItem = consumedItems.find(item => origin.includes(item._id));
 
+            if (!consumedItem) {
+                continue;
+            }
+
             console.log(`(removePlacedBitModifiersFromConsumedSynthesizingItems) Consumed Item: ${JSON.stringify(consumedItem)}`);
 
             // check if this item has 'allowLaterUnplacedBitsToLoseEffect' set to true. if yes, remove the modifier.
