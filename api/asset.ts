@@ -1323,7 +1323,7 @@ export const consumeSynthesizingItem = async (
                     updateOperations: {
                         $push: {
                             'islandStatsModifiers.gatheringRateModifiers': {
-                                origin: `Synthesizing Item: ${item}. Rand ID: ${randomId}`,
+                                origin: `Synthesizing Item: ${item}. Instance ID: ${randomId}`,
                                 value: modifierValue
                             }
                         },
@@ -1340,7 +1340,7 @@ export const consumeSynthesizingItem = async (
                         {
                             islandId: island.islandId,
                             owner: user._id,
-                            origin: `Synthesizing Item: ${item}. Rand ID: ${randomId}`,
+                            origin: `Synthesizing Item: ${item}. Instance ID: ${randomId}`,
                             endTimestamp: Math.floor(Date.now() / 1000) + synthesizingItemData.effectValues.effectDuration
                         },
                         { delay: synthesizingItemData.effectValues.effectDuration as number * 1000 }
@@ -1358,7 +1358,7 @@ export const consumeSynthesizingItem = async (
                     updateOperations: {
                         $push: {
                             'islandStatsModifiers.earningRateModifiers': {
-                                origin: `Synthesizing Item: ${item}. Rand ID: ${randomId}`,
+                                origin: `Synthesizing Item: ${item}. Instance ID: ${randomId}`,
                                 value: modifierValue
                             }
                         },
@@ -1375,7 +1375,7 @@ export const consumeSynthesizingItem = async (
                         {
                             islandId: island.islandId,
                             owner: user._id,
-                            origin: `Synthesizing Item: ${item}. Rand ID: ${randomId}`,
+                            origin: `Synthesizing Item: ${item}. Instance ID: ${randomId}`,
                             endTimestamp: Math.floor(Date.now() / 1000) + synthesizingItemData.effectValues.effectDuration
                         },
                         { delay: synthesizingItemData.effectValues.effectDuration as number * 1000 }
@@ -1399,7 +1399,7 @@ export const consumeSynthesizingItem = async (
                             updateOperations: {
                                 $push: {
                                     'bitStatsModifiers.energyRateModifiers': {
-                                        origin: `Synthesizing Item: ${item}. Rand ID: ${randomId}`,
+                                        origin: `Synthesizing Item: ${item}. Instance ID: ${randomId}`,
                                         value: energyDepletionRateModifier
                                     }
                                 },
@@ -1417,7 +1417,7 @@ export const consumeSynthesizingItem = async (
                                     bitId,
                                     islandId: island.islandId,
                                     owner: user._id,
-                                    origin: `Synthesizing Item: ${item}. Rand ID: ${randomId}`,
+                                    origin: `Synthesizing Item: ${item}. Instance ID: ${randomId}`,
                                     endTimestamp: Math.floor(Date.now() / 1000) + synthesizingItemData.effectValues.effectDuration
                                 },
                                 { delay: synthesizingItemData.effectValues.effectDuration as number * 1000 }
@@ -1434,7 +1434,7 @@ export const consumeSynthesizingItem = async (
 
         // add the consumed item to the `ConsumedSynthesizingItem` collection.
         const consumedSynthesizingItem = new ConsumedSynthesizingItemModel({
-            _id: generateObjectId(),
+            _id: randomId,
             usedBy: user._id,
             item,
             affectedAsset,

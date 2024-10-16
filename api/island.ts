@@ -1185,7 +1185,7 @@ export const addPlacedBitModifiersFromConsumedSynthesizingItems = async (userId:
                 
                 console.log(`(updatePlacedBitModifiersFromConsumedSynthesizingItems) origin for bull queue data #0: `, bullQueueData[0].data.origin);
 
-                // find any bull queues that have the `origin` starting with `Synthesizing Item: ${itemData.name}. Rand ID: ${consumedItem._id}` and `bitId` is in the `placedBits`
+                // find any bull queues that have the `origin` starting with `Synthesizing Item: ${itemData.name}. Instance ID: ${consumedItem._id}` and `bitId` is in the `placedBits`
                 const relevantBullQueueData = bullQueueData
                     .filter(queue => queue.name === 'removeBitEnergyDepletionRateModifier')
                     .filter(queue => queue.data.origin.startsWith(`Synthesizing Item: ${itemData.name}`))
@@ -1197,7 +1197,7 @@ export const addPlacedBitModifiersFromConsumedSynthesizingItems = async (userId:
 
                 // create the modifier
                 const energyRateModifier: Modifier = {
-                    origin: `Synthesizing Item: ${itemData.name}. Rand ID: ${consumedItem._id}`,
+                    origin: `Synthesizing Item: ${itemData.name}. Instance ID: ${consumedItem._id}`,
                     value: 1 + (itemData.effectValues.placedBitsEnergyDepletionRateModifier.value / 100)
                 }
 
@@ -1217,7 +1217,7 @@ export const addPlacedBitModifiersFromConsumedSynthesizingItems = async (userId:
                         bitId,
                         islandId: island.islandId,
                         owner: userId,
-                        origin: `Synthesizing Item: ${itemData.name}. Rand ID: ${consumedItem._id}`,
+                        origin: `Synthesizing Item: ${itemData.name}. Instance ID: ${consumedItem._id}`,
                         // for the end timestamp, we will match it with the `relevantBullQueueDataFirst`'s endTimestamp
                         // because we don't want it to last longer than the other bits.
                         endTimestamp: relevantBullQueueDataFirst.data.endTimestamp
@@ -1257,7 +1257,7 @@ export const removePlacedBitModifiersFromConsumedSynthesizingItems = async (bit:
     try {
         const bullQueueData = await SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE.getJobs(['waiting', 'active', 'delayed']);
 
-        // find any bull queues that have the `origin` starting with `Synthesizing Item: ${itemData.name}. Rand ID: ${consumedItem._id}` and `bitId` is in the `placedBits`
+        // find any bull queues that have the `origin` starting with `Synthesizing Item: ${itemData.name}. Instance ID: ${consumedItem._id}` and `bitId` is in the `placedBits`
         const relevantBullQueueData = bullQueueData.filter(queue => queue.name === 'removeBitEnergyDepletionRateModifier' && queue.data.bitId === bit.bitId && queue.data.owner === userId);
 
         // if there are no relevant bull queue data, return an empty object
