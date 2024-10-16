@@ -1050,7 +1050,7 @@ export const incrementProgressionByType = async (
             const requirements = quest.requirements.filter((req) => req.type === type);
             for (const requirement of requirements) {
                 if (!requirement.parameters.count) continue;
-                if (params && requirement.parameters.type !== params) continue;
+                if (params && !!requirement.parameters.type && requirement.parameters.type !== params) continue;
                 if (typeof requirement.parameters.type != typeof params) continue;
                 if (requirement.parameters.type && !requirement.parameters.type.includes(params)) continue;
 
