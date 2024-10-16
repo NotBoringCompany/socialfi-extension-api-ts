@@ -44,7 +44,7 @@ export const scheduleNextPOIItemDataReset = async (): Promise<void> => {
 
             // check if job is already scheduled for the given time range
             if (await checkPOIItemDataResetAlreadyScheduled(range)) {
-                console.log(`(scheduleNextPOIItemDataReset) POI item data reset already scheduled for range (${range.start}-${range.end}).`);
+                console.log(`(scheduleNextPOIItemDataReset) POI item data reset already scheduled for range (${range.start}-${range.end}). Reset scheduled at ${await redis.get('poiItemDataResetScheduledTime')}`);
                 continue;
             }
 
