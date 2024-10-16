@@ -1147,6 +1147,11 @@ export const resetDailyQuest = async (twitterId: string, poi: POIName): Promise<
             }))
         );
 
+        // delete previous quest progression
+        await QuestProgressionModel.deleteMany({
+            questId: {  $in: shuffledQuests.map((quest) => quest._id) }
+        });
+
         return {
             status: Status.SUCCESS,
             message: `(resetDailyQuest) Quest updated.`,
