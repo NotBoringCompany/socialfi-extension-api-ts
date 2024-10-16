@@ -1288,6 +1288,7 @@ export const removePlacedBitModifiersFromConsumedSynthesizingItems = async (bit:
         const consumedItems = await ConsumedSynthesizingItemModel.find({ usedBy: userId, affectedAsset: 'island', islandOrBitId: islandId }).lean();
 
         if (!consumedItems || consumedItems.length === 0) {
+            console.log(`(removePlacedBitModifiersFromConsumedSynthesizingItems) No consumed synthesizing items found.`);
             return updateOperations;
         }
 
