@@ -36,7 +36,7 @@ export const resetGlobalItemsDailyBuyableAndSellableAmount = async (): Promise<v
         const allPOIs = await POIModel.find().lean();
 
         const bulkWriteOperations = allPOIs.map(poi => {
-            const globalItems = poi.shop.globalItems;
+            const {globalItems, playerItems} = poi.shop;
 
             const updatedGlobalItems = globalItems.map(item => {
                 item.currentBuyableAmount = item.buyableAmount;
@@ -45,11 +45,17 @@ export const resetGlobalItemsDailyBuyableAndSellableAmount = async (): Promise<v
                 return item;
             });
 
+            const updatedPlayerItems = playerItems.map(item => {
+                item.userTransactionData.splice(0, item.userTransactionData.length);
+                return item;
+            });
+
             return {
                 updateOne: {
                     filter: { name: poi.name },
                     update: {
-                        'shop.globalItems': updatedGlobalItems
+                        'shop.globalItems': updatedGlobalItems,
+                        'shop.playerItems': updatedPlayerItems
                     }
                 }
             }
