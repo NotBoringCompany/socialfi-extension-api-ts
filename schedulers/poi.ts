@@ -3,7 +3,7 @@ import { resetPOIItemsData } from '../api/poi';
 
 import Bull from 'bull';
 import { POI_ITEM_DATA_RESET_TIME_RANGES } from '../utils/constants/poi';
-import { getRandomTimeBetween } from '../utils/time';
+import { adjustRandomTimeToNextDay, getRandomTimeBetween } from '../utils/time';
 import { redis } from '../utils/constants/redis';
 
 export const resetPOIItemsDataQueue = new Bull('resetPOIItemsDataQueue', {
@@ -57,9 +57,14 @@ export const scheduleNextPOIItemDataReset = async (): Promise<void> => {
         }
 
         // generate a random time within the next time range
-        const randomTime = getRandomTimeBetween(nextRange.start, nextRange.end);
-        const delay = randomTime.getTime() - now.getTime();
+        let randomTime = getRandomTimeBetween(nextRange.start, nextRange.end);
 
+        // if the time range is for tomorrow, adjust `randomTime` to reflect that
+        if (nextRange.start < currentHour) {
+            randomTime = adjustRandomTimeToNextDay(randomTime, now, nextRange.start);
+        }
+
+        const delay = randomTime.getTime() - now.getTime();
         console.log(`(scheduleNextPOIItemDataReset) Delay for next POI item data reset at ${randomTime.toISOString()}: ${delay}ms`);
 
         if (delay > 0) {
