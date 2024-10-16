@@ -103,7 +103,7 @@ initSocket(httpServer);
 
 httpServer.listen(port, async () => {
     console.log(`Server running on port: ${port}`);
-    // await schedulers();
+    await schedulers();
 });
 
 export default app;
