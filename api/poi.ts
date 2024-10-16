@@ -26,11 +26,12 @@ import { incrementProgressionByType } from './quest';
 import { QuestRequirementType } from '../models/quest';
 
 /**
- * Resets the `currentBuyableAmount` and `currentSellableAmount` of all global items in all POI shops every day at 23:59 UTC.
+ * Resets the `currentBuyableAmount` and `currentSellableAmount` of all global items in all POI shops.
+ * Also resets `userTransactionData` for all player items in all POI shops.
  * 
- * Called by a scheduler.
+ * Called by a scheduler every day at 23:59 UTC.
  */
-export const resetGlobalItemsDailyBuyableAndSellableAmount = async (): Promise<void> => {
+export const resetPOIItemsDailyData = async (): Promise<void> => {
     try {
         await mongoose.connect(process.env.MONGODB_URI);
         const allPOIs = await POIModel.find().lean();
@@ -46,7 +47,8 @@ export const resetGlobalItemsDailyBuyableAndSellableAmount = async (): Promise<v
             });
 
             const updatedPlayerItems = playerItems.map(item => {
-                item.userTransactionData.splice(0, item.userTransactionData.length);
+                // reset userTransactionData
+                item.userTransactionData.length = 0;
                 return item;
             });
 
@@ -64,9 +66,9 @@ export const resetGlobalItemsDailyBuyableAndSellableAmount = async (): Promise<v
         // execute the bulk write operations
         await POIModel.bulkWrite(bulkWriteOperations);
 
-        console.log('resetGlobalItemsDailyBuyableAndSellableAmount: Successfully reset all global items in all POI shops.');
+        console.log('resetPOIItemsDailyData: Successfully reset all global items in all POI shops.');
     } catch (err: any) {
-        console.error('Error in resetGlobalItemsDailyBuyableAndSellableAmount:', err.message);
+        console.error('Error in resetPOIItemsDailyData:', err.message);
     }
 }
 

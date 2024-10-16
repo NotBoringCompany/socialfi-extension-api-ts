@@ -1,31 +1,17 @@
 import cron from 'node-cron';
 import { checkDailyKOSRewards, checkWeeklyKOSRewards } from '../api/kos';
-import { resetGlobalItemsDailyBuyableAndSellableAmount } from '../api/poi';
+import { resetPOIItemsDailyData } from '../api/poi';
 
 import Bull from 'bull';
 
-export const resetGlobalItemsDailyBuyableAndSellableAmountQueue = new Bull('resetGlobalItemsDailyBuyableAndSellableAmountQueue', {
+export const resetPOIItemsDailyDataQueue = new Bull('resetPOIItemsDailyDataQueue', {
     redis: process.env.REDIS_URL
 });
 
 /**
- * Calls `resetGlobalItemsDailyBuyableAndSellableAmount` every day at 23:59 UTC to reset the daily buyable and sellable amount of global items.
+ * Calls `resetPOIItemsDailyData` every day at 23:59 UTC to reset the daily buyable and sellable amount of global items.
  */
-resetGlobalItemsDailyBuyableAndSellableAmountQueue.process(async () => {
-    console.log('Running resetGlobalItemsDailyBuyableAndSellableAmount...');
-    await resetGlobalItemsDailyBuyableAndSellableAmount();
+resetPOIItemsDailyDataQueue.process(async () => {
+    console.log('Running resetPOIItemsDailyData...');
+    await resetPOIItemsDailyData();
 });
-
-// /**
-//  * Calls `resetGlobalItemsDailyBuyableAndSellableAmount` every day at 23:59 UTC to reset the daily buyable and sellable amount of global items.
-//  */
-// export const resetGlobalItemsDailyBuyableAndSellableAmountScheduler = async (): Promise<void> => {
-//     try {
-//         cron.schedule('59 23 * * *', async () => {
-//             console.log('Running resetGlobalItemsDailyBuyableAndSellableAmount...');
-//             await resetGlobalItemsDailyBuyableAndSellableAmount();
-//         });
-//     } catch (err: any) {
-//         console.error('Error in resetGlobalItemsDailyBuyableAndSellableAmount:', err.message);
-//     }
-// }

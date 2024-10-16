@@ -1,19 +1,8 @@
-// import { depleteEnergyScheduler } from './bit';
-// import { removeOpenedTweetIdsTodayScheduler } from './chest';
-// import { updateSuccessfulIndirectReferralsScheduler } from './invite';
-// import { resetDailyIslandTappingMilestoneScheduler, updateClaimableCrumbsScheduler, updateClaimableXCookiesScheduler, updateDailyBonusResourcesGatheredScheduler, updateGatheringProgressAndDropResourceScheduler } from './island';
-// import { checkDailyKOSRewardsScheduler, checkWeeklyKOSRewardsScheduler } from './kos';
-// import { resetGlobalItemsDailyBuyableAndSellableAmountScheduler } from './poi';
-// import { calculateWeeklySquadRankingAndAddSquadLeaderboardScheduler } from './squadLeaderboard';
-// import { restoreUserCurrentEnergyAndResetRerollScheduler, testRandomizeSchedulerTimer, updateBeginnerRewardsDataScheduler, updateDailyLoginRewardsDataScheduler, updateUserEnergyPotionScheduler } from './user';
-// import { batchSendKICKScheduler } from './web3';
-// import { distributeWeeklyMVPRewardsScheduler, updateCurrentWeeklyMVPRankingLeaderboardScheduler } from './weeklyMVPReward';
-
 import { removeOpenedTweetIdsTodayQueue } from './chest';
 import { updateSuccessfulIndirectReferralsQueue } from './invite';
 import { resetDailyIslandTappingMilestoneQueue, updateDailyBonusResourcesGatheredQueue, updateGatheringProgressAndDropResourceThenDepleteEnergyQueue } from './island';
 import { checkDailyKOSRewardsQueue, checkWeeklyKOSRewardsQueue } from './kos';
-import { resetGlobalItemsDailyBuyableAndSellableAmountQueue } from './poi';
+import { resetPOIItemsDailyDataQueue } from './poi';
 import { calculateWeeklySquadRankingAndAddSquadLeaderboardQueue } from './squadLeaderboard';
 import { restoreUserCurrentEnergyAndResetRerollQueue, updateBeginnerRewardsDataQueue, updateDailyLoginRewardsDataQueue, updateUserEnergyPotionQueue } from './user';
 import { batchSendKICKQueue } from './web3';
@@ -103,7 +92,7 @@ export const schedulers = async (): Promise<void> => {
             }
         });
 
-        resetGlobalItemsDailyBuyableAndSellableAmountQueue.add({}, {
+        resetPOIItemsDailyDataQueue.add({}, {
             // every day at 11:59 and 23:59
             repeat: {
                 cron: '59 11,23 * * *',
