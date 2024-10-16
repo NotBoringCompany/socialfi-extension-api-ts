@@ -13,17 +13,21 @@ export const resetPOIItemsDataQueue = new Bull('resetPOIItemsDataQueue', {
  * Schedules the next POI item data reset 
  * (to reset the `buyable` and `sellable` amounts for global items and to reset the `userTransactionData` for player items).
  */
-export const scheduleNextPOIItemDataReset = async () => {
-    const now = new Date();
+export const scheduleNextPOIItemDataReset = async (): Promise<void> => {
+    try {
+        const now = new Date();
 
-    for (const range of POI_ITEM_DATA_RESET_TIME_RANGES) {
-        const randomTime = getRandomTimeBetween(range.start, range.end);
-        const delay = randomTime.getTime() - now.getTime();
+        for (const range of POI_ITEM_DATA_RESET_TIME_RANGES) {
+            const randomTime = getRandomTimeBetween(range.start, range.end);
+            const delay = randomTime.getTime() - now.getTime();
 
-        if (delay > 0) {
-            console.log(`Scheduling next POI item data reset at ${randomTime.toISOString()}`);
-            await resetPOIItemsDataQueue.add({}, { delay });
+            if (delay > 0) {
+                console.log(`Scheduling next POI item data reset at ${randomTime.toISOString()}`);
+                await resetPOIItemsDataQueue.add({}, { delay });
+            }
         }
+    } catch (err: any) {
+        console.error('Error in scheduleNextPOIItemDataReset:', err.message);
     }
 }
 
