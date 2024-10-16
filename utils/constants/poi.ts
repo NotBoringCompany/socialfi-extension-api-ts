@@ -1,6 +1,9 @@
 import { POIName } from '../../models/poi';
 import { getRandomTimeBetween } from '../time';
 
+/**
+ * Time ranges (hour) for resetting the POI item data (in UTC).
+ */
 export const POI_ITEM_DATA_RESET_TIME_RANGES = [
     { start: 0, end: 2 },
     { start: 8, end: 10 },
