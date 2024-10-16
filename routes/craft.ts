@@ -178,6 +178,7 @@ router.post('/claim_crafted_assets', async (req, res) => {
                     const rarity = CRAFTING_RECIPES.find((recipe) => recipe.craftedAssetData.asset === item.craftedAsset).craftedAssetData.assetRarity;
                     if (!rarity) return;
 
+                    incrementProgressionByType(QuestRequirementType.CRAFT_ITEM, validateData?.twitterId, item.claimableAmount);
                     incrementProgressionByType(QuestRequirementType.CRAFT_ITEM, validateData?.twitterId, item.claimableAmount, rarity);
                 });
         }
