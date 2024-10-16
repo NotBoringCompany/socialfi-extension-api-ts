@@ -27,15 +27,18 @@ router.post('/consume', async (req, res) => {
 
         const { status, message, data } = await consumeTerraCapsulator(type, validateData?.twitterId);
 
-        if (status === Status.SUCCESS && allowMixpanel) {
-            mixpanel.track('Consume Terra Capsulator', {
-                distinct_id: validateData?.twitterId,
-                '_type': type,
-                '_island': data?.island,
-            });
+        if (status === Status.SUCCESS) {
+            if (allowMixpanel) {
+                mixpanel.track('Consume Terra Capsulator', {
+                    distinct_id: validateData?.twitterId,
+                    '_type': type,
+                    '_island': data?.island,
+                });
+    
+                // increment the event counter in the wonderbits contract.
+                incrementEventCounterInContract(validateData?.twitterId, CONSUME_TERRA_CAPSULATOR_MIXPANEL_EVENT_HASH);
+            }
 
-            // increment the event counter in the wonderbits contract.
-            incrementEventCounterInContract(validateData?.twitterId, CONSUME_TERRA_CAPSULATOR_MIXPANEL_EVENT_HASH);
             incrementProgressionByType(QuestRequirementType.SUMMON_ISLAND, validateData?.twitterId, 1, data.island.type);
         }
 
