@@ -1432,6 +1432,10 @@ export const consumeSynthesizingItem = async (
         const consumedItemIndex = (user.inventory?.items as Item[]).findIndex(i => i.type === item);
         userUpdateOperations.$inc[`inventory.items.${consumedItemIndex}.amount`] = -1;
 
+        // increase the `totalAmountConsumed` and `weeklyAmountConsumed` of the item.
+        userUpdateOperations.$inc[`inventory.items.${consumedItemIndex}.weeklyAmountConsumed`] = 1;
+        userUpdateOperations.$inc[`inventory.items.${consumedItemIndex}.totalAmountConsumed`] = 1;
+
         // add the consumed item to the `ConsumedSynthesizingItem` collection.
         const consumedSynthesizingItem = new ConsumedSynthesizingItemModel({
             _id: randomId,
