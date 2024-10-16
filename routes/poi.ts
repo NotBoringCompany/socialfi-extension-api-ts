@@ -260,7 +260,7 @@ router.post('/sell_items_in_poi_shop', async (req, res) => {
             const amount = (items as POIShopActionItemData[]).reduce((total, currentItem) => currentItem?.amount ? total + currentItem.amount : 0, 0);
             const item = (items as POIShopActionItemData[])[0].item;
 
-            // incrementProgressionByType(QuestRequirementType.SELL_RESOURCE_AMOUNT, validateData?.twitterId, amount);
+            incrementProgressionByType(QuestRequirementType.SELL_RESOURCE_AMOUNT, validateData?.twitterId, amount);
             incrementProgressionByType(QuestRequirementType.SELL_RESOURCE_AMOUNT, validateData?.twitterId, amount, item);
         }
 
