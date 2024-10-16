@@ -1271,6 +1271,8 @@ export const removePlacedBitModifiersFromConsumedSynthesizingItems = async (bit:
             }
         }
 
+        console.log(`(removePlacedBitModifiersFromConsumedSynthesizingItems) Relevant Bull Queue Data: ${JSON.stringify(relevantBullQueueData, null, 2)}`);
+
         const updateOperations: {
             bitId: number,
             $pull: {},
