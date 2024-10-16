@@ -25,40 +25,47 @@ export const checkPOIItemDataResetAlreadyScheduled = async (timeRange: { start: 
 }
 
 /**
+ * 
+ * Determines the next available time range to call `resetPOIItemsData` based on the current hour after the current time range has been scheduled and executed.
+ */
+export const getNextTimeRangeForPOIItemDataReset = (currentHour: number) => {
+    return POI_ITEM_DATA_RESET_TIME_RANGES.find(range => currentHour < range.start);
+}
+
+/**
  * Schedules the next POI item data reset 
  * (to reset the `buyable` and `sellable` amounts for global items and to reset the `userTransactionData` for player items).
  */
 export const scheduleNextPOIItemDataReset = async (): Promise<void> => {
     try {
         const now = new Date();
+        const currentHour = now.getUTCHours();
 
-        for (const range of POI_ITEM_DATA_RESET_TIME_RANGES) {
-            // skip the range if it is in the past
-            const endTime = new Date();
-            endTime.setUTCHours(range.end, 0, 0, 0);
+        // get the next available time range after the current hour
+        let nextRange = getNextTimeRangeForPOIItemDataReset(currentHour);
 
-            if (now > endTime) {
-                console.log(`(scheduleNextPOIItemDataReset) Skipping POI item data reset scheduling for range (${range.start}-${range.end}) as it is in the past.`);
-                continue;
-            }
+        // if no future range is found for today, move to the first time range for the next day
+        if (!nextRange) {
+            nextRange = POI_ITEM_DATA_RESET_TIME_RANGES[0];
+            console.log(`(scheduleNextPOIItemDataReset) No next time range found. Using the first time range (${nextRange.start}-${nextRange.end}) for the next day.`);
+        }
 
-            // check if job is already scheduled for the given time range
-            if (await checkPOIItemDataResetAlreadyScheduled(range)) {
-                console.log(`(scheduleNextPOIItemDataReset) POI item data reset already scheduled for range (${range.start}-${range.end}). Reset scheduled at ${await redis.get('poiItemDataResetScheduledTime')}`);
-                continue;
-            }
+        // skip scheduling if the job is already scheduled for the current time range
+        if (await checkPOIItemDataResetAlreadyScheduled(nextRange)) {
+            console.log(`(scheduleNextPOIItemDataReset) POI item data reset already scheduled for range (${nextRange.start}-${nextRange.end}). Reset scheduled at ${await redis.get('poiItemDataResetScheduledTime')}`);
+            return;
+        }
 
-            // generate a random time between the given range
-            const randomTime = getRandomTimeBetween(range.start, range.end);
-            const delay = randomTime.getTime() - now.getTime();
+        // generate a random time within the next time range
+        const randomTime = getRandomTimeBetween(nextRange.start, nextRange.end);
+        const delay = randomTime.getTime() - now.getTime();
 
-            console.log(`(scheduleNextPOIItemDataReset) Delay for next POI item data reset at ${randomTime.toISOString()}: ${delay}ms`);
+        console.log(`(scheduleNextPOIItemDataReset) Delay for next POI item data reset at ${randomTime.toISOString()}: ${delay}ms`);
 
-            if (delay > 0) {
-                console.log(`Scheduling next POI item data reset at ${randomTime.toISOString()}`);
-                await redis.set('poiItemDataResetScheduledTime', randomTime.toISOString());
-                await resetPOIItemsDataQueue.add({}, { delay });
-            }
+        if (delay > 0) {
+            console.log(`Scheduling next POI item data reset at ${randomTime.toISOString()}`);
+            await redis.set('poiItemDataResetScheduledTime', randomTime.toISOString());
+            await resetPOIItemsDataQueue.add({}, { delay });
         }
     } catch (err: any) {
         console.error('Error in scheduleNextPOIItemDataReset:', err.message);
