@@ -1301,6 +1301,8 @@ export const removePlacedBitModifiersFromConsumedSynthesizingItems = async (bit:
             // for each modifier, check the origin.
             const origin = queueData.data.origin as string;
 
+            console.log(`(removePlacedBitModifiersFromConsumedSynthesizingItems) Origin: ${origin}`);
+
             // find the consumed item that includes the origin
             const consumedItem = consumedItems.find(item => origin.includes(item._id));
 
