@@ -275,7 +275,6 @@ export const energyRecover = async (userId: string, energyRecover: number): Prom
   }
 };
 
-
 // the function return expired time until midnight
 const getExpiredTime = () => {
   const now = new Date();
@@ -283,4 +282,9 @@ const getExpiredTime = () => {
   midnight.setHours(23, 59, 59, 999);
   const timeUntilMidnight = midnight.getTime() - now.getTime();
   return Math.floor(timeUntilMidnight / 1000);
+}
+
+// this function only on development
+export const resetUserRedisById = async (userId: string) => {
+  await redisDb.del(`${SaunaUserKey.MAXIMUM_ENERGY}:${userId}`)
 }

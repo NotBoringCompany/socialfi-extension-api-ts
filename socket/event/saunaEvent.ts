@@ -1,11 +1,11 @@
 import { Socket } from "socket.io";
-import { saunaInit, startRest, stopRest } from "../../api/sauna";
+import { resetUserRedisById, saunaInit, startRest, stopRest } from "../../api/sauna";
 
 export enum EventSauna {
   USER_COUNT = "user_count",
   START_REST = "start_rest",
   STOP_REST = "stop_rest",
-  SERVER_RESPONSE = "server_response", 
+  SERVER_RESPONSE = "server_response",
 }
 // use for redis 
 export enum SaunaGlobalKey {
@@ -29,6 +29,12 @@ export const saunaEvent = (socket: Socket) => {
 
   socket.on(EventSauna.STOP_REST, () => {
     stopRest(socket)
+  })
+
+  // should delet in production
+  socket.on("saunaReset", (msg) => {
+    const userId = msg.userId
+    resetUserRedisById(userId)
   })
 
   socket.on('disconnect', () => {
