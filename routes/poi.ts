@@ -95,14 +95,17 @@ router.post('/apply_travel_booster', async (req, res) => {
 
         const { status, message, data } = await applyTravelBooster(validateData?.twitterId, booster);
 
-        if (status === Status.SUCCESS && allowMixpanel) {
-            mixpanel.track('Apply Travelling Booster', {
-                distinct_id: validateData?.twitterId,
-                '_booster': booster,
-            });
+        if (status === Status.SUCCESS) {
+            if (allowMixpanel) {
+                mixpanel.track('Apply Travelling Booster', {
+                    distinct_id: validateData?.twitterId,
+                    '_booster': booster,
+                });
+    
+                // increment the event counter in the wonderbits contract.
+                incrementEventCounterInContract(validateData?.twitterId, APPLY_TRAVELLING_BOOSTER_MIXPANEL_EVENT_HASH);
+            }
 
-            // increment the event counter in the wonderbits contract.
-            incrementEventCounterInContract(validateData?.twitterId, APPLY_TRAVELLING_BOOSTER_MIXPANEL_EVENT_HASH);
             incrementProgressionByType(QuestRequirementType.USE_TRAVEL_BOOSTER, validateData?.twitterId, 1);
         }
 
@@ -289,15 +292,21 @@ router.post('/buy_items_in_poi_shop', async (req, res) => {
 
         const { status, message, data } = await buyItemsInPOIShop(validateData?.twitterId, items, paymentChoice);
 
-        if (status === Status.SUCCESS && allowMixpanel) {
-            mixpanel.track('Currency Tracker', {
-                distinct_id: validateData?.twitterId,
-                '_type': 'Buy Item In POI Shop',
-                '_data': data,
-            });
+        if (status === Status.SUCCESS) {
+            if (allowMixpanel) {
+                mixpanel.track('Currency Tracker', {
+                    distinct_id: validateData?.twitterId,
+                    '_type': 'Buy Item In POI Shop',
+                    '_data': data,
+                });
+    
+                // increment the event counter in the wonderbits contract.
+                incrementEventCounterInContract(validateData?.twitterId, BUY_ITEMS_IN_POI_SHOP_MIXPANEL_EVENT_HASH);
+            }
 
-            // increment the event counter in the wonderbits contract.
-            incrementEventCounterInContract(validateData?.twitterId, BUY_ITEMS_IN_POI_SHOP_MIXPANEL_EVENT_HASH);
+            const amount = (items as POIShopActionItemData[]).reduce((total, currentItem) => currentItem?.amount ? total + currentItem.amount : 0, 0);
+
+            incrementProgressionByType(QuestRequirementType.PURCHASE_ITEM, validateData?.twitterId, Number(amount));
         }
 
         return res.status(status).json({

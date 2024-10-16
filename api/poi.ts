@@ -181,7 +181,7 @@ export const travelToPOI = async (
         console.log('timeToTravel:', timeToTravel);
         console.log('destinationArrival:', Math.ceil(currentTime + timeToTravel));
 
-        incrementProgressionByType(QuestRequirementType.TRAVEL_TIME, user.twitterId, Math.floor(timeToTravel / 60));
+        incrementProgressionByType(QuestRequirementType.TRAVEL_TIME, user.twitterId, timeToTravel / 60);
 
         // update the user's data
         // 1. set `travellingTo` in the user's inGameData to the destination
