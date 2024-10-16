@@ -1292,6 +1292,8 @@ export const removePlacedBitModifiersFromConsumedSynthesizingItems = async (bit:
             return updateOperations;
         }
 
+        console.log(`(removePlacedBitModifiersFromConsumedSynthesizingItems) Consumed Items: ${JSON.stringify(consumedItems, null, 2)}`);
+
         // loop through each relevant bull queue data and remove any modifiers that have the origin of the synthesizing item
         for (const queueData of relevantBullQueueData) {
             // for each modifier, check the origin.
