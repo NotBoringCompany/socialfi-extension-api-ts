@@ -2,7 +2,7 @@ import { removeOpenedTweetIdsTodayQueue } from './chest';
 import { updateSuccessfulIndirectReferralsQueue } from './invite';
 import { resetDailyIslandTappingMilestoneQueue, updateDailyBonusResourcesGatheredQueue, updateGatheringProgressAndDropResourceThenDepleteEnergyQueue } from './island';
 import { checkDailyKOSRewardsQueue, checkWeeklyKOSRewardsQueue } from './kos';
-import { resetPOIItemsDailyDataQueue } from './poi';
+import { resetPOIItemsDataQueue, scheduleNextPOIItemDataReset } from './poi';
 import { calculateWeeklySquadRankingAndAddSquadLeaderboardQueue } from './squadLeaderboard';
 import { restoreUserCurrentEnergyAndResetRerollQueue, updateBeginnerRewardsDataQueue, updateDailyLoginRewardsDataQueue, updateUserEnergyPotionQueue } from './user';
 import { batchSendKICKQueue } from './web3';
@@ -92,13 +92,8 @@ export const schedulers = async (): Promise<void> => {
             }
         });
 
-        resetPOIItemsDailyDataQueue.add({}, {
-            // every day at 11:59 and 23:59
-            repeat: {
-                cron: '59 11,23 * * *',
-                tz: 'UTC',
-            }
-        });
+        // this will be a dynamic time-range randomizer to call `resetPOIItemsData` at any time on the given time ranges
+        await scheduleNextPOIItemDataReset();
 
         resetDailyIslandTappingMilestoneQueue.add({}, {
             // every day at 23:59

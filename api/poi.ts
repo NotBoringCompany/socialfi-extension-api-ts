@@ -29,9 +29,9 @@ import { QuestRequirementType } from '../models/quest';
  * Resets the `currentBuyableAmount` and `currentSellableAmount` of all global items in all POI shops.
  * Also resets `userTransactionData` for all player items in all POI shops.
  * 
- * Called by a scheduler every day at 23:59 UTC.
+ * Called by a scheduler at random times at the given time ranges.
  */
-export const resetPOIItemsDailyData = async (): Promise<void> => {
+export const resetPOIItemsData = async (): Promise<void> => {
     try {
         await mongoose.connect(process.env.MONGODB_URI);
         const allPOIs = await POIModel.find().lean();
@@ -66,9 +66,9 @@ export const resetPOIItemsDailyData = async (): Promise<void> => {
         // execute the bulk write operations
         await POIModel.bulkWrite(bulkWriteOperations);
 
-        console.log('resetPOIItemsDailyData: Successfully reset all global items in all POI shops.');
+        console.log('resetPOIItemsData: Successfully reset all global items in all POI shops.');
     } catch (err: any) {
-        console.error('Error in resetPOIItemsDailyData:', err.message);
+        console.error('Error in resetPOIItemsData:', err.message);
     }
 }
 
