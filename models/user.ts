@@ -159,15 +159,6 @@ export interface InGameData {
      * Showcases the user's mastery in different aspects (such as crafting or tapping).
      */
     mastery: PlayerMastery;
-    /**
-     * all assets that require tracking (e.g. how many times the user has used a certain asset) will be stored here.
-     * 
-     * for instance, some items crafted from the synthesizing line requires tracking. for example, restoration items
-     * can only be used once per island. this data will be stored here.
-     * 
-     * NOTE: as such, not all assets may be stored here upon usage.
-     */
-    usedAssetData: UsedAssetData[];
     /** the list of tutorial IDs the user has completed at the start */
     completedTutorialIds: number[];
     /** 
@@ -200,18 +191,6 @@ export interface InGameData {
     lastLoginTimestamp?: number;
     /** login streak count */
     loginStreak?: number;
-}
-
-/**
- * Represents the data of assets that were used in-game which require tracking.
- */
-export interface UsedAssetData {
-    /** the type of asset */
-    asset: AssetType;
-    /** the amount of times the asset was used */
-    amount: number;
-    /** the last used timestamp of the asset (i.e. when the `amount`th asset was used) */
-    lastUsedTimestamp: number;
 }
 
 /**
