@@ -4014,6 +4014,7 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
         // If island Type is Primal, add 100% booster on top of milestone Booster reward
         const islandTappingLimit = ISLAND_TAPPING_MILESTONE_LIMIT(type);
         const boosterPercentage = type === IslandType.PRIMAL_ISLES ? milestoneReward.boosterReward + 100 : milestoneReward.boosterReward;
+        console.log(`(applyIslandTapping), Island #${island.islandId} type ${type}. Apply ${boosterPercentage}% Booster`);
         let resourcesDropped: number = 0;
 
         // if caressMeter passed from FE isn't equal than current caressEnergyMeter return error.
