@@ -173,6 +173,78 @@ export const assets: Asset[] = [
     {
         type: BitOrbType.BIT_ORB_III,
         description: 'A shiny orb that holds the power of your own companion. Highest chances of getting higher rarity Bits.'
+    },
+    {
+        type: AugmentationItem.PARCHMENT_OF_AUGMENTATION,
+        description: `Select an Isle (Exotic rarity or below) and increase its resource cap by 1%.`,
+    },
+    {
+        type: AugmentationItem.SCROLL_OF_AUGMENTATION,
+        description: `Select an Isle (Exotic rarity or below) and increase its resource cap by 3%.`,
+    },
+    {
+        type: AugmentationItem.TOME_OF_AUGMENTATION,
+        description: `Select an Isle (Exotic rarity or below) and increase its resource cap by 7%.`,
+    },
+    {
+        type: AugmentationItem.ANCIENT_SCROLL_OF_AUGMENTATION,
+        description: `Select an Isle (any rarity) and increase its resource cap by 10%.`,
+    },
+    {
+        type: AugmentationItem.ANCIENT_TOME_OF_AUGMENTATION,
+        description: `Select an Isle (any rarity) and increase its resource cap by 20%.`,
+    },
+    {
+        type: TransmutationItem.WAND_OF_TRANSMUTATION,
+        description: `Select an Isle (Exotic rarity or below) and randomly transmute all of the Isle's current traits.`,
+    },
+    {
+        type: TransmutationItem.STAFF_OF_TRANSMUTATION,
+        description: `Select an Isle (any rarity) and randomly transmute all of the Isle's current traits.`,
+    },
+    {
+        type: TransmutationItem.ROYAL_SCEPTER_OF_TRANSMUTATION,
+        description: `Select an Isle (any rarity) and choose a trait to transmute all of the Isle's current traits into.`,
+    },
+    {
+        type: EnergyTotemItem.SMALL_TOTEM_OF_ENERGY,
+        description: `Select an Isle and receive +2.5% Isle farming rate & -12.5% energy consumption for all bits there.`,
+    },
+    {
+        type: EnergyTotemItem.BIG_TOTEM_OF_ENERGY,
+        description: `Select an Isle and receive +5% Isle farming rate & -25% energy consumption for all bits there.`,
+    },
+    {
+        type: EnergyTotemItem.GRAND_TOTEM_OF_ENERGY,
+        description: `Select an Isle and receive +7.5% Isle farming rate & -50% energy consumption for all bits there.`,
+    },
+    {
+        type: ContinuumRelicItem.FADED_CONTINUUM_RELIC,
+        description: `Select a Bit (rare rarity or below) and allow transfer to Season 1.`,
+    },
+    {
+        type: ContinuumRelicItem.GLEAMING_CONTINUUM_RELIC,
+        description: `Select a Bit (epic rarity or below) and allow transfer to Season 1.`,
+    },
+    {
+        type: ContinuumRelicItem.MYTHIC_CONTINUUM_RELIC,
+        description: `Select a Bit (any rarity) and allow transfer to Season 1.`,
+    },
+    {
+        type: PotionItem.POTION_OF_LUCK,
+        description: `Select a Bit and reroll one trait randomly.`,
+    },
+    {
+        type: PotionItem.POTION_OF_ENLIGHTENMENT,
+        description: `Select a Bit and reroll all traits randomly.`,
+    },
+    {
+        type: PotionItem.POTION_OF_UNHOLY_ENLIGHTENMENT,
+        description: `Select a Bit and select one trait to reroll randomly. A positive trait and no duplicate guaranteed.`,
+    },
+    {
+        type: PotionItem.POTION_OF_DIVINE_ENLIGHTENMENT,
+        description: `Select a Bit and reroll all traits randomly. Positive traits and no duplicates guaranteed.`,
     }
 ]
 
