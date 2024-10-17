@@ -3,7 +3,7 @@ import { Food } from './food';
 import { BitOrbType, Item, TerraCapsulatorType } from './item';
 import { ExtendedResource } from './resource';
 import { InviteCodeData, ReferralData } from './invite';
-import { CraftingMastery, TappingMastery } from './mastery';
+import { BerryFactoryMastery, CraftingMastery, TappingMastery } from './mastery';
 import { AssetType } from './asset';
 
 /****************
@@ -98,9 +98,6 @@ export interface UserInventory {
     islandIds: number[];
     /** a list of owned bit IDs */
     bitIds: number[];
-    /** a list of crafted item / tradable items */
-    /** waiting for validation if crafting item is different from resources */
-    //craftItems: CraftResultItem[];
 }
 
 /**
@@ -312,4 +309,8 @@ export interface PlayerEnergy {
 export interface PlayerMastery {
     tapping: TappingMastery;
     crafting: CraftingMastery;
+    /**
+     * the berry factory mastery.
+     */
+    berryFactory: BerryFactoryMastery;
 }

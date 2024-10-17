@@ -1,3 +1,6 @@
+import { CraftingRecipeLine } from './craft';
+import { POIName } from './poi';
+
 /**
  * Represents the user's mastery in tapping.
  */
@@ -10,28 +13,7 @@ export interface TappingMastery {
 /**
  * Represents the user's mastery in crafting.
  */
-export interface CraftingMastery {
-    /**
-     * Anything clothes/accessories related.
-     */
-    tailoring: CraftingMasteryStats;
-    /**
-     * Anything food related.
-     */
-    cooking: CraftingMasteryStats;
-    /**
-     * Anything weapon/armor/tools related.
-     */
-    blacksmithing: CraftingMasteryStats;
-    /**
-     * Anything refining/purification of ore resources related
-     */
-    smelting: CraftingMasteryStats;
-    /**
-     * Anything consumables/basic assets related.
-     */
-    synthesizing: CraftingMasteryStats;
-}
+export interface CraftingMastery extends Record<CraftingRecipeLine, CraftingMasteryStats> {}
 
 /**
  * Represents the stats for a specific crafting mastery.
@@ -54,4 +36,19 @@ export interface CraftingMasteryStats {
      * for example, if `craftablePerSlot` is 10, then a user can craft 10 of an asset per slot.
      */
     craftablePerSlot: number;
+}
+
+/**
+ * Represents the user's mastery for a Berry Factory in each POI.
+ */
+export interface BerryFactoryMastery extends Record<POIName, BerryFactoryMasteryStats> {}
+
+/**
+ * Represents the stats for a specific berry factory mastery.
+ */
+export interface BerryFactoryMasteryStats {
+    /** the level for this specific berry factory */
+    level: number;
+    /** the XP obtained for this berry factory */
+    xp: number;
 }

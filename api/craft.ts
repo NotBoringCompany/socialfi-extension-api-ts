@@ -13,6 +13,7 @@ import { getResource, getResourceWeight, resources } from "../utils/constants/re
 import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
 import { generateObjectId } from '../utils/crypto';
 import { ReturnValue, Status } from "../utils/retVal";
+import { toCamelCase } from '../utils/strings';
 
 /**
  * Crafts a craftable asset for the user.
@@ -185,7 +186,7 @@ export const craftAsset = async (
             // so we don't need to worry.
             // only when the required crafting level is above 1 will we need to check if the user has the required crafting level.
             if (craftingRecipe.requiredCraftingLevel > 1) {
-                if (user.inGameData.mastery.crafting[craftingRecipe.craftingRecipeLine.toLowerCase()].level < craftingRecipe.requiredCraftingLevel){
+                if (user.inGameData.mastery.crafting[toCamelCase(craftingRecipe.craftingRecipeLine)].level < craftingRecipe.requiredCraftingLevel){
                     console.log(`(craftAsset) User crafting level too low to craft ${assetToCraft}.`);
     
                     return {
@@ -699,7 +700,7 @@ export const craftAsset = async (
 
         // do task 3.
         // get the user's current crafting level for the specific crafting line
-        const currentCraftingLineData = user?.inGameData?.mastery?.crafting?.[craftingRecipe.craftingRecipeLine.toLowerCase()] ?? null;
+        const currentCraftingLineData = user?.inGameData?.mastery?.crafting?.[toCamelCase(craftingRecipe.craftingRecipeLine)] ?? null;
 
         // if current crafting line data exists, update. else, create a new entry.
         if (currentCraftingLineData) {
@@ -709,17 +710,17 @@ export const craftAsset = async (
             const newCraftingLevel = GET_CRAFTING_LEVEL(craftingRecipe.craftingRecipeLine, currentCraftingLineData.xp + (craftingRecipe.earnedXP * amount));
 
             // set the new XP for the crafting line
-            userUpdateOperations.$inc[`inGameData.mastery.crafting.${craftingRecipe.craftingRecipeLine.toLowerCase()}.xp`] = craftingRecipe.earnedXP * amount;
+            userUpdateOperations.$inc[`inGameData.mastery.crafting.${toCamelCase(craftingRecipe.craftingRecipeLine)}.xp`] = craftingRecipe.earnedXP * amount;
 
             // if the user will level up, set the new level
             if (newCraftingLevel > currentCraftingLineData.level) {
-                userUpdateOperations.$set[`inGameData.mastery.crafting.${craftingRecipe.craftingRecipeLine.toLowerCase()}.level`] = newCraftingLevel;
+                userUpdateOperations.$set[`inGameData.mastery.crafting.${toCamelCase(craftingRecipe.craftingRecipeLine)}.level`] = newCraftingLevel;
             }
         // if not found, create a new entry
         } else {
             console.log(`(craftAsset) currentCraftingLineData not found. Creating new entry.`);
 
-            userUpdateOperations.$set[`inGameData.mastery.crafting.${craftingRecipe.craftingRecipeLine.toLowerCase()}`] = {
+            userUpdateOperations.$set[`inGameData.mastery.crafting.${toCamelCase(craftingRecipe.craftingRecipeLine)}`] = {
                 level: GET_CRAFTING_LEVEL(craftingRecipe.craftingRecipeLine, craftingRecipe.earnedXP * amount),
                 xp: craftingRecipe.earnedXP * amount,
                 // instantiate craftingSlots AND craftablePerSlot to the base values.
@@ -843,15 +844,6 @@ export const craftAsset = async (
                 }
             }
         }
-
-        // // if the mastery data's `craftingSlots` or `craftablePerSlot` is undefined now, we set it.
-        // if (userUpdateOperations.$set[`inGameData.mastery.crafting.${craftingRecipe.craftingRecipeLine.toLowerCase()}.craftingSlots`] === undefined) {
-        //     userUpdateOperations.$set[`inGameData.mastery.crafting.${craftingRecipe.craftingRecipeLine.toLowerCase()}.craftingSlots`] = BASE_CRAFTING_SLOTS;
-        // }
-
-        // if (userUpdateOperations.$set[`inGameData.mastery.crafting.${craftingRecipe.craftingRecipeLine.toLowerCase()}.craftablePerSlot`] === undefined) {
-        //     userUpdateOperations.$set[`inGameData.mastery.crafting.${craftingRecipe.craftingRecipeLine.toLowerCase()}.craftablePerSlot`] = BASE_CRAFTABLE_PER_SLOT;
-        // }
 
         console.log(`(craftAsset) User update operations: ${JSON.stringify(userUpdateOperations, null, 2)}`);
 

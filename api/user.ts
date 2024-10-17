@@ -246,7 +246,9 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
                             rerollCount: 6,
                         },
                         // empty crafting for now (so it can be more flexible)
-                        crafting: {}
+                        crafting: {},
+                        // empty berry factory for now (so it can be more flexible)
+                        berryFactory: {},
                     },
                     completedTutorialIds: [],
                     beginnerRewardData: {
@@ -2309,7 +2311,9 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
                         rerollCount: 6,
                     },
                     // empty crafting for now (so it can be more flexible)
-                    crafting: {}
+                    crafting: {},
+                    // empty berry factory for now (so it can be more flexible)
+                    berryFactory: {}
                 },
                 completedTutorialIds: [],
                 beginnerRewardData: {
@@ -2746,7 +2750,9 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                             rerollCount: 6,
                         },
                         // empty crafting for now (so it can be more flexible)
-                        crafting: {}
+                        crafting: {},
+                        // empty berry factory for now (so it can be more flexible)
+                        berryFactory: {},
                     },
                     completedTutorialIds: [],
                     beginnerRewardData: {
