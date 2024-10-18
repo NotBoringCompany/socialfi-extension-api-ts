@@ -1,6 +1,7 @@
 import { BitRarity } from '../models/bit';
 import { Food } from '../models/food';
 import { Item } from '../models/item';
+import { BerryFactoryMastery } from '../models/mastery';
 import { POIName } from '../models/poi';
 import { ExtendedResource } from '../models/resource';
 import { UpgradableAsset, UpgradeCost } from '../models/upgrade';
@@ -8,7 +9,7 @@ import { PlayerMastery } from '../models/user';
 import { MAX_BIT_LEVEL } from '../utils/constants/bit';
 import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
 import { MAX_ISLAND_LEVEL } from '../utils/constants/island';
-import { BIT_UPGRADE_DATA, ISLAND_UPGRADE_DATA } from '../utils/constants/upgrade';
+import { BERRY_FACTORY_UPGRADE_DATA, BIT_UPGRADE_DATA, ISLAND_UPGRADE_DATA } from '../utils/constants/upgrade';
 import { ReturnValue, Status } from '../utils/retVal';
 import { toCamelCase } from '../utils/strings';
 
@@ -193,10 +194,10 @@ export const universalAssetUpgrade = async (
 
             // fetch the user's mastery data for this particular POI's berry factory.
             // const berryFactoryMastery = (user?.inGameData?.mastery as PlayerMastery)?.berryFactory[toCamelCase(poi)];
-            const berryFactoryData = (user?.inGameData?.mastery as PlayerMastery).berryFactory;
+            const berryFactoryData = user?.inGameData?.mastery?.berryFactory as BerryFactoryMastery;
 
-            console.log(`(universalAssetUpgrade) berryFactoryData: ${JSON.stringify(berryFactoryData, null, 2)}
-            `)
+            console.log(`(universalAssetUpgrade) berryFactoryData: ${JSON.stringify(berryFactoryData, null, 2)}`);
+
             const berryFactoryMastery = berryFactoryData ? berryFactoryData[toCamelCase(poi)] : null;
 
             console.log(`(universalAssetUpgrade) berryFactoryMastery: ${JSON.stringify(berryFactoryMastery, null, 2)}`);
@@ -204,31 +205,14 @@ export const universalAssetUpgrade = async (
             // if the mastery is empty, this means that the berry factory is still level 1. we just put `2` as the level to upgrade to.
             levelToUpgradeTo = berryFactoryMastery ? berryFactoryMastery.level + 1 : 2;
 
-            console.log(`(universalAssetUpgrade) levelToUpgradeTo: ${levelToUpgradeTo}`);
-
             // check the costs to upgrade.
             // 1. find the `levelRange` where `levelToUpgradeTo` is between `levelFloor` and `levelCeiling` (inclusive).
             // 2. at the same time, find the `poi` that matches the POI's name.
-            // upgradeCosts = BIT_UPGRADE_DATA.upgradeRequirements.find(requirement => {
-            //     return requirement.levelRange.levelFloor <= levelToUpgradeTo && 
-            //     requirement.levelRange.levelCeiling >= levelToUpgradeTo && 
-            //     requirement.poi === poi
-            // })?.upgradeCosts ?? null;
-            const upgradeRequirementsOne = BIT_UPGRADE_DATA.upgradeRequirements.filter(requirement => {
-                return requirement.poi === poi;
-            });
-
-            console.log(`(universalAssetUpgrade) upgradeRequirementsOne: ${JSON.stringify(upgradeRequirementsOne, null, 2)}`);
-            const upgradeRequirementsTwo = upgradeRequirementsOne?.find(requirement => {
+            upgradeCosts = BERRY_FACTORY_UPGRADE_DATA.upgradeRequirements.find(requirement => {
                 return requirement.levelRange.levelFloor <= levelToUpgradeTo && 
-                requirement.levelRange.levelCeiling >= levelToUpgradeTo
-            });
-
-            console.log(`(universalAssetUpgrade) upgradeRequirementsTwo: ${JSON.stringify(upgradeRequirementsTwo, null, 2)}`);
-
-            upgradeCosts = upgradeRequirementsTwo?.upgradeCosts ?? null;
-
-            console.log(`(universalAssetUpgrade) upgradeCosts: ${JSON.stringify(upgradeCosts, null, 2)}`);
+                requirement.levelRange.levelCeiling >= levelToUpgradeTo && 
+                requirement.poi === poi
+            })?.upgradeCosts ?? null;
 
             // increase the berry factory's level by 1.
             // NOTE: we do this prematurely, but this won't get called until the end of the function, meaning that if an error occurs, the berry factory's level won't be increased.
