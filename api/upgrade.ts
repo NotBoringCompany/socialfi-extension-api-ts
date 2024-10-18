@@ -216,7 +216,7 @@ export const universalAssetUpgrade = async (
         }
 
         // check if the cost group is valid.
-        if (finalizedCostGroup >= upgradeCosts.length) {
+        if (upgradeCosts && finalizedCostGroup >= upgradeCosts.length) {
             return {
                 status: Status.ERROR,
                 message: `(universalAssetUpgrade) Upgrade cost group ${finalizedCostGroup} not found.`,
@@ -242,7 +242,7 @@ export const universalAssetUpgrade = async (
         }
 
         // if required assets is not null, check if the user has enough of the required assets to upgrade.
-        if (requiredAssetsData.length > 0) {
+        if (requiredAssetsData && requiredAssetsData.length > 0) {
             for (const requiredAssetData of requiredAssetsData) {
                 // check the asset type
                 const { assetType: requiredAssetType, amount: requiredAssetAmount, asset: requiredAsset } = requiredAssetData;
