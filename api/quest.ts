@@ -1101,13 +1101,14 @@ export const resetDailyQuest = async (twitterId: string, poi: POIName): Promise<
         }
 
         const [prev, next] = DAILY_QUEST_LAPSE_PHASE();
-
+        console.log(`(resetDailyQuest), Daily quest lapse: Prev (${prev}, Next (${next}))`);
         // delete all expired daily quest
         await QuestDailyModel.deleteMany({
             poi,
             user: user._id,
             expiredAt: { $lte: next },
         });
+        console.log('(resetDailyQuest) delete expired QuestDaily collection');
 
         // get user's active daily quest ids
         const dailyQuests = (
@@ -1181,14 +1182,19 @@ export const getDailyQuests = async (
             };
         }
 
-        const [prev, next] = DAILY_QUEST_LAPSE_PHASE();
+        // Initialize currentTimestamp
+        const currentTimestamp = Math.floor(Date.now() / 1000);
 
+        // Fetch quests that haven't expired yet and are valid for the current lapse phase
         let quests = await QuestDailyModel.find({
             poi,
             user: user._id,
-            expiredAt: { $gte: prev },
-            createdAt: { $lte: next },
+            expiredAt: { $gt: currentTimestamp },
+            createdAt: { $lte: currentTimestamp }
         }).populate('quest');
+
+        console.log(`(getDailyQuests), quest Query: {poi: ${poi}, user: ${user._id}, expiredAt: { $gte: ${currentTimestamp}}, createdAt: { $lte: ${currentTimestamp}}}`);
+        console.log(`(getDailyQuests), user ${user._id} quest length is ${quests.length}`);
 
         // if the quests empty, then reset & randomize the daily quest
         if (!quests || quests.length === 0) {
@@ -1198,8 +1204,8 @@ export const getDailyQuests = async (
             quests = await QuestDailyModel.find({
                 poi,
                 user: user._id,
-                expiredAt: { $gte: prev },
-                createdAt: { $lte: next },
+                expiredAt: { $gte: currentTimestamp },
+                createdAt: { $lte: currentTimestamp },
             }).populate('quest');
         }
 
