@@ -1182,16 +1182,18 @@ export const getDailyQuests = async (
             };
         }
 
-        const [prev, next] = DAILY_QUEST_LAPSE_PHASE();
+        // Initialize currentTimestamp
+        const currentTimestamp = Math.floor(Date.now() / 1000);
 
+        // Fetch quests that haven't expired yet and are valid for the current lapse phase
         let quests = await QuestDailyModel.find({
             poi,
             user: user._id,
-            expiredAt: { $gte: prev },
-            createdAt: { $lte: next },
+            expiredAt: { $gt: currentTimestamp },
+            createdAt: { $lte: currentTimestamp }
         }).populate('quest');
 
-        console.log(`(getDailyQuests), quest Query: {poi: ${poi}, user: ${user._id}, expiredAt: { $gte: ${prev}}, createdAt: { $lte: ${next}}}`);
+        console.log(`(getDailyQuests), quest Query: {poi: ${poi}, user: ${user._id}, expiredAt: { $gte: ${currentTimestamp}}, createdAt: { $lte: ${currentTimestamp}}}`);
         console.log(`(getDailyQuests), user ${user._id} quest length is ${quests.length}`);
 
         // if the quests empty, then reset & randomize the daily quest
@@ -1202,8 +1204,8 @@ export const getDailyQuests = async (
             quests = await QuestDailyModel.find({
                 poi,
                 user: user._id,
-                expiredAt: { $gte: prev },
-                createdAt: { $lte: next },
+                expiredAt: { $gte: currentTimestamp },
+                createdAt: { $lte: currentTimestamp },
             }).populate('quest');
         }
 
