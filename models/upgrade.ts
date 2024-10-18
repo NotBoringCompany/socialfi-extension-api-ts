@@ -1,5 +1,6 @@
 import { Asset, AssetType } from './asset';
 import { IslandType } from './island';
+import { POIName } from './poi';
 
 /**
  * Represents the upgrade data for upgradable assets.
@@ -27,20 +28,14 @@ export enum UpgradableAsset {
  */
 export interface UpgradeRequirement {
     /** 
-     * the level this upgrade is valid for.
-     * 
-     * this is used if each level has different requirements.
-     * 
-     * NOTE: if both `level` and `levelRange` is somehow set, `level` will take precedence.
-     */
-    level: number | null;
-    /** 
      * the level range this upgrade is valid for.
      * 
      * this is used if a range/set of levels have the same exact requirements.
      * 
      * for example, say upgrading asset A from level 2 to 9 requires 100 xCookies and 10 asset A.
      * we can use `levelRange` to set this instead of having to set the same requirements for each level from 2 to 9.
+     * 
+     * NOTE: if the requirements are only valid for a single level, `levelFloor` and `levelCeiling` can be set to the same value.
      */
     levelRange: UpgradeRequirementLevelRange | null;
     /**
@@ -49,6 +44,12 @@ export interface UpgradeRequirement {
      * this is used to determine which island type is valid for this upgrade requirement.
      */
     islandType: IslandType | null;
+    /**
+     * used when the asset to upgrade is a berry factory.
+     * 
+     * this is used to determine which POI is valid for this upgrade requirement.
+     */
+    poi: POIName | null;
     /**
      * the upgrade costs to upgrade to this level.
      * 
