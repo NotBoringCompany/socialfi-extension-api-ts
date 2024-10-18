@@ -191,6 +191,8 @@ export const universalAssetUpgrade = async (
             // fetch the user's mastery data for this particular POI's berry factory.
             const berryFactoryMastery = (user?.inGameData?.mastery as PlayerMastery)?.berryFactory[poi];
 
+            console.log(`berryFactoryMastery: ${JSON.stringify(berryFactoryMastery, null, 2)}`);
+
             // if the mastery is empty, this means that the berry factory is still level 1. we just put `2` as the level to upgrade to.
             levelToUpgradeTo = berryFactoryMastery ? berryFactoryMastery.level + 1 : 2;
 
