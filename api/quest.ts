@@ -1101,13 +1101,14 @@ export const resetDailyQuest = async (twitterId: string, poi: POIName): Promise<
         }
 
         const [prev, next] = DAILY_QUEST_LAPSE_PHASE();
-
+        console.log(`(resetDailyQuest), Daily quest lapse: Prev (${prev}, Next (${next}))`);
         // delete all expired daily quest
         await QuestDailyModel.deleteMany({
             poi,
             user: user._id,
             expiredAt: { $lte: next },
         });
+        console.log('(resetDailyQuest) delete expired QuestDaily collection');
 
         // get user's active daily quest ids
         const dailyQuests = (

@@ -46,7 +46,7 @@ export const DAILY_QUEST_PER_POI = 3;
  * @returns [startLapse, endLapse] - The start and end of the current lapse phase.
  */
 export const DAILY_QUEST_LAPSE_PHASE = () => {
-    const current = dayjs().tz('America/New_York').unix();
+    const current = dayjs().utc().unix();
     const difference = current - DAILY_QUEST_INIT_LAPSE;
 
     const divide = difference / DAILY_QUEST_LAPSE_TIME;
