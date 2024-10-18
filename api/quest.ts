@@ -1101,16 +1101,13 @@ export const resetDailyQuest = async (twitterId: string, poi: POIName): Promise<
         }
 
         const [prev, next] = DAILY_QUEST_LAPSE_PHASE();
-        console.log(`(resetDailyQuest), Daily quest lapse: Prev (${prev}, Next (${next}))`);
-        // delete all expired daily quest
+        // delete user's expired daily quests
         await QuestDailyModel.deleteMany({
-            poi,
             user: user._id,
             expiredAt: { $lte: next },
         });
-        console.log('(resetDailyQuest) delete expired QuestDaily collection');
 
-        // get user's active daily quest ids
+        // get user's available daily quest
         const dailyQuests = (
             await QuestDailyModel.find({
                 user: user._id,
@@ -1120,17 +1117,17 @@ export const resetDailyQuest = async (twitterId: string, poi: POIName): Promise<
                 .lean()
         ).map(({ quest }) => quest._id);
 
-        // get available quests in the POI
+        // get list of Quest with Daily type and Berry Factory category
         const quests = await QuestModel.find({
             type: QuestType.DAILY,
             category: QuestCategory.BERRY_FACTORY,
             $or: [{ poi: null }, { poi }],
         });
 
-        // prevent the same quest appear at the same POI
+        // prevent the same quest appear at the same POI by filtering it
         const uniqueQuests = quests.filter(({ _id }) => !dailyQuests.includes(_id));
 
-        // shuffle the quests randomly
+        // shuffle the quests randomly from uniqueQuests data
         const shuffledQuests = uniqueQuests.sort(() => 0.5 - Math.random()).slice(0, DAILY_QUEST_PER_POI);
 
         await QuestDailyModel.insertMany(
@@ -1192,9 +1189,6 @@ export const getDailyQuests = async (
             expiredAt: { $gt: currentTimestamp },
             createdAt: { $lte: currentTimestamp }
         }).populate('quest');
-
-        console.log(`(getDailyQuests), quest Query: {poi: ${poi}, user: ${user._id}, expiredAt: { $gte: ${currentTimestamp}}, createdAt: { $lte: ${currentTimestamp}}}`);
-        console.log(`(getDailyQuests), user ${user._id} quest length is ${quests.length}`);
 
         // if the quests empty, then reset & randomize the daily quest
         if (!quests || quests.length === 0) {
