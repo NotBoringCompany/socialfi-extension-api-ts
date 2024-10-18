@@ -181,6 +181,8 @@ export const universalAssetUpgrade = async (
             islandUpdateOperations.$inc['currentLevel'] = 1;
         // if the asset to upgrade is a berry factory
         } else if (asset === UpgradableAsset.BERRY_FACTORY) {
+            console.log(`(universalAssetUpgrade) poi: ${poi}`);
+            console.log(`(universalAssetUpgrade) BERRY FACTORY BEING UPGRADED!`)
             if (!poi) {
                 return {
                     status: Status.ERROR,
@@ -191,7 +193,7 @@ export const universalAssetUpgrade = async (
             // fetch the user's mastery data for this particular POI's berry factory.
             const berryFactoryMastery = (user?.inGameData?.mastery as PlayerMastery)?.berryFactory[poi];
 
-            console.log(`berryFactoryMastery: ${JSON.stringify(berryFactoryMastery, null, 2)}`);
+            console.log(`(universalAssetUpgrade) berryFactoryMastery: ${JSON.stringify(berryFactoryMastery, null, 2)}`);
 
             // if the mastery is empty, this means that the berry factory is still level 1. we just put `2` as the level to upgrade to.
             levelToUpgradeTo = berryFactoryMastery ? berryFactoryMastery.level + 1 : 2;
