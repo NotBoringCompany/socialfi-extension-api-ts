@@ -10,6 +10,7 @@ import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
 import { MAX_ISLAND_LEVEL } from '../utils/constants/island';
 import { BIT_UPGRADE_DATA, ISLAND_UPGRADE_DATA } from '../utils/constants/upgrade';
 import { ReturnValue, Status } from '../utils/retVal';
+import { toCamelCase } from '../utils/strings';
 
 /**
  * Universal upgrade function for upgradable assets.
@@ -191,7 +192,12 @@ export const universalAssetUpgrade = async (
             }
 
             // fetch the user's mastery data for this particular POI's berry factory.
-            const berryFactoryMastery = (user?.inGameData?.mastery as PlayerMastery)?.berryFactory[poi];
+            // const berryFactoryMastery = (user?.inGameData?.mastery as PlayerMastery)?.berryFactory[toCamelCase(poi)];
+            const berryFactoryData = user?.inGameData?.mastery as PlayerMastery;
+
+            console.log(`(universalAssetUpgrade) berryFactoryData: ${JSON.stringify(berryFactoryData, null, 2)}
+            `)
+            const berryFactoryMastery = berryFactoryData ? berryFactoryData.berryFactory[toCamelCase(poi)] : null;
 
             console.log(`(universalAssetUpgrade) berryFactoryMastery: ${JSON.stringify(berryFactoryMastery, null, 2)}`);
 
