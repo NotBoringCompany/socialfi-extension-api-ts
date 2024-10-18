@@ -193,11 +193,11 @@ export const universalAssetUpgrade = async (
 
             // fetch the user's mastery data for this particular POI's berry factory.
             // const berryFactoryMastery = (user?.inGameData?.mastery as PlayerMastery)?.berryFactory[toCamelCase(poi)];
-            const berryFactoryData = user?.inGameData?.mastery as PlayerMastery;
+            const berryFactoryData = (user?.inGameData?.mastery as PlayerMastery).berryFactory;
 
             console.log(`(universalAssetUpgrade) berryFactoryData: ${JSON.stringify(berryFactoryData, null, 2)}
             `)
-            const berryFactoryMastery = berryFactoryData ? berryFactoryData.berryFactory[toCamelCase(poi)] : null;
+            const berryFactoryMastery = berryFactoryData ? berryFactoryData[toCamelCase(poi)] : null;
 
             console.log(`(universalAssetUpgrade) berryFactoryMastery: ${JSON.stringify(berryFactoryMastery, null, 2)}`);
 
