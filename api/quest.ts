@@ -1101,6 +1101,7 @@ export const resetDailyQuest = async (twitterId: string, poi: POIName): Promise<
         }
 
         const [prev, next] = DAILY_QUEST_LAPSE_PHASE();
+
         // delete user's expired daily quests
         await QuestDailyModel.deleteMany({
             user: user._id,
@@ -1180,14 +1181,13 @@ export const getDailyQuests = async (
         }
 
         // Initialize currentTimestamp
-        const currentTimestamp = Math.floor(Date.now() / 1000);
+        const currentTimestamp = dayjs().utc().unix();
 
         // Fetch quests that haven't expired yet and are valid for the current lapse phase
         let quests = await QuestDailyModel.find({
             poi,
             user: user._id,
-            expiredAt: { $gt: currentTimestamp },
-            createdAt: { $lte: currentTimestamp }
+            expiredAt: { $gt: currentTimestamp }
         }).populate('quest');
 
         // if the quests empty, then reset & randomize the daily quest
