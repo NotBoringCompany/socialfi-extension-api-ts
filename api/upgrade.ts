@@ -183,12 +183,18 @@ export const universalAssetUpgrade = async (
             islandUpdateOperations.$inc['currentLevel'] = 1;
         // if the asset to upgrade is a berry factory
         } else if (asset === UpgradableAsset.BERRY_FACTORY) {
-            console.log(`(universalAssetUpgrade) poi: ${poi}`);
-            console.log(`(universalAssetUpgrade) BERRY FACTORY BEING UPGRADED!`)
             if (!poi) {
                 return {
                     status: Status.ERROR,
                     message: `(universalAssetUpgrade) POI not inputted.`,
+                };
+            }
+
+            // check if user is currently at this POI.
+            if (user?.inGameData?.location !== poi) {
+                return {
+                    status: Status.ERROR,
+                    message: `(universalAssetUpgrade) User is not currently at ${poi}.`,
                 };
             }
 
