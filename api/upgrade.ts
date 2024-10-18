@@ -216,7 +216,7 @@ export const universalAssetUpgrade = async (
 
             // increase the berry factory's level by 1.
             // NOTE: we do this prematurely, but this won't get called until the end of the function, meaning that if an error occurs, the berry factory's level won't be increased.
-            userUpdateOperations.$set[`inGameData.mastery.berryFactory.${poi}.level`] = levelToUpgradeTo;
+            userUpdateOperations.$set[`inGameData.mastery.berryFactory.${toCamelCase(poi)}.level`] = levelToUpgradeTo;
         }
 
         if (!upgradeCosts) {
