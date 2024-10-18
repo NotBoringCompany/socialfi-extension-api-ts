@@ -1,3 +1,4 @@
+import { IslandType } from '../../models/island';
 import { UpgradableAsset, UpgradableAssetData } from '../../models/upgrade';
 
 /**
@@ -12,8 +13,13 @@ export const BIT_UPGRADE_DATA: UpgradableAssetData = {
                 levelFloor: 2,
                 levelCeiling: 9
             },
-            xCookies: 5,
-            assetData: null
+            islandType: null,
+            upgradeCosts: [
+                {
+                    xCookies: 5,
+                    assetData: null
+                }
+            ]
         },
         {
             level: null,
@@ -21,8 +27,13 @@ export const BIT_UPGRADE_DATA: UpgradableAssetData = {
                 levelFloor: 10,
                 levelCeiling: 19
             },
-            xCookies: 15,
-            assetData: null
+            islandType: null,
+            upgradeCosts: [
+                {
+                    xCookies: 15,
+                    assetData: null
+                }
+            ]
         },
         {
             level: null,
@@ -30,8 +41,13 @@ export const BIT_UPGRADE_DATA: UpgradableAssetData = {
                 levelFloor: 20,
                 levelCeiling: 29
             },
-            xCookies: 45,
-            assetData: null
+            islandType: null,
+            upgradeCosts: [
+                {
+                    xCookies: 45,
+                    assetData: null
+                }
+            ]
         },
         {
             level: null,
@@ -39,8 +55,13 @@ export const BIT_UPGRADE_DATA: UpgradableAssetData = {
                 levelFloor: 30,
                 levelCeiling: 39
             },
-            xCookies: 135,
-            assetData: null
+            islandType: null,
+            upgradeCosts: [
+                {
+                    xCookies: 135,
+                    assetData: null
+                }
+            ]
         },
         {
             level: null,
@@ -48,8 +69,13 @@ export const BIT_UPGRADE_DATA: UpgradableAssetData = {
                 levelFloor: 40,
                 levelCeiling: 49
             },
-            xCookies: 405,
-            assetData: null
+            islandType: null,
+            upgradeCosts: [
+                {
+                    xCookies: 405,
+                    assetData: null
+                }
+            ]
         },
         {
             level: null,
@@ -57,8 +83,13 @@ export const BIT_UPGRADE_DATA: UpgradableAssetData = {
                 levelFloor: 50,
                 levelCeiling: 59
             },
-            xCookies: 1215,
-            assetData: null
+            islandType: null,
+            upgradeCosts: [
+                {
+                    xCookies: 1215,
+                    assetData: null
+                }
+            ]
         },
         {
             level: null,
@@ -66,8 +97,106 @@ export const BIT_UPGRADE_DATA: UpgradableAssetData = {
                 levelFloor: 60,
                 levelCeiling: 65
             },
-            xCookies: 3645,
-            assetData: null
+            islandType: null,
+            upgradeCosts: [
+                {
+                    xCookies: 3645,
+                    assetData: null
+                }
+            ]
         }
+    ]
+}
+
+/**
+ * Represents the upgrade (evolve) data for islands.
+ */
+export const ISLAND_UPGRADE_DATA: UpgradableAssetData = {
+    asset: UpgradableAsset.ISLAND,
+    upgradeRequirements: [
+        {
+            level: null,
+            levelRange: {
+                levelFloor: 2,
+                levelCeiling: 20
+            },
+            islandType: IslandType.PRIMAL_ISLES,
+            upgradeCosts: [
+                {
+                    xCookies: 10,
+                    assetData: null
+                }
+            ]
+        },
+        {
+            level: null,
+            levelRange: {
+                levelFloor: 2,
+                levelCeiling: 20
+            },
+            islandType: IslandType.VERDANT_ISLES,
+            upgradeCosts: [
+                {
+                    xCookies: 20,
+                    assetData: null
+                }
+            ]
+        },
+        {
+            level: null,
+            levelRange: {
+                levelFloor: 2,
+                levelCeiling: 20
+            },
+            islandType: IslandType.EXOTIC_ISLES,
+            upgradeCosts: [
+                {
+                    xCookies: 40,
+                    assetData: null
+                }
+            ]
+        },
+        {
+            level: null,
+            levelRange: {
+                levelFloor: 2,
+                levelCeiling: 20
+            },
+            islandType: IslandType.XTERIO_ISLES,
+            upgradeCosts: [
+                {
+                    xCookies: 40,
+                    assetData: null
+                }
+            ]
+        },
+        {
+            level: null,
+            levelRange: {
+                levelFloor: 2,
+                levelCeiling: 20
+            },
+            islandType: IslandType.CRYSTAL_ISLES,
+            upgradeCosts: [
+                {
+                    xCookies: 70,
+                    assetData: null
+                }
+            ]
+        },
+        {
+            level: null,
+            levelRange: {
+                levelFloor: 2,
+                levelCeiling: 20
+            },
+            islandType: IslandType.CELESTIAL_ISLES,
+            upgradeCosts: [
+                {
+                    xCookies: 100,
+                    assetData: null
+                }
+            ]
+        },
     ]
 }

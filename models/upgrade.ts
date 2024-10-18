@@ -1,4 +1,5 @@
 import { Asset, AssetType } from './asset';
+import { IslandType } from './island';
 
 /**
  * Represents the upgrade data for upgradable assets.
@@ -22,7 +23,7 @@ export enum UpgradableAsset {
 }
 
 /**
- * Represents the requirements to upgrade to this particular level.
+ * Represents the requirements (and costs) to upgrade to this particular level.
  */
 export interface UpgradeRequirement {
     /** 
@@ -30,7 +31,7 @@ export interface UpgradeRequirement {
      * 
      * this is used if each level has different requirements.
      * 
-     * NOTE: if both `level` and `levelRange` is somehow set, `levelRange` will take precedence.
+     * NOTE: if both `level` and `levelRange` is somehow set, `level` will take precedence.
      */
     level: number | null;
     /** 
@@ -42,10 +43,26 @@ export interface UpgradeRequirement {
      * we can use `levelRange` to set this instead of having to set the same requirements for each level from 2 to 9.
      */
     levelRange: UpgradeRequirementLevelRange | null;
-    /** the amount of xCookies required to upgrade to `level` */
-    xCookies: number | null;
-    /** the assets required to upgrade to `level` */
-    assetData: AssetUpgradeRequirement[] | null;
+    /**
+     * used when the asset to upgrade is an island.
+     * 
+     * this is used to determine which island type is valid for this upgrade requirement.
+     */
+    islandType: IslandType | null;
+    /**
+     * the upgrade costs to upgrade to this level.
+     * 
+     * NOTE: this is made an array to support multiple cost groups.
+     * for instance, say asset A can be upgraded EITHER using:
+     * 1. 100 xCookies and 10 asset X OR
+     * 2. 150 xCookies and 5 asset Y.
+     * 
+     * cost group 1 will be placed in index 0, and cost group 2 will be placed in index 1.
+     * then, the user can choose which cost group to use to upgrade the asset.
+     * 
+     * NOTE: only one cost group can be used to upgrade an asset.
+     */
+    upgradeCosts: UpgradeCost[];
 }
 
 /**
@@ -56,6 +73,16 @@ export interface UpgradeRequirementLevelRange {
     levelFloor: number;
     /** the maximum level in the range */
     levelCeiling: number;
+}
+
+/**
+ * Represents the upgrade costs to upgrade an upgradable asset.
+ */
+export interface UpgradeCost {
+    /** the amount of xCookies required to upgrade to `level` */
+    xCookies: number | null;
+    /** the assets required to upgrade to `level` */
+    assetData: AssetUpgradeRequirement[] | null;
 }
 
 /**
