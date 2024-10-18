@@ -49,6 +49,4 @@ export interface BerryFactoryMastery extends Record<POIName, BerryFactoryMastery
 export interface BerryFactoryMasteryStats {
     /** the level for this specific berry factory */
     level: number;
-    /** the XP obtained for this berry factory */
-    xp: number;
 }
