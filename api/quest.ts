@@ -1191,6 +1191,9 @@ export const getDailyQuests = async (
             createdAt: { $lte: next },
         }).populate('quest');
 
+        console.log(`(getDailyQuests), quest Query: {poi: ${poi}, user: ${user._id}, expiredAt: { $gte: ${prev}}, createdAt: { $lte: ${next}}}`);
+        console.log(`(getDailyQuests), user ${user._id} quest length is ${quests.length}`);
+
         // if the quests empty, then reset & randomize the daily quest
         if (!quests || quests.length === 0) {
             await resetDailyQuest(twitterId, poi);
