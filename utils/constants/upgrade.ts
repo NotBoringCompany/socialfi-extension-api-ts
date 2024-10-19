@@ -266,3 +266,32 @@ export const BERRY_FACTORY_UPGRADE_DATA: UpgradableAssetData = {
         },
     ],
 };
+
+/**
+ * Represents the upgrade (evolve) data for rafts.
+ * 
+ * NOTE: This requires an `levelToUpgradeTo` parameter because the cost is dynamic per level.
+ */
+export const RAFT_UPGRADE_DATA = (levelToUpgradeTo: number): UpgradableAssetData => {
+    return {
+        asset: UpgradableAsset.RAFT,
+        upgradeRequirements: [
+            {
+                levelRange: {
+                    levelFloor: 2,
+                    // technically no level ceiling, but we'll set it to a high number.
+                    levelCeiling: 10000000,
+                },
+                islandType: null,
+                poi: null,
+                upgradeCosts: [
+                    {
+                        // starts at 100 xCookies when upgrading to level 2 and increases by 50 xCookies per level.
+                        xCookies: 100 + (50 * (levelToUpgradeTo - 1)),
+                        assetData: null,
+                    },
+                ],
+            }
+        ],
+    }
+}

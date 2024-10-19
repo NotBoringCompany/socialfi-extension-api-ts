@@ -1,3 +1,4 @@
+import { eventarc } from 'googleapis/build/src/apis/eventarc';
 import { BitRarity } from '../models/bit';
 import { Food } from '../models/food';
 import { Item } from '../models/item';
@@ -7,9 +8,9 @@ import { ExtendedResource } from '../models/resource';
 import { UpgradableAsset, UpgradeCost } from '../models/upgrade';
 import { PlayerMastery } from '../models/user';
 import { MAX_BIT_LEVEL } from '../utils/constants/bit';
-import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
+import { BitModel, IslandModel, RaftModel, UserModel } from '../utils/constants/db';
 import { MAX_ISLAND_LEVEL } from '../utils/constants/island';
-import { BERRY_FACTORY_UPGRADE_DATA, BIT_UPGRADE_DATA, ISLAND_UPGRADE_DATA } from '../utils/constants/upgrade';
+import { BERRY_FACTORY_UPGRADE_DATA, BIT_UPGRADE_DATA, ISLAND_UPGRADE_DATA, RAFT_UPGRADE_DATA } from '../utils/constants/upgrade';
 import { ReturnValue, Status } from '../utils/retVal';
 import { toCamelCase } from '../utils/strings';
 
@@ -68,6 +69,13 @@ export const universalAssetUpgrade = async (
         };
 
         const islandUpdateOperations = {
+            $set: {},
+            $push: {},
+            $pull: {},
+            $inc: {},
+        }
+
+        const raftUpdateOperations = {
             $set: {},
             $push: {},
             $pull: {},
@@ -201,12 +209,7 @@ export const universalAssetUpgrade = async (
             // fetch the user's mastery data for this particular POI's berry factory.
             // const berryFactoryMastery = (user?.inGameData?.mastery as PlayerMastery)?.berryFactory[toCamelCase(poi)];
             const berryFactoryData = user?.inGameData?.mastery?.berryFactory as BerryFactoryMastery;
-
-            console.log(`(universalAssetUpgrade) berryFactoryData: ${JSON.stringify(berryFactoryData, null, 2)}`);
-
             const berryFactoryMastery = berryFactoryData ? berryFactoryData[toCamelCase(poi)] : null;
-
-            console.log(`(universalAssetUpgrade) berryFactoryMastery: ${JSON.stringify(berryFactoryMastery, null, 2)}`);
 
             // if the mastery is empty, this means that the berry factory is still level 1. we just put `2` as the level to upgrade to.
             levelToUpgradeTo = berryFactoryMastery ? berryFactoryMastery.level + 1 : 2;
@@ -223,6 +226,39 @@ export const universalAssetUpgrade = async (
             // increase the berry factory's level by 1.
             // NOTE: we do this prematurely, but this won't get called until the end of the function, meaning that if an error occurs, the berry factory's level won't be increased.
             userUpdateOperations.$set[`inGameData.mastery.berryFactory.${toCamelCase(poi)}.level`] = levelToUpgradeTo;
+        // if the asset to upgrade is a raft
+        } else if (asset === UpgradableAsset.RAFT) {
+            // check the user's raft ID
+            // this shouldn't happen, but just in case.
+            if (!user.inventory?.raftId) {
+                return {
+                    status: Status.ERROR,
+                    message: `(universalAssetUpgrade) Raft not found in user's inventory.`,
+                };
+            }
+
+            // fetch the user's raft data.
+            const raft = await RaftModel.findOne({ raftId: user.inventory.raftId }).lean();
+
+            // if the raft is not found in the database, return an error.
+            if (!raft) {
+                return {
+                    status: Status.ERROR,
+                    message: `(universalAssetUpgrade) Raft not found in the database.`,
+                };
+            }
+
+            levelToUpgradeTo = raft.currentLevel + 1;
+
+            // check the costs to upgrade.
+            // find the `levelRange` where `levelToUpgradeTo` is between `levelFloor` and `levelCeiling` (inclusive).
+            upgradeCosts = RAFT_UPGRADE_DATA(levelToUpgradeTo).upgradeRequirements.find(requirement => {
+                return requirement.levelRange.levelFloor <= levelToUpgradeTo && requirement.levelRange.levelCeiling >= levelToUpgradeTo;
+            })?.upgradeCosts ?? null;
+
+            // increase the raft's current level by 1.
+            // NOTE: we do this prematurely, but this won't get called until the end of the function, meaning that if an error occurs, the raft's level won't be increased.
+            raftUpdateOperations.$inc['currentLevel'] = 1;
         }
 
         if (!upgradeCosts) {
@@ -345,7 +381,6 @@ export const universalAssetUpgrade = async (
             $pull: userUpdateOperations.$pull,
         });
 
-        // if the asset to upgrade is a bit, do the bit update operations.
         if (asset === UpgradableAsset.BIT) {
             await BitModel.updateOne({ bitId: islandOrBitId }, {
                 $set: bitUpdateOperations.$set,
@@ -366,7 +401,17 @@ export const universalAssetUpgrade = async (
                 $push: islandUpdateOperations.$push,
                 $pull: islandUpdateOperations.$pull,
             });
-        } 
+        }  else if (asset === UpgradableAsset.RAFT) {
+            await RaftModel.updateOne({ raftId: user.inventory.raftId }, {
+                $set: raftUpdateOperations.$set,
+                $inc: raftUpdateOperations.$inc,
+            });
+
+            await RaftModel.updateOne({ raftId: user.inventory.raftId }, {
+                $push: raftUpdateOperations.$push,
+                $pull: raftUpdateOperations.$pull,
+            });
+        }
         // no need to worry about berry factory because that's included in the user update operations.
 
         return {
@@ -376,7 +421,9 @@ export const universalAssetUpgrade = async (
                 upgradedAsset: 
                     asset === UpgradableAsset.BIT ? `Bit ID: ${islandOrBitId}` 
                     : asset === UpgradableAsset.ISLAND ? `Island ID: ${islandOrBitId}` 
-                    : `Berry Factory: ${poi}`,
+                    : asset === UpgradableAsset.RAFT ? `Raft ID: ${user.inventory.raftId}`
+                    : asset === UpgradableAsset.BERRY_FACTORY ? `Berry Factory at ${poi}`
+                    : null,
                 upgradedToLevel: levelToUpgradeTo,
                 totalPaid: {
                     xCookies: requiredXCookies,

@@ -21,6 +21,7 @@ export enum UpgradableAsset {
     BERRY_FACTORY = 'Berry Factory',
     BIT = 'Bit',
     ISLAND = 'Island',
+    RAFT = 'Raft',
 }
 
 /**
