@@ -372,6 +372,17 @@ export const universalAssetUpgrade = async (
         return {
             status: Status.SUCCESS,
             message: `(universalAssetUpgrade) Successfully upgraded ${asset} to level ${levelToUpgradeTo}.`,
+            data: {
+                upgradedAsset: 
+                    asset === UpgradableAsset.BIT ? `Bit ID: ${islandOrBitId}` 
+                    : asset === UpgradableAsset.ISLAND ? `Island ID: ${islandOrBitId}` 
+                    : `Berry Factory: ${poi}`,
+                upgradedToLevel: levelToUpgradeTo,
+                totalPaid: {
+                    xCookies: requiredXCookies,
+                    assets: requiredAssetsData,
+                },
+            }
         };
     } catch (err: any) {
         return {
