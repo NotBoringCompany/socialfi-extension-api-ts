@@ -382,6 +382,43 @@ export const universalAssetUpgrade = async (
                     xCookies: requiredXCookies,
                     assets: requiredAssetsData,
                 },
+                currencyData: [
+                    {
+                        currency: 'xCookies',
+                        prevAmount: user.inventory?.xCookieData.currentXCookies + requiredXCookies,
+                        newAmount: user.inventory?.xCookieData.currentXCookies,
+                    },
+                    // map through required assets (if any) and return the previous and new amounts.
+                    ...(requiredAssetsData ? requiredAssetsData.map(requiredAssetData => {
+                        const { assetType, asset, amount } = requiredAssetData;
+
+                        if (assetType === 'food') {
+                            const foodIndex = (user.inventory?.foods as Food[]).findIndex(food => food.type === asset);
+
+                            return {
+                                currency: asset,
+                                prevAmount: (user.inventory?.foods as Food[])[foodIndex].amount + amount,
+                                newAmount: (user.inventory?.foods as Food[])[foodIndex].amount,
+                            };
+                        } else if (assetType === 'item') {
+                            const itemIndex = (user.inventory?.items as Item[]).findIndex(item => item.type === asset);
+
+                            return {
+                                currency: asset,
+                                prevAmount: (user.inventory?.items as Item[])[itemIndex].amount + amount,
+                                newAmount: (user.inventory?.items as Item[])[itemIndex].amount,
+                            };
+                        } else if (assetType === 'resource') {
+                            const resourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(resource => resource.type === asset);
+
+                            return {
+                                currency: asset,
+                                prevAmount: (user.inventory?.resources as ExtendedResource[])[resourceIndex].amount + amount,
+                                newAmount: (user.inventory?.resources as ExtendedResource[])[resourceIndex].amount,
+                            };
+                        }
+                    }) : []),
+                ]
             }
         };
     } catch (err: any) {
