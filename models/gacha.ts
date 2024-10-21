@@ -11,30 +11,20 @@ export interface GachaRoll {
     /** 
      * the number of rolls before a B tier asset is guaranteed to drop.
      * if this is `null`, then each roll will have the same base probability of obtaining a B tier asset.
-     * 
-     * NOTE: if the user obtains a B tier asset before `bThreshold` rolls, then the roll counter will reset back to `bThreshold`.
      */
-    bThreshold: number | null;
+    fortuneCrestThreshold: number | null;
     /**
-     * similar to Genshin, a fortune surge acts like a soft pity between `fortuneSurgeThreshold` to `aThreshold` rolls, where the probability of obtaining an A tier asset increases with each roll from `fortuneSurgeThreshold` until it reaches `aThreshold` rolls, where an A tier asset is guaranteed to drop.
-     * 
-     * unlike `bThreshold`, `aThreshold` and `fortunePeakThreshold`, this value is not reset upon obtaining a guaranteed asset, because it's only used as a 'roll counter benchmark' to determine when the probability of obtaining an A tier asset should start increasing.
+     * similar to Genshin, a fortune surge acts like a soft pity between `fortuneSurgeThreshold` to `aThreshold` rolls, where the probability of obtaining an A tier asset increases with each roll from `fortuneSurgeThreshold` until it reaches `fortuneBlessingThreshold` rolls, where an A tier asset is guaranteed to drop.
      */
     fortuneSurgeThreshold: number | null; 
     /**
-     * the number of rolls before an A tier asset is guaranteed to drop.
+     * the number of rolls before an A tier asset is guaranteed to drop (similar to a hard pity in Genshin).
      * if this is `null`, then each roll will have the same base probability of obtaining an A tier asset.
-     * 
-     * NOTE: if the user obtains an A tier asset before `aThreshold` rolls, then the roll counter will reset back to `aThreshold`.
      */
-    aThreshold: number | null;
+    fortuneBlessingThreshold: number | null;
     /**
-     * the number of rolls before a featured asset is guaranteed to drop (similar to a hard pity in Genshin).
+     * the number of rolls before a featured asset is guaranteed to drop (similar to a rate-up in Genshin).
      * if this is `null`, then each roll will have the same base probability of obtaining a featured asset.
-     * 
-     * NOTE: if the user obtains a featured asset before `fortunePeakThreshold` rolls, then:
-     * 1. the `fortunePeakThreshold` counter will reset back to `fortunePeakThreshold`.
-     * 2. the `aThreshold` counter will reset back to `aThreshold` (because featured assets are A tier).
      * 
      * if this gacha roll has no featured assets, then this value should be `null`, otherwise it will use the normal probability values to roll for any asset.
      */
@@ -66,8 +56,8 @@ export interface GachaRollAssetData {
     /**
      * if this asset is a featured drop in the gacha roll.
      * 
-     * if `featured` is true and the gacha roll's `zRolls` is on (not null), then every Z rolls (as specified in the gacha roll's `zRolls`), a featured asset will be guaranteed to drop.
-     * if there are more than one featured assets, the probability of obtaining one of them upon a Z roll depends on their individual probability weights. however, what's certain is that all featured assets will have a cumulative probability of 100%.
+     * if `featured` is true and the gacha roll's `fortunePeakThreshold` is not `null`, then a featured asset (this or other featured assets) is guaranteed to drop after `fortunePeakThreshold` rolls.
+     * if this gacha roll has more than one featured asset, the probability to obtain any of them depends on their individual probability weights.
      * 
      * NOTE: only A tier assets can be featured, else the backend may throw errors.
      */
@@ -97,4 +87,73 @@ export enum GachaRollAssetTier {
     A = 'A',
     B = 'B',
     C = 'C',
+}
+
+/**
+ * Represents a user's data per gacha roll instance/type.
+ * 
+ * For instance, say that there are 3 different gacha rolls in the game:
+ * 1. Gacha Roll A
+ * 2. Gacha Roll B
+ * 3. Gacha Roll C
+ * 
+ * all of the rolls done in Gacha Roll A, for example, will be recorded within 1 `UserGachaRollData` object. another one for Gacha Roll B, and so on.
+ */
+export interface UserGachaRollData {
+    /** the user's database ID */
+    userId: string;
+    /** the gacha roll's ID */
+    gachaRollId: string;
+    /** the number of rolls done in this gacha roll */
+    totalRolls: number;
+    /** 
+     * how many rolls until `fortuneCrestThreshold` for this gacha roll is reached and at least a B tier asset is guaranteed to drop on the next roll.
+     * 
+     * if `fortuneCrestThreshold` is `null`, this value will be `null` as well.
+     * 
+     * NOTE: if the user obtains a B tier asset before `fortuneCrestThreshold` rolls, then the roll counter will reset back to `fortuneCrestThreshold`.
+     */
+    rollsUntilFortuneCrest: number | null;
+    /**
+     * how many rolls until `fortuneSurgeThreshold` for this gacha roll is reached and the probability of obtaining an A tier asset increases with each roll until it reaches `fortuneBlessingThreshold` rolls, where an A tier asset is guaranteed to drop.
+     * 
+     * if `fortuneSurgeThreshold` is `null`, this value will be `null` as well.
+     */
+    rollsUntilFortuneSurge: number | null;
+    /**
+     * when `rollsUntilFortuneSurge` reaches 0, the next roll will increase this value by 1 until an A tier asset is guaranteed to drop, which will reset this back to 0.
+     * 
+     * this is used to calculate the probability of obtaining an A tier asset on the next roll. the higher this value, the higher the probability of obtaining an A tier asset.
+     * 
+     * the formula to calculate the surged probability of obtaining an A tier asset (denotation: SPa) with the current fortune surge roll is:
+     * BPa + ((100 - BPa) / (fortuneBlessingThreshold - fortuneSurgeThreshold) * currentFortuneSurgeRoll), where BPa = base probability of obtaining an A tier asset (calculated by obtaining the cumulative probability of all A tier assets in the gacha roll).
+     * 
+     * for example, say BPa is 10%, `fortuneSurgeThreshold` is 50, and `fortuneBlessingThreshold` is 60. if the user has reached 50 rolls, the next roll will have the `currentFortuneSurgeRoll` as 1.
+     * this means that the new FPa is 10 + ((100 - 10) / (60 - 50) * 1) = 19%. therefore, the user has a 19% chance of obtaining an A tier asset on the next roll.
+     * 
+     * NOTE: the max value of this should be the difference between `fortuneBlessingThreshold` and `fortuneSurgeThreshold`.
+     * 
+     * if `rollsUntilFortuneSurge` is `null`, this value will remain as 0.
+     */
+    currentFortuneSurgeRoll: number;
+    /** 
+     * how many rolls until `fortuneBlessingThreshold` for this gacha roll is reached and at least an A tier asset is guaranteed to drop on the next roll.
+     * 
+     * if `fortuneBlessingThreshold` is `null`, this value will be `null` as well.
+     * 
+     * NOTE: if the user obtains an A tier asset before `fortuneBlessingThreshold` rolls, then the roll counter will reset back to `fortuneBlessingThreshold`.
+     */
+    rollsUntilFortuneBlessing: number | null;
+    /** 
+     * how many rolls until `fortunePeakThreshold` for this gacha roll is reached and a featured asset is guaranteed to drop on the next roll.
+     * 
+     * if `fortunePeakThreshold` is `null`, this value will be `null` as well.
+     * 
+     * if the user obtains a featured asset before `fortunePeakThreshold` rolls, then:
+     * 1. the `rollsUntilFortunePeak` counter will reset back to `fortunePeakThreshold`.
+     * 2. the `rollsUntilFortuneSurge` counter will reset back to `fortuneSurgeThreshold` (because featured assets are A tier).
+     * 
+     * NOTE: obtaining A tier assets before `fortunePeakThreshold` rolls will NOT reset the `rollsUntilFortunePeak` counter, because this counter is only for featured assets.
+     */
+    rollsUntilFortunePeak: number | null;
 }
