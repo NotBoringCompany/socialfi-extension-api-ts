@@ -27,7 +27,7 @@ import {
 } from '../utils/constants/user';
 import { ReferralData, ReferralReward, ReferredUserData } from '../models/invite';
 import { BitOrbType, Item, TerraCapsulatorType } from '../models/item';
-import { BitRarity, BitTrait } from '../models/bit';
+import { BitRarity, BitTrait, BitTraitCategory, BitTraitData, BitTraitRarity, BitTraitSubCategory } from '../models/bit';
 import { IslandStatsModifiers, IslandType } from '../models/island';
 import { Modifier } from '../models/modifier';
 import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
@@ -134,7 +134,23 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
             const rarity = BitRarity.COMMON;
             const bitType = randomizeBitType();
 
-            const traits = randomizeBitTraits(rarity);
+            // const traits = randomizeBitTraits(rarity);
+            const traits: BitTraitData[] = [
+                {
+                    trait: BitTrait.INFLUENTIAL,
+                    effect: '+1% working rate to all islands owned',
+                    rarity: BitTraitRarity.RARE,
+                    category: BitTraitCategory.WORKRATE_D,
+                    subcategory: BitTraitSubCategory.POSITIVE
+                },
+                {
+                    trait: BitTrait.FRUGAL,
+                    effect: '+10% energy when consuming food',
+                    rarity: BitTraitRarity.COMMON,
+                    category: BitTraitCategory.FOOD_CONSUMPTION,
+                    subcategory: BitTraitSubCategory.POSITIVE
+                },
+            ];
 
             const bitStatsModifiers = getBitStatsModifiersFromTraits(traits.map((trait) => trait.trait));
 
