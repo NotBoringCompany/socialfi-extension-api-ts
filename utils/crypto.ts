@@ -16,57 +16,6 @@ export const generateObjectId = (): string => {
 }
 
 /**
- * Generates a random server seed for lottery draws.
- */
-export const generateServerSeed = (): string => {
-    return CryptoJS.lib.WordArray.random(32).toString();
-}
-
-/**
- * Hashes a server seed from `generateServerSeed` using SHA-256.
- */
-export const hashServerSeed = (seed: string): string => {
-    return CryptoJS.SHA256(seed).toString();
-}
-
-/**
- * Generates a random draw seed for lottery draws.
- */
-export const generateDrawSeed = async (): Promise<ReturnValue> => {
-    try {
-        const blockNumber = await BLAST_TESTNET_PROVIDER.getBlockNumber();
-        // ensure to get a block that was mined (here we use 6 blocks before the latest block)
-        const block = await BLAST_TESTNET_PROVIDER.getBlock(blockNumber - 6);
-
-        if (!block) {
-            return {
-                status: Status.ERROR,
-                message: `(generateDrawSeed) Failed to get block number ${blockNumber - 6}`
-            }
-        }
-
-        // combine block hash and timestamp
-        const drawSeed = ethers.utils.solidityKeccak256(
-            ['bytes32', 'uint256'],
-            [block.hash, block.timestamp]
-        );
-
-        return {
-            status: Status.SUCCESS,
-            message: '(generateDrawSeed) Draw seed generated successfully',
-            data: {
-                drawSeed
-            }
-        }
-    } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(generateDrawSeed) Err: ${err.message}`
-        }
-    }
-}
-
-/**
  * Generates a random hash salt for cryptographic operations.
  */
 export const generateHashSalt = (): string => {
