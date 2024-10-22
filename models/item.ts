@@ -40,6 +40,14 @@ PotionItem |
 IngotItem;
 
 /**
+ * Represents all Wonderspin tickets to roll a Wonderspin (gacha).
+ */
+export enum WonderspinTicket {
+    // test ticket
+    TEST_OF_FATE = 'Test of Fate',
+}
+
+/**
  * Represents all Bit Orb types in the game.
  */
 export enum BitOrbType {
