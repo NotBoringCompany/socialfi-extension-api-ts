@@ -50,3 +50,4 @@ export const CONSUME_ENERGY_POTION_MIXPANEL_EVENT_HASH = convertToBytes32('Consu
 export const CRAFT_ASSET_MIXPANEL_EVENT_HASH = convertToBytes32('Craft Asset');
 export const CANCEL_CRAFTING_QUEUE_MIXPANEL_EVENT_HASH = convertToBytes32('Cancel Crafting Queue');
 export const CLAIM_CRAFTED_ASSET_MIXPANEL_EVENT_HASH = convertToBytes32('Claim Crafted Asset');
+export const UNIVERSAL_UGPRADE_ASSET_MIXPANEL_EVENT_HASH = convertToBytes32('Universal Upgrade Asset');

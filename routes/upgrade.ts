@@ -2,6 +2,9 @@ import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { universalAssetUpgrade } from '../api/upgrade';
+import { mixpanel } from '../utils/mixpanel';
+import { incrementEventCounterInContract } from '../api/web3';
+import { UNIVERSAL_UGPRADE_ASSET_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 
 const router = express.Router();
 
@@ -19,6 +22,17 @@ router.post('/universal_asset_upgrade', async (req, res) => {
         }
 
         const { status, message, data } = await universalAssetUpgrade(validateData?.twitterId, asset, upgradeCostGroup, islandOrBitId, poi);
+
+        if (status === Status.SUCCESS) {
+            mixpanel.track('Currency Tracker', {
+                distinct_id: validateData?.twitterId,
+                '_type': `Upgrade ${asset}`,
+                '_data': data
+            });
+
+            // increment the event counter in the wonderbits contract.
+            incrementEventCounterInContract(validateData?.twitterId, UNIVERSAL_UGPRADE_ASSET_MIXPANEL_EVENT_HASH);
+        }
 
         return res.status(status).json({
             status,
