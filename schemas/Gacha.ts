@@ -18,6 +18,7 @@ export const WonderspinSchema = new mongoose.Schema<Wonderspin>({
     assetData: [{
         assetType: String,
         asset: Object,
+        amount: Number,
         imageUrl: String,
         tier: String,
         featured: Boolean,

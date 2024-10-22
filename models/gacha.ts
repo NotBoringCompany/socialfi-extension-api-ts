@@ -44,7 +44,9 @@ export interface WonderspinAssetData {
     /** the type of asset. used mostly to help simplify query logic. */
     assetType: 'item' | 'resource' | 'food' | 'igc';
     /** the actual asset */
-    asset: AssetType;
+    asset: AssetType | 'diamonds' | 'xCookies';
+    /** the amount of this asset to be obtained if rolled */
+    amount: number;
     /** the image URL of the asset */
     imageUrl: string | null;
     /** 
