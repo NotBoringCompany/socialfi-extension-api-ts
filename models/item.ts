@@ -29,6 +29,7 @@ export interface Item {
  */
 export type ItemType = 
 BoosterItem | 
+WonderspinTicket | 
 BitOrbType | 
 TerraCapsulatorType | 
 WonderArtefactItem | 
