@@ -24,6 +24,7 @@ export const checkPOIItemDataResetAlreadyScheduled = async (timeRange: { start: 
     const nextScheduledTime = new Date(scheduledTime).getTime();
 
     // return true if the next scheduled time falls within the future range
+    console.log(`(checkPOIItemDataResetAlreadyScheduled) ${now} < ${nextScheduledTime} && ${nextScheduledTime} < ${new Date().setUTCHours(timeRange.end, 0, 0, 0)} is ${now < nextScheduledTime && nextScheduledTime < new Date().setUTCHours(timeRange.end, 0, 0, 0)}`)
     return now < nextScheduledTime && nextScheduledTime < new Date().setUTCHours(timeRange.end, 0, 0, 0);
 }
 
