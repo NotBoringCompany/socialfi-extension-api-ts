@@ -45,7 +45,7 @@ IngotItem;
  */
 export enum WonderspinTicket {
     // test ticket
-    TEST_OF_FATE = 'Test of Fate',
+    TEST_OF_FATE_WONDERSPIN = 'Test of Fate (Wonderspin)',
 }
 
 /**
