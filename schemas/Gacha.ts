@@ -22,6 +22,7 @@ export const WonderspinSchema = new mongoose.Schema<Wonderspin>({
         imageUrl: String,
         tier: String,
         featured: Boolean,
+        probabilityWeight: Number,
         _id: false
     }]
 })
