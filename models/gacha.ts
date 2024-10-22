@@ -100,6 +100,8 @@ export enum GachaRollAssetTier {
  * all of the rolls done in Gacha Roll A, for example, will be recorded within 1 `UserGachaRollData` object. another one for Gacha Roll B, and so on.
  */
 export interface UserGachaRollData {
+    /** the database ID for this roll data */
+    _id: string;
     /** the user's database ID */
     userId: string;
     /** the gacha roll's ID */

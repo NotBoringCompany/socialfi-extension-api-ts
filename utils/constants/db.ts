@@ -26,6 +26,7 @@ import { CraftingQueueSchema } from '../../schemas/Craft';
 import { BanSchema } from '../../schemas/Ban';
 import { MailReceiverDataSchema, MailSchema } from '../../schemas/Mail';
 import { ConsumedSynthesizingItemSchema } from '../../schemas/Asset';
+import { UserGachaRollDataSchema } from '../../schemas/Gacha';
 
 
 const TEST_DATABASE = process.env.MONGODB_URI!;
@@ -104,3 +105,4 @@ export const BanModel = TEST_CONNECTION.model('Bans', BanSchema, 'Bans');
 export const MailModel = TEST_CONNECTION.model('Mails', MailSchema, 'Mails');
 export const MailReceiverDataModel = TEST_CONNECTION.model('MailReceiverData', MailReceiverDataSchema, 'MailReceiverData');
 export const ConsumedSynthesizingItemModel = TEST_CONNECTION.model('ConsumedSynthesizingItems', ConsumedSynthesizingItemSchema, 'ConsumedSynthesizingItems');
+export const UserGachaRollDataModel = TEST_CONNECTION.model('UserGachaRollData', UserGachaRollDataSchema, 'UserGachaRollData');
