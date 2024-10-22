@@ -15,7 +15,10 @@ export const resetPOIItemsDataQueue = new Bull('resetPOIItemsDataQueue', {
  */
 export const checkPOIItemDataResetAlreadyScheduled = async (timeRange: { start: number, end: number }): Promise<boolean> => {
     const scheduledTime = await redis.get('poiItemDataResetScheduledTime');
-    if (!scheduledTime) return false;
+    if (!scheduledTime) {
+        console.log(`(checkPOIItemDataResetAlreadyScheduled) scheduledTime for time range (${timeRange.start}-${timeRange.end}) is null/undefined`);
+        return false
+    };
 
     const now = new Date().getTime();
     const nextScheduledTime = new Date(scheduledTime).getTime();
