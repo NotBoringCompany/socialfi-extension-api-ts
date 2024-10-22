@@ -25,6 +25,49 @@ export const addWonderspin = async (
             }
         }
 
+        // for each asset to be added, ensure that:
+        // 1. the asset type exists
+        // 2. the asset exists
+        // 3. the amount is at least 1
+        // 4. the tier exists
+        // 5. the probability weight is at least 1
+        for (const asset of assetData) {
+            if (!['item', 'resource', 'food', 'igc'].includes(asset.assetType)) {
+                return {
+                    status: Status.ERROR,
+                    message: '(addWonderspin) Invalid asset type.'
+                }
+            }
+
+            if (!asset) {
+                return {
+                    status: Status.ERROR,
+                    message: '(addWonderspin) Invalid asset.'
+                }
+            }
+
+            if (asset.amount < 1) {
+                return {
+                    status: Status.ERROR,
+                    message: '(addWonderspin) Asset amount must be at least 1.'
+                }
+            }
+
+            if (!asset.tier) {
+                return {
+                    status: Status.ERROR,
+                    message: '(addWonderspin) Invalid asset tier.'
+                }
+            }
+
+            if (asset.probabilityWeight < 1) {
+                return {
+                    status: Status.ERROR,
+                    message: '(addWonderspin) Asset probability weight must be at least 1.'
+                }
+            }
+        }
+
         // for each asset to be added, check if any of them are featured. if yes, they NEED to be A tier, or else an error is thrown.
         const featuredAssets = assetData.filter(asset => asset.featured);
 
@@ -69,5 +112,5 @@ export const addWonderspin = async (
 
 // export const rollWonderspin = async (
 //     twitterId: string,
-
+//     wonderspin
 // )
