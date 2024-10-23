@@ -29,7 +29,7 @@ export interface Item {
  */
 export type ItemType = 
 BoosterItem | 
-WonderspinTicket | 
+WonderspinTicketType | 
 BitOrbType | 
 TerraCapsulatorType | 
 WonderArtefactItem | 
@@ -41,11 +41,12 @@ PotionItem |
 IngotItem;
 
 /**
- * Represents all Wonderspin tickets to roll a Wonderspin (gacha).
+ * Represents all ticket types for the Wonderspin.
  */
-export enum WonderspinTicket {
-    // test ticket
-    TEST_OF_FATE_WONDERSPIN = 'Test of Fate (Wonderspin)',
+export enum WonderspinTicketType {
+    STANDARD_WONDERSPIN_TICKET_I = 'Standard Wonderspin Ticket (I)',
+    STANDARD_WONDERSPIN_TICKET_II = 'Standard Wonderspin Ticket (II)',
+    PREMIUM_WONDERSPIN_TICKET = 'Premium Wonderspin Ticket',
 }
 
 /**

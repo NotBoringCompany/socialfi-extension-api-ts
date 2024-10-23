@@ -11,6 +11,10 @@ export const WonderspinSchema = new mongoose.Schema<Wonderspin>({
         type: String,
         index: true
     },
+    ticketType: {
+        type: String,
+        index: true
+    },
     fortuneCrestThreshold: Number,
     fortuneSurgeThreshold: Number,
     fortuneBlessingThreshold: Number,

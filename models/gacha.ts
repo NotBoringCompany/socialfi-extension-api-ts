@@ -1,4 +1,5 @@
 import { AssetType } from './asset';
+import { WonderspinTicketType } from './item';
 
 /**
  * Represents a gacha roll to obtain an asset by luck.
@@ -8,6 +9,8 @@ export interface Wonderspin {
     _id: string;
     /** the name of the Wonderspin */
     name: string;
+    /** the type of ticket required to spin this Wonderspin */
+    ticketType: WonderspinTicketType;
     /** 
      * the number of rolls before a B tier asset is guaranteed to drop.
      * if this is `null`, then each roll will have the same base probability of obtaining a B tier asset.
@@ -155,7 +158,9 @@ export interface UserWonderspinData {
      * 
      * if the user obtains a featured asset before `fortunePeakThreshold` rolls, then:
      * 1. the `rollsUntilFortunePeak` counter will reset back to `fortunePeakThreshold`.
-     * 2. the `rollsUntilFortuneSurge` counter will reset back to `fortuneSurgeThreshold` (because featured assets are A tier).
+     * 2. the `rollsUntilFortuneBlessing` counter will reset back to `fortuneBlessingThreshold` (because featured assets are A tier).
+     * 3. the `rollsUntilFortuneSurge` counter will reset back to `fortuneSurgeThreshold` (because the user has obtained an A tier asset).
+     * 4. the `currentFortuneSurgeRoll` counter will reset back to 0 (because the user has obtained an A tier asset).
      * 
      * NOTE: obtaining A tier assets before `fortunePeakThreshold` rolls will NOT reset the `rollsUntilFortunePeak` counter, because this counter is only for featured assets.
      */
