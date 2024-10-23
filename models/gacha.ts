@@ -17,7 +17,7 @@ export interface Wonderspin {
      */
     fortuneCrestThreshold: number | null;
     /**
-     * similar to Genshin, a fortune surge acts like a soft pity between `fortuneSurgeThreshold` to `aThreshold` rolls, where the probability of obtaining an A tier asset increases with each roll from `fortuneSurgeThreshold` until it reaches `fortuneBlessingThreshold` rolls, where an A tier asset is guaranteed to drop.
+     * similar to Genshin, a fortune surge acts like a soft pity between `fortuneSurgeThreshold` to `fortuneBlessingThreshold` rolls, where the probability of obtaining an A tier asset increases with each roll from `fortuneSurgeThreshold` until it reaches `fortuneBlessingThreshold` rolls, where an A tier asset is guaranteed to drop.
      */
     fortuneSurgeThreshold: number | null; 
     /**
