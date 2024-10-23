@@ -829,7 +829,6 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
         const rarityDeviationReductions =
             bit.bitType === BitType.XTERIO ? {
                 gatheringRateReduction: 0,
-                earningRateReduction: 0
             } : RARITY_DEVIATION_REDUCTIONS(<IslandType>island.type, bitRarity);
 
         // check for previous `gatheringRateModifiers` from the island's `IslandStatsModifiers`
@@ -996,6 +995,30 @@ export const unplaceBit = async (twitterId: string, bitId: number): Promise<Retu
                 status: Status.ERROR,
                 message: `(unplaceBit) Island not found.`
             }
+        }
+
+        // fetch bit's rarity
+        const bitRarity = <BitRarity>bit.rarity;
+
+        // fetch rarityDeviationReductions based on bitRarity
+        // xTerio bit doesn't have reductions
+        const rarityDeviationReductions =
+            bit.bitType === BitType.XTERIO ? {
+                gatheringRateReduction: 0
+            } : RARITY_DEVIATION_REDUCTIONS(<IslandType>island.type, bitRarity);
+
+        // check if island `gatheringRateModifiers` containing `Rarity Deviation` origin && Reductions is greater than 0
+        const gatheringRateModifierIndex = (island.islandStatsModifiers?.gatheringRateModifiers as Modifier[]).findIndex(modifier => modifier.origin === 'Rarity Deviation');
+        // check if this is the last placed bit in the island
+        if (island.placedBitIds.length === 1) {
+            // restore the value back to 1(100%) since we are unplacing the last bit placed in island
+            islandUpdateOperations.$set[`islandStatsModifiers.gatheringRateModifiers.${gatheringRateModifierIndex}.value`] = 1;
+        } else if (gatheringRateModifierIndex !== 1 && rarityDeviationReductions.gatheringRateReduction > 0) {
+            const currentValue = island.islandStatsModifiers?.gatheringRateModifiers[gatheringRateModifierIndex].value;
+            const newValue = currentValue + (rarityDeviationReductions.gatheringRateReduction / 100);
+
+            // added the value by the reduction amount since we are unplacing the bit from the isle
+            islandUpdateOperations.$set[`islandStatsModifiers.gatheringRateModifiers.${gatheringRateModifierIndex}.value`] = newValue;
         }
 
         // remove the bit ID from the island's `placedBitIds`
@@ -4578,5 +4601,82 @@ export const resetDailyIslandTappingMilestone = async (): Promise<void> => {
         }
     } catch (err: any) {
         console.error(`(resetDailyIslandTappingMilestone) Error: ${err.message}`);
+    }
+};
+
+export const cleanUpRarityDeviation = async () => {
+    try {
+        // Find all islands with Rarity Deviation modifiers
+        const islands = await IslandModel.find({'islandStatsModifiers.gatheringRateModifiers.origin': 'Rarity Deviation'}).lean();
+        // Find all Bits that is Active in island right now
+        const bits = await BitModel.find({placedIslandId: {$ne: 0}}).lean();
+        
+        if (islands.length === 0) {
+            throw new Error(`(cleanUpRarityDeviation) No islands found.`);
+        }
+
+        if (bits.length === 0) {
+            throw new Error(`(cleanUpRarityDeviation) No bits found.`);
+        }
+
+        const bulkWriteOps = await Promise.all(
+            islands.map((island) => {
+                const { placedBitIds } = island as Island;
+        
+                // Sum total of gatheringRateReduction using reduce
+                const totalGatheringRateReduction = placedBitIds.reduce((acc, bitId) => {
+                    const bitFound = bits.find((bit) => bit.bitId === bitId);
+        
+                    // If the bit is not found, return the current accumulated value (no addition)
+                    if (!bitFound) return acc;
+        
+                    const rarity = bitFound.rarity as BitRarity;
+        
+                    // Calculate the rarity deviation reductions based on bit type and rarity
+                    const rarityDeviationReductions =
+                        bitFound.bitType === BitType.XTERIO
+                            ? { gatheringRateReduction: 0 }
+                            : RARITY_DEVIATION_REDUCTIONS(<IslandType>island.type, rarity);
+        
+                    // Add the gatheringRateReduction to the accumulator
+                    return acc + rarityDeviationReductions.gatheringRateReduction;
+                }, 0); // Initialize accumulator with 0
+        
+                // Get gatheringRateModifierIndex for 'Rarity Deviation'.
+                const gatheringRateModifierIndex = (island.islandStatsModifiers?.gatheringRateModifiers as Modifier[])?.findIndex(
+                    (modifier) => modifier.origin === 'Rarity Deviation'
+                );
+        
+                // Handle the case where the gatheringRateModifier is not found
+                if (gatheringRateModifierIndex === -1) {
+                    return null; // No modifier found, skip this island
+                }
+        
+                // Prepare the update operation for MongoDB bulk write
+                return {
+                    updateOne: {
+                        filter: { islandId: island.islandId },
+                        update: {
+                            $set: {
+                                [`islandStatsModifiers.gatheringRateModifiers.${gatheringRateModifierIndex}.value`]:
+                                    1 - totalGatheringRateReduction / 100, // Adjust gathering rate value
+                            },
+                        },
+                    },
+                };
+            })
+        );
+
+        // Filter out any null values from the operations array
+        const filteredBulkWriteOps = bulkWriteOps.filter((op) => op !== null);
+
+        // Perform the bulk write operation only if there are valid operations
+        if (filteredBulkWriteOps.length > 0) {
+            await IslandModel.bulkWrite(filteredBulkWriteOps);
+        } else {
+            throw new Error(`(cleanUpRarityDeviation) No valid operations to execute.`);
+        }
+    } catch (err: any) {
+        console.error(`(cleanUpRarityDeviation) Error: ${err.message}`);
     }
 };
