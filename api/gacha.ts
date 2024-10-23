@@ -440,6 +440,7 @@ export const rollWonderspin = async (
                     // filter the assets with their min and max probability ranges.
                     // however, because an A tier asset is not guaranteed (B can also be obtained), we will need to fetch the `rollsUntilFortuneSurge` value as well as the `currentFortuneSurgeRoll` value.
                     // if `rollsUntilFortuneSurge` is 0, then the probability of obtaining an A tier asset will increase with each roll until it reaches `fortuneBlessingThreshold` rolls.
+                    // the increase in probability is calculated by the formula: BPa + ((100 - BPa) / (fortuneBlessingThreshold - fortuneSurgeThreshold) * currentFortuneSurgeRoll)
                     
                 }
             
