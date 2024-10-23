@@ -4603,3 +4603,80 @@ export const resetDailyIslandTappingMilestone = async (): Promise<void> => {
         console.error(`(resetDailyIslandTappingMilestone) Error: ${err.message}`);
     }
 };
+
+export const cleanUpRarityDeviation = async () => {
+    try {
+        // Find all islands with Rarity Deviation modifiers
+        const islands = await IslandModel.find({'islandStatsModifiers.gatheringRateModifiers.origin': 'Rarity Deviation'}).lean();
+        // Find all Bits that is Active in island right now
+        const bits = await BitModel.find({placedIslandId: {$ne: 0}}).lean();
+        
+        if (islands.length === 0) {
+            throw new Error(`(cleanUpRarityDeviation) No islands found.`);
+        }
+
+        if (bits.length === 0) {
+            throw new Error(`(cleanUpRarityDeviation) No bits found.`);
+        }
+
+        const bulkWriteOps = await Promise.all(
+            islands.map((island) => {
+                const { placedBitIds } = island as Island;
+        
+                // Sum total of gatheringRateReduction using reduce
+                const totalGatheringRateReduction = placedBitIds.reduce((acc, bitId) => {
+                    const bitFound = bits.find((bit) => bit.bitId === bitId);
+        
+                    // If the bit is not found, return the current accumulated value (no addition)
+                    if (!bitFound) return acc;
+        
+                    const rarity = bitFound.rarity as BitRarity;
+        
+                    // Calculate the rarity deviation reductions based on bit type and rarity
+                    const rarityDeviationReductions =
+                        bitFound.bitType === BitType.XTERIO
+                            ? { gatheringRateReduction: 0 }
+                            : RARITY_DEVIATION_REDUCTIONS(<IslandType>island.type, rarity);
+        
+                    // Add the gatheringRateReduction to the accumulator
+                    return acc + rarityDeviationReductions.gatheringRateReduction;
+                }, 0); // Initialize accumulator with 0
+        
+                // Get gatheringRateModifierIndex for 'Rarity Deviation'.
+                const gatheringRateModifierIndex = (island.islandStatsModifiers?.gatheringRateModifiers as Modifier[])?.findIndex(
+                    (modifier) => modifier.origin === 'Rarity Deviation'
+                );
+        
+                // Handle the case where the gatheringRateModifier is not found
+                if (gatheringRateModifierIndex === -1) {
+                    return null; // No modifier found, skip this island
+                }
+        
+                // Prepare the update operation for MongoDB bulk write
+                return {
+                    updateOne: {
+                        filter: { islandId: island.islandId },
+                        update: {
+                            $set: {
+                                [`islandStatsModifiers.gatheringRateModifiers.${gatheringRateModifierIndex}.value`]:
+                                    1 - totalGatheringRateReduction / 100, // Adjust gathering rate value
+                            },
+                        },
+                    },
+                };
+            })
+        );
+
+        // Filter out any null values from the operations array
+        const filteredBulkWriteOps = bulkWriteOps.filter((op) => op !== null);
+
+        // Perform the bulk write operation only if there are valid operations
+        if (filteredBulkWriteOps.length > 0) {
+            await IslandModel.bulkWrite(filteredBulkWriteOps);
+        } else {
+            throw new Error(`(cleanUpRarityDeviation) No valid operations to execute.`);
+        }
+    } catch (err: any) {
+        console.error(`(cleanUpRarityDeviation) Error: ${err.message}`);
+    }
+};
