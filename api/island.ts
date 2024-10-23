@@ -1009,9 +1009,11 @@ export const unplaceBit = async (twitterId: string, bitId: number): Promise<Retu
 
         // check if island `gatheringRateModifiers` containing `Rarity Deviation` origin && Reductions is greater than 0
         const gatheringRateModifierIndex = (island.islandStatsModifiers?.gatheringRateModifiers as Modifier[]).findIndex(modifier => modifier.origin === 'Rarity Deviation');
-        // if true, adjust the reductions when unplacing bits
-        // else, don't execute the logic
-        if (gatheringRateModifierIndex !== 1 && rarityDeviationReductions.gatheringRateReduction > 0) {
+        // check if this is the last placed bit in the island
+        if (island.placedBitIds.length === 1) {
+            // restore the value back to 1(100%) since we are unplacing the last bit placed in island
+            islandUpdateOperations.$set[`islandStatsModifiers.gatheringRateModifiers.${gatheringRateModifierIndex}.value`] = 1;
+        } else if (gatheringRateModifierIndex !== 1 && rarityDeviationReductions.gatheringRateReduction > 0) {
             const currentValue = island.islandStatsModifiers?.gatheringRateModifiers[gatheringRateModifierIndex].value;
             const newValue = currentValue + (rarityDeviationReductions.gatheringRateReduction / 100);
 
