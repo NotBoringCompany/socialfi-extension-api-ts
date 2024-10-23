@@ -829,7 +829,6 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
         const rarityDeviationReductions =
             bit.bitType === BitType.XTERIO ? {
                 gatheringRateReduction: 0,
-                earningRateReduction: 0
             } : RARITY_DEVIATION_REDUCTIONS(<IslandType>island.type, bitRarity);
 
         // check for previous `gatheringRateModifiers` from the island's `IslandStatsModifiers`
@@ -996,6 +995,28 @@ export const unplaceBit = async (twitterId: string, bitId: number): Promise<Retu
                 status: Status.ERROR,
                 message: `(unplaceBit) Island not found.`
             }
+        }
+
+        // fetch bit's rarity
+        const bitRarity = <BitRarity>bit.rarity;
+
+        // fetch rarityDeviationReductions based on bitRarity
+        // xTerio bit doesn't have reductions
+        const rarityDeviationReductions =
+            bit.bitType === BitType.XTERIO ? {
+                gatheringRateReduction: 0
+            } : RARITY_DEVIATION_REDUCTIONS(<IslandType>island.type, bitRarity);
+
+        // check if island `gatheringRateModifiers` containing `Rarity Deviation` origin && Reductions is greater than 0
+        const gatheringRateModifierIndex = (island.islandStatsModifiers?.gatheringRateModifiers as Modifier[]).findIndex(modifier => modifier.origin === 'Rarity Deviation');
+        // if true, adjust the reductions when unplacing bits
+        // else, don't execute the logic
+        if (gatheringRateModifierIndex !== 1 && rarityDeviationReductions.gatheringRateReduction > 0) {
+            const currentValue = island.islandStatsModifiers?.gatheringRateModifiers[gatheringRateModifierIndex].value;
+            const newValue = currentValue + (rarityDeviationReductions.gatheringRateReduction / 100);
+
+            // added the value by the reduction amount since we are unplacing the bit from the isle
+            islandUpdateOperations.$set[`islandStatsModifiers.gatheringRateModifiers.${gatheringRateModifierIndex}.value`] = newValue;
         }
 
         // remove the bit ID from the island's `placedBitIds`
