@@ -1,5 +1,6 @@
 import { Socket } from "socket.io";
 import { resetUserRedisById, saunaInit, startRest, stopRest } from "../../api/sauna";
+import { Status } from "../../utils/retVal";
 
 export enum EventSauna {
   USER_COUNT = "user_count",
@@ -32,9 +33,15 @@ export const saunaEvent = (socket: Socket) => {
   })
 
   // should delet in production
-  socket.on("saunaReset", (msg) => {
-    const userId = msg.userId
-    resetUserRedisById(userId)
+  socket.on("saunaReset", async () => {
+    try {
+      await resetUserRedisById()
+    } catch (error) {
+      socket.emit(EventSauna.SERVER_RESPONSE, {
+        status: Status.ERROR,
+        message: `(saunaReset) ${error.message}`,
+      })
+    }
   })
 
   socket.on('disconnect', () => {
