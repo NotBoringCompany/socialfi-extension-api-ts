@@ -86,6 +86,8 @@ export interface UserInventory {
     xCookieData: XCookieData;
     /** the amount of cookie crumbs owned */
     cookieCrumbs: number;
+    /** how many diamonds the user has */
+    diamonds: number;
     /** a list of resources owned */
     resources: ExtendedResource[];
     /** a list of items owned */
@@ -142,6 +144,7 @@ export enum XCookieSource {
     TUTORIAL_REWARDS = 'Tutorial Rewards',
     DISCORD_ENGAGEMENT = 'Discord Engagement',
     SHOP_PURCHASE = 'Shop Purchase',
+    WONDERSPIN = 'Wonderspin',
 }
 
 /**

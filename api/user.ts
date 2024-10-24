@@ -50,6 +50,20 @@ import { sendMailsToNewUser } from './mail';
 dotenv.config();
 
 /**
+ * Initializes 0 diamonds for each user in the database.
+ */
+export const initializeDiamonds = async (): Promise<void> => {
+    try {
+        // bulk set `diamonds` to 0 for all users in `inventory.diamonds`
+        await UserModel.updateMany({}, { $set: { 'inventory.diamonds': 0 } });
+
+        console.log(`(initializeDiamonds) Successfully initialized diamonds for all users.`);
+    } catch (err: any) {
+        console.log(`(initializeDiamonds) ${err.message}`);
+    }
+}
+
+/**
  * Returns the user's data.
  */
 export const getUserData = async (twitterId: string): Promise<ReturnValue> => {

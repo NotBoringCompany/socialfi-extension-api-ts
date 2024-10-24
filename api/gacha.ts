@@ -1,7 +1,10 @@
 import { Asset, AssetType } from '../models/asset';
+import { Food } from '../models/food';
 import { WonderspinAssetData, WonderspinAssetTier } from '../models/gacha';
 import { Item, WonderspinTicketType } from '../models/item';
+import { ExtendedResource, ExtendedResourceOrigin } from '../models/resource';
 import { UserModel, UserWonderspinDataModel, WonderspinModel } from '../utils/constants/db';
+import { resources } from '../utils/constants/resource';
 import { generateObjectId } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
 
@@ -219,6 +222,12 @@ export const rollWonderspin = async (
             }
         }
 
+        // consume the ticket.
+        userUpdateOperations.$inc[`inventory.items.${ticketIndex}.amount`] = -amount;
+        // increase the `weeklyAmountConsumed` and `totalAmountConsumed` fields.
+        userUpdateOperations.$inc[`inventory.items.${ticketIndex}.weeklyAmountConsumed`] = amount;
+        userUpdateOperations.$inc[`inventory.items.${ticketIndex}.totalAmountConsumed`] = amount;
+
         // the user might not have the data yet, so no need to check for null/undefined.
         const userWonderspinData = await UserWonderspinDataModel.findOne({ userId: user._id, wonderspinId: wonderspinData._id }).lean();
         
@@ -265,11 +274,23 @@ export const rollWonderspin = async (
         // used to store the assets obtained from the roll.
         const obtainedAssets: Array<{
             assetType: 'item' | 'resource' | 'food' | 'igc',
+            assetTier: WonderspinAssetTier,
+            isFeatured: boolean,
             asset: AssetType | 'xCookies' | 'diamonds',
+            normalProbability: number,
+            surgedProbability: number | null,
             amount: number
         }> = [];
 
         while (obtainedAssets.length < amount) {
+            console.log(`(rollWonderspin) Roll ${obtainedAssets.length + 1}...`);
+            console.log(`(rollWonderspin) Rolls until fortune crest: ${rollsUntilFortuneCrest}`);
+            console.log(`(rollWonderspin) Rolls until fortune surge: ${rollsUntilFortuneSurge}`);
+            console.log(`(rollWonderspin) Current fortune surge roll: ${currentFortuneSurgeRoll}`);
+            console.log(`(rollWonderspin) Rolls until fortune blessing: ${rollsUntilFortuneBlessing}`);
+            console.log(`(rollWonderspin) Rolls until fortune peak: ${rollsUntilFortunePeak}`);
+            console.log(`(rollWonderspin) Total rolls: ${totalRolls}`);
+            
             // the order of priority is:
             // 1. featured asset (if rollsUntilFortunePeak is NOT null AND is 0)
             // 2. A tier asset (if rollsUntilFortuneBlessing is NOT null AND is 0)
@@ -293,7 +314,11 @@ export const rollWonderspin = async (
 
                     obtainedAssets.push({
                         assetType: featuredAssets[0].assetType,
+                        assetTier: featuredAssets[0].tier,
+                        isFeatured: true,
                         asset: featuredAssets[0].asset,
+                        normalProbability: 100,
+                        surgedProbability: null,
                         amount: featuredAssets[0].amount
                     });
                 } else {
@@ -334,7 +359,11 @@ export const rollWonderspin = async (
 
                     obtainedAssets.push({
                         assetType: obtainedAsset.assetType,
+                        assetTier: WonderspinAssetTier.A,
+                        isFeatured: true,
                         asset: obtainedAsset.asset,
+                        normalProbability: obtainedAsset.probabilityWeight / maxRange * 100,
+                        surgedProbability: null,
                         amount: obtainedAsset.amount
                     });
                 }
@@ -368,7 +397,11 @@ export const rollWonderspin = async (
                 if (aTierAssets.length === 1) {
                     obtainedAssets.push({
                         assetType: aTierAssets[0].assetType,
+                        assetTier: aTierAssets[0].tier,
+                        isFeatured: aTierAssets[0].featured,
                         asset: aTierAssets[0].asset,
+                        normalProbability: 100,
+                        surgedProbability: null,
                         amount: aTierAssets[0].amount
                     });
 
@@ -414,7 +447,11 @@ export const rollWonderspin = async (
 
                     obtainedAssets.push({
                         assetType: obtainedAsset.assetType,
+                        assetTier: WonderspinAssetTier.A,
+                        isFeatured: aTierAssets.find(asset => asset.asset === obtainedAsset.asset)?.featured ?? false,
                         asset: obtainedAsset.asset,
+                        normalProbability: obtainedAsset.probabilityWeight / maxRange * 100,
+                        surgedProbability: null,
                         amount: obtainedAsset.amount
                     });
 
@@ -455,7 +492,11 @@ export const rollWonderspin = async (
                 if (atLeastBTierAssets.length === 1) {
                     obtainedAssets.push({
                         assetType: atLeastBTierAssets[0].assetType,
+                        assetTier: atLeastBTierAssets[0].tier,
+                        isFeatured: atLeastBTierAssets[0].featured,
                         asset: atLeastBTierAssets[0].asset,
+                        normalProbability: 100,
+                        surgedProbability: null,
                         amount: atLeastBTierAssets[0].amount
                     });
 
@@ -564,7 +605,13 @@ export const rollWonderspin = async (
 
                     obtainedAssets.push({
                         assetType: obtainedAsset.assetType,
+                        assetTier: obtainedAsset.assetTier,
+                        isFeatured: atLeastBTierAssets.find(asset => asset.asset === obtainedAsset.asset)?.featured ?? false,
                         asset: obtainedAsset.asset,
+                        // to get the normal probability, we need the base filtered data, not the updated one with updated probabilities.
+                        // max range will also need to be manually calculated, because `maxRange` is based on the updated probabilities.
+                        normalProbability: atLeastBTierAssets.find(asset => asset.asset === obtainedAsset.asset)?.probabilityWeight / atLeastBTierAssets.reduce((acc, asset) => acc + asset.probabilityWeight, 0) * 100,
+                        surgedProbability: obtainedAsset.probabilityWeight / maxRange * 100,
                         amount: obtainedAsset.amount
                     });
 
@@ -642,7 +689,11 @@ export const rollWonderspin = async (
                 if (wonderspinData.assetData.length === 1) {
                     obtainedAssets.push({
                         assetType: wonderspinData.assetData[0].assetType,
+                        assetTier: wonderspinData.assetData[0].tier,
+                        isFeatured: wonderspinData.assetData[0].featured,
                         asset: wonderspinData.assetData[0].asset,
+                        normalProbability: 100,
+                        surgedProbability: null,
                         amount: wonderspinData.assetData[0].amount
                     });
 
@@ -767,7 +818,13 @@ export const rollWonderspin = async (
 
                     obtainedAssets.push({
                         assetType: obtainedAsset.assetType,
+                        assetTier: obtainedAsset.assetTier,
+                        isFeatured: wonderspinData.assetData.find(asset => asset.asset === obtainedAsset.asset)?.featured ?? false,
                         asset: obtainedAsset.asset,
+                        // to get the normal probability, we need the base filtered data, not the updated one with updated probabilities.
+                        // max range will also need to be manually calculated, because `maxRange` is based on the updated probabilities.
+                        normalProbability: wonderspinData.assetData.find(asset => asset.asset === obtainedAsset.asset)?.probabilityWeight / wonderspinData.assetData.reduce((acc, asset) => acc + asset.probabilityWeight, 0) * 100,
+                        surgedProbability: obtainedAsset.probabilityWeight / maxRange * 100,
                         amount: obtainedAsset.amount
                     });
 
@@ -779,10 +836,244 @@ export const rollWonderspin = async (
                     obtainedAssetIsBTier = obtainedAsset.assetTier === WonderspinAssetTier.B;
                 }
 
-                
+                // if `obtainedAssetIsFeatured` is true:
+                // 1. `rollsUntilFortunePeak` will be reset to `fortunePeakThreshold`.
+                // 2. `rollsUntilFortuneBlessing` will be reset to `fortuneBlessingThreshold`.
+                // 3. `rollsUntilFortuneSurge` will be reset to `fortuneSurgeThreshold`.
+                // 4. `currentFortuneSurgeRoll` will be reset to 1.
+                if (obtainedAssetIsFeatured) {
+                    rollsUntilFortunePeak = wonderspinData.fortunePeakThreshold;
+                    rollsUntilFortuneBlessing = wonderspinData.fortuneBlessingThreshold;
+                    rollsUntilFortuneSurge = wonderspinData.fortuneSurgeThreshold;
+                    currentFortuneSurgeRoll = 1;
+                }
+
+                // if `obtainedAssetIsATier` is true:
+                // 1. `rollsUntilFortunePeak` will be decremented by 1 if not null, because the user didn't get a featured asset.
+                // 2. `rollsUntilFortuneBlessing` will be reset to `fortuneBlessingThreshold`.
+                // 3. `rollsUntilFortuneSurge` will be reset to `fortuneSurgeThreshold`.
+                // 4. `currentFortuneSurgeRoll` will be reset to 1.
+                if (obtainedAssetIsATier) {
+                    if (rollsUntilFortunePeak !== null) {
+                        rollsUntilFortunePeak--;
+                    }
+
+                    rollsUntilFortuneBlessing = wonderspinData.fortuneBlessingThreshold;
+                    rollsUntilFortuneSurge = wonderspinData.fortuneSurgeThreshold;
+                    currentFortuneSurgeRoll = 1;
+                }
+
+                // if `obtainedAssetIsBTier` is true:
+                // 1. `rollsUntilFortunePeak` will be decremented by 1 if not null, because the user didn't get a featured asset.
+                // 2. `rollsUntilFortuneBlessing` will be decremented by 1 if not null, because the user didn't get an A tier asset.
+                // 3. `rollsUntilFortuneSurge` will be decremented if not 0. if 0, then the `currentFortuneSurgeRoll` will increase by 1.
+                // 4. `rollsUntilFortuneCrest` will be reset to `fortuneCrestThreshold`.
+                if (obtainedAssetIsBTier) {
+                    if (rollsUntilFortunePeak !== null) {
+                        rollsUntilFortunePeak--;
+                    }
+
+                    if (rollsUntilFortuneBlessing !== null) {
+                        rollsUntilFortuneBlessing--;
+                    }
+
+                    if (rollsUntilFortuneSurge !== null) {
+                        if (rollsUntilFortuneSurge === 0) {
+                            currentFortuneSurgeRoll++;
+                        } else {
+                            rollsUntilFortuneSurge--;
+                        }
+                    }
+
+                    rollsUntilFortuneCrest = wonderspinData.fortuneCrestThreshold;
+                }
+
+                // if `obtainedAssetIsFeatured`, `obtainedAssetIsATier`, and `obtainedAssetIsBTier` are false, then the user has obtained a C tier asset, meaning:
+                // 1. `rollsUntilFortunePeak` will be decremented by 1 if not null, because the user didn't get a featured asset.
+                // 2. `rollsUntilFortuneBlessing` will be decremented by 1 if not null, because the user didn't get an A tier asset.
+                // 3. `rollsUntilFortuneSurge` will be decremented if not 0. if 0, then the `currentFortuneSurgeRoll` will increase by 1.
+                // 4. `rollsUntilFortuneCrest` will be decremented by 1 if not null, because the user didn't get a B tier asset.
+                if (!obtainedAssetIsFeatured && !obtainedAssetIsATier && !obtainedAssetIsBTier) {
+                    if (rollsUntilFortunePeak !== null) {
+                        rollsUntilFortunePeak--;
+                    }
+
+                    if (rollsUntilFortuneBlessing !== null) {
+                        rollsUntilFortuneBlessing--;
+                    }
+
+                    if (rollsUntilFortuneSurge !== null) {
+                        if (rollsUntilFortuneSurge === 0) {
+                            currentFortuneSurgeRoll++;
+                        } else {
+                            rollsUntilFortuneSurge--;
+                        }
+                    }
+
+                    if (rollsUntilFortuneCrest !== null) {
+                        rollsUntilFortuneCrest--;
+                    }
+                }
+
+                // increase the `totalRolls` counter by 1.
+                totalRolls++;
+                // continue to the next iteration.
+                continue;
             }
         }
-        
+
+        // initialize $each on the user's inventory items, foods and/or resources.
+        if (!userUpdateOperations.$push['inventory.items']) {
+            userUpdateOperations.$push['inventory.items'] = { $each: [] }
+        }
+
+        if (!userUpdateOperations.$push['inventory.foods']) {
+            userUpdateOperations.$push['inventory.foods'] = { $each: [] }
+        }
+
+        if (!userUpdateOperations.$push['inventory.resources']) {
+            userUpdateOperations.$push['inventory.resources'] = { $each: [] }
+        }
+
+        console.log(`(rollWonderspin) Obtained assets after all rolls: ${JSON.stringify(obtainedAssets, null, 2)}`);
+
+        // check if `obtainedAssets` contains duplicates. we will just combine the amounts of the duplicates.
+        const combinedObtainedAssets: Array<{
+            assetType: "item" | "resource" | "food" | "igc";
+            asset: AssetType | "xCookies" | "diamonds";
+            amount: number;
+        }>  = obtainedAssets.reduce((acc, curr) => {
+            const existingAsset = acc.find(asset => asset.asset === curr.asset);
+
+            if (existingAsset) {
+                existingAsset.amount += curr.amount;
+            } else {
+                acc.push({
+                    assetType: curr.assetType,
+                    asset: curr.asset,
+                    amount: curr.amount
+                });
+            }
+
+            return acc;
+        }, []);
+
+        // loop through each obtained asset and push them to the user's inventory.
+        for (const obtainedAsset of combinedObtainedAssets) {
+            // get the asset type
+            const assetType = obtainedAsset.assetType;
+
+            // if asset is item
+            if (assetType === 'item') {
+                // check if the user owns this asset in their inventory
+                const itemIndex = (user.inventory?.items as Item[]).findIndex(item => item.type === obtainedAsset.asset);
+
+                // if not found, add the item to the user's inventory (along with the amount). if found, increment the amount.
+                if (itemIndex === -1) {
+                    userUpdateOperations.$push['inventory.items'].$each.push({
+                        type: obtainedAsset.asset,
+                        amount: obtainedAsset.amount,
+                        totalAmountConsumed: 0,
+                        weeklyAmountConsumed: 0
+                    })
+                } else {
+                    userUpdateOperations.$inc[`inventory.items.${itemIndex}.amount`] = obtainedAsset.amount;
+                }
+            } else if (assetType === 'food') {
+                // check if the user owns the food in their inventory
+                const foodIndex = (user.inventory?.foods as Food[]).findIndex(food => food.type === obtainedAsset.asset);
+
+                // if not found, add the food to the user's inventory (along with the amount). if found, increment the amount.
+                if (foodIndex === -1) {
+                    userUpdateOperations.$push['inventory.foods'].$each.push({
+                        type: obtainedAsset.asset,
+                        amount: obtainedAsset.amount
+                    })
+                } else {
+                    userUpdateOperations.$inc[`inventory.foods.${foodIndex}.amount`] = obtainedAsset.amount;
+                }
+            } else if (assetType === 'resource') {
+                // get the resource data.
+                const resourceData = resources.find(resource => resource.type === obtainedAsset.asset);
+
+                if (!resourceData) {
+                    return {
+                        status: Status.ERROR,
+                        message: `(rollWonderspin) Resource data not found for ${obtainedAsset.asset}.`
+                    }
+                }
+
+                // check if the user owns the resource in their inventory
+                const resourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(resource => resource.type === obtainedAsset.asset);
+
+                // if not found, add the resource to the user's inventory (along with the amount). if found, increment the amount.
+                if (resourceIndex === -1) {
+                    userUpdateOperations.$push['inventory.resources'].$each.push({
+                        ...resourceData,
+                        amount: obtainedAsset.amount,
+                        origin: ExtendedResourceOrigin.NORMAL
+                    })
+                } else {
+                    userUpdateOperations.$inc[`inventory.resources.${resourceIndex}.amount`] = obtainedAsset.amount;
+                }
+            } else if (assetType === 'igc') {
+                // check if asset is xCookies or diamonds
+                if (obtainedAsset.asset === 'xCookies') {
+                    userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = obtainedAsset.amount;
+                } else if (obtainedAsset.asset === 'diamonds') {
+                    userUpdateOperations.$inc['inventory.diamonds'] = obtainedAsset.amount;
+                }
+            }
+        }
+
+        // if the user wonderspin data doesn't exist, create a new one.
+        if (!userWonderspinData) {
+            console.log(`(rollWonderspin) User wonderspin data doesn't exist. Creating a new one...`);
+            const newWonderspinData = new UserWonderspinDataModel({
+                _id: generateObjectId(),
+                userId: user._id,
+                wonderspinId: wonderspinData._id,
+                totalRolls,
+                rollsUntilFortuneCrest,
+                rollsUntilFortuneSurge,
+                currentFortuneSurgeRoll,
+                rollsUntilFortuneBlessing,
+                rollsUntilFortunePeak
+            });
+
+            await newWonderspinData.save();
+        } else {
+            // update the user's wonderspin data.
+            await UserWonderspinDataModel.updateOne({ _id: userWonderspinData._id }, {
+                $set: {
+                    totalRolls,
+                    rollsUntilFortuneCrest,
+                    rollsUntilFortuneSurge,
+                    currentFortuneSurgeRoll,
+                    rollsUntilFortuneBlessing,
+                    rollsUntilFortunePeak
+                }
+            });
+        }
+
+        // update the user's inventory with the obtained assets.
+        await UserModel.updateOne({ twitterId }, {
+            $set: userUpdateOperations.$set,
+            $inc: userUpdateOperations.$inc,
+        });
+
+        await UserModel.updateOne({ twitterId }, {
+            $push: userUpdateOperations.$push,
+            $pull: userUpdateOperations.$pull
+        });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(rollWonderspin) Successfully rolled the wonderspin and updated the user's inventory.`,
+            data: {
+                obtainedAssets
+            }
+        }
     } catch (err: any) {
         return {
             status: Status.ERROR,
