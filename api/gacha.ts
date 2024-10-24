@@ -11,6 +11,7 @@ import { ReturnValue, Status } from '../utils/retVal';
 export const addWonderspin = async (
     name: string,
     ticketType: WonderspinTicketType,
+    active: boolean = true,
     fortuneCrestThreshold: number | null,
     fortuneSurgeThreshold: number | null,
     fortuneBlessingThreshold: number | null,

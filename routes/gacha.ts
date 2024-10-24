@@ -7,9 +7,9 @@ import { addWonderspin } from '../api/gacha';
 const router = express.Router();
 
 router.post('/add_wonderspin', authMiddleware(3), async (req, res) => {
-    const { name, ticketType, fortuneCrestThreshold, fortuneSurgeThreshold, fortuneBlessingThreshold, fortunePeakThreshold, assetData } = req.body;
+    const { name, ticketType, active, fortuneCrestThreshold, fortuneSurgeThreshold, fortuneBlessingThreshold, fortunePeakThreshold, assetData } = req.body;
     try {
-        const { status, message, data } = await addWonderspin(name, ticketType, fortuneCrestThreshold, fortuneSurgeThreshold, fortuneBlessingThreshold, fortunePeakThreshold, assetData);
+        const { status, message, data } = await addWonderspin(name, ticketType, active, fortuneCrestThreshold, fortuneSurgeThreshold, fortuneBlessingThreshold, fortunePeakThreshold, assetData);
 
         return res.status(status).json({
             status,
