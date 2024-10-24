@@ -86,7 +86,7 @@ export const updateTutorial = async (tutorialId: number, name?: string, rewards?
  */
 export const getTutorials = async (): Promise<ReturnValue> => {
     try {
-        const tutorials = await TutorialModel.find();
+        const tutorials = await TutorialModel.find({ autoAccept: true });
 
         if (!tutorials || tutorials.length === 0) {
             return {

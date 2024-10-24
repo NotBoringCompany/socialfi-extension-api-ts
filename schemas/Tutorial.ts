@@ -12,4 +12,5 @@ export const TutorialSchema = new mongoose.Schema({
     id: Number,
     name: String,
     rewards: Array,
+    autoAccept: Boolean
 });
