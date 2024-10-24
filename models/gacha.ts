@@ -11,6 +11,8 @@ export interface Wonderspin {
     name: string;
     /** the type of ticket required to spin this Wonderspin */
     ticketType: WonderspinTicketType;
+    /** if the wonderspin is able to be spun currently */
+    active: boolean;
     /** 
      * the number of rolls before a B tier asset is guaranteed to drop.
      * if this is `null`, then each roll will have the same base probability of obtaining a B tier asset.

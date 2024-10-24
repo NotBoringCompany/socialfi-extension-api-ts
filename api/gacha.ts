@@ -201,6 +201,14 @@ export const rollWonderspin = async (
             }
         }
 
+        // check if the `active` field is true.
+        if (!wonderspinData.active) {
+            return {
+                status: Status.ERROR,
+                message: '(rollWonderspin) Wonderspin is currently inactive.'
+            }
+        }
+
 
         // check if the ticket inputted matches the ticket type of the Wonderspin.
         if (wonderspinData.ticketType !== ticket) {
@@ -452,7 +460,6 @@ export const rollWonderspin = async (
 
                     // check if the asset obtained is a featured asset.
                     obtainedAssetIsFeatured = atLeastBTierAssets[0].featured;
-
                     // check if the asset obtained is an A tier asset.
                     obtainedAssetIsATier = atLeastBTierAssets[0].tier === WonderspinAssetTier.A;
 
@@ -562,7 +569,6 @@ export const rollWonderspin = async (
 
                     // check if the asset obtained is a featured asset.
                     obtainedAssetIsFeatured = atLeastBTierAssets.find(asset => asset.asset === obtainedAsset.asset)?.featured ?? false;
-
                     // check if the asset obtained is an A tier asset.
                     obtainedAssetIsATier = obtainedAsset.assetTier === WonderspinAssetTier.A;
                 }
@@ -623,6 +629,156 @@ export const rollWonderspin = async (
                 totalRolls++;
                 // continue to the next iteration.
                 continue;
+            // 4th priority: asset is randomly rolled based on the probability weights of each asset.
+            } else {
+                console.log(`(rollWonderspin) Rolling asset normally based on probability weights...`);
+
+                let obtainedAssetIsFeatured: boolean = false;
+                let obtainedAssetIsATier: boolean = false;
+                let obtainedAssetIsBTier: boolean = false;
+
+                // if there is only 1 asset, then we can just push that asset to the obtainedAssets array.
+                if (wonderspinData.assetData.length === 1) {
+                    obtainedAssets.push({
+                        assetType: wonderspinData.assetData[0].assetType,
+                        asset: wonderspinData.assetData[0].asset,
+                        amount: wonderspinData.assetData[0].amount
+                    });
+
+                    // check if the asset obtained is a featured asset.
+                    obtainedAssetIsFeatured = wonderspinData.assetData[0].featured;
+                    // check if the asset obtained is an A tier asset.
+                    obtainedAssetIsATier = wonderspinData.assetData[0].tier === WonderspinAssetTier.A;
+                    // check if the asset obtained is a B tier asset.
+                    obtainedAssetIsBTier = wonderspinData.assetData[0].tier === WonderspinAssetTier.B;
+
+                    console.log(`(rollWonderspin) Obtained asset from normal roll: ${JSON.stringify(wonderspinData.assetData[0])}`);
+                } else {
+                    // otherwise, if there are multiple assets, we need to roll one of them based on their probability weights.
+                    let currentMinProbability = 0;
+
+                    // filter the assets with their min and max probability ranges.
+                    const filteredAssetsData = wonderspinData.assetData.map((asset, index) => {
+                        const minProbability = currentMinProbability;
+                        const maxProbability = currentMinProbability + asset.probabilityWeight - 1;
+
+                        currentMinProbability = maxProbability + 1;
+
+                        return {
+                            assetType: asset.assetType,
+                            assetTier: asset.tier,
+                            asset: asset.asset,
+                            amount: asset.amount,
+                            probabilityWeight: asset.probabilityWeight,
+                            minProbability: minProbability,
+                            maxProbability: maxProbability,
+                        }
+                    });
+
+                    console.log(`(rollWonderspin) Filtered assets data: ${JSON.stringify(filteredAssetsData)}`);
+
+                    // we will need to calculate the increased probability of obtaining an A tier asset IF:
+                    // 1. `rollsUntilFortuneSurge` is NOT null AND is 0
+                    // AND
+                    // 2. `rollsUntilFortuneBlessing` is NOT null
+                    if (rollsUntilFortuneSurge !== null && rollsUntilFortuneSurge === 0 && rollsUntilFortuneBlessing !== null) {
+                        console.log(`(rollWonderspin) Normal roll, and rolls until fortune surge is 0. Calculating increased probability of obtaining an A tier asset...`);
+
+                        // get the current cumulative probability of obtaining ONLY an A tier asset.
+                        // this is done by obtaining the sum of all A tier asset probability weights divided by the sum of all asset probability weights for all assets.
+                        // this will be used as the `BPa` of the formula.
+                        const totalATierProbabilityWeight = wonderspinData.assetData.filter(asset => asset.tier === WonderspinAssetTier.A).reduce((acc, asset) => acc + asset.probabilityWeight, 0);
+                        const BPa = (totalATierProbabilityWeight / wonderspinData.assetData.reduce((acc, asset) => acc + asset.probabilityWeight, 0)) * 100;
+
+                        // get the current cumulative probability of obtaining ONLY a B tier asset.
+                        // this is done by obtaining the sum of all B tier asset probability weights divided by the sum of all asset probability weights for all assets.
+                        // this will be used as the `BPb` of the formula.
+                        const totalBTierProbabilityWeight = wonderspinData.assetData.filter(asset => asset.tier === WonderspinAssetTier.B).reduce((acc, asset) => acc + asset.probabilityWeight, 0);
+                        const BPb = (totalBTierProbabilityWeight / wonderspinData.assetData.reduce((acc, asset) => acc + asset.probabilityWeight, 0)) * 100;
+
+                        // get the current cumulative probability of obtaining ONLY a C tier asset.
+                        // this is done by obtaining the sum of all C tier asset probability weights divided by the sum of all asset probability weights for all assets.
+                        // this will be used as the `BPc` of the formula.
+                        const totalCTierProbabilityWeight = wonderspinData.assetData.filter(asset => asset.tier === WonderspinAssetTier.C).reduce((acc, asset) => acc + asset.probabilityWeight, 0);
+                        // we can also use the reduce function to get BPc, but we can just calculate it this way:
+                        const BPc = 100 - (BPa + BPb);
+
+                        console.log(`(rollWonderspin) Current cumulative probability of obtaining an A tier asset: ${BPa}%`);
+                        console.log(`(rollWonderspin) Current cumulative probability of obtaining a B tier asset: ${BPb}%`);
+                        console.log(`(rollWonderspin) Current cumulative probability of obtaining a C tier asset: ${BPc}%`);
+
+                        // calculate the new probability of obtaining an A tier asset (FPa, or fortune surge probability of obtaining an A tier asset).
+                        const FPa = BPa  + ((100 - BPa) / (wonderspinData.fortuneBlessingThreshold - wonderspinData.fortuneSurgeThreshold) * currentFortuneSurgeRoll);
+
+                        console.log(`(rollWonderspin) Calculated fortune surge probability of obtaining an A tier asset: ${FPa}%`);
+
+                        // to calculate the proprtional decrease in probability of obtaining a B tier asset, we can use the formula:
+                        const FPb = BPb - ((BPb / (BPb + BPc)) * (FPa - BPa));
+                        // to calculate the proprtional decrease in probability of obtaining a C tier asset, we can use the formula:
+                        const FPc = BPc - ((BPc / (BPb + BPc)) * (FPa - BPa));
+
+                        console.log(`(rollWonderspin) Calculated fortune surge probability of obtaining a B tier asset: ${FPb}%`);
+                        console.log(`(rollWonderspin) Calculated fortune surge probability of obtaining a C tier asset: ${FPc}%`);
+
+                        // update `filteredAssetsData` with the new probability weight for the C, B, and A tier assets.
+                        filteredAssetsData.forEach(asset => {
+                            let updatedProbabilityWeight: number;
+
+                            if (asset.assetTier === WonderspinAssetTier.A) {
+                                // scale the probability weight based on the new FPa.
+                                updatedProbabilityWeight = (FPa / BPa) * asset.probabilityWeight;
+                            } else if (asset.assetTier === WonderspinAssetTier.B) {
+                                // scale the probability weight based on the new FPb.
+                                updatedProbabilityWeight = (FPb / BPb) * asset.probabilityWeight;
+                            } else {
+                                // scale the probability weight based on the new FPc.
+                                updatedProbabilityWeight = (FPc / BPc) * asset.probabilityWeight;
+                            }
+
+                            // calculate min and max probability based on the updated probability weights.
+                            const minProbability = currentMinProbability;
+                            const maxProbability = currentMinProbability + updatedProbabilityWeight - 1;
+                            currentMinProbability = maxProbability + 1;
+
+                            // update asset's properties in the same array
+                            asset.minProbability = minProbability;
+                            asset.maxProbability = maxProbability;
+                            asset.probabilityWeight = updatedProbabilityWeight;
+                        });
+
+                        console.log(`(rollWonderspin) Updated assets data with new probability weights from fortune surge: ${JSON.stringify(filteredAssetsData)}`);
+                    } 
+                    // if `rollsUntilFortuneSurge` is NOT null AND is NOT 0, then we can just roll the assets normally.
+                    // this is because the probability of obtaining an A tier asset is not increased yet, so the probabilities for all assets are the same as it was.
+
+                    // get the last asset's max probability, and this is used as the max range for the random number.
+                    const maxRange = filteredAssetsData[filteredAssetsData.length - 1].maxProbability;
+
+                    // roll a random number between 0 and the max range.
+                    const randomNumber = Math.floor(Math.random() * (maxRange + 1));
+
+                    console.log(`(rollWonderspin) Random number for roll ${obtainedAssets.length}: ${randomNumber}`);
+
+                    // find the asset that corresponds to the random number.
+                    const obtainedAsset = filteredAssetsData.find(asset => randomNumber >= asset.minProbability && randomNumber <= asset.maxProbability);
+
+                    console.log(`(rollWonderspin) Roll ${obtainedAssets.length} asset obtained: ${JSON.stringify(obtainedAsset)}`);
+
+                    obtainedAssets.push({
+                        assetType: obtainedAsset.assetType,
+                        asset: obtainedAsset.asset,
+                        amount: obtainedAsset.amount
+                    });
+
+                    // check if the asset obtained is a featured asset.
+                    obtainedAssetIsFeatured = wonderspinData.assetData.find(asset => asset.asset === obtainedAsset.asset)?.featured ?? false;
+                    // check if the asset obtained is an A tier asset.
+                    obtainedAssetIsATier = obtainedAsset.assetTier === WonderspinAssetTier.A;
+                    // check if the asset obtained is a B tier asset.
+                    obtainedAssetIsBTier = obtainedAsset.assetTier === WonderspinAssetTier.B;
+                }
+
+                
             }
         }
         
