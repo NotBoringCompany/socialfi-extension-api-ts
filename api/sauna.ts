@@ -287,6 +287,10 @@ const getExpiredTime = () => {
 
 // this function only on development
 export const resetUserRedisById = async (userId: string) => {
-  await removeUserFromRoom(userId)
-  await redisDb.del(`${SaunaUserKey.MAXIMUM_ENERGY}:${userId}`)
+  try {
+    await removeUserFromRoom(userId)
+    await redisDb.del(`${SaunaUserKey.MAXIMUM_ENERGY}:${userId}`)
+  }catch (error) {
+    throw new Error(`${error.message}`)
+  }
 }
