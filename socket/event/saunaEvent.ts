@@ -33,10 +33,9 @@ export const saunaEvent = (socket: Socket) => {
   })
 
   // should delet in production
-  socket.on("saunaReset", async (msg) => {
+  socket.on("saunaReset", async () => {
     try {
-      const userId = msg.userId
-      await resetUserRedisById(userId)
+      await resetUserRedisById()
     } catch (error) {
       socket.emit(EventSauna.SERVER_RESPONSE, {
         status: Status.ERROR,

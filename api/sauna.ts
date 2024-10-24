@@ -3,7 +3,6 @@ import { Status } from "../utils/retVal";
 import redisDb from "../utils/constants/redisDb";
 import { UserModel } from "../utils/constants/db";
 import { EventSauna, SaunaGlobalKey, SaunaUserKey } from "../socket/event/saunaEvent";
-import {writeFileSync} from 'fs';
 
 export const startRest = async (socket: Socket) => {
   try {
@@ -286,10 +285,9 @@ const getExpiredTime = () => {
 }
 
 // this function only on development
-export const resetUserRedisById = async (userId: string) => {
+export const resetUserRedisById = async () => {
   try {
-    await removeUserFromRoom(userId)
-    await redisDb.del(`${SaunaUserKey.MAXIMUM_ENERGY}:${userId}`)
+    await redisDb.set(SaunaGlobalKey.CONNECTED, 0)
   }catch (error) {
     throw new Error(`${error.message}`)
   }
