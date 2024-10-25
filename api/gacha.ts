@@ -167,6 +167,13 @@ export const rollWonderspin = async (
     amount: 1 | 5 | 10
 ): Promise<ReturnValue> => {
     try {
+        if (![1, 5, 10].includes(amount)) {
+            return {
+                status: Status.ERROR,
+                message: '(rollWonderspin) amount passed is not valid!.'
+            }
+        }
+
         const user = await UserModel.findOne({ twitterId }).lean();
 
         if (!user) {
@@ -355,7 +362,7 @@ export const rollWonderspin = async (
                     // find the asset that corresponds to the random number.
                     const obtainedAsset = filteredFeaturedAssetsData.find(asset => randomNumber >= asset.minProbability && randomNumber <= asset.maxProbability);
 
-                    console.log(`(rollWonderspin) Roll ${obtainedAssets.length} guaranteed featured asset obtained: ${JSON.stringify(obtainedAsset)}`);
+                    console.log(`(rollWonderspin) Roll ${obtainedAssets.length + 1} guaranteed featured asset obtained: ${JSON.stringify(obtainedAsset)}`);
 
                     obtainedAssets.push({
                         assetType: obtainedAsset.assetType,
