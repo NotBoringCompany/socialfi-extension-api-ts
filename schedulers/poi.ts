@@ -26,10 +26,11 @@ export const checkPOIItemDataResetAlreadyScheduled = async (timeRange: { start: 
 
     // Determine the end time for today
     const todayEnd = new Date();
-    todayEnd.setUTCHours(timeRange.end, 0, 0, 0);;
+    todayEnd.setUTCHours(timeRange.end, 0, 0, 0);
     let targetEndTime = todayEnd.getTime();
 
     // If the current time is past the end of today's time range, schedule for tomorrow time range
+    console.log(`(checkPOIItemDataResetAlreadyScheduled), currentHour(${currentHour}) >= timeRange.end(${timeRange.end}) equal ${currentHour >= timeRange.end}`);
     if (currentHour >= timeRange.end) {
         const tomorrow = new Date();
         tomorrow.setUTCDate(tomorrow.getUTCDate() + 1); // Move to tomorrow
@@ -38,8 +39,8 @@ export const checkPOIItemDataResetAlreadyScheduled = async (timeRange: { start: 
     }
 
     // return true if the next scheduled time falls within the future range
-    console.log(`(checkPOIItemDataResetAlreadyScheduled) ${now.getTime()} < ${nextScheduledTime} && ${nextScheduledTime} < ${new Date().setUTCHours(timeRange.end, 0, 0, 0)} is ${now.getTime() < nextScheduledTime && nextScheduledTime < new Date().setUTCHours(timeRange.end, 0, 0, 0)}`)
-    return now.getTime() < nextScheduledTime && nextScheduledTime < new Date().setUTCHours(timeRange.end, 0, 0, 0);
+    console.log(`(checkPOIItemDataResetAlreadyScheduled) ${now.getTime()} < ${nextScheduledTime} && ${nextScheduledTime} < ${targetEndTime} is ${now.getTime() < nextScheduledTime && nextScheduledTime < targetEndTime}`)
+    return now.getTime() < nextScheduledTime && nextScheduledTime < targetEndTime;
 }
 
 /**
