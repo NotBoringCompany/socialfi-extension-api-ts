@@ -544,6 +544,9 @@ export const rollWonderspin = async (
                         }
                     });
 
+                    // let currentMinProbability back to 0 to filter the assets further later.
+                    currentMinProbability = 0;
+
                     console.log(`(rollWonderspin) Filtered AT LEAST B tier assets data: ${JSON.stringify(filteredAtLeastBTierAssetsData)}`);
 
                     // we will need to calculate the increased probability of obtaining an A tier asset IF:
@@ -740,6 +743,9 @@ export const rollWonderspin = async (
                         }
                     });
 
+                    // let currentMinProbability back to 0 to filter the assets further later.
+                    currentMinProbability = 0;
+
                     console.log(`(rollWonderspin) Filtered assets data: ${JSON.stringify(filteredAssetsData)}`);
 
                     // we will need to calculate the increased probability of obtaining an A tier asset IF:
@@ -747,7 +753,7 @@ export const rollWonderspin = async (
                     // AND
                     // 2. `rollsUntilFortuneBlessing` is NOT null
                     if (rollsUntilFortuneSurge !== null && rollsUntilFortuneSurge <= 1 && rollsUntilFortuneBlessing !== null) {
-                        console.log(`(rollWonderspin) Normal roll, and rolls until fortune surge is 0. Calculating increased probability of obtaining an A tier asset...`);
+                        console.log(`(rollWonderspin) Normal roll, and rolls until fortune surge is 1. Calculating increased probability of obtaining an A tier asset...`);
 
                         // get the current cumulative probability of obtaining ONLY an A tier asset.
                         // this is done by obtaining the sum of all A tier asset probability weights divided by the sum of all asset probability weights for all assets.
