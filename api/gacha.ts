@@ -383,11 +383,6 @@ export const rollWonderspin = async (
                 rollsUntilFortuneSurge = wonderspinData.fortuneSurgeThreshold;
                 // reset the `currentFortuneSurgeRoll` counter back to 1.
                 currentFortuneSurgeRoll = 1;
-                // decrement the `rollsUntilFortuneCrest` counter by 1. if already 0, then it will remain as 0.
-                // this is because the user didn't obtain a B tier asset.
-                if (rollsUntilFortuneCrest !== null && rollsUntilFortuneCrest > 0) {
-                    rollsUntilFortuneCrest--;
-                }
                 // increase the `totalRolls` counter by 1.
                 totalRolls++;
 
@@ -489,11 +484,6 @@ export const rollWonderspin = async (
                 rollsUntilFortuneSurge = wonderspinData.fortuneSurgeThreshold;
                 // reset the `currentFortuneSurgeRoll` counter back to 1.
                 currentFortuneSurgeRoll = 1;
-                // decrement the `rollsUntilFortuneCrest` counter by 1. if already 0, then it will remain as 0.
-                // this is because the user didn't obtain a B tier asset.
-                if (rollsUntilFortuneCrest !== null && rollsUntilFortuneCrest > 0) {
-                    rollsUntilFortuneCrest--;
-                }
                 // increase the `totalRolls` counter by 1.
                 totalRolls++;
 
@@ -651,16 +641,11 @@ export const rollWonderspin = async (
                 // 2. `rollsUntilFortuneBlessing` will be reset to `fortuneBlessingThreshold`.
                 // 3. `rollsUntilFortuneSurge` will be reset to `fortuneSurgeThreshold`.
                 // 4. `currentFortuneSurgeRoll` will be reset to 1.
-                // 5. `rollsUntilFortuneCrest` will be decremented by 1 if not null and is > 0, because the user didn't get a B tier asset.
                 if (obtainedAssetIsFeatured) {
                     rollsUntilFortunePeak = wonderspinData.fortunePeakThreshold;
                     rollsUntilFortuneBlessing = wonderspinData.fortuneBlessingThreshold;
                     rollsUntilFortuneSurge = wonderspinData.fortuneSurgeThreshold;
                     currentFortuneSurgeRoll = 1;
-
-                    if (rollsUntilFortuneCrest !== null && rollsUntilFortuneCrest > 0) {
-                        rollsUntilFortuneCrest--;
-                    }
                 }
 
                 // if `obtainedAssetIsATier` is true:
@@ -668,7 +653,6 @@ export const rollWonderspin = async (
                 // 2. `rollsUntilFortuneBlessing` will be reset to `fortuneBlessingThreshold`.
                 // 3. `rollsUntilFortuneSurge` will be reset to `fortuneSurgeThreshold`.
                 // 4. `currentFortuneSurgeRoll` will be reset to 1.
-                // 5. `rollsUntilFortuneCrest` will be decremented by 1 if not null and is > 0, because the user didn't get a B tier asset.
                 if (obtainedAssetIsATier) {
                     if (rollsUntilFortunePeak !== null) {
                         rollsUntilFortunePeak--;
@@ -677,10 +661,6 @@ export const rollWonderspin = async (
                     rollsUntilFortuneBlessing = wonderspinData.fortuneBlessingThreshold;
                     rollsUntilFortuneSurge = wonderspinData.fortuneSurgeThreshold;
                     currentFortuneSurgeRoll = 1;
-
-                    if (rollsUntilFortuneCrest !== null && rollsUntilFortuneCrest > 0) {
-                        rollsUntilFortuneCrest--;
-                    }
                 }
 
                 // if BOTH `obtainedAssetIsFeatured` and `obtainedAssetIsATier` are false, then the user has obtained a B tier asset, meaning:
@@ -876,16 +856,11 @@ export const rollWonderspin = async (
                 // 2. `rollsUntilFortuneBlessing` will be reset to `fortuneBlessingThreshold`.
                 // 3. `rollsUntilFortuneSurge` will be reset to `fortuneSurgeThreshold`.
                 // 4. `currentFortuneSurgeRoll` will be reset to 1.
-                // 5. `rollsUntilFortuneCrest` will be decremented by 1 if not null, because the user didn't get a B tier asset.
                 if (obtainedAssetIsFeatured) {
                     rollsUntilFortunePeak = wonderspinData.fortunePeakThreshold;
                     rollsUntilFortuneBlessing = wonderspinData.fortuneBlessingThreshold;
                     rollsUntilFortuneSurge = wonderspinData.fortuneSurgeThreshold;
                     currentFortuneSurgeRoll = 1;
-
-                    if (rollsUntilFortuneCrest !== null && rollsUntilFortuneCrest > 0) {
-                        rollsUntilFortuneCrest--;
-                    }
                 }
 
                 // if `obtainedAssetIsATier` is true:
@@ -893,7 +868,6 @@ export const rollWonderspin = async (
                 // 2. `rollsUntilFortuneBlessing` will be reset to `fortuneBlessingThreshold`.
                 // 3. `rollsUntilFortuneSurge` will be reset to `fortuneSurgeThreshold`.
                 // 4. `currentFortuneSurgeRoll` will be reset to 1.
-                // 5. `rollsUntilFortuneCrest` will be decremented by 1 if not null, because the user didn't get a B tier asset.
                 if (obtainedAssetIsATier) {
                     if (rollsUntilFortunePeak !== null) {
                         rollsUntilFortunePeak--;
@@ -902,10 +876,6 @@ export const rollWonderspin = async (
                     rollsUntilFortuneBlessing = wonderspinData.fortuneBlessingThreshold;
                     rollsUntilFortuneSurge = wonderspinData.fortuneSurgeThreshold;
                     currentFortuneSurgeRoll = 1;
-
-                    if (rollsUntilFortuneCrest !== null && rollsUntilFortuneCrest > 0) {
-                        rollsUntilFortuneCrest--;
-                    }
                 }
 
                 // if `obtainedAssetIsBTier` is true:
