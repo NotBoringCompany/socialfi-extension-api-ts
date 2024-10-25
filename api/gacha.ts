@@ -291,12 +291,6 @@ export const rollWonderspin = async (
 
         while (obtainedAssets.length < amount) {
             console.log(`(rollWonderspin) Roll ${obtainedAssets.length + 1}...`);
-            console.log(`(rollWonderspin) Rolls until fortune crest: ${rollsUntilFortuneCrest}`);
-            console.log(`(rollWonderspin) Rolls until fortune surge: ${rollsUntilFortuneSurge}`);
-            console.log(`(rollWonderspin) Current fortune surge roll: ${currentFortuneSurgeRoll}`);
-            console.log(`(rollWonderspin) Rolls until fortune blessing: ${rollsUntilFortuneBlessing}`);
-            console.log(`(rollWonderspin) Rolls until fortune peak: ${rollsUntilFortunePeak}`);
-            console.log(`(rollWonderspin) Total rolls: ${totalRolls}`);
             
             // the order of priority is:
             // 1. featured asset (if rollsUntilFortunePeak is NOT null AND is 0)
@@ -1081,6 +1075,13 @@ export const rollWonderspin = async (
             $push: userUpdateOperations.$push,
             $pull: userUpdateOperations.$pull
         });
+
+        console.log(`(rollWonderspin) Rolls until fortune crest: ${rollsUntilFortuneCrest}`);
+        console.log(`(rollWonderspin) Rolls until fortune surge: ${rollsUntilFortuneSurge}`);
+        console.log(`(rollWonderspin) Current fortune surge roll: ${currentFortuneSurgeRoll}`);
+        console.log(`(rollWonderspin) Rolls until fortune blessing: ${rollsUntilFortuneBlessing}`);
+        console.log(`(rollWonderspin) Rolls until fortune peak: ${rollsUntilFortunePeak}`);
+        console.log(`(rollWonderspin) Total rolls: ${totalRolls}`);
 
         return {
             status: Status.SUCCESS,
