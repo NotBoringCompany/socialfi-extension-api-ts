@@ -474,7 +474,15 @@ export const rollWonderspin = async (
                 // if `obtainedAssetIsFeatured` is true, reset the `rollsUntilFortunePeak` counter back to `fortunePeakThreshold`.
                 if (obtainedAssetIsFeatured) {
                     rollsUntilFortunePeak = wonderspinData.fortunePeakThreshold;
+                } else {
+                    // if not, reduce the `rollsUntilFortunePeak` counter by 1. if already 0, then it will remain as 0.
+                    // well, it shouldn't be `0` anyways because the first `if` condition should be true.
+                    // however, we will add this just in case.
+                    if (rollsUntilFortunePeak !== null && rollsUntilFortunePeak > 0) {
+                        rollsUntilFortunePeak--;
+                    }
                 }
+
                 // reset the `rollsUntilFortuneBlessing` counter back to `fortuneBlessingThreshold`.
                 rollsUntilFortuneBlessing = wonderspinData.fortuneBlessingThreshold;
                 // reset the `rollsUntilFortuneSurge` counter back to `fortuneSurgeThreshold`.
