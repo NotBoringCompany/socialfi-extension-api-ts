@@ -914,6 +914,8 @@ export const rollWonderspin = async (
                 // 3. `rollsUntilFortuneSurge` will be decremented if not 1 (we put <=1 just in case). if 1, then the `currentFortuneSurgeRoll` will increase by 1.
                 // 4. `rollsUntilFortuneCrest` will be decremented by 1 if not null, because the user didn't get a B tier asset.
                 if (!obtainedAssetIsFeatured && !obtainedAssetIsATier && !obtainedAssetIsBTier) {
+                    console.log(`(rollWonderspin) Obtained C tier asset. Decreasing counters...`);
+                    
                     if (rollsUntilFortunePeak !== null) {
                         rollsUntilFortunePeak--;
                     }
