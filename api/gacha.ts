@@ -301,8 +301,8 @@ export const rollWonderspin = async (
             // this will also increase the cumulative probability of obtaining an A tier asset on the next roll based on the formula found in `UserWonderspinData.currentFortuneSurgeRoll`:
             // BPa + ((100 - BPa) / (fortuneBlessingThreshold - fortuneSurgeThreshold) * currentFortuneSurgeRoll)
 
-            // check if `rollsUntilFortunePeak` is NOT null AND is 0 (meaning a guaranteed featured asset).
-            if (rollsUntilFortunePeak !== null && rollsUntilFortunePeak === 0) {
+            // check if `rollsUntilFortunePeak` is NOT null AND is 1 (we put <=1 just in case) (meaning a guaranteed featured asset).
+            if (rollsUntilFortunePeak !== null && rollsUntilFortunePeak <= 1) {
                 // obtain a featured asset.
                 const featuredAssets = wonderspinData.assetData.filter(asset => asset.featured);
 
@@ -382,8 +382,8 @@ export const rollWonderspin = async (
 
                 // continue to the next iteration.
                 continue;
-            // 2nd priority: check if `rollsUntilFortuneBlessing` is NOT null AND is 0 (meaning a guaranteed A tier asset).
-            } else if (rollsUntilFortuneBlessing !== null && rollsUntilFortuneBlessing === 0) {
+            // 2nd priority: check if `rollsUntilFortuneBlessing` is NOT null AND is 1 (we put <=1 just in case) (meaning a guaranteed A tier asset).
+            } else if (rollsUntilFortuneBlessing !== null && rollsUntilFortuneBlessing <= 1) {
                 // obtain an A tier asset (guaranteed).
                 const aTierAssets = wonderspinData.assetData.filter(asset => asset.tier === WonderspinAssetTier.A);
                 
@@ -483,8 +483,8 @@ export const rollWonderspin = async (
 
                 // continue to the next iteration.
                 continue;
-            // 3rd priority: check if `rollsUntilFortuneCrest` is NOT null AND is 0 (meaning guaranteed AT least a B tier asset).
-            } else if (rollsUntilFortuneCrest !== null && rollsUntilFortuneCrest === 0) {
+            // 3rd priority: check if `rollsUntilFortuneCrest` is NOT null AND is 1 (we put <=1 just in case) (meaning guaranteed AT least a B tier asset).
+            } else if (rollsUntilFortuneCrest !== null && rollsUntilFortuneCrest <= 1) {
                 // obtain AT least a B tier asset (so we will filter for B and A tier assets).
                 const atLeastBTierAssets = wonderspinData.assetData.filter(asset => asset.tier === WonderspinAssetTier.B || asset.tier === WonderspinAssetTier.A);
 
@@ -545,10 +545,10 @@ export const rollWonderspin = async (
                     console.log(`(rollWonderspin) Filtered AT LEAST B tier assets data: ${JSON.stringify(filteredAtLeastBTierAssetsData)}`);
 
                     // we will need to calculate the increased probability of obtaining an A tier asset IF:
-                    // 1. `rollsUntilFortuneSurge` is NOT null AND is 0
+                    // 1. `rollsUntilFortuneSurge` is NOT null AND is 1 (we put <=1 just in case)
                     // AND
                     // 2. `rollsUntilFortuneBlessing` is NOT null
-                    if (rollsUntilFortuneSurge !== null && rollsUntilFortuneSurge === 0 && rollsUntilFortuneBlessing !== null) {
+                    if (rollsUntilFortuneSurge !== null && rollsUntilFortuneSurge <= 1 && rollsUntilFortuneBlessing !== null) {
                         console.log(`(rollWonderspin) Guaranteed at least B tier asset, and rolls until fortune surge is 0. Calculating increased probability of obtaining an A tier asset...`);
 
                         // get the current cumulative probability of obtaining ONLY an A tier asset.
@@ -660,7 +660,7 @@ export const rollWonderspin = async (
                 // if BOTH `obtainedAssetIsFeatured` and `obtainedAssetIsATier` are false, then the user has obtained a B tier asset, meaning:
                 // 1. `rollsUntilFortunePeak` will be decremented by 1 if not null, because the user didn't get a featured asset.
                 // 2. `rollsUntilFortuneBlessing` will be decremented by 1 if not null, because the user didn't get an A tier asset.
-                // 3. `rollsUntilFortuneSurge` will be decremented if not 0. if 0, then the `currentFortuneSurgeRoll` will increase by 1.
+                // 3. `rollsUntilFortuneSurge` will be decremented if not 1 (we put <=1 just in case). if 1, then the `currentFortuneSurgeRoll` will increase by 1.
                 // 4. `rollsUntilFortuneCrest` will be reset to `fortuneCrestThreshold`.
                 if (!obtainedAssetIsFeatured && !obtainedAssetIsATier) {
                     if (rollsUntilFortunePeak !== null) {
@@ -672,7 +672,7 @@ export const rollWonderspin = async (
                     }
 
                     if (rollsUntilFortuneSurge !== null) {
-                        if (rollsUntilFortuneSurge === 0) {
+                        if (rollsUntilFortuneSurge <= 1) {
                             currentFortuneSurgeRoll++;
                         } else {
                             rollsUntilFortuneSurge--;
@@ -739,10 +739,10 @@ export const rollWonderspin = async (
                     console.log(`(rollWonderspin) Filtered assets data: ${JSON.stringify(filteredAssetsData)}`);
 
                     // we will need to calculate the increased probability of obtaining an A tier asset IF:
-                    // 1. `rollsUntilFortuneSurge` is NOT null AND is 0
+                    // 1. `rollsUntilFortuneSurge` is NOT null AND is 1 (we put <=1 just in case)
                     // AND
                     // 2. `rollsUntilFortuneBlessing` is NOT null
-                    if (rollsUntilFortuneSurge !== null && rollsUntilFortuneSurge === 0 && rollsUntilFortuneBlessing !== null) {
+                    if (rollsUntilFortuneSurge !== null && rollsUntilFortuneSurge <= 1 && rollsUntilFortuneBlessing !== null) {
                         console.log(`(rollWonderspin) Normal roll, and rolls until fortune surge is 0. Calculating increased probability of obtaining an A tier asset...`);
 
                         // get the current cumulative probability of obtaining ONLY an A tier asset.
@@ -875,7 +875,7 @@ export const rollWonderspin = async (
                 // if `obtainedAssetIsBTier` is true:
                 // 1. `rollsUntilFortunePeak` will be decremented by 1 if not null, because the user didn't get a featured asset.
                 // 2. `rollsUntilFortuneBlessing` will be decremented by 1 if not null, because the user didn't get an A tier asset.
-                // 3. `rollsUntilFortuneSurge` will be decremented if not 0. if 0, then the `currentFortuneSurgeRoll` will increase by 1.
+                // 3. `rollsUntilFortuneSurge` will be decremented if not 1 (we put <=1 just in case). if 1, then the `currentFortuneSurgeRoll` will increase by 1.
                 // 4. `rollsUntilFortuneCrest` will be reset to `fortuneCrestThreshold`.
                 if (obtainedAssetIsBTier) {
                     if (rollsUntilFortunePeak !== null) {
@@ -887,7 +887,7 @@ export const rollWonderspin = async (
                     }
 
                     if (rollsUntilFortuneSurge !== null) {
-                        if (rollsUntilFortuneSurge === 0) {
+                        if (rollsUntilFortuneSurge <= 1) {
                             currentFortuneSurgeRoll++;
                         } else {
                             rollsUntilFortuneSurge--;
@@ -900,7 +900,7 @@ export const rollWonderspin = async (
                 // if `obtainedAssetIsFeatured`, `obtainedAssetIsATier`, and `obtainedAssetIsBTier` are false, then the user has obtained a C tier asset, meaning:
                 // 1. `rollsUntilFortunePeak` will be decremented by 1 if not null, because the user didn't get a featured asset.
                 // 2. `rollsUntilFortuneBlessing` will be decremented by 1 if not null, because the user didn't get an A tier asset.
-                // 3. `rollsUntilFortuneSurge` will be decremented if not 0. if 0, then the `currentFortuneSurgeRoll` will increase by 1.
+                // 3. `rollsUntilFortuneSurge` will be decremented if not 1 (we put <=1 just in case). if 1, then the `currentFortuneSurgeRoll` will increase by 1.
                 // 4. `rollsUntilFortuneCrest` will be decremented by 1 if not null, because the user didn't get a B tier asset.
                 if (!obtainedAssetIsFeatured && !obtainedAssetIsATier && !obtainedAssetIsBTier) {
                     if (rollsUntilFortunePeak !== null) {
@@ -912,7 +912,7 @@ export const rollWonderspin = async (
                     }
 
                     if (rollsUntilFortuneSurge !== null) {
-                        if (rollsUntilFortuneSurge === 0) {
+                        if (rollsUntilFortuneSurge <= 1) {
                             currentFortuneSurgeRoll++;
                         } else {
                             rollsUntilFortuneSurge--;
