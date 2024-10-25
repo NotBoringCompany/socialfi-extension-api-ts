@@ -133,6 +133,7 @@ export const addWonderspin = async (
             _id: generateObjectId(),
             name,
             ticketType,
+            active,
             fortuneCrestThreshold,
             fortuneSurgeThreshold,
             fortuneBlessingThreshold,
@@ -464,10 +465,10 @@ export const rollWonderspin = async (
                 if (obtainedAssetIsFeatured) {
                     rollsUntilFortunePeak = wonderspinData.fortunePeakThreshold;
                 } else {
-                    // if not, reduce the `rollsUntilFortunePeak` counter by 1. if already 0, then it will remain as 0.
-                    // well, it shouldn't be `0` anyways because the first `if` condition should be true.
+                    // if not, reduce the `rollsUntilFortunePeak` counter by 1. if already 1, then it will remain as 1.
+                    // well, it shouldn't be `1` anyways because the first `if` condition should be true.
                     // however, we will add this just in case.
-                    if (rollsUntilFortunePeak !== null && rollsUntilFortunePeak > 0) {
+                    if (rollsUntilFortunePeak !== null && rollsUntilFortunePeak > 1) {
                         rollsUntilFortunePeak--;
                     }
                 }
@@ -512,7 +513,8 @@ export const rollWonderspin = async (
                     // check if the asset obtained is a featured asset.
                     obtainedAssetIsFeatured = atLeastBTierAssets[0].featured;
                     // check if the asset obtained is an A tier asset.
-                    obtainedAssetIsATier = atLeastBTierAssets[0].tier === WonderspinAssetTier.A;
+                    // featured assets are technically A tier, but for the sake of the roll counter updates, it won't count as an A tier asset.
+                    obtainedAssetIsATier = atLeastBTierAssets[0].tier === WonderspinAssetTier.A && !obtainedAssetIsFeatured;
 
                     console.log(`(rollWonderspin) Obtained AT LEAST a B tier asset from guaranteed B tier roll: ${JSON.stringify(atLeastBTierAssets[0])}`);
                 } else {
@@ -627,7 +629,8 @@ export const rollWonderspin = async (
                     // check if the asset obtained is a featured asset.
                     obtainedAssetIsFeatured = atLeastBTierAssets.find(asset => asset.asset === obtainedAsset.asset)?.featured ?? false;
                     // check if the asset obtained is an A tier asset.
-                    obtainedAssetIsATier = obtainedAsset.assetTier === WonderspinAssetTier.A;
+                    // featured assets are technically A tier, but for the sake of the roll counter updates, it won't count as an A tier asset.
+                    obtainedAssetIsATier = obtainedAsset.assetTier === WonderspinAssetTier.A && !obtainedAssetIsFeatured;
                 }
 
                 // if `obtainedAssetIsFeatured` is true:
@@ -709,7 +712,8 @@ export const rollWonderspin = async (
                     // check if the asset obtained is a featured asset.
                     obtainedAssetIsFeatured = wonderspinData.assetData[0].featured;
                     // check if the asset obtained is an A tier asset.
-                    obtainedAssetIsATier = wonderspinData.assetData[0].tier === WonderspinAssetTier.A;
+                    // featured assets are technically A tier, but for the sake of the roll counter updates, it won't count as an A tier asset.
+                    obtainedAssetIsATier = wonderspinData.assetData[0].tier === WonderspinAssetTier.A && !obtainedAssetIsFeatured;
                     // check if the asset obtained is a B tier asset.
                     obtainedAssetIsBTier = wonderspinData.assetData[0].tier === WonderspinAssetTier.B;
 
@@ -840,7 +844,8 @@ export const rollWonderspin = async (
                     // check if the asset obtained is a featured asset.
                     obtainedAssetIsFeatured = wonderspinData.assetData.find(asset => asset.asset === obtainedAsset.asset)?.featured ?? false;
                     // check if the asset obtained is an A tier asset.
-                    obtainedAssetIsATier = obtainedAsset.assetTier === WonderspinAssetTier.A;
+                    // featured assets are technically A tier, but for the sake of the roll counter updates, it won't count as an A tier asset.
+                    obtainedAssetIsATier = obtainedAsset.assetTier === WonderspinAssetTier.A && !obtainedAssetIsFeatured;
                     // check if the asset obtained is a B tier asset.
                     obtainedAssetIsBTier = obtainedAsset.assetTier === WonderspinAssetTier.B;
                 }
