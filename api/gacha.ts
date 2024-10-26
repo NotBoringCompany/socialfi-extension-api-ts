@@ -33,7 +33,7 @@ export const fetchActiveWonderspins = async (): Promise<ReturnValue> => {
 /**
  * Fetches all of a user's Wonderspin data.
  */
-export const fetchAllUserWonderspinData = async (twitterId: string): Promise<ReturnValue> => {
+export const fetchUserWonderspinData = async (twitterId: string): Promise<ReturnValue> => {
     try {
         const user = await UserModel.findOne({ twitterId }).lean();
 

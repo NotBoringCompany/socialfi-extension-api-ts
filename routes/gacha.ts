@@ -2,7 +2,7 @@ import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { authMiddleware } from '../middlewares/auth';
-import { addWonderspin, fetchActiveWonderspins, fetchAllUserWonderspinData, rollWonderspin } from '../api/gacha';
+import { addWonderspin, fetchActiveWonderspins, fetchUserWonderspinData, rollWonderspin } from '../api/gacha';
 
 const router = express.Router();
 
@@ -50,9 +50,9 @@ router.get('/fetch_active_wonderspins', async (req, res) => {
     }
 });
 
-router.get('/fetch_all_user_wonderspin_data', async (req, res) => {
+router.get('/fetch_user_wonderspin_data', async (req, res) => {
     try {
-        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'fetch_all_user_wonderspin_data');
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'fetch_user_wonderspin_data');
 
         if (validateStatus !== Status.SUCCESS) {
             return res.status(validateStatus).json({
@@ -61,7 +61,7 @@ router.get('/fetch_all_user_wonderspin_data', async (req, res) => {
             });
         }
 
-        const { status, message, data } = await fetchAllUserWonderspinData(validateData?.twitterId);
+        const { status, message, data } = await fetchUserWonderspinData(validateData?.twitterId);
 
         return res.status(status).json({
             status,
