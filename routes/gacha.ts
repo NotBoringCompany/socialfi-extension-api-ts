@@ -50,7 +50,7 @@ router.get('/fetch_active_wonderspins', async (req, res) => {
     }
 });
 
-router.get('/fetch_all_user_wonderspin_data/:', async (req, res) => {
+router.get('/fetch_all_user_wonderspin_data', async (req, res) => {
     try {
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'fetch_all_user_wonderspin_data');
 
