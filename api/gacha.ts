@@ -9,6 +9,60 @@ import { generateObjectId } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
 
 /**
+ * Fetches all currently active Wonderspins.
+ */
+export const fetchActiveWonderspins = async (): Promise<ReturnValue> => {
+    try {
+        const activeWonderspins = await WonderspinModel.find({ active: true }).lean();
+
+        return {
+            status: Status.SUCCESS,
+            message: '(fetchActiveWonderspins) fetched successfully.',
+            data: {
+                wonderspins: activeWonderspins
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(fetchActiveWonderspins) ${err.message}`
+        }
+    }
+} 
+
+/**
+ * Fetches all of a user's Wonderspin data.
+ */
+export const fetchAllUserWonderspinData = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: '(fetchAllUserWonderspinData) User not found.'
+            }
+        }
+
+        const userWonderspinData = await UserWonderspinDataModel.find({ userId: user._id }).lean();
+
+        return {
+            status: Status.SUCCESS,
+            message: '(fetchUserWonderspinData) fetched successfully.',
+            data: {
+                userWonderspinData
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(fetchUserWonderspinData) ${err.message}`
+        }
+    }
+
+}
+
+/**
  * Adds a new Wonderspin type to the database.
  */
 export const addWonderspin = async (
