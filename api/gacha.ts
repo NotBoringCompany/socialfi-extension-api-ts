@@ -700,5 +700,7 @@ export const rollWonderspin = async (
             status: Status.ERROR,
             message: `(rollWonderspin) ${err.message}`
         }
+    } finally {
+        await redis.del(lockKey);
     }
 }
