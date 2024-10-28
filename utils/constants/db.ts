@@ -27,6 +27,7 @@ import { BanSchema } from '../../schemas/Ban';
 import { MailReceiverDataSchema, MailSchema } from '../../schemas/Mail';
 import { ConsumedSynthesizingItemSchema } from '../../schemas/Asset';
 import { UserWonderspinDataSchema, WonderspinSchema } from '../../schemas/Gacha';
+import { CosmeticSchema } from '../../schemas/Cosmetic';
 
 
 const TEST_DATABASE = process.env.MONGODB_URI!;
@@ -107,3 +108,4 @@ export const MailReceiverDataModel = TEST_CONNECTION.model('MailReceiverData', M
 export const ConsumedSynthesizingItemModel = TEST_CONNECTION.model('ConsumedSynthesizingItems', ConsumedSynthesizingItemSchema, 'ConsumedSynthesizingItems');
 export const UserWonderspinDataModel = TEST_CONNECTION.model('UserWonderspinData', UserWonderspinDataSchema, 'UserWonderspinData');
 export const WonderspinModel = TEST_CONNECTION.model('Wonderspins', WonderspinSchema, 'Wonderspins');
+export const CosmeticModel = TEST_CONNECTION.model('Cosmetics', CosmeticSchema, 'Cosmetics');
