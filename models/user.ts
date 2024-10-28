@@ -173,7 +173,7 @@ export interface ExtendedDiamondData {
  * A list of the sources of obtaining diamonds.
  */
 export enum DiamondSource {
-    IN_APP_PURCHASE = 'In App Purchase',
+    SHOP_PURCHASE = 'Shop Purchase',
     WONDERSPIN = 'Wonderspin',
 }
 
