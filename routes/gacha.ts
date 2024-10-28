@@ -2,7 +2,7 @@ import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { authMiddleware } from '../middlewares/auth';
-import { addWonderspin, fetchActiveWonderspins, fetchUserWonderspinData, rollWonderspin } from '../api/gacha';
+import { addWonderspin, fetchActiveWonderspins, fetchCurrentActiveWonderspinData, fetchUserWonderspinData, rollWonderspin } from '../api/gacha';
 
 const router = express.Router();
 
@@ -24,9 +24,9 @@ router.post('/add_wonderspin', authMiddleware(3), async (req, res) => {
     }
 });
 
-router.get('/fetch_active_wonderspins', async (req, res) => {
+router.get('/fetch_current_active_wonderspin_data', async (req, res) => {
     try {
-        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'fetch_active_wonderspins');
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'fetch_current_active_wonderspin_data');
 
         if (validateStatus !== Status.SUCCESS) {
             return res.status(validateStatus).json({
@@ -35,7 +35,7 @@ router.get('/fetch_active_wonderspins', async (req, res) => {
             });
         }
 
-        const { status, message, data } = await fetchActiveWonderspins();
+        const { status, message, data } = await fetchCurrentActiveWonderspinData(validateData?.twitterId);
 
         return res.status(status).json({
             status,
@@ -49,32 +49,6 @@ router.get('/fetch_active_wonderspins', async (req, res) => {
         });
     }
 });
-
-router.get('/fetch_user_wonderspin_data', async (req, res) => {
-    try {
-        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'fetch_user_wonderspin_data');
-
-        if (validateStatus !== Status.SUCCESS) {
-            return res.status(validateStatus).json({
-                status: validateStatus,
-                message: validateMessage
-            });
-        }
-
-        const { status, message, data } = await fetchUserWonderspinData(validateData?.twitterId);
-
-        return res.status(status).json({
-            status,
-            message,
-            data
-        });
-    } catch (err: any) {
-        return res.status(500).json({
-            status: 500,
-            message: err.message
-        });
-    }
-})
 
 router.post('/roll_wonderspin', async (req, res) => {
     const { ticket, wonderspin, amount } = req.body;
