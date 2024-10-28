@@ -58,7 +58,7 @@ export const getAllUserCosmetics = async (userId: string): Promise<ReturnValue> 
   }
 }
 
-export const equippedCosmetic = async (cosmeticId: string, bitId: number, userId: string): Promise<ReturnValue> => {
+export const equipCosmetic = async (cosmeticId: string, bitId: number, userId: string): Promise<ReturnValue> => {
   try {
     // check bitId is valid
     const bit = await BitModel.findOne({ bitId }).lean();
@@ -122,6 +122,49 @@ export const equippedCosmetic = async (cosmeticId: string, bitId: number, userId
     return {
       status: Status.ERROR,
       message: `(equippedCosmetic) Error: ${err.message}`,
+    };
+  }
+}
+
+export const unequipCosmetic = async (cosmeticId: string, userId: string): Promise<ReturnValue> => {
+  try {
+    // check real idUser exists
+    const user = await UserModel.findOne({ _id: userId }).lean();
+    if (!user) {
+      return {
+        status: Status.ERROR,
+        message: `(unequippedCosmetic) User with ID: ${userId} not found`,
+      };
+    }
+    // check if cosmetic exists
+    const cosmetic = await CosmeticModel.findOne({ _id: cosmeticId }).lean();
+    if (!cosmetic) {
+      return {
+        status: Status.ERROR,
+        message: `(unequippedCosmetic) Cosmetic with ID: ${cosmeticId} not found`,
+      };
+    }
+    // check if user owns cosmetic
+    if (cosmetic.owner !== userId) {
+      return {
+        status: Status.ERROR,
+        message: `(unequippedCosmetic) User with ID: ${userId} does not own cosmetic with ID: ${cosmeticId}`,
+      };
+    }
+    // update cosmetic
+    cosmetic.equipped = null;
+    await CosmeticModel.updateOne({ _id: cosmeticId }, cosmetic);
+    return {
+      status: Status.SUCCESS,
+      message: `(unequippedCosmetic) Successfully updated cosmetic with ID: ${cosmeticId} for user with ID: ${userId}`,
+      data: {
+        cosmetic
+      }
+    };
+  } catch (err: any) {
+    return {
+      status: Status.ERROR,
+      message: `(unequippedCosmetic) Error: ${err.message}`,    
     };
   }
 }
