@@ -24,23 +24,19 @@ WONDERSPIN_QUEUE.process('rollWonderspin', async (job) => {
 
     try {
         if (![1, 5, 10].includes(amount)) {
-            // return {
-            //     status: Status.ERROR,
-            //     message: '(rollWonderspin) Invalid amount.'
-            // }
-            console.error(`(rollWonderspin) Invalid amount.`);
-            throw new Error('(rollWonderspin) Invalid amount.');
+            return {
+                status: Status.ERROR,
+                message: '(rollWonderspin) Invalid amount.'
+            }
         }
         
         const user = await UserModel.findOne({ twitterId }).lean();
         
         if (!user) {
-            // return {
-            //     status: Status.ERROR,
-            //     message: '(rollWonderspin) User not found.'
-            // }
-            console.error(`(rollWonderspin) User not found.`);
-            throw new Error('(rollWonderspin) User not found.');
+            return {
+                status: Status.ERROR,
+                message: '(rollWonderspin) User not found.'
+            }
         }
         
         const userUpdateOperations = {
@@ -54,12 +50,10 @@ WONDERSPIN_QUEUE.process('rollWonderspin', async (job) => {
         const ticketIndex = (user?.inventory?.items as Item[]).findIndex(item => item.type === ticket);
         
         if (ticketIndex === -1 || (user.inventory.items as Item[])[ticketIndex].amount < amount) {
-            // return {
-            //     status: Status.ERROR,
-            //     message: '(rollWonderspin) Insufficient tickets to roll this Wonderspin.'
-            // }
-            console.error(`(rollWonderspin) Insufficient tickets to roll this Wonderspin.`);
-            throw new Error('(rollWonderspin) Insufficient tickets to roll this Wonderspin.');
+            return {
+                status: Status.ERROR,
+                message: '(rollWonderspin) Insufficient tickets to roll this Wonderspin.'
+            }
         }
         
         // we fetch two things:
@@ -68,34 +62,27 @@ WONDERSPIN_QUEUE.process('rollWonderspin', async (job) => {
         const wonderspinData = await WonderspinModel.findOne({ name: { $regex: new RegExp(`^${wonderspin}$`, 'i') } }).lean();
         
         if (!wonderspinData) {
-            // return {
-            //     status: Status.ERROR,
-            //     message: '(rollWonderspin) Wonderspin not found.'
-            // }
-            console.error(`(rollWonderspin) Wonderspin not found.`);
-            throw new Error('(rollWonderspin) Wonderspin not found.');
+            return {
+                status: Status.ERROR,
+                message: '(rollWonderspin) Wonderspin not found.'
+            }
         }
         
         // check if the `active` field is true.
         if (!wonderspinData.active) {
-            // return {
-            //     status: Status.ERROR,
-            //     message: '(rollWonderspin) Wonderspin is currently inactive.'
-            // }
-            console.error(`(rollWonderspin) Wonderspin is currently inactive.`);
-            throw new Error('(rollWonderspin) Wonderspin is currently inactive.');
+            return {
+                status: Status.ERROR,
+                message: '(rollWonderspin) Wonderspin is currently inactive.'
+            }
         }
         
         
         // check if the ticket inputted matches the ticket type of the Wonderspin.
         if (wonderspinData.ticketType !== ticket) {
-            // return {
-            //     status: Status.ERROR,
-            //     message: `(rollWonderspin) Ticket type does not match the Wonderspin's required ticket type.`
-            // }
-
-            console.error(`(rollWonderspin) Ticket type does not match the Wonderspin's required ticket type.`);
-            throw new Error('(rollWonderspin) Ticket type does not match the Wonderspin\'s required ticket type.');
+            return {
+                status: Status.ERROR,
+                message: `(rollWonderspin) Ticket type does not match the Wonderspin's required ticket type.`
+            }
         }
         
         // consume the ticket.
@@ -887,12 +874,10 @@ WONDERSPIN_QUEUE.process('rollWonderspin', async (job) => {
                 const resourceData = resources.find(resource => resource.type === obtainedAsset.asset);
         
                 if (!resourceData) {
-                    // return {
-                    //     status: Status.ERROR,
-                    //     message: `(rollWonderspin) Resource data not found for ${obtainedAsset.asset}.`
-                    // }
-                    console.error(`(rollWonderspin) Resource data not found for ${obtainedAsset.asset}.`);
-                    throw new Error(`Resource data not found for ${obtainedAsset.asset}.`);
+                    return {
+                        status: Status.ERROR,
+                        message: `(rollWonderspin) Resource data not found for ${obtainedAsset.asset}.`
+                    }
                 }
         
                 // check if the user owns the resource in their inventory

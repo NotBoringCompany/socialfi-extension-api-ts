@@ -684,15 +684,15 @@ export const rollWonderspin = async (
         });
 
         // wait until the job finishes processing to get the result
-        const result = await job.finished();
+        const { status, message, data }= await job.finished();
 
-        console.log(`(rollWonderspin) Job with ID ${job.id} has finished processing. Result: ${result}`);
+        console.log(`(rollWonderspin) Job with ID ${job.id} has finished processing.`);
 
         return {
             status: Status.SUCCESS,
             message: `(rollWonderspin) Successfully rolled the wonderspin and updated the user's inventory.`,
             data: {
-                obtainedAssets: result
+                obtainedAssets: data.obtainedAssets
             }
         }
     } catch (err: any) {
