@@ -2,7 +2,7 @@ import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { authMiddleware } from '../middlewares/auth';
-import { addWonderspin, fetchActiveWonderspins, fetchCurrentActiveWonderspinData, fetchUserWonderspinData, rollWonderspin } from '../api/gacha';
+import { addWonderspin, fetchCurrentActiveWonderspinData, fetchUserWonderspinData, rollWonderspin } from '../api/gacha';
 
 const router = express.Router();
 
