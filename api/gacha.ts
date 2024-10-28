@@ -686,6 +686,13 @@ export const rollWonderspin = async (
         // wait until the job finishes processing to get the result
         const { status, message, data }= await job.finished();
 
+        if (status !== Status.SUCCESS) {
+            return {
+                status,
+                message
+            }
+        }
+
         console.log(`(rollWonderspin) Job with ID ${job.id} has finished processing.`);
 
         return {
