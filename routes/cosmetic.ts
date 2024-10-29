@@ -39,10 +39,10 @@ router.get('/costmetic_inventory', validateRequestAuthV2('costmetic_inventory'),
   }
 })
 
-router.get('/get_cosmetics_by_bit', validateRequestAuthV2('get_cosmetics_by_bit'), async (req, res) => {
-  const { bitId } = req.body;
+router.get('/get_cosmetics_by_bit/:bitId', validateRequestAuthV2('get_cosmetics_by_bit'), async (req, res) => {
+  const { bitId } = req.params;
   try {
-    const { status, message, data } = await getCosmeticsByBit(bitId);
+    const { status, message, data } = await getCosmeticsByBit(Number(bitId));
     return res.status(status).json({
       status,
       message,
