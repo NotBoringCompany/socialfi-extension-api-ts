@@ -53,7 +53,7 @@ export const fetchCurrentActiveWonderspinData = async (twitterId: string): Promi
             }
         }
 
-        const activeWonderspins: Wonderspin[] = await WonderspinModel.findOne({ active: true }).lean();
+        const activeWonderspins: Wonderspin[] = await WonderspinModel.find({ active: true }).lean();
 
         if (!activeWonderspins) {
             return {
