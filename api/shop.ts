@@ -544,52 +544,24 @@ export const purchaseShopAsset = async (
         }
 
         // calculate timestamp of effect expiration.
-        // if one time, set to 'never'.
-        // if daily, weekly or monthly, set to exactly 1, 7 or 30 days from now.
-        // if full daily, full weekly or full monthly, set to 23:59 UTC of the next day, week or month; so in most cases, it will be a bit more than 1, 7 or 30 days.
         const effectExpiration = (): number | 'never' => {
-            const now = new Date();
-
-            switch (shopAsset.effectDuration) {
-                case 'One Time':
-                    return 'never';
-                case 'Daily':
-                    return Math.floor(now.getTime() / 1000) + 86400;
-                case 'Weekly':
-                    return Math.floor(now.getTime() / 1000) + 604800;
-                case 'Monthly':
-                    return Math.floor(now.getTime() / 1000) + 2592000;
-                case 'Full Daily':
-                    // get the timestamp of 23:59 UTC of the next day
-                    const endOfNextDay = new Date(Date.UTC(
-                        now.getUTCFullYear(),
-                        now.getUTCMonth(),
-                        now.getUTCDate() + 1,
-                        23, 59, 0
-                    ));
-                    return Math.floor(endOfNextDay.getTime() / 1000);
-                case 'Full Weekly':
-                    // get the timestamp of 23:59 UTC in 7 days
-                    const endOf7Days = new Date(Date.UTC(
-                        now.getUTCFullYear(),
-                        now.getUTCMonth(),
-                        now.getUTCDate() + 7,
-                        23, 59, 0
-                    ));
-                    return Math.floor(endOf7Days.getTime() / 1000);
-                case 'Full Monthly':
-                    // get the timestamp of 23:59 UTC in 30 days
-                    const endOf30Days = new Date(Date.UTC(
-                        now.getUTCFullYear(),
-                        now.getUTCMonth(),
-                        now.getUTCDate() + 30,
-                        23, 59, 0
-                    ));
-
-                    return Math.floor(endOf30Days.getTime() / 1000);
-                default:
-                    return 'never';
+            // if effect duration is null, then the effect is a one-time effect. set to 'never'.
+            if (!shopAsset.effectDuration) {
+                return 'never';
             }
+
+            // if effect duration type is `DURATION_BASED`, then add the current timestamp by the `value`.
+            if (shopAsset.effectDuration.durationType === ShopAssetEffectDurationType.DURATION_BASED) {
+                return Math.floor(Date.now() / 1000) + shopAsset.effectDuration.value;
+            }
+
+            // if effect duration type is `UNTIL`, then the effect expiration will be on `value`.
+            if (shopAsset.effectDuration.durationType === ShopAssetEffectDurationType.UNTIL) {
+                return shopAsset.effectDuration.value;
+            }
+
+            // default to `never` just in case for other cases.
+            return 'never';
         }
 
         // if stock is not unlimited, decrement the stock of the asset

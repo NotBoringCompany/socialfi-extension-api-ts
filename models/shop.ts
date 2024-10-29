@@ -37,9 +37,10 @@ export interface ShopAsset {
     // the limit of how many of this asset can be purchased per account
     // if 'unlimited', then there is no limit
     purchaseLimit: number | 'unlimited';
-    // the effect of the asset
-    // for example, if an asset has a `DAILY` effect duration, the effect given by the `givenContent` will last for 24 hours from the date of purchase.
-    effectDuration: ShopAssetEffectDurationType;
+    // the effect duration data of the asset
+    // an asset can have a duration-based effect (e.g. 24 hour boost) or an effect that lasts until a certain date (e.g. battle passes).
+    // if the asset has no effect duration, then this will be `null`.
+    effectDuration: ShopAssetEffectDuration | null;
     // the refresh interval of the asset
     refreshIntervalData: ShopAssetRefreshIntervalData;
     // the level requirement of the asset
@@ -151,24 +152,26 @@ export interface ShopAssetStockData {
 }
 
 /**
+ * The effect duration data of a shop asset.
+ */
+export interface ShopAssetEffectDuration {
+    /**
+     * the type of duration.
+     * 
+     * if `DURATION_BASED`, then `value` will be the duration (in seconds) the effect will last upon purchase.
+     * 
+     * if `UNTIL`, then `value` will be the unix timestamp of when the effect will expire.
+     */
+    durationType: ShopAssetEffectDurationType;
+    value: number;
+}
+
+/**
  * Lists the different effect durations of a shop asset.
  */
 export enum ShopAssetEffectDurationType {
-    // one time use; no effect duration 
-    // (used mainly for assets that give users content directly, like currencies, food, items, etc.)
-    ONE_TIME = 'One Time',
-    // lasts 1 day from the date of purchase (exactly)
-    DAILY = 'Daily',
-    // lasts 1 day on whole day intervals (i.e. until 23:59 UTC of the day)
-    FULL_DAILY = 'Full Daily',
-    // lasts 1 week from the date of purchase (exactly)
-    WEEKLY = 'Weekly',
-    // lasts 1 week on whole day intervals (i.e. until 23:59 UTC of the last day of the week)
-    FULL_WEEKLY = 'Full Weekly',
-    // lasts 1 month from the date of purchase (exactly)
-    MONTHLY = 'Monthly',
-    // lasts 1 month on whole day intervals (i.e. until 23:59 UTC of the last day of the month)
-    FULL_MONTHLY = 'Full Monthly',
+    DURATION_BASED = 'durationBased',
+    UNTIL = 'until',
 }
 
 /**
