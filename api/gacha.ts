@@ -311,10 +311,10 @@ export const fetchCurrentActiveWonderspinData = async (twitterId: string): Promi
                             filteredAtLeastBTierAssetsData.forEach(asset => {
                                 asset.currentProbability = (asset.maxProbabilityRange - asset.minProbabilityRange + 1) / newCumulativeProbability * 100;
                             });
-
-                            // add the updated assets to the main array.
-                            assetProbability.push(...filteredAtLeastBTierAssetsData);
                         }
+
+                        // add the updated assets to the main array.
+                        assetProbability.push(...filteredAtLeastBTierAssetsData);
                     }
 
                     // add the C tier assets with 0% probability.
@@ -349,6 +349,8 @@ export const fetchCurrentActiveWonderspinData = async (twitterId: string): Promi
                     } else {
                         let currentMinProbability = 0;
                         const currentCumulativeProbability = wonderspin.assetData.reduce((acc, asset) => acc + asset.probabilityWeight, 0);
+
+                        console.log(`(fetchCurrentWonderspinData) Cumulative probability for ${wonderspin.name} is ${currentCumulativeProbability}.`);
 
                         const filteredAssetsData = wonderspin.assetData.map((asset, index) => {
                             const minProbability = currentMinProbability;
@@ -430,12 +432,10 @@ export const fetchCurrentActiveWonderspinData = async (twitterId: string): Promi
                             filteredAssetsData.forEach(asset => {
                                 asset.currentProbability = (asset.maxProbabilityRange - asset.minProbabilityRange + 1) / newCumulativeProbability * 100;
                             });
-
-                            console.log(`(fetchCurrentWonderspinData) Filtered assets data: ${JSON.stringify(filteredAssetsData, null, 2)}`);
-
-                            // add the updated assets to the main array.
-                            assetProbability.push(...filteredAssetsData);
                         }
+
+                        // add the updated assets to the main array.
+                        assetProbability.push(...filteredAssetsData);
                     }
                 }
 
