@@ -49,16 +49,16 @@ export const fetchCurrentActiveWonderspinData = async (twitterId: string): Promi
         if (!user) {
             return {
                 status: Status.ERROR,
-                message: '(fetchCurrentWonderspinData) User not found.'
+                message: '(fetchCurrentActiveWonderspinData) User not found.'
             }
         }
 
-        const activeWonderspins = (await WonderspinModel.findOne({ active: true }).lean()) as Wonderspin[];
+        const activeWonderspins: Wonderspin[] = await WonderspinModel.findOne({ active: true }).lean();
 
         if (!activeWonderspins) {
             return {
                 status: Status.SUCCESS,
-                message: '(fetchCurrentWonderspinData) No active Wonderspins found.',
+                message: '(fetchCurrentActiveWonderspinData) No active Wonderspins found.',
                 data: {
                     wonderspinData
                 }
