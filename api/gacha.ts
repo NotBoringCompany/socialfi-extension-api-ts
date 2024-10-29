@@ -73,6 +73,8 @@ export const fetchCurrentActiveWonderspinData = async (twitterId: string): Promi
             const userWonderspinData = allUserWonderspinData.find(data => data.wonderspinId === wonderspin._id);
 
             if (!userWonderspinData) {
+                console.log(`(fetchCurrentActiveWonderspinData) User has no data for ${wonderspin.name}.`);
+
                 wonderspinData.push({
                     wonderspin: wonderspin.name,
                     wonderspinId: wonderspin._id,
@@ -113,6 +115,8 @@ export const fetchCurrentActiveWonderspinData = async (twitterId: string): Promi
                 }> = [];
 
                 if (userWonderspinData.rollsUntilFortunePeak !== null && userWonderspinData.rollsUntilFortunePeak <= 1) {
+                    console.log(`(fetchCurrentWonderspinData) User is in a fortune peak event.`);
+
                     // if the user is guaranteed a featured asset, then all featured assets will sum up to 100% probability, and the rest being 0%.
                     const featuredAssets = wonderspin.assetData.filter(asset => asset.featured);
 
@@ -167,6 +171,8 @@ export const fetchCurrentActiveWonderspinData = async (twitterId: string): Promi
                         }
                     }));
                 } else if (userWonderspinData.rollsUntilFortuneBlessing !== null && userWonderspinData.rollsUntilFortuneBlessing <= 1) {
+                    console.log(`(fetchCurrentWonderspinData) User is in a fortune blessing event.`);
+
                     // if the user is guaranteed an A tier asset, then all A tier assets will sum up to 100% probability, and the rest being 0%.
                     const aTierAssets = wonderspin.assetData.filter(asset => asset.tier === WonderspinAssetTier.A);
 
@@ -221,6 +227,8 @@ export const fetchCurrentActiveWonderspinData = async (twitterId: string): Promi
                         }
                     }));
                 } else if (userWonderspinData.rollsUntilFortuneCrest !== null && userWonderspinData.rollsUntilFortuneCrest <= 1) {
+                    console.log(`(fetchCurrentWonderspinData) User is in a fortune crest event.`);
+
                     // if the user is guaranteed AT least a B tier asset, then all B and A tier assets will sum up to 100% probability, and the rest being 0%.
                     const atLeastBTierAssets = wonderspin.assetData.filter(asset => asset.tier === WonderspinAssetTier.B || asset.tier === WonderspinAssetTier.A);
 
@@ -430,6 +438,8 @@ export const fetchCurrentActiveWonderspinData = async (twitterId: string): Promi
                         }
                     }
                 }
+
+                console.log(`(fetchCurrentWonderspinData) Completed asset probability calculations for ${wonderspin.name}.`);
 
                 // add the data to the main array.
                 wonderspinData.push({
