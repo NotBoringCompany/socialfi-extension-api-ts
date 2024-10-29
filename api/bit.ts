@@ -586,6 +586,7 @@ export const bulkFeedBits = async (userId: string, foodType: FoodType, bitIds: n
             BitModel.find({ 
                 owner: userId, 
                 placedIslandId: { $ne: 0 },
+                "farmingStats.currentEnergy": {$lt: 100},
                 bitId: { $in: bitIds }
             }).lean()
         ]);
@@ -600,7 +601,7 @@ export const bulkFeedBits = async (userId: string, foodType: FoodType, bitIds: n
         if (!workingBits || workingBits.length <= 0) {
             return {
                 status: Status.ERROR,
-                message: `(bulkFeedBit) workingBits not found/valid.`
+                message: `(bulkFeedBit) active Bits are not found.`
             }
         }
 
