@@ -7,7 +7,7 @@ import { generateObjectId } from '../utils/crypto';
 const GivenContentSchema = new mongoose.Schema({
     contentType: {
         type: String,
-        enum: ['item', 'food', 'igc', 'monthlyPass']
+        enum: ['item', 'food', 'igc', 'wonderpass']
     },
     content: String,
     amount: Number

@@ -534,11 +534,11 @@ export const purchaseShopAsset = async (
                             message: `(purchaseShopAsset) Other currencies not implemented yet.`
                         }
                 }
-            } else if (givenContent.contentType === 'monthlyPass') {
+            } else if (givenContent.contentType === 'wonderpass') {
                 // TBD. not implemented yet.
                 return {
                     status: Status.ERROR,
-                    message: `(purchaseShopAsset) Monthly pass not implemented yet.`
+                    message: `(purchaseShopAsset) Wonderpass not implemented yet.`
                 }
             }
         }

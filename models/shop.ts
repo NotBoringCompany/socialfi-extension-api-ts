@@ -192,18 +192,18 @@ export interface ShopAssetRefreshIntervalData {
 export interface ShopAssetGivenContentData {
     // the type of content. used to easily identify and handle operations for the content given by the asset.
     // igc = in-game currency.
-    contentType: 'item' | 'food' | 'igc' | 'monthlyPass';
+    contentType: 'item' | 'food' | 'igc' | 'wonderpass';
     // the actual content that the asset gives to the player
-    content: ItemType | FoodType | 'xCookies' | 'diamonds' | 'monthlyPass';
+    content: ItemType | FoodType | 'xCookies' | 'diamonds' | 'wonderpass';
     // the amount of content that the asset gives to the player
-    // for monthly passes and other non-quantity-based content, this will be 1
+    // for wonderpasses and other non-quantity-based content, this will be 1
     amount: number;
 }
 
 /**
  * A list of packages that can be bought in the shop.
  * 
- * These can range from monthly passes, special event packages, bundles, etc.
+ * These can range from wonderpasses, special event packages, bundles, etc.
  */
 export enum ShopPackageType {
     // test package
@@ -230,7 +230,7 @@ export interface ShopAssetPurchase {
     // the purchase timestamp (in unix format)
     purchaseTimestamp: number;
     // the expiration timestamp of the asset's effects (in unix format)
-    // used primarily for assets with effect durations (like monthly passes, etc)
+    // used primarily for assets with effect durations (like wonderpasses, etc)
     // for one-time use assets, this will be set to `never`.
     effectExpiration: number | 'never';
     // the data of the contents the player receives after this asset was purchased
