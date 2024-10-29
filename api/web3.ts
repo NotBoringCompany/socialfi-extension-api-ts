@@ -410,7 +410,7 @@ export const verifyTONTransaction = async (
                                 }
                             }
                         }
-                    } else if (givenContent.contentType === 'monthlyPass') {
+                    } else if (givenContent.contentType === 'wonderpass') {
                         // NOT IMPLEMENTED YET. TBD.
                         console.error(`(verifyTONTransaction) Content not implemented yet. Content: ${givenContent.content}`);
     
