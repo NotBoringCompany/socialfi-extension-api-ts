@@ -324,6 +324,8 @@ export const fetchCurrentActiveWonderspinData = async (twitterId: string): Promi
                         }
                     }));
                 } else {
+                    console.log(`(fetchCurrentWonderspinData) User is not in any main fortune event.`);
+
                     // if the user is not in any main fortune event (crest, blessing, peak), then we can calculate the probability normally.
                     // of course, the user can still be in a fortune surge, so we need to check for that as well.
                     if (wonderspin.assetData.length === 1) {
@@ -420,6 +422,8 @@ export const fetchCurrentActiveWonderspinData = async (twitterId: string): Promi
                             filteredAssetsData.forEach(asset => {
                                 asset.currentProbability = (asset.maxProbabilityRange - asset.minProbabilityRange + 1) / newCumulativeProbability * 100;
                             });
+
+                            console.log(`(fetchCurrentWonderspinData) Filtered assets data: ${JSON.stringify(filteredAssetsData, null, 2)}`);
 
                             // add the updated assets to the main array.
                             assetProbability.push(...filteredAssetsData);
