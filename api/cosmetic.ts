@@ -213,3 +213,59 @@ export const getCosmeticsByBit = async (bitId: number): Promise<ReturnValue> => 
   }
 }
 
+export const batchEquipCosmetics = async (cosmeticIds: string[], bitId: number, userId: string): Promise<ReturnValue> => {
+  try {
+    // check real idUser exists
+    const user = await UserModel.findOne({ _id: userId }).lean();
+    if (!user) {
+      return {
+        status: Status.ERROR,
+        message: `(batchEquipCosmetics) User with ID: ${userId} not found`,
+      };
+    }
+    // check bit is owned by user
+    const bit = await BitModel.findOne({ _id: bitId }).lean();
+    if (!bit) {
+      return {
+        status: Status.ERROR,
+        message: `(batchEquipCosmetics) Bit with ID: ${bitId} not found`,
+      };
+    }
+    if (bit.owner !== userId) {
+      return {
+        status: Status.ERROR,
+        message: `(batchEquipCosmetics) User with ID: ${userId} does not own bit with ID: ${bitId}`,
+      };
+    }
+    // check all cosmetics exist
+    const cosmetics = await CosmeticModel.find({ _id: { $in: cosmeticIds } }).lean();
+    if (cosmetics.length !== cosmeticIds.length) {
+      return {
+        status: Status.ERROR,
+        message: `(batchEquipCosmetics) Some cosmetics with IDs: ${cosmeticIds} not found`,
+      };
+    }
+    // check all cosmetics are owned by user
+    for (const cosmetic of cosmetics) {
+      if (cosmetic.owner !== userId) {
+        return {
+          status: Status.ERROR,
+          message: `(batchEquipCosmetics) User with ID: ${userId} does not own cosmetic with ID: ${cosmetic._id}`,
+        };
+      }
+    }
+
+    // update cosmetics
+    const data = await CosmeticModel.updateMany({ _id: { $in: cosmeticIds }, equipped: null }, { $set: { equipped: { bitId, equipAt: Math.floor(Date.now() / 1000) } } }).lean();
+    return {
+      status: Status.SUCCESS,
+      message: `(batchEquipCosmetics) Successfully updated cosmetics with bitId: ${bitId} for user with ID: ${userId}`,
+      data
+    }
+  } catch (err: any) {
+    return {
+      status: Status.ERROR,
+      message: `(batchEquipCosmetics) Error: ${err.message}`,
+    };
+  }
+}

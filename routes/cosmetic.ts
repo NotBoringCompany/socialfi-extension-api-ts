@@ -1,5 +1,5 @@
 import express from 'express';
-import { equipCosmetic,  getAllUserCosmetics, getCosmeticMatch, getCosmeticsByBit, unequipCosmetic } from '../api/cosmetic';
+import { batchEquipCosmetics, equipCosmetic,  getAllUserCosmetics, getCosmeticMatch, getCosmeticsByBit, unequipCosmetic } from '../api/cosmetic';
 import { validateRequestAuthV2 } from '../middlewares/validateRequest';
 const router = express.Router();
 
@@ -81,6 +81,25 @@ router.put('/unequip_cosmetic', validateRequestAuthV2('unequip_cosmetic'), async
   const { userId, cosmeticId } = req.body;
   try {
     const { status, message, data } = await unequipCosmetic(cosmeticId, userId);
+    return res.status(status).json({
+      status,
+      message,
+      data
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      status: 500,
+      message: err.message
+    })
+  }
+})
+
+// use cosmetic multiple cosmetics
+router.put('/batch_equip_cosmetics', validateRequestAuthV2('batch_equip_cosmetics'), async (req, res) => {
+  // no need to send userID from body cuz validateRequestAuthV2 will handle it
+  const { userId, cosmeticIds, bitId } = req.body;
+  try {
+    const { status, message, data } = await batchEquipCosmetics(cosmeticIds, bitId, userId);
     return res.status(status).json({
       status,
       message,
