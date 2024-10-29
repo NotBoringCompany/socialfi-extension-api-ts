@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, {Schema } from 'mongoose';
 import { generateObjectId } from '../utils/crypto';
 import { Cosmetic, CosmeticEquip, CosmeticName, CosmeticSlot } from '../models/cosmetic';
 

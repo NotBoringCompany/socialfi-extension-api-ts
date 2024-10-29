@@ -59,7 +59,7 @@ export enum CosmeticSlot {
   /**
    * Hands slot.
    */
-  HANDS = "hands",
+  HANDS = "hand",
   /**
    * Back slot.
    */
