@@ -50,12 +50,17 @@ import { sendMailsToNewUser } from './mail';
 dotenv.config();
 
 /**
- * Initializes 0 diamonds for each user in the database.
+ * Initializes the diamond data for each user in the database.
  */
 export const initializeDiamonds = async (): Promise<void> => {
     try {
         // bulk set `diamonds` to 0 for all users in `inventory.diamonds`
-        await UserModel.updateMany({}, { $set: { 'inventory.diamonds': 0 } });
+        await UserModel.updateMany({}, { $set: { 'inventory.diamondData': {
+            currentDiamonds: 0,
+            totalDiamondsSpent: 0,
+            weeklyDiamondsSpent: 0,
+            extendedDiamondData: []
+        } } });
 
         console.log(`(initializeDiamonds) Successfully initialized diamonds for all users.`);
     } catch (err: any) {

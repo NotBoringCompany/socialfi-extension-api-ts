@@ -86,8 +86,8 @@ export interface UserInventory {
     xCookieData: XCookieData;
     /** the amount of cookie crumbs owned */
     cookieCrumbs: number;
-    /** how many diamonds the user has */
-    diamonds: number;
+    /** the user's diamonds data (i.e. the current diamonds owned, the total diamonds earned from different sources etc.) */
+    diamondData: DiamondData;
     /** a list of resources owned */
     resources: ExtendedResource[];
     /** a list of items owned */
@@ -143,6 +143,36 @@ export enum XCookieSource {
     KOS_BENEFITS = 'KOS Benefits',
     TUTORIAL_REWARDS = 'Tutorial Rewards',
     DISCORD_ENGAGEMENT = 'Discord Engagement',
+    SHOP_PURCHASE = 'Shop Purchase',
+    WONDERSPIN = 'Wonderspin',
+}
+
+/**
+ * Represents the user's diamond data.
+ */
+export interface DiamondData {
+    /** the user's current diamonds left */
+    currentDiamonds: number;
+    /** the total amount of diamonds the user has spent */
+    totalDiamondsSpent: number;
+    /** the weekly amount of diamonds the user has spent. resets every sunday 23:59 utc */
+    weeklyDiamondsSpent: number;
+    /** the extended diamond data (shows how many diamonds have been obtained from what source) */
+    extendedDiamondData: ExtendedDiamondData[];
+}
+
+/**
+ * Represents the extended diamond data.
+ */
+export interface ExtendedDiamondData {
+    diamonds: number;
+    source: DiamondSource;
+}
+
+/**
+ * A list of the sources of obtaining diamonds.
+ */
+export enum DiamondSource {
     SHOP_PURCHASE = 'Shop Purchase',
     WONDERSPIN = 'Wonderspin',
 }

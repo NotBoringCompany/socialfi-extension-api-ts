@@ -8,6 +8,7 @@ import { resources } from './resource';
 import { ExtendedResource, ExtendedResourceOrigin } from '../../models/resource';
 import { generateObjectId } from '../crypto';
 import { Status } from '../retVal';
+import { DiamondSource, ExtendedDiamondData, ExtendedXCookieData, XCookieSource } from '../../models/user';
 
 /**
  * Creates a new Bull queue for Wonderspin rolls.
@@ -897,8 +898,32 @@ WONDERSPIN_QUEUE.process('rollWonderspin', async (job) => {
                 // check if asset is xCookies or diamonds
                 if (obtainedAsset.asset === 'xCookies') {
                     userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = obtainedAsset.amount;
+
+                    // check if the extended xCookie data with the `Wonderspin` source exists.
+                    const wonderspinIndex = (user.inventory?.xCookieData?.extendedXCookieData as ExtendedXCookieData[]).findIndex(data => data.source === XCookieSource.WONDERSPIN);
+
+                    if (wonderspinIndex === -1) {
+                        userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = {
+                            source: XCookieSource.WONDERSPIN,
+                            xCookies: obtainedAsset.amount
+                        }
+                    } else {
+                        userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${wonderspinIndex}.xCookies`] = obtainedAsset.amount;
+                    }
                 } else if (obtainedAsset.asset === 'diamonds') {
-                    userUpdateOperations.$inc['inventory.diamonds'] = obtainedAsset.amount;
+                    userUpdateOperations.$inc['inventory.diamondData.currentDiamonds'] = obtainedAsset.amount;
+
+                    // check if the extended diamond data with the `Wonderspin` source exists.
+                    const wonderspinIndex = (user.inventory?.diamondData?.extendedDiamondData as ExtendedDiamondData[]).findIndex(data => data.source === DiamondSource.WONDERSPIN);
+
+                    if (wonderspinIndex === -1) {
+                        userUpdateOperations.$push['inventory.diamondData.extendedDiamondData'] = {
+                            source: DiamondSource.WONDERSPIN,
+                            diamonds: obtainedAsset.amount
+                        }
+                    } else {
+                        userUpdateOperations.$inc[`inventory.diamondData.extendedDiamondData.${wonderspinIndex}.diamonds`] = obtainedAsset.amount;
+                    }
                 }
             }
         }

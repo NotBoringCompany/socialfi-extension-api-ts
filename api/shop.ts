@@ -6,7 +6,7 @@ import { Item, ItemType } from '../models/item';
 import { generateObjectId } from '../utils/crypto';
 import { fetchIAPTickers, verifyTONTransaction } from './web3';
 import { TxParsedMessage } from '../models/web3';
-import { ExtendedXCookieData, XCookieSource } from '../models/user';
+import { DiamondSource, ExtendedDiamondData, ExtendedXCookieData, XCookieSource } from '../models/user';
 import { USD_TO_STARS_CONVERSION } from '../utils/constants/tg';
 import axios from 'axios';
 
@@ -512,12 +512,22 @@ export const purchaseShopAsset = async (
                             }
                         }
                     case 'diamonds':
-                        // TBD. not implemented yet.
-                        return {
-                            status: Status.ERROR,
-                            message: `(purchaseShopAsset) Diamonds not implemented yet.`
+                        // add the diamonds to the user's inventory
+                        userUpdateOperations.$inc['inventory.diamondData.currentDiamonds'] = givenContent.amount * amount;
+
+                        // check if the user already has the source `SHOP_PURCHASE` in their extended diamond data.
+                        // if yes, increment the amount, if not, add it to the user's extended diamond data.
+                        const existingDiamondSourceIndex = (user.inventory?.diamondData.extendedDiamondData as ExtendedDiamondData[]).findIndex(d => d.source === DiamondSource.SHOP_PURCHASE);
+
+                        if (existingDiamondSourceIndex !== -1) {
+                            userUpdateOperations.$inc[`inventory.diamondData.extendedDiamondData.${existingDiamondSourceIndex}.diamonds`] = givenContent.amount * amount;
+                        } else {
+                            userUpdateOperations.$push['inventory.diamondData.extendedDiamondData'] = {
+                                source: DiamondSource.SHOP_PURCHASE,
+                                diamonds: givenContent.amount * amount,
+                            }
                         }
-                    // other currencies also TBD. not implemented yet.
+                    // other currencies are TBD. not implemented yet.
                     default:
                         return {
                             status: Status.ERROR,
