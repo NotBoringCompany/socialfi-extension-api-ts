@@ -54,6 +54,42 @@ export const getAllUserCosmetics = async (userId: string): Promise<ReturnValue> 
   }
 }
 
+export const getCosmeticMatch = async (userId: string): Promise<ReturnValue> => {
+  try {
+    // get all cosmetics
+    const data = await CosmeticModel.aggregate([
+      // filter by owner
+      { $match: { owner: userId } },
+      // group by name and slot, if same name and slot, sum quantity
+      {
+        $group: {
+          _id: { name: "$name", slot: "$slot" },
+          quantity: { $sum: 1 }
+        }
+      },
+      {
+        // recreate the object
+        $project: {
+          _id: 0,
+          name: "$_id.name",
+          slot: "$_id.slot",
+          quantity: "$quantity"
+        }
+      }
+    ])
+    return {
+      status: Status.SUCCESS,
+      message: `(getCosmeticMatch) Successfully retrieved all cosmetics`,
+      data
+    };
+  } catch (err: any) {
+    return {
+      status: Status.ERROR,
+      message: `(getCosmeticMatch) Error: ${err.message}`,
+    };
+  }
+}
+
 export const equipCosmetic = async (cosmeticId: string, bitId: number, userId: string): Promise<ReturnValue> => {
   try {
     // check bitId is valid
@@ -156,12 +192,12 @@ export const unequipCosmetic = async (cosmeticId: string, userId: string): Promi
   } catch (err: any) {
     return {
       status: Status.ERROR,
-      message: `(unequippedCosmetic) Error: ${err.message}`,    
+      message: `(unequippedCosmetic) Error: ${err.message}`,
     };
   }
 }
 
-export const getCosmeticsByBit = async (bitId:number): Promise<ReturnValue> => {
+export const getCosmeticsByBit = async (bitId: number): Promise<ReturnValue> => {
   try {
     const cosmetics = await CosmeticModel.find({ 'equipped.bitId': bitId }).lean();
     return {

@@ -1,5 +1,5 @@
 import express from 'express';
-import { equipCosmetic,  getAllUserCosmetics, getCosmeticsByBit, unequipCosmetic } from '../api/cosmetic';
+import { equipCosmetic,  getAllUserCosmetics, getCosmeticMatch, getCosmeticsByBit, unequipCosmetic } from '../api/cosmetic';
 import { validateRequestAuthV2 } from '../middlewares/validateRequest';
 const router = express.Router();
 
@@ -8,6 +8,24 @@ router.get('/get_cosmetics', validateRequestAuthV2('get_cosmetics'), async (req,
   const { userId } = req.body;
   try {
     const { status, message, data } = await getAllUserCosmetics(userId);
+    return res.status(status).json({
+      status,
+      message,
+      data
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      status: 500,
+      message: err.message
+    })
+  }
+})
+
+router.get('/costmetic_inventory', validateRequestAuthV2('costmetic_inventory'), async (req, res) => {
+  // no need to send from body cuz validateRequestAuthV2 will handle it
+  const { userId } = req.body;
+  try {
+    const { status, message, data } = await getCosmeticMatch(userId);
     return res.status(status).json({
       status,
       message,
