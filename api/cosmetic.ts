@@ -161,3 +161,19 @@ export const unequipCosmetic = async (cosmeticId: string, userId: string): Promi
   }
 }
 
+export const getCosmeticsByBit = async (bitId:number): Promise<ReturnValue> => {
+  try {
+    const cosmetics = await CosmeticModel.find({ 'equipped.bitId': bitId }).lean();
+    return {
+      status: Status.SUCCESS,
+      message: `(getBitsCosmetics) Successfully retrieved all cosmetics for bit with ID: ${bitId}`,
+      data: cosmetics
+    }
+  } catch (err: any) {
+    return {
+      status: Status.ERROR,
+      message: `(getBitsCosmetics) Error: ${err.message}`,
+    };
+  }
+}
+
