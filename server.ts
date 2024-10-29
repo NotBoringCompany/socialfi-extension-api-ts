@@ -67,6 +67,7 @@ import mail from './routes/mail';
 import { initSocket } from './socket';
 import upgrade from './routes/upgrade';
 import gacha from './routes/gacha';
+import cosmetic from './routes/cosmetic';
 
 app.use('/auth/twitter', checkMaintenance, twitterAuth);
 app.use('/auth/discord', checkMaintenance, discordAuth);
@@ -100,6 +101,7 @@ app.use('/bans', checkMaintenance, ban);
 app.use('/mail', checkMaintenance, mail);
 app.use('/upgrade', checkMaintenance, upgrade);
 app.use('/gacha', checkMaintenance, gacha);
+app.use('/cosmetic', checkMaintenance, cosmetic);
 // both protocol and socket.io
 const httpServer = http.createServer(app);
 // Sockets init
