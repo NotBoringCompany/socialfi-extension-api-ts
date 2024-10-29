@@ -577,24 +577,16 @@ export const feedBit = async (twitterId: string, bitId: number, foodType: FoodTy
 }
 
 /**
- * Bulk feeds all working bits owned by User and replenishes bits energy.
- * minThreshold will be used to fetch user workingBits with currentEnergy <= minThreshold
+ * Bulk feed all bits based on passed bitIds
  */
-export const bulkFeedBits = async (userId: string, foodType: FoodType, minThreshold: number = 100): Promise<ReturnValue> => {
+export const bulkFeedBits = async (userId: string, foodType: FoodType, bitIds: number[]): Promise<ReturnValue> => {
     try {
-        if (minThreshold <= 0 || minThreshold > 100) {
-            return {
-                status: Status.ERROR,
-                message: `(bulkFeedBit) mininum theshold isn't valid. It must be between 0 and 100 (inclusive).`
-            }
-        }
-
         const [user, workingBits] = await Promise.all([
             UserModel.findOne({ _id: userId }).lean(),
             BitModel.find({ 
                 owner: userId, 
                 placedIslandId: { $ne: 0 },
-                'farmingStats.currentEnergy': { $lte: minThreshold }
+                bitId: { $in: bitIds }
             }).lean()
         ]);
 

@@ -199,7 +199,7 @@ router.post('/feed_bit', async (req, res) => {
 });
 
 router.post('/bulk_feed_bits', async (req, res) => {
-    const { userId, foodType, minThreshold } = req.body;
+    const { userId, foodType, bitIds } = req.body;
 
     try {
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'bulk_feed_bits');
@@ -211,7 +211,7 @@ router.post('/bulk_feed_bits', async (req, res) => {
             })
         }
 
-        const { status, message, data } = await bulkFeedBits(userId, foodType, minThreshold);
+        const { status, message, data } = await bulkFeedBits(userId, foodType, bitIds);
 
         if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Bulk Feed Bit', {
