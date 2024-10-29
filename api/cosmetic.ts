@@ -19,9 +19,7 @@ export const createCosmetic = async (owner: string, cosmeticName: CosmeticName, 
     return {
       status: Status.SUCCESS,
       message: `(createCosmetic) Successfully created cosmetic with name: ${cosmeticName}`,
-      data: {
-        cosmetic: newCosmetic
-      }
+      data: newCosmetic
     };
   } catch (err: any) {
     return {
@@ -42,13 +40,11 @@ export const getAllUserCosmetics = async (userId: string): Promise<ReturnValue> 
       };
     }
     // get all cosmetics
-    const cosmetics = await CosmeticModel.find({ owner: userId }).lean();
+    const data = await CosmeticModel.find({ owner: userId }).lean();
     return {
       status: Status.SUCCESS,
       message: `(getAllUserCosmetics) Successfully retrieved all cosmetics for user with ID: ${userId}`,
-      data: {
-        cosmetics
-      }
+      data
     };
   } catch (err: any) {
     return {
@@ -110,13 +106,11 @@ export const equipCosmetic = async (cosmeticId: string, bitId: number, userId: s
       bitId,
       equipAt: Math.floor(Date.now() / 1000),
     }
-    await CosmeticModel.updateOne({ _id: cosmeticId }, cosmetic);
+    const data = await CosmeticModel.updateOne({ _id: cosmeticId }, cosmetic).lean();
     return {
       status: Status.SUCCESS,
       message: `(equippedCosmetic) Successfully updated cosmetic with bitId: ${bitId} for user with ID: ${userId}`,
-      data: {
-        cosmetic
-      }
+      data
     };
   } catch (err: any) {
     return {
@@ -153,13 +147,11 @@ export const unequipCosmetic = async (cosmeticId: string, userId: string): Promi
     }
     // update cosmetic
     cosmetic.equipped = null;
-    await CosmeticModel.updateOne({ _id: cosmeticId }, cosmetic);
+    const data = await CosmeticModel.updateOne({ _id: cosmeticId }, cosmetic).lean();
     return {
       status: Status.SUCCESS,
       message: `(unequippedCosmetic) Successfully updated cosmetic with ID: ${cosmeticId} for user with ID: ${userId}`,
-      data: {
-        cosmetic
-      }
+      data
     };
   } catch (err: any) {
     return {
