@@ -1101,12 +1101,14 @@ export const resetDailyQuest = async (twitterId: string, poi: POIName): Promise<
         }
 
         const [prev, next] = DAILY_QUEST_LAPSE_PHASE();
+        console.log(`(resetDailyQuest) prev timestamp: ${prev}, next timestamp ${next}`);
 
         // delete user's expired daily quests
         await QuestDailyModel.deleteMany({
             user: user._id,
             expiredAt: { $lte: next },
         });
+        console.log(`(resetDailyQuest) delete QuestDailyModel with expiredAt <= ${next}`);
 
         // get user's available daily quest
         const dailyQuests = (
@@ -1189,10 +1191,12 @@ export const getDailyQuests = async (
             user: user._id,
             expiredAt: { $gt: currentTimestamp }
         }).populate('quest');
+        console.log(`(getDailyQuests) available quests length: ${quests.length}`);
 
         // if the quests empty, then reset & randomize the daily quest
         if (!quests || quests.length === 0) {
             await resetDailyQuest(twitterId, poi);
+            console.log(`(getDailyLogin) resetting daily quest`);
 
             // refetch the quests after reset
             quests = await QuestDailyModel.find({
@@ -1201,6 +1205,7 @@ export const getDailyQuests = async (
                 expiredAt: { $gte: currentTimestamp },
                 createdAt: { $lte: currentTimestamp },
             }).populate('quest');
+            console.log(`(getDailyQuests) refetch available quests length: ${quests.length}`);
         }
 
         // if the quests somehow still empty, even after refetch, then returns error
