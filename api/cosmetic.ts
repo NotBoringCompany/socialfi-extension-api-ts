@@ -224,13 +224,14 @@ export const batchEquipCosmetics = async (cosmeticIds: string[], bitId: number, 
       };
     }
     // check bit is owned by user
-    const bit = await BitModel.findOne({ _id: bitId }).lean();
+    const bit = await BitModel.findOne({ bitId: bitId }).lean();
     if (!bit) {
       return {
         status: Status.ERROR,
         message: `(batchEquipCosmetics) Bit with ID: ${bitId} not found`,
       };
     }
+    
     if (bit.owner !== userId) {
       return {
         status: Status.ERROR,
