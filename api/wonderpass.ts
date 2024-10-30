@@ -169,3 +169,97 @@ export const progressWonderpass = async (
         }
     }
 }
+
+/**
+ * Converts the current user's Wonderpass to the premium version.
+ * 
+ * NOTE: payment is done on the parent function (most likely `purchaseShopAsset`. This is only used to update the Wonderpass related data).
+ */
+export const purchasePremiumWonderpass = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const [ user, wonderpass ] = await Promise.all([
+            UserModel.findOne({ twitterId }).lean(),
+            WonderpassModel.findOne({
+                start: { $lte: Math.floor(Date.now() / 1000) },
+                end: { $gte: Math.floor(Date.now() / 1000) }
+            }).lean()
+        ]);
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(purchasePremiumWonderpass) User not found.`
+            }
+        }
+
+        if (!wonderpass) {
+            return {
+                status: Status.ERROR,
+                message: `(purchasePremiumWonderpass) Wonderpass not found.`
+            }
+        }
+
+        // check if the user already has a wonderpass data
+        const userWonderpassData = await UserWonderpassDataModel.findOne({ userId: user._id, wonderpassId: wonderpass._id }).lean();
+
+        // if the data already exists, we check if the user already has the premium version
+        if (userWonderpassData) {
+            if (userWonderpassData.premium) {
+                return {
+                    status: Status.ERROR,
+                    message: `(purchasePremiumWonderpass) User already has the premium version.`
+                }
+            }
+
+            // if the user doesn't have the premium version, we will update the data.
+            // we will check the user's current level and add the claimable premium levels.
+            const claimablePremiumLevels = wonderpass.levelData.map(data => {
+                if (data.level <= userWonderpassData.level && data.premiumRewards.length > 0) {
+                    return data.level;
+                }
+            }).filter(Boolean);
+
+            await UserWonderpassDataModel.updateOne({ _id: userWonderpassData._id }, {
+                premium: true,
+                claimablePremiumLevels
+            });
+
+            return {
+                status: Status.SUCCESS,
+                message: `(purchasePremiumWonderpass) Successfully updated Wonderpass to premium version and added available rewards.`
+            }
+        }
+
+        // else, we will create the data.
+        await UserWonderpassDataModel.create({
+            _id: generateObjectId(),
+            userId: user._id,
+            wonderpassId: wonderpass._id,
+            level: 1,
+            xp: 0,
+            premium: true,
+            claimableFreeLevels: wonderpass.levelData.map(data => {
+                if (data.level === 1 && data.freeRewards.length > 0) {
+                    return data.level;
+                }
+            }),
+            claimedFreeLevels: [],
+            claimablePremiumLevels: wonderpass.levelData.map(data => {
+                if (data.level === 1 && data.premiumRewards.length > 0) {
+                    return data.level;
+                }
+            }).filter(Boolean),
+            claimedPremiumLevels: []
+        });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(purchasePremiumWonderpass) Successfully created user Wonderpass data with premium version.`
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(purchasePremiumWonderpass) ${err.message}`
+        }
+    }
+}
