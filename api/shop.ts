@@ -1,7 +1,7 @@
 import { Food, FoodType } from '../models/food';
 import { ShopAsset, ShopAssetCurrencyConversionData, ShopAssetEffectDurationType, ShopAssetExtended, ShopAssetExternalPaymentMethod, ShopAssetIGCPaymentMethod, ShopAssetPaymentMethod, ShopAssetPurchaseConfirmationAttemptType, ShopAssetType, ShopPackageType } from '../models/shop';
 import { ReturnValue, Status } from '../utils/retVal';
-import { ShopAssetModel, ShopAssetPurchaseModel, UserModel } from '../utils/constants/db';
+import { ShopAssetModel, ShopAssetPurchaseModel, UserModel, WonderpassModel } from '../utils/constants/db';
 import { Item, ItemType } from '../models/item';
 import { generateObjectId } from '../utils/crypto';
 import { fetchIAPTickers, verifyTONTransaction } from './web3';
@@ -9,6 +9,7 @@ import { TxParsedMessage } from '../models/web3';
 import { DiamondSource, ExtendedDiamondData, ExtendedXCookieData, XCookieSource } from '../models/user';
 import { USD_TO_STARS_CONVERSION } from '../utils/constants/tg';
 import axios from 'axios';
+import { purchasePremiumWonderpass } from './wonderpass';
 
 /**
  * Fetches all shop assets from the database and return them as a shop instance.
@@ -535,10 +536,16 @@ export const purchaseShopAsset = async (
                         }
                 }
             } else if (givenContent.contentType === 'wonderpass') {
-                // TBD. not implemented yet.
-                return {
-                    status: Status.ERROR,
-                    message: `(purchaseShopAsset) Wonderpass not implemented yet.`
+                // call `purchasePremiumWonderpass`
+                // WARNING: payment will be done on the block below, so if there is a problem with the final part of the operations,
+                // users MAY get the premium wonderpass for free. we will need to check this.
+                const { status, message, data } = await purchasePremiumWonderpass(twitterId);
+
+                if (status !== Status.SUCCESS) {
+                    return {
+                        status: Status.ERROR,
+                        message: `(purchaseShopAsset) Error in purchasing Wonderpass: ${message}`
+                    }
                 }
             }
         }

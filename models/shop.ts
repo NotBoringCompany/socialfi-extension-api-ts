@@ -13,8 +13,8 @@ import { TxParsedMessage } from './web3';
 export interface ShopAsset {
     // the name of the asset
     assetName: ShopAssetType;
-    // the type of asset (e.g. food, item, in-app package, etc.)
-    assetType: 'item' | 'food' | 'package';
+    // the type of asset (e.g. food, item, in-app package, wonderpass, etc.)
+    assetType: 'item' | 'food' | 'package' | 'wonderpass';
     // the price of the asset
     price: ShopPrice;
     // the image URL of the asset (for rendering in the frontend)
@@ -56,6 +56,8 @@ export interface ShopAsset {
 export enum ShopAssetClassification {
     // non-IAP asset
     NON_IAP = 'nonIAP',
+    // wonderpass will have their own classification
+    WONDERPASS = 'wonderpass',
     // special assets with lower/base value for IAP, rendered with a base component (e.g. with just a background)
     SPECIAL_BASE_IAP = 'specialBaseIAP',
     // special higher value assets for IAP, rendered with a special component (e.g. showcasing its contents, with extra sparkling components, etc.)
@@ -302,4 +304,4 @@ export interface ShopAssetPurchaseTotalCostData {
 }
 
 // all available shop assets
-export type ShopAssetType = AssetType | ShopPackageType;
+export type ShopAssetType = AssetType | ShopPackageType | 'wonderpass';

@@ -71,7 +71,7 @@ export const progressWonderpass = async (
         if (!wonderpass) {
             return {
                 status: Status.ERROR,
-                message: `(progressWonderpass) Wonderpass not found.`
+                message: `(progressWonderpass) No active Wonderpass found.`
             }
         }
 
@@ -195,7 +195,7 @@ export const purchasePremiumWonderpass = async (twitterId: string): Promise<Retu
         if (!wonderpass) {
             return {
                 status: Status.ERROR,
-                message: `(purchasePremiumWonderpass) Wonderpass not found.`
+                message: `(purchasePremiumWonderpass) No active Wonderpass found.`
             }
         }
 

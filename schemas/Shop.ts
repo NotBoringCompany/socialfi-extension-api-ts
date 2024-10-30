@@ -29,7 +29,7 @@ export const ShopAssetSchema = new mongoose.Schema({
     },
     assetType: {
         type: String,
-        enum: ['item', 'food', 'package'],
+        enum: ['item', 'food', 'package', 'wonderpass'],
         index: true
     },
     imageUrl: String,
@@ -41,7 +41,7 @@ export const ShopAssetSchema = new mongoose.Schema({
     },
     assetClassification: {
         type: String,
-        enum: ['nonIAP', 'specialIAP', 'normalIAP']
+        enum: ['nonIAP', 'wonderpass', 'specialBaseIAP', 'specialValueIAP', 'normalIAP']
     },
     availablePaymentMethods: Array,
     expirationDate: {
