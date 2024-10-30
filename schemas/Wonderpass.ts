@@ -14,8 +14,14 @@ export const WonderpassSchema = new mongoose.Schema<Wonderpass>({
         type: String,
         index: true
     },
-    start: Number,
-    end: Number,
+    start: {
+        type: Number,
+        index: true
+    },
+    end: {
+        type: Number,
+        index: true
+    },
     levelData: [{
         level: Number,
         xpRequired: Number,
@@ -48,6 +54,7 @@ export const UserWonderpassDataSchema = new mongoose.Schema({
     wonderpassId: String,
     level: Number,
     xp: Number,
+    premium: Boolean,
     claimableFreeLevels: [Number],
     claimedFreeLevels: [Number],
     claimablePremiumLevels: [Number],

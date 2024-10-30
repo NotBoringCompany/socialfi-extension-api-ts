@@ -60,6 +60,8 @@ export interface UserWonderpassData {
     level: number;
     /** the amount of XP the user has */
     xp: number;
+    /** if the user has purchased the premium version of the wonderpass, this will be `true`. else, `false`.  */
+    premium: boolean;
     /**
      * the levels where the user has pending free rewards to claim
      */
