@@ -1,7 +1,10 @@
 import { FoodType } from '../../models/food';
-import { BerryFactoryMasteryStats } from '../../models/mastery';
+import { BerryFactoryMastery, BerryFactoryMasteryStats } from '../../models/mastery';
 import { POIName } from '../../models/poi';
+import { QuestType } from '../../models/quest';
+import { PlayerMastery } from '../../models/user';
 import { dayjs } from '../dayjs';
+import { toCamelCase } from '../strings';
 
 /** gets the corresponding food from completing a quest based on the probability of obtaining it, depending on `rand`, which is a number from 1 to 100 */
 export const RANDOMIZE_FOOD_FROM_QUEST = (): FoodType => {
@@ -62,15 +65,13 @@ export const DAILY_QUEST_LAPSE_PHASE = () => {
 /**
  * Return Extra quest benefit that user can accept per 48 Hours
  */
-export const EXTRA_QUESTS_BENEFIT = (factoryMastery: {
-    evergreenVillage: BerryFactoryMasteryStats | null;
-    palmshadeVillage: BerryFactoryMasteryStats | null;
-    seabreezeHarbor: BerryFactoryMasteryStats | null;
-}) => {
+export const EXTRA_QUESTS_BENEFIT = (mastery: PlayerMastery) => {
     // Initialize totalExtra count
     let totalExtra: number = 0;
-    // Destructure factoryMastery
-    const { evergreenVillage, palmshadeVillage, seabreezeHarbor } = factoryMastery;
+    // Destructure data from berryFactory
+    const evergreenVillage = mastery?.berryFactory?.[toCamelCase(POIName.EVERGREEN_VILLAGE) as keyof BerryFactoryMastery];
+    const palmshadeVillage = mastery?.berryFactory?.[toCamelCase(POIName.PALMSHADE_VILLAGE) as keyof BerryFactoryMastery];
+    const seabreezeHarbor = mastery?.berryFactory?.[toCamelCase(POIName.SEABREEZE_HARBOR) as keyof BerryFactoryMastery];
 
     // handle case for evergreenVillage
     if (evergreenVillage) {
@@ -100,21 +101,30 @@ export const EXTRA_QUESTS_BENEFIT = (factoryMastery: {
 };
 
 /**
- * Return Extra earning benefits based on Level & POIName passed.
- * Extra Benefit will only affect respective POI only
+ * Return Extra earning benefits based on Level, POIName, and Quest Type passed.
+ * Extra Benefit will only apply if the Quest Type is DAILY and affects the respective POI only.
  */
-export const EXTRA_LOCAL_EARNING_BENEFIT = (level: number, poiName: POIName) => {
+export const EXTRA_LOCAL_EARNING_BENEFIT = (questType: QuestType, mastery: PlayerMastery, poiName: POIName): number => {
+    // Only calculate benefits if the quest type is DAILY; otherwise, return 0
+    if (questType !== QuestType.DAILY) return 0;
+
+    // Retrieve level with fallback to 1 if undefined
+    const level = mastery?.berryFactory?.[toCamelCase(poiName) as keyof BerryFactoryMastery]?.level ?? 1;
+
+    // Determine extra benefit based on POIName and level
     switch(poiName) {
         case POIName.EVERGREEN_VILLAGE: {
             if (level < 5) return 0;
             else return 1;
         }
-        case POIName.PALMSHADE_VILLAGE:
+        case POIName.PALMSHADE_VILLAGE: {
             if (level < 5) return 0;
             else return 2;
-        case POIName.SEABREEZE_HARBOR:
+        }
+        case POIName.SEABREEZE_HARBOR: {
             if (level < 5) return 0;
             else return 3;
+        }
         // For POI that isn't specified or invalid will return 0 as Benefit
         default: return 0;
     }

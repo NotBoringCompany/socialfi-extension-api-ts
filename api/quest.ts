@@ -11,9 +11,9 @@ import {
 } from '../models/quest';
 import { ReturnValue, Status } from '../utils/retVal';
 import { generateObjectId } from '../utils/crypto';
-import { ExtendedXCookieData, UserInventory, XCookieSource } from '../models/user';
+import { ExtendedXCookieData, InGameData, UserInventory, XCookieSource } from '../models/user';
 import { Food, FoodType } from '../models/food';
-import { DAILY_QUEST_LAPSE_PHASE, DAILY_QUEST_PER_POI, MAX_DAILY_QUEST_ACCEPTABLE } from '../utils/constants/quest';
+import { DAILY_QUEST_LAPSE_PHASE, DAILY_QUEST_PER_POI, EXTRA_LOCAL_EARNING_BENEFIT, EXTRA_QUESTS_BENEFIT, MAX_DAILY_QUEST_ACCEPTABLE } from '../utils/constants/quest';
 import { IslandModel, QuestDailyModel, QuestModel, QuestProgressionModel, UserModel } from '../utils/constants/db';
 import { Bit, BitRarity } from '../models/bit';
 import {
@@ -30,6 +30,8 @@ import { ExtendedResource } from '../models/resource';
 import { POIName } from '../models/poi';
 import { TwitterHelper } from '../utils/twitterHelper';
 import { dayjs } from '../utils/dayjs';
+import { toCamelCase } from '../utils/strings';
+import { BerryFactoryMastery } from '../models/mastery';
 
 /**
  * Adds a quest to the database.
@@ -240,6 +242,8 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
 
         // loop through the rewards and add them to the user's inventory
         const rewards: QuestReward[] = quest.rewards;
+        // Destructure User Data
+        const { location, mastery } = user.inGameData as InGameData;
 
         // the actual reward types and amounts obtained by the user (e.g. if food => then burger or chocolate etc)
         let obtainedRewards = [];
@@ -257,7 +261,11 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
             switch (rewardType) {
                 // add the cookie count into the user's inventory
                 case QuestRewardType.X_COOKIES:
-                    userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = amount;
+                    // Calculate Extra xCookies amount. if questType isn't Daily extraAmount will always be 0.
+                    const extraAmount = EXTRA_LOCAL_EARNING_BENEFIT(quest.type, mastery, location);
+                    const totalAmount = amount + extraAmount;
+                    console.log(`(completeQuest) xCookies totalAmount: ${totalAmount} (base: ${amount} + extra: ${extraAmount})`);
+                    userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = totalAmount;
 
                     // check if the user's `xCookieData.extendedXCookieData` contains a source called QUEST_REWARDS.
                     // if yes, we increment the amount, if not, we create a new entry for the source
@@ -268,15 +276,15 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                     if (questRewardsIndex !== -1) {
                         userUpdateOperations.$inc[
                             `inventory.xCookieData.extendedXCookieData.${questRewardsIndex}.xCookies`
-                        ] = amount;
+                        ] = totalAmount;
                     } else {
                         userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = {
-                            xCookies: amount,
+                            xCookies: totalAmount,
                             source: XCookieSource.QUEST_REWARDS,
                         };
                     }
 
-                    obtainedRewards.push({ type: rewardType, amount });
+                    obtainedRewards.push({ type: rewardType, amount: totalAmount });
                     break;
                 // give user a bit, TODO: might need to add looping for the amount of bits rewarded
                 case QuestRewardType.BIT:
@@ -1260,7 +1268,10 @@ export const acceptDailyQuest = async (twitterId: string, questId: number | stri
             };
         }
 
+        // Initialize & Destructure Data
         const [prev, next] = DAILY_QUEST_LAPSE_PHASE();
+        const { mastery } = user.inGameData as InGameData;
+        const maxAccepted = MAX_DAILY_QUEST_ACCEPTABLE + EXTRA_QUESTS_BENEFIT(mastery);
 
         const acceptedQuests = await QuestDailyModel.countDocuments({
             user: user._id,
@@ -1270,10 +1281,11 @@ export const acceptDailyQuest = async (twitterId: string, questId: number | stri
         });
 
         // check if the number of accepted quests exceeds the maximum allowed
-        if (acceptedQuests > MAX_DAILY_QUEST_ACCEPTABLE) {
+        console.log(`(acceptDailyQuest), maxAccepted limit: ${maxAccepted}`);
+        if (acceptedQuests > maxAccepted) {
             return {
                 status: Status.ERROR,
-                message: '(acceptDailyQuest) Maximum daily quests exceeded.',
+                message: `(acceptDailyQuest) Maximum daily quests exceeded. accepted (${acceptedQuests}/${maxAccepted})`,
             };
         }
 
