@@ -125,6 +125,7 @@ export interface QuestReward {
  * Represents the type of a Quest Reward.
  */
 export enum QuestRewardType {
+    EXP = 'Exp',
     X_COOKIES = 'xCookies',
     BIT = 'Bit',
     GATHERING_PROGRESS_BOOSTER_25 = BoosterItem.GATHERING_PROGRESS_BOOSTER_25,
