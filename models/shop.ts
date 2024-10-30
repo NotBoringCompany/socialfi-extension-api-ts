@@ -135,6 +135,11 @@ export interface ShopPrice {
     // the final price of the asset in xCookies after discounts (if no discount, then this will be the same as `xCookies`)
     // this will be the price used for the final purchase
     finalXCookies?: number;
+    // the base price of the asset in diamonds
+    diamonds: number;
+    // the final price of the asset in diamonds after discounts (if no discount, then this will be the same as `diamonds`)
+    // this will be the price used for the final purchase
+    finalDiamonds?: number;
     // base non-discounted USD value of the asset
     usd?: number;
     // final USD value of the asset. if discounted, this should be lower than `usd`.

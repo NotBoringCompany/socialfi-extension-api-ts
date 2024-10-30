@@ -36,6 +36,8 @@ export const ShopAssetSchema = new mongoose.Schema({
     price: {
         xCookies: Number,
         finalXCookies: Number,
+        diamonds: Number,
+        finalDiamonds: Number,
         usd: Number,
         finalUsd: Number
     },

@@ -90,9 +90,14 @@ export const getShop = async (): Promise<ReturnValue> => {
                 }
             }
 
-            // else, if the asset contains a price in xCookies, simply add it to the extendedShopAssets array.
+            // if the asset contains a price in xCookies, simply add it to the extendedShopAssets array.
             if (asset.price.finalXCookies > 0) {
                 purchasableWith.push(ShopAssetIGCPaymentMethod.X_COOKIES);
+            }
+
+            // if the asset contains a price in diamonds, simply add it to the extendedShopAssets array.
+            if (asset.price.finalDiamonds > 0) {
+                purchasableWith.push(ShopAssetIGCPaymentMethod.DIAMONDS);
             }
 
             extendedShopAssets.push({
