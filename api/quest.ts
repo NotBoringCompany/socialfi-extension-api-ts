@@ -1096,14 +1096,13 @@ export const resetDailyQuest = async (twitterId: string, poi: POIName): Promise<
         if (!user) {
             return {
                 status: Status.ERROR,
-                message: `(getDailyQuest) User not found.`,
+                message: `(resetDailyQuest) User not found.`,
             };
         }
-        
+
         // Initialize currentTimestamp
         const currentTimestamp = dayjs().utc().unix();
         const [prev, next] = DAILY_QUEST_LAPSE_PHASE();
-        console.log(`(resetDailyQuest) prev timestamp: ${prev}, next timestamp ${next}`);
 
         // delete user's expired daily quests
         await QuestDailyModel.deleteMany({
@@ -1198,7 +1197,7 @@ export const getDailyQuests = async (
         // if the quests empty, then reset & randomize the daily quest
         if (!quests || quests.length === 0) {
             await resetDailyQuest(twitterId, poi);
-            console.log(`(getDailyLogin) resetting daily quest`);
+            console.log(`(getDailyQuests) resetting daily quest`);
 
             // refetch the quests after reset
             quests = await QuestDailyModel.find({
