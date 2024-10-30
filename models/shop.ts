@@ -71,6 +71,7 @@ export enum ShopAssetClassification {
  */
 export enum ShopAssetIGCPaymentMethod {
     X_COOKIES = 'xCookies',
+    DIAMONDS = 'diamonds',
 }
 
 /**
