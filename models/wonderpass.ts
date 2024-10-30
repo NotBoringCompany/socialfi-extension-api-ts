@@ -17,23 +17,23 @@ export interface Wonderpass {
     /** the unix timestamp of when the wonderpass is valid until */
     end: number;
     /**
-     * the rewards for each level of the wonderpass for free-to-play users (non-premium)
+     * the level data of the wonderpass. includes the XP required to reach each level, the rewards for free and premium versions, etc.
      */
-    freeLevelRewards: WonderpassLevelRewardData[];
-    /**
-     * the rewards for each level of the wonderpass for premium users (i.e. users who purchase the premium version of the pass)
-     */
-    premiumLevelRewards: WonderpassLevelRewardData[];
+    levelData: WonderpassLevelData[];
 }
 
 /**
- * Represents the reward data for a specific level of a wonderpass.
+ * Represents the data for a specific level of a wonderpass.
  */
-export interface WonderpassLevelRewardData {
+export interface WonderpassLevelData {
     /** the level of the wonderpass */
     level: number;
-    /** the rewards for the level */
-    rewards: WonderpassLevelReward[];
+    /** the cumulative XP required to reach this level */
+    xpRequired: number;
+    /** the rewards for this level for the free version */
+    freeRewards: WonderpassLevelReward[];
+    /** the rewards for this level for the premium version */
+    premiumRewards: WonderpassLevelReward[];
 }
 
 /**
@@ -44,4 +44,36 @@ export interface WonderpassLevelReward {
     rewardType: AssetType | 'xCookies' | 'diamonds';
     /** the amount of the reward */
     amount: number;
+}
+
+/**
+ * Represents the data for a user's progression on a Wonderpass.
+ */
+export interface UserWonderpassData {
+    /** the database ID of this data instance */
+    _id: string;
+    /** the user's database ID */
+    userId: string;
+    /** the wonderpass ID */
+    wonderpassId: string;
+    /** the level the user is currently at */
+    level: number;
+    /** the amount of XP the user has */
+    xp: number;
+    /**
+     * the levels where the user has pending free rewards to claim
+     */
+    claimableFreeLevels: number[];
+    /**
+     * the levels the user has claimed the free rewards for
+     */
+    claimedFreeLevels: number[];
+    /**
+     * the levels where the user has pending premium rewards to claim
+     */
+    claimablePremiumLevels: number[];
+    /**
+     * the levels the user has claimed the premium rewards for
+     */
+    claimedPremiumLevels: number[];
 }

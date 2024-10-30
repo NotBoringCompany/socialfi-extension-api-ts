@@ -2,6 +2,9 @@ import mongoose from 'mongoose';
 import { generateObjectId } from '../utils/crypto';
 import { UserWonderspinData, Wonderspin } from '../models/gacha';
 
+/**
+ * Wonderspin schema. Represents closely to the `Wonderspin` interface in `models/gacha.ts`.
+ */
 export const WonderspinSchema = new mongoose.Schema<Wonderspin>({
     _id: {
         type: String,
