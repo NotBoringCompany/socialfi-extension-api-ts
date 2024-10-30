@@ -1099,16 +1099,18 @@ export const resetDailyQuest = async (twitterId: string, poi: POIName): Promise<
                 message: `(getDailyQuest) User not found.`,
             };
         }
-
+        
+        // Initialize currentTimestamp
+        const currentTimestamp = dayjs().utc().unix();
         const [prev, next] = DAILY_QUEST_LAPSE_PHASE();
         console.log(`(resetDailyQuest) prev timestamp: ${prev}, next timestamp ${next}`);
 
         // delete user's expired daily quests
         await QuestDailyModel.deleteMany({
             user: user._id,
-            expiredAt: { $lte: next },
+            expiredAt: { $lte: currentTimestamp },
         });
-        console.log(`(resetDailyQuest) delete QuestDailyModel with expiredAt <= ${next}`);
+        console.log(`(resetDailyQuest) delete QuestDailyModel with expiredAt <= ${currentTimestamp}`);
 
         // get user's available daily quest
         const dailyQuests = (
@@ -1191,7 +1193,7 @@ export const getDailyQuests = async (
             user: user._id,
             expiredAt: { $gt: currentTimestamp }
         }).populate('quest');
-        console.log(`(getDailyQuests) available quests length: ${quests.length}`);
+        console.log(`(getDailyQuests) available quests length with expiredAt > ${currentTimestamp}: ${quests.length}`);
 
         // if the quests empty, then reset & randomize the daily quest
         if (!quests || quests.length === 0) {
