@@ -1282,7 +1282,7 @@ export const acceptDailyQuest = async (twitterId: string, questId: number | stri
 
         // check if the number of accepted quests exceeds the maximum allowed
         console.log(`(acceptDailyQuest), maxAccepted limit: ${maxAccepted}`);
-        if (acceptedQuests > maxAccepted) {
+        if (acceptedQuests >= maxAccepted) {
             return {
                 status: Status.ERROR,
                 message: `(acceptDailyQuest) Maximum daily quests exceeded. accepted (${acceptedQuests}/${maxAccepted})`,
