@@ -89,6 +89,12 @@ export const giftXterioBit = async (twitterId: string): Promise<ReturnValue> => 
             currentFarmingLevel: 1,
             farmingStats: randomizeFarmingStats(rarity),
             traits,
+            equippedCosmetics: {
+                head: { cosmeticId: null, equippedAt: 0 },
+                body: { cosmeticId: null, equippedAt: 0 },
+                arms: { cosmeticId: null, equippedAt: 0 },
+                back: { cosmeticId: null, equippedAt: 0 },
+            },
             bitStatsModifiers
         })
 

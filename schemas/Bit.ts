@@ -22,6 +22,7 @@ export const BitSchema = new mongoose.Schema({
     lastRelocationTimestamp: Number,
     currentFarmingLevel: Number,
     traits: Array,
+    equippedCosmetics: Object,
     farmingStats: Object,
     bitStatsModifiers: Object,
 })

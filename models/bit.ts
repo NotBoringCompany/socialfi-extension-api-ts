@@ -35,10 +35,36 @@ export interface Bit {
     currentFarmingLevel: number;
     /** the bit's traits (up to 5 depending on rarity) */
     traits: BitTraitData[];
+    /** the data for any equipped cosmetics for the bit */
+    equippedCosmetics: EquippedCosmetics;
     /** farming stats of the bit, such as gathering rate, earning rate and energy */
     farmingStats: BitFarmingStats;
     /** stat modifiers for the bit's farming stats */
     bitStatsModifiers: BitStatsModifiers;
+}
+
+/**
+ * Represents the data of equipped bit cosmetics.
+ */
+export interface EquippedCosmetics {
+    /** the data for the head (if any cosmetic is equipped) */
+    head: EquippedCosmeticData;
+    /** the data for the body (if any cosmetic is equipped) */
+    body: EquippedCosmeticData;
+    /** the data for the arms (if any cosmetic is equipped) */
+    arms: EquippedCosmeticData;
+    /** the data for the back (if any cosmetic is equipped) */
+    back: EquippedCosmeticData;
+}
+
+/**
+ * Represents the data of an equipped bit cosmetic.
+ */
+export interface EquippedCosmeticData {
+    /** the id of the cosmetic. if none is equipped, this will be null. */
+    cosmeticId: string | null;
+    /** when the cosmetic was equipped at. if none is equipped at the moment, this will be 0. */
+    equippedAt: number;
 }
 
 /**
