@@ -3,6 +3,7 @@
  ****************/
 import { BitRarity } from './bit';
 import { BoosterItem } from './booster';
+import { BitCosmetic } from './cosmetic';
 import { IslandType } from './island';
 import { ResourceLine, ResourceRarity } from './resource';
 
