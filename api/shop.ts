@@ -304,6 +304,8 @@ export const purchaseShopAsset = async (
 
         // fetch user's xCookies
         const userXCookies = user.inventory?.xCookieData.currentXCookies;
+        // fetch user's diamonds
+        const userDiamonds = user.inventory?.diamondData.currentDiamonds;
 
         // Initialize currentCurrenct value. This will be used to store which current Currency value in used as payment choice
         let currentCurrency: number = 0;
@@ -463,6 +465,30 @@ export const purchaseShopAsset = async (
                 status: Status.ERROR,
                 message: `(purchaseShopAsset) Telegram Stars payment not implemented yet.`
             }
+        } else if (payment === ShopAssetIGCPaymentMethod.DIAMONDS) {
+            if (shopAsset.price.finalDiamonds <= 0) {
+                return {
+                    status: Status.ERROR,
+                    message: `(purchaseShopAsset) Invalid diamonds price for asset.`
+                }
+            }
+
+            // Set currentCurrency with diamonds value
+            currentCurrency = userDiamonds;
+            // check if the user has enough diamonds to purchase the asset
+            totalCost = shopAsset.price.finalDiamonds * amount;
+
+            if (userDiamonds < totalCost) {
+                return {
+                    status: Status.ERROR,
+                    message: `(purchaseShopAsset) Not enough diamonds to purchase asset(s).`
+                }
+            }
+
+            // deduct the asset price from the user's diamonds and increment `totalDiamondsSpent` and `weeklyDiamondsSpent`
+            userUpdateOperations.$inc['inventory.diamondData.currentDiamonds'] = -totalCost;
+            userUpdateOperations.$inc['inventory.diamondData.totalDiamondsSpent'] = totalCost;
+            userUpdateOperations.$inc['inventory.diamondData.weeklyDiamondsSpent'] = totalCost;
         } else {
             totalCost = shopAsset.price.finalUsd * amount;
 
