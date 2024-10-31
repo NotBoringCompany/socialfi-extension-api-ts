@@ -14,7 +14,7 @@ export const addBitCosmetics = async (
 
     // filter out the cosmetics that already exist and only add the new ones.
     const newCosmeticsToAdd = cosmetics.filter(cosmetic => {
-      return !existingCosmetics.some(existing => existing.name === cosmetic.name);
+      return !existingCosmetics.some(existing => existing.name.toLowerCase() === cosmetic.name.toLowerCase());
     });
 
     // add the new cosmetics to the database.
@@ -27,28 +27,6 @@ export const addBitCosmetics = async (
     throw new Error(`(addBitCosmetic) Error: ${err.message}`);
   }
 }
-
-// export const createCosmetic = async (owner: string, cosmeticName: CosmeticName, slot: CosmeticSlot): Promise<ReturnValue> => {
-//   try {
-//     const newCosmetic = new CosmeticModel<Cosmetic>({
-//       equipped: null,
-//       name: cosmeticName,
-//       owner,
-//       slot
-//     });
-//     await newCosmetic.save();
-//     return {
-//       status: Status.SUCCESS,
-//       message: `(createCosmetic) Successfully created cosmetic with name: ${cosmeticName}`,
-//       data: newCosmetic
-//     };
-//   } catch (err: any) {
-//     return {
-//       status: Status.ERROR,
-//       message: `(createCosmetic) Error: ${err.message}`,
-//     };
-//   }
-// }
 
 // export const getAllUserCosmetics = async (userId: string): Promise<ReturnValue> => {
 //   try {

@@ -17,6 +17,18 @@ export interface BitCosmetic {
 }
 
 /**
+ * Represents a BitCosmetic instance stored in a user's inventory.
+ */
+export interface BitCosmeticInventory {
+  /** the database ID of the cosmetic in the `BitCosmetics` DB */
+  cosmeticId: string;
+  /** the name of the bit cosmetic */
+  cosmeticName: BitCosmeticType;
+  /** the amount of this cosmetic the user owns */
+  amount: number;
+}
+
+/**
  * a runtime-populated object representing all available bit cosmetics. 
  * each key is a unique cosmetic name, and each value is the same cosmetic name as a string, 
  * allowing it to behave similarly to a typescript enum.
