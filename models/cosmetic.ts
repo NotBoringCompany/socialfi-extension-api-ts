@@ -17,6 +17,19 @@ export interface BitCosmetic {
 }
 
 /**
+ * a runtime-populated object representing all available bit cosmetics. 
+ * each key is a unique cosmetic name, and each value is the same cosmetic name as a string, 
+ * allowing it to behave similarly to a typescript enum.
+ */
+export const BitCosmeticEnum: { [key: string]: string } = {}
+/**
+ * represents the type of a bit cosmetic key from `BitCosmeticEnum`, 
+ * acting as a union of all valid cosmetic names once populated at runtime.
+ * this allows `BitCosmeticType` to behave similarly to an enum type.
+ */
+export type BitCosmeticType = Extract<keyof typeof BitCosmeticEnum, string>;
+
+/**
  * Represents the slot of a cosmetic item.
  */
 export enum BitCosmeticSlot {

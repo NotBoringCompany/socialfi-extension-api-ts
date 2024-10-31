@@ -68,6 +68,7 @@ import { initSocket } from './socket';
 import upgrade from './routes/upgrade';
 import gacha from './routes/gacha';
 import cosmetic from './routes/cosmetic';
+import { populateBitCosmeticEnum } from './utils/constants/cosmetic';
 
 app.use('/auth/twitter', checkMaintenance, twitterAuth);
 app.use('/auth/discord', checkMaintenance, discordAuth);
@@ -109,6 +110,10 @@ initSocket(httpServer);
 
 httpServer.listen(port, async () => {
     console.log(`Server running on port: ${port}`);
+
+    // populates the `BitCosmeticEnum` enum with the values from the database
+    await populateBitCosmeticEnum();
+
     await schedulers();
 });
 

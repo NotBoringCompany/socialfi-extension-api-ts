@@ -1,3 +1,4 @@
+import { BitCosmeticType } from './cosmetic';
 import { CraftableAsset } from './craft';
 import { FoodType } from './food';
 import { ItemType } from './item';
@@ -17,4 +18,4 @@ export interface Asset {
  * This includes resources, food, items, and other assets (essentially every single 'thing' in the game).
  */
 export type AssetType = 
-    ResourceType | FoodType | ItemType | CraftableAsset;
+    ResourceType | FoodType | ItemType | CraftableAsset | BitCosmeticType;
