@@ -10,7 +10,7 @@ import { PlayerMastery } from '../models/user';
 import { MAX_BIT_LEVEL } from '../utils/constants/bit';
 import { BitModel, IslandModel, RaftModel, UserModel } from '../utils/constants/db';
 import { MAX_ISLAND_LEVEL } from '../utils/constants/island';
-import { BERRY_FACTORY_UPGRADE_DATA, BIT_UPGRADE_DATA, ISLAND_UPGRADE_DATA, RAFT_UPGRADE_DATA } from '../utils/constants/upgrade';
+import { BIT_UPGRADE_DATA, ISLAND_UPGRADE_DATA, RAFT_UPGRADE_DATA } from '../utils/constants/upgrade';
 import { ReturnValue, Status } from '../utils/retVal';
 import { toCamelCase } from '../utils/strings';
 
