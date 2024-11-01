@@ -1,5 +1,5 @@
 import { BitCosmetic, BitCosmeticInventory, BitCosmeticRarity, BitCosmeticSlot } from '../models/cosmetic';
-import { BitCosmeticModel, UserModel } from '../utils/constants/db';
+import { BitCosmeticModel, BitModel, UserModel } from '../utils/constants/db';
 import { generateObjectId } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
 /**
@@ -84,66 +84,83 @@ export const fetchOwnedBitCosmetics = async (twitterId: string): Promise<ReturnV
   }
 }
 
-// export const getAllUserCosmetics = async (userId: string): Promise<ReturnValue> => {
-//   try {
-//     // check real idUser exists
-//     const user = await UserModel.findOne({ _id: userId }).lean();
-//     if (!user) {
-//       return {
-//         status: Status.ERROR,
-//         message: `(getAllUserCosmetics) User with ID: ${userId} not found`,
-//       };
-//     }
-//     // get all cosmetics
-//     const data = await CosmeticModel.find({ owner: userId }).lean();
-//     return {
-//       status: Status.SUCCESS,
-//       message: `(getAllUserCosmetics) Successfully retrieved all cosmetics for user with ID: ${userId}`,
-//       data
-//     };
-//   } catch (err: any) {
-//     return {
-//       status: Status.ERROR,
-//       message: `(getAllUserCosmetics) Error: ${err.message}`,
-//     };
-//   }
-// }
+/**
+ * Equips a cosmetic set to a user's bit.
+ * 
+ * NOTE: If a set is not complete, it will only equip whatever cosmetics from that set are available for each slot.
+ */
+export const equipBitCosmeticSet = async (twitterId: string, bitId: number, set: string): Promise<ReturnValue> => {
+  try {
+    const [user, bit] = await Promise.all([
+      UserModel.findOne({ twitterId }).lean(),
+      BitModel.findOne({ bitId }).lean(),
+    ]);
 
-// export const getCosmeticMatch = async (userId: string): Promise<ReturnValue> => {
-//   try {
-//     // get all cosmetics
-//     const data = await CosmeticModel.aggregate([
-//       // filter by owner
-//       { $match: { owner: userId } },
-//       // group by name and slot, if same name and slot, sum quantity
-//       {
-//         $group: {
-//           _id: { name: "$name", slot: "$slot" },
-//           quantity: { $sum: 1 }
-//         }
-//       },
-//       {
-//         // recreate the object
-//         $project: {
-//           _id: 0,
-//           name: "$_id.name",
-//           slot: "$_id.slot",
-//           quantity: "$quantity"
-//         }
-//       }
-//     ])
-//     return {
-//       status: Status.SUCCESS,
-//       message: `(getCosmeticMatch) Successfully retrieved all cosmetics`,
-//       data
-//     };
-//   } catch (err: any) {
-//     return {
-//       status: Status.ERROR,
-//       message: `(getCosmeticMatch) Error: ${err.message}`,
-//     };
-//   }
-// }
+    if (!user) {
+      return {
+        status: Status.ERROR,
+        message: `(equipBitCosmeticSet) User with Twitter ID: ${twitterId} not found`,
+      };
+    }
+
+    if (!bit) {
+      return {
+        status: Status.ERROR,
+        message: `(equipBitCosmeticSet) Bit with ID: ${bitId} not found`,
+      };
+    }
+
+    // if the bit is not owned by the user, return an error.
+    if (bit.owner !== user._id) {
+      return {
+        status: Status.ERROR,
+        message: `(equipBitCosmeticSet) Bit with ID: ${bitId} is not owned by user with Twitter ID: ${twitterId}`,
+      };
+    }
+
+    const cosmetics = user?.inventory?.bitCosmetics as BitCosmeticInventory[];
+
+    // cosmetics are named something like `Myconid (Head)` or `Angelic A (Arms)`. The set name is the name before the `(`.
+    const setCosmetics = cosmetics.filter(cosmetic => cosmetic.cosmeticName.split(' (')[0].toLowerCase() === set.toLowerCase());
+
+    // if the user doesn't have any cosmetics from the set, return an error.
+    if (setCosmetics.length === 0) {
+      return {
+        status: Status.ERROR,
+        message: `(equipBitCosmeticSet) User with Twitter ID: ${twitterId} does not have any cosmetics from the set: ${set}`,
+      };
+    }
+
+    // check which slots are available in the set. for example:
+    // if the user owns `Myconid (Head)` and `Myconid (Body)`, then the user has the Head and Body parts of the set.
+    const availableSlots = setCosmetics.map(cosmetic => cosmetic.cosmeticName.match(/\((.*?)\)/)?.[1] as BitCosmeticSlot);
+
+    const bitUpdateOperations = {
+      $set: {}
+    }
+
+    // for each available slot, update the bit's `equippedCosmetics.<slot>` field.
+    availableSlots.forEach(slot => {
+      bitUpdateOperations.$set[`equippedCosmetics.${slot.toLowerCase()}`] = {
+        cosmeticId: setCosmetics.find(cosmetic => cosmetic.cosmeticName.includes(slot))?.cosmeticId,
+        equippedAt: Math.floor(Date.now() / 1000),
+      }
+    });
+
+    // update the bit with the new equipped cosmetics.
+    await BitModel.updateOne({ bitId }, bitUpdateOperations);
+
+    return {
+      status: Status.SUCCESS,
+      message: `(equipBitCosmeticSet) Successfully equipped the ${set} set to bit ID ${bitId}`,
+    }
+  } catch (err: any) {
+    return {
+      status: Status.ERROR,
+      message: `(equipBitCosmeticSet) Error: ${err.message}`,
+    }
+  }
+}
 
 // export const equipCosmetic = async (cosmeticId: string, bitId: number, userId: string): Promise<ReturnValue> => {
 //   try {
