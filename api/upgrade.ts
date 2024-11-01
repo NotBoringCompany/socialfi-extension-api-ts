@@ -189,43 +189,6 @@ export const universalAssetUpgrade = async (
             // increase the island's current level by 1.
             // NOTE: we do this prematurely, but this won't get called until the end of the function, meaning that if an error occurs, the island's level won't be increased.
             islandUpdateOperations.$inc['currentLevel'] = 1;
-        // if the asset to upgrade is a berry factory
-        } else if (asset === UpgradableAsset.BERRY_FACTORY) {
-            if (!poi) {
-                return {
-                    status: Status.ERROR,
-                    message: `(universalAssetUpgrade) POI not inputted.`,
-                };
-            }
-
-            // check if user is currently at this POI.
-            if (user?.inGameData?.location !== poi) {
-                return {
-                    status: Status.ERROR,
-                    message: `(universalAssetUpgrade) User is not currently at ${poi}.`,
-                };
-            }
-
-            // fetch the user's mastery data for this particular POI's berry factory.
-            // const berryFactoryMastery = (user?.inGameData?.mastery as PlayerMastery)?.berryFactory[toCamelCase(poi)];
-            const berryFactoryData = user?.inGameData?.mastery?.berryFactory as BerryFactoryMastery;
-            const berryFactoryMastery = berryFactoryData ? berryFactoryData[toCamelCase(poi)] : null;
-
-            // if the mastery is empty, this means that the berry factory is still level 1. we just put `2` as the level to upgrade to.
-            levelToUpgradeTo = berryFactoryMastery ? berryFactoryMastery.level + 1 : 2;
-
-            // check the costs to upgrade.
-            // 1. find the `levelRange` where `levelToUpgradeTo` is between `levelFloor` and `levelCeiling` (inclusive).
-            // 2. at the same time, find the `poi` that matches the POI's name.
-            upgradeCosts = BERRY_FACTORY_UPGRADE_DATA.upgradeRequirements.find(requirement => {
-                return requirement.levelRange.levelFloor <= levelToUpgradeTo && 
-                requirement.levelRange.levelCeiling >= levelToUpgradeTo && 
-                requirement.poi === poi
-            })?.upgradeCosts ?? null;
-
-            // increase the berry factory's level by 1.
-            // NOTE: we do this prematurely, but this won't get called until the end of the function, meaning that if an error occurs, the berry factory's level won't be increased.
-            userUpdateOperations.$set[`inGameData.mastery.berryFactory.${toCamelCase(poi)}.level`] = levelToUpgradeTo;
         // if the asset to upgrade is a raft
         } else if (asset === UpgradableAsset.RAFT) {
             // check the user's raft ID
@@ -422,7 +385,6 @@ export const universalAssetUpgrade = async (
                     asset === UpgradableAsset.BIT ? `Bit ID: ${islandOrBitId}` 
                     : asset === UpgradableAsset.ISLAND ? `Island ID: ${islandOrBitId}` 
                     : asset === UpgradableAsset.RAFT ? `Raft ID: ${user.inventory.raftId}`
-                    : asset === UpgradableAsset.BERRY_FACTORY ? `Berry Factory at ${poi}`
                     : null,
                 upgradedToLevel: levelToUpgradeTo,
                 totalPaid: {
