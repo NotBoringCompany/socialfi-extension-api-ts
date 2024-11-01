@@ -26,6 +26,12 @@ export interface BitCosmeticInventory {
   cosmeticName: BitCosmeticType;
   /** the amount of this cosmetic the user owns */
   amount: number;
+  /**
+   * the total amount of this cosmetic that is equipped to any bit.
+   * 
+   * `equippedAmount` CANNOT exceed `amount`.
+   */
+  equippedAmount: number;
 }
 
 /**

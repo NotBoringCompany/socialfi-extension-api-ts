@@ -139,11 +139,31 @@ export const equipBitCosmeticSet = async (twitterId: string, bitId: number, set:
       $set: {}
     }
 
-    // for each available slot, update the bit's `equippedCosmetics.<slot>` field.
+    const userUpdateOperations = {
+      $inc: {}
+    }
+
+    // for each available slot, 
+    // check if the `equippedAmount` is less than the `amount` of the cosmetic. if yes:
+    // 1. update the bit's `equippedCosmetics.<slot>` field.
+    // 2. increment the user's `equippedAmount` of the cosmetic.
     availableSlots.forEach(slot => {
-      bitUpdateOperations.$set[`equippedCosmetics.${slot.toLowerCase()}`] = {
-        cosmeticId: setCosmetics.find(cosmetic => cosmetic.cosmeticName.includes(slot))?.cosmeticId,
-        equippedAt: Math.floor(Date.now() / 1000),
+      const cosmeticIndex = setCosmetics.findIndex(cosmetic => cosmetic.cosmeticName.match(/\((.*?)\)/)?.[1] === slot);
+      const cosmetic = setCosmetics[cosmeticIndex];
+
+      if (cosmetic.equippedAmount < cosmetic.amount) {
+        bitUpdateOperations.$set[`equippedCosmetics.${slot.toLowerCase()}`] = {
+          cosmeticId: cosmetic.cosmeticId,
+          equippedAt: Math.floor(Date.now() / 1000),
+        }
+
+        userUpdateOperations.$inc[`inventory.bitCosmetics.${cosmeticIndex}.equippedAmount`] = 1;
+      } else {
+        // if the cosmetic is already fully equipped, return an error.
+        return {
+          status: Status.ERROR,
+          message: `(equipBitCosmeticSet) Cosmetic with ID ${cosmetic.cosmeticId} is already fully equipped. Please try manually equipping the cosmetics.`,
+        }
       }
     });
 
@@ -162,71 +182,89 @@ export const equipBitCosmeticSet = async (twitterId: string, bitId: number, set:
   }
 }
 
-// export const equipCosmetic = async (cosmeticId: string, bitId: number, userId: string): Promise<ReturnValue> => {
-//   try {
-//     // check bitId is valid
-//     const bit = await BitModel.findOne({ bitId }).lean();
-//     if (!bit) {
-//       return {
-//         status: Status.ERROR,
-//         message: `(equippedCosmetic) Bit with ID: ${bitId} not found`,
-//       };
-//     }
-//     // check bit is owned by user
-//     if (bit.owner !== userId) {
-//       return {
-//         status: Status.ERROR,
-//         message: `(equippedCosmetic) Bit with ID: ${bitId} is not owned by user with ID: ${userId}`,
-//       };
-//     }
-//     // check real idUser exists
-//     const user = await UserModel.findOne({ _id: userId }).lean();
-//     if (!user) {
-//       return {
-//         status: Status.ERROR,
-//         message: `(equippedCosmetic) User with ID: ${userId} not found`,
-//       };
-//     }
-//     // check if cosmetic exists
-//     const cosmetic = await CosmeticModel.findOne({ _id: cosmeticId }).lean();
-//     if (!cosmetic) {
-//       return {
-//         status: Status.ERROR,
-//         message: `(equippedCosmetic) Cosmetic with ID: ${cosmeticId} not found`,
-//       };
-//     }
-//     // check if user owns cosmetic
-//     if (cosmetic.owner !== userId) {
-//       return {
-//         status: Status.ERROR,
-//         message: `(equippedCosmetic) User with ID: ${userId} does not own cosmetic with ID: ${cosmeticId}`,
-//       };
-//     }
-//     // check cosmetic only can be equipped once
-//     if (cosmetic.equipped) {
-//       return {
-//         status: Status.ERROR,
-//         message: `(equippedCosmetic) Cosmetic with ID: ${cosmeticId} has already been equipped`,
-//       };
-//     }
-//     // update cosmetic
-//     cosmetic.equipped = {
-//       bitId,
-//       equipAt: Math.floor(Date.now() / 1000),
-//     }
-//     const data = await CosmeticModel.updateOne({ _id: cosmeticId }, cosmetic).lean();
-//     return {
-//       status: Status.SUCCESS,
-//       message: `(equippedCosmetic) Successfully updated cosmetic with bitId: ${bitId} for user with ID: ${userId}`,
-//       data
-//     };
-//   } catch (err: any) {
-//     return {
-//       status: Status.ERROR,
-//       message: `(equippedCosmetic) Error: ${err.message}`,
-//     };
-//   }
-// }
+/**
+ * Equips a single cosmetic item to one of the bit's slots.
+ */
+export const equipBitCosmetic = async (twitterId: string, bitId: number, cosmeticId: string): Promise<ReturnValue> => {
+  try {
+    const [user, bit] = await Promise.all([
+      UserModel.findOne({ twitterId }).lean(),
+      BitModel.findOne({ bitId }).lean(),
+    ]);
+
+    if (!user) {
+      return {
+        status: Status.ERROR,
+        message: `(equipBitCosmetic) User with Twitter ID: ${twitterId} not found`,
+      };
+    }
+
+    if (!bit) {
+      return {
+        status: Status.ERROR,
+        message: `(equipBitCosmetic) Bit with ID: ${bitId} not found`,
+      };
+    }
+
+    // if the bit is not owned by the user, return an error.
+    if (bit.owner !== user._id) {
+      return {
+        status: Status.ERROR,
+        message: `(equipBitCosmetic) Bit with ID: ${bitId} is not owned by user with Twitter ID: ${twitterId}`,
+      };
+    }
+
+    const cosmetic = (user?.inventory?.bitCosmetics as BitCosmeticInventory[]).find(cosmetic => cosmetic.cosmeticId === cosmeticId);
+    const cosmeticIndex = (user?.inventory?.bitCosmetics as BitCosmeticInventory[]).findIndex(cosmetic => cosmetic.cosmeticId === cosmeticId);
+
+    // if the user doesn't own the cosmetic, return an error.
+    if (!cosmetic) {
+      return {
+        status: Status.ERROR,
+        message: `(equipBitCosmetic) User with Twitter ID: ${twitterId} does not own a cosmetic with ID: ${cosmeticId}`,
+      };
+    }
+
+    // check if the `equippedAmount` is less than the `amount` of the cosmetic. if not, return an error.
+    if (cosmetic.equippedAmount >= cosmetic.amount) {
+      return {
+        status: Status.ERROR,
+        message: `(equipBitCosmetic) User with Twitter ID: ${twitterId} has already equipped the maximum amount of the cosmetic with ID: ${cosmeticId}`,
+      };
+    }
+
+    // get the slot of the cosmetic.
+    const slot = cosmetic.cosmeticName.match(/\((.*?)\)/)?.[1] as BitCosmeticSlot;
+
+    // update the bit with the new equipped cosmetic.
+    // also increment the user's `equippedAmount` of the cosmetic.
+    await Promise.all([
+      BitModel.updateOne({ bitId }, {
+        $set: {
+          [`equippedCosmetics.${slot.toLowerCase()}`]: {
+            cosmeticId,
+            equippedAt: Math.floor(Date.now() / 1000),
+          }
+        }
+      }),
+      UserModel.updateOne({ twitterId }, {
+        $inc: {
+          [`inventory.bitCosmetics.${cosmeticIndex}.equippedAmount`]: 1
+        }
+      })
+    ])
+
+    return {
+      status: Status.SUCCESS,
+      message: `(equipBitCosmetic) Successfully equipped the cosmetic with ID ${cosmeticId} to bit ID ${bitId}`,
+    }
+  } catch (err: any) {
+    return {
+      status: Status.ERROR,
+      message: `(equipBitCosmetic) Error: ${err.message}`,
+    }
+  }
+}
 
 // export const unequipCosmetic = async (cosmeticId: string, userId: string): Promise<ReturnValue> => {
 //   try {
