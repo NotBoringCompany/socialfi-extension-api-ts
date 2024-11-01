@@ -1,5 +1,53 @@
 import express from 'express';
+import { authMiddleware } from '../middlewares/auth';
+import { addBitCosmetics, fetchOwnedBitCosmetics } from '../api/cosmetic';
+import { validateRequestAuth } from '../utils/auth';
+import { Status } from '../utils/retVal';
 const router = express.Router();
+
+router.post('/add_bit_cosmetics', authMiddleware(3), async (req, res) => {
+    const { cosmetics } = req.body;
+    try {
+        const { status, message, data } = await addBitCosmetics(cosmetics);
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
+
+router.get('/fetch_owned_bit_cosmetics', async (req, res) => {
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'fetch_owned_bit_cosmetics');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            });
+        }
+
+        const { status, message, data } = await fetchOwnedBitCosmetics(validateData?.twitterId);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
 
 // router.get('/get_cosmetics', validateRequestAuthV2('get_cosmetics'), async (req, res) => {
 //   // no need to send from body cuz validateRequestAuthV2 will handle it
