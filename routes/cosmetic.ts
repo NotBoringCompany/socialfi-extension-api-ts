@@ -1,6 +1,6 @@
 import express from 'express';
 import { authMiddleware } from '../middlewares/auth';
-import { addBitCosmetics, equipBitCosmetic, equipBitCosmeticSet, fetchOwnedBitCosmetics } from '../api/cosmetic';
+import { addBitCosmetics, equipBitCosmetic, equipBitCosmeticSet, fetchOwnedBitCosmetics, unequipBitCosmeticSlots } from '../api/cosmetic';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 const router = express.Router();
@@ -89,6 +89,33 @@ router.post('/equip_bit_cosmetic', async (req, res) => {
         }
 
         const { status, message, data } = await equipBitCosmetic(validateData?.twitterId, bitId, cosmeticId);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
+
+router.post('/unequip_bit_cosmetic_slots', async (req, res) => {
+    const { bitId, slots } = req.body;
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'unequip_bit_cosmetic_slots');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            });
+        }
+
+        const { status, message, data } = await unequipBitCosmeticSlots(validateData?.twitterId, bitId, slots);
 
         return res.status(status).json({
             status,
