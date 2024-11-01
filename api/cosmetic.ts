@@ -1,3 +1,4 @@
+import { EquippedCosmeticData } from '../models/bit';
 import { BitCosmetic, BitCosmeticInventory, BitCosmeticRarity, BitCosmeticSlot } from '../models/cosmetic';
 import { BitCosmeticModel, BitModel, UserModel } from '../utils/constants/db';
 import { generateObjectId } from '../utils/crypto';
@@ -262,6 +263,86 @@ export const equipBitCosmetic = async (twitterId: string, bitId: number, cosmeti
     return {
       status: Status.ERROR,
       message: `(equipBitCosmetic) Error: ${err.message}`,
+    }
+  }
+}
+
+/**
+ * Unequips one or multiple cosmetic items from a bit.
+ */
+export const unequipCosmeticSlots = async (twitterId: string, bitId: number, slots: BitCosmeticSlot[]): Promise<ReturnValue> => {
+  try {
+    const [user, bit] = await Promise.all([
+      UserModel.findOne({ twitterId }).lean(),
+      BitModel.findOne({ bitId }).lean(),
+    ]);
+
+    if (!user) {
+      return {
+        status: Status.ERROR,
+        message: `(unequipCosmeticSlots) User with Twitter ID: ${twitterId} not found`,
+      };
+    }
+
+    if (!bit) {
+      return {
+        status: Status.ERROR,
+        message: `(unequipCosmeticSlots) Bit with ID: ${bitId} not found`,
+      };
+    }
+
+    // if the bit is not owned by the user, return an error.
+    if (bit.owner !== user._id) {
+      return {
+        status: Status.ERROR,
+        message: `(unequipCosmeticSlots) Bit with ID: ${bitId} is not owned by user with Twitter ID: ${twitterId}`,
+      };
+    }
+
+    const bitUpdateOperations = {
+      $set: {}
+    }
+
+    const userUpdateOperations = {
+      $inc: {}
+    }
+
+    // check if the bit has any equipped cosmetics.
+    for (const slot of slots) {
+      const equippedCosmetic: EquippedCosmeticData = bit.equippedCosmetics[slot.toLowerCase()];
+      // check if this slot has a cosmetic equipped.
+      if (!equippedCosmetic || equippedCosmetic.cosmeticId === null) {
+        return {
+          status: Status.ERROR,
+          message: `(unequipCosmeticSlots) Bit with ID: ${bitId} does not have any cosmetic equipped in the ${slot} slot`,
+        }
+      }
+
+      // otherwise, simply unequip the cosmetic by setting the `cosmeticId` to `null` and the `equippedAt` to 0.
+      bitUpdateOperations.$set[`equippedCosmetics.${slot.toLowerCase()}`] = {
+        cosmeticId: null,
+        equippedAt: 0,
+      }
+
+      // decrement the user's `equippedAmount` of the cosmetic.
+      const cosmeticIndex = (user?.inventory?.bitCosmetics as BitCosmeticInventory[]).findIndex(cosmetic => cosmetic.cosmeticId === equippedCosmetic.cosmeticId);
+      userUpdateOperations.$inc[`inventory.bitCosmetics.${cosmeticIndex}.equippedAmount`] = -1;
+    }
+
+    // update bit and user.
+    await Promise.all([
+      BitModel.updateOne({ bitId }, bitUpdateOperations),
+      UserModel.updateOne({ twitterId }, userUpdateOperations)
+    ]);
+
+    return {
+      status: Status.SUCCESS,
+      message: `(unequipCosmeticSlots) Successfully unequipped cosmetics from bit with ID: ${bitId}`,
+    }
+  } catch (err: any) {
+    return {
+      status: Status.ERROR,
+      message: `(unequipCosmeticSlots) Error: ${err.message}`,
     }
   }
 }
