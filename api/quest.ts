@@ -322,6 +322,24 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                         lastRelocationTimestamp: 0,
                         currentFarmingLevel: 1, // starts at level 1
                         traits,
+                        equippedCosmetics: {
+                            head: {
+                                cosmeticId: null,
+                                equippedAt: 0
+                            },
+                            arms: {
+                                cosmeticId: null,
+                                equippedAt: 0
+                            },
+                            back: {
+                                cosmeticId: null,
+                                equippedAt: 0
+                            },
+                            body: {
+                                cosmeticId: null,
+                                equippedAt: 0
+                            }
+                        },
                         farmingStats: randomizeFarmingStats(rarity),
                         bitStatsModifiers,
                     };
