@@ -179,6 +179,24 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
                 lastRelocationTimestamp: 0,
                 currentFarmingLevel: 1, // starts at level 1
                 traits,
+                equippedCosmetics: {
+                    head: {
+                        cosmeticId: null,
+                        equippedAt: 0
+                    },
+                    arms: {
+                        cosmeticId: null,
+                        equippedAt: 0
+                    },
+                    back: {
+                        cosmeticId: null,
+                        equippedAt: 0
+                    },
+                    body: {
+                        cosmeticId: null,
+                        equippedAt: 0
+                    }
+                },
                 farmingStats: {
                     ...randomizeFarmingStats(rarity),
                     currentEnergy: 50, // set energy to half for tutorial purposes
@@ -2386,6 +2404,24 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
             lastRelocationTimestamp: 0,
             currentFarmingLevel: 1, // starts at level 1
             traits,
+            equippedCosmetics: {
+                head: {
+                    cosmeticId: null,
+                    equippedAt: 0
+                },
+                arms: {
+                    cosmeticId: null,
+                    equippedAt: 0
+                },
+                back: {
+                    cosmeticId: null,
+                    equippedAt: 0
+                },
+                body: {
+                    cosmeticId: null,
+                    equippedAt: 0
+                }
+            },
             farmingStats: {
                 ...randomizeFarmingStats(rarity),
                 currentEnergy: 50, // set energy to half for tutorial purposes
@@ -2822,6 +2858,24 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                 lastRelocationTimestamp: 0,
                 currentFarmingLevel: 1, // starts at level 1
                 traits,
+                equippedCosmetics: {
+                    head: {
+                        cosmeticId: null,
+                        equippedAt: 0
+                    },
+                    arms: {
+                        cosmeticId: null,
+                        equippedAt: 0
+                    },
+                    back: {
+                        cosmeticId: null,
+                        equippedAt: 0
+                    },
+                    body: {
+                        cosmeticId: null,
+                        equippedAt: 0
+                    }
+                },
                 farmingStats: {
                     ...randomizeFarmingStats(rarity),
                     currentEnergy: 50, // set energy to half for tutorial purposes

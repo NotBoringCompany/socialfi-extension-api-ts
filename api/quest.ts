@@ -30,8 +30,8 @@ import { ExtendedResource } from '../models/resource';
 import { POIName } from '../models/poi';
 import { TwitterHelper } from '../utils/twitterHelper';
 import { dayjs } from '../utils/dayjs';
+import { BerryFactoryMastery, BerryFactoryMasteryStats } from '../models/mastery';
 import { toCamelCase } from '../utils/strings';
-import { BerryFactoryMastery } from '../models/mastery';
 
 /**
  * Adds a quest to the database.
@@ -259,6 +259,29 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
             const userInventory: UserInventory = user.inventory;
 
             switch (rewardType) {
+                // add case for Experience rewards.
+                case QuestRewardType.EXP:
+                    // If Quest type isn't daily skip this process into next reward
+                    if (quest.type !== QuestType.DAILY) continue;
+                    // We already do the Quest POI & User current Location so no need to check it again
+                    // Check if user contain BerryFactoryMastery data
+                    const berryFactoryData = user?.inGameData?.mastery?.berryFactory as BerryFactoryMastery;
+                    const berryFactoryMastery = berryFactoryData ? berryFactoryData[toCamelCase(location)] : null;
+                    if (berryFactoryMastery) {
+                        // Destructure berryFactoryMastery
+                        const { level, totalExp} = berryFactoryMastery;
+                        // sum totalExp
+                        const newTotalExp = totalExp + amount;
+                        
+                        // Set newMasteryStats data into userUpdateOperations
+                        // Level isn't updated for now since we don't have the total exp requirement for next level.
+                        userUpdateOperations.$set[`inGameData.mastery.berryFactory.${toCamelCase(location)}`] = { level, totalExp: newTotalExp } as BerryFactoryMasteryStats;
+                    } else {
+                        // Initialize new BerryFactoryMasteryStats data for User
+                        const newMasteryStats: BerryFactoryMasteryStats = { level: 1, totalExp: amount };
+                        // Set newMasteryStats into userUpdateOperations
+                        userUpdateOperations.$set[`inGameData.mastery.berryFactory.${toCamelCase(location)}`] = newMasteryStats;
+                    }
                 // add the cookie count into the user's inventory
                 case QuestRewardType.X_COOKIES:
                     // Calculate Extra xCookies amount. if questType isn't Daily extraAmount will always be 0.
@@ -322,6 +345,24 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                         lastRelocationTimestamp: 0,
                         currentFarmingLevel: 1, // starts at level 1
                         traits,
+                        equippedCosmetics: {
+                            head: {
+                                cosmeticId: null,
+                                equippedAt: 0
+                            },
+                            arms: {
+                                cosmeticId: null,
+                                equippedAt: 0
+                            },
+                            back: {
+                                cosmeticId: null,
+                                equippedAt: 0
+                            },
+                            body: {
+                                cosmeticId: null,
+                                equippedAt: 0
+                            }
+                        },
                         farmingStats: randomizeFarmingStats(rarity),
                         bitStatsModifiers,
                     };

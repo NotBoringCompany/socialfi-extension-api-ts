@@ -18,7 +18,6 @@ export interface UpgradableAssetData {
  * Represents a list of upgradable assets that can be upgraded via the `universalAssetUpgrade` function.
  */
 export enum UpgradableAsset {
-    BERRY_FACTORY = 'Berry Factory',
     BIT = 'Bit',
     ISLAND = 'Island',
     RAFT = 'Raft',

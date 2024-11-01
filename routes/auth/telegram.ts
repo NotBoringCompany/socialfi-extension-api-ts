@@ -45,6 +45,7 @@ router.post('/login', async (req, res, next) => {
             data: {
                 data,
                 token,
+                telegramProfile: telegramData.user
             },
         });
     } catch (err: any) {
