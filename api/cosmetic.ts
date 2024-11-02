@@ -147,12 +147,23 @@ export const equipBitCosmeticSet = async (twitterId: string, bitId: number, set:
     // for each available slot, 
     // check if the `equippedAmount` is less than the `amount` of the cosmetic. if yes:
     // 1. update the bit's `equippedCosmetics.<slot>` field.
+    // 2. if there was a previous cosmetic equipped in that slot, decrement the user's `equippedAmount` of that cosmetic.
     // 2. increment the user's `equippedAmount` of the cosmetic.
     availableSlots.forEach(slot => {
       const cosmeticIndex = setCosmetics.findIndex(cosmetic => cosmetic.cosmeticName.match(/\((.*?)\)/)?.[1] === slot);
       const cosmetic = setCosmetics[cosmeticIndex];
 
       if (cosmetic.equippedAmount < cosmetic.amount) {
+        // check if there is already a cosmetic equipped in this slot.
+        const equippedCosmeticData: EquippedCosmeticData = bit.equippedCosmetics[slot.toLowerCase()];
+
+        if (equippedCosmeticData.cosmeticId !== null) {
+          // decrement the user's `equippedAmount` of the previously equipped cosmetic.
+          const previousCosmeticIndex = cosmetics.findIndex(cosmetic => cosmetic.cosmeticId === equippedCosmeticData.cosmeticId);
+          userUpdateOperations.$inc[`inventory.bitCosmetics.${previousCosmeticIndex}.equippedAmount`] = -1;
+        }
+
+        // update the bit with the new equipped cosmetic.
         bitUpdateOperations.$set[`equippedCosmetics.${slot.toLowerCase()}`] = {
           cosmeticId: cosmetic.cosmeticId,
           equippedAt: Math.floor(Date.now() / 1000),
@@ -234,11 +245,27 @@ export const equipBitCosmetic = async (twitterId: string, bitId: number, cosmeti
       };
     }
 
+    const userUpdateOperations = {
+      $inc: {}
+    }
+
     // get the slot of the cosmetic.
     const slot = cosmetic.cosmeticName.match(/\((.*?)\)/)?.[1] as BitCosmeticSlot;
 
-    // update the bit with the new equipped cosmetic.
-    // also increment the user's `equippedAmount` of the cosmetic.
+    // check if there is already a cosmetic equipped in this slot.
+    const equippedCosmeticData: EquippedCosmeticData = bit.equippedCosmetics[slot.toLowerCase()];
+
+    if (equippedCosmeticData.cosmeticId !== null) {
+      // decrement the user's `equippedAmount` of the previously equipped cosmetic.
+      const previousCosmeticIndex = (user?.inventory?.bitCosmetics as BitCosmeticInventory[]).findIndex(cosmetic => cosmetic.cosmeticId === equippedCosmeticData.cosmeticId);
+      
+      userUpdateOperations.$inc[`inventory.bitCosmetics.${previousCosmeticIndex}.equippedAmount`] = -1;
+    }
+
+    // increment the user's `equippedAmount` of the cosmetic.
+    userUpdateOperations.$inc[`inventory.bitCosmetics.${cosmeticIndex}.equippedAmount`] = 1;
+
+    // update the bit with the new equipped cosmetic and do the user update operations
     await Promise.all([
       BitModel.updateOne({ bitId }, {
         $set: {
@@ -248,12 +275,8 @@ export const equipBitCosmetic = async (twitterId: string, bitId: number, cosmeti
           }
         }
       }),
-      UserModel.updateOne({ twitterId }, {
-        $inc: {
-          [`inventory.bitCosmetics.${cosmeticIndex}.equippedAmount`]: 1
-        }
-      })
-    ])
+      UserModel.updateOne({ twitterId }, userUpdateOperations)
+    ]);
 
     return {
       status: Status.SUCCESS,
@@ -270,7 +293,7 @@ export const equipBitCosmetic = async (twitterId: string, bitId: number, cosmeti
 /**
  * Unequips one or multiple cosmetic items from a bit.
  */
-export const unequipCosmeticSlots = async (twitterId: string, bitId: number, slots: BitCosmeticSlot[]): Promise<ReturnValue> => {
+export const unequipBitCosmeticSlots = async (twitterId: string, bitId: number, slots: BitCosmeticSlot[]): Promise<ReturnValue> => {
   try {
     const [user, bit] = await Promise.all([
       UserModel.findOne({ twitterId }).lean(),
