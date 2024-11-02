@@ -1,6 +1,6 @@
 import express from 'express';
 import { authMiddleware } from '../middlewares/auth';
-import { addBitCosmetics, equipBitCosmetic, equipBitCosmeticSet, fetchOwnedBitCosmetics, unequipBitCosmeticSlots } from '../api/cosmetic';
+import { addBitCosmetics, equipBitCosmetic, equipBitCosmeticSet, fetchOwnedBitCosmetics, unequipCosmeticSlots } from '../api/cosmetic';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 const router = express.Router();
@@ -115,7 +115,7 @@ router.post('/unequip_bit_cosmetic_slots', async (req, res) => {
             });
         }
 
-        const { status, message, data } = await unequipBitCosmeticSlots(validateData?.twitterId, bitId, slots);
+        const { status, message, data } = await unequipCosmeticSlots(validateData?.twitterId, bitId, slots);
 
         return res.status(status).json({
             status,
