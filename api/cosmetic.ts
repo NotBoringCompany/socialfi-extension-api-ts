@@ -39,53 +39,6 @@ export const addBitCosmetics = async (
 }
 
 /**
- * Fetches all owned bit cosmetics and group them per slot.
- */
-export const fetchOwnedBitCosmetics = async (twitterId: string): Promise<ReturnValue> => {
-  try {
-    const user = await UserModel.findOne({ twitterId }).lean();
-
-    if (!user) {
-      return {
-        status: Status.ERROR,
-        message: `(fetchOwnedBitCosmetics) User with Twitter ID: ${twitterId} not found`,
-      };
-    }
-
-    const cosmetics = user?.inventory?.bitCosmetics as BitCosmeticInventory[];
-
-    // group them into the 4 slots: head, body, arms, back.
-    const groupedCosmetics: { [key in BitCosmeticSlot]: BitCosmeticInventory[] } = {
-      head: [],
-      body: [],
-      arms: [],
-      back: [],
-    }
-
-    cosmetics.forEach(cosmetic => {
-      // the cosmetic will be named something like `Myconid (Head)`. The slot will always be between the `()` brackets.
-      // we will need to extract it.
-      const slot = cosmetic.cosmeticName.match(/\((.*?)\)/)?.[1] as BitCosmeticSlot;
-
-      groupedCosmetics[slot].push(cosmetic);
-    });
-
-    return {
-      status: Status.SUCCESS,
-      message: `(fetchOwnedBitCosmetics) Successfully fetched all owned bit cosmetics for user with Twitter ID: ${twitterId}`,
-      data: {
-        groupedCosmetics
-      },
-    }
-  } catch (err: any) {
-    return {
-      status: Status.ERROR,
-      message: `(fetchOwnedBitCosmetics) Error: ${err.message}`,
-    }
-  }
-}
-
-/**
  * Equips a cosmetic set to a user's bit.
  * 
  * NOTE: If a set is not complete, it will only equip whatever cosmetics from that set are available for each slot.
