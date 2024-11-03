@@ -226,10 +226,10 @@ export const completeTutorial = async (twitterId: string, tutorialId: number): P
                         currentFarmingLevel: 1, // starts at level 1
                         traits,
                         equippedCosmetics: {
-                            head: { cosmeticId: null, equippedAt: 0 },
-                            body: { cosmeticId: null, equippedAt: 0 },
-                            arms: { cosmeticId: null, equippedAt: 0 },
-                            back: { cosmeticId: null, equippedAt: 0 },
+                            head: { cosmeticId: null, cosmeticName: null, equippedAt: 0 },
+                            body: { cosmeticId: null, cosmeticName: null, equippedAt: 0 },
+                            arms: { cosmeticId: null, cosmeticName: null, equippedAt: 0 },
+                            back: { cosmeticId: null, cosmeticName: null, equippedAt: 0 },
                         },
                         farmingStats: randomizeFarmingStats(rarity),
                         bitStatsModifiers,
