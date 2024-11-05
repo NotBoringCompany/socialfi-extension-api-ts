@@ -388,7 +388,7 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
                 }
 
                 // if the user also has a squad, add the points to the squad's total points
-                if (user.inGameData.squad !== null) {
+                if (user.inGameData.squadId !== null) {
                     // get the squad
                     const squad = await SquadModel.findOne({ _id: user.inGameData.squadId }).lean();
 
