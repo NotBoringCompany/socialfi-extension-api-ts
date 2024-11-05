@@ -522,17 +522,26 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
         // execute the update operations. $set and $inc first, then $push and $pull to avoid conflicts.
         await Promise.all([
             await UserModel.updateOne({ twitterId }, { $set: userUpdateOperations.$set, $inc: userUpdateOperations.$inc }),
-            await SquadModel.updateOne({ _id: user.inGameData.squadId }, { $set: squadUpdateOperations.$set, $inc: squadUpdateOperations.$inc }),
-            await SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, { $set: squadLeaderboardUpdateOperations.$set, $inc: squadLeaderboardUpdateOperations.$inc }),
             await LeaderboardModel.updateOne({ name: 'Season 0' }, { $set: leaderboardUpdateOperations.$set, $inc: leaderboardUpdateOperations.$inc }),
         ]);
 
         await Promise.all([
             await UserModel.updateOne({ twitterId }, { $push: userUpdateOperations.$push, $pull: userUpdateOperations.$pull }),
-            await SquadModel.updateOne({ _id: user.inGameData.squadId }, { $push: squadUpdateOperations.$push, $pull: squadUpdateOperations.$pull }),
-            await SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, { $push: squadLeaderboardUpdateOperations.$push, $pull: squadLeaderboardUpdateOperations.$pull }),
             await LeaderboardModel.updateOne({ name: 'Season 0' }, { $push: leaderboardUpdateOperations.$push, $pull: leaderboardUpdateOperations.$pull }),
         ]);
+
+        // if the user has a squad, update the squad and squad leaderboard models
+        if (user.inGameData.squadId) {
+            await Promise.all([
+                await SquadModel.updateOne({ _id: user.inGameData.squadId }, { $set: squadUpdateOperations.$set, $inc: squadUpdateOperations.$inc }),
+                await SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, { $set: squadLeaderboardUpdateOperations.$set, $inc: squadLeaderboardUpdateOperations.$inc }),
+            ]);
+
+            await Promise.all([
+                await SquadModel.updateOne({ _id: user.inGameData.squadId }, { $push: squadUpdateOperations.$push, $pull: squadUpdateOperations.$pull }),
+                await SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, { $push: squadLeaderboardUpdateOperations.$push, $pull: squadLeaderboardUpdateOperations.$pull }),
+            ]);
+        }
 
         // reset all claimable rewards to 0
         await KOSClaimableWeeklyRewardsModel.updateOne({ userId: user._id }, {
