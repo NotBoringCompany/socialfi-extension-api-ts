@@ -1143,8 +1143,10 @@ export const consumeSynthesizingItem = async (
                 islandUpdateOperations.push({
                     islandId: island.islandId,
                     updateOperations: {
+                        // set newResourceCap & Set gatheringEnd into 0 (In case if island already depleted)
                         $set: {
-                            'islandResourceStats.baseResourceCap': newResourceCap
+                            'islandResourceStats.baseResourceCap': newResourceCap,
+                            'islandResourceStats.gatheringEnd': 0
                         },
                         $inc: {},
                         $push: {},
