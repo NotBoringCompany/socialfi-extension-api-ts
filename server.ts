@@ -67,7 +67,6 @@ import chat from './routes/chat';
 import { schedulers } from './schedulers/schedulers';
 import ban from './routes/ban';
 import mail from './routes/mail';
-import { initSocket } from './socket';
 import upgrade from './routes/upgrade';
 import gacha from './routes/gacha';
 import cosmetic from './routes/cosmetic';
@@ -109,10 +108,8 @@ app.use('/upgrade', checkMaintenance, upgrade);
 app.use('/gacha', checkMaintenance, gacha);
 app.use('/cosmetic', checkMaintenance, cosmetic);
 
-// both protocol and socket.io
 const httpServer = http.createServer(app);
-// Sockets init
-initSocket(httpServer);
+
 /** socket io listener */
 initializeSocket(httpServer);
 
@@ -122,7 +119,7 @@ httpServer.listen(port, async () => {
     // populates the `BitCosmeticEnum` enum with the values from the database
     await populateBitCosmeticEnum();
 
-    await schedulers();
+    // await schedulers();
 });
 
 export default app;

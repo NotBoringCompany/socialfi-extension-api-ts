@@ -1,13 +1,17 @@
 import http from 'http';
 import { Server, Socket } from 'socket.io';
+
 import { validateJWT } from '../utils/jwt';
 import { Status } from '../utils/retVal';
 import { ChatroomModel, UserModel } from '../utils/constants/db';
-import redis from './redis';
 import { handleChatEvents } from '../events/chat';
+import { redis } from '../utils/constants/redis';
+import { handleSaunaEvents } from '../events/sauna';
+
+let io: Server | null = null;
 
 export const initializeSocket = (server: http.Server) => {
-    const io = new Server(server, {
+    io = new Server(server, {
         cors: {
             origin: '*',
         },
@@ -49,8 +53,6 @@ export const initializeSocket = (server: http.Server) => {
     io.on('connection', async (socket) => {
         const userId = socket.data.userId as string;
 
-        console.log(socket.data);
-
         // if the userId didn't exist then return authentication error
         if (!userId) throw new Error('Authentication error');
 
@@ -67,8 +69,8 @@ export const initializeSocket = (server: http.Server) => {
 
         // chat event listener
         handleChatEvents(socket, io);
-
-        console.log(`User ${userId} connected with socket ID ${socket.id}`);
+        // sauna event listener
+        handleSaunaEvents(socket);
 
         // handle user disconnection
         socket.on('disconnect', async () => {
