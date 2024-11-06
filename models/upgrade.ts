@@ -1,6 +1,8 @@
 import { Asset, AssetType } from './asset';
+import { CraftedAssetRarity } from './craft';
 import { IslandType } from './island';
 import { POIName } from './poi';
+import { ResourceRarity } from './resource';
 
 /**
  * Represents the upgrade data for upgradable assets.
@@ -90,10 +92,27 @@ export interface UpgradeCost {
  * Represents the requirement data when requiring assets to upgrade an upgradable asset.
  */
 export interface AssetUpgradeRequirement {
-    /** a generic asset */
-    asset: AssetType;
-    /** the type of asset */
-    assetType: 'item' | 'resource' | 'food';
-    /** the amount of the asset required */
+    /** 
+     * the asset category of the required asset.
+     */
+    assetCategory: 'resource' | 'food' | 'item';
+    /**
+     * the specific asset required.
+     * 
+     * having a specific `specificAsset` and having `specificAsset` as `any` is allowed.
+     * 
+     * for example, if `assetCategory` is `resource` and `specificAsset` is `any` and `requiredRarity` is `ResourceRarity.COMMON`,
+     * the user can use any common resource to upgrade the upgradable asset.
+     */
+    specificAsset: AssetType | 'any';
+    /**
+     * The minimum rarity of the asset required.
+     * 
+     * Some assets have no rarity, so the value can be 'none'.
+     */
+    requiredRarity: CraftedAssetRarity | ResourceRarity | 'none';
+    /**
+     * The amount of the asset required.
+     */
     amount: number;
 }
