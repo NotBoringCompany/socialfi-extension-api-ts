@@ -1,4 +1,5 @@
 import express from 'express';
+import http from 'http';
 import cors from 'cors';
 import * as dotenv from 'dotenv';
 import './utils/zod';
@@ -8,7 +9,6 @@ import session from 'express-session';
 import MongoStore from 'connect-mongo';
 import { checkMaintenance } from './middlewares/maintenance';
 import {Server} from 'socket.io'
-import http from 'http';
 
 dotenv.config();
 
@@ -21,12 +21,14 @@ app.use(express.json());
 // temporarily allowing all cors requests
 app.use(cors());
 
-app.use(session({
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    // store: MongoStore.create({ mongoUrl: mongoUri, collectionName: 'Sessions' })
-}));
+app.use(
+    session({
+        secret: process.env.SESSION_SECRET,
+        resave: false,
+        saveUninitialized: false,
+        // store: MongoStore.create({ mongoUrl: mongoUri, collectionName: 'Sessions' })
+    })
+);
 
 app.use(passport.initialize());
 app.use(passport.session());
@@ -61,14 +63,17 @@ import weeklyMVPReward from './routes/weeklyMVPReward';
 import collab from './routes/collab';
 import collabV2 from './routes/collab_v2';
 import web3 from './routes/web3';
+import chat from './routes/chat';
 import { schedulers } from './schedulers/schedulers';
 import ban from './routes/ban';
 import mail from './routes/mail';
-import { initSocket } from './socket';
 import upgrade from './routes/upgrade';
 import gacha from './routes/gacha';
 import cosmetic from './routes/cosmetic';
+import friend from './routes/friend';
+import report from './routes/report';
 import { populateBitCosmeticEnum } from './utils/constants/cosmetic';
+import { initializeSocket } from './configs/socket';
 
 app.use('/auth/twitter', checkMaintenance, twitterAuth);
 app.use('/auth/discord', checkMaintenance, discordAuth);
@@ -98,15 +103,19 @@ app.use('/squad_leaderboard', checkMaintenance, squadLeaderboard);
 app.use('/weekly_mvp_reward', checkMaintenance, weeklyMVPReward);
 app.use('/collab', checkMaintenance, collabV2);
 app.use('/web3', checkMaintenance, web3);
+app.use('/chat', checkMaintenance, chat);
 app.use('/bans', checkMaintenance, ban);
 app.use('/mail', checkMaintenance, mail);
 app.use('/upgrade', checkMaintenance, upgrade);
 app.use('/gacha', checkMaintenance, gacha);
 app.use('/cosmetic', checkMaintenance, cosmetic);
-// both protocol and socket.io
+app.use('/friend', checkMaintenance, friend);
+app.use('/report', checkMaintenance, report);
+
 const httpServer = http.createServer(app);
-// Sockets init
-initSocket(httpServer);
+
+/** socket io listener */
+initializeSocket(httpServer);
 
 httpServer.listen(port, async () => {
     console.log(`Server running on port: ${port}`);
@@ -114,7 +123,7 @@ httpServer.listen(port, async () => {
     // populates the `BitCosmeticEnum` enum with the values from the database
     await populateBitCosmeticEnum();
 
-    await schedulers();
+    // await schedulers();
 });
 
 export default app;

@@ -2,7 +2,7 @@ import { Socket } from "socket.io";
 import { Status } from "../utils/retVal";
 import redisDb from "../utils/constants/redisDb";
 import { UserModel } from "../utils/constants/db";
-import { EventSauna, SaunaGlobalKey, SaunaUserKey } from "../socket/event/saunaEvent";
+import { EventSauna, SaunaGlobalKey, SaunaUserKey } from "../events/sauna";
 
 export const startRest = async (socket: Socket) => {
   try {

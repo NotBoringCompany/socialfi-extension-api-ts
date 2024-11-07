@@ -9,7 +9,7 @@ import { UNIVERSAL_UGPRADE_ASSET_MIXPANEL_EVENT_HASH } from '../utils/constants/
 const router = express.Router();
 
 router.post('/universal_asset_upgrade', async (req, res) => {
-    const { asset, upgradeCostGroup, chosenFlexibleRequiredAssets, islandOrBitId } = req.body;
+    const { asset, upgradeCostGroup, chosenFlexibleRequiredAssets, islandOrBitId, poi } = req.body;
 
     try {
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'universal_asset_upgrade');
@@ -21,7 +21,7 @@ router.post('/universal_asset_upgrade', async (req, res) => {
             })
         }
 
-        const { status, message, data } = await universalAssetUpgrade(validateData?.twitterId, asset, upgradeCostGroup, chosenFlexibleRequiredAssets, islandOrBitId);
+        const { status, message, data } = await universalAssetUpgrade(validateData?.twitterId, asset, upgradeCostGroup, chosenFlexibleRequiredAssets, islandOrBitId, poi);
 
         if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Currency Tracker', {

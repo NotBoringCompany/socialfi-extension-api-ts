@@ -13,7 +13,7 @@ import { ReturnValue, Status } from '../utils/retVal';
 import { generateObjectId } from '../utils/crypto';
 import { ExtendedXCookieData, InGameData, UserInventory, XCookieSource } from '../models/user';
 import { Food, FoodType } from '../models/food';
-import { DAILY_QUEST_LAPSE_PHASE, DAILY_QUEST_PER_POI, EXTRA_LOCAL_EARNING_BENEFIT, EXTRA_QUESTS_BENEFIT, MAX_DAILY_QUEST_ACCEPTABLE } from '../utils/constants/quest';
+import { DAILY_QUEST_LAPSE_PHASE, DAILY_QUEST_PER_POI, EXTRA_FACTORY_EXP_BENEFIT, EXTRA_LOCAL_EARNING_BENEFIT, EXTRA_QUESTS_BENEFIT, MAX_DAILY_QUEST_ACCEPTABLE } from '../utils/constants/quest';
 import { IslandModel, QuestDailyModel, QuestModel, QuestProgressionModel, UserModel } from '../utils/constants/db';
 import { Bit, BitRarity } from '../models/bit';
 import {
@@ -269,19 +269,27 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                     const berryFactoryMastery = berryFactoryData ? berryFactoryData[toCamelCase(location)] : null;
                     if (berryFactoryMastery) {
                         // Destructure berryFactoryMastery
-                        const { level, totalExp} = berryFactoryMastery;
+                        const { level, totalExp } = berryFactoryMastery;
+                        
+                        // Calculate Extra Exp amount, if questType isn't Daily extraAmount will alwaya be 0.
+                        const extraAmount = EXTRA_FACTORY_EXP_BENEFIT(quest.type, mastery, location);
+                        const totalAmount = amount + extraAmount;
+                        console.log(`(completeQuest) Exp totalAmount: ${totalAmount} (base: ${amount} + extra: ${extraAmount})`);
                         // sum totalExp
-                        const newTotalExp = totalExp + amount;
+                        const newTotalExp = totalExp + totalAmount;
                         
                         // Set newMasteryStats data into userUpdateOperations
                         // Level isn't updated for now since we don't have the total exp requirement for next level.
                         userUpdateOperations.$set[`inGameData.mastery.berryFactory.${toCamelCase(location)}`] = { level, totalExp: newTotalExp } as BerryFactoryMasteryStats;
+                        obtainedRewards.push({ type: rewardType, amount: totalAmount });
                     } else {
                         // Initialize new BerryFactoryMasteryStats data for User
                         const newMasteryStats: BerryFactoryMasteryStats = { level: 1, totalExp: amount };
                         // Set newMasteryStats into userUpdateOperations
                         userUpdateOperations.$set[`inGameData.mastery.berryFactory.${toCamelCase(location)}`] = newMasteryStats;
+                        obtainedRewards.push({ type: rewardType, amount: amount });
                     }
+                    break;
                 // add the cookie count into the user's inventory
                 case QuestRewardType.X_COOKIES:
                     // Calculate Extra xCookies amount. if questType isn't Daily extraAmount will always be 0.
@@ -437,7 +445,7 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                     obtainedRewards.push({ type: rewardType, amount, data: bitData });
 
                     break;
-                // Default case when rewardType isn't X_COOKIES or BIT
+                // Default case when rewardType isn't Exp, X_COOKIES, or BIT
                 default:
                     // Check if the reward type is a part of FoodType
                     if (Object.values(FoodType).includes(rewardType.toString() as FoodType)) {

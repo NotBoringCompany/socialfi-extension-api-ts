@@ -6,11 +6,11 @@ import { BerryFactoryMastery } from '../models/mastery';
 import { POIName } from '../models/poi';
 import { ExtendedResource } from '../models/resource';
 import { AssetUpgradeRequirement, UpgradableAsset, UpgradeCost } from '../models/upgrade';
-import { PlayerMastery } from '../models/user';
+import { ExtendedXCookieData, PlayerMastery, XCookieSource } from '../models/user';
 import { MAX_BIT_LEVEL } from '../utils/constants/bit';
 import { BitModel, IslandModel, RaftModel, UserModel } from '../utils/constants/db';
 import { MAX_ISLAND_LEVEL } from '../utils/constants/island';
-import { BIT_UPGRADE_DATA, ISLAND_UPGRADE_DATA, RAFT_UPGRADE_DATA } from '../utils/constants/upgrade';
+import { BERRY_FACTORY_LEVEL_UP_BENEFIT, BERRY_FACTORY_UPGRADE_DATA, BIT_UPGRADE_DATA, ISLAND_UPGRADE_DATA, RAFT_UPGRADE_DATA } from '../utils/constants/upgrade';
 import { ReturnValue, Status } from '../utils/retVal';
 import { toCamelCase } from '../utils/strings';
 import { AssetType } from '../models/asset';
@@ -98,6 +98,9 @@ export const universalAssetUpgrade = async (
         let finalizedCostGroup: number = upgradeCostGroup ?? 0;
         let upgradeCosts: UpgradeCost[] = [];
         let levelToUpgradeTo = 0;
+        // initialize user assetTotalExperience, default value is 0;
+        let assetTotalExperience = 0;
+        let levelUpBenefits: any = null;
 
         // check which asset to upgrade.
         if (asset === UpgradableAsset.BIT) {
@@ -234,6 +237,68 @@ export const universalAssetUpgrade = async (
             // increase the raft's current level by 1.
             // NOTE: we do this prematurely, but this won't get called until the end of the function, meaning that if an error occurs, the raft's level won't be increased.
             raftUpdateOperations.$inc['currentLevel'] = 1;
+        } else if (asset === UpgradableAsset.BERRY_FACTORY) {
+            if (!poi) {
+                return {
+                    status: Status.ERROR,
+                    message: `(universalAssetUpgrade) POI not inputted.`,
+                };
+            }
+
+            // check if user is currently at this POI.
+            if (user?.inGameData?.location !== poi) {
+                return {
+                    status: Status.ERROR,
+                    message: `(universalAssetUpgrade) User is not currently at ${poi}.`,
+                };
+            }
+
+            // fetch the user's mastery data for this particular POI's berry factory.
+            // const berryFactoryMastery = (user?.inGameData?.mastery as PlayerMastery)?.berryFactory[toCamelCase(poi)];
+            const berryFactoryData = user?.inGameData?.mastery?.berryFactory as BerryFactoryMastery;
+            const berryFactoryMastery = berryFactoryData ? berryFactoryData[toCamelCase(poi)] : null;
+
+            // Define current berryFactoryMastery totalExp into assetTotalExperience
+            assetTotalExperience = berryFactoryMastery.totalExp;
+            // if the mastery is empty, this means that the berry factory is still level 1. we just put `2` as the level to upgrade to.
+            levelToUpgradeTo = berryFactoryMastery ? berryFactoryMastery.level + 1 : 2;
+
+            // check the costs to upgrade.
+            // 1. find the `levelRange` where `levelToUpgradeTo` is between `levelFloor` and `levelCeiling` (inclusive).
+            // 2. at the same time, find the `poi` that matches the POI's name.
+            upgradeCosts = BERRY_FACTORY_UPGRADE_DATA.upgradeRequirements.find(requirement => {
+                return requirement.levelRange.levelFloor <= levelToUpgradeTo && 
+                requirement.levelRange.levelCeiling >= levelToUpgradeTo && 
+                requirement.poi === poi
+            })?.upgradeCosts ?? null;
+
+            // Get xCookies Rewards from levelling up Berry Factory
+            const xCookiesRewards = BERRY_FACTORY_LEVEL_UP_BENEFIT(levelToUpgradeTo, poi);
+            console.log(`(universalAssetUpgrade) upgrade Berry Factory to level ${levelToUpgradeTo}, rewards: ${xCookiesRewards} xCookies`);
+            // Defined levelUpBenefits with xCookiesRewards
+            levelUpBenefits = { xCookies: xCookiesRewards };
+
+            // increase the berry factory's level by 1.
+            // NOTE: we do this prematurely, but this won't get called until the end of the function, meaning that if an error occurs, the berry factory's level won't be increased.
+            userUpdateOperations.$set[`inGameData.mastery.berryFactory.${toCamelCase(poi)}.level`] = levelToUpgradeTo;
+            userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = xCookiesRewards;
+
+            // check if the user's `xCookieData.extendedXCookieData` contains a source called QUEST_REWARDS.
+            // if yes, we increment the amount, if not, we create a new entry for the source
+            const questRewardsIndex = (
+                user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]
+            ).findIndex((data) => data.source === XCookieSource.QUEST_REWARDS);
+
+            if (questRewardsIndex !== -1) {
+                userUpdateOperations.$inc[
+                    `inventory.xCookieData.extendedXCookieData.${questRewardsIndex}.xCookies`
+                ] = xCookiesRewards;
+            } else {
+                userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = {
+                    xCookies: xCookiesRewards,
+                    source: XCookieSource.QUEST_REWARDS,
+                };
+            }
         }
 
         if (!upgradeCosts) {
@@ -252,7 +317,7 @@ export const universalAssetUpgrade = async (
         }
 
         // get the upgrade cost group.
-        const { xCookies: requiredXCookies, assetData: requiredAssetsData } = upgradeCosts[finalizedCostGroup];
+        const { xCookies: requiredXCookies, assetData: requiredAssetsData, totalExperience: requiredTotalExp } = upgradeCosts[finalizedCostGroup];
 
         // if xCookies > 0, check if the user has enough xCookies to upgrade.
         if (requiredXCookies > 0) {
@@ -569,6 +634,20 @@ export const universalAssetUpgrade = async (
             }
         }
 
+        // if requiredTotalExp > 0, check if the user has enough totalExperience to upgrade. (NOTE: CURRENTLY ONLY BERRY_FACTORY has totalExp data)
+        if (requiredTotalExp > 0) {
+            if (asset === UpgradableAsset.BERRY_FACTORY) {
+                if (assetTotalExperience < requiredTotalExp) {
+                    return {
+                        status: Status.ERROR,
+                        message: `(universalAssetUpgrade) Not enough totalExperience to upgrade ${asset}. Required: ${requiredTotalExp}, Available: ${assetTotalExperience}.`,
+                    };
+                }
+            } else {
+                console.log(`(universalAssetUpgrade) skips checking requiredTotalExp for asset ${asset} since it's not BerryFactory`);
+            }
+        }
+
         // do the update operations.
         await UserModel.updateOne({ twitterId }, {
             $set: userUpdateOperations.$set,
@@ -692,7 +771,8 @@ export const universalAssetUpgrade = async (
                             };
                         }
                     }) : [])
-                ]
+                ],
+                levelUpBenefits,
             }
         };
     } catch (err: any) {
