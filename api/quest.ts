@@ -289,6 +289,7 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                         userUpdateOperations.$set[`inGameData.mastery.berryFactory.${toCamelCase(location)}`] = newMasteryStats;
                         obtainedRewards.push({ type: rewardType, amount: amount });
                     }
+                    break;
                 // add the cookie count into the user's inventory
                 case QuestRewardType.X_COOKIES:
                     // Calculate Extra xCookies amount. if questType isn't Daily extraAmount will always be 0.
