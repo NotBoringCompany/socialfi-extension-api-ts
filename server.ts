@@ -71,6 +71,7 @@ import upgrade from './routes/upgrade';
 import gacha from './routes/gacha';
 import cosmetic from './routes/cosmetic';
 import friend from './routes/friend';
+import report from './routes/report';
 import { populateBitCosmeticEnum } from './utils/constants/cosmetic';
 import { initializeSocket } from './configs/socket';
 
@@ -109,6 +110,7 @@ app.use('/upgrade', checkMaintenance, upgrade);
 app.use('/gacha', checkMaintenance, gacha);
 app.use('/cosmetic', checkMaintenance, cosmetic);
 app.use('/friend', checkMaintenance, friend);
+app.use('/report', checkMaintenance, report);
 
 const httpServer = http.createServer(app);
 
