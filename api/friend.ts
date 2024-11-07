@@ -36,10 +36,10 @@ export const getFriends = async (twitterId: string): Promise<ReturnValue<{ frien
                     friends: [] as FriendData[],
                 },
             };
-        }
+        }        
 
         // retrieve the user details of each friend
-        const results = await UserModel.find({ _id: { in: friendIds } });
+        const results = await UserModel.find({ _id: { $in: friendIds } });
 
         // parse the data to get ranking data
         const friends = await Promise.all(
