@@ -273,9 +273,33 @@ export const universalAssetUpgrade = async (
                 requirement.poi === poi
             })?.upgradeCosts ?? null;
 
+            // Get xCookies Rewards from levelling up Berry Factory
+            const xCookiesRewards = DAILY_QUEST_LEVEL_UP_REWARDS(levelToUpgradeTo, poi);
+            console.log(`(universalAssetUpgrade) upgrade Berry Factory to level ${levelToUpgradeTo}, rewards: ${xCookiesRewards} xCookies`);
+            // Defined levelUpBenefits with xCookiesRewards
+            levelUpBenefits = { xCookies: xCookiesRewards };
+
             // increase the berry factory's level by 1.
             // NOTE: we do this prematurely, but this won't get called until the end of the function, meaning that if an error occurs, the berry factory's level won't be increased.
             userUpdateOperations.$set[`inGameData.mastery.berryFactory.${toCamelCase(poi)}.level`] = levelToUpgradeTo;
+            userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = xCookiesRewards;
+
+            // check if the user's `xCookieData.extendedXCookieData` contains a source called QUEST_REWARDS.
+            // if yes, we increment the amount, if not, we create a new entry for the source
+            const questRewardsIndex = (
+                user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]
+            ).findIndex((data) => data.source === XCookieSource.QUEST_REWARDS);
+
+            if (questRewardsIndex !== -1) {
+                userUpdateOperations.$inc[
+                    `inventory.xCookieData.extendedXCookieData.${questRewardsIndex}.xCookies`
+                ] = xCookiesRewards;
+            } else {
+                userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = {
+                    xCookies: xCookiesRewards,
+                    source: XCookieSource.QUEST_REWARDS,
+                };
+            }
         }
 
         if (!upgradeCosts) {
@@ -620,31 +644,6 @@ export const universalAssetUpgrade = async (
                         message: `(universalAssetUpgrade) Not enough totalExperience to upgrade ${asset}. Required: ${requiredTotalExp}, Available: ${assetTotalExperience}.`,
                     };
                 }
-
-                // Get xCookies Rewards from levelling up Berry Factory
-                const xCookiesRewards = DAILY_QUEST_LEVEL_UP_REWARDS(levelToUpgradeTo, poi);
-                userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = xCookiesRewards;
-
-                // check if the user's `xCookieData.extendedXCookieData` contains a source called QUEST_REWARDS.
-                // if yes, we increment the amount, if not, we create a new entry for the source
-                const questRewardsIndex = (
-                    user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]
-                ).findIndex((data) => data.source === XCookieSource.QUEST_REWARDS);
-
-                if (questRewardsIndex !== -1) {
-                    userUpdateOperations.$inc[
-                        `inventory.xCookieData.extendedXCookieData.${questRewardsIndex}.xCookies`
-                    ] = xCookiesRewards;
-                } else {
-                    userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = {
-                        xCookies: xCookiesRewards,
-                        source: XCookieSource.QUEST_REWARDS,
-                    };
-                }
-
-                console.log(`(universalAssetUpgrade) upgrade Berry Factory to level ${levelToUpgradeTo}, rewards: ${xCookiesRewards} xCookies`);
-                // Defined levelUpBenefits with xCookiesRewards
-                levelUpBenefits = { xCookies: xCookiesRewards };
             } else {
                 console.log(`(universalAssetUpgrade) skips checking requiredTotalExp for asset ${asset} since it's not BerryFactory`);
             }
