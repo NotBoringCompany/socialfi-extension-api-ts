@@ -334,7 +334,7 @@ export const cancelFriendRequest = async (userId: string, friendId: string): Pro
         const result = await FriendModel.findOneAndDelete({
             userId1: user._id,
             userId2: friend._id,
-            status: FriendStatus.PENDING,
+            status: { $ne: FriendStatus.ACCEPTED },
         });
 
         if (!result) {
