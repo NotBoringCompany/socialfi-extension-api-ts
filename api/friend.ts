@@ -31,7 +31,7 @@ export const getFriends = async (twitterId: string): Promise<ReturnValue<{ frien
         if (friendIds.length === 0) {
             return {
                 status: Status.SUCCESS,
-                message: '(getFriends) Successfully retrieved tutorials',
+                message: '(getFriends) Successfully retrieved friends',
                 data: {
                     friends: [] as FriendData[],
                 },
@@ -61,7 +61,7 @@ export const getFriends = async (twitterId: string): Promise<ReturnValue<{ frien
 
         return {
             status: Status.SUCCESS,
-            message: '(getFriends) Successfully retrieved tutorials',
+            message: '(getFriends) Successfully retrieved friends',
             data: {
                 friends: friends as FriendData[],
             },
@@ -100,7 +100,7 @@ export const getFriendRequests = async (userId: string): Promise<ReturnValue<{ r
         if (requesterIds.length === 0) {
             return {
                 status: Status.SUCCESS,
-                message: '(getFriends) Successfully retrieved tutorials',
+                message: '(getFriends) Successfully retrieved friends',
                 data: {
                     requests: [] as FriendData[],
                 },
