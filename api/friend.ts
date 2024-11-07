@@ -39,7 +39,7 @@ export const getFriends = async (twitterId: string): Promise<ReturnValue<{ frien
         }
 
         // retrieve the user details of each friend
-        const results = await UserModel.find({ _id: { in: [] } });
+        const results = await UserModel.find({ _id: { in: friendIds } });
 
         // parse the data to get ranking data
         const friends = await Promise.all(
@@ -48,6 +48,7 @@ export const getFriends = async (twitterId: string): Promise<ReturnValue<{ frien
 
                 return {
                     _id: user._id,
+                    twitterId: user.twitterId,
                     name: user.twitterDisplayName,
                     username: user.twitterUsername,
                     profilePicture: user.twitterProfilePicture,
@@ -116,6 +117,7 @@ export const getFriendRequests = async (userId: string): Promise<ReturnValue<{ r
 
                 return {
                     _id: user._id,
+                    twitterId: user.twitterId,
                     name: user.twitterDisplayName,
                     username: user.twitterUsername,
                     profilePicture: user.twitterProfilePicture,

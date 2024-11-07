@@ -20,6 +20,7 @@ export enum FriendStatus {
 
 export interface FriendData {
     _id?: string;
+    twitterId: string;
     name: string;
     username: string;
     profilePicture: string;
