@@ -257,6 +257,7 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
             // get the reward type and see if the user has the following asset in their inventory
             const rewardType: QuestRewardType = reward.rewardType;
             const userInventory: UserInventory = user.inventory;
+            console.log('(completeQuest) reward: ',JSON.stringify(reward));
 
             switch (rewardType) {
                 // add case for Experience rewards.
