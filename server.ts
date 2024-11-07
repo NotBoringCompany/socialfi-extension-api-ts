@@ -70,6 +70,7 @@ import mail from './routes/mail';
 import upgrade from './routes/upgrade';
 import gacha from './routes/gacha';
 import cosmetic from './routes/cosmetic';
+import friend from './routes/friend';
 import { populateBitCosmeticEnum } from './utils/constants/cosmetic';
 import { initializeSocket } from './configs/socket';
 
@@ -107,6 +108,7 @@ app.use('/mail', checkMaintenance, mail);
 app.use('/upgrade', checkMaintenance, upgrade);
 app.use('/gacha', checkMaintenance, gacha);
 app.use('/cosmetic', checkMaintenance, cosmetic);
+app.use('/friend', checkMaintenance, friend);
 
 const httpServer = http.createServer(app);
 

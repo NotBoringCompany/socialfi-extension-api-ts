@@ -30,6 +30,7 @@ import { ConsumedSynthesizingItemSchema } from '../../schemas/Asset';
 import { UserWonderspinDataSchema, WonderspinSchema } from '../../schemas/Gacha';
 import { BitCosmeticSchema } from '../../schemas/Cosmetic';
 import { UserWonderpassDataSchema, WonderpassSchema } from '../../schemas/Wonderpass';
+import { FriendSchema } from '../../schemas/Friend';
 
 
 const TEST_DATABASE = process.env.MONGODB_URI!;
@@ -115,3 +116,4 @@ export const WonderpassModel = TEST_CONNECTION.model('Wonderpasses', WonderpassS
 export const UserWonderpassDataModel = TEST_CONNECTION.model('UserWonderpassData', UserWonderpassDataSchema, 'UserWonderpassData');
 export const ChatModel = TEST_CONNECTION.model('Chats', ChatSchema, 'Chats');
 export const ChatroomModel = TEST_CONNECTION.model('Chatrooms', ChatroomSchema, 'Chatrooms');
+export const FriendModel = TEST_CONNECTION.model('Friends', FriendSchema, 'Friends');
