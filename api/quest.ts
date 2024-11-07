@@ -269,7 +269,7 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                     const berryFactoryMastery = berryFactoryData ? berryFactoryData[toCamelCase(location)] : null;
                     if (berryFactoryMastery) {
                         // Destructure berryFactoryMastery
-                        const { level, totalExp} = berryFactoryMastery;
+                        const { level, totalExp } = berryFactoryMastery;
                         // sum totalExp
                         const newTotalExp = totalExp + amount;
                         

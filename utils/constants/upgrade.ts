@@ -1,5 +1,6 @@
 import { IslandType } from '../../models/island';
 import { POIName } from '../../models/poi';
+import { ResourceRarity } from '../../models/resource';
 import { UpgradableAsset, UpgradableAssetData } from '../../models/upgrade';
 
 /**
@@ -19,6 +20,7 @@ export const BIT_UPGRADE_DATA: UpgradableAssetData = {
                 {
                     xCookies: 5,
                     assetData: null,
+                    totalExperience: null,
                 },
             ],
         },
@@ -33,6 +35,7 @@ export const BIT_UPGRADE_DATA: UpgradableAssetData = {
                 {
                     xCookies: 15,
                     assetData: null,
+                    totalExperience: null,
                 },
             ],
         },
@@ -47,6 +50,7 @@ export const BIT_UPGRADE_DATA: UpgradableAssetData = {
                 {
                     xCookies: 45,
                     assetData: null,
+                    totalExperience: null,
                 },
             ],
         },
@@ -61,6 +65,7 @@ export const BIT_UPGRADE_DATA: UpgradableAssetData = {
                 {
                     xCookies: 135,
                     assetData: null,
+                    totalExperience: null,
                 },
             ],
         },
@@ -75,6 +80,7 @@ export const BIT_UPGRADE_DATA: UpgradableAssetData = {
                 {
                     xCookies: 405,
                     assetData: null,
+                    totalExperience: null,
                 },
             ],
         },
@@ -89,6 +95,7 @@ export const BIT_UPGRADE_DATA: UpgradableAssetData = {
                 {
                     xCookies: 1215,
                     assetData: null,
+                    totalExperience: null,
                 },
             ],
         },
@@ -103,6 +110,7 @@ export const BIT_UPGRADE_DATA: UpgradableAssetData = {
                 {
                     xCookies: 3645,
                     assetData: null,
+                    totalExperience: null,
                 },
             ],
         },
@@ -126,6 +134,7 @@ export const ISLAND_UPGRADE_DATA: UpgradableAssetData = {
                 {
                     xCookies: 10,
                     assetData: null,
+                    totalExperience: null,
                 },
             ],
         },
@@ -140,6 +149,7 @@ export const ISLAND_UPGRADE_DATA: UpgradableAssetData = {
                 {
                     xCookies: 20,
                     assetData: null,
+                    totalExperience: null,
                 },
             ],
         },
@@ -154,6 +164,7 @@ export const ISLAND_UPGRADE_DATA: UpgradableAssetData = {
                 {
                     xCookies: 40,
                     assetData: null,
+                    totalExperience: null,
                 },
             ],
         },
@@ -168,6 +179,7 @@ export const ISLAND_UPGRADE_DATA: UpgradableAssetData = {
                 {
                     xCookies: 40,
                     assetData: null,
+                    totalExperience: null,
                 },
             ],
         },
@@ -182,6 +194,7 @@ export const ISLAND_UPGRADE_DATA: UpgradableAssetData = {
                 {
                     xCookies: 70,
                     assetData: null,
+                    totalExperience: null,
                 },
             ],
         },
@@ -196,10 +209,622 @@ export const ISLAND_UPGRADE_DATA: UpgradableAssetData = {
                 {
                     xCookies: 100,
                     assetData: null,
+                    totalExperience: null,
                 },
             ],
         },
     ],
+};
+
+/**
+ * Represents the upgrade (evolve) data for berry factories.
+ */
+export const BERRY_FACTORY_UPGRADE_DATA: UpgradableAssetData = {
+    asset: UpgradableAsset.BERRY_FACTORY,
+    upgradeRequirements: [
+    //#region Evergreen POI
+        {
+            levelRange: {
+                levelFloor: 2,
+                levelCeiling: 4,
+            },
+            islandType: null,
+            poi: POIName.EVERGREEN_VILLAGE,
+            upgradeCosts: [
+                {
+                    xCookies: null,
+                    assetData: [
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.COMMON,
+                            amount: 15
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.UNCOMMON,
+                            amount: 5
+                        },
+                    ],
+                    totalExperience: null,
+                },
+            ],
+        },
+        {
+            levelRange: {
+                levelFloor: 5,
+                levelCeiling: 5,
+            },
+            islandType: null,
+            poi: POIName.EVERGREEN_VILLAGE,
+            upgradeCosts: [
+                {
+                    xCookies: null,
+                    assetData: [
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.COMMON,
+                            amount: 20
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.UNCOMMON,
+                            amount: 10
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.RARE,
+                            amount: 5
+                        },
+                    ],
+                    totalExperience: 150,
+                },
+            ],
+        },
+        {
+            levelRange: {
+                levelFloor: 6,
+                levelCeiling: 9,
+            },
+            islandType: null,
+            poi: POIName.EVERGREEN_VILLAGE,
+            upgradeCosts: [
+                {
+                    xCookies: null,
+                    assetData: [
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.COMMON,
+                            amount: 15
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.UNCOMMON,
+                            amount: 5
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.RARE,
+                            amount: 1
+                        },
+                    ],
+                    totalExperience: null,
+                },
+            ],
+        },
+        {
+            levelRange: {
+                levelFloor: 10,
+                levelCeiling: 10,
+            },
+            islandType: null,
+            poi: POIName.EVERGREEN_VILLAGE,
+            upgradeCosts: [
+                {
+                    xCookies: null,
+                    assetData: [
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.COMMON,
+                            amount: 30
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.UNCOMMON,
+                            amount: 15
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.RARE,
+                            amount: 10
+                        },
+                    ],
+                    totalExperience: 600,
+                },
+            ],
+        },
+        {
+            levelRange: {
+                levelFloor: 11,
+                levelCeiling: 19,
+            },
+            islandType: null,
+            poi: POIName.EVERGREEN_VILLAGE,
+            upgradeCosts: [
+                {
+                    xCookies: null,
+                    assetData: [
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.COMMON,
+                            amount: 15
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.UNCOMMON,
+                            amount: 5
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.RARE,
+                            amount: 2
+                        },
+                    ],
+                    totalExperience: null,
+                },
+            ],
+        },
+        {
+            levelRange: {
+                levelFloor: 20,
+                levelCeiling: 20,
+            },
+            islandType: null,
+            poi: POIName.EVERGREEN_VILLAGE,
+            upgradeCosts: [
+                {
+                    xCookies: null,
+                    assetData: [
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.COMMON,
+                            amount: 30
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.UNCOMMON,
+                            amount: 15
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.RARE,
+                            amount: 10
+                        },
+                    ],
+                    totalExperience: null,
+                },
+            ],
+        },
+    //#endregion
+    
+    //#region Palmshade POI
+        {
+            levelRange: {
+                levelFloor: 2,
+                levelCeiling: 4,
+            },
+            islandType: null,
+            poi: POIName.PALMSHADE_VILLAGE,
+            upgradeCosts: [
+                {
+                    xCookies: null,
+                    assetData: [
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.UNCOMMON,
+                            amount: 15
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.RARE,
+                            amount: 5
+                        },
+                    ],
+                    totalExperience: null,
+                },
+            ],
+        },
+        {
+            levelRange: {
+                levelFloor: 5,
+                levelCeiling: 5,
+            },
+            islandType: null,
+            poi: POIName.PALMSHADE_VILLAGE,
+            upgradeCosts: [
+                {
+                    xCookies: null,
+                    assetData: [
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.UNCOMMON,
+                            amount: 20
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.RARE,
+                            amount: 10
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.EPIC,
+                            amount: 5
+                        },
+                    ],
+                    totalExperience: 540,
+                },
+            ],
+        },
+        {
+            levelRange: {
+                levelFloor: 6,
+                levelCeiling: 9,
+            },
+            islandType: null,
+            poi: POIName.PALMSHADE_VILLAGE,
+            upgradeCosts: [
+                {
+                    xCookies: null,
+                    assetData: [
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.UNCOMMON,
+                            amount: 15
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.RARE,
+                            amount: 5
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.EPIC,
+                            amount: 1
+                        },
+                    ],
+                    totalExperience: null,
+                },
+            ],
+        },
+        {
+            levelRange: {
+                levelFloor: 10,
+                levelCeiling: 10,
+            },
+            islandType: null,
+            poi: POIName.PALMSHADE_VILLAGE,
+            upgradeCosts: [
+                {
+                    xCookies: null,
+                    assetData: [
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.UNCOMMON,
+                            amount: 30
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.RARE,
+                            amount: 15
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.EPIC,
+                            amount: 10
+                        },
+                    ],
+                    totalExperience: 2280,
+                },
+            ],
+        },
+        {
+            levelRange: {
+                levelFloor: 11,
+                levelCeiling: 19,
+            },
+            islandType: null,
+            poi: POIName.PALMSHADE_VILLAGE,
+            upgradeCosts: [
+                {
+                    xCookies: null,
+                    assetData: [
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.UNCOMMON,
+                            amount: 15
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.RARE,
+                            amount: 5
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.EPIC,
+                            amount: 2
+                        },
+                    ],
+                    totalExperience: null,
+                },
+            ],
+        },
+        {
+            levelRange: {
+                levelFloor: 20,
+                levelCeiling: 20,
+            },
+            islandType: null,
+            poi: POIName.PALMSHADE_VILLAGE,
+            upgradeCosts: [
+                {
+                    xCookies: null,
+                    assetData: [
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.UNCOMMON,
+                            amount: 30
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.RARE,
+                            amount: 15
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.EPIC,
+                            amount: 10
+                        },
+                    ],
+                    totalExperience: null,
+                },
+            ],
+        },
+    //#endregion
+    
+    //#region Seabreeze POI
+        {
+            levelRange: {
+                levelFloor: 2,
+                levelCeiling: 4,
+            },
+            islandType: null,
+            poi: POIName.SEABREEZE_HARBOR,
+            upgradeCosts: [
+                {
+                    xCookies: null,
+                    assetData: [
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.RARE,
+                            amount: 15
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.EPIC,
+                            amount: 5
+                        },
+                    ],
+                    totalExperience: null,
+                },
+            ],
+        },
+        {
+            levelRange: {
+                levelFloor: 5,
+                levelCeiling: 5,
+            },
+            islandType: null,
+            poi: POIName.SEABREEZE_HARBOR,
+            upgradeCosts: [
+                {
+                    xCookies: null,
+                    assetData: [
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.RARE,
+                            amount: 20
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.EPIC,
+                            amount: 10
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.LEGENDARY,
+                            amount: 5
+                        },
+                    ],
+                    totalExperience: 1350,
+                },
+            ],
+        },
+        {
+            levelRange: {
+                levelFloor: 6,
+                levelCeiling: 9,
+            },
+            islandType: null,
+            poi: POIName.SEABREEZE_HARBOR,
+            upgradeCosts: [
+                {
+                    xCookies: null,
+                    assetData: [
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.RARE,
+                            amount: 15
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.EPIC,
+                            amount: 5
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.LEGENDARY,
+                            amount: 1
+                        },
+                    ],
+                    totalExperience: null,
+                },
+            ],
+        },
+        {
+            levelRange: {
+                levelFloor: 10,
+                levelCeiling: 10,
+            },
+            islandType: null,
+            poi: POIName.SEABREEZE_HARBOR,
+            upgradeCosts: [
+                {
+                    xCookies: null,
+                    assetData: [
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.RARE,
+                            amount: 30
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.EPIC,
+                            amount: 15
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.LEGENDARY,
+                            amount: 10
+                        },
+                    ],
+                    totalExperience: 5700,
+                },
+            ],
+        },
+        {
+            levelRange: {
+                levelFloor: 11,
+                levelCeiling: 19,
+            },
+            islandType: null,
+            poi: POIName.SEABREEZE_HARBOR,
+            upgradeCosts: [
+                {
+                    xCookies: null,
+                    assetData: [
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.RARE,
+                            amount: 15
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.EPIC,
+                            amount: 5
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.LEGENDARY,
+                            amount: 2
+                        },
+                    ],
+                    totalExperience: null,
+                },
+            ],
+        },
+        {
+            levelRange: {
+                levelFloor: 20,
+                levelCeiling: 20,
+            },
+            islandType: null,
+            poi: POIName.SEABREEZE_HARBOR,
+            upgradeCosts: [
+                {
+                    xCookies: null,
+                    assetData: [
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.RARE,
+                            amount: 30
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.EPIC,
+                            amount: 15
+                        },
+                        {
+                            assetCategory: 'resource',
+                            specificAsset: 'any',
+                            requiredRarity: ResourceRarity.LEGENDARY,
+                            amount: 10
+                        },
+                    ],
+                    totalExperience: null,
+                },
+            ],
+        },
+    //#endregion
+    ]
 };
 
 /**
@@ -224,6 +849,7 @@ export const RAFT_UPGRADE_DATA = (levelToUpgradeTo: number): UpgradableAssetData
                         // starts at 100 xCookies when upgrading to level 2 and increases by 50 xCookies per level.
                         xCookies: 100 + (50 * (levelToUpgradeTo - 1)),
                         assetData: null,
+                        totalExperience: null,
                     },
                 ],
             }

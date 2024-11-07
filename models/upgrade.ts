@@ -23,6 +23,7 @@ export enum UpgradableAsset {
     BIT = 'Bit',
     ISLAND = 'Island',
     RAFT = 'Raft',
+    BERRY_FACTORY = 'Berry Factory'
 }
 
 /**
@@ -86,6 +87,8 @@ export interface UpgradeCost {
     xCookies: number | null;
     /** the assets required to upgrade to `level` */
     assetData: AssetUpgradeRequirement[] | null;
+    /** the amount of totalExperience required to upgrade to `level` */
+    totalExperience: number | null;
 }
 
 /**
