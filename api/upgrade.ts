@@ -10,12 +10,11 @@ import { ExtendedXCookieData, PlayerMastery, XCookieSource } from '../models/use
 import { MAX_BIT_LEVEL } from '../utils/constants/bit';
 import { BitModel, IslandModel, RaftModel, UserModel } from '../utils/constants/db';
 import { MAX_ISLAND_LEVEL } from '../utils/constants/island';
-import { BERRY_FACTORY_UPGRADE_DATA, BIT_UPGRADE_DATA, ISLAND_UPGRADE_DATA, RAFT_UPGRADE_DATA } from '../utils/constants/upgrade';
+import { BERRY_FACTORY_LEVEL_UP_BENEFIT, BERRY_FACTORY_UPGRADE_DATA, BIT_UPGRADE_DATA, ISLAND_UPGRADE_DATA, RAFT_UPGRADE_DATA } from '../utils/constants/upgrade';
 import { ReturnValue, Status } from '../utils/retVal';
 import { toCamelCase } from '../utils/strings';
 import { AssetType } from '../models/asset';
 import { resources } from '../utils/constants/resource';
-import { DAILY_QUEST_LEVEL_UP_REWARDS } from '../utils/constants/quest';
 
 /**
  * Universal upgrade function for upgradable assets.
@@ -274,7 +273,7 @@ export const universalAssetUpgrade = async (
             })?.upgradeCosts ?? null;
 
             // Get xCookies Rewards from levelling up Berry Factory
-            const xCookiesRewards = DAILY_QUEST_LEVEL_UP_REWARDS(levelToUpgradeTo, poi);
+            const xCookiesRewards = BERRY_FACTORY_LEVEL_UP_BENEFIT(levelToUpgradeTo, poi);
             console.log(`(universalAssetUpgrade) upgrade Berry Factory to level ${levelToUpgradeTo}, rewards: ${xCookiesRewards} xCookies`);
             // Defined levelUpBenefits with xCookiesRewards
             levelUpBenefits = { xCookies: xCookiesRewards };

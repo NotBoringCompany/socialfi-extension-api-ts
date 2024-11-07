@@ -856,3 +856,63 @@ export const RAFT_UPGRADE_DATA = (levelToUpgradeTo: number): UpgradableAssetData
         ],
     }
 }
+
+/**
+ * Berry Factory Level Up Benefit, returning xCookies amount based on level & poiName
+ */
+export const BERRY_FACTORY_LEVEL_UP_BENEFIT = ( level: number, poiName: POIName ): number => {
+    switch(poiName) {
+        case POIName.EVERGREEN_VILLAGE: {
+            if (level >= 2 && level <= 4) {
+                return 5;
+            } else if (level === 5) {
+                return 20;
+            } else if (level >= 6 && level <= 9) {
+                return 10;
+            } else if (level === 10) {
+                return 30;
+            } else if (level >= 11 && level <= 19) {
+                return 15;
+            } else if (level === 20) {
+                return 40;
+            } else {
+                return 0;
+            }
+        }
+        case POIName.PALMSHADE_VILLAGE: {
+            if (level >= 2 && level <= 4) {
+                return 10;
+            } else if (level === 5) {
+                return 30;
+            } else if (level >= 6 && level <= 9) {
+                return 15;
+            } else if (level === 10) {
+                return 40;
+            } else if (level >= 11 && level <= 19) {
+                return 20;
+            } else if (level === 20) {
+                return 50;
+            } else {
+                return 0;
+            }
+        }
+        case POIName.SEABREEZE_HARBOR: {
+            if (level >= 2 && level <= 4) {
+                return 20;
+            } else if (level === 5) {
+                return 40;
+            } else if (level >= 6 && level <= 9) {
+                return 20;
+            } else if (level === 10) {
+                return 50;
+            } else if (level >= 11 && level <= 19) {
+                return 25;
+            } else if (level === 20) {
+                return 60;
+            } else {
+                return 0;
+            }
+        }
+        default: return 0;
+    }
+};
