@@ -6,7 +6,7 @@ import { BerryFactoryMastery } from '../models/mastery';
 import { POIName } from '../models/poi';
 import { ExtendedResource } from '../models/resource';
 import { AssetUpgradeRequirement, UpgradableAsset, UpgradeCost } from '../models/upgrade';
-import { PlayerMastery } from '../models/user';
+import { ExtendedXCookieData, PlayerMastery, XCookieSource } from '../models/user';
 import { MAX_BIT_LEVEL } from '../utils/constants/bit';
 import { BitModel, IslandModel, RaftModel, UserModel } from '../utils/constants/db';
 import { MAX_ISLAND_LEVEL } from '../utils/constants/island';
@@ -15,6 +15,7 @@ import { ReturnValue, Status } from '../utils/retVal';
 import { toCamelCase } from '../utils/strings';
 import { AssetType } from '../models/asset';
 import { resources } from '../utils/constants/resource';
+import { DAILY_QUEST_LEVEL_UP_REWARDS } from '../utils/constants/quest';
 
 /**
  * Universal upgrade function for upgradable assets.
@@ -618,6 +619,29 @@ export const universalAssetUpgrade = async (
                         message: `(universalAssetUpgrade) Not enough totalExperience to upgrade ${asset}. Required: ${requiredTotalExp}, Available: ${assetTotalExperience}.`,
                     };
                 }
+
+                // Get xCookies Rewards from levelling up Berry Factory
+                const xCookiesRewards = DAILY_QUEST_LEVEL_UP_REWARDS(levelToUpgradeTo, poi);
+                userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = xCookiesRewards;
+
+                // check if the user's `xCookieData.extendedXCookieData` contains a source called QUEST_REWARDS.
+                // if yes, we increment the amount, if not, we create a new entry for the source
+                const questRewardsIndex = (
+                    user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]
+                ).findIndex((data) => data.source === XCookieSource.QUEST_REWARDS);
+
+                if (questRewardsIndex !== -1) {
+                    userUpdateOperations.$inc[
+                        `inventory.xCookieData.extendedXCookieData.${questRewardsIndex}.xCookies`
+                    ] = xCookiesRewards;
+                } else {
+                    userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = {
+                        xCookies: xCookiesRewards,
+                        source: XCookieSource.QUEST_REWARDS,
+                    };
+                }
+
+                console.log(`(universalAssetUpgrade) upgrade Berry Factory to level ${levelToUpgradeTo}, rewards: ${xCookiesRewards} xCookies`);
             } else {
                 console.log(`(universalAssetUpgrade) skips checking requiredTotalExp for asset ${asset} since it's not BerryFactory`);
             }
