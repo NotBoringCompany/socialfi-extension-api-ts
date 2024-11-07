@@ -281,11 +281,13 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                         // Set newMasteryStats data into userUpdateOperations
                         // Level isn't updated for now since we don't have the total exp requirement for next level.
                         userUpdateOperations.$set[`inGameData.mastery.berryFactory.${toCamelCase(location)}`] = { level, totalExp: newTotalExp } as BerryFactoryMasteryStats;
+                        obtainedRewards.push({ type: rewardType, amount: totalAmount });
                     } else {
                         // Initialize new BerryFactoryMasteryStats data for User
                         const newMasteryStats: BerryFactoryMasteryStats = { level: 1, totalExp: amount };
                         // Set newMasteryStats into userUpdateOperations
                         userUpdateOperations.$set[`inGameData.mastery.berryFactory.${toCamelCase(location)}`] = newMasteryStats;
+                        obtainedRewards.push({ type: rewardType, amount: amount });
                     }
                 // add the cookie count into the user's inventory
                 case QuestRewardType.X_COOKIES:
@@ -442,7 +444,7 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                     obtainedRewards.push({ type: rewardType, amount, data: bitData });
 
                     break;
-                // Default case when rewardType isn't X_COOKIES or BIT
+                // Default case when rewardType isn't Exp, X_COOKIES, or BIT
                 default:
                     // Check if the reward type is a part of FoodType
                     if (Object.values(FoodType).includes(rewardType.toString() as FoodType)) {
