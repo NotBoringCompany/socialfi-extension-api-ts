@@ -738,6 +738,14 @@ export const sendTelegramStarsInvoice = async (
 
         console.log('response.data: ', response.data);
 
+        // delete invoice after 10 seconds
+        setTimeout(async () => {
+            await axios.post(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/deleteMessage`, {
+                chat_id: chatId,
+                message_id: response.data.result.message_id
+            });
+        }, 10000);
+
         return {
             status: Status.SUCCESS,
             message: `(sendTelegramStarsInvoice) Invoice sent successfully.`,
