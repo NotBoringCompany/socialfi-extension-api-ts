@@ -101,6 +101,7 @@ export const universalAssetUpgrade = async (
         let levelToUpgradeTo = 0;
         // initialize user assetTotalExperience, default value is 0;
         let assetTotalExperience = 0;
+        let levelUpBenefits: any = null;
 
         // check which asset to upgrade.
         if (asset === UpgradableAsset.BIT) {
@@ -642,6 +643,8 @@ export const universalAssetUpgrade = async (
                 }
 
                 console.log(`(universalAssetUpgrade) upgrade Berry Factory to level ${levelToUpgradeTo}, rewards: ${xCookiesRewards} xCookies`);
+                // Defined levelUpBenefits with xCookiesRewards
+                levelUpBenefits = { xCookies: xCookiesRewards };
             } else {
                 console.log(`(universalAssetUpgrade) skips checking requiredTotalExp for asset ${asset} since it's not BerryFactory`);
             }
@@ -770,7 +773,8 @@ export const universalAssetUpgrade = async (
                             };
                         }
                     }) : [])
-                ]
+                ],
+                levelUpBenefits,
             }
         };
     } catch (err: any) {
