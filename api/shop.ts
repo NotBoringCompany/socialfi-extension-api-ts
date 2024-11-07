@@ -381,14 +381,14 @@ export const purchaseShopAsset = async (
                 let confirmationAttempt: ShopAssetPurchaseConfirmationAttemptType;
 
                 // if any of these messages are found, then the transaction is invalid.
-                if (verificationMessage.includes(
-                    'Address not found' ||
-                    'BOC not found' ||
-                    'Asset name or amount not found/invalid' ||
-                    'Purchase ID not found' ||
-                    'Purchase not found' ||
-                    'Receiver address mismatch'
-                )) {
+                if (
+                    verificationMessage.includes('Address not found') ||
+                    verificationMessage.includes('BOC not found') ||
+                    verificationMessage.includes('Asset name or amount not found/invalid') ||
+                    verificationMessage.includes('Purchase ID not found') ||
+                    verificationMessage.includes('Purchase not found') ||
+                    verificationMessage.includes('Receiver address mismatch')
+                ) {
                     confirmationAttempt = ShopAssetPurchaseConfirmationAttemptType.NO_VALID_TX;
                 } else if (verificationMessage.includes('Value mismatch')) {
                     confirmationAttempt = ShopAssetPurchaseConfirmationAttemptType.PAYMENT_MISMATCH;
