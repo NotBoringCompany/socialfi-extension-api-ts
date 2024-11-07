@@ -382,8 +382,8 @@ export const deleteFriend = async (userId: string, friendId: string): Promise<Re
         // find and delete the accepted friendship between the two users
         const result = await FriendModel.findOneAndDelete({
             $or: [
-                { userId1: userId, userId2: friendId, status: FriendStatus.ACCEPTED },
-                { userId1: friendId, userId2: userId, status: FriendStatus.ACCEPTED },
+                { userId1: user._id, userId2: friend._id, status: FriendStatus.ACCEPTED },
+                { userId1: friend._id, userId2: user._id, status: FriendStatus.ACCEPTED },
             ],
         });
 
