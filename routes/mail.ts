@@ -41,12 +41,12 @@ router.get('/get_all_user_mails/:twitterId/:page/:limit', async (req, res) => {
             });
         }
 
-        if (!validateData?.twitterId || validateData?.twitterId !== twitterId) {
-            return res.status(Status.UNAUTHORIZED).json({
-                status: Status.UNAUTHORIZED,
-                message: '(get_all_user_mails) Unauthorized'
-            });
-        }
+        // if (!validateData?.twitterId || validateData?.twitterId !== twitterId) {
+        //     return res.status(Status.UNAUTHORIZED).json({
+        //         status: Status.UNAUTHORIZED,
+        //         message: '(get_all_user_mails) Unauthorized'
+        //     });
+        // }
 
         const { status, message, data } = await getAllUserMails(validateData?.twitterId, parseInt(page), parseInt(limit));
 
