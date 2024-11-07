@@ -1,6 +1,7 @@
 import { FriendData, FriendStatus } from '../models/friend';
 import { InGameData } from '../models/user';
 import { FriendModel, UserModel } from '../utils/constants/db';
+import { generateObjectId } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
 import { getOwnLeaderboardRanking } from './leaderboard';
 
@@ -158,6 +159,7 @@ export const sendFriendRequest = async (userId: string, friendId: string): Promi
 
         // create a new friend request with PENDING status
         await FriendModel.create({
+            _id: generateObjectId(),
             userId1: user._id,
             userId2: friend._id,
             status: FriendStatus.PENDING,
