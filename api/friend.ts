@@ -27,8 +27,19 @@ export const getFriends = async (twitterId: string): Promise<ReturnValue<{ frien
         // extract and return the friend's user IDs
         const friendIds = friendships.map((friend) => (friend.userId1 === user._id ? friend.userId2 : friend.userId1));
 
+        // if has no friends, then return empty array
+        if (friendIds.length === 0) {
+            return {
+                status: Status.SUCCESS,
+                message: '(getFriends) Successfully retrieved tutorials',
+                data: {
+                    friends: [] as FriendData[],
+                },
+            };
+        }
+
         // retrieve the user details of each friend
-        const results = await UserModel.find({ _id: { in: friendIds } });
+        const results = await UserModel.find({ _id: { in: [] } });
 
         // parse the data to get ranking data
         const friends = await Promise.all(
@@ -83,6 +94,17 @@ export const getFriendRequests = async (userId: string): Promise<ReturnValue<{ r
 
         // extract the user IDs of the friend request senders
         const requesterIds = pendingRequests.map((request) => request.userId1);
+
+        // if has no requests, then return empty array
+        if (requesterIds.length === 0) {
+            return {
+                status: Status.SUCCESS,
+                message: '(getFriends) Successfully retrieved tutorials',
+                data: {
+                    requests: [] as FriendData[],
+                },
+            };
+        }
 
         // retrieve the user details of each requester
         const requesters = await UserModel.find({ _id: { $in: requesterIds } });
