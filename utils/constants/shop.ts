@@ -21,3 +21,7 @@ SHOP_QUEUE.process('deliverShopAssetViaSuccessfulTelegramStarsPayment', async (j
         console.error(`Error delivering shop asset via successful Telegram Stars payment for user ${userId} in chat ${chatId}: ${err.message}`);
     }
 });
+
+SHOP_QUEUE.getCompletedCount().then((completedCount) => {
+    console.log(`Completed count for shop queue: ${completedCount}`);
+})
