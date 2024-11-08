@@ -10,7 +10,7 @@ import { addIslandToDatabase, getLatestIslandId, randomizeBaseResourceCap } from
 import { POIName } from '../models/poi';
 import { ExtendedResource, SimplifiedResource } from '../models/resource';
 import { resources } from '../utils/constants/resource';
-import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, PlayerEnergy, UserWallet, XCookieSource, User } from '../models/user';
+import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, PlayerEnergy, UserWallet, XCookieSource, User, InGameData, UserKeyData, UserProfile } from '../models/user';
 import {
     DAILY_REROLL_BONUS_MILESTONE,
     ENERGY_POTION_RECOVERY,
@@ -40,12 +40,14 @@ import { ExtendedDiscordProfile, ExtendedProfile } from '../utils/types';
 import { WeeklyMVPRewardType } from '../models/weeklyMVPReward';
 import mongoose from 'mongoose';
 import * as dotenv from 'dotenv';
-import { getUserCurrentPoints } from './leaderboard';
+import { getOwnLeaderboardRanking, getUserCurrentPoints } from './leaderboard';
 import { DEPLOYER_WALLET, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
 import { parseTelegramData, TelegramAuthData, validateTelegramData } from '../utils/telegram';
 import { sendKICKUponRegistration, updatePointsInContract } from './web3';
 import { ethers } from 'ethers';
 import { sendMailsToNewUser } from './mail';
+import { dayjs } from '../utils/dayjs';
+import { getOwnedKeyIDs } from './kos';
 
 dotenv.config();
 
@@ -3263,6 +3265,76 @@ export const handleTelegramConnect = async (twitterId: string, telegramUser: Tel
         return {
             status: Status.ERROR,
             message: `(handleTelegramConnect) ${err.message}`,
+        };
+    }
+}
+
+/**
+ * Used to refresh user's key data
+ */
+export const refreshKeyData = async (twitterId: string) => {
+    try {
+        const user = await UserModel.findOne({ twitterId });
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(refreshKeyData) User not found.`,
+            };
+        }
+
+        
+
+        return {
+            status: Status.SUCCESS,
+            message: `(refreshKeyData) User profile fetched successfully.`,
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(refreshKeyData) ${err.message}`,
+        };
+    }
+}
+
+/**
+ * Get user's profile
+ */
+export const getUserProfile = async (twitterId: string): Promise<ReturnValue<{ profile: UserProfile }>> => {
+    try {
+        const user = await UserModel.findOne({ twitterId });
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(getUserProfile) User not found.`,
+            };
+        }
+
+        const ranking = await getOwnLeaderboardRanking(user.twitterId, 'Season 0');
+        const keys = await getOwnedKeyIDs(user.twitterId);
+
+        const profile = {
+            _id: user._id,
+            twitterId: user.twitterId,
+            name: user.twitterDisplayName,
+            username: user.twitterUsername,
+            profilePicture: user.twitterProfilePicture,
+            level: (user.inGameData as InGameData).level,
+            rank: ranking.data?.ranking?.rank ?? 0,
+            points: ranking.data?.ranking?.points ?? 0,
+            ownedKeyCount: keys.data?.ownedKeyCount ?? 0
+        } as UserProfile;
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getUserProfile) User profile fetched successfully.`,
+            data: {
+                profile
+            }
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getUserProfile) ${err.message}`,
         };
     }
 }

@@ -1,14 +1,14 @@
-import { FriendData, FriendStatus } from '../models/friend';
-import { InGameData } from '../models/user';
+import { FriendStatus } from '../models/friend';
+import { UserProfile } from '../models/user';
 import { FriendModel, UserModel } from '../utils/constants/db';
 import { generateObjectId } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
-import { getOwnLeaderboardRanking } from './leaderboard';
+import { getUserProfile } from './user';
 
 /**
  * Gets user's friends.
  */
-export const getFriends = async (twitterId: string): Promise<ReturnValue<{ friends: FriendData[] }>> => {
+export const getFriends = async (twitterId: string): Promise<ReturnValue<{ friends: UserProfile[] }>> => {
     try {
         const user = await UserModel.findOne({ twitterId });
 
@@ -27,35 +27,15 @@ export const getFriends = async (twitterId: string): Promise<ReturnValue<{ frien
         // extract and return the friend's user IDs
         const friendIds = friendships.map((friend) => (friend.userId1 === user._id ? friend.userId2 : friend.userId1));
 
-        // if has no friends, then return empty array
-        if (friendIds.length === 0) {
-            return {
-                status: Status.SUCCESS,
-                message: '(getFriends) Successfully retrieved friends',
-                data: {
-                    friends: [] as FriendData[],
-                },
-            };
-        }        
-
         // retrieve the user details of each friend
         const results = await UserModel.find({ _id: { $in: friendIds } });
 
         // parse the data to get ranking data
         const friends = await Promise.all(
             results.map(async (user) => {
-                const ranking = await getOwnLeaderboardRanking(user.twitterId, 'Season 0');
+                const { data } = await getUserProfile(user.twitterId);
 
-                return {
-                    _id: user._id,
-                    twitterId: user.twitterId,
-                    name: user.twitterDisplayName,
-                    username: user.twitterUsername,
-                    profilePicture: user.twitterProfilePicture,
-                    level: (user.inGameData as InGameData).level,
-                    rank: ranking.data?.ranking?.rank ?? 0,
-                    points: ranking.data?.ranking?.points ?? 0,
-                } as FriendData;
+                return data.profile;
             })
         );
 
@@ -63,7 +43,7 @@ export const getFriends = async (twitterId: string): Promise<ReturnValue<{ frien
             status: Status.SUCCESS,
             message: '(getFriends) Successfully retrieved friends',
             data: {
-                friends: friends as FriendData[],
+                friends: friends as UserProfile[],
             },
         };
     } catch (err: any) {
@@ -77,7 +57,7 @@ export const getFriends = async (twitterId: string): Promise<ReturnValue<{ frien
 /**
  * Gets user's friend request.
  */
-export const getFriendRequests = async (userId: string): Promise<ReturnValue<{ requests: FriendData[] }>> => {
+export const getFriendRequests = async (userId: string): Promise<ReturnValue<{ requests: UserProfile[] }>> => {
     try {
         const user = await UserModel.findOne({ twitterId: userId });
         if (!user) {
@@ -96,35 +76,15 @@ export const getFriendRequests = async (userId: string): Promise<ReturnValue<{ r
         // extract the user IDs of the friend request senders
         const requesterIds = pendingRequests.map((request) => request.userId1);
 
-        // if has no requests, then return empty array
-        if (requesterIds.length === 0) {
-            return {
-                status: Status.SUCCESS,
-                message: '(getFriends) Successfully retrieved friends',
-                data: {
-                    requests: [] as FriendData[],
-                },
-            };
-        }
-
         // retrieve the user details of each requester
         const requesters = await UserModel.find({ _id: { $in: requesterIds } });
 
         // parse the data to get ranking data
         const requests = await Promise.all(
             requesters.map(async (user) => {
-                const ranking = await getOwnLeaderboardRanking(user.twitterId, 'Season 0');
+                const { data } = await getUserProfile(user.twitterId);
 
-                return {
-                    _id: user._id,
-                    twitterId: user.twitterId,
-                    name: user.twitterDisplayName,
-                    username: user.twitterUsername,
-                    profilePicture: user.twitterProfilePicture,
-                    level: (user.inGameData as InGameData).level,
-                    rank: ranking.data?.ranking?.rank ?? 0,
-                    points: ranking.data?.ranking?.points ?? 0,
-                } as FriendData;
+                return data.profile;
             })
         );
 
@@ -178,7 +138,7 @@ export const sendFriendRequest = async (userId: string, friendId: string): Promi
             // Update status to PENDING if request was REJECTED; otherwise, return an error
             if (existingFriendship.status === FriendStatus.REJECTED) {
                 existingFriendship.status = FriendStatus.PENDING;
-                await existingFriendship.save();    
+                await existingFriendship.save();
             } else {
                 return {
                     status: Status.ERROR,

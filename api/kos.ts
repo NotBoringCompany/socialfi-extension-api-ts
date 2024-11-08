@@ -6,7 +6,7 @@ import fs from 'fs';
 import path from 'path';
 import { KOSClaimableDailyRewardsModel, KOSClaimableWeeklyRewardsModel, LeaderboardModel, SquadLeaderboardModel, SquadModel, UserModel } from '../utils/constants/db';
 import { KOS_DAILY_BENEFITS, KOS_WEEKLY_BENEFITS } from '../utils/constants/kos';
-import { ExtendedXCookieData, UserWallet, XCookieSource } from '../models/user';
+import { ExtendedXCookieData, InGameData, UserKeyData, UserWallet, XCookieSource } from '../models/user';
 import { Item } from '../models/item';
 import { BoosterItem } from '../models/booster';
 import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
@@ -17,6 +17,7 @@ import * as dotenv from 'dotenv';
 import { BigNumber, ethers } from 'ethers';
 import { getUserCurrentPoints } from './leaderboard';
 import { updatePointsInContract } from './web3';
+import { dayjs } from '../utils/dayjs';
 
 dotenv.config();
 
@@ -1325,6 +1326,22 @@ export const getAllExplicitOwnerships = async (): Promise<ReturnValue> => {
  */
 export const getOwnedKeyIDs = async (twitterId: string): Promise<ReturnValue> => {
     try {
+        const user = await UserModel.findOne({ twitterId });
+
+        const keyData = (user.inGameData as InGameData).keyData
+
+        // check if the keydata exist and the last check haven't past 24 hours yet, then return the values from the cache instead
+        if (keyData && !dayjs.unix(keyData.lastCheckTimestamp).isAfter(dayjs().subtract(24, 'hour'))) {
+            return {
+                status: Status.SUCCESS,
+                message: `(getOwnedKeys) Successfully retrieved owned Key of Salvation IDs.`,
+                data: {
+                    ownedKeyCount: keyData.ownedKeyCount,
+                    ownedKeyIDs: keyData.ownedKeyIDs
+                }
+            };
+        }
+
         const { status, message, data } = await getWallets(twitterId);
 
         if (status !== Status.SUCCESS) {
@@ -1367,6 +1384,17 @@ export const getOwnedKeyIDs = async (twitterId: string): Promise<ReturnValue> =>
                     return id.toString(); // Fallback to string if too large
                 }
             });
+
+        // save the values as a cache
+        await user.updateOne({
+            $set: {
+                'inGameData.keyData': {
+                    lastCheckTimestamp: dayjs().unix(),
+                    ownedKeyCount: keyIDs.length,
+                    ownedKeyIDs: keyIDs
+                } as UserKeyData
+            }
+        });
 
         return {
             status: Status.SUCCESS,

@@ -224,6 +224,7 @@ export interface InGameData {
     lastLoginTimestamp?: number;
     /** login streak count */
     loginStreak?: number;
+    keyData?: UserKeyData;
 }
 
 /**
@@ -349,4 +350,30 @@ export interface PlayerMastery {
      * the berry factory mastery.
      */
     berryFactory: BerryFactoryMastery;
+}
+
+/**
+ * Represents user Key (KOS) Data
+ */
+export interface UserKeyData {
+    /** cached value of owned keys */
+    ownedKeyCount: number;
+    ownedKeyIDs: (string | number)[];
+    /** last time getOwnedKeys fetched */
+    lastCheckTimestamp: number;
+}
+
+/**
+ * Represents user's profile
+ */
+export interface UserProfile {
+    _id: string;
+    twitterId: string;
+    name: string;
+    username: string;
+    profilePicture: string;
+    level: string | number;
+    rank: string | number;
+    points: string | number;
+    ownedKeyCount: number;
 }
