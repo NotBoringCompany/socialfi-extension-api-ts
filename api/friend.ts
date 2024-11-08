@@ -172,6 +172,7 @@ export const sendFriendRequest = async (userId: string, friendId: string): Promi
                 { userId1: user._id, userId2: friend._id },
                 { userId1: friend._id, userId2: user._id },
             ],
+            status: { $ne: FriendStatus.REJECTED },
         });
 
         if (existingFriendship) {
