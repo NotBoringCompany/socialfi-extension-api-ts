@@ -376,4 +376,6 @@ export interface UserProfile {
     rank: string | number;
     points: string | number;
     ownedKeyCount: number;
+    squadName: string | null;
+    mastery: PlayerMastery;
 }

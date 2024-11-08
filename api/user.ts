@@ -3309,8 +3309,16 @@ export const getUserProfile = async (twitterId: string): Promise<ReturnValue<{ p
             };
         }
 
+        const inGameData = user.inGameData as InGameData;
         const ranking = await getOwnLeaderboardRanking(user.twitterId, 'Season 0');
         const keys = await getOwnedKeyIDs(user.twitterId);
+        let squadName: string | null = null;
+
+        if (inGameData.squadId) {
+            const squad = await SquadModel.findById(inGameData.squadId)
+
+            squadName = squad?.name || null;
+        }
 
         const profile = {
             _id: user._id,
@@ -3321,7 +3329,9 @@ export const getUserProfile = async (twitterId: string): Promise<ReturnValue<{ p
             level: (user.inGameData as InGameData).level,
             rank: ranking.data?.ranking?.rank ?? 0,
             points: ranking.data?.ranking?.points ?? 0,
-            ownedKeyCount: keys.data?.ownedKeyCount ?? 0
+            ownedKeyCount: keys.data?.ownedKeyCount ?? 0,
+            squadName,
+            mastery: inGameData.mastery
         } as UserProfile;
 
         return {
