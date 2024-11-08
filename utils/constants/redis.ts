@@ -6,7 +6,7 @@ import { getLatestRaftId } from '../../api/raft';
 export const redis = new Redis(process.env.REDIS_URL);
 
 redis.on('connect', async () => {
-    console.log('Redis connected');
+    console.log('Redis connected, URL: ' + process.env.REDIS_URL);
 
     // initialize bit latest id counter
     getLatestBitId();
