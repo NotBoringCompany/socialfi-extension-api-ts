@@ -22,6 +22,17 @@ SHOP_QUEUE.process('deliverShopAssetViaSuccessfulTelegramStarsPayment', async (j
     }
 });
 
-SHOP_QUEUE.getCompletedCount().then((completedCount) => {
-    console.log(`Completed count for shop queue: ${completedCount}`);
-})
+const fetchShopQueueData = async (): Promise<void> => {
+    const waitingJobs = await SHOP_QUEUE.getWaiting();
+    const activeJobs = await SHOP_QUEUE.getActive();
+    const completedJobs = await SHOP_QUEUE.getCompleted();
+    const failedJobs = await SHOP_QUEUE.getFailed();
+
+    console.log(`(Shop Queue) Waiting jobs: ${waitingJobs.length}`);
+    console.log(`(Shop Queue) Active jobs: ${activeJobs.length}`);
+    console.log(`(Shop Queue) Completed jobs: ${completedJobs.length}`);
+    console.log(`(Shop Queue) Completed jobs: ${JSON.stringify(completedJobs, null, 2)}`);
+    console.log(`(Shop Queue) Failed jobs: ${failedJobs.length}`);
+}
+
+fetchShopQueueData();
