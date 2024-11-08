@@ -185,15 +185,15 @@ export const sendFriendRequest = async (userId: string, friendId: string): Promi
                     message: '(sendFriendRequest) Friendship or pending request already exists.',
                 };
             }
+        } else {
+            // create a new friend request with PENDING status
+            await FriendModel.create({
+                _id: generateObjectId(),
+                userId1: user._id,
+                userId2: friend._id,
+                status: FriendStatus.PENDING,
+            });
         }
-
-        // create a new friend request with PENDING status
-        await FriendModel.create({
-            _id: generateObjectId(),
-            userId1: user._id,
-            userId2: friend._id,
-            status: FriendStatus.PENDING,
-        });
 
         return {
             status: Status.SUCCESS,
