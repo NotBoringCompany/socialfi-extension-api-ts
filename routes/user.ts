@@ -426,7 +426,7 @@ router.post('/consume_energy_potion', async (req, res) => {
     }
 })
 
-router.post('/get_user_profile/:twitterId', async (req, res) => {
+router.get('/get_user_profile/:twitterId', async (req, res) => {
     const { twitterId } = req.params;
 
     try {
