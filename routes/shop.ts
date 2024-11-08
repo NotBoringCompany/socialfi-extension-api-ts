@@ -85,7 +85,10 @@ router.post('/purchase_shop_asset', async (req, res) => {
         payment,
         address,
         chain,
-        txHash
+        txHash,
+        invoicePayload,
+        telegramPaymentChargeId,
+        providerPaymentChargeId
     } = req.body;
 
     try {
@@ -105,7 +108,10 @@ router.post('/purchase_shop_asset', async (req, res) => {
             payment,
             address,
             chain,
-            txHash
+            txHash,
+            invoicePayload,
+            telegramPaymentChargeId,
+            providerPaymentChargeId
         );
 
         if (status === Status.SUCCESS) {

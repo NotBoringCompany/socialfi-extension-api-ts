@@ -235,6 +235,9 @@ export interface ShopAssetPurchase {
     // if the payment is done via blockchain, this will contain the blockchain data (e.g. which chain the payment was done on, the purchaser's wallet address, etc.)
     // else, this will be null.
     blockchainData: ShopAssetPurchaseBlockchainData;
+    // if the payment is done via telegram stars, this will contain the telegram payment data (e.g. the payment ID, etc.)
+    // else, this will be null.
+    telegramData: ShopAssetPurchaseTelegramPaymentData;
     // the purchase timestamp (in unix format)
     purchaseTimestamp: number;
     // the expiration timestamp of the asset's effects (in unix format)
@@ -271,6 +274,18 @@ export interface ShopAssetPurchaseBlockchainData {
     // users should NOT receive any items until `success` is reached.
     // if `itemMismatch` was on the array, then items given to the user MAY have to be manually handled/fixed.
     confirmationAttempts: ShopAssetPurchaseConfirmationAttemptType[];
+}
+
+/**
+ * Represents the telegram payment data of a shop asset purchase.
+ */
+export interface ShopAssetPurchaseTelegramPaymentData {
+    /** the invoice payload of the payment (contains the metadata/details of the purchase) */
+    invoicePayload?: string;
+    /** the telegram payment charge ID */
+    telegramPaymentChargeId?: string;
+    /** the provider payment charge ID */
+    providerPaymentChargeId?: string;
 }
 
 /**

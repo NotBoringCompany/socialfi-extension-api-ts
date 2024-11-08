@@ -192,8 +192,14 @@ export const purchaseShopAsset = async (
     address?: string,
     // for blockchain txs only; the chain the payment was made on.
     chain?: string | number,
-    // for blockchain txs only; the hex string of the transaction hash (for EVM chains) or the signed BOC (bag of cells; for TON).
-    txHash?: string
+    // for blockchain txs only; the hex string of the transaction hash (for EVM chains) or the signed BOC (bag of cells; for TON)
+    txHash?: string,
+    // for telegram payments only; the payload of the invoice.
+    invoicePayload?: string,
+    // for telegram payments only; the telegram payment charge ID.
+    telegramPaymentChargeId?: string,
+    // for external payments only; the provider payment charge ID.
+    providerPaymentChargeId?: string,
 ): Promise<ReturnValue> => {
     console.log(`(purchaseShopAsset) User ${twitterId} attempting to purchase ${amount} of ${asset} with ${payment}.`);
     
@@ -422,9 +428,10 @@ export const purchaseShopAsset = async (
                         address,
                         chain,
                         txHash,
-                        txPayload: verificationData?.txPayload ?? null,
+                        txPayload,
                         confirmationAttempts: [confirmationAttempt]
                     },
+                    telegramData: null,
                     purchaseTimestamp: Math.floor(Date.now() / 1000),
                     effectExpiration: 'never',
                     givenContents: shopAsset.givenContents
@@ -641,13 +648,18 @@ export const purchaseShopAsset = async (
                         ? payment
                         : txPayload?.curr
                 },
-                blockchainData: {
+                blockchainData: txHash && address && chain ? {
                     address,
                     chain,
                     txHash,
                     txPayload,
                     confirmationAttempts: [ShopAssetPurchaseConfirmationAttemptType.SUCCESS]
-                },
+                } : null,
+                telegramData: invoicePayload && telegramPaymentChargeId && providerPaymentChargeId ? {
+                    invoicePayload,
+                    telegramPaymentChargeId,
+                    providerPaymentChargeId,
+                } : null,
                 purchaseTimestamp: Math.floor(Date.now() / 1000),
                 effectExpiration: effectExpiration(),
                 givenContents: shopAsset.givenContents
@@ -679,7 +691,10 @@ export const purchaseShopAsset = async (
                 userCurrency: typeof payment === 'string' && Object.values(ShopAssetIGCPaymentMethod).includes(payment as ShopAssetIGCPaymentMethod) ? {
                     currentValue: currentCurrency,
                     updatedValue: Math.max(currentCurrency - totalCost, 0),
-                } : null
+                } : null,
+                invoicePayload: invoicePayload ?? null,
+                telegramPaymentChargeId: telegramPaymentChargeId ?? null,
+                providerPaymentChargeId: providerPaymentChargeId ?? null,
             }
         }
     } catch (err: any) {
