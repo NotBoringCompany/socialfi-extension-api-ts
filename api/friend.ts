@@ -172,14 +172,19 @@ export const sendFriendRequest = async (userId: string, friendId: string): Promi
                 { userId1: user._id, userId2: friend._id },
                 { userId1: friend._id, userId2: user._id },
             ],
-            status: { $ne: FriendStatus.REJECTED },
         });
 
         if (existingFriendship) {
-            return {
-                status: Status.ERROR,
-                message: '(sendFriendRequest) Friendship or pending request already exists.',
-            };
+            // Update status to PENDING if request was REJECTED; otherwise, return an error
+            if (existingFriendship.status === FriendStatus.REJECTED) {
+                existingFriendship.status = FriendStatus.PENDING;
+                await existingFriendship.save();    
+            } else {
+                return {
+                    status: Status.ERROR,
+                    message: '(sendFriendRequest) Friendship or pending request already exists.',
+                };
+            }
         }
 
         // create a new friend request with PENDING status
