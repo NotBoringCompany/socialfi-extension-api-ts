@@ -1,8 +1,8 @@
 import { Socket } from "socket.io";
 import { Status } from "../utils/retVal";
-import redisDb from "../utils/constants/redisDb";
 import { UserModel } from "../utils/constants/db";
 import { EventSauna, SaunaGlobalKey, SaunaUserKey } from "../events/sauna";
+import { redis } from '../utils/constants/redis';
 
 export const startRest = async (socket: Socket) => {
   try {
@@ -25,7 +25,7 @@ export const startRest = async (socket: Socket) => {
     }
 
     // get rest maximum energy
-    const getRestMaximumEnergy = await redisDb.get(`${SaunaUserKey.MAXIMUM_ENERGY}:${userId}`);
+    const getRestMaximumEnergy = await redis.get(`${SaunaUserKey.MAXIMUM_ENERGY}:${userId}`);
     const maximumEnergyToFarm = getRestMaximumEnergy ? Number(getRestMaximumEnergy) : 1000;
     const energyPotionPerMinute = 25;
     const energyPotionPerSecond = energyPotionPerMinute / 60;
@@ -46,7 +46,7 @@ export const startRest = async (socket: Socket) => {
     const startTime = Math.floor(Date.now() / 1000);
 
     await addUserToRoom(userId, socket.id, energyPotionPerSecond, startTime, maximumEnergyToFarm);
-    const getConnected = await redisDb.get(SaunaGlobalKey.CONNECTED)
+    const getConnected = await redis.get(SaunaGlobalKey.CONNECTED)
     // emit to all user connected
     socket.broadcast.emit(EventSauna.USER_COUNT, getConnected);
     // emit to user
@@ -76,7 +76,7 @@ export const startRest = async (socket: Socket) => {
  */
 export const stopRest = async (socket: Socket) => {
   try {
-    const userId = await redisDb.get(socket.id);
+    const userId = await redis.get(socket.id);
     const isUserAlreadyInRoom = await isUserInRoom(userId);
     if (!isUserAlreadyInRoom) {
       return socket.emit(EventSauna.SERVER_RESPONSE, {
@@ -85,9 +85,9 @@ export const stopRest = async (socket: Socket) => {
       });
     }
     // get user energy potion per second
-    const getEnergyPotionPerSecond = await redisDb.get(`${SaunaUserKey.ENERGY_POTION_PER_SECOND}:${userId}`);
+    const getEnergyPotionPerSecond = await redis.get(`${SaunaUserKey.ENERGY_POTION_PER_SECOND}:${userId}`);
     // get user when user join
-    const getTimeUserJoin = await redisDb.get(`${SaunaUserKey.TIME_STAMP}:${userId}`);
+    const getTimeUserJoin = await redis.get(`${SaunaUserKey.TIME_STAMP}:${userId}`);
     // calculate total energy
     const dateNowInSeconds = Math.floor(Date.now() / 1000);
     // calculate total time rest
@@ -99,7 +99,7 @@ export const stopRest = async (socket: Socket) => {
     await energyRecover(userId, getTotalEnergy);
     // remove user from room
     await removeUserFromRoom(socket.id);
-    const getConnected = await redisDb.get(SaunaGlobalKey.CONNECTED)
+    const getConnected = await redis.get(SaunaGlobalKey.CONNECTED)
     // broadcast to all user
     socket.broadcast.emit(EventSauna.USER_COUNT, getConnected);
     socket.emit(EventSauna.USER_COUNT, getConnected);
@@ -133,7 +133,7 @@ const addUserToRoom = async (userId: string, socketId: string, energyInSecond: n
   // get user already in room
   const isUserAlreadyInRoom = await isUserInRoom(userId)
   // socket id same as user id
-  const getCurrentSocketId = await redisDb.get(`${SaunaUserKey.USER_SOCKET}:${userId}`)
+  const getCurrentSocketId = await redis.get(`${SaunaUserKey.USER_SOCKET}:${userId}`)
   const isSocketIdSameAsUserId = getCurrentSocketId === socketId
   // user already in room 
   if (isUserAlreadyInRoom && isSocketIdSameAsUserId) {
@@ -145,11 +145,11 @@ const addUserToRoom = async (userId: string, socketId: string, energyInSecond: n
     console.log(`Socket ID updated for user ${userId}`);
   }
   // get total connected
-  const userConnected = await redisDb.get(SaunaGlobalKey.CONNECTED)
+  const userConnected = await redis.get(SaunaGlobalKey.CONNECTED)
   // get max energy
-  const getMaxEnergy = await redisDb.get(`${SaunaUserKey.MAXIMUM_ENERGY}:${userId}`)
+  const getMaxEnergy = await redis.get(`${SaunaUserKey.MAXIMUM_ENERGY}:${userId}`)
   //redis multi set
-  const redisMulti = redisDb.multi()
+  const redisMulti = redis.multi()
   try {
     if (!getMaxEnergy) {
       // set user max energy
@@ -178,15 +178,15 @@ const addUserToRoom = async (userId: string, socketId: string, energyInSecond: n
  */
 const removeUserFromRoom = async (socketId: string) => {
   // get userId from socket id
-  const userId = await redisDb.get(socketId)
+  const userId = await redis.get(socketId)
   // user exist in room
   const isUserExistInRoom = await isUserInRoom(userId)
   // throw error if user not in room
   if (!isUserExistInRoom) throw new Error('User not in room')
   // get total connected
-  const userConnected = await redisDb.get(SaunaGlobalKey.CONNECTED)
+  const userConnected = await redis.get(SaunaGlobalKey.CONNECTED)
   // redis multi set
-  const redisMulti = redisDb.multi()
+  const redisMulti = redis.multi()
   try {
     // decrement total connected
     redisMulti.set(SaunaGlobalKey.CONNECTED, Number(userConnected) - 1)
@@ -207,7 +207,7 @@ const removeUserFromRoom = async (socketId: string) => {
 
 export const saunaInit = async (socket: Socket) => {
   try {
-    const userConnected = await redisDb.get(SaunaGlobalKey.CONNECTED)
+    const userConnected = await redis.get(SaunaGlobalKey.CONNECTED)
     socket.broadcast.emit(EventSauna.USER_COUNT, userConnected ? Number(userConnected) : 0)
     socket.emit(EventSauna.USER_COUNT, userConnected ? Number(userConnected) : 0)
   } catch (error) {
@@ -220,7 +220,7 @@ export const saunaInit = async (socket: Socket) => {
 
 const isUserInRoom = async (userId: string) => {
   // check if user already in room
-  const socketId = await redisDb.get(`${SaunaUserKey.USER_SOCKET}:${userId}`)
+  const socketId = await redis.get(`${SaunaUserKey.USER_SOCKET}:${userId}`)
   // if user not in room return false
   if (!socketId) return false
   // if user in room return true
@@ -244,7 +244,7 @@ export const energyRecover = async (userId: string, energyRecover: number): Prom
     if (!user) throw new Error('User not found');
 
     // Get user's remaining energy from Redis
-    const remainingEnergy = await redisDb.get(`${SaunaUserKey.MAXIMUM_ENERGY}:${userId}`);
+    const remainingEnergy = await redis.get(`${SaunaUserKey.MAXIMUM_ENERGY}:${userId}`);
     if (!remainingEnergy) throw new Error('No remaining energy');
 
     const remainingEnergyValue = Number(remainingEnergy);
@@ -263,7 +263,7 @@ export const energyRecover = async (userId: string, energyRecover: number): Prom
     if (finalEnergyRecover <= 0) throw new Error('user has max energy');
 
     // Update Redis for the remaining energy to recover
-    await redisDb.set(`${SaunaUserKey.MAXIMUM_ENERGY}:${userId}`, remainingEnergyValue - finalEnergyRecover);
+    await redis.set(`${SaunaUserKey.MAXIMUM_ENERGY}:${userId}`, remainingEnergyValue - finalEnergyRecover);
 
     // Update user's energy in the database
     return await UserModel.updateOne(
@@ -287,7 +287,7 @@ const getExpiredTime = () => {
 // this function only on development
 export const resetUserRedisById = async () => {
   try {
-    await redisDb.set(SaunaGlobalKey.CONNECTED, 0)
+    await redis.set(SaunaGlobalKey.CONNECTED, 0)
   }catch (error) {
     throw new Error(`${error.message}`)
   }

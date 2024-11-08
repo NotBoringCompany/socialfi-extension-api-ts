@@ -659,6 +659,7 @@ export const purchaseShopAsset = async (
                     invoicePayload,
                     telegramPaymentChargeId,
                     providerPaymentChargeId,
+                    confirmationAttempts: [ShopAssetPurchaseConfirmationAttemptType.SUCCESS]
                 } : null,
                 purchaseTimestamp: Math.floor(Date.now() / 1000),
                 effectExpiration: effectExpiration(),

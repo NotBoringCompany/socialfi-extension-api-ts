@@ -281,11 +281,13 @@ export interface ShopAssetPurchaseBlockchainData {
  */
 export interface ShopAssetPurchaseTelegramPaymentData {
     /** the invoice payload of the payment (contains the metadata/details of the purchase) */
-    invoicePayload?: string;
+    invoicePayload: string;
     /** the telegram payment charge ID */
-    telegramPaymentChargeId?: string;
+    telegramPaymentChargeId: string;
     /** the provider payment charge ID */
-    providerPaymentChargeId?: string;
+    providerPaymentChargeId: string;
+    // an array of differents trings that represent the status of each payment confirmation attempt.
+    confirmationAttempts: ShopAssetPurchaseConfirmationAttemptType[];
 }
 
 /**
@@ -296,7 +298,7 @@ export enum ShopAssetPurchaseConfirmationAttemptType {
     SUCCESS = 'success',
     // error with the API to verify (blockchain)
     API_ERROR = 'apiError',
-    // no valid transaction with given params found
+    // no valid transaction with given params found (applies for blockchain AND telegram stars)
     NO_VALID_TX = 'noValidTx',
     // payment sent with the transaction is lower than the required amount to pay for the asset
     PAYMENT_MISMATCH = 'paymentMismatch',
