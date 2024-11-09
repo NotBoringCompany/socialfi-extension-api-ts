@@ -43,6 +43,13 @@ export const validateRequestAuth = async (
             }
         }
 
+        if (req.body.twitterId && twitterId !== req.body.twitterId) {
+            return {
+                status: Status.UNAUTHORIZED,
+                message: `(${routeName ?? 'validateRequestAuth'}) Twitter ID does not match the request body.`
+            }
+        }
+
         // at this point, the token is deemed valid and we return the twitter id.
         return {
             status: Status.SUCCESS,
