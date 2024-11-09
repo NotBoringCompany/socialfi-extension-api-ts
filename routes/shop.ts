@@ -1,5 +1,5 @@
 import express from 'express';
-import { addShopAssets, getShop, purchaseShopAsset, sendTelegramStarsInvoice } from '../api/shop';
+import { addShopAssets, getShop, purchaseShopAsset, purchaseShopAssetPrerequisitesCheck, sendTelegramStarsInvoice } from '../api/shop';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { allowMixpanel, mixpanel } from '../utils/mixpanel';
@@ -41,6 +41,34 @@ router.post('/add_shop_assets', authMiddleware(3), async (req, res) => {
         return res.status(200).json({
             status: Status.SUCCESS,
             message: `Successfully added ${assets.length} assets to the shop.`
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
+
+router.post('/purchase_shop_asset_prerequisites_check', async (req, res) => {
+    const { twitterOrTelegramId, asset, amount } = req.body;
+
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'purchase_shop_asset_prerequisites_check');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            })
+        }
+
+        const { status, message, data } = await purchaseShopAssetPrerequisitesCheck(twitterOrTelegramId, asset, amount);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
         });
     } catch (err: any) {
         return res.status(500).json({

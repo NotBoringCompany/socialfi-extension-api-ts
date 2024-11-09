@@ -202,27 +202,6 @@ export const purchaseShopAsset = async (
     providerPaymentChargeId?: string,
 ): Promise<ReturnValue> => {
     console.log(`(purchaseShopAsset) User ${twitterId} attempting to purchase ${amount} of ${asset} with ${payment}.`);
-    
-    if (!twitterId) {
-        return {
-            status: Status.UNAUTHORIZED,
-            message: `(purchaseShopAsset) No twitterId provided.`
-        }
-    }
-
-    if (!asset) {
-        return {
-            status: Status.ERROR,
-            message: `(purchaseShopAsset) No asset provided.`
-        }
-    }
-
-    if (!amount || amount <= 0) {
-        return {
-            status: Status.ERROR,
-            message: `(purchaseShopAsset) Invalid amount provided.`
-        }
-    }
 
     const userUpdateOperations = {
         $pull: {},
@@ -242,71 +221,19 @@ export const purchaseShopAsset = async (
     }
 
     try {
-        // fetch the asset from the database
-        const shopAsset = await ShopAssetModel.findOne({ assetName: asset }).lean();
+        // check if prerequisites are successful.
+        const { status: prerequisitesStatus, message: prerequisitesMessage, data: prerequisitesData } = await purchaseShopAssetPrerequisitesCheck(twitterId, asset, amount);
 
-        if (!shopAsset) {
+        if (prerequisitesStatus !== Status.SUCCESS) {
             return {
                 status: Status.ERROR,
-                message: `(purchaseShopAsset) Asset not found.`
+                message: `(purchaseShopAsset) Prerequisites check failed: ${prerequisitesMessage}`
             }
         }
 
-        // check if asset is expired
-        if (shopAsset.expirationDate !== 'never' && shopAsset.expirationDate < Math.floor(Date.now() / 1000)) {
-            return {
-                status: Status.ERROR,
-                message: `(purchaseShopAsset) Asset is already expired.`
-            }
-        }
-
-        // check if asset is out of stock
-        if (
-            shopAsset.stockData.currentStock !== 'unlimited' &&
-            (shopAsset.stockData.currentStock <= 0 || shopAsset.stockData.currentStock < amount)
-        ) {
-            return {
-                status: Status.ERROR,
-                message: `(purchaseShopAsset) Not enough stock for purchase.`
-            }
-        }
-
-        // fetch the user
-        const user = await UserModel.findOne({ twitterId }).lean();
-
-        if (!user) {
-            return {
-                status: Status.ERROR,
-                message: `(purchaseShopAsset) User not found.`
-            }
-        }
-
-        // if the asset has a level requirement, check if the user meets the requirement
-        if (shopAsset.levelRequirement !== 'none' && user.inGameData.level < shopAsset.levelRequirement) {
-            return {
-                status: Status.ERROR,
-                message: `(purchaseShopAsset) User does not meet the level requirement for this asset.`
-            }
-        }
-
-        // check if this asset has a purchase limit. if it has, fetch the ShopAssetPurchases collection and
-        // check the amount of times the user has purchased this asset.
-        if (shopAsset.purchaseLimit !== 'unlimited') {
-            // fetch the user's purchase history of this asset
-            const assetPurchaseHistory = await ShopAssetPurchaseModel.find({ userId: user._id, assetId: shopAsset._id }).lean();
-
-            // get the `amount` purchased per asset (i.e. per document)
-            const assetPurchaseAmount = assetPurchaseHistory.reduce((acc, curr) => acc + curr.amount, 0);
-
-            console.log(`(purchaseShopAsset) total assets purchased for User ${user.twitterUsername}: ${assetPurchaseAmount}`);
-
-            if (assetPurchaseAmount + amount > shopAsset.purchaseLimit) {
-                return {
-                    status: Status.ERROR,
-                    message: `(purchaseShopAsset) User has reached the purchase limit for this asset.`
-                }
-            }
-        }
+        // get the user and shop asset from the prerequisites data
+        const user = prerequisitesData.user;
+        const shopAsset = prerequisitesData.asset;
 
         // fetch user's xCookies
         const userXCookies = user.inventory?.xCookieData.currentXCookies;
@@ -703,6 +630,122 @@ export const purchaseShopAsset = async (
         return {
             status: Status.ERROR,
             message: `(purchaseShopAsset) ${err.message}`
+        }
+    }
+}
+
+/**
+ * Checks to ensure that a shop asset purchase can be done given some requirements.
+ * 
+ * Used directly inside `purchaseShopAsset` as well as independently when purchasing via Telegram Stars (since it won't use `purchaseShopAsset`).
+ */
+export const purchaseShopAssetPrerequisitesCheck = async (
+    twitterOrTelegramId: string,
+    asset: ShopAssetType,
+    amount: number,
+): Promise<ReturnValue> => {
+    if (!twitterOrTelegramId) {
+        return {
+            status: Status.UNAUTHORIZED,
+            message: `(purchaseShopAssetPrerequisitesCheck) No telegramId provided.`
+        }
+    }
+
+    if (!asset) {
+        return {
+            status: Status.ERROR,
+            message: `(purchaseShopAssetPrerequisitesCheck) No asset provided.`
+        }
+    }
+
+    if (!amount || amount <= 0) {
+        return {
+            status: Status.ERROR,
+            message: `(purchaseShopAssetPrerequisitesCheck) Invalid amount provided.`
+        }
+    }
+
+    try {
+        const shopAsset = await ShopAssetModel.findOne({ assetName: asset }).lean();
+
+        if (!shopAsset) {
+            return {
+                status: Status.ERROR,
+                message: `(purchaseShopAssetPrerequisitesCheck) Asset not found.`
+            }
+        }
+
+        // check if asset is expired
+        if (shopAsset.expirationDate !== 'never' && shopAsset.expirationDate < Math.floor(Date.now() / 1000)) {
+            return {
+                status: Status.ERROR,
+                message: `(purchaseShopAssetPrerequisitesCheck) Asset is already expired.`
+            }
+        }
+
+        // check if asset is out of stock
+        if (
+            shopAsset.stockData.currentStock !== 'unlimited' &&
+            (shopAsset.stockData.currentStock <= 0 || shopAsset.stockData.currentStock < amount)
+        ) {
+            return {
+                status: Status.ERROR,
+                message: `(purchaseShopAssetPrerequisitesCheck) Not enough stock for purchase.`
+            }
+        }
+
+        // fetch the user
+        // the telegram id can be in the `twitterId` field or `telegramProfile.telegramId` field.
+        // we need to check either or.
+        const user = await UserModel.findOne({ $or: [{ twitterId: twitterOrTelegramId }, { 'telegramProfile.telegramId': twitterOrTelegramId }] }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(purchaseShopAssetPrerequisitesCheck) User not found.`
+            }
+        }
+
+        // if the asset has a level requirement, check if the user meets the requirement
+        if (shopAsset.levelRequirement !== 'none' && user.inGameData.level < shopAsset.levelRequirement) {
+            return {
+                status: Status.ERROR,
+                message: `(purchaseShopAssetPrerequisitesCheck) User does not meet the level requirement for this asset.`
+            }
+        }
+
+        // check if this asset has a purchase limit. if it has, fetch the ShopAssetPurchases collection and
+        // check the amount of times the user has purchased this asset.
+        if (shopAsset.purchaseLimit !== 'unlimited') {
+            // fetch the user's purchase history of this asset
+            const assetPurchaseHistory = await ShopAssetPurchaseModel.find({ userId: user._id, assetId: shopAsset._id }).lean();
+
+            // get the `amount` purchased per asset (i.e. per document)
+            const assetPurchaseAmount = assetPurchaseHistory.reduce((acc, curr) => acc + curr.amount, 0);
+
+            console.log(`(purchaseShopAssetPrerequisitesCheck) total assets purchased for User ${user.twitterUsername}: ${assetPurchaseAmount}`);
+
+            if (assetPurchaseAmount + amount > shopAsset.purchaseLimit) {
+                return {
+                    status: Status.ERROR,
+                    message: `(purchaseShopAssetPrerequisitesCheck) User has reached the purchase limit for this asset.`
+                }
+            }
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(purchaseShopAssetPrerequisitesCheck) Prerequisites check successful.`,
+            data: {
+                user: user,
+                asset: shopAsset
+            }
+        }
+    } catch (err: any) {
+        console.error(`(purchaseShopAssetPrerequisitesCheck) ${err.message}`);
+        return {
+            status: Status.ERROR,
+            message: `(purchaseShopAssetPrerequisitesCheck) ${err.message}`
         }
     }
 }
