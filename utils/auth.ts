@@ -43,7 +43,7 @@ export const validateRequestAuth = async (
             }
         }
 
-        if (twitterId !== req.body.twitterId) {
+        if (req.body.twitterId && twitterId !== req.body.twitterId) {
             return {
                 status: Status.UNAUTHORIZED,
                 message: `(${routeName ?? 'validateRequestAuth'}) Token does not match the request body.`

@@ -63,7 +63,7 @@ router.post('/purchase_shop_asset_prerequisites_check', async (req, res) => {
             })
         }
 
-        const { status, message, data } = await purchaseShopAssetPrerequisitesCheck(twitterOrTelegramId, asset, amount);
+        const { status, message, data } = await purchaseShopAssetPrerequisitesCheck(validateData?.twitterId, asset, amount);
 
         return res.status(status).json({
             status,
