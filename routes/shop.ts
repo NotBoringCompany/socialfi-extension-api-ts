@@ -51,7 +51,7 @@ router.post('/add_shop_assets', authMiddleware(3), async (req, res) => {
 })
 
 router.post('/purchase_shop_asset_prerequisites_check', async (req, res) => {
-    const { twitterOrTelegramId, asset, amount } = req.body;
+    const { asset, amount } = req.body;
 
     try {
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'purchase_shop_asset_prerequisites_check');
