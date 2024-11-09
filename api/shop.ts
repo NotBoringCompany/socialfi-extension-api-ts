@@ -805,6 +805,10 @@ export const sendTelegramStarsInvoice = async (
             text: `This invoice will be deleted after 10 minutes. Please ensure to pay within the given time.`
         });
 
+        const jobId = `delete-${chatId}-${databaseInvoiceId}`;
+
+        console.log(`(sendTelegramStarsInvoice) Job ID to delete invoice and reminder message: ${jobId}`);
+
         // add a job to delete the invoice and reminder messages after 10 minutes (or will be deleted manually if invoice is paid)
         await SHOP_QUEUE.add('deleteTelegramInvoiceAndReminderMessage', {
             chatId,
@@ -813,7 +817,7 @@ export const sendTelegramStarsInvoice = async (
             reminderMessageId: reminderResponse.data.result.message_id
         }, {
             delay: 600000,
-            jobId: `delete-${chatId}-${databaseInvoiceId}`
+            jobId
         });
 
         return {
