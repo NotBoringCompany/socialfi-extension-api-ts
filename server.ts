@@ -72,6 +72,7 @@ import gacha from './routes/gacha';
 import cosmetic from './routes/cosmetic';
 import friend from './routes/friend';
 import report from './routes/report';
+import './utils/constants/shop';
 import { populateBitCosmeticEnum } from './utils/constants/cosmetic';
 import { initializeSocket } from './configs/socket';
 
