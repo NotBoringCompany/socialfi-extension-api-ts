@@ -228,7 +228,7 @@ SHOP_QUEUE.process('deliverShopAssetViaSuccessfulTelegramStarsPayment', async (j
  * Deletes any Telegram invoice and reminder message for a chat if the invoice is not paid after 10 minutes.
  */
 SHOP_QUEUE.process('deleteTelegramInvoiceAndReminderMessage', async (job) => {
-    const { chatId, databaseInvoiceId, invoiceMessageId, reminderMessageId } = job.data;
+    const { chatId, invoiceMessageId, reminderMessageId } = job.data;
 
     console.log(`Deleting Telegram invoice and reminder message for chat ${chatId}`);
 

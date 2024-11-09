@@ -778,7 +778,7 @@ export const sendTelegramStarsInvoice = async (
             chat_id: chatId,
             title: dbAsset.assetName,
             description: dbAsset.assetName,
-            payload: `databaseInvoiceId: ${databaseInvoiceId},"asset":"${dbAsset.assetName}","amt":1,"cost":"${USD_TO_STARS_CONVERSION(dbAsset.price.finalUsd)} TG Stars","curr":"TG Stars"`,
+            payload: `"databaseInvoiceId": "${databaseInvoiceId}","asset":"${dbAsset.assetName}","amt":1,"cost":"${USD_TO_STARS_CONVERSION(dbAsset.price.finalUsd)} TG Stars","curr":"TG Stars"`,
             provider_token: '',
             // currency for telegram stars
             currency: 'XTR',
