@@ -126,7 +126,15 @@ export const sendFriendRequest = async (userId: string, friendId: string): Promi
             };
         }
 
-        // check if a friendship or pending request already exists
+        // Check if the user is attempting to send a friend request to themselves
+        if (friend.twitterId === user.twitterId) {
+            return {
+                status: Status.ERROR,
+                message: '(sendFriendRequest) You cannot send a friend request to yourself.',
+            };
+        }
+
+        // fetch existing friendship data
         const existingFriendship = await FriendModel.findOne({
             $or: [
                 { userId1: user._id, userId2: friend._id },
@@ -134,8 +142,8 @@ export const sendFriendRequest = async (userId: string, friendId: string): Promi
             ],
         });
 
+        // if exsitingFriendship found, check if status is rejected or not. if Rejected, simply set the status into Pending. else throw error
         if (existingFriendship) {
-            // Update status to PENDING if request was REJECTED; otherwise, return an error
             if (existingFriendship.status === FriendStatus.REJECTED) {
                 existingFriendship.status = FriendStatus.PENDING;
                 await existingFriendship.save();

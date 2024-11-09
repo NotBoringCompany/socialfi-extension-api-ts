@@ -426,8 +426,8 @@ router.post('/consume_energy_potion', async (req, res) => {
     }
 })
 
-router.get('/get_user_profile/:twitterId', async (req, res) => {
-    const { twitterId } = req.params;
+router.get('/get_user_profile/:id', async (req, res) => {
+    const { id } = req.params;
 
     try {
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'get_user_profile');
@@ -439,7 +439,7 @@ router.get('/get_user_profile/:twitterId', async (req, res) => {
             })
         }
 
-        const { status, message, data } = await getUserProfile(twitterId);
+        const { status, message, data } = await getUserProfile(id);
 
         return res.status(status).json({
             status,
