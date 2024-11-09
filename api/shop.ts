@@ -10,6 +10,7 @@ import { DiamondSource, ExtendedDiamondData, ExtendedXCookieData, XCookieSource 
 import { USD_TO_STARS_CONVERSION } from '../utils/constants/tg';
 import axios from 'axios';
 import { purchasePremiumWonderpass } from './wonderpass';
+import { SHOP_QUEUE } from '../utils/constants/shop';
 
 /**
  * Fetches all shop assets from the database and return them as a shop instance.
@@ -770,13 +771,14 @@ export const sendTelegramStarsInvoice = async (
             }
         }
 
+        const databaseInvoiceId = generateObjectId();
+
         // to ensure that only legit data is sent to the Telegram API, the asset data is fetched from the database.
         const payload = {
             chat_id: chatId,
             title: dbAsset.assetName,
             description: dbAsset.assetName,
-            // TO DO: cost in telegram stars (need the API).
-            payload: `"asset":"${dbAsset.assetName}","amt":1,"cost":"${USD_TO_STARS_CONVERSION(dbAsset.price.finalUsd)} TG Stars","curr":"TG Stars"`,
+            payload: `databaseInvoiceId: ${databaseInvoiceId},"asset":"${dbAsset.assetName}","amt":1,"cost":"${USD_TO_STARS_CONVERSION(dbAsset.price.finalUsd)} TG Stars","curr":"TG Stars"`,
             provider_token: '',
             // currency for telegram stars
             currency: 'XTR',
@@ -803,22 +805,16 @@ export const sendTelegramStarsInvoice = async (
             text: `This invoice will be deleted after 10 minutes. Please ensure to pay within the given time.`
         });
 
-        // delete invoice and reminder message after 10 seconds
-        setTimeout(async () => {
-            console.log(`(sendTelegramStarsInvoice) Deleting invoice after 10 minutes.`);
-
-            await axios.post(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/deleteMessage`, {
-                chat_id: chatId,
-                message_id: response.data.result.message_id
-            });
-
-            // also delete the reminder message
-            await axios.post(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/deleteMessage`, {
-                chat_id: chatId,
-                message_id: reminderResponse.data.result.message_id
-            });
-
-        }, 600000);
+        // add a job to delete the invoice and reminder messages after 10 minutes (or will be deleted manually if invoice is paid)
+        await SHOP_QUEUE.add('deleteTelegramInvoiceAndReminderMessage', {
+            chatId,
+            databaseInvoiceId: databaseInvoiceId.toString(),
+            invoiceMessageId: response.data.result.message_id,
+            reminderMessageId: reminderResponse.data.result.message_id
+        }, {
+            delay: 600000,
+            jobId: `delete-${chatId}-${databaseInvoiceId}`
+        });
 
         return {
             status: Status.SUCCESS,

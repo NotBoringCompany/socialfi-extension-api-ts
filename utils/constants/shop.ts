@@ -7,6 +7,7 @@ import { DiamondSource, ExtendedDiamondData, ExtendedXCookieData, XCookieSource 
 import { Food } from '../../models/food';
 import { Item } from '../../models/item';
 import { generateObjectId } from '../crypto';
+import axios from 'axios';
 
 /**
  * Creates a new Bull instance for shop asset purchases and processing.
@@ -222,3 +223,35 @@ SHOP_QUEUE.process('deliverShopAssetViaSuccessfulTelegramStarsPayment', async (j
         throw new Error(`(deliverShopAssetViaSuccessfulTelegramStarsPayment) Error delivering shop asset via successful Telegram Stars payment for user ${userId} in chat ${chatId}: ${err.message}`);
     }
 });
+
+/**
+ * Deletes any Telegram invoice and reminder message for a chat if the invoice is not paid after 10 minutes.
+ */
+SHOP_QUEUE.process('deleteTelegramInvoiceAndReminderMessage', async (job) => {
+    const { chatId, databaseInvoiceId, invoiceMessageId, reminderMessageId } = job.data;
+
+    console.log(`Deleting Telegram invoice and reminder message for chat ${chatId}`);
+
+    try {
+        // delete the invoice message
+        await axios.post(
+            `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/deleteMessage`,
+            {
+                chat_id: chatId,
+                message_id: invoiceMessageId,
+            }
+        );
+
+        // delete the reminder message
+        await axios.post(
+            `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/deleteMessage`,
+            {
+                chat_id: chatId,
+                message_id: reminderMessageId,
+            }
+        );
+    } catch (err: any) {
+        console.error(`(deleteTelegramInvoiceAndReminderMessage) Error deleting Telegram invoice and reminder message for chat ${chatId}: ${err.message}`);
+        throw new Error(`(deleteTelegramInvoiceAndReminderMessage) Error deleting Telegram invoice and reminder message for chat ${chatId}: ${err.message}`);
+    }
+})
