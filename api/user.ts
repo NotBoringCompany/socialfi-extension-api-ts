@@ -3301,7 +3301,7 @@ export const refreshKeyData = async (twitterId: string) => {
  */
 export const getUserProfile = async (id: string): Promise<ReturnValue<{ profile: UserProfile }>> => {
     try {
-        const user = await UserModel.findOne({ $or: [{ _id: id, twitterId: id }] });
+        const user = await UserModel.findOne({ $or: [{ _id: id }, { twitterId: id }] });
         if (!user) {
             return {
                 status: Status.ERROR,
