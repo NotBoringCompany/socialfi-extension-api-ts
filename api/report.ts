@@ -120,7 +120,7 @@ export const submitReport = async (data: ReportDTO): Promise<ReturnValue> => {
             };
         }
 
-        const reportedOn = await UserModel.findById({ twitterId: data.reportedOn });
+        const reportedOn = await UserModel.findOne({ twitterId: data.reportedOn });
         if (!reportedOn) {
             return {
                 status: Status.ERROR,
