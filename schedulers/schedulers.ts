@@ -5,7 +5,6 @@ import { checkDailyKOSRewardsQueue, checkWeeklyKOSRewardsQueue } from './kos';
 import { resetPOIItemsDataQueue, scheduleNextPOIItemDataReset } from './poi';
 import { calculateWeeklySquadRankingAndAddSquadLeaderboardQueue } from './squadLeaderboard';
 import { restoreUserCurrentEnergyAndResetRerollQueue, updateBeginnerRewardsDataQueue, updateDailyLoginRewardsDataQueue, updateUserEnergyPotionQueue } from './user';
-import { batchSendKICKQueue } from './web3';
 import { distributeWeeklyMVPRewardsQueue, updateCurrentWeeklyMVPRankingLeaderboardQueue } from './weeklyMVPReward';
 import {mailGarbageCollector} from './mail'
 

@@ -43,7 +43,6 @@ import * as dotenv from 'dotenv';
 import { getOwnLeaderboardRanking, getUserCurrentPoints } from './leaderboard';
 import { DEPLOYER_WALLET, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
 import { parseTelegramData, TelegramAuthData, validateTelegramData } from '../utils/telegram';
-import { sendKICKUponRegistration, updatePointsInContract } from './web3';
 import { ethers } from 'ethers';
 import { sendMailsToNewUser } from './mail';
 import { dayjs } from '../utils/dayjs';
@@ -446,9 +445,6 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
 
             await newUser.save();
 
-            // give the user some KICK tokens
-            const { status: kickStatus, message: kickMessage } = await sendKICKUponRegistration(address);
-
             // send any necessary mails to the new user (mails with `includeNewUsers` set to true)
             await sendMailsToNewUser(twitterId);
 
@@ -459,9 +455,6 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
                     userId: newUser._id,
                     twitterId,
                     loginType: loginType,
-                    // checks if KICK is sent successfully to the user; if not, no need to throw an error.
-                    sendKICKStatus: kickStatus,
-                    sendKICKMessage: kickMessage,
                 },
             };
         } else {
@@ -1387,9 +1380,6 @@ export const claimDailyRewards = async (twitterId: string, leaderboardName: stri
                 }
             }
         }
-
-        // update the user's points in the wonderbits contract
-        updatePointsInContract(twitterId);
 
         return {
             status: Status.SUCCESS,
@@ -2522,9 +2512,6 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
             },
         });
 
-        // give the user some KICK tokens
-        const { status: kickStatus, message: kickMessage } = await sendKICKUponRegistration(address);
-
         // send any necessary mails to the new user (mails with `includeNewUsers` set to true)
         await sendMailsToNewUser(twitterId);
 
@@ -2535,9 +2522,6 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
                 userId: user._id,
                 twitterId: user.twitterId,
                 loginType: loginType,
-                // checks if sending KICK is successful; no need to throw error if unsuccessful.
-                sendKICKStatus: kickStatus,
-                sendKICKMessage: kickMessage,
             },
         };
     } catch (err: any) {
@@ -3115,9 +3099,6 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
             });
 
             await newUser.save();
-
-            // give the user some KICK tokens
-            const { status: kickStatus, message: kickMessage } = await sendKICKUponRegistration(address);
 
             // send any necessary mails to the new user (mails with `includeNewUsers` set to true)
             await sendMailsToNewUser(String(telegramUser.id));

@@ -8,7 +8,6 @@ import { APPLY_TRAVELLING_BOOSTER_MIXPANEL_EVENT_HASH, BUY_ITEMS_IN_POI_SHOP_MIX
 import { getMainWallet } from '../api/user';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { UserWallet } from '../models/user';
-import { incrementEventCounterInContract } from '../api/web3';
 import { incrementProgressionByType } from '../api/quest';
 import { QuestRequirementType } from '../models/quest';
 import { POIShopActionItemData } from '../models/poi';
@@ -58,9 +57,6 @@ router.post('/travel_to_poi', async (req, res) => {
                 '_data': data
             });
 
-            // increment the event counter in the wonderbits contract.
-            incrementEventCounterInContract(validateData?.twitterId, TRAVEL_TO_POI_MIXPANEL_EVENT_HASH);
-
             incrementProgressionByType(QuestRequirementType.TRAVEL_POI, validateData?.twitterId, 1);
         }
 
@@ -101,9 +97,6 @@ router.post('/apply_travel_booster', async (req, res) => {
                     distinct_id: validateData?.twitterId,
                     '_booster': booster,
                 });
-    
-                // increment the event counter in the wonderbits contract.
-                incrementEventCounterInContract(validateData?.twitterId, APPLY_TRAVELLING_BOOSTER_MIXPANEL_EVENT_HASH);
             }
 
             incrementProgressionByType(QuestRequirementType.USE_TRAVEL_BOOSTER, validateData?.twitterId, 1);
@@ -252,9 +245,6 @@ router.post('/sell_items_in_poi_shop', async (req, res) => {
                     '_leaderboardName': leaderboardName,
                     '_data': data,
                 });
-    
-                // increment the event counter in the wonderbits contract.
-                incrementEventCounterInContract(validateData?.twitterId, SELL_ITEMS_IN_POI_SHOP_MIXPANEL_EVENT_HASH);
             }
 
             const amount = (items as POIShopActionItemData[]).reduce((total, currentItem) => currentItem?.amount ? total + currentItem.amount : 0, 0);
@@ -299,9 +289,6 @@ router.post('/buy_items_in_poi_shop', async (req, res) => {
                     '_type': 'Buy Item In POI Shop',
                     '_data': data,
                 });
-    
-                // increment the event counter in the wonderbits contract.
-                incrementEventCounterInContract(validateData?.twitterId, BUY_ITEMS_IN_POI_SHOP_MIXPANEL_EVENT_HASH);
             }
 
             const amount = (items as POIShopActionItemData[]).reduce((total, currentItem) => currentItem?.amount ? total + currentItem.amount : 0, 0);

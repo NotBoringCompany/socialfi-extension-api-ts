@@ -21,7 +21,6 @@ import { ExtendedXCookieData, UserWallet, XCookieSource } from '../models/user';
 import { DEPLOYER_WALLET, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
 import { generateHashSalt, generateWonderbitsDataHash } from '../utils/crypto';
 import { ethers } from 'ethers';
-import { updatePointsInContract } from './web3';
 import { incrementProgressionByType } from './quest';
 import { QuestRequirementType } from '../models/quest';
 
@@ -1171,9 +1170,6 @@ export const sellItemsInPOIShop = async (
                 }
             }
         }
-
-        // update the user's points in the wonderbits contract
-        updatePointsInContract(twitterId);
 
         return {
             status: Status.SUCCESS,

@@ -8,7 +8,6 @@ import { ExtendedXCookieData, UserWallet, XCookieSource } from '../models/user';
 import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS, GET_SEASON_0_REFERRAL_REWARDS } from '../utils/constants/user';
 import { getUserCurrentPoints } from './leaderboard';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
-import { updatePointsInContract } from './web3';
 import { updateReferredUsersData } from './user';
 
 /**
@@ -263,9 +262,6 @@ export const claimReferralRewards = async (twitterId: string): Promise<ReturnVal
                 }
             }
         }
-
-        // update the user's points in the wonderbits contract
-        updatePointsInContract(twitterId);
 
         return {
             status: Status.SUCCESS,

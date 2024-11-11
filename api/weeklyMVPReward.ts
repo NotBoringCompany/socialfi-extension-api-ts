@@ -15,7 +15,6 @@ import * as dotenv from 'dotenv';
 import { getUserCurrentPoints } from './leaderboard';
 import { DEPLOYER_WALLET, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
 import { ethers } from 'ethers';
-import { updatePointsInContract } from './web3';
 import { updateReferredUsersData } from './user';
 
 dotenv.config();
@@ -569,9 +568,6 @@ export const claimWeeklyMVPRewards = async (twitterId: string): Promise<ReturnVa
                 }
             }
         }
-
-        // update the user's points in the wonderbits contract
-        updatePointsInContract(twitterId);
 
         return {
             status: Status.SUCCESS,

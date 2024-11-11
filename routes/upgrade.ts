@@ -3,7 +3,7 @@ import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { universalAssetUpgrade } from '../api/upgrade';
 import { allowMixpanel, mixpanel } from '../utils/mixpanel';
-import { incrementEventCounterInContract } from '../api/web3';
+
 import { UNIVERSAL_UGPRADE_ASSET_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 
 const router = express.Router();
@@ -31,7 +31,7 @@ router.post('/universal_asset_upgrade', async (req, res) => {
             });
 
             // increment the event counter in the wonderbits contract.
-            incrementEventCounterInContract(validateData?.twitterId, UNIVERSAL_UGPRADE_ASSET_MIXPANEL_EVENT_HASH);
+            
         }
 
         return res.status(status).json({

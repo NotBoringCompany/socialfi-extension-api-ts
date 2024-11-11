@@ -14,7 +14,6 @@ import { getMainWallet } from '../api/user';
 import { APPLY_GATHERING_BOOSTER_MIXPANEL_EVENT_HASH, APPLY_ISLAND_MILESTONE, CLAIM_RESOURCES_MIXPANEL_EVENT_HASH, EVOLVE_ISLAND_MIXPANEL_EVENT_HASH, PLACE_BIT_MIXPANEL_EVENT_HASH, REMOVE_ISLAND_MIXPANEL_EVENT_HASH, REROLL_ISLAND_MILESTONE_BONUS, UNPLACE_BIT_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { UserWallet } from '../models/user';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
-import { incrementEventCounterInContract } from '../api/web3';
 import { QuestRequirementType } from '../models/quest';
 import { incrementProgressionByType } from '../api/quest';
 
@@ -59,9 +58,6 @@ router.post('/place_bit', async (req, res) => {
                     distinct_id: validateData?.twitterId,
                     '_data': data,
                 });
-    
-                // increment the event counter in the wonderbits contract.
-                incrementEventCounterInContract(validateData?.twitterId, PLACE_BIT_MIXPANEL_EVENT_HASH);
             }
 
             incrementProgressionByType(QuestRequirementType.PLACE_BIT, validateData?.twitterId, 1);
@@ -100,9 +96,6 @@ router.post('/unplace_bit', async (req, res) => {
                 distinct_id: validateData?.twitterId,
                 '_data': data,
             });
-
-            // increment the event counter in the wonderbits contract.
-            incrementEventCounterInContract(validateData?.twitterId, UNPLACE_BIT_MIXPANEL_EVENT_HASH);
         }
 
         return res.status(status).json({
@@ -138,9 +131,6 @@ router.post('/remove_island', async (req, res) => {
                 distinct_id: validateData?.twitterId,
                 '_data': data
             });
-
-            // increment the event counter in the wonderbits contract.
-            incrementEventCounterInContract(validateData?.twitterId, REMOVE_ISLAND_MIXPANEL_EVENT_HASH);
         }
 
         return res.status(status).json({
@@ -196,9 +186,6 @@ router.post('/evolve_island', async (req, res) => {
                 '_type': 'Evolve Island',
                 '_data': data,
             });
-
-            // increment the event counter in the wonderbits contract.
-            incrementEventCounterInContract(validateData?.twitterId, EVOLVE_ISLAND_MIXPANEL_EVENT_HASH);
         }
 
         return res.status(status).json({
@@ -275,9 +262,6 @@ router.post('/claim_resources', async (req, res) => {
                 distinct_id: validateData?.twitterId,
                 '_data': data,
             });
-
-            // increment the event counter in the wonderbits contract.
-            incrementEventCounterInContract(validateData?.twitterId, CLAIM_RESOURCES_MIXPANEL_EVENT_HASH);
         }
 
         return res.status(status).json({
@@ -505,9 +489,6 @@ router.post('/apply_gathering_progress_booster', async (req, res) => {
                     distinct_id: validateData?.twitterId,
                     '_data': data,
                 });
-
-                // increment the event counter in the wonderbits contract.
-                incrementEventCounterInContract(validateData?.twitterId, APPLY_GATHERING_BOOSTER_MIXPANEL_EVENT_HASH);
             }
 
             incrementProgressionByType(QuestRequirementType.USE_GATHERING_BOOSTER, validateData?.twitterId, boosters?.length ?? 1);
@@ -652,9 +633,6 @@ router.post('/reroll_bonus_milestone_reward', async (req, res) => {
                 distinct_id: validateData?.twitterId,
                 '_data': data,
             });
-
-            // increment the event counter in the wonderbits contract.
-            incrementEventCounterInContract(validateData?.twitterId, REROLL_ISLAND_MILESTONE_BONUS);
         }
         
         return res.status(status).json({
@@ -688,9 +666,6 @@ router.post('/apply_island_tapping_data', async (req, res) => {
                     distinct_id: validateData?.twitterId,
                     '_data': data,
                 });
-    
-                // increment the event counter in the wonderbits contract.
-                incrementEventCounterInContract(validateData?.twitterId, APPLY_ISLAND_MILESTONE);
             }
 
             incrementProgressionByType(QuestRequirementType.TAPPING_MILESTONE, validateData?.twitterId, 1);

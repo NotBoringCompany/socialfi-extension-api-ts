@@ -17,7 +17,6 @@ import { UserWallet } from '../models/user';
 import { BULK_FEED_BIT_MIXPANEL_EVENT_HASH, EVOLVE_BIT_MIXPANEL_EVENT_HASH, FEED_BIT_MIXPANEL_EVENT_HASH, RELEASE_BIT_MIXPANEL_EVENT_HASH, RENAME_BIT_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { generateHashSalt, generateWonderbitsDataHash } from '../utils/crypto';
 import { ethers } from 'ethers';
-import { incrementEventCounterInContract } from '../api/web3';
 import { incrementProgressionByType } from '../api/quest';
 import { QuestRequirementType } from '../models/quest';
 
@@ -63,9 +62,6 @@ router.post('/rename_bit', async (req, res) => {
                 distinct_id: validateData?.twitterId,
                 '_data': data,
             });
-
-            // increment the event counter in the wonderbits contract.
-            incrementEventCounterInContract(validateData?.twitterId, RENAME_BIT_MIXPANEL_EVENT_HASH);
         }
 
         return res.status(status).json({
@@ -101,9 +97,6 @@ router.post('/release_bit', async (req, res) => {
                 distinct_id: validateData?.twitterId,
                 '_data': data,
             });
-
-            // increment the event counter in the wonderbits contract.
-            incrementEventCounterInContract(validateData?.twitterId, RELEASE_BIT_MIXPANEL_EVENT_HASH);
         }
 
         return res.status(status).json({
@@ -140,9 +133,6 @@ router.post('/evolve_bit', async (req, res) => {
                 '_type': 'Evolve Bit',
                 '_data': data,
             });
-
-            // increment the event counter in the wonderbits contract.
-            incrementEventCounterInContract(validateData?.twitterId, EVOLVE_BIT_MIXPANEL_EVENT_HASH);
         }
 
         return res.status(status).json({
@@ -178,9 +168,6 @@ router.post('/feed_bit', async (req, res) => {
                 distinct_id: validateData?.twitterId,
                 '_data': data
             });
-
-            // increment the event counter in the wonderbits contract.
-            incrementEventCounterInContract(validateData?.twitterId, FEED_BIT_MIXPANEL_EVENT_HASH);
 
             incrementProgressionByType(QuestRequirementType.FEED_BIT, validateData?.twitterId, 1);
         }
@@ -218,9 +205,6 @@ router.post('/bulk_feed_bits', async (req, res) => {
                 distinct_id: validateData?.twitterId,
                 '_data': data
             });
-
-            // increment the event counter in the wonderbits contract.
-            incrementEventCounterInContract(validateData?.twitterId, BULK_FEED_BIT_MIXPANEL_EVENT_HASH);
 
             incrementProgressionByType(QuestRequirementType.FEED_BIT, validateData?.twitterId, data?.foodUsed ?? 1);
         }

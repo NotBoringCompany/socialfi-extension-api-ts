@@ -43,7 +43,7 @@ router.post('/increment_event_counter_in_contract', async (req, res) => {
             })
         }
 
-        const { status, message, data } = await incrementEventCounterInContract(validateData?.twitterId, mixpanelEventHash);
+        const { status, message, data } = await 
 
         return res.status(status).json({
             status,

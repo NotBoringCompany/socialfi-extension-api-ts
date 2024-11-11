@@ -7,7 +7,6 @@ import { getMainWallet } from '../api/user';
 import { UserWallet } from '../models/user';
 import { OPEN_CHEST_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
-import { incrementEventCounterInContract } from '../api/web3';
 
 const router = express.Router();
 
@@ -32,9 +31,6 @@ router.post('/open_chest', async (req, res) => {
                 '_tweetId': tweetId,
                 '_data': data,
             });
-
-            // increment the event counter in the wonderbits contract.
-            incrementEventCounterInContract(validateData?.twitterId, OPEN_CHEST_MIXPANEL_EVENT_HASH);
         }
 
         return res.status(status).json({
