@@ -15,7 +15,6 @@ export const IslandSchema = new mongoose.Schema({
     purchaseDate: Number,
     obtainMethod: String,
     currentLevel: Number,
-    currentTax: Number,
     placedBitIds: Array,
     traits: Array,
     islandResourceStats: {
