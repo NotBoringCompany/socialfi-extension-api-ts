@@ -19,6 +19,9 @@ export const ENERGY_POTION_RECOVERY = 250;
 /** Base number of reroll milestone chance */
 export const BASE_REROLL_BONUS_MILESTONE = 6;
 
+/** Maximum number of Friends each user can have */
+export const MAX_FRIENDS_CAP = 50;
+
 /**
  * Gets the daily login rewards. Currently only supports xCookies and leaderboard points.
  * 

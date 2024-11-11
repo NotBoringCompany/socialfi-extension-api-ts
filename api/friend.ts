@@ -1,6 +1,7 @@
 import { FriendStatus } from '../models/friend';
 import { UserProfile } from '../models/user';
 import { FriendModel, UserModel } from '../utils/constants/db';
+import { MAX_FRIENDS_CAP } from '../utils/constants/user';
 import { generateObjectId } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
 import { getUserProfile } from './user';
@@ -197,6 +198,20 @@ export const acceptFriendRequest = async (userId: string, friendId: string): Pro
                 message: '(acceptFriendRequest) Friend not found.',
             };
         }
+
+        // Check if user has reached the maximum friend cap
+        const userFriendsCount = await FriendModel.countDocuments({
+            $or: [
+                { userId1: user._id, status: FriendStatus.ACCEPTED },
+                { userId2: user._id, status: FriendStatus.ACCEPTED }
+            ],
+        });
+        if (userFriendsCount >= MAX_FRIENDS_CAP) {
+            return {
+                status: Status.ERROR,
+                message: '(acceptFriendRequest) You have reached the maximum friend limit. Please remove some friends to add new ones.',
+            };
+        }        
 
         // find the pending friend request
         const friendRequest = await FriendModel.findOne({
