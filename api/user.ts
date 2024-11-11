@@ -203,7 +203,6 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
             const islandStatsModifiers: IslandStatsModifiers = {
                 resourceCapModifiers: [],
                 gatheringRateModifiers: [],
-                earningRateModifiers: [],
             };
 
             // check the bit's traits
@@ -219,13 +218,7 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
                     value: 1.01,
                 };
 
-                const earningRateModifier: Modifier = {
-                    origin: `Bit ID ${bitData.bit.bitId}'s Trait: Influential`,
-                    value: 1.01,
-                };
-
                 islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
-                islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
             }
 
             // if the bit has antagonistic trait
@@ -236,13 +229,7 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
                     value: 0.99,
                 };
 
-                const earningRateModifier: Modifier = {
-                    origin: `Bit ID ${bitData.bit.bitId}'s Trait: Antagonistic`,
-                    value: 0.99,
-                };
-
                 islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
-                islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
             }
 
             // if the bit has famous trait
@@ -253,13 +240,7 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
                     value: 1.005,
                 };
 
-                const earningRateModifier: Modifier = {
-                    origin: `Bit ID ${bitData.bit.bitId}'s Trait: Famous`,
-                    value: 1.005,
-                };
-
                 islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
-                islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
             }
 
             // if the bit has mannerless trait
@@ -270,13 +251,7 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
                     value: 0.995,
                 };
 
-                const earningRateModifier: Modifier = {
-                    origin: `Bit ID ${bitData.bit.bitId}'s Trait: Mannerless`,
-                    value: 0.995,
-                };
-
                 islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
-                islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
             }
 
             // creates a free primal island for the user
@@ -2840,7 +2815,6 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
             const islandStatsModifiers: IslandStatsModifiers = {
                 resourceCapModifiers: [],
                 gatheringRateModifiers: [],
-                earningRateModifiers: [],
             };
 
             // check the bit's traits
@@ -2856,13 +2830,7 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                     value: 1.01,
                 };
 
-                const earningRateModifier: Modifier = {
-                    origin: `Bit ID ${bitData.bit.bitId}'s Trait: Influential`,
-                    value: 1.01,
-                };
-
                 islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
-                islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
             }
 
             // if the bit has antagonistic trait
@@ -2873,13 +2841,7 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                     value: 0.99,
                 };
 
-                const earningRateModifier: Modifier = {
-                    origin: `Bit ID ${bitData.bit.bitId}'s Trait: Antagonistic`,
-                    value: 0.99,
-                };
-
                 islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
-                islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
             }
 
             // if the bit has famous trait
@@ -2890,13 +2852,7 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                     value: 1.005,
                 };
 
-                const earningRateModifier: Modifier = {
-                    origin: `Bit ID ${bitData.bit.bitId}'s Trait: Famous`,
-                    value: 1.005,
-                };
-
                 islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
-                islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
             }
 
             // if the bit has mannerless trait
@@ -2907,13 +2863,7 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                     value: 0.995,
                 };
 
-                const earningRateModifier: Modifier = {
-                    origin: `Bit ID ${bitData.bit.bitId}'s Trait: Mannerless`,
-                    value: 0.995,
-                };
-
                 islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
-                islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
             }
 
             // creates a free primal island for the user

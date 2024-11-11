@@ -38,29 +38,6 @@ SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE.process('removeIslandGatheringRateModifie
 });
 
 /**
- * Remove any expired earning rate modifier effects from a consumed synthesizing item.
- */
-SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE.process('removeIslandEarningRateModifier', async (job) => {
-    const { islandId, owner, origin, endTimestamp } = job.data;
-
-    try {
-        // directly remove earning rate modifier with the given `origin` from the island
-        const result = await IslandModel.updateOne({ islandId, owner }, {
-            $pull: {
-                'islandStatsModifiers.earningRateModifiers': { origin }
-            }
-        });
-
-        if (result.modifiedCount === 0) {
-            throw new Error(`No earning rate modifier found for island ${islandId} from ${origin}`);
-        }
-    
-    } catch (err: any) {
-        console.error(`Error removing earning rate modifier effect from island ${islandId} from ${origin}: ${err.message}`);
-    }
-});
-
-/**
  * Remove any expired energy rate modifier effects for placed bits from a consumed synthesizing item.
  */
 SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE.process('removeBitEnergyDepletionRateModifier', async (job) => {
@@ -397,10 +374,6 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 value: null
             },
-            earningRateModifier: {
-                active: false,
-                value: null
-            },
             placedBitsEnergyDepletionRateModifier: {
                 active: false,
                 allowLaterPlacedBitsToObtainEffect: true,
@@ -507,10 +480,6 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 value: null
             },
             gatheringRateModifier: {
-                active: false,
-                value: null
-            },
-            earningRateModifier: {
                 active: false,
                 value: null
             },
@@ -623,10 +592,6 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 value: null
             },
-            earningRateModifier: {
-                active: false,
-                value: null
-            },
             placedBitsEnergyDepletionRateModifier: {
                 active: false,
                 allowLaterPlacedBitsToObtainEffect: true,
@@ -733,10 +698,6 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 value: null
             },
             gatheringRateModifier: {
-                active: false,
-                value: null
-            },
-            earningRateModifier: {
                 active: false,
                 value: null
             },
@@ -849,10 +810,6 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 value: null
             },
-            earningRateModifier: {
-                active: false,
-                value: null
-            },
             placedBitsEnergyDepletionRateModifier: {
                 active: false,
                 allowLaterPlacedBitsToObtainEffect: true,
@@ -959,10 +916,6 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 value: 'all'
             },
             gatheringRateModifier: {
-                active: false,
-                value: null
-            },
-            earningRateModifier: {
                 active: false,
                 value: null
             },
@@ -1075,10 +1028,6 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 value: null
             },
-            earningRateModifier: {
-                active: false,
-                value: null
-            },
             placedBitsEnergyDepletionRateModifier: {
                 active: false,
                 allowLaterPlacedBitsToObtainEffect: true,
@@ -1185,10 +1134,6 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 value: 'all'
             },
             gatheringRateModifier: {
-                active: false,
-                value: null
-            },
-            earningRateModifier: {
                 active: false,
                 value: null
             },
@@ -1302,10 +1247,6 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: true,
                 value: 2.5
             },
-            earningRateModifier: {
-                active: true,
-                value: 2.5
-            },
             placedBitsEnergyDepletionRateModifier: {
                 active: true,
                 allowLaterPlacedBitsToObtainEffect: true,
@@ -1413,10 +1354,6 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 value: null
             },
             gatheringRateModifier: {
-                active: true,
-                value: 5
-            },
-            earningRateModifier: {
                 active: true,
                 value: 5
             },
@@ -1530,10 +1467,6 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: true,
                 value: 7.5
             },
-            earningRateModifier: {
-                active: true,
-                value: 7.5
-            },
             placedBitsEnergyDepletionRateModifier: {
                 active: true,
                 allowLaterPlacedBitsToObtainEffect: true,
@@ -1642,10 +1575,6 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
             gatheringRateModifier: {
                 active: false,
                 value: null
-            },
-            earningRateModifier: {
-                active: false,
-                value: null,
             },
             placedBitsEnergyDepletionRateModifier: {
                 active: false,
@@ -1756,10 +1685,6 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 value: null
             },
-            earningRateModifier: {
-                active: false,
-                value: null,
-            },
             placedBitsEnergyDepletionRateModifier: {
                 active: false,
                 allowLaterPlacedBitsToObtainEffect: true,
@@ -1868,10 +1793,6 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
             gatheringRateModifier: {
                 active: false,
                 value: null
-            },
-            earningRateModifier: {
-                active: false,
-                value: null,
             },
             placedBitsEnergyDepletionRateModifier: {
                 active: false,
@@ -1982,10 +1903,6 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 value: null
             },
-            earningRateModifier: {
-                active: false,
-                value: null,
-            },
             placedBitsEnergyDepletionRateModifier: {
                 active: false,
                 allowLaterPlacedBitsToObtainEffect: true,
@@ -2094,10 +2011,6 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
             gatheringRateModifier: {
                 active: false,
                 value: null
-            },
-            earningRateModifier: {
-                active: false,
-                value: null,
             },
             placedBitsEnergyDepletionRateModifier: {
                 active: false,
@@ -2208,10 +2121,6 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
                 active: false,
                 value: null
             },
-            earningRateModifier: {
-                active: false,
-                value: null,
-            },
             placedBitsEnergyDepletionRateModifier: {
                 active: false,
                 allowLaterPlacedBitsToObtainEffect: true,
@@ -2320,10 +2229,6 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
             gatheringRateModifier: {
                 active: false,
                 value: null
-            },
-            earningRateModifier: {
-                active: false,
-                value: null,
             },
             placedBitsEnergyDepletionRateModifier: {
                 active: false,

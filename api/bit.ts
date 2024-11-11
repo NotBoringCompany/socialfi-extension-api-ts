@@ -286,21 +286,15 @@ export const releaseBit = async (twitterId: string, bitId: number): Promise<Retu
 
             // check if the islandStatsModifiers contain any modifiers related to this bit
             const gatheringRateModifiers = islandStatsModifiers?.gatheringRateModifiers as Modifier[];
-            const earningRateModifiers = islandStatsModifiers?.earningRateModifiers as Modifier[];
             const resourceCapModifiers = islandStatsModifiers?.resourceCapModifiers as Modifier[];
 
             // check if the `gatheringRateModifiers` contain a modifier related to this bit
             const gatheringRateModifierIndex = gatheringRateModifiers.findIndex((modifier: Modifier) => modifier.origin.includes(`Bit ID #${bitId}`));
-            const earningRateModifierIndex = earningRateModifiers.findIndex((modifier: Modifier) => modifier.origin.includes(`Bit ID #${bitId}`));
             const resourceCapModifierIndex = resourceCapModifiers.findIndex((modifier: Modifier) => modifier.origin.includes(`Bit ID #${bitId}`));
 
             // if the modifier exists, remove it
             if (gatheringRateModifierIndex !== -1) {
                 islandUpdateOperations.$pull['islandStatsModifiers.gatheringRateModifiers'] = gatheringRateModifiers[gatheringRateModifierIndex];
-            }
-
-            if (earningRateModifierIndex !== -1) {
-                islandUpdateOperations.$pull['islandStatsModifiers.earningRateModifiers'] = earningRateModifiers[earningRateModifierIndex];
             }
 
             if (resourceCapModifierIndex !== -1) {
@@ -323,12 +317,10 @@ export const releaseBit = async (twitterId: string, bitId: number): Promise<Retu
 
                     // check if the bitStatsModifiers contain any modifiers related to this bit
                     const gatheringRateModifiers = otherBitStatsModifiers?.gatheringRateModifiers as Modifier[];
-                    const earningRateModifiers = otherBitStatsModifiers?.earningRateModifiers as Modifier[];
                     const energyRateModifiers = otherBitStatsModifiers?.energyRateModifiers as Modifier[];
                     const foodConsumptionEfficiencyModifiers = otherBitStatsModifiers?.foodConsumptionEfficiencyModifiers as Modifier[];
 
                     const gatheringRateModifierIndex = gatheringRateModifiers.findIndex((modifier: Modifier) => modifier.origin.includes(`Bit ID #${bitId}`));
-                    const earningRateModifierIndex = earningRateModifiers.findIndex((modifier: Modifier) => modifier.origin.includes(`Bit ID #${bitId}`));
                     const energyRateModifierIndex = energyRateModifiers.findIndex((modifier: Modifier) => modifier.origin.includes(`Bit ID #${bitId}`));
                     const foodConsumptionEfficiencyModifierIndex = foodConsumptionEfficiencyModifiers.findIndex((modifier: Modifier) => modifier.origin.includes(`Bit ID #${bitId}`));
 
@@ -338,18 +330,6 @@ export const releaseBit = async (twitterId: string, bitId: number): Promise<Retu
                             bitId: otherBit.bitId,
                             updateOperations: {
                                 $pull: { 'bitStatsModifiers.gatheringRateModifiers': gatheringRateModifiers[gatheringRateModifierIndex] },
-                                $inc: {},
-                                $set: {},
-                                $push: {}
-                            }
-                        });
-                    }
-
-                    if (earningRateModifierIndex !== -1) {
-                        bitUpdateOperations.push({
-                            bitId: otherBit.bitId,
-                            updateOperations: {
-                                $pull: { 'bitStatsModifiers.earningRateModifiers': earningRateModifiers[earningRateModifierIndex] },
                                 $inc: {},
                                 $set: {},
                                 $push: {}
@@ -515,18 +495,11 @@ export const feedBit = async (twitterId: string, bitId: number, foodType: FoodTy
             value: 1 - (gatheringRateReduction / 100)
         }
 
-        const earningRateModifier: Modifier = {
-            origin: 'Energy Threshold Reduction',
-            value: 1 - (earningRateReduction / 100)
-        }
-
         // update the bit's `statsModifiers` with the new modifiers. check first if the `bitStatsModifiers` already has modifiers called `Energy Threshold Reduction`
         const gatheringRateModifiers = bit.bitStatsModifiers?.gatheringRateModifiers;
-        const earningRateModifiers = bit.bitStatsModifiers?.earningRateModifiers;
 
         // check if the `gatheringRateModifiers` already has a modifier called `Energy Threshold Reduction`
         const gatheringRateModifierIndex = gatheringRateModifiers?.findIndex((modifier: Modifier) => modifier.origin === 'Energy Threshold Reduction');
-        const earningRateModifierIndex = earningRateModifiers?.findIndex((modifier: Modifier) => modifier.origin === 'Energy Threshold Reduction');
 
         // if the modifier exists, update it; if not, push it
         if (gatheringRateModifierIndex !== -1) {
@@ -540,21 +513,10 @@ export const feedBit = async (twitterId: string, bitId: number, foodType: FoodTy
             bitUpdateOperations.$push['bitStatsModifiers.gatheringRateModifiers'] = gatheringRateModifier;
         }
 
-        if (earningRateModifierIndex !== -1) {
-            // if the new earning rate modifier is 1, remove the modifier
-            if (earningRateModifier.value === 1) {
-                bitUpdateOperations.$pull['bitStatsModifiers.earningRateModifiers'] = { origin: 'Energy Threshold Reduction' };
-            } else {
-                bitUpdateOperations.$set[`bitStatsModifiers.earningRateModifiers.$[elem].value`] = earningRateModifier.value;
-            }
-        } else {
-            bitUpdateOperations.$push['bitStatsModifiers.earningRateModifiers'] = earningRateModifier;
-        }
-
         let bitUpdateOptions = {};
 
-        // set the array filters for the bit update operations if gathering rate and earning rate modifier values are not 1
-        if (gatheringRateModifier.value !== 1 && earningRateModifier.value !== 1) {
+        // set the array filters for the bit update operations if gathering rate modifier value is not 1
+        if (gatheringRateModifier.value !== 1) {
             bitUpdateOptions = { arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }] };
         }
 
@@ -638,7 +600,7 @@ export const bulkFeedBits = async (userId: string, foodType: FoodType, bitIds: n
             // check if the current energy is above the thresholds defined by `ENERGY_THRESHOLD_REDUCTIONS`. if so, check for prev. negative modifiers and update them.
             // here, we assume that `currentEnergy` is still the same because it was called before updating it, so we use `currentEnergy` instead of `currentEnergy + actualToReplenish`
             const currentEnergy: number = bit.farmingStats?.currentEnergy + actualToReplenish;
-            const { gatheringRateReduction, earningRateReduction } = ENERGY_THRESHOLD_REDUCTIONS(currentEnergy);
+            const { gatheringRateReduction } = ENERGY_THRESHOLD_REDUCTIONS(currentEnergy);
 
             // Initialize updateOperations
             let updateOperations = [];
@@ -649,18 +611,11 @@ export const bulkFeedBits = async (userId: string, foodType: FoodType, bitIds: n
                 value: 1 - (gatheringRateReduction / 100)
             }
 
-            const earningRateModifier: Modifier = {
-                origin: 'Energy Threshold Reduction',
-                value: 1 - (earningRateReduction / 100)
-            }
-
             // update the bit's `statsModifiers` with the new modifiers. check first if the `bitStatsModifiers` already has modifiers called `Energy Threshold Reduction`
             const gatheringRateModifiers = bit.bitStatsModifiers?.gatheringRateModifiers || [];
-            const earningRateModifiers = bit.bitStatsModifiers?.earningRateModifiers || [];
 
             // check if the `gatheringRateModifiers` already has a modifier called `Energy Threshold Reduction`
             const gatheringRateModifierIndex = gatheringRateModifiers?.findIndex((modifier: Modifier) => modifier.origin === 'Energy Threshold Reduction');
-            const earningRateModifierIndex = earningRateModifiers?.findIndex((modifier: Modifier) => modifier.origin === 'Energy Threshold Reduction');
 
             // if the modifier exists, update it; if not, push it
             if (gatheringRateModifierIndex !== -1) {
@@ -716,54 +671,6 @@ export const bulkFeedBits = async (userId: string, foodType: FoodType, bitIds: n
                                 $push: {
                                     'bitStatsModifiers.gatheringRateModifiers':
                                         gatheringRateModifier,
-                                },
-                            },
-                        },
-                    });
-                }
-            }
-
-            // at this point, we've already updated the gathering rate modifier AND the energy. We don't need to update the energy anymore.
-            if (earningRateModifierIndex !== -1) {
-                // if the new earning rate modifier is 1, remove the modifier
-                if (earningRateModifier.value === 1) {
-                    updateOperations.push({
-                        updateOne: {
-                            filter: { bitId: bit.bitId },
-                            update: {
-                                $pull: {
-                                    'bitStatsModifiers.earningRateModifiers': {
-                                        origin: 'Energy Threshold Reduction',
-                                    },
-                                },
-                            },
-                        },
-                    });
-                // if the new earning rate modifier is not 1, update it
-                } else {
-                    updateOperations.push({
-                        updateOne: {
-                            filter: { bitId: bit.bitId },
-                            update: {
-                                $set: {
-                                    'bitStatsModifiers.earningRateModifiers.$[elem].value':
-                                        earningRateModifier.value,
-                                },
-                            },
-                            arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }],
-                        },
-                    });
-                }
-            } else {
-                // if the new earning rate modifier is not 1, push the modifier, else, do nothing (since energy is already updated)
-                if (earningRateModifier.value !== 1) {
-                    updateOperations.push({
-                        updateOne: {
-                            filter: { bitId: bit.bitId },
-                            update: {
-                                $push: {
-                                    'bitStatsModifiers.earningRateModifiers':
-                                        earningRateModifier,
                                 },
                             },
                         },
@@ -853,7 +760,7 @@ export const depleteEnergy = async (): Promise<void> => {
             const newEnergy = Math.max(currentEnergy - depletionRate, 0);
 
             // check if the new energy goes below a certain threshold
-            const { gatheringRateReduction, earningRateReduction } =
+            const { gatheringRateReduction } =
                 ENERGY_THRESHOLD_REDUCTIONS(newEnergy);
 
             let updateOperations = [];
@@ -863,24 +770,12 @@ export const depleteEnergy = async (): Promise<void> => {
                 value: 1 - gatheringRateReduction / 100,
             };
 
-            const earningRateModifier: Modifier = {
-                origin: 'Energy Threshold Reduction',
-                value: 1 - earningRateReduction / 100,
-            };
-
             // update the bit's `statsModifiers` with the new modifiers. if the `bitStatsModifiers` already has modifiers called `Energy Threshold Reduction`, overwrite them, else push them
             const gatheringRateModifiers = bit.bitStatsModifiers
                 ?.gatheringRateModifiers as Modifier[];
-            const earningRateModifiers = bit.bitStatsModifiers
-                ?.earningRateModifiers as Modifier[];
 
             // check if the `gatheringRateModifiers` already has a modifier called `Energy Threshold Reduction`
             const gatheringRateModifierIndex = gatheringRateModifiers?.findIndex(
-                (modifier: Modifier) =>
-                    modifier.origin === 'Energy Threshold Reduction'
-            );
-            // check if the `earningRateModifiers` already has a modifier called `Energy Threshold Reduction`
-            const earningRateModifierIndex = earningRateModifiers?.findIndex(
                 (modifier: Modifier) =>
                     modifier.origin === 'Energy Threshold Reduction'
             );
@@ -964,71 +859,6 @@ export const depleteEnergy = async (): Promise<void> => {
                             },
                         },
                     });
-                }
-            }
-
-            // at this point, we've already updated the gathering rate modifier AND the energy. We don't need to update the energy anymore.
-            if (earningRateModifierIndex !== -1) {
-                // if the new earning rate modifier is 1, remove modifier
-                if (earningRateModifier.value === 1) {
-                    console.log(
-                        `Bit ID ${bit.bitId} - earning rate modifier exists AND value is 1. removing modifier`
-                    );
-
-                    updateOperations.push({
-                        updateOne: {
-                            filter: { bitId: bit.bitId },
-                            update: {
-                                $pull: {
-                                    'bitStatsModifiers.earningRateModifiers': {
-                                        origin: 'Energy Threshold Reduction',
-                                    },
-                                },
-                            },
-                        },
-                    });
-                    // if the new earning rate modifier is not 1, update it
-                } else {
-                    console.log(
-                        `Bit ID ${bit.bitId} - earning rate modifier exists AND value is not 1. updating modifier`
-                    );
-
-                    updateOperations.push({
-                        updateOne: {
-                            filter: { bitId: bit.bitId },
-                            update: {
-                                $set: {
-                                    'bitStatsModifiers.earningRateModifiers.$[elem].value':
-                                        earningRateModifier.value,
-                                },
-                            },
-                            arrayFilters: [{ 'elem.origin': 'Energy Threshold Reduction' }],
-                        },
-                    });
-                }
-                // if the modifier doesn't exist, push it
-            } else {
-                // if the new earning rate modifier is not 1, push the modifier, else, do nothing (since energy is already updated)
-                if (earningRateModifier.value !== 1) {
-                    console.log(
-                        `Bit ID ${bit.bitId} - earning rate modifier does not exist AND value is not 1. pushing modifier`
-                    );
-
-                    updateOperations.push({
-                        updateOne: {
-                            filter: { bitId: bit.bitId },
-                            update: {
-                                $push: {
-                                    'bitStatsModifiers.earningRateModifiers':
-                                        earningRateModifier,
-                                },
-                            },
-                        },
-                    });
-                } else {
-                    console.log(
-                        `Bit ID ${bit.bitId} - earning rate modifier does not exist AND value is 1. doing nothing.`
-                    );
                 }
             }
 

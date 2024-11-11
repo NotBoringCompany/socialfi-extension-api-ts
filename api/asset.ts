@@ -693,10 +693,6 @@ export const consumeSynthesizingItem = async (
                                         origin: `Bit ID #${bit.bitId}'s Trait: Influential`,
                                         value: 1.01
                                     },
-                                    'islandStatsModifiers.earningRateModifiers': {
-                                        origin: `Bit ID #${bit.bitId}'s Trait: Influential`,
-                                        value: 1.01
-                                    }
                                 },
                                 $pull: {},
                                 $set: {},
@@ -716,9 +712,6 @@ export const consumeSynthesizingItem = async (
                                     'islandStatsModifiers.gatheringRateModifiers': {
                                         origin: `Bit ID #${bit.bitId}'s Trait: Influential`
                                     },
-                                    'islandStatsModifiers.earningRateModifiers': {
-                                        origin: `Bit ID #${bit.bitId}'s Trait: Influential`
-                                    }
                                 },
                                 $push: {},
                                 $set: {},
@@ -737,10 +730,6 @@ export const consumeSynthesizingItem = async (
                                         origin: `Bit ID #${bit.bitId}'s Trait: Antagonistic`,
                                         value: 0.99
                                     },
-                                    'islandStatsModifiers.earningRateModifiers': {
-                                        origin: `Bit ID #${bit.bitId}'s Trait: Antagonistic`,
-                                        value: 0.99
-                                    }
                                 },
                                 $pull: {},
                                 $set: {},
@@ -758,9 +747,6 @@ export const consumeSynthesizingItem = async (
                                     'islandStatsModifiers.gatheringRateModifiers': {
                                         origin: `Bit ID #${bit.bitId}'s Trait: Antagonistic`
                                     },
-                                    'islandStatsModifiers.earningRateModifiers': {
-                                        origin: `Bit ID #${bit.bitId}'s Trait: Antagonistic`
-                                    }
                                 },
                                 $push: {},
                                 $set: {},
@@ -779,10 +765,6 @@ export const consumeSynthesizingItem = async (
                                         origin: `Bit ID #${bit.bitId}'s Trait: Famous`,
                                         value: 1.005
                                     },
-                                    'islandStatsModifiers.earningRateModifiers': {
-                                        origin: `Bit ID #${bit.bitId}'s Trait: Famous`,
-                                        value: 1.005
-                                    }
                                 },
                                 $pull: {},
                                 $set: {},
@@ -800,9 +782,6 @@ export const consumeSynthesizingItem = async (
                                     'islandStatsModifiers.gatheringRateModifiers': {
                                         origin: `Bit ID #${bit.bitId}'s Trait: Famous`
                                     },
-                                    'islandStatsModifiers.earningRateModifiers': {
-                                        origin: `Bit ID #${bit.bitId}'s Trait: Famous`
-                                    }
                                 },
                                 $push: {},
                                 $set: {},
@@ -821,10 +800,6 @@ export const consumeSynthesizingItem = async (
                                         origin: `Bit ID #${bit.bitId}'s Trait: Mannerless`,
                                         value: 0.995
                                     },
-                                    'islandStatsModifiers.earningRateModifiers': {
-                                        origin: `Bit ID #${bit.bitId}'s Trait: Mannerless`,
-                                        value: 0.995
-                                    }
                                 },
                                 $pull: {},
                                 $set: {},
@@ -842,9 +817,6 @@ export const consumeSynthesizingItem = async (
                                     'islandStatsModifiers.gatheringRateModifiers': {
                                         origin: `Bit ID #${bit.bitId}'s Trait: Mannerless`
                                     },
-                                    'islandStatsModifiers.earningRateModifiers': {
-                                        origin: `Bit ID #${bit.bitId}'s Trait: Mannerless`
-                                    }
                                 },
                                 $push: {},
                                 $set: {},
@@ -1317,7 +1289,7 @@ export const consumeSynthesizingItem = async (
 
             if (synthesizingItemData.effectValues.gatheringRateModifier.active) {
                 // because the `value` is in %, we need to divide it by 100 and add 1 to get the multiplier.
-                const modifierValue = 1 + (synthesizingItemData.effectValues.earningRateModifier.value / 100);
+                const modifierValue = 1 + (synthesizingItemData.effectValues.gatheringRateModifier.value / 100);
 
                 // add the gathering rate modifier to the island.
                 islandUpdateOperations.push({
@@ -1339,41 +1311,6 @@ export const consumeSynthesizingItem = async (
                 if (synthesizingItemData.effectValues.effectDuration !== 'oneTime') {
                     SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE.add(
                         'removeIslandGatheringRateModifier',
-                        {
-                            islandId: island.islandId,
-                            owner: user._id,
-                            origin: `Synthesizing Item: ${item}. Instance ID: ${randomId}`,
-                            endTimestamp: Math.floor(Date.now() / 1000) + synthesizingItemData.effectValues.effectDuration
-                        },
-                        { delay: synthesizingItemData.effectValues.effectDuration as number * 1000 }
-                    )
-                }
-            }
-
-            if (synthesizingItemData.effectValues.earningRateModifier.active) {
-                // because the `value` is in %, we need to divide it by 100 and add 1 to get the multiplier.
-                const modifierValue = 1 + (synthesizingItemData.effectValues.earningRateModifier.value / 100);
-
-                // add the earning rate modifier to the island.
-                islandUpdateOperations.push({
-                    islandId: island.islandId,
-                    updateOperations: {
-                        $push: {
-                            'islandStatsModifiers.earningRateModifiers': {
-                                origin: `Synthesizing Item: ${item}. Instance ID: ${randomId}`,
-                                value: modifierValue
-                            }
-                        },
-                        $pull: {},
-                        $set: {},
-                        $inc: {}
-                    }
-                });
-
-                // if there is an effect duration, we need to add a bull queue to remove the modifier after the effect duration.
-                if (synthesizingItemData.effectValues.effectDuration !== 'oneTime') {
-                    SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE.add(
-                        'removeIslandEarningRateModifier',
                         {
                             islandId: island.islandId,
                             owner: user._id,

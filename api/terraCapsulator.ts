@@ -138,7 +138,6 @@ export const summonIsland = async (
         const islandStatsModifiers: IslandStatsModifiers = {
             resourceCapModifiers: [],
             gatheringRateModifiers: [],
-            earningRateModifiers: []
         }
 
         // loop through each bit and see if they have these traits:
@@ -173,22 +172,8 @@ export const summonIsland = async (
                         bitTraits.some(traitData => traitData.trait === BitTrait.MANNERLESS) ? 0.995 :
                         0.99
                 };
-            
-                const earningRateModifier: Modifier = {
-                    origin: `Bit ID #${bit.bitId}'s Trait: ${
-                        bitTraits.some(traitData => traitData.trait === BitTrait.INFLUENTIAL) ? 'Influential' :
-                        bitTraits.some(traitData => traitData.trait === BitTrait.FAMOUS) ? 'Famous' :
-                        bitTraits.some(traitData => traitData.trait === BitTrait.MANNERLESS) ? 'Mannerless' :
-                        'Antagonistic'
-                    }`,
-                    value: bitTraits.some(traitData => traitData.trait === BitTrait.INFLUENTIAL) ? 1.01 :
-                        bitTraits.some(traitData => traitData.trait === BitTrait.FAMOUS) ? 1.005 :
-                        bitTraits.some(traitData => traitData.trait === BitTrait.MANNERLESS) ? 0.995 :
-                        0.99
-                };
 
                 islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
-                islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
             }
         });
 

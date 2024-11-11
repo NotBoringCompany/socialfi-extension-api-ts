@@ -383,15 +383,6 @@ export interface SynthesizingItemEffectValues {
         value: number | null;
     }
     /**
-     * increases OR decreases the earning rate of an island (%), depending on the value specified.
-     */
-    earningRateModifier: {
-        /** if this effect is active on this item */
-        active: boolean;
-        /** the value to increase or decrease by */
-        value: number | null;
-    }
-    /**
      * increases OR decreases the energy depletion rate of ALL BITS placed within an island (%), depending on the value specified.
      * 
      * if the value is positive, this will increase the depletion rate, making the bits lose energy faster, and vice versa.

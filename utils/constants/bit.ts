@@ -522,7 +522,6 @@ export const getBitStatsModifiersFromTraits = (traits: BitTrait[]): BitStatsModi
 
     const bitStatsModifiers: BitStatsModifiers = {
         gatheringRateModifiers: [],
-        earningRateModifiers: [],
         energyRateModifiers: [],
         foodConsumptionEfficiencyModifiers: []
     }
@@ -530,9 +529,6 @@ export const getBitStatsModifiersFromTraits = (traits: BitTrait[]): BitStatsModi
     for (const traitEffect of traitEffects) {
         if (traitEffect.bitGatheringRate) {
             bitStatsModifiers.gatheringRateModifiers.push(traitEffect.bitGatheringRate);
-        }
-        if (traitEffect.bitEarningRate) {
-            bitStatsModifiers.earningRateModifiers.push(traitEffect.bitEarningRate);
         }
         if (traitEffect.energyDepletionRate) {
             bitStatsModifiers.energyRateModifiers.push(traitEffect.energyDepletionRate);

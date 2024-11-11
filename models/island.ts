@@ -129,8 +129,6 @@ export interface IslandStatsModifiers {
     resourceCapModifiers: Modifier[];
     /** gathering rate modifiers */
     gatheringRateModifiers: Modifier[];
-    /** earning rate modifiers */
-    earningRateModifiers: Modifier[];
 }
 
 /**

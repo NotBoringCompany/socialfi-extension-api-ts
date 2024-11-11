@@ -405,24 +405,6 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                                 ? 1.005
                                 : 0.995,
                         };
-                        const earningRateModifier: Modifier = {
-                            origin: `Bit ID #${newBit.bitId}'s Trait: ${
-                                hasInfluentialTrait
-                                    ? 'Influential'
-                                    : hasAntagonisticTrait
-                                    ? 'Antagonistic'
-                                    : hasFamousTrait
-                                    ? 'Famous'
-                                    : 'Mannerless'
-                            }`,
-                            value: hasInfluentialTrait
-                                ? 1.01
-                                : hasAntagonisticTrait
-                                ? 0.99
-                                : hasFamousTrait
-                                ? 1.005
-                                : 0.995,
-                        };
 
                         for (const islandId of islands) {
                             islandUpdateOperations.push({
@@ -430,7 +412,6 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                                 updateOperations: {
                                     $push: {
                                         'islandStatsModifiers.gatheringRateModifiers': gatheringRateModifier,
-                                        'islandStatsModifiers.earningRateModifiers': earningRateModifier,
                                     },
                                     $set: {},
                                     $pull: {},

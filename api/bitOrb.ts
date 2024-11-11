@@ -89,14 +89,9 @@ export const consumeBitOrb = async (twitterId: string, bitOrbType: BitOrbType): 
         const hasMannerlessTrait = bit.traits.some(trait => trait.trait === 'Mannerless');
 
         const gatheringRateModifiers: Modifier[] = [];
-        const earningRateModifiers: Modifier[] = [];
 
         if (hasInfluentialTrait) {
             gatheringRateModifiers.push({
-                origin: `Bit ID #${bit.bitId}'s Trait: Influential`,
-                value: 1.01
-            });
-            earningRateModifiers.push({
                 origin: `Bit ID #${bit.bitId}'s Trait: Influential`,
                 value: 1.01
             });
@@ -107,10 +102,6 @@ export const consumeBitOrb = async (twitterId: string, bitOrbType: BitOrbType): 
                 origin: `Bit ID #${bit.bitId}'s Trait: Antagonistic`,
                 value: 0.99
             });
-            earningRateModifiers.push({
-                origin: `Bit ID #${bit.bitId}'s Trait: Antagonistic`,
-                value: 0.99
-            });
         }
 
         if (hasFamousTrait) {
@@ -118,18 +109,10 @@ export const consumeBitOrb = async (twitterId: string, bitOrbType: BitOrbType): 
                 origin: `Bit ID #${bit.bitId}'s Trait: Famous`,
                 value: 1.005
             });
-            earningRateModifiers.push({
-                origin: `Bit ID #${bit.bitId}'s Trait: Famous`,
-                value: 1.005
-            });
         }
 
         if (hasMannerlessTrait) {
             gatheringRateModifiers.push({
-                origin: `Bit ID #${bit.bitId}'s Trait: Mannerless`,
-                value: 0.995
-            });
-            earningRateModifiers.push({
                 origin: `Bit ID #${bit.bitId}'s Trait: Mannerless`,
                 value: 0.995
             });
@@ -141,7 +124,6 @@ export const consumeBitOrb = async (twitterId: string, bitOrbType: BitOrbType): 
                 updateOperations: {
                     $push: {
                         'islandStatsModifiers.gatheringRateModifiers': { $each: gatheringRateModifiers },
-                        'islandStatsModifiers.earningRateModifiers': { $each: earningRateModifiers }
                     },
                     $set: {},
                     $pull: {},

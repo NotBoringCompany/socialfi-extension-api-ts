@@ -220,7 +220,6 @@ export interface BitFarmingStats {
  */
 export interface BitStatsModifiers {
     gatheringRateModifiers: Modifier[];
-    earningRateModifiers: Modifier[];
     energyRateModifiers: Modifier[];
     // energy replenishment after consuming food. > 1 means more energy is replenished and vice versa.
     foodConsumptionEfficiencyModifiers: Modifier[];
