@@ -314,21 +314,6 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
                     gatheringProgress: 0,
                     lastUpdatedGatheringProgress: Math.floor(Date.now() / 1000),
                 },
-                islandEarningStats: {
-                    totalXCookiesSpent: 0,
-                    totalXCookiesEarnable: 0,
-                    totalXCookiesEarned: 0,
-                    claimableXCookies: 0,
-                    totalCookieCrumbsSpent: 0,
-                    totalCookieCrumbsEarnable: 0,
-                    totalCookieCrumbsEarned: 0,
-                    claimableCookieCrumbs: 0,
-                    earningStart: 0,
-                    crumbsEarningStart: 0,
-                    earningEnd: 0,
-                    crumbsEarningEnd: 0,
-                    lastClaimed: 0,
-                },
                 islandStatsModifiers,
                 islandTappingData: ISLAND_TAPPING_REQUIREMENT(1, 1),
             });
@@ -384,7 +369,6 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
                         currentXCookies: 0,
                         extendedXCookieData: [],
                     },
-                    cookieCrumbs: 0,
                     resources: [],
                     items: [
                         {
@@ -2453,7 +2437,6 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
                     currentXCookies: 0,
                     extendedXCookieData: [],
                 },
-                cookieCrumbs: 0,
                 resources: [],
                 items: [
                     {
@@ -2968,21 +2951,6 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                     gatheringProgress: 0,
                     lastUpdatedGatheringProgress: Math.floor(Date.now() / 1000),
                 },
-                islandEarningStats: {
-                    totalXCookiesSpent: 0,
-                    totalXCookiesEarnable: 0,
-                    totalXCookiesEarned: 0,
-                    claimableXCookies: 0,
-                    totalCookieCrumbsSpent: 0,
-                    totalCookieCrumbsEarnable: 0,
-                    totalCookieCrumbsEarned: 0,
-                    claimableCookieCrumbs: 0,
-                    earningStart: 0,
-                    crumbsEarningStart: 0,
-                    earningEnd: 0,
-                    crumbsEarningEnd: 0,
-                    lastClaimed: 0,
-                },
                 islandStatsModifiers,
                 islandTappingData: ISLAND_TAPPING_REQUIREMENT(1, 1),
             });
@@ -3039,7 +3007,6 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                         currentXCookies: 0,
                         extendedXCookieData: [],
                     },
-                    cookieCrumbs: 0,
                     resources: [],
                     items: [
                         {

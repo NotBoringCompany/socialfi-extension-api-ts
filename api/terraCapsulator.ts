@@ -4,7 +4,7 @@ import { randomizeTypeFromCapsulator } from '../utils/constants/terraCapsulator'
 import { Island, IslandStatsModifiers, IslandType } from '../models/island';
 import { ObtainMethod } from '../models/obtainMethod';
 import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
-import { DEFAULT_ISLAND_TYPE, GET_TOTAL_COOKIE_CRUMBS_EARNABLE, GET_TOTAL_X_COOKIES_EARNABLE, ISLAND_TAPPING_REQUIREMENT, randomizeIslandTraits } from '../utils/constants/island';
+import { DEFAULT_ISLAND_TYPE, ISLAND_TAPPING_REQUIREMENT, randomizeIslandTraits } from '../utils/constants/island';
 import { BitTrait, BitTraitData } from '../models/bit';
 import { Modifier } from '../models/modifier';
 import { Item, TerraCapsulatorType } from '../models/item';
@@ -133,12 +133,6 @@ export const summonIsland = async (
         // randomize the 5 island traits
         const traits = randomizeIslandTraits();
 
-        // get total xCookies earnable based on rarity
-        const totalXCookiesEarnable = GET_TOTAL_X_COOKIES_EARNABLE(isIsland ? TerraCapsulatorType.TERRA_CAPSULATOR_I : (terraCapsulatorType as TerraCapsulatorType), islandType);
-
-        // get total cookie crumbs earnable based on rarity
-        const totalCookieCrumbsEarnable = GET_TOTAL_COOKIE_CRUMBS_EARNABLE(islandType);
-
         const userBitIds = user.inventory?.bitIds as number[];
 
         const islandStatsModifiers: IslandStatsModifiers = {
@@ -219,21 +213,6 @@ export const summonIsland = async (
                 lastClaimed: 0,
                 gatheringProgress: 0,
                 lastUpdatedGatheringProgress: Math.floor(Date.now() / 1000),
-            },
-            islandEarningStats: {
-                totalXCookiesSpent: 0,
-                totalXCookiesEarnable,
-                totalXCookiesEarned: 0,
-                claimableXCookies: 0,
-                totalCookieCrumbsSpent: 0,
-                totalCookieCrumbsEarnable,
-                totalCookieCrumbsEarned: 0,
-                claimableCookieCrumbs: 0,
-                earningStart: Math.floor(Date.now() / 1000),
-                crumbsEarningStart: Math.floor(Date.now() / 1000),
-                earningEnd: 0,
-                crumbsEarningEnd: 0,
-                lastClaimed: 0,
             },
             islandStatsModifiers,
             islandTappingData: ISLAND_TAPPING_REQUIREMENT(1, tapping.level),

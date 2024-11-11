@@ -1195,7 +1195,7 @@ export const sellItemsInPOIShop = async (
 export const buyItemsInPOIShop = async (
     twitterId: string,
     items: POIShopActionItemData[],
-    paymentChoice: 'xCookies' | 'cookieCrumbs'
+    paymentChoice: 'xCookies'
 ): Promise<ReturnValue> => {
     try {
         const user = await UserModel.findOne({ twitterId }).lean();
@@ -1249,8 +1249,8 @@ export const buyItemsInPOIShop = async (
         // 1. 1 or more items are not available in the POI shop (cannot be found)
         // 2. 1 or more items have a currentBuyableAmount of less than or equal to 0
         // 3. 1 or more items have a currentBuyableAmount less than the amount the user wants to buy
-        // 4. depending on the payment method, check if despite having a currentBuyableAmount > 0 if the xCookies/cookie crumbs value of the item is unavailable.
-        // 5. the user doesn't have the amount of xCookies/cookie crumbs they need to buy the item (for any of the specified items)
+        // 4. depending on the payment method, check if despite having a currentBuyableAmount > 0 if the xCookies value of the item is unavailable.
+        // 5. the user doesn't have the amount of xCookies they need to buy the item (for any of the specified items)
         // if one of these conditions are met, return an error.
         const invalidItems = items.filter(item => {
             const globalItems = poiShop.globalItems;
@@ -1298,15 +1298,13 @@ export const buyItemsInPOIShop = async (
                 }
             }
 
-            // check if depending on the payment method, the xCookies/cookie crumbs value of the item is unavailable.
+            // check if depending on the payment method, the xCookies value of the item is unavailable.
             if (paymentChoice === 'xCookies' && itemData.buyingPrice.xCookies === 'unavailable') {
-                return true;
-            } else if (paymentChoice === 'cookieCrumbs' && itemData.buyingPrice.cookieCrumbs === 'unavailable') {
                 return true;
             }
 
             // get the total payment the user has to make.
-            totalPayment += item.amount * (paymentChoice === 'xCookies' ? itemData.buyingPrice.xCookies as number : itemData.buyingPrice.cookieCrumbs as number);
+            totalPayment += item.amount * (itemData.buyingPrice.xCookies as number);
         });
 
         if (invalidItems.length > 0) {
@@ -1316,16 +1314,11 @@ export const buyItemsInPOIShop = async (
             }
         }
 
-        // check if the user has enough xCookies/cookie crumbs to buy the items.
+        // check if the user has enough xCookies to buy the items.
         if (paymentChoice === 'xCookies' && user.inventory.xCookieData.currentXCookies < totalPayment) {
             return {
                 status: Status.BAD_REQUEST,
                 message: `(buyItemsInPOIShop) User does not have enough xCookies.`
-            }
-        } else if (paymentChoice === 'cookieCrumbs' && user.inventory.cookieCrumbs < totalPayment) {
-            return {
-                status: Status.BAD_REQUEST,
-                message: `(buyItemsInPOIShop) User does not have enough cookie crumbs.`
             }
         }
 
@@ -1484,10 +1477,6 @@ export const buyItemsInPOIShop = async (
                 userUpdateOperations.$inc[`inventory.xCookieData.currentXCookies`] = -totalPayment;
                 userUpdateOperations.$inc[`inventory.xCookieData.totalXCookiesSpent`] = totalPayment;
                 userUpdateOperations.$inc[`inventory.xCookieData.weeklyXCookiesSpent`] = totalPayment;
-            } else if (paymentChoice === 'cookieCrumbs') {
-                currentCurrency = user.inventory.cookieCrumbs;
-                userUpdateOperations.$inc[`inventory.cookieCrumbs`] = -totalPayment;
-                // to do later: increment `totalCookieCrumbsSpent` and `weeklyCookieCrumbsSpent` by the total payment (not implemented yet).
             }
         });
 

@@ -1,10 +1,10 @@
 import express from 'express';
-import { applyGatheringProgressBooster, applyIslandTapping, calcEffectiveResourceDropChances, calcIslandCurrentRate, checkCurrentTax, claimResources, claimXCookiesAndCrumbs, evolveIsland, getIslandTappingData, getIslands, giftXterioIsland, placeBit, removeIsland, rerollBonusMilestoneReward, unplaceBit, updateGatheringProgressAndDropResourceAlt } from '../api/island';
+import { applyGatheringProgressBooster, applyIslandTapping, calcEffectiveResourceDropChances, calcIslandCurrentRate, checkCurrentTax, claimResources, getIslandTappingData, getIslands, giftXterioIsland, placeBit, removeIsland, rerollBonusMilestoneReward, unplaceBit, updateGatheringProgressAndDropResourceAlt } from '../api/island';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { IslandType, RateType, ResourceDropChanceDiff } from '../models/island';
 import { Modifier } from '../models/modifier';
-import { ISLAND_EVOLUTION_COST, MAX_ISLAND_LEVEL } from '../utils/constants/island';;
+import { MAX_ISLAND_LEVEL } from '../utils/constants/island';;
 import { BitModel, IslandModel } from '../utils/constants/db';
 import { getBits } from '../api/bit';
 import { Bit } from '../models/bit';
@@ -165,78 +165,6 @@ router.get('/check_current_tax/:twitterId/:islandId', async (req, res) => {
     }
 });
 
-router.post('/evolve_island', async (req, res) => {
-    const { islandId, choice } = req.body;
-
-    try {
-        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'evolve_island');
-
-        if (validateStatus !== Status.SUCCESS) {
-            return res.status(validateStatus).json({
-                status: validateStatus,
-                message: validateMessage
-            })
-        }
-
-        const { status, message, data } = await evolveIsland(validateData?.twitterId, islandId, choice);
-
-        if (status === Status.SUCCESS && allowMixpanel) {
-            mixpanel.track('Currency Tracker', {
-                distinct_id: validateData?.twitterId,
-                '_type': 'Evolve Island',
-                '_data': data,
-            });
-        }
-
-        return res.status(status).json({
-            status,
-            message,
-            data
-        });
-    } catch (err: any) {
-        return res.status(500).json({
-            status: 500,
-            message: err.message
-        })
-    }
-});
-
-router.post('/claim_xcookies_and_crumbs', async (req, res) => {
-    const { islandId } = req.body;
-
-    try {
-
-        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'claim_xcookies_and_crumbs');
-
-        if (validateStatus !== Status.SUCCESS) {
-            return res.status(validateStatus).json({
-                status: validateStatus,
-                message: validateMessage
-            })
-        }
-
-        const { status, message, data } = await claimXCookiesAndCrumbs(validateData?.twitterId, islandId);
-        
-        // if (status === Status.SUCCESS && allowMixpanel) {
-        //     mixpanel.track('Claim Cookies & Crumbs', {
-        //         distinct_id: validateData?.twitterId,
-        //         '_data': data,
-        //     });
-        // }
-
-        return res.status(status).json({
-            status,
-            message,
-            data
-        });
-    } catch (err: any) {
-        return res.status(500).json({
-            status: 500,
-            message: err.message
-        })
-    }
-});
-
 router.post('/claim_resources', async (req, res) => {
     const { islandId, claimType, chosenResources } = req.body;
 
@@ -352,36 +280,6 @@ router.get('/get_current_rates/:islandId', async (req, res) => {
             data: {
                 currentGatheringRate,
                 currentEarningRate
-            }
-        });
-    } catch (err: any) {
-        return res.status(500).json({
-            status: 500,
-            message: err.message
-        });
-    }
-})
-
-router.get('/get_evolution_cost/:islandId', async (req, res) => {
-    const { islandId } = req.params;
-
-    try {
-        const island = await IslandModel.findOne({ islandId: parseInt(islandId) }).lean();
-
-        if (!island) {
-            return res.status(404).json({
-                status: 404,
-                message: `(get_evolution_cost) Island with ID ${islandId} not found.`
-            });
-        }
-
-        const evolutionCost = ISLAND_EVOLUTION_COST(<IslandType>island.type, island.currentLevel);
-
-        return res.status(200).json({
-            status: 200,
-            message: `(get_evolution_cost) Successfully retrieved evolution cost for island with ID ${islandId}.`,
-            data: {
-                evolutionCost
             }
         });
     } catch (err: any) {

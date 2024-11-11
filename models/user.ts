@@ -85,8 +85,6 @@ export interface UserInventory {
     maxWeight: number;
     /** the user's xCookies data (i.e. the current xCookies owned, the total xCookies earned from different sources etc.) */
     xCookieData: XCookieData;
-    /** the amount of cookie crumbs owned */
-    cookieCrumbs: number;
     /** the user's diamonds data (i.e. the current diamonds owned, the total diamonds earned from different sources etc.) */
     diamondData: DiamondData;
     /** a list of resources owned */

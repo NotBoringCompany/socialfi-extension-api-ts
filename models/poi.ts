@@ -191,7 +191,6 @@ export enum POIShopItemName {
  */
 export interface POIShopItemBuyingPrice {
     xCookies: number | 'unavailable';
-    cookieCrumbs: number | 'unavailable';
 }
 
 /**

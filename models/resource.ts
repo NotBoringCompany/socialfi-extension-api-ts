@@ -56,7 +56,6 @@ export enum ExtendedResourceOrigin {
  * Represents the resource's line.
  */
 export enum ResourceLine {
-    BARREN = 'Barren',
     ORE = 'Ore',
     FRUIT = 'Fruit',
     LIQUID = 'Liquid',

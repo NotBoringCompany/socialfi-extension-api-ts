@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
 import { IslandSchema } from '../schemas/Island';
 import { Island, IslandStatsModifiers, IslandTappingData, IslandTrait, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
-import { BARREN_ISLE_COMMON_DROP_CHANCE, BASE_CARESS_PER_TAPPING, BASE_ENERGY_PER_TAPPING, BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DAILY_BONUS_RESOURCES_GATHERABLE, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLUTION_COST, ISLAND_RARITY_DEVIATION_MODIFIERS, ISLAND_TAPPING_MILESTONE_BONUS_REWARD, ISLAND_TAPPING_MILESTONE_LIMIT, ISLAND_TAPPING_REQUIREMENT, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN, X_COOKIE_TAX, randomizeIslandTraits } from '../utils/constants/island';
+import { BARREN_ISLE_COMMON_DROP_CHANCE, BASE_CARESS_PER_TAPPING, BASE_ENERGY_PER_TAPPING, BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DAILY_BONUS_RESOURCES_GATHERABLE, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_RARITY_DEVIATION_MODIFIERS, ISLAND_TAPPING_MILESTONE_BONUS_REWARD, ISLAND_TAPPING_MILESTONE_LIMIT, ISLAND_TAPPING_REQUIREMENT, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN, X_COOKIE_TAX, randomizeIslandTraits } from '../utils/constants/island';
 import { calcBitCurrentRate, getBits } from './bit';
 import { BarrenResource, ExtendedResource, ExtendedResourceOrigin, Resource, ResourceLine, ResourceRarity, ResourceRarityNumeric, ResourceType, SimplifiedResource } from '../models/resource';
 import { UserSchema } from '../schemas/User';
@@ -64,8 +64,6 @@ export const giftXterioIsland = async (
 
         const baseResourceCap = randomizeBaseResourceCap(islandType);
         const traits = randomizeIslandTraits();
-        const totalXCookiesEarnable = 0;
-        const totalCookieCrumbsEarnable = 0;
 
         const userBitIds = user.inventory?.bitIds as number[];
 
@@ -148,21 +146,6 @@ export const giftXterioIsland = async (
                 gatheringProgress: 0,
                 lastUpdatedGatheringProgress: Math.floor(Date.now() / 1000)
             },
-            islandEarningStats: {
-                totalXCookiesSpent: 0,
-                totalXCookiesEarnable,
-                totalXCookiesEarned: 0,
-                claimableXCookies: 0,
-                totalCookieCrumbsSpent: 0,
-                totalCookieCrumbsEarnable,
-                totalCookieCrumbsEarned: 0,
-                claimableCookieCrumbs: 0,
-                earningStart: Math.floor(Date.now() / 1000),
-                crumbsEarningStart: Math.floor(Date.now() / 1000),
-                earningEnd: 0,
-                crumbsEarningEnd: 0,
-                lastClaimed: 0,
-            },
             islandStatsModifiers
         });
 
@@ -183,83 +166,6 @@ export const giftXterioIsland = async (
         return {
             status: Status.ERROR,
             message: `(giftXterioIsland) Error: ${err.message}`
-        }
-    }
-}
-
-/**
- * Generates a barren island. This is called when a user signs up or when a user obtains and opens a bottled message.
- */
-export const generateBarrenIsland = async (
-    userId: string,
-    obtainMethod: ObtainMethod.SIGN_UP | ObtainMethod.BOTTLED_MESSAGE,
-    // leave empty if no modifiers are to be applied.
-    // however, when signing up, users will at times get bits that will impact the barren island's stats modifiers
-    islandStatsModifiers: IslandStatsModifiers,
-): Promise<ReturnValue> => {
-    try {
-        const { status, message, data } = await getLatestIslandId();
-
-        if (status !== Status.SUCCESS) {
-            return {
-                status,
-                message: `(createBarrenIsland) Error from getLatestIslandId: ${message}`
-            }
-        }
-
-        const newIsland = new IslandModel({
-            _id: generateObjectId(),
-            islandId: data.latestIslandId + 1,
-            type: IslandType.BARREN,
-            owner: userId,
-            purchaseDate: Math.floor(Date.now() / 1000),
-            obtainMethod,
-            currentLevel: 1,
-            currentTax: 0,
-            placedBitIds: [],
-            traits: randomizeIslandTraits(),
-            islandResourceStats: {
-                baseResourceCap: randomizeBaseResourceCap(IslandType.BARREN),
-                resourcesGathered: [],
-                dailyBonusResourcesGathered: 0,
-                claimableResources: [],
-                gatheringStart: 0,
-                gatheringEnd: 0,
-                lastClaimed: 0,
-                gatheringProgress: 0,
-                lastUpdatedGatheringProgress: Math.floor(Date.now() / 1000)
-            },
-            islandEarningStats: {
-                totalXCookiesSpent: 0,
-                totalXCookiesEarnable: 0,
-                totalXCookiesEarned: 0,
-                claimableXCookies: 0,
-                totalCookieCrumbsSpent: 0,
-                totalCookieCrumbsEarnable: 0,
-                totalCookieCrumbsEarned: 0,
-                claimableCookieCrumbs: 0,
-                earningStart: 0,
-                crumbsEarningStart: 0,
-                earningEnd: 0,
-                crumbsEarningEnd: 0,
-                lastClaimed: 0,
-            },
-            islandStatsModifiers: islandStatsModifiers
-        });
-
-        await newIsland.save();
-
-        return {
-            status: Status.SUCCESS,
-            message: `(createBarrenIsland) Barren island created.`,
-            data: {
-                island: newIsland
-            }
-        }
-    } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(createBarrenIsland) Error: ${err.message}`
         }
     }
 }
@@ -394,173 +300,6 @@ export const getIslands = async (islandIds: number[]): Promise<ReturnValue> => {
 }
 
 /**
- * (User) Evolves an island (levelling it up). Allows either xCookies or cookie crumbs.
- * 
- * NOTE: Requires `twitterId` which is fetched via `req.user`, automatically giving us the user's Twitter ID. This will check if the user who calls this function owns the twitter ID that owns the island.
- */
-export const evolveIsland = async (twitterId: string, islandId: number, choice: 'xCookies' | 'Cookie Crumbs'): Promise<ReturnValue> => {
-    try {
-        const [user, island] = await Promise.all([
-            UserModel.findOne({ twitterId }).lean(),
-            IslandModel.findOne({ islandId }).lean()
-        ]);
-
-        const userUpdateOperations = {
-            $pull: {},
-            $inc: {},
-            $set: {},
-            $push: {}
-        }
-
-        const islandUpdateOperations = {
-            $pull: {},
-            $inc: {},
-            $set: {},
-            $push: {}
-        }
-
-        // Track consumed Currency
-        let currentCurrency: number = 0;
-        let totalPaid: number = 0;
-        let paymentChoice: 'xCookies' | 'cookieCrumbs';
-
-        if (!user) {
-            return {
-                status: Status.ERROR,
-                message: `(evolveIsland) User not found.`
-            }
-        }
-
-        if (!(user.inventory?.islandIds as number[]).includes(islandId)) {
-            return {
-                status: Status.ERROR,
-                message: `(evolveIsland) User does not own the island.`
-            }
-        }
-
-        if (!island) {
-            return {
-                status: Status.ERROR,
-                message: `(evolveIsland) Island not found.`
-            }
-        }
-
-        // check if island is barren. barren islands CANNOT be evolved.
-        if (island.type === IslandType.BARREN) {
-            return {
-                status: Status.ERROR,
-                message: `(evolveIsland) Barren islands cannot be evolved.`
-            }
-        }
-
-        // check if the island is already max level, if it is, return an error.
-        if (island.currentLevel >= MAX_ISLAND_LEVEL) {
-            return {
-                status: Status.ERROR,
-                message: `(evolveIsland) Island is already at max level.`
-            }
-        }
-
-        // if choice to evolve is using xCookies
-        if (choice === 'xCookies') {
-            // check if the user has enough xCookies
-            const userXCookies: number = user.inventory?.xCookieData.currentXCookies;
-            currentCurrency = userXCookies;
-
-            // calculate the cost to evolve the island based on its current level
-            const { xCookies: requiredXCookies } = ISLAND_EVOLUTION_COST(<IslandType>island.type, island.currentLevel);
-            totalPaid = requiredXCookies;
-            paymentChoice = 'xCookies';
-
-            // if not enough, return an error.
-            if (userXCookies < requiredXCookies) {
-                return {
-                    status: Status.ERROR,
-                    message: `(evolveIsland) Not enough xCookies to evolve island.`
-                }
-            }
-
-            // deduct the xCookies from the user and increment the `totalXCookiesSpent` and `weeklyXCookiesSpent` of the island by `requiredXCookies`
-            userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = -requiredXCookies;
-            userUpdateOperations.$inc['inventory.xCookieData.totalXCookiesSpent'] = requiredXCookies;
-            userUpdateOperations.$inc['inventory.xCookieData.weeklyXCookiesSpent'] = requiredXCookies;
-
-            // firstly, check if at this moment, the totalXCookiesSpent is 0.
-            // because if it is, it means that earning hasn't started yet, meaning that after evolving the island, `earningStart` will be set to current timestamp, and earning will start.
-            const totalXCookiesEarnableIsZero = island.islandEarningStats?.totalXCookiesEarnable === 0;
-
-            // if totalXCookies spent is 0, evolve the island, increment the totalXCookiesSpent and totalXCookiesEarnable of the island by `requiredXCookies` and also set the `earningStart` to now.
-            if (totalXCookiesEarnableIsZero) {
-                islandUpdateOperations.$inc['currentLevel'] = 1;
-                islandUpdateOperations.$inc['islandEarningStats.totalXCookiesSpent'] = requiredXCookies;
-
-                ////// !!!! temporarily disable earning xCookies from evolving and the earning start for season 0 !!!! //////
-                // islandUpdateOperations.$inc['islandEarningStats.totalXCookiesEarnable'] = requiredXCookies;
-                // islandUpdateOperations.$set['islandEarningStats.earningStart'] = Math.floor(Date.now() / 1000);
-
-                // otherwise, only evolve the island and increment the totalXCookiesSpent and totalXCookiesEarnable by `requiredXCookies`.
-            } else {
-                islandUpdateOperations.$inc['currentLevel'] = 1;
-                islandUpdateOperations.$inc['islandEarningStats.totalXCookiesSpent'] = requiredXCookies;
-                islandUpdateOperations.$inc['islandEarningStats.totalXCookiesEarnable'] = requiredXCookies;
-            }
-            // if choice to evolve is using cookie crumbs
-        } else {
-            const userCookieCrumbs: number = user.inventory?.cookieCrumbs;
-            currentCurrency = userCookieCrumbs;
-
-            // calculate the cost to evolve the island based on its current level
-            const { cookieCrumbs: requiredCookieCrumbs } = ISLAND_EVOLUTION_COST(<IslandType>island.type, island.currentLevel);
-            totalPaid = requiredCookieCrumbs;
-            paymentChoice = 'cookieCrumbs';
-
-            // if not enough, return an error.
-            if (userCookieCrumbs < requiredCookieCrumbs) {
-                return {
-                    status: Status.ERROR,
-                    message: `(evolveIsland) Not enough Cookie Crumbs to evolve island.`
-                }
-            }
-
-            // deduct the cookie crumbs from the user
-            userUpdateOperations.$inc['inventory.cookieCrumbs'] = -requiredCookieCrumbs;
-
-            // since users wont get back cookie crumbs spent, no need to do any sort of logic for earnable cookie crumbs.
-            // we just simply evolve the island and increment `totalCookieCrumbsSpent`
-            islandUpdateOperations.$inc['islandEarningStats.totalCookieCrumbsSpent'] = requiredCookieCrumbs;
-            islandUpdateOperations.$inc['currentLevel'] = 1;
-        }
-
-        // execute the update operations
-        await Promise.all([
-            UserModel.updateOne({ twitterId }, userUpdateOperations),
-            IslandModel.updateOne({ islandId }, islandUpdateOperations)
-        ]);
-
-        return {
-            status: Status.SUCCESS,
-            message: `(evolveIsland) Island with ID ${islandId} successfully evolved.`,
-            data: {
-                island,
-                currentLevel: island.currentLevel,
-                nextLevel: island.currentLevel + 1,
-                totalPaid,
-                paymentChoice,
-                userCurrency: {
-                    currentValue: currentCurrency,
-                    updatedValue: Math.max(currentCurrency - totalPaid, 0),
-                }
-            }
-        }
-    } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(evolveIsland) Error: ${err.message}`
-        }
-    }
-}
-
-/**
  * (User) Places a bit on an island.
  * 
  * NOTE: Requires `twitterId` which is fetched via `req.user`, automatically giving us the user's Twitter ID. This will check if the user who calls this function owns the twitter ID that owns the island and the bit ID.
@@ -645,14 +384,6 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
             return {
                 status: Status.ERROR,
                 message: `(placeBit) User has reached the maximum amount of islands with bits placed.`
-            }
-        }
-
-        // check if this bit is premium and the island is barren. if both are false, return an error.
-        if (!bit.premium && island.type !== IslandType.BARREN) {
-            return {
-                status: Status.ERROR,
-                message: `(placeBit) Non-premium bits cannot be placed on non-barren islands.`
             }
         }
 
@@ -2101,128 +1832,6 @@ export const updateGatheringProgressAndDropResourceAlt = async (
 }
 
 /**
- * Updates all eligible islands' `claimableXCookies` based on their current earning rate.
- * 
- * Run by a scheduler every 10 minutes.
- * 
- * NOTE: If 0 xCookies is earnable for an island, this function will skip that island.
- */
-export const updateClaimableXCookies = async (): Promise<void> => {
-    try {
-        // find islands only where xCookies earnable is > 0
-        const islands = await IslandModel.find({ 'islandEarningStats.totalXCookiesEarnable': { $gt: 0 } }).lean();
-
-        if (islands.length === 0 || !islands) {
-            console.error(`(updateClaimableXCookies) No islands found.`);
-            return;
-        }
-
-        // prepare bulk write operations to update all islands' `claimableXCookies`
-        const bulkWriteOpsPromises = islands.map(async island => {
-            let updateOperations = [];
-
-            // get the bit ids placed on this island and fetch the bits
-            const placedBitIds = island.placedBitIds as number[];
-
-            // if no bits are placed, skip this island
-            if (placedBitIds.length === 0) {
-                console.log(`(updateClaimableXCookies) Island ID ${island.islandId} has no bits placed. Skipping...`);
-                return [];
-            }
-
-            // get the bits placed on the island
-            const bits = await BitModel.find({ bitId: { $in: placedBitIds } });
-
-            // get the island's current earning rate
-            const currentEarningRate = calcIslandCurrentRate(
-                RateType.EARNING,
-                <IslandType>island.type,
-                bits.map(bit => bit.farmingStats?.baseEarningRate),
-                bits.map(bit => bit.currentFarmingLevel),
-                bits.map(bit => bit.farmingStats.earningRateGrowth),
-                bits.map(bit => bit.bitStatsModifiers.earningRateModifiers as Modifier[]),
-                island.islandStatsModifiers?.earningRateModifiers as Modifier[]
-            );
-
-            // since this is called every 10 minutes, we will divide the `currentEarningRate` by 6 to get the 10-minute earning rate, and multiply it by the cookies earnable to get the `claimableXCookies`
-            const tenMinEarningRate = currentEarningRate / 6;
-            const claimableXCookies = tenMinEarningRate / 100 * island.islandEarningStats?.totalXCookiesEarnable;
-
-            console.log(`claimable xCookies for Island ${island.islandId} is ${claimableXCookies}.`);
-
-            // get the current amount of cookies earned already
-            const xCookiesEarned = island.islandEarningStats?.totalXCookiesEarned;
-
-            // if the amount of `claimableXCookies` is 0, skip this island (shouldn't happen, but just in case)
-            if (claimableXCookies === 0) {
-                console.log(`(updateClaimableXCookies) Island ID ${island.islandId} has 0 claimable xCookies. Skipping...`);
-                return [];
-            }
-
-            if (xCookiesEarned >= island.islandEarningStats?.totalXCookiesEarnable) {
-                console.log(`(updateClaimableXCookies) Island ID ${island.islandId} has already earned all of its xCookies. Skipping...`);
-                return [];
-            }
-
-            // if `xCookiesEarned` + `claimableXCookies` is greater than totalXCookiesEarnable, set `claimableXCookies` to totalXCookiesEarnable - xCookiesEarned
-            // this is to prevent the user from claiming more xCookies than they have spent
-            if (claimableXCookies + xCookiesEarned > island.islandEarningStats?.totalXCookiesEarnable) {
-                console.log(`(updateClaimableXCookies) Island ID ${island.islandId}'s claimableXCookies exceeds cookies spent.
-                 adjusting... totalXCookiesEarnable: ${island.islandEarningStats?.totalXCookiesEarnable} - xCookiesEarned: ${xCookiesEarned} = ${island.islandEarningStats?.totalXCookiesEarnable - xCookiesEarned}.`
-                );
-
-                updateOperations.push({
-                    updateOne: {
-                        filter: { islandId: island.islandId },
-                        update: {
-                            // also increment the `totalXCookiesEarned` by `totalXCookiesEarnable - xCookiesEarned`
-                            $inc: {
-                                'islandEarningStats.totalXCookiesEarned': island.islandEarningStats?.totalXCookiesEarnable - xCookiesEarned,
-                                'islandEarningStats.claimableXCookies': island.islandEarningStats?.totalXCookiesEarnable - xCookiesEarned
-                            }
-                        }
-                    }
-                });
-            } else {
-                console.log(`(updateClaimableXCookies) Island ID ${island.islandId} has updated its claimable xCookies to ${island.islandEarningStats?.claimableXCookies + claimableXCookies}.`);
-
-                updateOperations.push({
-                    updateOne: {
-                        filter: { islandId: island.islandId },
-                        update: {
-                            // also increment the `totalXCookiesEarned` by `claimableXCookies`
-                            $inc: {
-                                'islandEarningStats.totalXCookiesEarned': claimableXCookies,
-                                'islandEarningStats.claimableXCookies': claimableXCookies
-                            }
-                        }
-                    }
-                });
-            }
-
-            return updateOperations;
-        });
-
-        const bulkWriteOpsArrays = await Promise.all(bulkWriteOpsPromises);
-
-        const bulkWriteOps = bulkWriteOpsArrays.flat().filter(op => op);
-
-        // if there are no bulk write operations, return
-        if (bulkWriteOps.length === 0) {
-            console.error(`(updateClaimableXCookies) No bulk write operations found.`);
-            return;
-        }
-
-        // execute the bulk write operations
-        await IslandModel.bulkWrite(bulkWriteOps);
-
-        console.log(`(updateClaimableXCookies) All islands' claimableXCookies have been updated.`);
-    } catch (err: any) {
-        console.error(`(updateClaimableXCookies) Error: ${err.message}`);
-    }
-}
-
-/**
  * Applies a Gathering Progress booster to boost an island's gathering progress and potentially drop resources.
  */
 export const applyGatheringProgressBooster = async (
@@ -2526,127 +2135,6 @@ export const applyGatheringProgressBooster = async (
             status: Status.ERROR,
             message: `(applyGatheringProgressBooster) Error: ${err.message}`
         }
-    }
-}
-
-/**
- * Updates all eligible islands' `claimableCookieCrumbs` based on their current earning rate.
- * 
- * Run by a scheduler every 10 minutes.
- * 
- * NOTE: If 0 cookie crumbs is earnable for an island, this function will skip that island.
- */
-export const updateClaimableCrumbs = async (): Promise<void> => {
-    try {
-        const islands = await IslandModel.find({ 'islandEarningStats.totalCookieCrumbsEarnable': { $gt: 0 } }).lean();
-
-        if (islands.length === 0 || !islands) {
-            console.error(`(updateClaimableCrumbs) No islands found.`);
-            return;
-        }
-
-        // prepare bulk write operations to update all islands' `claimableCookieCrumbs`
-        const bulkWriteOpsPromises = islands.map(async island => {
-            let updateOperations = [];
-
-            // get the bit ids placed on this island and fetch the bits
-            const placedBitIds = island.placedBitIds as number[];
-
-            // if no bits are placed, skip this island
-            if (placedBitIds.length === 0) {
-                console.log(`(updateClaimableCrumbs) Island ID ${island.islandId} has no bits placed. Skipping...`);
-                return;
-            }
-
-            // get the bits placed on the island
-            const bits = await BitModel.find({ bitId: { $in: placedBitIds } });
-
-            // get the island's current earning rate
-            const currentEarningRate = calcIslandCurrentRate(
-                RateType.EARNING,
-                <IslandType>island.type,
-                bits.map(bit => bit.farmingStats?.baseEarningRate),
-                bits.map(bit => bit.currentFarmingLevel),
-                bits.map(bit => bit.farmingStats.earningRateGrowth),
-                bits.map(bit => bit.bitStatsModifiers.earningRateModifiers as Modifier[]),
-                island.islandStatsModifiers?.earningRateModifiers as Modifier[]
-            );
-
-            // since this is called every 10 minutes, we will divide the `currentEarningRate` by 6 to get the 10-minute earning rate, and multiply it by the cookie crumbs earnable to get the `claimableCookieCrumbs`
-            const tenMinEarningRate = currentEarningRate / 6;
-            const claimableCookieCrumbs = tenMinEarningRate / 100 * island.islandEarningStats?.totalCookieCrumbsEarnable;
-
-            console.log(`claimable Cookie Crumbs for Island ${island.islandId} is ${claimableCookieCrumbs}.`);
-
-            // get the current amount of cookie crumbs earned already
-            const cookieCrumbsEarned = island.islandEarningStats?.totalCookieCrumbsEarned;
-
-            // if the amount of `claimableCookieCrumbs` is 0, skip this island (shouldn't happen, but just in case)
-            if (claimableCookieCrumbs === 0) {
-                console.log(`(updateClaimableCrumbs) Island ID ${island.islandId} has 0 claimable Cookie Crumbs. Skipping...`);
-                return [];
-            }
-
-            if (cookieCrumbsEarned >= island.islandEarningStats?.totalCookieCrumbsEarnable) {
-                console.log(`(updateClaimableCrumbs) Island ID ${island.islandId} has already earned all of its Cookie Crumbs. Skipping...`);
-                return [];
-            }
-
-            // if `cookieCrumbsEarned` + `claimableCookieCrumbs` is greater than totalCookieCrumbsEarnable, set `claimableCookieCrumbs` to totalCookieCrumbsEarnable - cookieCrumbsEarned
-            // this is to prevent the user from claiming more cookie crumbs than they have spent
-            if (claimableCookieCrumbs + cookieCrumbsEarned > island.islandEarningStats?.totalCookieCrumbsEarnable) {
-                console.log(`(updateClaimableCrumbs) Island ID ${island.islandId}'s claimableCookieCrumbs exceeds cookie crumbs spent.
-                 adjusting... totalCookieCrumbsEarnable: ${island.islandEarningStats?.totalCookieCrumbsEarnable} - cookieCrumbsEarned: ${cookieCrumbsEarned} = ${island.islandEarningStats?.totalCookieCrumbsEarnable - cookieCrumbsEarned}.`
-                );
-
-                updateOperations.push({
-                    updateOne: {
-                        filter: { islandId: island.islandId },
-                        update: {
-                            // also increment the `totalCookieCrumbsEarned` by `totalCookieCrumbsEarnable - cookieCrumbsEarned`
-                            $inc: {
-                                'islandEarningStats.totalCookieCrumbsEarned': island.islandEarningStats?.totalCookieCrumbsEarnable - cookieCrumbsEarned,
-                                'islandEarningStats.claimableCookieCrumbs': island.islandEarningStats?.totalCookieCrumbsEarnable - cookieCrumbsEarned
-                            }
-                        }
-                    }
-                });
-            } else {
-                console.log(`(updateClaimableCrumbs) Island ID ${island.islandId} has updated its claimable Cookie Crumbs to ${island.islandEarningStats?.claimableCookieCrumbs + claimableCookieCrumbs}.`);
-
-                updateOperations.push({
-                    updateOne: {
-                        filter: { islandId: island.islandId },
-                        update: {
-                            // also increment the `totalCookieCrumbsEarned` by `claimableCookieCrumbs`
-                            $inc: {
-                                'islandEarningStats.totalCookieCrumbsEarned': claimableCookieCrumbs,
-                                'islandEarningStats.claimableCookieCrumbs': claimableCookieCrumbs
-                            }
-                        }
-                    }
-                });
-            }
-
-            return updateOperations;
-        });
-
-        const bulkWriteOpsArrays = await Promise.all(bulkWriteOpsPromises);
-
-        const bulkWriteOps = bulkWriteOpsArrays.flat().filter(op => op);
-
-        // if there are no bulk write operations, return
-        if (bulkWriteOps.length === 0) {
-            console.error(`(updateClaimableCrumbs) No bulk write operations found.`);
-            return;
-        }
-
-        // execute the bulk write operations
-        await IslandModel.bulkWrite(bulkWriteOps);
-
-        console.log(`(updateClaimableCrumbs) All islands' claimableCookieCrumbs have been updated.`);
-    } catch (err: any) {
-        console.error(`(updateClaimableCrumbs) Error: ${err.message}`);
     }
 }
 
@@ -3129,154 +2617,6 @@ export const updateDailyBonusResourcesGathered = async (): Promise<void> => {
 }
 
 /**
- * Claims either xCookies or cookie crumbs (or both, but at least one) from an island.
- */
-export const claimXCookiesAndCrumbs = async (twitterId: string, islandId: number): Promise<ReturnValue> => {
-    try {
-        const [user, island] = await Promise.all([
-            UserModel.findOne({ twitterId }).lean(),
-            IslandModel.findOne({ islandId }).lean()
-        ]);
-
-        const userUpdateOperations = {
-            $pull: {},
-            $inc: {},
-            $set: {},
-            $push: {}
-        }
-
-        const islandUpdateOperations = {
-            $pull: {},
-            $inc: {},
-            $set: {},
-            $push: {}
-        }
-
-        if (!user) {
-            return {
-                status: Status.ERROR,
-                message: `(claimXCookies) User not found.`
-            }
-        }
-
-        if (!island) {
-            return {
-                status: Status.ERROR,
-                message: `(claimXCookies) Island not found.`
-            }
-        }
-
-        // check if the user owns the island
-        if (!(user.inventory?.islandIds as number[]).includes(islandId)) {
-            return {
-                status: Status.UNAUTHORIZED,
-                message: `(claimXCookies) User does not own the island.`
-            }
-        }
-
-        // check if the `X_COOKIE_CLAIM_COOLDOWN` has passed from the last claimed time
-        // `lastClaimed` checks for both xCookies and cookie crumbs
-        const currentTime = Math.floor(Date.now() / 1000);
-        const lastClaimedTime = island.islandEarningStats?.lastClaimed as number;
-
-        if (currentTime - lastClaimedTime < X_COOKIE_CLAIM_COOLDOWN) {
-            return {
-                status: Status.ERROR,
-                message: `(claimXCookies) Cooldown not yet passed.`
-            }
-        }
-
-        // check if the island has any xCookies to claim
-        const xCookies: number = island.islandEarningStats?.claimableXCookies;
-
-        // check if the island has any cookie crumbs to claim
-        const cookieCrumbs: number = island.islandEarningStats?.claimableCookieCrumbs;
-
-        // at least one should be claimable, else return an error
-        if (xCookies <= 0 && cookieCrumbs <= 0) {
-            return {
-                status: Status.ERROR,
-                message: `(claimXCookies) No xCookies or Cookie Crumbs to claim.`
-            }
-        }
-
-        // if xCookies can be claimed, do the following logic
-        if (xCookies > 0) {
-            // check how much tax the user has to pay
-            const { status, message, data } = await checkCurrentTax(twitterId, islandId);
-
-            if (status !== Status.SUCCESS) {
-                return {
-                    status: Status.ERROR,
-                    message: `(claimXCookies) Error from checkCurrentTax: ${message}`
-                }
-            }
-
-            const tax = data?.tax as number;
-
-            // reduce the xCookies by the tax amount
-            const xCookiesAfterTax = xCookies - (tax / 100 * xCookies);
-
-            console.log(`claiming tax for island ID ${islandId}: ${tax}%`);
-
-            // add the xCookies to the user's inventory
-            userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = xCookiesAfterTax;
-
-            // check if the user's `xCookieData.extendedXCookieData` contains a source called ISLAND_CLAIMING. if not, push a new source.
-            const islandClaimingIndex = (user.inventory.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(data => data.source === XCookieSource.ISLAND_CLAIMING);
-
-            if (islandClaimingIndex === -1) {
-                userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = {
-                    xCookies: xCookiesAfterTax,
-                    source: XCookieSource.ISLAND_CLAIMING,
-                };
-            } else {
-                userUpdateOperations.$inc[`inventory.xCookieData.extendedXCookieData.${islandClaimingIndex}.xCookies`] = xCookiesAfterTax;
-            }
-
-            // do a few things:
-            // 1. set the island's `claimableXCookies` to 0
-            // 2. set the island's `currentTax` to `tax`
-            islandUpdateOperations.$set['islandEarningStats.claimableXCookies'] = 0;
-            islandUpdateOperations.$set['currentTax'] = tax;
-        }
-
-        // if cookie crumbs can be claimed, do the following logic
-        if (cookieCrumbs > 0) {
-            // add the cookie crumbs to the user's inventory
-            userUpdateOperations.$inc['inventory.cookieCrumbs'] = cookieCrumbs;
-
-            // set the island's `claimableCookieCrumbs` to 0
-            islandUpdateOperations.$set['islandEarningStats.claimableCookieCrumbs'] = 0;
-        }
-
-        // set the island's `lastClaimed` to the current time
-        islandUpdateOperations.$set['islandEarningStats.lastClaimed'] = currentTime;
-
-        // execute the update operations
-        await Promise.all([
-            UserModel.updateOne({ twitterId }, userUpdateOperations),
-            IslandModel.updateOne({ islandId }, islandUpdateOperations)
-        ]);
-
-        return {
-            status: Status.SUCCESS,
-            message: `(claimXCookies) Claimed ${xCookies} xCookies from island ID ${islandId}.`,
-            data: {
-                islandId: islandId,
-                xCookies: xCookies,
-                crumbs: cookieCrumbs,
-            }
-        }
-    } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(claimXCookies) Error: ${err.message}`
-        }
-    }
-}
-
-/**
  * Drops a resource for a user's island. 
  * 
  * Should only be called when gathering progress has reached >= 100% (and then reset back to 0%). Scheduler/parent function will check this.
@@ -3325,34 +2665,6 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
             const resourcesGathered: ExtendedResource[] = island.islandResourceStats?.resourcesGathered.filter((r: ExtendedResource) => r.origin === ExtendedResourceOrigin.NORMAL);
             // get the amount per `resourcesGathered` instance
             const resourcesGatheredAmount = resourcesGathered.reduce((acc, r) => acc + r.amount, 0);
-
-            // for barren isles, check only for resources gathered that are seaweed instead of the entire length.
-            // this is because for barren isles, there is a small chance to drop common resources that won't be counted towards the base resource cap.
-            if (<IslandType>island.type === IslandType.BARREN) {
-                const seaweedGathered = resourcesGathered.filter(r => r.type === BarrenResource.SEAWEED);
-                if (baseResourceCap - seaweedGathered.length <= 0) {
-                    console.log(`(dropResource) No resources left to drop for Island ${islandId}.`);
-
-                    // if the island's `gatheringEnd` is still equal to 0 at this point, update it to the current time.
-                    if (island.islandResourceStats?.gatheringEnd === 0) {
-                        await IslandModel.updateOne({ islandId }, {
-                            $set: {
-                                'islandResourceStats.gatheringEnd': Math.floor(Date.now() / 1000)
-                            }
-                        });
-
-                        return {
-                            status: Status.ERROR,
-                            message: `(dropResource) No resources left to drop. Updated gatheringEnd to current time.`
-                        }
-                    }
-
-                    return {
-                        status: Status.ERROR,
-                        message: `(dropResource) No resources left to drop.`
-                    }
-                }
-            }
 
             // for any other isles, check the entire length of resources gathered.
             if (baseResourceCap - resourcesGatheredAmount <= 0) {
@@ -3456,60 +2768,6 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
 
                     // add the new resource to the island's `resourcesGathered`
                     gatheredResourcesToAdd.push(newResource);
-                }
-            }
-
-            // lastly, check if island is barren. if it is, they have an additional small chance to drop a common resource of any line.
-            if (<IslandType>island.type === IslandType.BARREN) {
-                // roll a dice between 1-100
-                const rand = Math.random() * 100 + 1;
-
-                // if dice lands under `BARREN_ISLE_COMMON_DROP_CHANCE`, drop a random common resource alongside the seaweed they're getting.
-                if (rand <= BARREN_ISLE_COMMON_DROP_CHANCE) {
-                    // randomize any common resource from `resources`
-                    const commonResources = resources.filter(r => r.rarity === ResourceRarity.COMMON);
-                    const commonResourceToDrop = commonResources[Math.floor(Math.random() * commonResources.length)];
-
-                    // check if the common resource already exists in `claimableResources`
-                    const existingResourceIndex = claimableResources.findIndex(r => r.type === commonResourceToDrop.type);
-
-                    console.log(`(dropResource) works #4`);
-
-                    // if the resource already exists, increment its amount
-                    if (existingResourceIndex !== -1) {
-                        islandUpdateOperations.$inc[`islandResourceStats.claimableResources.${existingResourceIndex}.amount`] = 1;
-                    } else {
-                        // if the resource doesn't exist, push a new resource
-                        const newResource: ExtendedResource = {
-                            ...commonResourceToDrop,
-                            origin: ExtendedResourceOrigin.NORMAL,
-                            amount: 1
-                        }
-
-                        // add the new resource to the island's `claimableResources`
-                        claimableResourcesToAdd.push(newResource);
-                    }
-
-                    // add to the island's `resourcesGathered` as well
-                    // check if the common resource already exists in `resourcesGathered`
-                    const existingGatheredResourceIndex = resourcesGathered.findIndex(r => r.type === commonResourceToDrop.type);
-
-                    // if the resource already exists, increment its amount
-                    if (existingGatheredResourceIndex !== -1) {
-                        islandUpdateOperations.$inc[`islandResourceStats.resourcesGathered.${existingGatheredResourceIndex}.amount`] = 1;
-                    } else {
-                        // if the resource doesn't exist, push a new resource
-                        const newResource: ExtendedResource = {
-                            ...commonResourceToDrop,
-                            origin: ExtendedResourceOrigin.NORMAL,
-                            amount: 1
-                        }
-
-                        // add the new resource to the island's `resourcesGathered`
-                        gatheredResourcesToAdd.push(newResource);
-                    }
-
-
                 }
             }
 
@@ -3696,15 +2954,10 @@ export const randomizeResourceFromChances = (
             // get the trait for the resource rarity. if rarity is common, then take traits[0], if uncommon, then traits[1], and so on.
             const trait = traits[ResourceRarityNumeric[resourceRarity]];
 
-            // if island type is barren, return seaweed
             // if trait is mineral rich, find the ore resource with the specified rarity.
             // if trait is aquifer, find the liquid resource with the specified rarity.
             // if trait is fertile, find the fruit resource with the specified rarity
             const resource = resources.find(r => {
-                if (type === IslandType.BARREN) {
-                    return r.line === ResourceLine.BARREN;
-                }
-
                 if (trait === IslandTrait.MINERAL_RICH) {
                     return r.line === ResourceLine.ORE && r.rarity === <ResourceRarity>resourceRarity;
                 }

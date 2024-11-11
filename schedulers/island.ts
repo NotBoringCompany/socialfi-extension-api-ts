@@ -1,5 +1,5 @@
 import cron from 'node-cron';
-import { resetDailyIslandTappingMilestone, updateClaimableCrumbs, updateClaimableXCookies, updateDailyBonusResourcesGathered, updateGatheringProgressAndDropResource } from '../api/island';
+import { resetDailyIslandTappingMilestone, updateDailyBonusResourcesGathered, updateGatheringProgressAndDropResource } from '../api/island';
 import Bull from 'bull';
 import { depleteEnergy } from '../api/bit';
 

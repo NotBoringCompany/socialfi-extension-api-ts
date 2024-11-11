@@ -39,8 +39,6 @@ export interface Island {
     traits: IslandTrait[];
     /** resource stats related to the island, such as gathering rate */
     islandResourceStats: IslandResourceStats;
-    /** earning stats related to the island, such as earning rate */
-    islandEarningStats: IslandEarningStats;
     /** modifiers for both resource and earning stats (incl. boost and reduction) */
     islandStatsModifiers: IslandStatsModifiers;
     /** island tapping related data */
@@ -51,8 +49,6 @@ export interface Island {
  * Represents the type of island.
  */
 export enum IslandType {
-    // for free to play players, generating very small amount of (possibly common) resources
-    BARREN = 'Barren',
     PRIMAL_ISLES = 'Primal Isles',
     VERDANT_ISLES = 'Verdant Isles',
     EXOTIC_ISLES = 'Exotic Isles',
@@ -64,14 +60,13 @@ export enum IslandType {
 
 /** Numeric representation of `IslandType` (numerical instance for rarity comparison) */
 export const IslandRarityNumeric: { [key in IslandType]: number } = {
-    [IslandType.BARREN]: 0,
-    [IslandType.PRIMAL_ISLES]: 1,
-    [IslandType.VERDANT_ISLES]: 2,
-    [IslandType.EXOTIC_ISLES]: 3,
+    [IslandType.PRIMAL_ISLES]: 0,
+    [IslandType.VERDANT_ISLES]: 1,
+    [IslandType.EXOTIC_ISLES]: 2,
     // xterio isles = exotic isles in terms of rarity
-    [IslandType.XTERIO_ISLES]: 3,
-    [IslandType.CRYSTAL_ISLES]: 4,
-    [IslandType.CELESTIAL_ISLES]: 5
+    [IslandType.XTERIO_ISLES]: 2,
+    [IslandType.CRYSTAL_ISLES]: 3,
+    [IslandType.CELESTIAL_ISLES]: 4
 }
 
 /**
@@ -121,38 +116,6 @@ export interface IslandResourceStats {
      *  to prevent users from faking the gathering progress increase by updating the value in the frontend.
      */
     lastUpdatedGatheringProgress: number;
-}
-
-/**
- * Represents the earning stats of an island.
- */
-export interface IslandEarningStats {
-    /** total xCookies spent for this island (a % of the xCookies spent for a terra cap will go here. the rest comes from island upgrades) */
-    totalXCookiesSpent: number;
-    /** total xCookies earnable from this island. */
-    totalXCookiesEarnable: number;
-    /** total xCookies earned, incl. ones claimed already. end amount should equal total xCookies spent (even with tax since it's not calc. here) */
-    totalXCookiesEarned: number;
-    /** claimable xCookies that haven't been claimed yet to the inventory */
-    claimableXCookies: number;
-    /**  total cookie crumbs spent on this island */
-    totalCookieCrumbsSpent: number;
-    /** total cookie crumbs earnble on this island */
-    totalCookieCrumbsEarnable: number;
-    /** total cookie crumbs earned, incl. the ones claimed already. */
-    totalCookieCrumbsEarned: number;
-    /** claimable cookie crumbs that haven't been claimed yet to the inventory */
-    claimableCookieCrumbs: number;
-    /** start timestamp of earning (xCookies); 0 if not started yet */
-    earningStart: number;
-    /**  start timestamp of earning (cookie crumbs); 0 if not started yet; starts after gathering of resources and earning of xCookies are completed */
-    crumbsEarningStart: number;
-    /** end timestamp of earning (xCookies); 0 if not ended yet */
-    earningEnd: number;
-    /** end timestamp of earning (cookie crumbs); 0 if not ended yet */
-    crumbsEarningEnd: number;
-    /** timestamp of when `claimableXCookies` and/or `claimableCookieCrumbs` were last claimed */
-    lastClaimed: number;
 }
 
 /** 
