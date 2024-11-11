@@ -3,7 +3,7 @@ import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { claimWeeklyMVPRewards, fetchWeeklyMVPRankingData, getClaimableWeeklyMVPRewards } from '../api/weeklyMVPReward';
 import { authMiddleware } from '../middlewares/auth';
-import { incrementEventCounterInContract } from '../api/web3';
+
 import { mixpanel, allowMixpanel } from '../utils/mixpanel';
 import { CLAIM_WEEKLY_MVP_REWARDS_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 
@@ -29,7 +29,7 @@ router.post('/claim_weekly_mvp_rewards', async (req, res) => {
             });
 
             // increment the event counter in the wonderbits contract.
-            incrementEventCounterInContract(validateData?.twitterId, CLAIM_WEEKLY_MVP_REWARDS_MIXPANEL_EVENT_HASH);
+            
         }
 
         return res.status(status).json({

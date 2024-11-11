@@ -7,7 +7,7 @@ import { CONSUME_TERRA_CAPSULATOR_MIXPANEL_EVENT_HASH } from '../utils/constants
 
 import { UserWallet } from '../models/user';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
-import { incrementEventCounterInContract } from '../api/web3';
+
 import { incrementProgressionByType } from '../api/quest';
 import { QuestRequirementType } from '../models/quest';
 
@@ -34,7 +34,7 @@ router.post('/consume', async (req, res) => {
                 '_island': data?.island,
             });
 
-            incrementEventCounterInContract(validateData?.twitterId, CONSUME_TERRA_CAPSULATOR_MIXPANEL_EVENT_HASH);
+            
             incrementProgressionByType(QuestRequirementType.SUMMON_ISLAND, validateData?.twitterId, 1, data.island.type);
         }
 

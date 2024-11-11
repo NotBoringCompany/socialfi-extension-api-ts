@@ -2,7 +2,7 @@ import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { claimWeeklySquadMemberRewards, getClaimableWeeklySquadMemberRewards, getLatestWeeklyLeaderboard } from '../api/squadLeaderboard';
-import { incrementEventCounterInContract } from '../api/web3';
+
 import { mixpanel, allowMixpanel } from '../utils/mixpanel';
 import { CLAIM_SQUAD_REWARDS_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 
@@ -54,7 +54,7 @@ router.post('/claim_weekly_squad_member_rewards', async (req, res) => {
             });
 
             // increment the event counter in the wonderbits contract.
-            incrementEventCounterInContract(validateData?.twitterId, CLAIM_SQUAD_REWARDS_MIXPANEL_EVENT_HASH);
+            
         }
 
         return res.status(status).json({

@@ -43,7 +43,7 @@ export const findDuplicateIslandIds = async (): Promise<void> => {
         const latestIslandId = await IslandModel.findOne().sort({ islandId: -1 }).exec();
 
         // we will use this to increment the islandIds
-        let latestIslandCounter = latestIslandId?.islandId + 1 ?? 0;
+        let latestIslandCounter = latestIslandId?.islandId + 1;
 
         console.log(`(findDuplicateIslandIds) Found ${duplicates.length} duplicate islandIds: ${JSON.stringify(duplicates, null, 2)}`);
 
@@ -273,7 +273,7 @@ export const findDuplicateBitIds = async (): Promise<void> => {
         const latestBitId = await BitModel.findOne().sort({ bitId: -1 }).exec();
 
         // we will use this to increment the bitIds
-        let latestBitIdCounter = latestBitId?.bitId + 1 ?? 0;
+        let latestBitIdCounter = latestBitId?.bitId + 1;
 
         // for each duplicate bit id, if there is more than 1 occurrence, fetch count - 1 of the duplicates (because we want to keep 1 of them)
         for (const duplicate of duplicates) {

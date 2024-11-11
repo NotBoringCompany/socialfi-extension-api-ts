@@ -9,7 +9,7 @@ import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { COMPLETE_QUEST_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { UserWallet } from '../models/user';
 
-import { incrementEventCounterInContract } from '../api/web3';
+
 
 const router = express.Router();
 
@@ -54,7 +54,7 @@ router.post('/complete_quest', async (req, res) => {
                 '_data': data
             });
 
-            incrementEventCounterInContract(validateData?.twitterId, COMPLETE_QUEST_MIXPANEL_EVENT_HASH);
+            
         }
 
         return res.status(status).json({

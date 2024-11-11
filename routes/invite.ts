@@ -2,7 +2,7 @@ import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { claimReferralRewards, claimSuccessfulIndirectReferralRewards, fetchSuccessfulIndirectReferralRewards, getReferredUsersKOSCount } from '../api/invite';
-import { incrementEventCounterInContract } from '../api/web3';
+
 import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 import { CLAIM_INDIRECT_REFERRAL_REWARDS_MIXPANEL_EVENT_HASH, CLAIM_REFERRAL_REWARDS_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 
@@ -28,7 +28,7 @@ router.post('/claim_referral_rewards', async (req, res) => {
             });
 
             // increment the event counter in the wonderbits contract.
-            incrementEventCounterInContract(validateData?.twitterId, CLAIM_REFERRAL_REWARDS_MIXPANEL_EVENT_HASH);
+            
         }
 
         return res.status(status).json({
@@ -116,7 +116,7 @@ router.post('/claim_successful_indirect_referral_rewards', async (req, res) => {
             });
 
             // increment the event counter in the wonderbits contract.
-            incrementEventCounterInContract(validateData?.twitterId, CLAIM_INDIRECT_REFERRAL_REWARDS_MIXPANEL_EVENT_HASH);
+            
         }
 
         return res.status(status).json({

@@ -7,7 +7,7 @@ import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { PURCHASE_SHOP_ASSET_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { UserWallet } from '../models/user';
 
-import { incrementEventCounterInContract } from '../api/web3';
+
 import { BitOrbType } from '../models/bitOrb';
 import { incrementProgressionByType } from '../api/quest';
 import { QuestRequirementType } from '../models/quest';
@@ -90,7 +90,7 @@ router.post('/purchase_shop_asset', async (req, res) => {
                 });
 
                 // increment the event counter in the wonderbits contract.
-                incrementEventCounterInContract(validateData?.twitterId, PURCHASE_SHOP_ASSET_MIXPANEL_EVENT_HASH);
+                
             }
 
 

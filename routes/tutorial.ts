@@ -5,7 +5,7 @@ import { validateRequestAuth } from '../utils/auth';
 import { COMPLETE_QUEST_MIXPANEL_EVENT_HASH, TUTORIAL_COMPLETED_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { UserWallet } from '../models/user';
-import { incrementEventCounterInContract } from '../api/web3';
+
 import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 
 const router = express.Router();
@@ -47,7 +47,7 @@ router.post('/complete_tutorial', async (req, res) => {
                 distinct_id: validateData?.twitterId,
             });
 
-            incrementEventCounterInContract(validateData?.twitterId, TUTORIAL_COMPLETED_MIXPANEL_EVENT_HASH);
+            
         }
 
         return res.status(status).json({
@@ -81,7 +81,7 @@ router.post('/skip_tutorial', async (req, res) => {
                 distinct_id: validateData?.twitterId,
             });
 
-            incrementEventCounterInContract(validateData?.twitterId, TUTORIAL_COMPLETED_MIXPANEL_EVENT_HASH);
+            
         }
 
         return res.status(status).json({

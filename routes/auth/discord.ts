@@ -9,7 +9,6 @@ import { allowMixpanel, mixpanel } from '../../utils/mixpanel';
 import { UserWallet } from '../../models/user';
 import { CONNECT_DISCORD_CALLBACK_MIXPANEL_EVENT_HASH, DISCONNECT_DISCORD_MIXPANEL_EVENT_HASH } from '../../utils/constants/mixpanelEvents';
 import { WONDERBITS_CONTRACT } from '../../utils/constants/web3';
-import { incrementEventCounterInContract } from '../../api/web3';
 
 const router = express.Router();
 
@@ -110,7 +109,7 @@ router.get('/callback', passport.authenticate('discord', { failureRedirect: '/',
                 '_profile': profile,
             });
 
-            incrementEventCounterInContract(validateData?.twitterId, CONNECT_DISCORD_CALLBACK_MIXPANEL_EVENT_HASH);
+            
         }
 
         return res.redirect(target.href);
@@ -141,7 +140,7 @@ router.post('/disconnect', async (req, res) => {
                 '_data': data
             });
 
-            incrementEventCounterInContract(validateData?.twitterId, DISCONNECT_DISCORD_MIXPANEL_EVENT_HASH);
+            
         }
 
         return res.status(status).json({

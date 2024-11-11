@@ -6,7 +6,6 @@ import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 import { CONSUME_BIT_ORB_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { UserWallet } from '../models/user';
-import { incrementEventCounterInContract } from '../api/web3';
 import { incrementProgressionByType } from '../api/quest';
 import { QuestRequirementType } from '../models/quest';
 
@@ -40,7 +39,7 @@ router.post('/consume', async (req, res) => {
             });
 
             // increment the event counter in the wonderbits contract.
-            incrementEventCounterInContract(validateData?.twitterId, CONSUME_BIT_ORB_MIXPANEL_EVENT_HASH);
+            
 
             incrementProgressionByType(QuestRequirementType.CONSUME_ORB, validateData?.twitterId, 1);
             incrementProgressionByType(QuestRequirementType.HATCH_BIT, validateData?.twitterId, 1, data.bit.rarity);

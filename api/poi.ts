@@ -19,7 +19,7 @@ import * as dotenv from 'dotenv';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { UserWallet } from '../models/user';
 import { getUserCurrentPoints } from './leaderboard';
-import { updatePointsInContract } from './web3';
+
 
 /**
  * Resets the `currentBuyableAmount` and `currentSellableAmount` of all global items in all POI shops every day at 23:59 UTC.
@@ -1253,8 +1253,7 @@ export const sellItemsInPOIShop = async (
             }
         }
 
-        // update the user's points in the wonderbits contract
-        updatePointsInContract(twitterId);
+        
 
         return {
             status: Status.SUCCESS,

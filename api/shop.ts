@@ -433,19 +433,10 @@ export const purchaseShopAsset = async (
             // at this point, if verification is successful, no need to deduct anything currency-wise because the user has already paid for the asset.
             // simply continue and get out of the if-else block.
         } else if (payment === ShopAssetExternalPaymentMethod.TELEGRAM_STARS) {
-            if (shopAsset.price.finalUsd <= 0) {
-                return {
-                    status: Status.ERROR,
-                    message: `(purchaseShopAsset) Invalid USD price for asset.`
-                }
-            }
-
-            totalCost = shopAsset.price.finalUsd * amount;
-
-            // TBD. throw error; not implemented yet.
+            // Telegram Stars will use another endpoint (with an invoice).
             return {
                 status: Status.ERROR,
-                message: `(purchaseShopAsset) Telegram Stars payment not implemented yet.`
+                message: `(purchaseShopAsset) Telegram Stars payment not supported in this endpoint.`
             }
         } else {
             totalCost = shopAsset.price.finalUsd * amount;

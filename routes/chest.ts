@@ -7,7 +7,7 @@ import { OPEN_CHEST_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvent
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { UserWallet } from '../models/user';
 
-import { incrementEventCounterInContract } from '../api/web3';
+
 
 const router = express.Router();
 
@@ -33,7 +33,7 @@ router.post('/open_chest', async (req, res) => {
                 '_data': data,
             });
 
-            incrementEventCounterInContract(validateData?.twitterId, OPEN_CHEST_MIXPANEL_EVENT_HASH);
+            
         }
 
         return res.status(status).json({

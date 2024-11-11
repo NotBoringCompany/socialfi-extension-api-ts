@@ -5,7 +5,6 @@ import { checkDailyKOSRewardsQueue, checkWeeklyKOSRewardsQueue } from './kos';
 import { resetGlobalItemsDailyBuyableAndSellableAmountQueue } from './poi';
 import { calculateWeeklySquadRankingAndAddSquadLeaderboardQueue } from './squadLeaderboard';
 import { restoreUserCurrentEnergyAndResetRerollQueue, updateBeginnerRewardsDataQueue, updateDailyLoginRewardsDataQueue, updateUserEnergyPotionQueue } from './user';
-import { batchSendKICKQueue } from './web3';
 import { distributeWeeklyMVPRewardsQueue, updateCurrentWeeklyMVPRankingLeaderboardQueue } from './weeklyMVPReward';
 
 export const schedulers = async (): Promise<void> => {
@@ -28,14 +27,6 @@ export const schedulers = async (): Promise<void> => {
         });
 
         updateCurrentWeeklyMVPRankingLeaderboardQueue.add({}, {
-            // every hour
-            repeat: {
-                cron: '0 * * * *',
-                tz: 'UTC',
-            }
-        });
-
-        batchSendKICKQueue.add({}, {
             // every hour
             repeat: {
                 cron: '0 * * * *',

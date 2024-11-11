@@ -8,7 +8,6 @@ import { allowMixpanel, mixpanel } from '../../utils/mixpanel';
 import { TWITTER_LOGIN_CALLBACK_MIXPANEL_EVENT_HASH } from '../../utils/constants/mixpanelEvents';
 import { WONDERBITS_CONTRACT } from '../../utils/constants/web3';
 import { UserWallet } from '../../models/user';
-import { incrementEventCounterInContract } from '../../api/web3';
 
 const router = express.Router();
 
@@ -85,7 +84,7 @@ router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/',
                     _data: data,
                 });
 
-                incrementEventCounterInContract(twitterId, TWITTER_LOGIN_CALLBACK_MIXPANEL_EVENT_HASH);
+                
             }
 
             // update user's login streak ingame data

@@ -41,7 +41,6 @@ import { ExtendedDiscordProfile, ExtendedProfile } from '../utils/types';
 import { WeeklyMVPRewardType } from '../models/weeklyMVPReward';
 import mongoose from 'mongoose';
 import * as dotenv from 'dotenv';
-import { sendKICKUponRegistration, updatePointsInContract } from './web3';
 import { getUserCurrentPoints } from './leaderboard';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { parseTelegramData, TelegramAuthData, validateTelegramData } from '../utils/telegram';
@@ -269,9 +268,6 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
             });
 
             await newUser.save();
-
-            // give the user some KICK tokens
-            sendKICKUponRegistration(address);
 
             return {
                 status: Status.SUCCESS,
@@ -1175,8 +1171,7 @@ export const claimDailyRewards = async (twitterId: string, leaderboardName: stri
             }
         }
 
-        // update the user's points in the wonderbits contract
-        updatePointsInContract(twitterId);
+        
 
         return {
             status: Status.SUCCESS,
@@ -2543,9 +2538,6 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
         });
 
         await placeBit(twitterId, islandData.island.islandId, bitIdData?.latestBitId + 1);
-
-        // give the user some KICK tokens
-        sendKICKUponRegistration(address);
 
         return {
             status: Status.SUCCESS,
