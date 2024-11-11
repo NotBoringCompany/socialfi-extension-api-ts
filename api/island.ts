@@ -48,6 +48,28 @@ export const deleteEarningStatsFromAllIslands = async (): Promise<void> => {
 }
 
 /**
+ * Deletes the `currentTax` field from all islands.
+ */
+export const deleteTaxFromAllIslands = async (): Promise<void> => {
+    try {
+        // delete the `currentTax` field from all islands
+        await IslandModel.updateMany({}, {
+            $unset: {
+                currentTax: 1
+            }
+        }).catch(err => {
+            throw err;
+        })
+
+        console.log(`(deleteTaxFromAllIslands) Deleted the 'currentTax' field from all islands.`);
+    } catch (err: any) {
+        console.error('Error in deleteTaxFromAllIslands:', err.message);
+    }
+}
+
+deleteTaxFromAllIslands();
+
+/**
  * Gifts an Xterio user an Xterio island.
  */
 export const giftXterioIsland = async (
@@ -140,7 +162,6 @@ export const giftXterioIsland = async (
             purchaseDate: Math.floor(Date.now() / 1000),
             obtainMethod: ObtainMethod.XTERIO,
             currentLevel: 1,
-            currentTax: 0,
             placedBitIds: [],
             traits,
             islandResourceStats: {
