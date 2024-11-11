@@ -29,6 +29,27 @@ import { ObtainMethod } from '../models/obtainMethod';
 import { redis } from '../utils/constants/redis';
 
 /**
+ * Removes earning stats from all bits in the database.
+ */
+export const removeEarningStatsFromBit = async (): Promise<void> => {
+    try {
+        // remove `baseEarningRate` and `earningRateGrowth` from all bits' `farmingStats`.
+        // also, remove `bitStatsModifiers.earningRateModifiers` from all bits.
+        await BitModel.updateMany({}, {
+            $unset: {
+                'farmingStats.baseEarningRate': 1,
+                'farmingStats.earningRateGrowth': 1,
+                'bitStatsModifiers.earningRateModifiers': 1,
+            }
+        });
+
+        console.log(`(removeEarningStatsFromBit) Removed earning stats from all bits.`);
+    } catch (err: any) {
+        console.log(`(removeEarningStatsFromBit) Error: ${err.message}`);
+    }
+}
+
+/**
  * Gifts a user from Xterio an Xterio bit.
  */
 export const giftXterioBit = async (twitterId: string): Promise<ReturnValue> => {
