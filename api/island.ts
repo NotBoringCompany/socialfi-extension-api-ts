@@ -26,20 +26,22 @@ import { redis } from '../utils/constants/redis';
 import { SYNTHESIZING_ITEM_DATA, SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE } from '../utils/constants/asset';
 
 /**
- * Deletes the `islandEarningStats` field from all islands.
+ * Deletes the `islandEarningStats` field from all islands as well as earning modifiers.
  */
 export const deleteEarningStatsFromAllIslands = async (): Promise<void> => {
     try {
-        console.log(`(deleteEarningStatsFromAllIslands) Deleting the 'islandEarningStats' field from all islands...`);
+        // delete the `islandEarningStats` field from all islands
+        // also, delete `islandStatsModifiers.earningRateModifiers` from all islands
         await IslandModel.updateMany({}, {
             $unset: {
-                islandEarningStats: 1
+                islandEarningStats: 1,
+                'islandStatsModifiers.earningRateModifiers': 1
             }
         }).catch(err => {
             throw err;
         })
 
-        console.log(`(deleteEarningStatsFromAllIslands) Deleted the 'islandEarningStats' field from all islands.`);
+        console.log(`(deleteEarningStatsFromAllIslands) Deleted the 'islandEarningStats' field and earning rate modifiers from all islands.`);
     } catch (err: any) {
         console.error('Error in deleteEarningStatsFromAllIslands:', err.message);
     }
