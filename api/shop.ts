@@ -195,12 +195,6 @@ export const purchaseShopAsset = async (
     chain?: string | number,
     // for blockchain txs only; the hex string of the transaction hash (for EVM chains) or the signed BOC (bag of cells; for TON)
     txHash?: string,
-    // for telegram payments only; the payload of the invoice.
-    invoicePayload?: string,
-    // for telegram payments only; the telegram payment charge ID.
-    telegramPaymentChargeId?: string,
-    // for external payments only; the provider payment charge ID.
-    providerPaymentChargeId?: string,
 ): Promise<ReturnValue> => {
     console.log(`(purchaseShopAsset) User ${twitterId} attempting to purchase ${amount} of ${asset} with ${payment}.`);
 
@@ -386,19 +380,10 @@ export const purchaseShopAsset = async (
             // at this point, if verification is successful, no need to deduct anything currency-wise because the user has already paid for the asset.
             // simply continue and get out of the if-else block.
         } else if (payment === ShopAssetExternalPaymentMethod.TELEGRAM_STARS) {
-            if (shopAsset.price.finalUsd <= 0) {
-                return {
-                    status: Status.ERROR,
-                    message: `(purchaseShopAsset) Invalid USD price for asset.`
-                }
-            }
-
-            totalCost = shopAsset.price.finalUsd * amount;
-
-            // TBD. throw error; not implemented yet.
+            // TG Stars is NOT supported on this endpoint. Please use the `sendTelegramStarsInvoice` function to send an invoice.
             return {
                 status: Status.ERROR,
-                message: `(purchaseShopAsset) Telegram Stars payment not implemented yet.`
+                message: `(purchaseShopAsset) Telegram Stars payment is not supported on this endpoint.`
             }
         } else if (payment === ShopAssetIGCPaymentMethod.DIAMONDS) {
             if (shopAsset.price.finalDiamonds <= 0) {
@@ -583,12 +568,7 @@ export const purchaseShopAsset = async (
                     txPayload,
                     confirmationAttempts: [ShopAssetPurchaseConfirmationAttemptType.SUCCESS]
                 } : null,
-                telegramData: invoicePayload && telegramPaymentChargeId && providerPaymentChargeId ? {
-                    invoicePayload,
-                    telegramPaymentChargeId,
-                    providerPaymentChargeId,
-                    confirmationAttempts: [ShopAssetPurchaseConfirmationAttemptType.SUCCESS]
-                } : null,
+                telegramData: null,
                 purchaseTimestamp: Math.floor(Date.now() / 1000),
                 effectExpiration: effectExpiration(),
                 givenContents: shopAsset.givenContents
@@ -620,10 +600,7 @@ export const purchaseShopAsset = async (
                 userCurrency: typeof payment === 'string' && Object.values(ShopAssetIGCPaymentMethod).includes(payment as ShopAssetIGCPaymentMethod) ? {
                     currentValue: currentCurrency,
                     updatedValue: Math.max(currentCurrency - totalCost, 0),
-                } : null,
-                invoicePayload: invoicePayload ?? null,
-                telegramPaymentChargeId: telegramPaymentChargeId ?? null,
-                providerPaymentChargeId: providerPaymentChargeId ?? null,
+                } : null
             }
         }
     } catch (err: any) {
