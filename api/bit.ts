@@ -2,13 +2,9 @@ import { ReturnValue, Status } from '../utils/retVal';
 import { Bit, BitFarmingStats, BitNameData, BitRarity, BitType } from '../models/bit';
 import {
     DEFAULT_ENERGY_DEPLETION_RATE,
-    BIT_EVOLUTION_COST,
-    DEFAULT_EARNING_RATE,
-    DEFAULT_EARNING_RATE_GROWTH,
     DEFAULT_GATHERING_RATE,
     DEFAULT_GATHERING_RATE_GROWTH,
     ENERGY_THRESHOLD_REDUCTIONS,
-    FREE_BIT_EVOLUTION_COST,
     MAX_BIT_LEVEL,
     RANDOMIZE_GENDER,
     getBitStatsModifiersFromTraits,
