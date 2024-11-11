@@ -487,7 +487,7 @@ export const feedBit = async (twitterId: string, bitId: number, foodType: FoodTy
         // here, we assume that `currentEnergy` is still the same because it was called before updating it, so we use `currentEnergy` instead of `currentEnergy + actualToReplenish`
         const currentEnergy: number = bit.farmingStats?.currentEnergy + actualToReplenish;
 
-        const { gatheringRateReduction, earningRateReduction } = ENERGY_THRESHOLD_REDUCTIONS(currentEnergy);
+        const { gatheringRateReduction } = ENERGY_THRESHOLD_REDUCTIONS(currentEnergy);
 
         // update the modifiers of the bit regardless based on the energy thresholds
         const gatheringRateModifier: Modifier = {
@@ -1105,10 +1105,6 @@ export const randomizeFarmingStats = (rarity: BitRarity): BitFarmingStats => {
     const defaultGatheringRate = DEFAULT_GATHERING_RATE(rarity);
     // get the default gathering rate growth
     const defaultGatheringRateGrowth = DEFAULT_GATHERING_RATE_GROWTH(rarity);
-    // get the default earning rate
-    const defaultEarningRate = DEFAULT_EARNING_RATE(rarity);
-    // get the default earning rate growth
-    const defaultEarningRateGrowth = DEFAULT_EARNING_RATE_GROWTH(rarity);
     // get the base energy depletion rate
     const baseEnergyDepletionRate = DEFAULT_ENERGY_DEPLETION_RATE(rarity);
 
@@ -1122,17 +1118,9 @@ export const randomizeFarmingStats = (rarity: BitRarity): BitFarmingStats => {
     const gatheringRateGrowth =
         defaultGatheringRateGrowth * rand1;
 
-    // rand from 0.9 to 1.1 to determine base earning rate (and also current earning rate since it's at level 1)
-    const baseEarningRate = defaultEarningRate * rand1;
-
-    // rand from 0.9 to 1.1 to determine earning rate growth
-    const earningRateGrowth = defaultEarningRateGrowth * rand1;
-
     return {
         baseGatheringRate,
         gatheringRateGrowth,
-        baseEarningRate,
-        earningRateGrowth,
         currentEnergyDepletionRate: baseEnergyDepletionRate,
         currentEnergy: 100,
     };

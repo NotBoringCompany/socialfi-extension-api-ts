@@ -264,22 +264,11 @@ router.get('/get_current_rates/:islandId', async (req, res) => {
             island.islandStatsModifiers?.gatheringRateModifiers as Modifier[]
         );
 
-        const currentEarningRate = calcIslandCurrentRate(
-            RateType.EARNING,
-            <IslandType>island.type,
-            bits.map(bit => bit.farmingStats?.baseEarningRate),
-            bits.map(bit => bit.currentFarmingLevel),
-            bits.map(bit => bit.farmingStats?.earningRateGrowth),
-            bits.map(bit => bit.bitStatsModifiers?.earningRateModifiers),
-            island.islandStatsModifiers?.earningRateModifiers as Modifier[]
-        );
-
         return res.status(200).json({
             status: 200,
             message: `(get_current_rates) Successfully retrieved current rates for island with ID ${islandId}.`,
             data: {
                 currentGatheringRate,
-                currentEarningRate
             }
         });
     } catch (err: any) {

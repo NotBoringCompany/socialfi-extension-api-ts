@@ -244,7 +244,7 @@ router.get('/get_bits', async (req, res) => {
     }
 });
 
-// current gathering and earning rate for 1 bit
+// current gathering rate for 1 bit
 router.get('/get_current_rates/:bitId', async (req, res) => {
     const { bitId } = req.params;
 
@@ -266,20 +266,11 @@ router.get('/get_current_rates/:bitId', async (req, res) => {
             bit.bitStatsModifiers?.gatheringRateModifiers
         );
 
-        const currentEarningRate = calcBitCurrentRate(
-            RateType.EARNING,
-            bit.farmingStats?.baseEarningRate,
-            bit.currentFarmingLevel,
-            bit.farmingStats?.earningRateGrowth,
-            bit.bitStatsModifiers?.earningRateModifiers
-        );
-
         return res.status(200).json({
             status: 200,
-            message: `(get_current_rates) Successfully retrieved current gathering and earning rates for bit with ID ${bitId}.`,
+            message: `(get_current_rates) Successfully retrieved current gathering rate for bit with ID ${bitId}.`,
             data: {
                 currentGatheringRate,
-                currentEarningRate
             }
         });
     } catch (err: any) {
@@ -306,7 +297,6 @@ router.get('/get_max_current_rates/:bitId', async (req, res) => {
 
         // for the modifiers, only get the modifiers impacted by the traits (since it's permanent)
         const gatheringRateTraitsModifiers = (bit.bitStatsModifiers?.gatheringRateModifiers as Modifier[]).filter(modifier => modifier.origin.includes('Trait'));
-        const earningRateTraitsModifiers = (bit.bitStatsModifiers?.earningRateModifiers as Modifier[]).filter(modifier => modifier.origin.includes('Trait'));
 
         const maxGatheringRate = calcBitCurrentRate(
             RateType.GATHERING,
@@ -316,20 +306,11 @@ router.get('/get_max_current_rates/:bitId', async (req, res) => {
             gatheringRateTraitsModifiers
         );
 
-        const maxEarningRate = calcBitCurrentRate(
-            RateType.EARNING,
-            bit.farmingStats?.baseEarningRate,
-            bit.currentFarmingLevel,
-            bit.farmingStats?.earningRateGrowth,
-            earningRateTraitsModifiers
-        );
-
         return res.status(200).json({
             status: 200,
-            message: `(get_max_current_rates) Successfully retrieved max current gathering and earning rates for bit with ID ${bitId}.`,
+            message: `(get_max_current_rates) Successfully retrieved max current gathering rate for bit with ID ${bitId}.`,
             data: {
-                maxGatheringRate,
-                maxEarningRate
+                maxGatheringRate
             }
         });
     } catch (err: any) {
@@ -363,14 +344,6 @@ router.get('/get_next_current_rate_increases/:bitId', async (req, res) => {
             []
         );
 
-        const maxCurrentEarningRate = calcBitCurrentRate(
-            RateType.EARNING,
-            bit.farmingStats?.baseEarningRate,
-            bit.currentFarmingLevel,
-            bit.farmingStats?.earningRateGrowth,
-            []
-        );
-
         // get the next max current gathering and earning rates for the bit (with no modifiers applied)
         const nextMaxCurrentGatheringRate = calcBitCurrentRate(
             RateType.GATHERING,
@@ -380,22 +353,12 @@ router.get('/get_next_current_rate_increases/:bitId', async (req, res) => {
             []
         );
 
-        const nextMaxCurrentEarningRate = calcBitCurrentRate(
-            RateType.EARNING,
-            bit.farmingStats?.baseEarningRate,
-            bit.currentFarmingLevel + 1,
-            bit.farmingStats?.earningRateGrowth,
-            []
-        );
-
         return res.status(200).json({
             status: 200,
             message: `(get_current_rates) Successfully retrieved all rates for bit with ID ${bitId}.`,
             data: {
                 maxCurrentGatheringRate,
-                maxCurrentEarningRate,
                 maxCurrentGatheringRateIncrease: nextMaxCurrentGatheringRate - maxCurrentGatheringRate,
-                maxCurrentEarningRateIncrease: nextMaxCurrentEarningRate - maxCurrentEarningRate
             }
         });
 

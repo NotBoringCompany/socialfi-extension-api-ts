@@ -37,7 +37,7 @@ export interface Bit {
     traits: BitTraitData[];
     /** the data for any equipped cosmetics for the bit */
     equippedCosmetics: EquippedCosmetics;
-    /** farming stats of the bit, such as gathering rate, earning rate and energy */
+    /** farming stats of the bit, such as gathering rate and energy */
     farmingStats: BitFarmingStats;
     /** stat modifiers for the bit's farming stats */
     bitStatsModifiers: BitStatsModifiers;
@@ -191,17 +191,13 @@ export enum BitGender {
 /**
  * Represents the farming stats of a Bit.
  * 
- * NOTE: the current gathering and earning rates will NOT be added here due to complexity, but is available in `calcBitCurrentRate`.
+ * NOTE: the current gathering rate will NOT be added here due to complexity, but is available in `calcBitCurrentRate`.
  */
 export interface BitFarmingStats {
     /** base gathering rate for the bit (at level 1), calculated at % of total resources/hour */
     baseGatheringRate: number;
     /** growth of base gathering rate when level increases, currently a fixed percentage */
     gatheringRateGrowth: number;
-    /** base earning rate for the bit (at level 1), calculated at % of total xCookies/hour */
-    baseEarningRate: number;
-    /** growth of base earning rate when level increases, currently a fixed percentage */
-    earningRateGrowth: number;
     /** 
      * current energy depletion rate for the bit, calculated at % of total energy/hour (+- 25% of the base energy depletion rate, which is 0.1% of total energy/hour)
      * 
@@ -215,8 +211,8 @@ export interface BitFarmingStats {
 /**
  * Represents the stat modifiers for a Bit's farming stats.
  * 
- * NOTE: Calculating the final gathering and earning rates will be as follows:
- * current gathering/earning rate * modifier 1 * modifier 2 and so on...
+ * NOTE: Calculating the final gathering rates will be as follows:
+ * current gathering rate * modifier 1 * modifier 2 and so on...
  */
 export interface BitStatsModifiers {
     gatheringRateModifiers: Modifier[];
@@ -226,13 +222,11 @@ export interface BitStatsModifiers {
 }
 
 /**
- * Reductions in gathering rate and earning rate when the bit's energy is lower than a certain amount.
+ * Reductions in gathering rate when the bit's energy is lower than a certain amount.
  */
 export interface EnergyThresholdReduction {
     /** the reduction in gathering rate (by a fixed %) */
     gatheringRateReduction: number;
-    /** the reduction in earning rate (by a fixed %) */
-    earningRateReduction: number;
 }
 
 /**
