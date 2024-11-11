@@ -25,9 +25,21 @@ export interface CollabReward {
 }
 
 /**
+ * Represents a collection of rewards for a collab participant.
+ */
+export interface CollabBasket {
+    /** The unique identifier for the collab basket */
+    _id: string;
+    /** The name of the collab basket */
+    name: string;
+    /** An array of rewards included in the collab basket */
+    rewards: CollabReward[];
+}
+
+/**
  * Represents a participant in a KOL or group tier.
  */
-export interface Participant {
+export interface CollabParticipant {
     /** The unique identifier for the participant */
     _id?: string;
     /** The name of the participant */
@@ -36,79 +48,19 @@ export interface Participant {
     code: string;
     /** The role of the participant (Leader or Member) */
     role: 'Leader' | 'Member';
+    /** The name of the tier */
+    tier: string;
+    /** The name of the community */
+    community: string;
     /** The Twitter username of the participant */
     twitterUsername: string;
     /** The Discord ID of the participant */
     discordId: string;
+    /** The collab basket assigned to the participant */
+    basket: CollabBasket;
     /** Whether the participant can claim rewards */
     claimable: boolean;
     /** Whether the participant has fulfilled the requirements */
     approved: boolean;
-}
-
-/**
- * Represents a group in a group tier.
- */
-export interface Group {
-    /** The name of the group */
-    name: string;
-    /** The code of the group */
-    code: string;
-    /** The participants in the group */
-    participants: Participant[];
-}
-
-/**
- * Represents a KOL reward tier.
- */
-export interface KOLCollab {
-    /** The unique identifier for the KOL reward tier */
-    _id: string;
-    /** The name of the tier */
-    tier: string;
-    /** The maximum number of users for this tier */
-    maxUsers: number;
-    /** The rewards associated with this tier */
-    rewards: CollabReward[];
-    /** The participants in this tier */
-    participants: Participant[];
-}
-
-/**
- * Represents a group reward tier.
- */
-export interface GroupCollab {
-    /** The unique identifier for the group reward tier */
-    _id: string;
-    /** The name of the tier */
-    tier: string;
-    /** The maximum number of groups for this tier, null if unlimited */
-    maxGroups: number | null;
-    /** The maximum number of members in each group for this tier, null if unlimited */
-    maxMembers: number | null;
-    /** The rewards for leaders in this tier */
-    leaderRewards: CollabReward[] | null;
-    /** The rewards for members in this tier */
-    memberRewards: CollabReward[] | null;
-    /** The groups in this tier */
-    groups: Group[];
-}
-
-/**
- * Represents a collab tier.
- */
-export interface Collab {
-    _id: string;
-    /** The name of the tier */
-    tier: string;
-    /** The type of the collab */
-    type: 'kol' | 'group';
-    /** The rewards for leaders in this tier, this is also used for KOL rewards */
-    leaderRewards: CollabReward[] | null;
-    /** The rewards for members in this tier */
-    memberRewards: CollabReward[] | null;
-    /** The participants of KOL collab */
-    participants?: Participant[];
-    /** The groups of group collab */
-    groups?: Group[];
+    claimedAt: Date;
 }

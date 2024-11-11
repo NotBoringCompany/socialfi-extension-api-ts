@@ -19,8 +19,7 @@ import { SettingSchema } from '../../schemas/Setting';
 import { POAPSchema } from '../../schemas/POAP';
 import { KOSClaimableDailyRewardsSchema, KOSClaimableWeeklyRewardsSchema } from '../../schemas/KOSRewards';
 import { WeeklyMVPClaimableRewardSchema, WeeklyMVPRankingLeaderboardSchema } from '../../schemas/WeeklyMVPReward';
-import { CollabSchema } from '../../schemas/Collab';
-import { CollabBasketSchema, CollabParticipantSchema } from '../../schemas/CollabV2';
+import { CollabBasketSchema, CollabParticipantSchema } from '../../schemas/Collab';
 import { ShopAssetPurchaseSchema, ShopAssetSchema } from '../../schemas/Shop';
 import { ChatroomSchema, ChatSchema } from '../../schemas/Chat';
 import { CraftingQueueSchema } from '../../schemas/Craft';
@@ -68,7 +67,6 @@ export const WonderbitsKOSClaimableDailyRewardsModel = WONDERBITS_CONNECTION.mod
 export const WonderbitsKOSClaimableWeeklyRewardsModel = WONDERBITS_CONNECTION.model('KOSClaimableWeeklyRewards', KOSClaimableWeeklyRewardsSchema, 'KOSClaimableWeeklyRewards');
 export const WonderbitsWeeklyMVPClaimableRewardsModel = WONDERBITS_CONNECTION.model('WeeklyMVPClaimableRewards', WeeklyMVPClaimableRewardSchema, 'WeeklyMVPClaimableRewards');
 export const WonderbitsSquadMemberClaimableWeeklyRewardModel = WONDERBITS_CONNECTION.model('SquadMemberClaimableWeeklyRewards', SquadMemberClaimableWeeklyRewardSchema, 'SquadMemberClaimableWeeklyRewards');
-export const WonderbitsCollabModel = WONDERBITS_CONNECTION.model('Collabs', CollabSchema, 'Collabs');
 export const WonderbitsCollabParticipantModel = WONDERBITS_CONNECTION.model('CollabParticipants', CollabParticipantSchema, 'CollabParticipants');
 export const WonderbitsCollabBasketModel = WONDERBITS_CONNECTION.model('CollabBaskets', CollabBasketSchema, 'CollabBaskets');
 export const WonderbitsWeeklyMVPRankingLeaderboardModel = WONDERBITS_CONNECTION.model('WeeklyMVPRankingData', WeeklyMVPRankingLeaderboardSchema, 'WeeklyMVPRankingData');
@@ -98,7 +96,6 @@ export const KOSClaimableDailyRewardsModel = TEST_CONNECTION.model('KOSClaimable
 export const KOSClaimableWeeklyRewardsModel = TEST_CONNECTION.model('KOSClaimableWeeklyRewards', KOSClaimableWeeklyRewardsSchema, 'KOSClaimableWeeklyRewards');
 export const WeeklyMVPClaimableRewardsModel = TEST_CONNECTION.model('WeeklyMVPClaimableRewards', WeeklyMVPClaimableRewardSchema, 'WeeklyMVPClaimableRewards');
 export const SquadMemberClaimableWeeklyRewardModel = TEST_CONNECTION.model('SquadMemberClaimableWeeklyRewards', SquadMemberClaimableWeeklyRewardSchema, 'SquadMemberClaimableWeeklyRewards');
-export const CollabModel = TEST_CONNECTION.model('Collabs', CollabSchema, 'Collabs');
 export const CollabParticipantModel = TEST_CONNECTION.model('CollabParticipants', CollabParticipantSchema, 'CollabParticipants');
 export const CollabBasketModel = TEST_CONNECTION.model('CollabBaskets', CollabBasketSchema, 'CollabBaskets');
 export const WeeklyMVPRankingLeaderboardModel = TEST_CONNECTION.model('WeeklyMVPRankingData', WeeklyMVPRankingLeaderboardSchema, 'WeeklyMVPRankingData');

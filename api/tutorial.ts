@@ -9,7 +9,7 @@ import { IslandModel, TutorialModel, UserModel } from '../utils/constants/db';
 import { generateObjectId } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
 import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
-import { claimCollabReward } from './collab_v2';
+import { claimCollabReward } from './collab';
 import { addIslandToDatabase } from './island';
 import { summonIsland } from './terraCapsulator';
 

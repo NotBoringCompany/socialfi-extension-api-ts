@@ -1,168 +1,102 @@
 import express from 'express';
 import {
-    addCollab,
-    getCollabs,
-    deleteCollab,
-    getCollabById,
-    updateCollab,
     addParticipant,
-    removeParticipant,
+    getAllParticipant,
     updateParticipant,
-    addGroup,
-    removeGroup,
-    addGroupParticipant,
-    removeGroupParticipant,
+    deleteParticipant,
+    addBasket,
+    updateBasket,
+    deleteBasket,
     importParticipants,
-    importGroupParticipants,
-    getCollabRewards,
-    claimCollabRewards,
+    getCollabReward,
+    claimCollabReward,
+    getCollabStatus,
+    collabWinnerChange,
 } from '../api/collab';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { authMiddleware } from '../middlewares/auth';
+import keyMiddleware from '../middlewares/key';
 
 const router = express.Router();
 
-// Route to add a collab
-router.post('/add_collab', authMiddleware(3), async (req, res) => {
+// Route to add a participant
+router.post('/add_participant', authMiddleware(3), async (req, res) => {
     const data = req.body;
 
     try {
-        const { status, message, data: collab } = await addCollab(data);
-        return res.status(status).json({ status, message, data: collab });
+        const { status, message, data: participant } = await addParticipant(data);
+        return res.status(status).json({ status, message, data: participant });
     } catch (err: any) {
         return res.status(500).json({ status: 500, message: err.message });
     }
 });
 
-// Route to get all collabs
-router.get('/get_collabs/:type', authMiddleware(3), async (req, res) => {
-    const { type } = req.params;
+// Route to get all participants
+router.get('/get_all_participants', authMiddleware(3), async (req, res) => {
+    try {
+        const { status, message, data: participants } = await getAllParticipant();
+        return res.status(status).json({ status, message, data: participants });
+    } catch (err: any) {
+        return res.status(500).json({ status: 500, message: err.message });
+    }
+});
+
+// Route to update a participant
+router.post('/update_participant', authMiddleware(3), async (req, res) => {
+    const { id, data } = req.body;
 
     try {
-        const { status, message, data: collabs } = await getCollabs(type as 'kol' | 'group');
-        return res.status(status).json({ status, message, data: collabs });
+        const { status, message, data: participant } = await updateParticipant(id, data);
+        return res.status(status).json({ status, message, data: participant });
     } catch (err: any) {
         return res.status(500).json({ status: 500, message: err.message });
     }
 });
 
-// Route to delete a collab
-router.post('/delete_collab', authMiddleware(3), async (req, res) => {
+// Route to delete a participant
+router.post('/delete_participant', authMiddleware(3), async (req, res) => {
     const { id } = req.body;
 
     try {
-        const { status, message, data } = await deleteCollab(id);
+        const { status, message, data } = await deleteParticipant(id);
         return res.status(status).json({ status, message, data });
     } catch (err: any) {
         return res.status(500).json({ status: 500, message: err.message });
     }
 });
 
-// Route to get a collab by ID
-router.get('/get_collab/:id', authMiddleware(3), async (req, res) => {
-    const { id } = req.params;
-
-    try {
-        const { status, message, data: collab } = await getCollabById(id);
-        return res.status(status).json({ status, message, data: collab });
-    } catch (err: any) {
-        return res.status(500).json({ status: 500, message: err.message });
-    }
-});
-
-// Route to update a collab
-router.post('/update_collab', authMiddleware(3), async (req, res) => {
-    const { id } = req.body;
+// Route to add a basket
+router.post('/add_basket', authMiddleware(3), async (req, res) => {
     const data = req.body;
 
     try {
-        const { status, message, data: collab } = await updateCollab(id, data);
-        return res.status(status).json({ status, message, data: collab });
+        const { status, message, data: basket } = await addBasket(data);
+        return res.status(status).json({ status, message, data: basket });
     } catch (err: any) {
         return res.status(500).json({ status: 500, message: err.message });
     }
 });
 
-// Route to add a participant to a collab
-router.post('/add_participant', authMiddleware(3), async (req, res) => {
-    const { collabId, participant } = req.body;
+// Route to update a basket
+router.post('/update_basket', authMiddleware(3), async (req, res) => {
+    const { id, data } = req.body;
 
     try {
-        const { status, message, data: collab } = await addParticipant(collabId, participant);
-        return res.status(status).json({ status, message, data: collab });
+        const { status, message, data: basket } = await updateBasket(id, data);
+        return res.status(status).json({ status, message, data: basket });
     } catch (err: any) {
         return res.status(500).json({ status: 500, message: err.message });
     }
 });
 
-// Route to remove a participant from a collab
-router.post('/remove_participant', authMiddleware(3), async (req, res) => {
-    const { collabId, participantId } = req.body;
+// Route to delete a basket
+router.post('/delete_basket', authMiddleware(3), async (req, res) => {
+    const { id } = req.body;
 
     try {
-        const { status, message, data: collab } = await removeParticipant(collabId, participantId);
-        return res.status(status).json({ status, message, data: collab });
-    } catch (err: any) {
-        return res.status(500).json({ status: 500, message: err.message });
-    }
-});
-
-// Route to update a participant in a collab
-router.post('/update_participant', authMiddleware(3), async (req, res) => {
-    const { collabId, participantId, updatedParticipant } = req.body;
-
-    try {
-        const { status, message, data: collab } = await updateParticipant(collabId, participantId, updatedParticipant);
-        return res.status(status).json({ status, message, data: collab });
-    } catch (err: any) {
-        return res.status(500).json({ status: 500, message: err.message });
-    }
-});
-
-// Route to add a group to a collab
-router.post('/add_group', authMiddleware(3), async (req, res) => {
-    const { collabId, group } = req.body;
-
-    try {
-        const { status, message, data: collab } = await addGroup(collabId, group);
-        return res.status(status).json({ status, message, data: collab });
-    } catch (err: any) {
-        return res.status(500).json({ status: 500, message: err.message });
-    }
-});
-
-// Route to remove a group from a collab
-router.post('/remove_group', authMiddleware(3), async (req, res) => {
-    const { collabId, groupId } = req.body;
-
-    try {
-        const { status, message, data: collab } = await removeGroup(collabId, groupId);
-        return res.status(status).json({ status, message, data: collab });
-    } catch (err: any) {
-        return res.status(500).json({ status: 500, message: err.message });
-    }
-});
-
-// Route to add a participant to a group in a collab
-router.post('/add_group_participant', authMiddleware(3), async (req, res) => {
-    const { collabId, groupId, participant } = req.body;
-
-    try {
-        const { status, message, data: collab } = await addGroupParticipant(collabId, groupId, participant);
-        return res.status(status).json({ status, message, data: collab });
-    } catch (err: any) {
-        return res.status(500).json({ status: 500, message: err.message });
-    }
-});
-
-// Route to remove a participant from a group in a collab
-router.post('/remove_group_participant', authMiddleware(3), async (req, res) => {
-    const { collabId, groupId, participantId } = req.body;
-
-    try {
-        const { status, message, data: collab } = await removeGroupParticipant(collabId, groupId, participantId);
-        return res.status(status).json({ status, message, data: collab });
+        const { status, message, data } = await deleteBasket(id);
+        return res.status(status).json({ status, message, data });
     } catch (err: any) {
         return res.status(500).json({ status: 500, message: err.message });
     }
@@ -180,38 +114,8 @@ router.post('/import_participants', authMiddleware(3), async (req, res) => {
     }
 });
 
-// Route to import group participants using Google Sheet
-router.post('/import_group_participants', authMiddleware(3), async (req, res) => {
-    const { spreadsheetId, range } = req.body;
-
-    try {
-        const { status, message } = await importGroupParticipants(spreadsheetId, range);
-        return res.status(status).json({ status, message });
-    } catch (err: any) {
-        return res.status(500).json({ status: 500, message: err.message });
-    }
-});
-
-// Route to get collab rewards by twitter username
-router.get('/get_collab_rewards', async (req, res) => {
-    try {
-        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'get_collab_rewards');
-        if (validateStatus !== Status.SUCCESS) {
-            return res.status(validateStatus).json({
-                status: validateStatus,
-                message: validateMessage,
-            });
-        }
-
-        const { status, message, data } = await getCollabRewards(validateData?.twitterId);
-        return res.status(status).json({ status, message, data });
-    } catch (err: any) {
-        return res.status(500).json({ status: 500, message: err.message });
-    }
-});
-
-// Route to claim collab rewards by twitter username
-router.post('/claim_collab_rewards', async (req, res) => {
+// Route to get collab rewards by Twitter ID
+router.get('/get_collab_reward', async (req, res) => {
     try {
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'claim_collab_rewards');
         if (validateStatus !== Status.SUCCESS) {
@@ -221,7 +125,53 @@ router.post('/claim_collab_rewards', async (req, res) => {
             });
         }
 
-        const { status, message, data } = await claimCollabRewards(validateData?.twitterId);
+        const { status, message, data } = await getCollabReward(validateData?.twitterId);
+        return res.status(status).json({ status, message, data });
+    } catch (err: any) {
+        return res.status(500).json({ status: 500, message: err.message });
+    }
+});
+
+// Route to claim collab rewards by Twitter ID
+router.post('/claim_collab_reward', async (req, res) => {
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'claim_collab_rewards');
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage,
+            });
+        }
+
+        const { status, message, data } = await claimCollabReward(validateData?.twitterId);
+        return res.status(status).json({ status, message, data });
+    } catch (err: any) {
+        return res.status(500).json({ status: 500, message: err.message });
+    }
+});
+
+/**
+ * Route to get collab status by link
+ */
+router.post('/get_collab_status', async (req, res) => {
+    const { spreadsheetId, range, link, messages } = req.body;
+
+    try {
+        const { status, message, data } = await getCollabStatus(spreadsheetId, range, link, messages);
+        return res.status(status).json({ status, message, data });
+    } catch (err: any) {
+        return res.status(500).json({ status: 500, message: err.message });
+    }
+});
+
+/**
+ * Route to append collab winner change request
+ */
+router.post('/collab_winner_change', keyMiddleware, async (req, res) => {
+    const { spreadsheetId, range, projectLink, winnerId, changeId } = req.body;
+
+    try {
+        const { status, message, data } = await collabWinnerChange(spreadsheetId, range, projectLink, winnerId, changeId);
         return res.status(status).json({ status, message, data });
     } catch (err: any) {
         return res.status(500).json({ status: 500, message: err.message });
