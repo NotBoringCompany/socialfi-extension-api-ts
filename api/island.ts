@@ -67,8 +67,6 @@ export const deleteTaxFromAllIslands = async (): Promise<void> => {
     }
 }
 
-deleteTaxFromAllIslands();
-
 /**
  * Gifts an Xterio user an Xterio island.
  */
