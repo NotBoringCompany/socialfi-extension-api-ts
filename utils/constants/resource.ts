@@ -1,8 +1,6 @@
 import { BarrenResource, FruitResource, LiquidResource, OreResource, Resource, ResourceLine, ResourceRarity, ResourceType } from '../../models/resource';
 
 export const resources: Resource[] = [
-    // Barren resources
-    { type: BarrenResource.SEAWEED, line: ResourceLine.BARREN, rarity: ResourceRarity.COMMON, weight: 1 },
     // Ore resources
     { type: OreResource.STONE, line: ResourceLine.ORE, rarity: ResourceRarity.COMMON, weight: 5 },
     { type: OreResource.COPPER, line: ResourceLine.ORE, rarity: ResourceRarity.UNCOMMON, weight: 5 },

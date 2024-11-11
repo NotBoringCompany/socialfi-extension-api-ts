@@ -25,6 +25,26 @@ import { updateReferredUsersData } from './user';
 import { redis } from '../utils/constants/redis';
 import { SYNTHESIZING_ITEM_DATA, SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE } from '../utils/constants/asset';
 
+// /**
+//  * Deletes the `islandEarningStats` field from all islands.
+//  */
+// export const deleteEarningStatsFromAllIslands = async (): Promise<void> => {
+//     try {
+//         console.log(`(deleteEarningStatsFromAllIslands) Deleting the 'islandEarningStats' field from all islands...`);
+//         await IslandModel.updateMany({}, {
+//             $unset: {
+//                 islandEarningStats: 1
+//             }
+//         }).catch(err => {
+//             throw err;
+//         })
+
+//         console.log(`(deleteEarningStatsFromAllIslands) Deleted the 'islandEarningStats' field from all islands.`);
+//     } catch (err: any) {
+//         console.error('Error in deleteEarningStatsFromAllIslands:', err.message);
+//     }
+// }
+
 /**
  * Gifts an Xterio user an Xterio island.
  */
