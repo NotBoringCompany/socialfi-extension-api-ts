@@ -344,7 +344,7 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
             // creates the wallet for the user
             const { encryptedPrivateKey, address } = createUserWallet();
 
-            // initialize PlayerEnergy fot user
+            // initialize PlayerEnergy for new user
             const newEnergy: PlayerEnergy = {
                 currentEnergy: MAX_ENERGY_CAP,
                 maxEnergy: MAX_ENERGY_CAP,
@@ -403,6 +403,12 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
                     raftId: data.raft.raftId,
                     islandIds: [islandData.island.islandId],
                     bitIds: [bitIdData?.latestBitId + 1],
+                    diamondData: {
+                        currentDiamonds: 0,
+                        totalDiamondsSpent: 0,
+                        weeklyDiamondsSpent: 0,
+                        extendedDiamondData: []
+                    }
                 },
                 inGameData: {
                     level: 1,
@@ -2475,6 +2481,12 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
                 raftId: data.raft.raftId,
                 islandIds: [],
                 bitIds: [bitIdData?.latestBitId + 1],
+                diamondData: {
+                    currentDiamonds: 0,
+                    totalDiamondsSpent: 0,
+                    weeklyDiamondsSpent: 0,
+                    extendedDiamondData: []
+                }
             },
             inGameData: {
                 level: 1,
@@ -3061,6 +3073,12 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                     raftId: data.raft.raftId,
                     islandIds: [islandData.island.islandId],
                     bitIds: [bitIdData?.latestBitId + 1],
+                    diamondData: {
+                        currentDiamonds: 0,
+                        totalDiamondsSpent: 0,
+                        weeklyDiamondsSpent: 0,
+                        extendedDiamondData: []
+                    }
                 },
                 inGameData: {
                     level: 1,
