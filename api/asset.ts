@@ -704,7 +704,7 @@ export const consumeSynthesizingItem = async (
                     // if the bit now doesn't have the influential trait but had it before, remove the modifier.
                     if (!nowHasInfluentialTrait && oldHasInfluentialTrait) {
                         // a modifier consists of `origin` and `value`.
-                        // find the `origin` that says `Bit ID #{bit.bitId}'s Trait: Influential` and remove that modifier from both gathering and earning rate modifiers.
+                        // find the `origin` that says `Bit ID #{bit.bitId}'s Trait: Influential` and remove that modifier from gatheringRateModifiers
                         islandUpdateOperations.push({
                             islandId,
                             updateOperations: {

@@ -2,8 +2,8 @@ import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
 import { IslandSchema } from '../schemas/Island';
 import { Island, IslandStatsModifiers, IslandTappingData, IslandTrait, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
-import { BARREN_ISLE_COMMON_DROP_CHANCE, BASE_CARESS_PER_TAPPING, BASE_ENERGY_PER_TAPPING, BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DAILY_BONUS_RESOURCES_GATHERABLE, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_RARITY_DEVIATION_MODIFIERS, ISLAND_TAPPING_MILESTONE_BONUS_REWARD, ISLAND_TAPPING_MILESTONE_LIMIT, ISLAND_TAPPING_REQUIREMENT, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN, X_COOKIE_TAX, randomizeIslandTraits } from '../utils/constants/island';
-import { calcBitCurrentRate, getBits } from './bit';
+import { BARREN_ISLE_COMMON_DROP_CHANCE, BASE_CARESS_PER_TAPPING, BASE_ENERGY_PER_TAPPING, BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DAILY_BONUS_RESOURCES_GATHERABLE, DEFAULT_RESOURCE_CAP, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_RARITY_DEVIATION_MODIFIERS, ISLAND_TAPPING_MILESTONE_BONUS_REWARD, ISLAND_TAPPING_MILESTONE_LIMIT, ISLAND_TAPPING_REQUIREMENT, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN, randomizeIslandTraits } from '../utils/constants/island';
+import { calcBitGatheringRate, getBits } from './bit';
 import { BarrenResource, ExtendedResource, ExtendedResourceOrigin, Resource, ResourceLine, ResourceRarity, ResourceRarityNumeric, ResourceType, SimplifiedResource } from '../models/resource';
 import { UserSchema } from '../schemas/User';
 import { Modifier } from '../models/modifier';
@@ -96,10 +96,10 @@ export const giftXterioIsland = async (
 
         // loop through each bit and see if they have these traits:
         // influential, antagonistic, famous or mannerless
-        // if influential, add 1% to earning and gathering rate modifiers
-        // if antagonistic, reduce 1% to earning and gathering rate modifiers
-        // if famous, add 0.5% to earning and gathering rate modifiers
-        // if mannerless, reduce 0.5% to earning and gathering rate modifiers
+        // if influential, add 1% to gathering rate modifiers
+        // if antagonistic, reduce 1% to gathering rate modifiers
+        // if famous, add 0.5% to gathering rate modifiers
+        // if mannerless, reduce 0.5% to gathering rate modifiers
         const bits = await BitModel.find({ bitId: { $in: userBitIds } }).lean();
 
         bits.forEach(bit => {
@@ -410,7 +410,7 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
         // when relocating bit, no need to change `placedIslandId` for the bit and `placedBitIds` for this island because it's done at the end. BUT:
         // 2. we need to remove the bit's ID from the previous island's `placedBitIds`.
         // 3. after removing the bit ID, we also need to remove any modifiers that has to do with the current bit's traits from the island's and its bits' modifiers.
-        // e.g. if Bit 40 was placed in Island 1, all other bits that has the same or lesser rarity than Bit 40 will get +5% gathering and earning rate.
+        // e.g. if Bit 40 was placed in Island 1, all other bits that has the same or lesser rarity than Bit 40 will get +5% gathering rate.
         // if Bit 40 is relocated to Island 2, we need to remove all the modifiers that has to do with Bit 40's traits from Island 1 and its bits (meaning that Island 1's bits will no longer get the +5% boost from Bit 40).
         // 4. when relocating bit, set the lastRelocationTimestamp to now.
         if (bit.placedIslandId !== 0) {
@@ -1088,7 +1088,7 @@ export const updateExtendedTraitEffects = async (
         const otherBits = await BitModel.find({ bitId: { $in: otherBitIds } }).lean();
 
         // if trait is teamworker:
-        // increase all other bits that have the same or lesser rarity as the bit being placed by 5% gathering and earning rate
+        // increase all other bits that have the same or lesser rarity as the bit being placed by 5% gathering rate
         if (trait.trait === BitTrait.TEAMWORKER) {
             // loop through each other bit and check if they have the same or lesser rarity as the bit being placed
             // if no other bits found, skip this trait
@@ -1124,7 +1124,7 @@ export const updateExtendedTraitEffects = async (
                 }
             }
             // if trait is leader:
-            // increase all other bits' gathering and earning rate by 10%
+            // increase all other bits' gathering rate by 10%
         } else if (trait.trait === BitTrait.LEADER) {
             if (otherBits.length === 0 || !otherBits) {
                 console.log(`(updateExtendedTraitEffects) No other bits found.`);
@@ -1152,7 +1152,7 @@ export const updateExtendedTraitEffects = async (
                 });
             }
             // if bit trait is cute:
-            // increase gathering and earning rate of all other bits by 12.5%
+            // increase gathering rate of all other bits by 12.5%
         } else if (trait.trait === BitTrait.CUTE) {
             if (otherBits.length === 0 || !otherBits) {
                 console.log(`(updateExtendedTraitEffects) No other bits found.`);
@@ -1180,7 +1180,7 @@ export const updateExtendedTraitEffects = async (
                 });
             }
             // if bit trait is genius:
-            // increase the island's gathering and earning rate by 7.5%
+            // increase the island's gathering rate by 7.5%
         } else if (trait.trait === BitTrait.GENIUS) {
             // add the new modifier to the island's `gatheringRateModifiers`
             const newGatheringRateModifier: Modifier = {
@@ -1218,7 +1218,7 @@ export const updateExtendedTraitEffects = async (
                     }
                 });
             }
-            // if bit trait is slow, reduce 1% of the island's gathering and earning rate
+            // if bit trait is slow, reduce 1% of the island's gathering rate
         } else if (trait.trait === BitTrait.SLOW) {
             // add the new modifier to the island's `gatheringRateModifiers`
             const newGatheringRateModifier: Modifier = {
@@ -1228,7 +1228,7 @@ export const updateExtendedTraitEffects = async (
 
             // add the new modifier to the island's `gatheringRateModifiers`
             islandUpdateOperations.$push['islandStatsModifiers.gatheringRateModifiers'] = newGatheringRateModifier;
-            // if bit trait is quick, increase 1% of the island's gathering and earning rate
+            // if bit trait is quick, increase 1% of the island's gathering rate
         } else if (trait.trait === BitTrait.QUICK) {
             // add the new modifier to the island's `gatheringRateModifiers`
             const newGatheringRateModifier: Modifier = {
@@ -1255,7 +1255,7 @@ export const updateExtendedTraitEffects = async (
 
             for (const trait of traits) {
                 // if this `otherBit`'s trait contains 'teamworker', check if the to-be-placed's bit rarity is the same or lesser rarity than the `otherBit`'s rarity.
-                // if yes, add 5% gathering and earning rate to the to-be-placed bit
+                // if yes, add 5% gathering rate to the to-be-placed bit
                 if (trait.trait === BitTrait.TEAMWORKER) {
                     if (BitRarityNumeric[bit.rarity] <= BitRarityNumeric[otherBit.rarity]) {
                         // add the new modifier to the bit's `gatheringRateModifiers`
@@ -1279,7 +1279,7 @@ export const updateExtendedTraitEffects = async (
                     }
                 }
 
-                // if the other bit's trait is leader, add 10% gathering and earning rate to the to-be-placed bit
+                // if the other bit's trait is leader, add 10% gathering rate to the to-be-placed bit
                 if (trait.trait === BitTrait.LEADER) {
                     // add the new modifier to the bit's `gatheringRateModifiers`
                     const newGatheringRateModifier: Modifier = {
@@ -1301,7 +1301,7 @@ export const updateExtendedTraitEffects = async (
                     });
                 }
 
-                // if the other bit's trait is cute, add 12.5% gathering and earning rate to the to-be-placed bit
+                // if the other bit's trait is cute, add 12.5% gathering rate to the to-be-placed bit
                 if (trait.trait === BitTrait.CUTE) {
                     // add the new modifier to the bit's `gatheringRateModifiers`
                     const newGatheringRateModifier: Modifier = {
@@ -1323,7 +1323,7 @@ export const updateExtendedTraitEffects = async (
                     });
                 }
 
-                // if the other bit's trait is lonewolf, reduce 5% gathering and earning rate to the to-be-placed bit
+                // if the other bit's trait is lonewolf, reduce 5% gathering rate to the to-be-placed bit
                 if (trait.trait === BitTrait.LONEWOLF) {
                     // add the new modifier to the bit's `gatheringRateModifiers`
                     const newGatheringRateModifier: Modifier = {
@@ -1366,68 +1366,6 @@ export const updateExtendedTraitEffects = async (
  */
 export const checkBitRarityAllowed = (bitRarity: BitRarity, minRarityRequired: BitRarity): boolean => {
     return BitRarityNumeric[bitRarity] >= BitRarityNumeric[minRarityRequired];
-}
-
-/**
- * Checks how much tax the user has to pay when claiming xCookies based on the island type and the amount of active islands the user has.
- */
-export const checkCurrentTax = async (twitterId: string, islandId: number): Promise<ReturnValue> => {
-    try {
-        // check if user exists
-        const user = await UserModel.findOne({ twitterId }).lean();
-
-        if (!user) {
-            return {
-                status: Status.ERROR,
-                message: `(checkCurrentTax) User not found.`
-            }
-        }
-
-        // get the island ids from the user's inventory
-        const islandIds = user.inventory?.islandIds as number[];
-
-        if (islandIds.length === 0 || !islandIds) {
-            return {
-                status: Status.SUCCESS,
-                message: `(checkCurrentTax) User has no islands.`
-            }
-        }
-
-        // check if the user owns the island
-        if (!islandIds.includes(islandId)) {
-            return {
-                status: Status.UNAUTHORIZED,
-                message: `(checkCurrentTax) User does not own the island.`
-            }
-        }
-
-        // filter out the islands that have bits placed by querying the `Islands` collection to get the total amount of active islands
-        const activeIslands = await IslandModel.find(
-            {
-                islandId:
-                    { $in: islandIds },
-                placedBitIds: { $exists: true, $ne: [] }
-            }).lean();
-
-        // get the island from the `islandId` within the `activeIslands` array
-        const island = activeIslands.find(island => island.islandId === islandId);
-
-        // calculate the tax based on the amount of active islands
-        const tax = X_COOKIE_TAX(<IslandType>island.type, activeIslands.length);
-
-        return {
-            status: Status.SUCCESS,
-            message: `(checkCurrentTax) Tax calculated.`,
-            data: {
-                tax
-            }
-        }
-    } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(checkCurrentTax) Error: ${err.message}`
-        }
-    }
 }
 
 /**
@@ -1479,8 +1417,7 @@ export const updateGatheringProgressAndDropResource = async (): Promise<void> =>
             const bitModifiers = bits.map(bit => bit.bitStatsModifiers.gatheringRateModifiers);
 
             // calculate current island gathering rate
-            const gatheringRate = calcIslandCurrentRate(
-                RateType.GATHERING,
+            const gatheringRate = calcIslandGatheringRate(
                 <IslandType>island.type,
                 baseRates,
                 bitLevels,
@@ -1651,8 +1588,7 @@ export const updateGatheringProgressAndDropResourceAlt = async (
         const bitModifiers = bits.map(bit => bit.bitStatsModifiers.gatheringRateModifiers);
 
         // calculate current island gathering rate
-        const gatheringRate = calcIslandCurrentRate(
-            RateType.GATHERING,
+        const gatheringRate = calcIslandGatheringRate(
             <IslandType>island.type,
             baseRates,
             bitLevels,
@@ -2949,24 +2885,23 @@ export const randomizeBaseResourceCap = (type: IslandType): number => {
 }
 
 /**
- * Calculates the current gathering/earning rate of the island, based on various factors like number of bits, the bits' stats and island type among others.
+ * Calculates the current gathering rate of the island, based on various factors like number of bits, the bits' stats and island type among others.
  * 
  * NOTE: to prevent miscalculations, ensure that:
  * 
- * 1. `baseRates` (referring to the base gathering/earning rates of the bits), `bitLevels`, and `initialGrowthRates` are all of the same length.
+ * 1. `baseRates` (referring to the base gathering rate of the bits), `bitLevels`, and `initialGrowthRates` are all of the same length.
  * 
  * 2. the indexes of each array correspond to the same bit; for example, if `baseRates[0]` = 0.025, `bitLevels[0]` = 3 and `initialGrowthRates[0]` = 0.0002,
- * this should mean that Bit #1 has a base gathering/earning rate of 0.025, is at level 3, and has an initial growth rate of 0.0002.
+ * this should mean that Bit #1 has a base gathering rate of 0.025, is at level 3, and has an initial growth rate of 0.0002.
  */
-export const calcIslandCurrentRate = (
-    type: RateType,
+export const calcIslandGatheringRate = (
     islandType: IslandType,
     baseRates: number[],
     bitLevels: number[],
     initialGrowthRates: number[],
-    // gathering OR earning rate modifiers from `BitStatsModifiers` for each bit (each bit will have Modifier[], so multiple bits will be an array of Modifier[], thus Modifier[][])
+    // gathering rate modifiers from `BitStatsModifiers` for each bit (each bit will have Modifier[], so multiple bits will be an array of Modifier[], thus Modifier[][])
     bitModifiers: Modifier[][],
-    // gathering OR earning rate modifiers from `IslandStatsModifiers`
+    // gathering rate modifiers from `IslandStatsModifiers`
     modifiers: Modifier[]
 ): number => {
     // check if all arrays have the same length, else throw an error.
@@ -2979,15 +2914,15 @@ export const calcIslandCurrentRate = (
         let n = baseRates.length;
 
         for (let i = 0; i < n; i++) {
-            // get the current rate for each bit
-            const currentRate = calcBitCurrentRate(type, baseRates[i], bitLevels[i], initialGrowthRates[i], bitModifiers[i]);
+            // get the gathering rate for each bit
+            const currentRate = calcBitGatheringRate(baseRates[i], bitLevels[i], initialGrowthRates[i], bitModifiers[i]);
 
             // add the current rate to the sum
             sum += currentRate;
         }
 
         // multiply the sum with the reduction modifier part of the formula
-        const reductionModifier = type === RateType.GATHERING ? GATHERING_RATE_REDUCTION_MODIFIER : EARNING_RATE_REDUCTION_MODIFIER;
+        const reductionModifier = GATHERING_RATE_REDUCTION_MODIFIER;
 
         // finally, check for IslandStatsModifiers for the island; if not empty, multiply each modifier's amount to the modifierMultiplier
         const modifierMultiplier = modifiers.reduce((acc, modifier) => acc * modifier.value, 1);

@@ -1,12 +1,11 @@
 import express from 'express';
-import { bulkFeedBits, calcBitCurrentRate, feedBit, getBits, giftXterioBit, releaseBit, renameBit } from '../api/bit';
+import { bulkFeedBits, calcBitGatheringRate, feedBit, getBits, giftXterioBit, releaseBit, renameBit } from '../api/bit';
 import { FoodType } from '../models/food';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { RateType } from '../models/island';
 import mongoose from 'mongoose';
 import { BitSchema } from '../schemas/Bit';
-import { BIT_EVOLUTION_COST, FREE_BIT_EVOLUTION_COST } from '../utils/constants/bit';
 import { BitModel } from '../utils/constants/db';
 import { Modifier } from '../models/modifier';
 import { allowMixpanel, mixpanel } from '../utils/mixpanel';
@@ -19,6 +18,7 @@ import { generateHashSalt, generateWonderbitsDataHash } from '../utils/crypto';
 import { ethers } from 'ethers';
 import { incrementProgressionByType } from '../api/quest';
 import { QuestRequirementType } from '../models/quest';
+import { calcIslandGatheringRate } from '../api/island';
 
 const router = express.Router();
 
@@ -222,8 +222,7 @@ router.get('/get_current_rates/:bitId', async (req, res) => {
             })
         }
 
-        const currentGatheringRate = calcBitCurrentRate(
-            RateType.GATHERING,
+        const currentGatheringRate = calcBitGatheringRate(
             bit.farmingStats?.baseGatheringRate,
             bit.currentFarmingLevel,
             bit.farmingStats?.gatheringRateGrowth,
@@ -245,7 +244,7 @@ router.get('/get_current_rates/:bitId', async (req, res) => {
     }
 })
 
-// gets the max current gathering and earning rate (negating any modifiers) for a bit. used mainly for showing max stats during evolution
+// gets the max current gathering rate (negating any modifiers) for a bit. used mainly for showing max stats during evolution
 router.get('/get_max_current_rates/:bitId', async (req, res) => {
     const { bitId } = req.params;
 
@@ -262,8 +261,7 @@ router.get('/get_max_current_rates/:bitId', async (req, res) => {
         // for the modifiers, only get the modifiers impacted by the traits (since it's permanent)
         const gatheringRateTraitsModifiers = (bit.bitStatsModifiers?.gatheringRateModifiers as Modifier[]).filter(modifier => modifier.origin.includes('Trait'));
 
-        const maxGatheringRate = calcBitCurrentRate(
-            RateType.GATHERING,
+        const maxGatheringRate = calcBitGatheringRate(
             bit.farmingStats?.baseGatheringRate,
             bit.currentFarmingLevel,
             bit.farmingStats?.gatheringRateGrowth,
@@ -285,8 +283,8 @@ router.get('/get_max_current_rates/:bitId', async (req, res) => {
     }
 })
 
-// get the current gathering and earning rates for a bit when it evolves to the next level (to show users how much the max CGR and CER can grow by)
-router.get('/get_next_current_rate_increases/:bitId', async (req, res) => {
+// get the current gathering rates for a bit when it evolves to the next level (to show users how much the max CGR and CER can grow by)
+router.get('/get_next_gathering_rate_increases/:bitId', async (req, res) => {
     const { bitId } = req.params;
 
     try {
@@ -295,22 +293,20 @@ router.get('/get_next_current_rate_increases/:bitId', async (req, res) => {
         if (!bit) {
             return res.status(404).json({
                 status: 404,
-                message: `(get_current_rates) Bit with ID ${bitId} not found.`
+                message: `(get_next_gathering_rate_increases) Bit with ID ${bitId} not found.`
             })
         }
 
-        // get the max current gathering and earning rates for the bit (with no modifiers applied)
-        const maxCurrentGatheringRate = calcBitCurrentRate(
-            RateType.GATHERING,
+        // get the max current gathering rates for the bit (with no modifiers applied)
+        const maxCurrentGatheringRate = calcBitGatheringRate(
             bit.farmingStats?.baseGatheringRate,
             bit.currentFarmingLevel,
             bit.farmingStats?.gatheringRateGrowth,
             []
         );
 
-        // get the next max current gathering and earning rates for the bit (with no modifiers applied)
-        const nextMaxCurrentGatheringRate = calcBitCurrentRate(
-            RateType.GATHERING,
+        // get the next max current gathering rates for the bit (with no modifiers applied)
+        const nextMaxCurrentGatheringRate = calcBitGatheringRate(
             bit.farmingStats?.baseGatheringRate,
             bit.currentFarmingLevel + 1,
             bit.farmingStats?.gatheringRateGrowth,
@@ -319,7 +315,7 @@ router.get('/get_next_current_rate_increases/:bitId', async (req, res) => {
 
         return res.status(200).json({
             status: 200,
-            message: `(get_current_rates) Successfully retrieved all rates for bit with ID ${bitId}.`,
+            message: `(get_next_gathering_rate_increases) Successfully retrieved all rates for bit with ID ${bitId}.`,
             data: {
                 maxCurrentGatheringRate,
                 maxCurrentGatheringRateIncrease: nextMaxCurrentGatheringRate - maxCurrentGatheringRate,
@@ -330,45 +326,6 @@ router.get('/get_next_current_rate_increases/:bitId', async (req, res) => {
         return res.status(500).json({
             status: 500,
             message: err.message
-        })
-    }
-});
-
-router.get('/get_evolution_cost/:bitId', async (req, res) => {
-    const { bitId } = req.params;
-
-    try {
-        const bit = await BitModel.findOne({ bitId: parseInt(bitId) }).lean();
-
-        if (!bit) {
-            return res.status(404).json({
-                status: 404,
-                message: `(get_evolution_cost) Bit with ID ${bitId} not found.`
-            });
-        }
-
-        let evolutionCost = 0;
-
-        if (bit.premium) {
-            evolutionCost = BIT_EVOLUTION_COST(bit.currentFarmingLevel);
-        } else {
-            evolutionCost = FREE_BIT_EVOLUTION_COST(bit.currentFarmingLevel);
-        }
-
-        return res.status(200).json({
-            status: 200,
-            message: `(get_evolution_cost) Successfully retrieved evolution cost for bit with ID ${bitId}.`,
-            data: {
-                evolutionCost: {
-                    xCookie: bit.premium ? evolutionCost : 0,
-                    seaweed: bit.premium ? 0 : evolutionCost
-                }
-            }
-        });
-    } catch (err: any) {
-        return res.status(500).json({
-            status: 500,
-            message: `(get_evolution_cost) ${err.message}`
         })
     }
 });

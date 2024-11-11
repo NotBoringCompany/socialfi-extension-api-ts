@@ -21,43 +21,6 @@ export const MAX_BIT_LEVEL = (rarity: BitRarity): number => {
 /** relocation cooldown for bits after relocating from a raft or island (1 day) */
 export const RELOCATION_COOLDOWN = 86400;
 
-/** gets the cost (in xCookies) of evolving a bit, based on its current level */
-export const BIT_EVOLUTION_COST = (currentLevel: number): number => {
-    // level once upgraded = 2 to 9
-    if (currentLevel >= 1 && currentLevel <= 8) {
-        return 5;
-    // level once upgraded = 10 to 19
-    } else if (currentLevel >= 9 && currentLevel <= 18) {
-        return 15; 
-    // level once upgraded = 20 to 29
-    } else if (currentLevel >= 19 && currentLevel <= 28) {
-        return 45; 
-    // level once upgraded = 30 to 39
-    } else if (currentLevel >= 29 && currentLevel <= 38) {
-        return 135; 
-    // level once upgraded = 40 to 49
-    } else if (currentLevel >= 39 && currentLevel <= 48) {
-        return 405;
-    // level once upgraded = 50 to 59
-    } else if (currentLevel >= 49 && currentLevel <= 58) {
-        return 1215;
-    // level once upgraded = 60 to 65
-    } else if (currentLevel >= 59 && currentLevel <= 64) {
-        return 3645;
-    }
-}
-
-/**
- * Calculates the cost (in seaweed) to evolve a free bit.
- * 
- * Unlike premium bits, free bits evolve with seaweed.
- */
-export const FREE_BIT_EVOLUTION_COST = (currentLevel: number): number => {
-    // level 1 starts with 10 seaweed, and every level after is 1.125x the previous level
-    const cost = 10 * (1.125 ** (currentLevel - 1));
-    return Math.ceil(cost);
-}
-
 /**
  * Randomizes 2-5 traits (based on rarity) for a Bit.
  */
@@ -563,46 +526,6 @@ export const DEFAULT_GATHERING_RATE_GROWTH = (rarity: BitRarity): number => {
     }
 }
 
-/**
- * Gets the default earning rate (excl. +-10%; in % of total xCookies spent/hour) for a Bit based on its rarity.
- */
-export const DEFAULT_EARNING_RATE = (rarity: BitRarity): number => {
-    switch (rarity) {
-        case BitRarity.COMMON:
-            return 0.045;
-        case BitRarity.UNCOMMON:
-            return 0.054;
-        case BitRarity.RARE:
-            return 0.066;
-        case BitRarity.EPIC:
-            return 0.0825;
-        case BitRarity.LEGENDARY:
-            return 0.105;
-        default:
-            throw new Error(`(BASE_EARNING_RATE) Invalid rarity: ${rarity}`);
-    }
-}
-
-/**
- * Gets the default earning rate growth (excl. +-10%; fixed increase in % of total xCookies spent/hour for every level increase) for a Bit based on its rarity.
- */
-export const DEFAULT_EARNING_RATE_GROWTH = (rarity: BitRarity): number => {
-    switch (rarity) {
-        case BitRarity.COMMON:
-            return 0.00375;
-        case BitRarity.UNCOMMON:
-            return 0.0048;
-        case BitRarity.RARE:
-            return 0.006;
-        case BitRarity.EPIC:
-            return 0.0075;
-        case BitRarity.LEGENDARY:
-            return 0.00975;
-        default:
-            throw new Error(`(EARNING_RATE_GROWTH) Invalid rarity: ${rarity}`);
-    }
-}
-
 /** base energy depletion rate of bits in % of energy bar/hour (regardless of rarity) */
 export const DEFAULT_ENERGY_DEPLETION_RATE = (rarity: BitRarity): number => {
     switch (rarity) {
@@ -621,7 +544,7 @@ export const DEFAULT_ENERGY_DEPLETION_RATE = (rarity: BitRarity): number => {
     }
 };
 
-/** returns the reductions in earning and gathering rate (by a fixed %) if the bit's energy goes below a certain threshold */
+/** returns the reductions in gathering rate (by a fixed %) if the bit's energy goes below a certain threshold */
 export const ENERGY_THRESHOLD_REDUCTIONS = (energy: number): EnergyThresholdReduction => {
     switch (true) {
         case energy <= 0:

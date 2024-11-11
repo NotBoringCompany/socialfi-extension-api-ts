@@ -1,5 +1,5 @@
 import express from 'express';
-import { applyGatheringProgressBooster, applyIslandTapping, calcEffectiveResourceDropChances, calcIslandCurrentRate, checkCurrentTax, claimResources, getIslandTappingData, getIslands, giftXterioIsland, placeBit, removeIsland, rerollBonusMilestoneReward, unplaceBit, updateGatheringProgressAndDropResourceAlt } from '../api/island';
+import { applyGatheringProgressBooster, applyIslandTapping, calcEffectiveResourceDropChances, calcIslandGatheringRate, claimResources, getIslandTappingData, getIslands, giftXterioIsland, placeBit, removeIsland, rerollBonusMilestoneReward, unplaceBit, updateGatheringProgressAndDropResourceAlt } from '../api/island';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { IslandType, RateType, ResourceDropChanceDiff } from '../models/island';
@@ -146,25 +146,6 @@ router.post('/remove_island', async (req, res) => {
     }
 })
 
-router.get('/check_current_tax/:twitterId/:islandId', async (req, res) => {
-    const { twitterId, islandId } = req.params;
-
-    try {
-        const { status, message, data } = await checkCurrentTax(twitterId, parseInt(islandId));
-
-        return res.status(status).json({
-            status,
-            message,
-            data
-        });
-    } catch (err: any) {
-        return res.status(500).json({
-            status: 500,
-            message: err.message
-        })
-    }
-});
-
 router.post('/claim_resources', async (req, res) => {
     const { islandId, claimType, chosenResources } = req.body;
 
@@ -254,8 +235,7 @@ router.get('/get_current_rates/:islandId', async (req, res) => {
             });
         }
 
-        const currentGatheringRate = calcIslandCurrentRate(
-            RateType.GATHERING,
+        const currentGatheringRate = calcIslandGatheringRate(
             <IslandType>island.type,
             bits.map(bit => bit.farmingStats?.baseGatheringRate),
             bits.map(bit => bit.currentFarmingLevel),
@@ -270,25 +250,6 @@ router.get('/get_current_rates/:islandId', async (req, res) => {
             data: {
                 currentGatheringRate,
             }
-        });
-    } catch (err: any) {
-        return res.status(500).json({
-            status: 500,
-            message: err.message
-        });
-    }
-})
-
-router.get('/get_x_cookie_tax/:twitterId/:islandId', async (req, res) => {
-    const { twitterId, islandId } = req.params;
-
-    try {
-        const { status, message, data } = await checkCurrentTax(twitterId, parseInt(islandId));
-        
-        return res.status(status).json({
-            status,
-            message,
-            data
         });
     } catch (err: any) {
         return res.status(500).json({
@@ -422,7 +383,7 @@ router.post('/update_gathering_progress_and_drop_resource_alt', async (req, res)
     }
 });
 
-router.get('/calc_island_current_rate/:islandId/:rateType', async (req, res) => {
+router.get('/calc_island_gathering_rate/:islandId/:rateType', async (req, res) => {
     const { islandId, rateType } = req.params;
 
     try {
@@ -431,7 +392,7 @@ router.get('/calc_island_current_rate/:islandId/:rateType', async (req, res) => 
         if (!island) {
             return res.status(404).json({
                 status: 404,
-                message: `(calc_island_current_rate) Island with ID ${islandId} not found.`
+                message: `(calc_island_gathering_rate) Island with ID ${islandId} not found.`
             });
         }
 
@@ -450,8 +411,7 @@ router.get('/calc_island_current_rate/:islandId/:rateType', async (req, res) => 
         // get the island data
         const islandType = <IslandType>island.type;
 
-        const currentRate = calcIslandCurrentRate(
-            <RateType>rateType,
+        const currentRate = calcIslandGatheringRate(
             islandType,
             bits.map(bit => bit.farmingStats?.baseGatheringRate),
             bits.map(bit => bit.currentFarmingLevel),
@@ -462,7 +422,7 @@ router.get('/calc_island_current_rate/:islandId/:rateType', async (req, res) => 
 
         return res.status(200).json({
             status: 200,
-            message: `(calc_island_current_rate) Successfully calculated current rate for island with ID ${islandId}.`,
+            message: `(calc_island_gathering_rate) Successfully calculated current rate for island with ID ${islandId}.`,
             data: {
                 currentRate
             }
