@@ -209,7 +209,7 @@ router.get('/get_bits', async (req, res) => {
 });
 
 // current gathering rate for 1 bit
-router.get('/get_current_rates/:bitId', async (req, res) => {
+router.get('/get_gathering_rates/:bitId', async (req, res) => {
     const { bitId } = req.params;
 
     try {
@@ -231,7 +231,7 @@ router.get('/get_current_rates/:bitId', async (req, res) => {
 
         return res.status(200).json({
             status: 200,
-            message: `(get_current_rates) Successfully retrieved current gathering rate for bit with ID ${bitId}.`,
+            message: `(get_gathering_rates) Successfully retrieved current gathering rate for bit with ID ${bitId}.`,
             data: {
                 currentGatheringRate,
             }
@@ -245,7 +245,7 @@ router.get('/get_current_rates/:bitId', async (req, res) => {
 })
 
 // gets the max current gathering rate (negating any modifiers) for a bit. used mainly for showing max stats during evolution
-router.get('/get_max_current_rates/:bitId', async (req, res) => {
+router.get('/get_max_gathering_rates/:bitId', async (req, res) => {
     const { bitId } = req.params;
 
     try {
@@ -254,7 +254,7 @@ router.get('/get_max_current_rates/:bitId', async (req, res) => {
         if (!bit) {
             return res.status(404).json({
                 status: 404,
-                message: `(get_max_current_rates) Bit with ID ${bitId} not found.`
+                message: `(get_max_gathering_rates) Bit with ID ${bitId} not found.`
             })
         }
 
@@ -270,7 +270,7 @@ router.get('/get_max_current_rates/:bitId', async (req, res) => {
 
         return res.status(200).json({
             status: 200,
-            message: `(get_max_current_rates) Successfully retrieved max current gathering rate for bit with ID ${bitId}.`,
+            message: `(get_max_gathering_rates) Successfully retrieved max current gathering rate for bit with ID ${bitId}.`,
             data: {
                 maxGatheringRate
             }
