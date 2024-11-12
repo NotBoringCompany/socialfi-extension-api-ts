@@ -254,7 +254,7 @@ router.get('/get_max_gathering_rate/:bitId', async (req, res) => {
         if (!bit) {
             return res.status(404).json({
                 status: 404,
-                message: `(get_max_gathering_rates) Bit with ID ${bitId} not found.`
+                message: `(get_max_gathering_rate) Bit with ID ${bitId} not found.`
             })
         }
 
@@ -270,7 +270,7 @@ router.get('/get_max_gathering_rate/:bitId', async (req, res) => {
 
         return res.status(200).json({
             status: 200,
-            message: `(get_max_gathering_rates) Successfully retrieved max current gathering rate for bit with ID ${bitId}.`,
+            message: `(get_max_gathering_rate) Successfully retrieved max current gathering rate for bit with ID ${bitId}.`,
             data: {
                 maxGatheringRate
             }
