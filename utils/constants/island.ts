@@ -751,6 +751,8 @@ ISLAND_QUEUE.process('claimResources', async (job) => {
           $inc: Object.keys(islandUpdateOperations.$inc).length > 0 ? islandUpdateOperations.$inc : {}
         }
       );
+
+      console.log(`(claimResources) Island ${islandId} islandResultOne: `, islandResultOne);
     }
 
     // do push and pull operations
@@ -761,6 +763,8 @@ ISLAND_QUEUE.process('claimResources', async (job) => {
           $pull: Object.keys(islandUpdateOperations.$pull).length > 0 ? islandUpdateOperations.$pull : {}
         }
       );
+
+      console.log(`(claimResources) Island ${islandId} islandResultTwo: `, islandResultTwo);
     }
 
     return {
