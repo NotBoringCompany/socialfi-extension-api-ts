@@ -65,7 +65,7 @@ export const initializeSocket = (server: http.Server) => {
         });
 
         // store the connected user's socket ID in Redis
-        await redis.sadd(`socket_user_${userId}`, socket.id);
+        await redis.set(`socket_user_${userId}`, socket.id);
 
         // chat event listener
         handleChatEvents(socket, io);
@@ -75,11 +75,7 @@ export const initializeSocket = (server: http.Server) => {
         // handle user disconnection
         socket.on('disconnect', async () => {
             if (userId) {
-                await redis.srem(`socket_user_${userId}`, socket.id);
-                const remainingSockets = await redis.scard(`socket_user_${userId}`);
-                if (remainingSockets === 0) {
-                    await redis.del(`socket_user_${userId}`);
-                }
+                await redis.del(`socket_user_${userId}`);
                 console.log(`User ${userId} disconnected and removed from Redis`);
             }
         });
