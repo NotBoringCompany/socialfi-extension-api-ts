@@ -719,11 +719,13 @@ ISLAND_QUEUE.process('claimResources', async (job) => {
     islandUpdateOperations.$set['islandResourceStats.lastClaimed'] = currentTime;
 
     // check if either the $push or $inc's `inventory.resources`'s $each is empty. if yes, remove it.
-    if (userUpdateOperations.$push['inventory.resources'].$each.length === 0) {
+    if (userUpdateOperations.$push['inventory.resources']?.$each?.length === 0) {
+      console.log(`(claimResources) $push's $each is empty. deleting...`);
       delete userUpdateOperations.$push['inventory.resources'];
     }
     
-    if (userUpdateOperations.$inc['inventory.resources'].$each.length === 0) {
+    if (userUpdateOperations.$inc['inventory.resources']?.$each?.length === 0) {
+      console.log(`(claimResources) $inc's $each is empty. deleting...`);
       delete userUpdateOperations.$inc['inventory.resources'];
     }
 
