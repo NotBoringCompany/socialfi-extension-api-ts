@@ -270,9 +270,9 @@ ISLAND_QUEUE.process('dropResource', async (job) => {
         if (rand <= bonusResourceChance) {
           console.log(`(dropResource) rand is below bonusResourceChance. dropping bonus resource!`);
           // randomize a resource based on the island's resource drop chances
-          let bonusResource: Resource | undefined | null = null;
+          let bonusResource: Resource = randomizeResourceFromChances(<IslandType>island.type, island.traits, island.currentLevel);
 
-          // keep fetching a resource until it's not undefined (just in case it returns undefined at times)
+          // keep fetching a resource until it's not undefined/null in case it currently is (just in case it returns undefined at times)
           while (!bonusResource) {
             bonusResource = randomizeResourceFromChances(<IslandType>island.type, island.traits, island.currentLevel);
           }
