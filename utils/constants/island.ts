@@ -156,12 +156,14 @@ ISLAND_QUEUE.process('dropResource', async (job) => {
     }
 
     // randomize the resource from the effective drop chances based on the island's type and level
-    let resourceToDrop: Resource | undefined | null = null;
+    let resourceToDrop: Resource = randomizeResourceFromChances(<IslandType>island.type, island.traits, island.currentLevel);
 
-    // keep fetching a resource until it's not undefined (just in case it returns undefined at times)
+    // keep fetching a resource until it's not undefined/null if it is currently so (just in case it returns undefined at times)
     while (!resourceToDrop) {
       resourceToDrop = randomizeResourceFromChances(<IslandType>island.type, island.traits, island.currentLevel);
     }
+
+    console.log(`(dropResource) Island ${island.islandId} has dropped a resource: ${resourceToDrop}`);
 
     // firstly check if `claimableResources` is empty.
     const claimableResources: ExtendedResource[] = island.islandResourceStats?.claimableResources;
@@ -282,8 +284,8 @@ ISLAND_QUEUE.process('dropResource', async (job) => {
           // check if the resource exists in the island's `claimableResources` OR the new `claimableResourcesToAdd`.
           // `claimableResources` means that the resource is already in the island's claimable resources.
           // `claimableResourcesToAdd` means that the resource isn't in the island's claimable resources, but the user has obtained it from the resource to drop.
-          const existingClaimableResourceToAddIndex = claimableResourcesToAdd.findIndex(r => r.type === bonusResource.type);
-          const existingClaimableResourceIndex = claimableResources.findIndex(r => r.type === bonusResource.type);
+          const existingClaimableResourceToAddIndex = claimableResourcesToAdd.findIndex(r => r?.type === bonusResource?.type);
+          const existingClaimableResourceIndex = claimableResources.findIndex(r => r?.type === bonusResource?.type);
 
           // if the resource exists in `claimableResources`, increment its amount via the $inc operator.
           // if not, check if the resource exists in `claimableResourcesToAdd`. if it does, increment its amount directly in the array.
@@ -306,8 +308,8 @@ ISLAND_QUEUE.process('dropResource', async (job) => {
           islandUpdateOperations.$inc['islandResourceStats.dailyBonusResourcesGathered'] = 1;
 
           // check if the bonus resource already exists in `resourcesGathered` or `gatheredResourcesToAdd`.
-          const existingGatheredResourceIndex = resourcesGathered.findIndex(r => r.type === bonusResource.type);
-          const existingGatheredResourceToAddIndex = gatheredResourcesToAdd.findIndex(r => r.type === bonusResource.type);
+          const existingGatheredResourceIndex = resourcesGathered.findIndex(r => r?.type === bonusResource?.type);
+          const existingGatheredResourceToAddIndex = gatheredResourcesToAdd.findIndex(r => r?.type === bonusResource?.type);
 
           // if the bonus resource exists in `resourcesGathered`, increment its amount via the $inc operator.
           // if not, check if the bonus resource exists in `gatheredResourcesToAdd`. if it does, increment its amount directly in the array.
@@ -588,7 +590,7 @@ ISLAND_QUEUE.process('claimResources', async (job) => {
           if (!resource || !resource.type) {
             console.log(`(claimResources) Resource is null or resource type is null. Resource: ${JSON.stringify(resource, null, 2)}`);
           }
-          
+
           // check if this resource exists on the user's inventory or not. if not, we push a new resource; if yes, we increment the amount.
           const existingResourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(r => r?.type === resource?.type);
 
