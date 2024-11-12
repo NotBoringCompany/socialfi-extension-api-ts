@@ -335,7 +335,6 @@ ISLAND_QUEUE.process('dropResource', async (job) => {
 
     // set and inc combined first to prevent conflicting issues
     await IslandModel.updateOne(
-      { islandId, 'islandResourceStats.version': island.islandResourceStats.version },
       {
         $set: Object.keys(islandUpdateOperations.$set).length > 0 ? islandUpdateOperations.$set : {},
         $inc: Object.keys(islandUpdateOperations.$inc).length > 0 ? islandUpdateOperations.$inc : {}
@@ -344,15 +343,11 @@ ISLAND_QUEUE.process('dropResource', async (job) => {
 
     // do push and pull
     await IslandModel.updateOne(
-      { islandId, 'islandResourceStats.version': island.islandResourceStats.version },
       {
         $pull: Object.keys(islandUpdateOperations.$pull).length > 0 ? islandUpdateOperations.$pull : {},
         $push: Object.keys(islandUpdateOperations.$push).length > 0 ? islandUpdateOperations.$push : {}
       }
     )
-
-    // increment the version field in the island document, indicating an update
-    await IslandModel.updateOne({ islandId }, { $inc: { 'islandResourceStats.version': 1 } });
 
     return {
       status: Status.SUCCESS,
@@ -363,6 +358,11 @@ ISLAND_QUEUE.process('dropResource', async (job) => {
     }
   } catch (err: any) {
     console.error(`(ISLAND_QUEUE) Error occurred while dropping resources for island ${islandId}: ${err.message}`);
+
+    return {
+      status: Status.ERROR,
+      message: `(dropResource) Error occurred while dropping resources for island ${islandId}: ${err.message}`
+    }
   }
 });
 
@@ -746,7 +746,6 @@ ISLAND_QUEUE.process('claimResources', async (job) => {
     // first check if we have any set/inc operations to perform
     if (Object.keys(islandUpdateOperations.$set).length > 0 || Object.keys(islandUpdateOperations.$inc).length > 0) {
       const islandResultOne = await IslandModel.updateOne(
-        { islandId, 'islandResourceStats.version': island.islandResourceStats.version },
         {
           $set: Object.keys(islandUpdateOperations.$set).length > 0 ? islandUpdateOperations.$set : {},
           $inc: Object.keys(islandUpdateOperations.$inc).length > 0 ? islandUpdateOperations.$inc : {}
@@ -757,16 +756,12 @@ ISLAND_QUEUE.process('claimResources', async (job) => {
     // do push and pull operations
     if (Object.keys(islandUpdateOperations.$push).length > 0 || Object.keys(islandUpdateOperations.$pull).length > 0) {
       const islandResultTwo = await IslandModel.updateOne(
-        { islandId, 'islandResourceStats.version': island.islandResourceStats.version },
         {
           $push: Object.keys(islandUpdateOperations.$push).length > 0 ? islandUpdateOperations.$push : {},
           $pull: Object.keys(islandUpdateOperations.$pull).length > 0 ? islandUpdateOperations.$pull : {}
         }
       );
     }
-
-    // increment the version number as the last step
-    await IslandModel.updateOne({ islandId }, { $inc: { 'islandResourceStats.version': 1 } });
 
     return {
       status: Status.SUCCESS,
@@ -778,6 +773,11 @@ ISLAND_QUEUE.process('claimResources', async (job) => {
     };
   } catch (err: any) {
     console.error(`(ISLAND_QUEUE) Error occurred while claiming resources for island ${islandId}: ${err.message}`);
+
+    return {
+      status: Status.ERROR,
+      message: `(claimResources) Error occurred while claiming resources for island ${islandId}: ${err.message}`
+    }
   }
 })
 
