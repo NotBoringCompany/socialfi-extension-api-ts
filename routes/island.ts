@@ -464,7 +464,7 @@ router.post('/reroll_bonus_milestone_reward', async (req, res) => {
     const { islandId } = req.body;
 
     try {
-        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'apply_island_tapping_data');
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'reroll_bonus_milestone_reward');
 
         if (validateStatus !== Status.SUCCESS) {
             return res.status(validateStatus).json({
