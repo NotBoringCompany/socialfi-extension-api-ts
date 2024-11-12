@@ -335,7 +335,7 @@ ISLAND_QUEUE.process('dropResource', async (job) => {
 
     // set and inc combined first to prevent conflicting issues
     await IslandModel.updateOne(
-      islandId,
+      { islandId },
       {
         $set: Object.keys(islandUpdateOperations.$set).length > 0 ? islandUpdateOperations.$set : {},
         $inc: Object.keys(islandUpdateOperations.$inc).length > 0 ? islandUpdateOperations.$inc : {}
@@ -344,7 +344,7 @@ ISLAND_QUEUE.process('dropResource', async (job) => {
 
     // do push and pull
     await IslandModel.updateOne(
-      islandId,
+      { islandId },
       {
         $pull: Object.keys(islandUpdateOperations.$pull).length > 0 ? islandUpdateOperations.$pull : {},
         $push: Object.keys(islandUpdateOperations.$push).length > 0 ? islandUpdateOperations.$push : {}
@@ -748,7 +748,7 @@ ISLAND_QUEUE.process('claimResources', async (job) => {
     // first check if we have any set/inc operations to perform
     if (Object.keys(islandUpdateOperations.$set).length > 0 || Object.keys(islandUpdateOperations.$inc).length > 0) {
       const islandResultOne = await IslandModel.updateOne(
-        islandId,
+        { islandId },
         {
           $set: Object.keys(islandUpdateOperations.$set).length > 0 ? islandUpdateOperations.$set : {},
           $inc: Object.keys(islandUpdateOperations.$inc).length > 0 ? islandUpdateOperations.$inc : {}
@@ -761,7 +761,7 @@ ISLAND_QUEUE.process('claimResources', async (job) => {
     // do push and pull operations
     if (Object.keys(islandUpdateOperations.$push).length > 0 || Object.keys(islandUpdateOperations.$pull).length > 0) {
       const islandResultTwo = await IslandModel.updateOne(
-        islandId,
+        { islandId },
         {
           $push: Object.keys(islandUpdateOperations.$push).length > 0 ? islandUpdateOperations.$push : {},
           $pull: Object.keys(islandUpdateOperations.$pull).length > 0 ? islandUpdateOperations.$pull : {}
