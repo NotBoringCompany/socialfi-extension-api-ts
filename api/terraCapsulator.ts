@@ -185,7 +185,6 @@ export const summonIsland = async (
             purchaseDate: Math.floor(Date.now() / 1000),
             obtainMethod: ObtainMethod.TERRA_CAPSULATOR,
             currentLevel: 1,
-            currentTax: 0,
             placedBitIds: [],
             traits,
             islandResourceStats: {

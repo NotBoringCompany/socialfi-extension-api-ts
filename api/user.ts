@@ -275,7 +275,6 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
                 purchaseDate: Math.floor(Date.now() / 1000),
                 obtainMethod: ObtainMethod.SIGN_UP,
                 currentLevel: 1,
-                currentTax: 0,
                 placedBitIds: [],
                 traits: randomizeIslandTraits(),
                 islandResourceStats: {
@@ -2887,7 +2886,6 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                 purchaseDate: Math.floor(Date.now() / 1000),
                 obtainMethod: ObtainMethod.SIGN_UP,
                 currentLevel: 1,
-                currentTax: 0,
                 placedBitIds: [],
                 traits: randomizeIslandTraits(),
                 islandResourceStats: {
