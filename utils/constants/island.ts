@@ -718,8 +718,17 @@ ISLAND_QUEUE.process('claimResources', async (job) => {
     // set the island's `lastClaimed` to the current time
     islandUpdateOperations.$set['islandResourceStats.lastClaimed'] = currentTime;
 
-    console.log(`Island ${island.islandId} userUpdateOperations: `, userUpdateOperations);
-    console.log(`Island ${island.islandId} islandUpdateOperations: `, islandUpdateOperations);
+    // check if either the $push or $inc's `inventory.resources`'s $each is empty. if yes, remove it.
+    if (userUpdateOperations.$push['inventory.resources'].$each.length === 0) {
+      delete userUpdateOperations.$push['inventory.resources'];
+    }
+    
+    if (userUpdateOperations.$inc['inventory.resources'].$each.length === 0) {
+      delete userUpdateOperations.$inc['inventory.resources'];
+    }
+
+    console.log(`Island ${island.islandId} userUpdateOperations: `, JSON.stringify(userUpdateOperations, null, 2));
+    console.log(`Island ${island.islandId} islandUpdateOperations: `, JSON.stringify(islandUpdateOperations, null, 2));
 
     // do set and inc first to prevent conflicting issues
     await UserModel.updateOne({ twitterId }, {
