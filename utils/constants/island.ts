@@ -571,8 +571,12 @@ ISLAND_QUEUE.process('claimResources', async (job) => {
 
       // loop through each resource and calculate the total weight to claim
       for (const resource of claimableResources) {
-        const resourceWeight: number = resources.find(r => r.type === resource.type)?.weight;
+        const resourceWeight: number = resources.find(r => r?.type === resource?.type)?.weight ?? 0;
         const totalWeight = resourceWeight * resource.amount;
+
+        if (totalWeight === 0) {
+          console.log(`(claimResources) Resource weight is 0 (maybe null issue?). Resource: ${JSON.stringify(resource, null, 2)}`);
+        }
 
         totalWeightToClaim += totalWeight;
       }
@@ -581,15 +585,19 @@ ISLAND_QUEUE.process('claimResources', async (job) => {
       if (currentInventoryWeight + totalWeightToClaim <= user.inventory.maxWeight) {
         // loop through each resource and add it to the user's inventory
         for (const resource of claimableResources) {
+          if (!resource || !resource.type) {
+            console.log(`(claimResources) Resource is null or resource type is null. Resource: ${JSON.stringify(resource, null, 2)}`);
+          }
+          
           // check if this resource exists on the user's inventory or not. if not, we push a new resource; if yes, we increment the amount.
-          const existingResourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(r => r.type === resource.type);
+          const existingResourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(r => r?.type === resource?.type);
 
           if (existingResourceIndex !== -1) {
             userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = resource.amount;
           } else {
-            console.log(`(claimResources) New user found. Adding resource to inventory... Resource: ${JSON.stringify(resource, null, 2)}`);
+            console.log(`(claimResources) New resource. found. Adding resource to inventory... Resource: ${JSON.stringify(resource, null, 2)}`);
             /// CHECK THIS!!!!!
-            userUpdateOperations.$push['inventory.resources'].$each.push({ ...resource, origin: ExtendedResourceOrigin.NORMAL });
+            userUpdateOperations.$push['inventory.resources'].$each.push(resource);
           }
         }
 
