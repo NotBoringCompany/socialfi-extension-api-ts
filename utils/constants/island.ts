@@ -104,6 +104,8 @@ ISLAND_QUEUE.process('dropResourceOrClaimResources', async (job) => {
           message: `(ISLAND_QUEUE/dropResource) Island not found.`
         }
       }
+
+      console.log(`(ISLAND_QUEUE/dropResource) Island ID ${islandId}'s claimableResources: ${island.islandResourceStats.claimableResources} `);
   
       // a list of resources to be added to the island's `claimableResources`.
       const claimableResourcesToAdd: ExtendedResource[] = [];
@@ -419,6 +421,8 @@ ISLAND_QUEUE.process('dropResourceOrClaimResources', async (job) => {
           message: `(ISLAND_QUEUE/claimResources) Island not found.`
         }
       }
+
+      console.log(`(ISLAND_QUEUE/claimResources) Island ID ${islandId}'s claimableResources: ${island.islandResourceStats.claimableResources} `);
   
       // check if the user owns the island
       if (!(user.inventory?.islandIds as number[]).includes(islandId)) {
