@@ -329,6 +329,9 @@ ISLAND_QUEUE.process('dropResourceOrClaimResources', async (job) => {
           }
         }
       }
+
+      console.log(`(ISLAND_QUEUE/dropResource) gathered resources to add: ${JSON.stringify(gatheredResourcesToAdd, null, 2)}`);
+      console.log(`(ISLAND_QUEUE/dropResource) claimable resources to add: ${JSON.stringify(claimableResourcesToAdd, null, 2)}`);
   
       // add the resources to the island's `claimableResources` and `resourcesGathered`
       islandUpdateOperations.$push['islandResourceStats.claimableResources'].$each.push(...claimableResourcesToAdd);
