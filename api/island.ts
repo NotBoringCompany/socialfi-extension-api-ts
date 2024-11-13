@@ -2003,6 +2003,9 @@ export const claimResources = async (
     chosenResources?: SimplifiedResource[]
 ): Promise<ReturnValue> => {
     const lockKey = `dropResourceOrClaimResources:${islandId}`;
+
+    console.log(`(claimResources) lockKey: `, lockKey);
+
     // lock expiration time is 10 seconds
     const lockTTL = 10000;
 
@@ -2043,6 +2046,7 @@ export const claimResources = async (
             message: `(claimResources) Error: ${err.message}`
         }
     } finally {
+        console.log(`(claimResources) releasing lock.`);
         // release the lock
         await redis.del(lockKey);
     }
@@ -2094,6 +2098,9 @@ export const updateDailyBonusResourcesGathered = async (): Promise<void> => {
  */
 export const dropResource = async (islandId: number): Promise<ReturnValue> => {
     const lockKey = `dropResourceOrClaimResources:${islandId}`;
+
+    console.log(`(dropResource) lockKey: `, lockKey);
+
     // lock expiration time is 10 seconds
     const lockTTL = 10000;
 
@@ -2101,10 +2108,10 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
     const lock = await redis.set(lockKey, 'locked', 'PX', lockTTL);
 
     if (!lock) {
-        console.error(`(claimResources) Resources are either being claimed or a resource is being dropped. Please try again soon.`);
+        console.error(`(dropResource) Resources are either being claimed or a resource is being dropped. Please try again soon.`);
         return {
             status: Status.ERROR,
-            message: `(claimResources) Resources are either being claimed or a resource is being dropped. Please try again soon.`
+            message: `(dropResource) Resources are either being claimed or a resource is being dropped. Please try again soon.`
         }
     }
 
@@ -2134,6 +2141,7 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
             message: `(dropResource) Error: ${err.message}`
         };
     } finally {
+        console.log(`(claimResources) releasing lock.`);
         // release the lock
         await redis.del(lockKey);
     }
@@ -2167,6 +2175,8 @@ export const randomizeResourceFromChances = (
             // get the trait for the resource rarity. if rarity is common, then take traits[0], if uncommon, then traits[1], and so on.
             const trait = traits[ResourceRarityNumeric[resourceRarity]];
 
+            console.log(`(randomizeResourceFromChances) trait: `, trait);
+
             // if trait is mineral rich, find the ore resource with the specified rarity.
             // if trait is aquifer, find the liquid resource with the specified rarity.
             // if trait is fertile, find the fruit resource with the specified rarity
@@ -2185,9 +2195,14 @@ export const randomizeResourceFromChances = (
             });
 
             console.log(`(randomizeResourceFromChances) resource is undefined: `, resource === undefined);
+            console.log(`(randomizeResourceFromChances) resource is null: `, resource === null);
+
+            console.log(`(randomizeResourceFromChances) resource: `, resource);
             return resource;
         }
     }
+
+    return null;
 }
 
 /**
