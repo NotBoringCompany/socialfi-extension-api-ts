@@ -709,6 +709,12 @@ ISLAND_QUEUE.process('dropResourceOrClaimResources', async (job) => {
           if (islandResourcesPulled.length > 0) {
             islandUpdateOperations.$pull[`islandResourceStats.claimableResources`] = { type: { $in: islandResourcesPulled } };
           }
+
+          // check if the $in has any `null` values. if yes, remove it.
+          if (userUpdateOperations.$push['inventory.resources']?.$each?.includes(null)) {
+            console.log(`(ISLAND_QUEUE/claimResources) $push's $each includes null. deleting...`);
+            userUpdateOperations.$push['inventory.resources'].$each = userUpdateOperations.$push['inventory.resources'].$each.filter((r: ExtendedResource) => r !== null);
+          }
   
           // add the weight to the user's inventory
           userUpdateOperations.$inc['inventory.weight'] = currentWeight;
