@@ -84,9 +84,6 @@ export const ISLAND_QUEUE = new Bull('islandQueue', {
 ISLAND_QUEUE.process('dropResourceOrClaimResources', async (job) => {
   const { queueType, islandId, twitterId, claimType, chosenResources } = job.data;
 
-  // set a 3-second delay between each job processing
-  await new Promise(resolve => setTimeout(resolve, 3000));
-
   if (queueType === 'dropResource') {
     try {
       const island = await IslandModel.findOneAndUpdate(
