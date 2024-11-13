@@ -148,12 +148,15 @@ ISLAND_QUEUE.process('dropResourceOrClaimResources', async (job) => {
       }
   
       // randomize the resource from the effective drop chances based on the island's type and level
-      let resourceToDrop: Resource = randomizeResourceFromChances(<IslandType>island.type, island.traits, island.currentLevel);
+      let resourceToDrop: Resource | null = randomizeResourceFromChances(<IslandType>island.type, island.traits, island.currentLevel);
 
       console.log(`(ISLAND_QUEUE/dropResource) resourceToDrop before accessing type: `, resourceToDrop);
   
       // keep fetching a resource until it's not undefined/null if it is currently so (just in case it returns undefined at times)
       while (!resourceToDrop || !resourceToDrop.type || !resourceToDrop.rarity || !resourceToDrop.weight || !resourceToDrop.line) {
+        if (resourceToDrop === null) {
+          console.log(`(ISLAND_QUEUE/dropResource) resourceToDrop is null. randomizing again...`);
+        }
         resourceToDrop = randomizeResourceFromChances(<IslandType>island.type, island.traits, island.currentLevel);
       }
 
