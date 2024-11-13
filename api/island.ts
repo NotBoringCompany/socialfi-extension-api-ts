@@ -2018,7 +2018,7 @@ export const claimResources = async (
     }
 
     try {
-        const job = await ISLAND_QUEUE.add('claimResources', { twitterId, islandId, claimType, chosenResources });
+        const job = await ISLAND_QUEUE.add('dropResourceOrClaimResources', { twitterId, islandId, claimType, chosenResources });
 
         // wait until the job finishes processing
         const { status, message, data } = await job.finished();
@@ -2109,7 +2109,7 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
     }
 
     try {
-        const job = await ISLAND_QUEUE.add('dropResource', { islandId });
+        const job = await ISLAND_QUEUE.add('dropResourceOrClaimResources', { islandId });
 
         // wait until the job finishes processing
         const { status, message, data } = await job.finished();
