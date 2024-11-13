@@ -2010,10 +2010,10 @@ export const claimResources = async (
     const lock = await redis.set(lockKey, 'locked', 'PX', lockTTL);
 
     if (!lock) {
-        console.error(`(claimResources) Resources are currently being claimed. Please try again soon.`);
+        console.error(`(claimResources) Resources are either being claimed or a resource is being dropped. Please try again soon.`);
         return {
             status: Status.ERROR,
-            message: `(claimResources) Resources are currently being claimed. Please try again soon.`
+            message: `(claimResources) Resources are either being claimed or a resource is being dropped. Please try again soon.`
         }
     }
 
@@ -2101,10 +2101,10 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
     const lock = await redis.set(lockKey, 'locked', 'PX', lockTTL);
 
     if (!lock) {
-        console.error(`(dropResource) A resource is currently being dropped. Please try again soon.`);
+        console.error(`(claimResources) Resources are either being claimed or a resource is being dropped. Please try again soon.`);
         return {
             status: Status.ERROR,
-            message: `(dropResource) A resource is currently being dropped. Please try again soon.`
+            message: `(claimResources) Resources are either being claimed or a resource is being dropped. Please try again soon.`
         }
     }
 
