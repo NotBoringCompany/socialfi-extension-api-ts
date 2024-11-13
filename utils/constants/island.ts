@@ -792,6 +792,11 @@ ISLAND_QUEUE.process('dropResourceOrClaimResources', async (job) => {
         message: `(ISLAND_QUEUE/claimResources) Error occurred while claiming resources for island ${islandId}: ${err.message}`
       }
     }
+  } else {
+    return {
+      status: Status.ERROR,
+      message: `(ISLAND_QUEUE) Invalid queue type.`
+    }
   }
 })
 

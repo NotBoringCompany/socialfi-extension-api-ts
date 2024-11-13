@@ -2002,7 +2002,7 @@ export const claimResources = async (
     // this essentially allows the user to choose which resources to claim
     chosenResources?: SimplifiedResource[]
 ): Promise<ReturnValue> => {
-    const lockKey = `claimResources:${islandId}`;
+    const lockKey = `dropResourceOrClaimResources:${islandId}`;
     // lock expiration time is 10 seconds
     const lockTTL = 10000;
 
@@ -2093,7 +2093,7 @@ export const updateDailyBonusResourcesGathered = async (): Promise<void> => {
  * Should only be called when gathering progress has reached >= 100% (and then reset back to 0%). Scheduler/parent function will check this.
  */
 export const dropResource = async (islandId: number): Promise<ReturnValue> => {
-    const lockKey = `dropResource:${islandId}`;
+    const lockKey = `dropResourceOrClaimResources:${islandId}`;
     // lock expiration time is 10 seconds
     const lockTTL = 10000;
 
