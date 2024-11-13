@@ -89,7 +89,11 @@ ISLAND_QUEUE.process('dropResourceOrClaimResources', async (job) => {
 
   if (queueType === 'dropResource') {
     try {
-      const island = await IslandModel.findOne({ islandId }).lean();
+      const island = await IslandModel.findOneAndUpdate(
+        { islandId },
+        {}, // no updates here; only locking the document
+        { new: true } // returns the updated document
+    ).lean();
   
       const islandUpdateOperations = {
         $pull: {},
@@ -386,7 +390,11 @@ ISLAND_QUEUE.process('dropResourceOrClaimResources', async (job) => {
   
       const [user, island] = await Promise.all([
         UserModel.findOne({ twitterId }).lean(),
-        IslandModel.findOne({ islandId }).lean()
+        IslandModel.findOneAndUpdate(
+          { islandId },
+          {}, // no updates here; only locking the document
+          { new: true } // returns the updated document
+        ).lean()
       ]);
   
       const userUpdateOperations = {
