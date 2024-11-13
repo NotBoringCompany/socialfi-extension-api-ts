@@ -2049,11 +2049,12 @@ export const claimResources = async (
             status: Status.ERROR,
             message: `(claimResources) Error: ${err.message}`
         }
-    } finally {
-        console.log(`(claimResources) releasing lock.`);
-        // release the lock
-        await redis.del(lockKey);
-    }
+    } 
+    // finally {
+    //     console.log(`(claimResources) releasing lock.`);
+    //     // release the lock
+    //     await redis.del(lockKey);
+    // }
 }
 
 /**
@@ -2148,11 +2149,12 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
             status: Status.ERROR,
             message: `(dropResource) Error: ${err.message}`
         };
-    } finally {
-        console.log(`(claimResources) releasing lock.`);
-        // release the lock
-        await redis.del(lockKey);
-    }
+    } 
+    // finally {
+    //     console.log(`(claimResources) releasing lock.`);
+    //     // release the lock
+    //     await redis.del(lockKey);
+    // }
 }
 
 /**
