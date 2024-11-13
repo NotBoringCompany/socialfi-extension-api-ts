@@ -65,7 +65,7 @@ export const initializeSocket = (server: http.Server) => {
         });
 
         // store the connected user's socket ID in Redis
-        await redis.set(`socket_user_${userId}`, socket.id);
+        await addSocketUser(userId, socket.id);
 
         // chat event listener
         handleChatEvents(socket, io);
@@ -75,9 +75,28 @@ export const initializeSocket = (server: http.Server) => {
         // handle user disconnection
         socket.on('disconnect', async () => {
             if (userId) {
-                await redis.del(`socket_user_${userId}`);
+                await removeSocketUser(userId, socket.id);
                 console.log(`User ${userId} disconnected and removed from Redis`);
             }
         });
     });
+};
+
+// Add a socket ID to a specific user
+export const addSocketUser = async (userId: string, socketId: string) => {
+    const key = `user_sockets:${userId}`;
+    await redis.hset(key, socketId, Date.now()); // Optionally store the timestamp for expiry or tracking
+};
+
+// Remove a socket ID for a specific user
+const removeSocketUser = async (userId: string, socketId: string) => {
+    const key = `user_sockets:${userId}`;
+    await redis.hdel(key, socketId); // Remove the socket ID from the user's hash
+};
+
+// Get all socket IDs for a user
+export const getSocketUsers = async (userId: string): Promise<string[]> => {
+    const key = `user_sockets:${userId}`;
+    const socketIds = await redis.hkeys(key); // Get all socket IDs (fields)
+    return socketIds;
 };
