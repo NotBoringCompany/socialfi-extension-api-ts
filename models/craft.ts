@@ -7,6 +7,8 @@ import { BarrenResource, ExtendedResource, FruitResource, LiquidResource, OreRes
  * Represents a crafting recipe with the required assets to craft the recipe.
  */
 export interface CraftingRecipe {
+    /** the database ID of the crafting recipe */
+    _id: string;
     /** the data/stats of the asset that's crafted from this recipe */
     craftedAssetData: CraftedAssetData;
     /** the `line`, `category` or type of crafting recipe */

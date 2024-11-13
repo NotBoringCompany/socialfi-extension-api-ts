@@ -22,7 +22,7 @@ import { WeeklyMVPClaimableRewardSchema, WeeklyMVPRankingLeaderboardSchema } fro
 import { CollabBasketSchema, CollabParticipantSchema } from '../../schemas/Collab';
 import { ShopAssetPurchaseSchema, ShopAssetSchema } from '../../schemas/Shop';
 import { ChatroomSchema, ChatSchema } from '../../schemas/Chat';
-import { CraftingQueueSchema } from '../../schemas/Craft';
+import { CraftingQueueSchema, CraftingRecipeSchema } from '../../schemas/Craft';
 import { BanSchema } from '../../schemas/Ban';
 import { MailReceiverDataSchema, MailSchema } from '../../schemas/Mail';
 import { ConsumedSynthesizingItemSchema } from '../../schemas/Asset';
@@ -116,3 +116,4 @@ export const ChatModel = TEST_CONNECTION.model('Chats', ChatSchema, 'Chats');
 export const ChatroomModel = TEST_CONNECTION.model('Chatrooms', ChatroomSchema, 'Chatrooms');
 export const FriendModel = TEST_CONNECTION.model('Friends', FriendSchema, 'Friends');
 export const ReportModel = TEST_CONNECTION.model('Reports', ReportSchema, 'Reports');
+export const CraftingRecipeModel = TEST_CONNECTION.model('CraftingRecipes', CraftingRecipeSchema, 'CraftingRecipes');

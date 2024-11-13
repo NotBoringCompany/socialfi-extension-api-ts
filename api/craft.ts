@@ -7,7 +7,7 @@ import { CraftingMasteryStats } from '../models/mastery';
 import { POIName } from '../models/poi';
 import { BarrenResource, ExtendedResource, ExtendedResourceOrigin, FruitResource, LiquidResource, OreResource, ResourceType, SimplifiedResource } from "../models/resource";
 import { BASE_CRAFTABLE_PER_SLOT, BASE_CRAFTABLE_PER_SLOT_SMELTING, BASE_CRAFTING_SLOTS, CANCEL_CRAFT_X_COOKIES_COST, CRAFT_QUEUE, CRAFTING_RECIPES, GET_CRAFTING_LEVEL, REQUIRED_POI_FOR_CRAFTING_LINE } from '../utils/constants/craft';
-import { LeaderboardModel, CraftingQueueModel, SquadLeaderboardModel, SquadModel, UserModel } from "../utils/constants/db";
+import { LeaderboardModel, CraftingQueueModel, SquadLeaderboardModel, SquadModel, UserModel, CraftingRecipeModel } from "../utils/constants/db";
 import { CARPENTING_MASTERY_LEVEL, COOKING_MASTERY_LEVEL, SMELTING_MASTERY_LEVEL, TAILORING_MASTERY_LEVEL } from "../utils/constants/mastery";
 import { getResource, getResourceWeight, resources } from "../utils/constants/resource";
 import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
