@@ -35,8 +35,6 @@ export const CraftingRecipeSchema = new mongoose.Schema<CraftingRecipe>({
         }],
         _id: false,
     }]
-
-
 })
 
 /**

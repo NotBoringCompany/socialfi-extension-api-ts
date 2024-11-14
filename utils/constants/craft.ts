@@ -1,7 +1,7 @@
 import Bull from 'bull';
 import { AssetType } from '../../models/asset';
 import { CraftedAssetData, CraftedAssetRarity, CraftingQueueStatus, CraftingRecipe, CraftingRecipeLine } from "../../models/craft";
-import { ContinuumRelicItem, EnergyTotemItem, IngotItem, Item, PotionItem, AugmentationItem, TransmutationItem, WonderArtefactItem } from '../../models/item';
+import { ContinuumRelicItem, EnergyTotemItem, IngotItem, Item, PotionItem, AugmentationItem, TransmutationItem, WonderArtefactItem, PotionEnum, EnergyTotemEnum, TransmutationEnum, AugmentationEnum, WonderArtefactEnum, ContinuumRelicEnum, IngotEnum } from '../../models/item';
 import { BarrenResource, CombinedResources, ExtendedResource, FruitResource, LiquidResource, OreResource, ResourceRarity, ResourceType, SimplifiedResource } from "../../models/resource";
 import { FoodType } from '../../models/food';
 import { CraftingQueueModel, CraftingRecipeModel, UserModel } from './db';
@@ -177,8 +177,9 @@ export const GET_CRAFTING_LEVEL = (line: CraftingRecipeLine, currentXP: number):
 
 /**
  * Populates the `CRAFTING_RECIPES` array with all the crafting recipes available from the database.
+ * Then, populates all crafting asset enums in `models/item.ts` with the assets available from the database's crafting recipes.
  */
-export const populateCraftingRecipes = async (): Promise<void> => {
+export const populateCraftingRecipesAndAssetEnums = async (): Promise<void> => {
     try {
         const recipes = await CraftingRecipeModel.find().lean();
 
@@ -188,11 +189,53 @@ export const populateCraftingRecipes = async (): Promise<void> => {
 
         CRAFTING_RECIPES = recipes;
 
-        console.log(`(populateCraftingRecipes) Successfully populated the CRAFTING_RECIPES array.`);
+        // populate synthesizing item enums
+        recipes.forEach(recipe => {
+            // check the recipe's craftedAssetData.asset. based on the name, populate the synthesizing item enums.
+            // for example, if the asset contains `Transmutation`, populate the TransmutationItem enum.
+            // if the asset contains `Augmentation`, populate the AugmentationItem enum an dso on.
+            const asset = recipe.craftedAssetData.asset;
+
+            if (asset.includes('Potion')) {
+                // Populate PotionEnum
+                PotionEnum[asset] = asset;
+            } else if (asset.includes('Totem of Energy')) {
+                // Populate EnergyTotemEnum
+                EnergyTotemEnum[asset] = asset;
+            } else if (asset.includes('Transmutation')) {
+                // Populate TransmutationEnum
+                TransmutationEnum[asset] = asset;
+            } else if (asset.includes('Augmentation')) {
+                // Populate AugmentationEnum
+                AugmentationEnum[asset] = asset;
+            } else if (asset.includes('of Wonder')) {
+                // Populate WonderArtefactEnum
+                WonderArtefactEnum[asset] = asset;
+            } else if (asset.includes('Relic')) {
+                // Populate ContinuumRelicEnum
+                ContinuumRelicEnum[asset] = asset;
+            } else if (asset.includes('Ingot')) {
+                // Populate IngotEnum
+                IngotEnum[asset] = asset;
+            }
+        })
+
+        console.log(`(populateCraftingRecipesAndAssetEnums) Successfully populated the CRAFTING_RECIPES array and all crafting asset enums.`);
     } catch (err: any) {
-        console.error(`(populateCraftingRecipes) ${err.message}`);
+        console.error(`(populateCraftingRecipesAndSynthesizingItems) ${err.message}`);
     }
 }
+
+// /**
+//  * Populates all synthesizing item enums in `models/item.ts` with the synthesizing items available from the database's crafting recipes.
+//  */
+// export const populateSynthesizingItems = async (): Promise<void> => {
+//     try {
+//         const recipes = await CraftingRecipeModel.find().lean();
+//     } catch (err: any) {
+//         console.error(`(populateSynthesizingItems) ${err.message}`);
+//     }
+// }
 
 /**
  * Contains all the crafting recipes available from the database. This will be empty by default.

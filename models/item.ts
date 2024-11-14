@@ -68,70 +68,102 @@ export enum TerraCapsulatorType {
 }
 
 /**
- * Represents all Wonder Artefact items.
+ * a runtime-populated object representing wonder artefact items.
+ * each key is a unique wonder artefact item name, and each value is the same wonder artefact item name as a string,
+ * allowing it to behave similarly to a typescript enum.
  */
-export enum WonderArtefactItem {
-    ESSENCE_OF_WONDER = 'Essence of Wonder',
-    LIGHT_OF_WONDER = 'Light of Wonder',
-}
+export const WonderArtefactEnum: { [key: string]: string } = {}
 
 /**
- * A list of different Augmentation items.
+ * a runtime-populated object representing augmentation items.
+ * each key is a unique augmentation item name, and each value is the same augmentation item name as a string,
+ * allowing it to behave similarly to a typescript enum.
  */
-export enum AugmentationItem {
-    PARCHMENT_OF_AUGMENTATION = 'Parchment of Augmentation',
-    SCROLL_OF_AUGMENTATION = 'Scroll of Augmentation',
-    TOME_OF_AUGMENTATION = 'Tome of Augmentation',
-    ANCIENT_SCROLL_OF_AUGMENTATION = 'Ancient Scroll of Augmentation',
-    ANCIENT_TOME_OF_AUGMENTATION = 'Ancient Tome of Augmentation',
-}
+export const AugmentationEnum: { [key: string]: string } = {}
 
 /**
- * A list of different Transmutation items.
+ * a runtime-populated object representing transmutation items.
+ * each key is a unique transmutation item name, and each value is the same transmutation item name as a string,
+ * allowing it to behave similarly to a typescript enum.
  */
-export enum TransmutationItem {
-    WAND_OF_TRANSMUTATION = 'Wand of Transmutation',
-    STAFF_OF_TRANSMUTATION = 'Staff of Transmutation',
-    ROYAL_SCEPTER_OF_TRANSMUTATION = 'Royal Scepter of Transmutation',
-}
+export const TransmutationEnum: { [key: string]: string } = {}
 
 /**
- * A list of different craftable Energy Totem items.
+ * a runtime-populated object representing energy totem items.
+ * each key is a unique energy totem item name, and each value is the same energy totem item name as a string,
+ * allowing it to behave similarly to a typescript enum.
  */
-export enum EnergyTotemItem {
-    SMALL_TOTEM_OF_ENERGY = 'Small Totem of Energy',
-    BIG_TOTEM_OF_ENERGY = 'Big Totem of Energy',
-    GRAND_TOTEM_OF_ENERGY = 'Grand Totem of Energy',
-}
+export const EnergyTotemEnum: { [key: string]: string } = {}
 
 /**
- * A list of different Continuum Relic items.
+ * a runtime-populated object representing continuum relic items.
+ * each key is a unique continuum relic item name, and each value is the same continuum relic item name as a string,
+ * allowing it to behave similarly to a typescript enum.
  */
-export enum ContinuumRelicItem {
-    FADED_CONTINUUM_RELIC = 'Faded Continuum Relic',
-    GLEAMING_CONTINUUM_RELIC = 'Gleaming Continuum Relic',
-    MYTHIC_CONTINUUM_RELIC = 'Mythic Continuum Relic',
-}
+export const ContinuumRelicEnum: { [key: string]: string } = {}
 
 /**
- * A list of different Potion items.
+ * a runtime-populated object representing potion items.
+ * each key is a unique potion item name, and each value is the same potion item name as a string,
+ * allowing it to behave similarly to a typescript enum.
  */
-export enum PotionItem {
-    POTION_OF_LUCK = 'Potion of Luck',
-    POTION_OF_ENLIGHTENMENT = 'Potion of Enlightenment',
-    POTION_OF_UNHOLY_ENLIGHTENMENT = 'Potion of Unholy Enlightenment',
-    POTION_OF_DIVINE_ENLIGHTENMENT = 'Potion of Divine Enlightenment',
-}
+export const PotionEnum: { [key: string]: string } = {}
 
 /**
- * A list of different ingots that are refined from resource ores.
+ * a runtime-populated object representing ingot items (that are refined from resource ores).
+ * each key is a unique potion item name, and each value is the same potion item name as a string,
+ * allowing it to behave similarly to a typescript enum.
  */
-export enum IngotItem {
-    COPPER_INGOT = 'Copper Ingot',
-    IRON_INGOT = 'Iron Ingot',
-    SILVER_INGOT = 'Silver Ingot',
-    GOLD_INGOT = 'Gold Ingot'
-}
+export const IngotEnum: { [key: string]: string } = {}
+
+/**
+ * represents the type of a wonder artefact key from `WonderArtefactEnum`,
+ * acting as a union of all valid wonder artefact names once populated at runtime.
+ * this allows `WonderArtefactItem` to behave similarly to an enum type.
+ */
+export type WonderArtefactItem = Extract<keyof typeof WonderArtefactEnum, string>;
+
+/**
+ * represents the type of an augmentation key from `AugmentationEnum`,
+ * acting as a union of all valid augmentation names once populated at runtime.
+ * this allows `AugmentationItem` to behave similarly to an enum type.
+ */
+export type AugmentationItem = Extract<keyof typeof AugmentationEnum, string>;
+
+/**
+ * represents the type of a transmutation key from `TransmutationEnum`,
+ * acting as a union of all valid transmutation names once populated at runtime.
+ * this allows `TransmutationItem` to behave similarly to an enum type.
+ */
+export type TransmutationItem = Extract<keyof typeof TransmutationEnum, string>;
+
+/**
+ * represents the type of an energy totem key from `EnergyTotemEnum`,
+ * acting as a union of all valid energy totem names once populated at runtime.
+ * this allows `EnergyTotemItem` to behave similarly to an enum type.
+ */
+export type EnergyTotemItem = Extract<keyof typeof EnergyTotemEnum, string>;
+
+/**
+ * represents the type of a continuum relic key from `ContinuumRelicEnum`,
+ * acting as a union of all valid continuum relic names once populated at runtime.
+ * this allows `ContinuumRelicItem` to behave similarly to an enum type.
+ */
+export type ContinuumRelicItem = Extract<keyof typeof ContinuumRelicEnum, string>;
+
+/**
+ * represents the type of a potion key from `PotionEnum`,
+ * acting as a union of all valid potion names once populated at runtime.
+ * this allows `PotionItem` to behave similarly to an enum type.
+ */
+export type PotionItem = Extract<keyof typeof PotionEnum, string>;
+
+/**
+ * represents the type of an ingot key from `IngotEnum`,
+ * acting as a union of all valid ingot names once populated at runtime.
+ * this allows `IngotItem` to behave similarly to an enum type.
+ */
+export type IngotItem = Extract<keyof typeof IngotEnum, string>;
 
 /**
  * Represents items that are made via the Synthesizing crafting line.
