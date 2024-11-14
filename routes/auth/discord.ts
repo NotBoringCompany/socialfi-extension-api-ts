@@ -8,7 +8,6 @@ import { validateRequestAuth } from '../../utils/auth';
 import { allowMixpanel, mixpanel } from '../../utils/mixpanel';
 import { UserWallet } from '../../models/user';
 import { WONDERBITS_CONTRACT } from '../../utils/constants/web3';
-import { CONNECT_DISCORD_CALLBACK_MIXPANEL_EVENT_HASH, DISCONNECT_DISCORD_MIXPANEL_EVENT_HASH } from '../../utils/constants/mixpanelEvents';
 
 const router = express.Router();
 
