@@ -5,7 +5,7 @@ import { Island, IslandStatsModifiers, IslandType } from '../models/island';
 import { ObtainMethod } from '../models/obtainMethod';
 import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
 import { DEFAULT_ISLAND_TYPE, ISLAND_TAPPING_REQUIREMENT, randomizeIslandTraits } from '../utils/constants/island';
-import { BitTrait, BitTraitData } from '../models/bit';
+import { BitTraitEnum, BitTraitData } from '../models/bit';
 import { Modifier } from '../models/modifier';
 import { Item, TerraCapsulatorType } from '../models/item';
 import { PlayerMastery, User } from '../models/user';
@@ -154,22 +154,22 @@ export const summonIsland = async (
             // check if the `trait` within each bitTraits instance contain the following traits
             if (
                 bitTraits.some(traitData => {
-                    return traitData.trait === BitTrait.INFLUENTIAL ||
-                        traitData.trait === BitTrait.FAMOUS ||
-                        traitData.trait === BitTrait.MANNERLESS ||
-                        traitData.trait === BitTrait.ANTAGONISTIC
+                    return traitData.trait === BitTraitEnum.INFLUENTIAL ||
+                        traitData.trait === BitTraitEnum.FAMOUS ||
+                        traitData.trait === BitTraitEnum.MANNERLESS ||
+                        traitData.trait === BitTraitEnum.ANTAGONISTIC
                 })
             ) {
                 const gatheringRateModifier: Modifier = {
                     origin: `Bit ID #${bit.bitId}'s Trait: ${
-                        bitTraits.some(traitData => traitData.trait === BitTrait.INFLUENTIAL) ? 'Influential' :
-                        bitTraits.some(traitData => traitData.trait === BitTrait.FAMOUS) ? 'Famous' :
-                        bitTraits.some(traitData => traitData.trait === BitTrait.MANNERLESS) ? 'Mannerless' :
+                        bitTraits.some(traitData => traitData.trait === BitTraitEnum.INFLUENTIAL) ? 'Influential' :
+                        bitTraits.some(traitData => traitData.trait === BitTraitEnum.FAMOUS) ? 'Famous' :
+                        bitTraits.some(traitData => traitData.trait === BitTraitEnum.MANNERLESS) ? 'Mannerless' :
                         'Antagonistic'
                     }`,
-                    value: bitTraits.some(traitData => traitData.trait === BitTrait.INFLUENTIAL) ? 1.01 :
-                        bitTraits.some(traitData => traitData.trait === BitTrait.FAMOUS) ? 1.005 :
-                        bitTraits.some(traitData => traitData.trait === BitTrait.MANNERLESS) ? 0.995 :
+                    value: bitTraits.some(traitData => traitData.trait === BitTraitEnum.INFLUENTIAL) ? 1.01 :
+                        bitTraits.some(traitData => traitData.trait === BitTraitEnum.FAMOUS) ? 1.005 :
+                        bitTraits.some(traitData => traitData.trait === BitTraitEnum.MANNERLESS) ? 0.995 :
                         0.99
                 };
 

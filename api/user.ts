@@ -27,7 +27,7 @@ import {
 } from '../utils/constants/user';
 import { ReferralData, ReferralReward, ReferredUserData } from '../models/invite';
 import { BitOrbType, Item, TerraCapsulatorType } from '../models/item';
-import { BitRarity, BitTrait } from '../models/bit';
+import { BitRarity, BitTraitEnum } from '../models/bit';
 import { IslandStatsModifiers, IslandType } from '../models/island';
 import { Modifier } from '../models/modifier';
 import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
@@ -211,7 +211,7 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
             // if antagonistic, reduce 1% to earning and gathering rate modifiers of the island
             // if famous, add 0.5% to earning and gathering rate modifiers of the island
             // if mannerless, reduce 0.5% to earning and gathering rate modifiers of the island
-            if (traits.some((trait) => trait.trait === BitTrait.INFLUENTIAL)) {
+            if (traits.some((trait) => trait.trait === BitTraitEnum.INFLUENTIAL)) {
                 // add 1% to earning and gathering rate modifiers of the island
                 const gatheringRateModifier: Modifier = {
                     origin: `Bit ID ${bitData.bit.bitId}'s Trait: Influential`,
@@ -222,7 +222,7 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
             }
 
             // if the bit has antagonistic trait
-            if (traits.some((trait) => trait.trait === BitTrait.ANTAGONISTIC)) {
+            if (traits.some((trait) => trait.trait === BitTraitEnum.ANTAGONISTIC)) {
                 // reduce 1% to earning and gathering rate modifiers of the island
                 const gatheringRateModifier: Modifier = {
                     origin: `Bit ID ${bitData.bit.bitId}'s Trait: Antagonistic`,
@@ -233,7 +233,7 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
             }
 
             // if the bit has famous trait
-            if (traits.some((trait) => trait.trait === BitTrait.FAMOUS)) {
+            if (traits.some((trait) => trait.trait === BitTraitEnum.FAMOUS)) {
                 // add 0.5% to earning and gathering rate modifiers of the island
                 const gatheringRateModifier: Modifier = {
                     origin: `Bit ID ${bitData.bit.bitId}'s Trait: Famous`,
@@ -244,7 +244,7 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
             }
 
             // if the bit has mannerless trait
-            if (traits.some((trait) => trait.trait === BitTrait.MANNERLESS)) {
+            if (traits.some((trait) => trait.trait === BitTraitEnum.MANNERLESS)) {
                 // reduce 0.5% to earning and gathering rate modifiers of the island
                 const gatheringRateModifier: Modifier = {
                     origin: `Bit ID ${bitData.bit.bitId}'s Trait: Mannerless`,
@@ -2822,7 +2822,7 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
             // if antagonistic, reduce 1% to earning and gathering rate modifiers of the island
             // if famous, add 0.5% to earning and gathering rate modifiers of the island
             // if mannerless, reduce 0.5% to earning and gathering rate modifiers of the island
-            if (traits.some((trait) => trait.trait === BitTrait.INFLUENTIAL)) {
+            if (traits.some((trait) => trait.trait === BitTraitEnum.INFLUENTIAL)) {
                 // add 1% to earning and gathering rate modifiers of the island
                 const gatheringRateModifier: Modifier = {
                     origin: `Bit ID ${bitData.bit.bitId}'s Trait: Influential`,
@@ -2833,7 +2833,7 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
             }
 
             // if the bit has antagonistic trait
-            if (traits.some((trait) => trait.trait === BitTrait.ANTAGONISTIC)) {
+            if (traits.some((trait) => trait.trait === BitTraitEnum.ANTAGONISTIC)) {
                 // reduce 1% to earning and gathering rate modifiers of the island
                 const gatheringRateModifier: Modifier = {
                     origin: `Bit ID ${bitData.bit.bitId}'s Trait: Antagonistic`,
@@ -2844,7 +2844,7 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
             }
 
             // if the bit has famous trait
-            if (traits.some((trait) => trait.trait === BitTrait.FAMOUS)) {
+            if (traits.some((trait) => trait.trait === BitTraitEnum.FAMOUS)) {
                 // add 0.5% to earning and gathering rate modifiers of the island
                 const gatheringRateModifier: Modifier = {
                     origin: `Bit ID ${bitData.bit.bitId}'s Trait: Famous`,
@@ -2855,7 +2855,7 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
             }
 
             // if the bit has mannerless trait
-            if (traits.some((trait) => trait.trait === BitTrait.MANNERLESS)) {
+            if (traits.some((trait) => trait.trait === BitTraitEnum.MANNERLESS)) {
                 // reduce 0.5% to earning and gathering rate modifiers of the island
                 const gatheringRateModifier: Modifier = {
                     origin: `Bit ID ${bitData.bit.bitId}'s Trait: Mannerless`,
