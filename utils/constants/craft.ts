@@ -8,6 +8,8 @@ import { CraftingQueueModel, CraftingRecipeModel, UserModel } from './db';
 import { resources } from './resource';
 import { POIName } from '../../models/poi';
 import { generateObjectId } from '../crypto';
+import { IslandType } from '../../models/island';
+import { BitRarity } from '../../models/bit';
 
 /**
  * this is the base amount of crafting slots users get per crafting line.
@@ -127,7 +129,7 @@ export const CANCEL_CRAFT_X_COOKIES_COST = (craftedAssetRarity: CraftedAssetRari
             return 50;
         default:
             throw new Error(`(CANCEL_CRAFT_X_COOKIES_COST) Crafted asset rarity ${craftedAssetRarity} not found.`);
-    
+
     }
 }
 
@@ -189,9 +191,9 @@ export const populateCraftingRecipesAndAssetEnums = async (): Promise<void> => {
 
         CRAFTING_RECIPES = recipes;
 
-        // populate synthesizing item enums
+        // populate enums
         recipes.forEach(recipe => {
-            // check the recipe's craftedAssetData.asset. based on the name, populate the synthesizing item enums.
+            // check the recipe's craftedAssetData.asset. based on the name, populate the asset enums.
             // for example, if the asset contains `Transmutation`, populate the TransmutationItem enum.
             // if the asset contains `Augmentation`, populate the AugmentationItem enum an dso on.
             const asset = recipe.craftedAssetData.asset;
@@ -220,22 +222,11 @@ export const populateCraftingRecipesAndAssetEnums = async (): Promise<void> => {
             }
         })
 
-        console.log(`(populateCraftingRecipesAndAssetEnums) Successfully populated the CRAFTING_RECIPES array and all crafting asset enums.`);
+        console.log(`(populateCraftingRecipesAndAssetEnums) Successfully populated the crafting recipe and asset enums.`);
     } catch (err: any) {
         console.error(`(populateCraftingRecipesAndSynthesizingItems) ${err.message}`);
     }
 }
-
-// /**
-//  * Populates all synthesizing item enums in `models/item.ts` with the synthesizing items available from the database's crafting recipes.
-//  */
-// export const populateSynthesizingItems = async (): Promise<void> => {
-//     try {
-//         const recipes = await CraftingRecipeModel.find().lean();
-//     } catch (err: any) {
-//         console.error(`(populateSynthesizingItems) ${err.message}`);
-//     }
-// }
 
 /**
  * Contains all the crafting recipes available from the database. This will be empty by default.

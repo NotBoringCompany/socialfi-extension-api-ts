@@ -4,8 +4,9 @@ import { IslandRarityNumeric, IslandTrait } from '../models/island';
 import { Item, PotionItem, SynthesizingItem } from '../models/item';
 import { Modifier } from '../models/modifier';
 import { ResourceLine, ResourceRarity, ResourceRarityNumeric } from '../models/resource';
-import { GET_SYNTHESIZING_ITEM_MEMBERS, GET_SYNTHESIZING_ITEM_TYPE, SYNTHESIZING_ITEM_DATA, SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE } from '../utils/constants/asset';
+import { GET_SYNTHESIZING_ITEM_MEMBERS, GET_SYNTHESIZING_ITEM_TYPE, SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE } from '../utils/constants/asset';
 import { BIT_TRAITS, getBitStatsModifiersFromTraits } from '../utils/constants/bit';
+import { CRAFTING_RECIPES } from '../utils/constants/craft';
 import { BitModel, ConsumedSynthesizingItemModel, IslandModel, UserModel } from '../utils/constants/db';
 import { generateObjectId } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
@@ -89,7 +90,8 @@ export const consumeSynthesizingItem = async (
 
         // get the item data with the limitations and effects.
         // since the data contains dynamic values, we don't need to manually put logic for each item type.
-        const synthesizingItemData = SYNTHESIZING_ITEM_DATA.find(i => i.name === item);
+        const synthesizingItemData = CRAFTING_RECIPES.find(i => i.craftedAssetData.asset === item)?.craftedAssetData.assetExtendedData;
+        // const synthesizingItemData = SYNTHESIZING_ITEM_DATA.find(i => i.name === item);
 
         if (!synthesizingItemData) {
             return {

@@ -13,6 +13,114 @@ export const CraftingRecipeSchema = new mongoose.Schema<CraftingRecipe>({
         assetDescription: String,
         assetRarity: String,
         assetEffectDuration: mongoose.Schema.Types.Mixed,
+        assetExtendedData: Object,
+        // assetExtendedData: {
+        //     minimumRarity: String,
+        //     maximumRarity: String,
+        //     limitations: {
+        //         applicableOnEmptyIsland: Boolean,
+        //         singleIslandConcurrentUsage: {
+        //             active: Boolean,
+        //             limit: Number
+        //         },
+        //         singleIslandConcurrentCategoryUsage: {
+        //             active: Boolean,
+        //             limit: Number
+        //         },
+        //         singleIslandTotalUsage: {
+        //             active: Boolean,
+        //             limit: Number
+        //         },
+        //         singleIslandTotalCategoryUsage: {
+        //             active: Boolean,
+        //             limit: Number
+        //         },
+        //         multiIslandConcurrentUsage: {
+        //             active: Boolean,
+        //             limit: Number
+        //         },
+        //         multiIslandConcurrentCategoryUsage: {
+        //             active: Boolean,
+        //             limit: Number
+        //         },
+        //         multiIslandTotalUsage: {
+        //             active: Boolean,
+        //             limit: Number
+        //         },
+        //         multiIslandTotalCategoryUsage: {
+        //             active: Boolean,
+        //             limit: Number
+        //         },
+        //         singleBitConcurrentUsage: {
+        //             active: Boolean,
+        //             limit: Number
+        //         },
+        //         singleBitConcurrentCategoryUsage: {
+        //             active: Boolean,
+        //             limit: Number
+        //         },
+        //         singleBitTotalUsage: {
+        //             active: Boolean,
+        //             limit: Number
+        //         },
+        //         singleBitTotalCategoryUsage: {
+        //             active: Boolean,
+        //             limit: Number
+        //         },
+        //         multiBitConcurrentUsage: {
+        //             active: Boolean,
+        //             limit: Number
+        //         },
+        //         multiBitConcurrentCategoryUsage: {
+        //             active: Boolean,
+        //             limit: Number
+        //         },
+        //         multiBitTotalUsage: {
+        //             active: Boolean,
+        //             limit: Number
+        //         },
+        //         multiBitTotalCategoryUsage: {
+        //             active: Boolean,
+        //             limit: Number
+        //         },
+        //     },
+        //     effectValues: {
+        //         affectedAsset: String,
+        //         effectDuration: mongoose.Schema.Types.Mixed,
+        //         resourceCapModifier: {
+        //             active: Boolean,
+        //             type: String,
+        //             value: Number
+        //         },
+        //         rerollIslandTraits: {
+        //             active: Boolean,
+        //             type: String,
+        //             allowDuplicates: Boolean,
+        //             value: mongoose.Schema.Types.Mixed,
+        //         },
+        //         gatheringRateModifier: {
+        //             active: Boolean,
+        //             value: Number
+        //         },
+        //         placedBitsEnergyDepletionRateModifier: {
+        //             active: Boolean,
+        //             allowLaterPlacedBitsToObtainEffect: Boolean,
+        //             allowLaterPlacedBitsToLoseEffect: Boolean,
+        //             value: Number
+        //         },
+        //         bitTransferrableBetweenSeasons: {
+        //             active: Boolean,
+        //             value: Number
+        //         },
+        //         rerollBitTraits: {
+        //             active: Boolean,
+        //             type: String,
+        //             result: String,
+        //             allowDuplicates: Boolean,
+        //             value: mongoose.Schema.Types.Mixed,
+        //         }
+        //     }
+        // }
     },
     craftingRecipeLine: String,
     craftingDuration: Number,
