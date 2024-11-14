@@ -8,7 +8,7 @@ import { BarrenResource, ExtendedResource, ExtendedResourceOrigin, Resource, Res
 import { UserSchema } from '../schemas/User';
 import { Modifier } from '../models/modifier';
 import { BitSchema } from '../schemas/Bit';
-import { Bit, BitRarity, BitRarityNumeric, BitStatsModifiers, BitTrait, BitTraitData, BitType } from '../models/bit';
+import { Bit, BitRarity, BitRarityNumeric, BitStatsModifiers, BitTraitEnum, BitTraitData, BitType } from '../models/bit';
 import { generateObjectId } from '../utils/crypto';
 import { BitModel, ConsumedSynthesizingItemModel, IslandModel, LeaderboardModel, SquadLeaderboardModel, SquadModel, UserModel } from '../utils/constants/db';
 import { ObtainMethod } from '../models/obtainMethod';
@@ -129,21 +129,21 @@ export const giftXterioIsland = async (
             // check if the `trait` within each bitTraits instance contain the following traits
             if (
                 bitTraits.some(traitData => {
-                    return traitData.trait === BitTrait.INFLUENTIAL ||
-                        traitData.trait === BitTrait.FAMOUS ||
-                        traitData.trait === BitTrait.MANNERLESS ||
-                        traitData.trait === BitTrait.ANTAGONISTIC
+                    return traitData.trait === BitTraitEnum.INFLUENTIAL ||
+                        traitData.trait === BitTraitEnum.FAMOUS ||
+                        traitData.trait === BitTraitEnum.MANNERLESS ||
+                        traitData.trait === BitTraitEnum.ANTAGONISTIC
                 })
             ) {
                 const gatheringRateModifier: Modifier = {
-                    origin: `Bit ID #${bit.bitId}'s Trait: ${bitTraits.some(traitData => traitData.trait === BitTrait.INFLUENTIAL) ? 'Influential' :
-                        bitTraits.some(traitData => traitData.trait === BitTrait.FAMOUS) ? 'Famous' :
-                            bitTraits.some(traitData => traitData.trait === BitTrait.MANNERLESS) ? 'Mannerless' :
+                    origin: `Bit ID #${bit.bitId}'s Trait: ${bitTraits.some(traitData => traitData.trait === BitTraitEnum.INFLUENTIAL) ? 'Influential' :
+                        bitTraits.some(traitData => traitData.trait === BitTraitEnum.FAMOUS) ? 'Famous' :
+                            bitTraits.some(traitData => traitData.trait === BitTraitEnum.MANNERLESS) ? 'Mannerless' :
                                 'Antagonistic'
                         }`,
-                    value: bitTraits.some(traitData => traitData.trait === BitTrait.INFLUENTIAL) ? 1.01 :
-                        bitTraits.some(traitData => traitData.trait === BitTrait.FAMOUS) ? 1.005 :
-                            bitTraits.some(traitData => traitData.trait === BitTrait.MANNERLESS) ? 0.995 :
+                    value: bitTraits.some(traitData => traitData.trait === BitTraitEnum.INFLUENTIAL) ? 1.01 :
+                        bitTraits.some(traitData => traitData.trait === BitTraitEnum.FAMOUS) ? 1.005 :
+                            bitTraits.some(traitData => traitData.trait === BitTraitEnum.MANNERLESS) ? 0.995 :
                                 0.99
                 };
 
@@ -785,9 +785,9 @@ export const unplaceBit = async (twitterId: string, bitId: number): Promise<Retu
 
             // if the trait is genius, remove modifiers from the island's `gatheringRateModifiers`
             if (
-                trait.trait === BitTrait.GENIUS ||
-                trait.trait === BitTrait.SLOW ||
-                trait.trait === BitTrait.QUICK
+                trait.trait === BitTraitEnum.GENIUS ||
+                trait.trait === BitTraitEnum.SLOW ||
+                trait.trait === BitTraitEnum.QUICK
             ) {
                 console.log(`unplaceBit ID ${bit.bitId}'s trait is ${trait}`);
 
@@ -802,10 +802,10 @@ export const unplaceBit = async (twitterId: string, bitId: number): Promise<Retu
                 }
                 // if trait is teamworker, leader, cute or lonewolf, remove modifiers for each bit that was impacted by this bit's trait
             } else if (
-                trait.trait === BitTrait.TEAMWORKER ||
-                trait.trait === BitTrait.LEADER ||
-                trait.trait === BitTrait.CUTE ||
-                trait.trait === BitTrait.LONEWOLF
+                trait.trait === BitTraitEnum.TEAMWORKER ||
+                trait.trait === BitTraitEnum.LEADER ||
+                trait.trait === BitTraitEnum.CUTE ||
+                trait.trait === BitTraitEnum.LONEWOLF
             ) {
                 for (const otherBit of otherBits) {
                     // check the index of the modifier in the bit's `gatheringRateModifiers`
@@ -1111,7 +1111,7 @@ export const updateExtendedTraitEffects = async (
 
         // if trait is teamworker:
         // increase all other bits that have the same or lesser rarity as the bit being placed by 5% gathering rate
-        if (trait.trait === BitTrait.TEAMWORKER) {
+        if (trait.trait === BitTraitEnum.TEAMWORKER) {
             // loop through each other bit and check if they have the same or lesser rarity as the bit being placed
             // if no other bits found, skip this trait
             if (otherBits.length === 0 || !otherBits) {
@@ -1147,7 +1147,7 @@ export const updateExtendedTraitEffects = async (
             }
             // if trait is leader:
             // increase all other bits' gathering rate by 10%
-        } else if (trait.trait === BitTrait.LEADER) {
+        } else if (trait.trait === BitTraitEnum.LEADER) {
             if (otherBits.length === 0 || !otherBits) {
                 console.log(`(updateExtendedTraitEffects) No other bits found.`);
                 continue;
@@ -1175,7 +1175,7 @@ export const updateExtendedTraitEffects = async (
             }
             // if bit trait is cute:
             // increase gathering rate of all other bits by 12.5%
-        } else if (trait.trait === BitTrait.CUTE) {
+        } else if (trait.trait === BitTraitEnum.CUTE) {
             if (otherBits.length === 0 || !otherBits) {
                 console.log(`(updateExtendedTraitEffects) No other bits found.`);
                 continue;
@@ -1203,7 +1203,7 @@ export const updateExtendedTraitEffects = async (
             }
             // if bit trait is genius:
             // increase the island's gathering rate by 7.5%
-        } else if (trait.trait === BitTrait.GENIUS) {
+        } else if (trait.trait === BitTraitEnum.GENIUS) {
             // add the new modifier to the island's `gatheringRateModifiers`
             const newGatheringRateModifier: Modifier = {
                 origin: `Bit ID #${bit.bitId}'s Trait: Genius`,
@@ -1214,7 +1214,7 @@ export const updateExtendedTraitEffects = async (
             islandUpdateOperations.$push['islandStatsModifiers.gatheringRateModifiers'] = newGatheringRateModifier;
             // if bit trait is lonewolf:
             // reduce the working rate of all other bits by 5%
-        } else if (trait.trait === BitTrait.LONEWOLF) {
+        } else if (trait.trait === BitTraitEnum.LONEWOLF) {
             if (otherBits.length === 0 || !otherBits) {
                 console.log(`(updateExtendedTraitEffects) No other bits found.`);
                 continue;
@@ -1241,7 +1241,7 @@ export const updateExtendedTraitEffects = async (
                 });
             }
             // if bit trait is slow, reduce 1% of the island's gathering rate
-        } else if (trait.trait === BitTrait.SLOW) {
+        } else if (trait.trait === BitTraitEnum.SLOW) {
             // add the new modifier to the island's `gatheringRateModifiers`
             const newGatheringRateModifier: Modifier = {
                 origin: `Bit ID #${bit.bitId}'s Trait: Slow`,
@@ -1251,7 +1251,7 @@ export const updateExtendedTraitEffects = async (
             // add the new modifier to the island's `gatheringRateModifiers`
             islandUpdateOperations.$push['islandStatsModifiers.gatheringRateModifiers'] = newGatheringRateModifier;
             // if bit trait is quick, increase 1% of the island's gathering rate
-        } else if (trait.trait === BitTrait.QUICK) {
+        } else if (trait.trait === BitTraitEnum.QUICK) {
             // add the new modifier to the island's `gatheringRateModifiers`
             const newGatheringRateModifier: Modifier = {
                 origin: `Bit ID #${bit.bitId}'s Trait: Quick`,
@@ -1278,7 +1278,7 @@ export const updateExtendedTraitEffects = async (
             for (const trait of traits) {
                 // if this `otherBit`'s trait contains 'teamworker', check if the to-be-placed's bit rarity is the same or lesser rarity than the `otherBit`'s rarity.
                 // if yes, add 5% gathering rate to the to-be-placed bit
-                if (trait.trait === BitTrait.TEAMWORKER) {
+                if (trait.trait === BitTraitEnum.TEAMWORKER) {
                     if (BitRarityNumeric[bit.rarity] <= BitRarityNumeric[otherBit.rarity]) {
                         // add the new modifier to the bit's `gatheringRateModifiers`
                         const newGatheringRateModifier: Modifier = {
@@ -1302,7 +1302,7 @@ export const updateExtendedTraitEffects = async (
                 }
 
                 // if the other bit's trait is leader, add 10% gathering rate to the to-be-placed bit
-                if (trait.trait === BitTrait.LEADER) {
+                if (trait.trait === BitTraitEnum.LEADER) {
                     // add the new modifier to the bit's `gatheringRateModifiers`
                     const newGatheringRateModifier: Modifier = {
                         origin: `Bit ID #${otherBit.bitId}'s Trait: Leader`,
@@ -1324,7 +1324,7 @@ export const updateExtendedTraitEffects = async (
                 }
 
                 // if the other bit's trait is cute, add 12.5% gathering rate to the to-be-placed bit
-                if (trait.trait === BitTrait.CUTE) {
+                if (trait.trait === BitTraitEnum.CUTE) {
                     // add the new modifier to the bit's `gatheringRateModifiers`
                     const newGatheringRateModifier: Modifier = {
                         origin: `Bit ID #${otherBit.bitId}'s Trait: Cute`,
@@ -1346,7 +1346,7 @@ export const updateExtendedTraitEffects = async (
                 }
 
                 // if the other bit's trait is lonewolf, reduce 5% gathering rate to the to-be-placed bit
-                if (trait.trait === BitTrait.LONEWOLF) {
+                if (trait.trait === BitTraitEnum.LONEWOLF) {
                     // add the new modifier to the bit's `gatheringRateModifiers`
                     const newGatheringRateModifier: Modifier = {
                         origin: `Bit ID #${otherBit.bitId}'s Trait: Lonewolf`,

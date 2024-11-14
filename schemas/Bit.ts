@@ -27,3 +27,18 @@ export const BitSchema = new mongoose.Schema({
     farmingStats: Object,
     bitStatsModifiers: Object,
 })
+
+/**
+ * BitTraitData schema. Represents closely to the `BitTraitData` interface in `models/bit.ts`.
+ */
+export const BitTraitDataSchema = new mongoose.Schema<BitTraitData>({
+    _id: {
+        type: String,
+        default: generateObjectId()
+    },
+    trait: String,
+    effect: String,
+    rarity: String,
+    category: String,
+    subcategory: String
+})

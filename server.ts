@@ -75,6 +75,7 @@ import './utils/constants/shop';
 import { populateBitCosmeticEnum } from './utils/constants/cosmetic';
 import { initializeSocket } from './configs/socket';
 import { CRAFTING_RECIPES, populateCraftingRecipesAndAssetEnums } from './utils/constants/craft';
+import { populateBitTraitsData } from './utils/constants/bit';
 
 app.use('/auth/twitter', checkMaintenance, twitterAuth);
 app.use('/auth/discord', checkMaintenance, discordAuth);
@@ -127,6 +128,9 @@ httpServer.listen(port, async () => {
     // populates `CRAFTING_RECIPES` array with all the crafting recipes available from the database
     // as well as the crafted asset enums
     await populateCraftingRecipesAndAssetEnums();
+
+    // populates `BIT_TRAITS` and the `BitTrait` enum with the values from the database
+    await populateBitTraitsData();
 
     // await schedulers();
 });

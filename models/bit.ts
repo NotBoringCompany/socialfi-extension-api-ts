@@ -100,40 +100,24 @@ export const BitRarityNumeric: { [key in BitRarity]: number } = {
 }
 
 /**
- * Lists all possible traits a Bit can have.
+ * a runtime-populated object representing all available bit traits.
+ * each key is a unique trait name, and each value is the same trait name as a string, 
+ * allowing it to behave similarly to a typescript enum.
  */
-export enum BitTrait {
-    PRODUCTIVE = 'Productive',
-    ENTHUSIASTIC = 'Enthusiastic',
-    LAZY = 'Lazy',
-    UNINSPIRED = 'Uninspired',
-    TEAMWORKER = 'Teamworker',
-    LEADER = 'Leader',
-    CUTE = 'Cute',
-    LONEWOLF = 'Lonewolf',
-    QUICK = 'Quick',
-    SLOW = 'Slow',
-    GENIUS = 'Genius',
-    FAMOUS = 'Famous',
-    MANNERLESS = 'Mannerless',
-    INFLUENTIAL = 'Influential',
-    ANTAGONISTIC = 'Antagonistic',
-    FIT = 'Fit',
-    OBESE = 'Obese',
-    STRONG = 'Strong',
-    WEAK = 'Weak',
-    FRUGAL = 'Frugal',
-    HUNGRY = 'Hungry',
-    LUCKY = 'Lucky',
-    UNLUCKY = 'Unlucky',
-    TRICKSTER = 'Trickster',
-    HAPLESS = 'Hapless',
-}
+export const BitTraitEnum: { [key: string]: string } = {}
+/**
+ * represents the type of a bit trait key from `BitTraitEnum`, 
+ * acting as a union of all valid cosmetic names once populated at runtime.
+ * this allows `BitTrait` to behave similarly to an enum type.
+ */
+export type BitTrait = Extract<keyof typeof BitTraitEnum, string>;
 
 /**
  * Represents the data of a Bit trait.
  */
 export interface BitTraitData {
+    /** the database ID of the bit trait data */
+    _id?: string;
     /** the trait name */
     trait: BitTrait;
     /** the trait's effect */

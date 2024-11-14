@@ -1,6 +1,8 @@
-import { Bit, BitGender, BitRarity, BitStatsModifiers, BitTrait, BitTraitCategory, BitTraitData, BitTraitRarity, BitTraitSubCategory, BitType, EnergyThresholdReduction } from '../../models/bit';
+import { Bit, BitGender, BitRarity, BitStatsModifiers, BitTrait, BitTraitCategory, BitTraitData, BitTraitEnum, BitTraitRarity, BitTraitSubCategory, BitType, EnergyThresholdReduction } from '../../models/bit';
 import { Island, IslandStatsModifiers } from '../../models/island';
 import { BitTraitModifier, Modifier } from '../../models/modifier';
+import { generateObjectId } from '../crypto';
+import { BitTraitDataModel } from './db';
 
 /** gets the max level for a bit given their rarity */
 export const MAX_BIT_LEVEL = (rarity: BitRarity): number => {
@@ -118,185 +120,35 @@ export const randomizeBitType = (): BitType => {
 }
 
 /**
- * A list of all bit traits and their respective stats/details.
+ * Populates `BIT_TRAITS` and the `BitTrait` enum on runtime.
  */
-export const BIT_TRAITS: BitTraitData[] = [
-    {
-        trait: BitTrait.PRODUCTIVE,
-        effect: `+5% working rate to self`,
-        rarity: BitTraitRarity.COMMON,
-        category: BitTraitCategory.WORKRATE_A,
-        subcategory: BitTraitSubCategory.POSITIVE
-    },
-    {
-        trait: BitTrait.ENTHUSIASTIC,
-        effect: '+10% working rate to self',
-        rarity: BitTraitRarity.COMMON,
-        category: BitTraitCategory.WORKRATE_A,
-        subcategory: BitTraitSubCategory.POSITIVE
-    },
-    {
-        trait: BitTrait.FIT,
-        effect: '-5% energy depletion rate to self',
-        rarity: BitTraitRarity.COMMON,
-        category: BitTraitCategory.ENERGY,
-        subcategory: BitTraitSubCategory.POSITIVE
-    },
-    {
-        trait: BitTrait.LUCKY,
-        effect: '+2.5% bonus resource chance when resource is dropped',
-        rarity: BitTraitRarity.COMMON,
-        category: BitTraitCategory.BONUS_RESOURCE,
-        subcategory: BitTraitSubCategory.POSITIVE
-    },
-    {
-        trait: BitTrait.LAZY,
-        effect: '-5% working rate to self',
-        rarity: BitTraitRarity.COMMON,
-        category: BitTraitCategory.WORKRATE_A,
-        subcategory: BitTraitSubCategory.NEGATIVE
-    },
-    {
-        trait: BitTrait.UNINSPIRED,
-        effect: '-10% working rate to self',
-        rarity: BitTraitRarity.COMMON,
-        category: BitTraitCategory.WORKRATE_A,
-        subcategory: BitTraitSubCategory.NEGATIVE
-    },
-    {
-        trait: BitTrait.OBESE,
-        effect: '+5% energy depletion rate to self',
-        rarity: BitTraitRarity.COMMON,
-        category: BitTraitCategory.ENERGY,
-        subcategory: BitTraitSubCategory.NEGATIVE
-    },
-    {
-        trait: BitTrait.UNLUCKY,
-        effect: '-2.5% bonus resource chance when resource is dropped',
-        rarity: BitTraitRarity.COMMON,
-        category: BitTraitCategory.BONUS_RESOURCE,
-        subcategory: BitTraitSubCategory.NEGATIVE
-    },
-    {
-        trait: BitTrait.STRONG,
-        effect: '-15% energy depletion rate to self',
-        rarity: BitTraitRarity.UNCOMMON,
-        category: BitTraitCategory.ENERGY,
-        subcategory: BitTraitSubCategory.POSITIVE
-    },
-    {
-        trait: BitTrait.TRICKSTER,
-        effect: '+5% bonus resource chance when resource is dropped',
-        rarity: BitTraitRarity.UNCOMMON,
-        category: BitTraitCategory.BONUS_RESOURCE,
-        subcategory: BitTraitSubCategory.POSITIVE
-    },
-    {
-        trait: BitTrait.TEAMWORKER,
-        effect: '+5% working rate to all bits with same or lesser rarity in the same island',
-        rarity: BitTraitRarity.UNCOMMON,
-        category: BitTraitCategory.WORKRATE_B,
-        subcategory: BitTraitSubCategory.POSITIVE
-    },
-    {
-        trait: BitTrait.WEAK,
-        effect: '+15% energy depletion rate to self',
-        rarity: BitTraitRarity.UNCOMMON,
-        category: BitTraitCategory.ENERGY,
-        subcategory: BitTraitSubCategory.NEGATIVE
-    },
-    {
-        trait: BitTrait.HAPLESS,
-        effect: '-5% bonus resource chance when resource is dropped',
-        rarity: BitTraitRarity.UNCOMMON,
-        category: BitTraitCategory.BONUS_RESOURCE,
-        subcategory: BitTraitSubCategory.NEGATIVE
-    },
-    {
-        trait: BitTrait.LEADER,
-        effect: '+10% working rate to all bits in the same island',
-        rarity: BitTraitRarity.RARE,
-        category: BitTraitCategory.WORKRATE_B,
-        subcategory: BitTraitSubCategory.POSITIVE
-    },
-    {
-        trait: BitTrait.CUTE,
-        effect: '+12.5% working rate to all other bits in the same island',
-        rarity: BitTraitRarity.RARE,
-        category: BitTraitCategory.WORKRATE_B,
-        subcategory: BitTraitSubCategory.POSITIVE
-    },
-    {
-        trait: BitTrait.GENIUS,
-        effect: '+7.5% island working rate',
-        rarity: BitTraitRarity.RARE,
-        category: BitTraitCategory.WORKRATE_C,
-        subcategory: BitTraitSubCategory.POSITIVE
-    },
-    {
-        trait: BitTrait.LONEWOLF,
-        effect: '+50% working rate to self, -5% working rate to all bits in the same island',
-        rarity: BitTraitRarity.RARE,
-        category: BitTraitCategory.WORKRATE_B,
-        subcategory: BitTraitSubCategory.POSITIVE
-    },
-    {
-        trait: BitTrait.INFLUENTIAL,
-        effect: '+1% working rate to all islands owned',
-        rarity: BitTraitRarity.RARE,
-        category: BitTraitCategory.WORKRATE_D,
-        subcategory: BitTraitSubCategory.POSITIVE
-    },
-    {
-        trait: BitTrait.ANTAGONISTIC,
-        effect: '-1% working rate to all islands owned',
-        rarity: BitTraitRarity.RARE,
-        category: BitTraitCategory.WORKRATE_D,
-        subcategory: BitTraitSubCategory.NEGATIVE
-    },
-    {
-        trait: BitTrait.QUICK,
-        effect: '+1% island working rate',
-        rarity: BitTraitRarity.COMMON,
-        category: BitTraitCategory.WORKRATE_C,
-        subcategory: BitTraitSubCategory.POSITIVE
-    },
-    {
-        trait: BitTrait.SLOW,
-        effect: '-1% island working rate',
-        rarity: BitTraitRarity.COMMON,
-        category: BitTraitCategory.WORKRATE_C,
-        subcategory: BitTraitSubCategory.NEGATIVE
-    },
-    {
-        trait: BitTrait.FAMOUS,
-        effect: '+0.5% working rate to all islands owned',
-        rarity: BitTraitRarity.UNCOMMON,
-        category: BitTraitCategory.WORKRATE_D,
-        subcategory: BitTraitSubCategory.POSITIVE
-    },
-    {
-        trait: BitTrait.MANNERLESS,
-        effect: '-0.5% working rate to all islands owned',
-        rarity: BitTraitRarity.UNCOMMON,
-        category: BitTraitCategory.WORKRATE_D,
-        subcategory: BitTraitSubCategory.NEGATIVE
-    },
-    {
-        trait: BitTrait.FRUGAL,
-        effect: '+10% energy when consuming food',
-        rarity: BitTraitRarity.COMMON,
-        category: BitTraitCategory.FOOD_CONSUMPTION,
-        subcategory: BitTraitSubCategory.POSITIVE
-    },
-    {
-        trait: BitTrait.HUNGRY,
-        effect: '-10% energy when consuming food',
-        rarity: BitTraitRarity.COMMON,
-        category: BitTraitCategory.FOOD_CONSUMPTION,
-        subcategory: BitTraitSubCategory.NEGATIVE
+export const populateBitTraitsData = async (): Promise<void> => {
+    try {
+        const bitTraits = await BitTraitDataModel.find().lean();
+
+        if (!bitTraits) {
+            return;
+        }
+
+        BIT_TRAITS = bitTraits;
+
+        // populate the BitTrait enum with the trait's name
+        bitTraits.forEach(trait => {
+            BitTraitEnum[trait.trait] = trait.trait;
+        });
+
+        console.log(`(populateBitTraitsData) Successfully populated the BitTrait enum and Bit traits.`);
+    } catch (err: any) {
+        console.error(`(populateBitTraitsData) ${err.message}`);
     }
-]
+}
+
+/**
+ * A list of all bit traits and their respective stats/details.
+ * 
+ * This will be populated on runtime.
+ */
+export let BIT_TRAITS: BitTraitData[] = [];
 
 /**
  * Gets the modifier effect of a Bit's trait ONLY on itself.
@@ -305,21 +157,21 @@ export const BIT_TRAITS: BitTraitData[] = [
  */
 export const BIT_TRAIT_EFFECT_ON_SELF = (trait: BitTrait): BitTraitModifier => {
     switch (trait) {
-        case BitTrait.PRODUCTIVE:
+        case 'Productive':
             return {
                 bitGatheringRate: {
                     origin: 'Bit Trait: Productive',
                     value: 1.05
                 },
             }
-        case BitTrait.ENTHUSIASTIC:
+        case 'Enthusiastic':
             return {
                 bitGatheringRate: {
                     origin: 'Bit Trait: Enthusiastic',
                     value: 1.1
                 },
             }
-        case BitTrait.FIT:
+        case 'Fit':
             return {
                 energyDepletionRate: {
                     origin: 'Bit Trait: Fit',
@@ -327,23 +179,23 @@ export const BIT_TRAIT_EFFECT_ON_SELF = (trait: BitTrait): BitTraitModifier => {
                 }
             }
         // lucky trait only impacts bonus resource chance when claiming resources
-        case BitTrait.LUCKY:
+        case 'Lucky':
             return {}
-        case BitTrait.LAZY:
+        case 'Lazy':
             return {
                 bitGatheringRate: {
                     origin: 'Bit Trait: Lazy',
                     value: 0.95
                 },
             }
-        case BitTrait.UNINSPIRED:
+        case 'Uninspired':
             return {
                 bitGatheringRate: {
                     origin: 'Bit Trait: Uninspired',
                     value: 0.9
                 }
             }
-        case BitTrait.OBESE:
+        case 'Obese':
             return {
                 energyDepletionRate: {
                     origin: 'Bit Trait: Obese',
@@ -351,9 +203,9 @@ export const BIT_TRAIT_EFFECT_ON_SELF = (trait: BitTrait): BitTraitModifier => {
                 }
             }
         // unlucky only impacts bonus resource chance when claiming resources
-        case BitTrait.UNLUCKY:
+        case 'Unlucky':
             return {}
-        case BitTrait.STRONG:
+        case 'Strong':
             return {
                 energyDepletionRate: {
                     origin: 'Bit Trait: Strong',
@@ -361,16 +213,16 @@ export const BIT_TRAIT_EFFECT_ON_SELF = (trait: BitTrait): BitTraitModifier => {
                 }
             }
         // trickster only impacts bonus resource chance when claiming resources
-        case BitTrait.TRICKSTER:
+        case 'Trickster':
             return {}
-        case BitTrait.TEAMWORKER:
+        case 'Teamworker':
             return {
                 bitGatheringRate: {
                     origin: 'Bit Trait: Teamworker',
                     value: 1.05
                 }
             }
-        case BitTrait.WEAK:
+        case 'Weak':
             return {
                 energyDepletionRate: {
                     origin: 'Bit Trait: Weak',
@@ -378,9 +230,9 @@ export const BIT_TRAIT_EFFECT_ON_SELF = (trait: BitTrait): BitTraitModifier => {
                 }
             }
         // hapless only impacts bonus resource chance when claiming resources
-        case BitTrait.HAPLESS:
+        case 'Hapless':
             return {}
-        case BitTrait.LEADER:
+        case 'Leader':
             return {
                 bitGatheringRate: {
                     origin: 'Bit Trait: Leader',
@@ -388,9 +240,9 @@ export const BIT_TRAIT_EFFECT_ON_SELF = (trait: BitTrait): BitTraitModifier => {
                 },
             }
         // cute trait only impacts other bits within the same isle
-        case BitTrait.CUTE:
+        case 'Cute':
             return {}
-        case BitTrait.GENIUS:
+        case 'Genius':
             return {
                 islandGatheringRate: {
                     origin: 'Bit Trait: Genius',
@@ -398,7 +250,7 @@ export const BIT_TRAIT_EFFECT_ON_SELF = (trait: BitTrait): BitTraitModifier => {
                 }
             }
         // increases own working rate by 50% but reduces working rate of other bits in the same island by 5%
-        case BitTrait.LONEWOLF:
+        case 'Lonewolf':
             return {
                 bitGatheringRate: {
                     origin: 'Bit Trait: Lonewolf',
@@ -406,32 +258,32 @@ export const BIT_TRAIT_EFFECT_ON_SELF = (trait: BitTrait): BitTraitModifier => {
                 },
             }
         // influential only increases the working rate of all islands owned
-        case BitTrait.INFLUENTIAL:
+        case 'Influential':
             return {}
         // antagonistic only reduces the working rate of all islands owned
-        case BitTrait.ANTAGONISTIC:
+        case 'Antagonistic':
             return {}
         // quick, slow, famous, mannerless, frugal, hungry
         // slow only reduces isle working rate
-        case BitTrait.SLOW:
+        case 'Slow':
             return {}
         // quick only increases isle working rate
-        case BitTrait.QUICK:
+        case 'Quick':
             return {}
         // famous only increases the working rate of all islands owned
-        case BitTrait.FAMOUS:
+        case 'Famous':
             return {}
         // mannerless only reduces the working rate of all islands owned
-        case BitTrait.MANNERLESS:
+        case 'Mannerless':
             return {}
-        case BitTrait.FRUGAL:
+        case 'Frugal':
             return {
                 foodConsumptionEfficiency: {
                     origin: 'Bit Trait: Frugal',
                     value: 1.1
                 }
             }
-        case BitTrait.HUNGRY:
+        case 'Hungry':
             return {
                 foodConsumptionEfficiency: {
                     origin: 'Bit Trait: Hungry',

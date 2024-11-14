@@ -1,5 +1,5 @@
 import Bull from 'bull';
-import { BitRarity, BitTrait, BitTraitData } from '../../models/bit';
+import { BitRarity, BitTrait, BitTraitData, BitTraitEnum } from '../../models/bit';
 import {
   IslandTappingData,
   IslandTrait,
@@ -250,19 +250,23 @@ ISLAND_QUEUE.process('dropResourceOrClaimResources', async (job) => {
         const bits = await BitModel.find({ bitId: { $in: placedBitIds } }).lean();
   
         for (const bit of bits) {
-          if ((bit.traits as BitTraitData[]).some(trait => trait.trait === BitTrait.LUCKY)) {
+          if ((bit.traits as BitTraitData[]).some(trait => trait.trait === BitTraitEnum.LUCKY)) {
+            console.log(`(ISLAND_QUEUE/dropResource) Bit ${bit.bitId} has the LUCKY trait. Incrementing bonusResourceChance by 2.5.`);
             bonusResourceChance += 2.5;
           }
   
-          if ((bit.traits as BitTraitData[]).some(trait => trait.trait === BitTrait.UNLUCKY)) {
+          if ((bit.traits as BitTraitData[]).some(trait => trait.trait === BitTraitEnum.UNLUCKY)) {
+            console.log(`(ISLAND_QUEUE/dropResource) Bit ${bit.bitId} has the UNLUCKY trait. Decrementing bonusResourceChance by 2.5.`);
             bonusResourceChance -= 2.5;
           }
   
-          if ((bit.traits as BitTraitData[]).some(trait => trait.trait === BitTrait.TRICKSTER)) {
+          if ((bit.traits as BitTraitData[]).some(trait => trait.trait === BitTraitEnum.TRICKSTER)) {
+            console.log(`(ISLAND_QUEUE/dropResource) Bit ${bit.bitId} has the TRICKSTER trait. Incrementing bonusResourceChance by 5.`);
             bonusResourceChance += 5;
           }
   
-          if ((bit.traits as BitTraitData[]).some(trait => trait.trait === BitTrait.HAPLESS)) {
+          if ((bit.traits as BitTraitData[]).some(trait => trait.trait === BitTraitEnum.HAPLESS)) {
+            console.log(`(ISLAND_QUEUE/dropResource) Bit ${bit.bitId} has the HAPLESS trait. Decrementing bonusResourceChance by 5.`);
             bonusResourceChance -= 5;
           }
         }

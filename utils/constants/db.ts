@@ -4,7 +4,7 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 import { UserSchema } from '../../schemas/User';
-import { BitSchema } from '../../schemas/Bit';
+import { BitSchema, BitTraitDataSchema } from '../../schemas/Bit';
 import { IslandSchema } from '../../schemas/Island';
 import { RaftSchema } from '../../schemas/Raft';
 import { CookieDepositSchema, CookieWithdrawalSchema } from '../../schemas/Cookie';
@@ -117,3 +117,4 @@ export const ChatroomModel = TEST_CONNECTION.model('Chatrooms', ChatroomSchema, 
 export const FriendModel = TEST_CONNECTION.model('Friends', FriendSchema, 'Friends');
 export const ReportModel = TEST_CONNECTION.model('Reports', ReportSchema, 'Reports');
 export const CraftingRecipeModel = TEST_CONNECTION.model('CraftingRecipes', CraftingRecipeSchema, 'CraftingRecipes');
+export const BitTraitDataModel = TEST_CONNECTION.model('BitTraitData', BitTraitDataSchema, 'BitTraitData');

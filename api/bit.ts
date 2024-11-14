@@ -1,6 +1,7 @@
 import { ReturnValue, Status } from '../utils/retVal';
 import { Bit, BitFarmingStats, BitNameData, BitRarity, BitType } from '../models/bit';
 import {
+    BIT_TRAITS,
     DEFAULT_ENERGY_DEPLETION_RATE,
     DEFAULT_GATHERING_RATE,
     DEFAULT_GATHERING_RATE_GROWTH,
@@ -19,7 +20,7 @@ import { Food, FoodType } from '../models/food';
 import { FOOD_ENERGY_REPLENISHMENT } from '../utils/constants/food';
 import { BarrenResource, ExtendedResource } from '../models/resource';
 import { generateObjectId } from '../utils/crypto';
-import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
+import { BitModel, BitTraitDataModel, IslandModel, UserModel } from '../utils/constants/db';
 import { ObtainMethod } from '../models/obtainMethod';
 import { redis } from '../utils/constants/redis';
 
