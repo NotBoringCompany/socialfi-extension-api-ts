@@ -4,7 +4,6 @@ import { validateRequestAuth } from '../utils/auth';
 import { cancelCraft, claimCraftedAssets, craftAsset, fetchCraftingQueues } from '../api/craft';
 import { CRAFTING_RECIPES } from '../utils/constants/craft';
 import { allowMixpanel, mixpanel } from '../utils/mixpanel';
-import { CANCEL_CRAFTING_QUEUE_MIXPANEL_EVENT_HASH, CLAIM_CRAFTED_ASSET_MIXPANEL_EVENT_HASH, CRAFT_ASSET_MIXPANEL_EVENT_HASH, OPEN_CHEST_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { IngotEnum, IngotItem } from '../models/item';
 import { incrementProgressionByType } from '../api/quest';
 import { QuestRequirementType } from '../models/quest';

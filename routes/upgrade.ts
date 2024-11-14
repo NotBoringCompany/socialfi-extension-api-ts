@@ -4,8 +4,6 @@ import { Status } from '../utils/retVal';
 import { universalAssetUpgrade } from '../api/upgrade';
 import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 
-import { UNIVERSAL_UGPRADE_ASSET_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
-
 const router = express.Router();
 
 router.post('/universal_asset_upgrade', async (req, res) => {
