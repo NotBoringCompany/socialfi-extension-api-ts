@@ -3,7 +3,7 @@ import { Asset } from '../../models/asset';
 import { BitRarity } from '../../models/bit';
 import { SynthesizingItemGroup } from '../../models/craft';
 import { IslandType } from '../../models/island';
-import { AugmentationItem, BitOrbType, ContinuumRelicItem, EnergyTotemItem, Item, PotionItem, SynthesizingItem, SynthesizingItemData, TerraCapsulatorType, TransmutationItem } from '../../models/item';
+import { AugmentationEnum, AugmentationItem, BitOrbType, ContinuumRelicEnum, ContinuumRelicItem, EnergyTotemEnum, EnergyTotemItem, Item, PotionEnum, PotionItem, SynthesizingItem, SynthesizingItemData, TerraCapsulatorType, TransmutationEnum, TransmutationItem } from '../../models/item';
 import { BarrenResource, FruitResource, LiquidResource, OreResource } from '../../models/resource';
 import { BitModel, IslandModel } from './db';
 import { Modifier } from '../../models/modifier';
@@ -152,75 +152,75 @@ export const assets: Asset[] = [
         description: 'A shiny orb that holds the power of your own companion. Highest chances of getting higher rarity Bits.'
     },
     {
-        type: AugmentationItem.PARCHMENT_OF_AUGMENTATION,
+        type: AugmentationEnum.PARCHMENT_OF_AUGMENTATION,
         description: `Select an Isle (Exotic rarity or below) and increase its resource cap by 1%.`,
     },
     {
-        type: AugmentationItem.SCROLL_OF_AUGMENTATION,
+        type: AugmentationEnum.SCROLL_OF_AUGMENTATION,
         description: `Select an Isle (Exotic rarity or below) and increase its resource cap by 3%.`,
     },
     {
-        type: AugmentationItem.TOME_OF_AUGMENTATION,
+        type: AugmentationEnum.TOME_OF_AUGMENTATION,
         description: `Select an Isle (Exotic rarity or below) and increase its resource cap by 7%.`,
     },
     {
-        type: AugmentationItem.ANCIENT_SCROLL_OF_AUGMENTATION,
+        type: AugmentationEnum.ANCIENT_SCROLL_OF_AUGMENTATION,
         description: `Select an Isle (any rarity) and increase its resource cap by 10%.`,
     },
     {
-        type: AugmentationItem.ANCIENT_TOME_OF_AUGMENTATION,
+        type: AugmentationEnum.ANCIENT_TOME_OF_AUGMENTATION,
         description: `Select an Isle (any rarity) and increase its resource cap by 20%.`,
     },
     {
-        type: TransmutationItem.WAND_OF_TRANSMUTATION,
+        type: TransmutationEnum.WAND_OF_TRANSMUTATION,
         description: `Select an Isle (Exotic rarity or below) and randomly transmute all of the Isle's current traits.`,
     },
     {
-        type: TransmutationItem.STAFF_OF_TRANSMUTATION,
+        type: TransmutationEnum.STAFF_OF_TRANSMUTATION,
         description: `Select an Isle (any rarity) and randomly transmute all of the Isle's current traits.`,
     },
     {
-        type: TransmutationItem.ROYAL_SCEPTER_OF_TRANSMUTATION,
+        type: TransmutationEnum.ROYAL_SCEPTER_OF_TRANSMUTATION,
         description: `Select an Isle (any rarity) and choose a trait to transmute all of the Isle's current traits into.`,
     },
     {
-        type: EnergyTotemItem.SMALL_TOTEM_OF_ENERGY,
+        type: EnergyTotemEnum.SMALL_TOTEM_OF_ENERGY,
         description: `Select an Isle and receive +2.5% Isle farming rate & -12.5% energy consumption for all bits there.`,
     },
     {
-        type: EnergyTotemItem.BIG_TOTEM_OF_ENERGY,
+        type: EnergyTotemEnum.BIG_TOTEM_OF_ENERGY,
         description: `Select an Isle and receive +5% Isle farming rate & -25% energy consumption for all bits there.`,
     },
     {
-        type: EnergyTotemItem.GRAND_TOTEM_OF_ENERGY,
+        type: EnergyTotemEnum.GRAND_TOTEM_OF_ENERGY,
         description: `Select an Isle and receive +7.5% Isle farming rate & -50% energy consumption for all bits there.`,
     },
     {
-        type: ContinuumRelicItem.FADED_CONTINUUM_RELIC,
+        type: ContinuumRelicEnum.FADED_CONTINUUM_RELIC,
         description: `Select a Bit (rare rarity or below) and allow transfer to Season 1.`,
     },
     {
-        type: ContinuumRelicItem.GLEAMING_CONTINUUM_RELIC,
+        type: ContinuumRelicEnum.GLEAMING_CONTINUUM_RELIC,
         description: `Select a Bit (epic rarity or below) and allow transfer to Season 1.`,
     },
     {
-        type: ContinuumRelicItem.MYTHIC_CONTINUUM_RELIC,
+        type: ContinuumRelicEnum.MYTHIC_CONTINUUM_RELIC,
         description: `Select a Bit (any rarity) and allow transfer to Season 1.`,
     },
     {
-        type: PotionItem.POTION_OF_LUCK,
+        type: PotionEnum.POTION_OF_LUCK,
         description: `Select a Bit and reroll one trait randomly.`,
     },
     {
-        type: PotionItem.POTION_OF_ENLIGHTENMENT,
+        type: PotionEnum.POTION_OF_ENLIGHTENMENT,
         description: `Select a Bit and reroll all traits randomly.`,
     },
     {
-        type: PotionItem.POTION_OF_UNHOLY_ENLIGHTENMENT,
+        type: PotionEnum.POTION_OF_UNHOLY_ENLIGHTENMENT,
         description: `Select a Bit and select one trait to reroll randomly. A positive trait and no duplicate guaranteed.`,
     },
     {
-        type: PotionItem.POTION_OF_DIVINE_ENLIGHTENMENT,
+        type: PotionEnum.POTION_OF_DIVINE_ENLIGHTENMENT,
         description: `Select a Bit and reroll all traits randomly. Positive traits and no duplicates guaranteed.`,
     }
 ]
@@ -229,23 +229,23 @@ export const assets: Asset[] = [
  * Gets the enum type of `item`. For example, if inputted `Parchment of Restoration`, it will return `Restoration Item`.
  */
 export const GET_SYNTHESIZING_ITEM_TYPE = (item: string): SynthesizingItemGroup | undefined => {
-    if (Object.values(AugmentationItem).includes(item as AugmentationItem)) {
+    if (Object.values(AugmentationEnum).includes(item as AugmentationItem)) {
         return SynthesizingItemGroup.AUGMENTATION_ITEM;
     }
 
-    if (Object.values(TransmutationItem).includes(item as TransmutationItem)) {
+    if (Object.values(TransmutationEnum).includes(item as TransmutationItem)) {
         return SynthesizingItemGroup.TRANSMUTATION_ITEM;
     }
 
-    if (Object.values(EnergyTotemItem).includes(item as EnergyTotemItem)) {
+    if (Object.values(EnergyTotemEnum).includes(item as EnergyTotemItem)) {
         return SynthesizingItemGroup.ENERGY_TOTEM_ITEM;
     }
 
-    if (Object.values(ContinuumRelicItem).includes(item as ContinuumRelicItem)) {
+    if (Object.values(ContinuumRelicEnum).includes(item as ContinuumRelicItem)) {
         return SynthesizingItemGroup.CONTINUUM_RELIC_ITEM;
     }
 
-    if (Object.values(PotionItem).includes(item as PotionItem)) {
+    if (Object.values(PotionEnum).includes(item as PotionItem)) {
         return SynthesizingItemGroup.POTION_ITEM;
     }
 
@@ -256,18 +256,18 @@ export const GET_SYNTHESIZING_ITEM_TYPE = (item: string): SynthesizingItemGroup 
  * Maps each `SynthesizingItemGroup` to its corresponding enum.
  */
 export const SYNTHESIZING_ITEM_ENUM_MAP: { [ key in SynthesizingItemGroup]: object } = {
-    [SynthesizingItemGroup.AUGMENTATION_ITEM]: AugmentationItem,
-    [SynthesizingItemGroup.TRANSMUTATION_ITEM]: TransmutationItem,
-    [SynthesizingItemGroup.ENERGY_TOTEM_ITEM]: EnergyTotemItem,
-    [SynthesizingItemGroup.CONTINUUM_RELIC_ITEM]: ContinuumRelicItem,
-    [SynthesizingItemGroup.POTION_ITEM]: PotionItem,
+    [SynthesizingItemGroup.AUGMENTATION_ITEM]: AugmentationEnum,
+    [SynthesizingItemGroup.TRANSMUTATION_ITEM]: TransmutationEnum,
+    [SynthesizingItemGroup.ENERGY_TOTEM_ITEM]: EnergyTotemEnum,
+    [SynthesizingItemGroup.CONTINUUM_RELIC_ITEM]: ContinuumRelicEnum,
+    [SynthesizingItemGroup.POTION_ITEM]: PotionEnum,
 }
 
 
 /**
  * Fetches all enum members of the item type.
  * 
- * For example, if input is `Parchment of Augmentation`, it returns the enum members of `AugmentationItem`.
+ * For example, if input is `Parchment of Augmentation`, it returns the enum members of `AugmentationEnum`.
  */
 export const GET_SYNTHESIZING_ITEM_MEMBERS = (item: string): string[] | undefined => {
     const itemType = GET_SYNTHESIZING_ITEM_TYPE(item);
@@ -285,7 +285,7 @@ export const GET_SYNTHESIZING_ITEM_MEMBERS = (item: string): string[] | undefine
  */
 export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
     {
-        name: AugmentationItem.PARCHMENT_OF_AUGMENTATION,
+        name: AugmentationEnum.PARCHMENT_OF_AUGMENTATION,
         description: `Select an Isle (Exotic rarity or below) and increase its resource cap by 1%.`,
         minimumRarity: null,
         maximumRarity: IslandType.EXOTIC_ISLES,
@@ -394,7 +394,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         }
     },
     {
-        name: AugmentationItem.SCROLL_OF_AUGMENTATION,
+        name: AugmentationEnum.SCROLL_OF_AUGMENTATION,
         description: `Select an Isle (Exotic rarity or below) and increase its resource cap by 3%.`,
         minimumRarity: null,
         maximumRarity: IslandType.EXOTIC_ISLES,
@@ -503,7 +503,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         }
     },
     {
-        name: AugmentationItem.TOME_OF_AUGMENTATION,
+        name: AugmentationEnum.TOME_OF_AUGMENTATION,
         description: `Select an Isle (Exotic rarity or below) and increase its resource cap by 7%.`,
         minimumRarity: null,
         maximumRarity: IslandType.EXOTIC_ISLES,
@@ -612,7 +612,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         }
     },
     {
-        name: AugmentationItem.ANCIENT_SCROLL_OF_AUGMENTATION,
+        name: AugmentationEnum.ANCIENT_SCROLL_OF_AUGMENTATION,
         description: `Select an Isle (any rarity) and increase its resource cap by 10%.`,
         minimumRarity: null,
         maximumRarity: null,
@@ -721,7 +721,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         }
     },
     {
-        name: AugmentationItem.ANCIENT_TOME_OF_AUGMENTATION,
+        name: AugmentationEnum.ANCIENT_TOME_OF_AUGMENTATION,
         description: `Select an Isle (any rarity) and increase its resource cap by 20%.`,
         minimumRarity: null,
         maximumRarity: null,
@@ -830,7 +830,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         }
     },
     {
-        name: TransmutationItem.WAND_OF_TRANSMUTATION,
+        name: TransmutationEnum.WAND_OF_TRANSMUTATION,
         description: `Select an Isle (Exotic rarity or below) and randomly transmute all of the Isle's current traits.`,
         minimumRarity: null,
         maximumRarity: IslandType.EXOTIC_ISLES,
@@ -939,7 +939,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         }
     },
     {
-        name: TransmutationItem.STAFF_OF_TRANSMUTATION,
+        name: TransmutationEnum.STAFF_OF_TRANSMUTATION,
         description: `Select an Isle (any rarity) and randomly transmute all of the Isle's current traits.`,
         minimumRarity: null,
         maximumRarity: null,
@@ -1048,7 +1048,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         }
     },
     {
-        name: TransmutationItem.ROYAL_SCEPTER_OF_TRANSMUTATION,
+        name: TransmutationEnum.ROYAL_SCEPTER_OF_TRANSMUTATION,
         description: `Select an Isle (any rarity) and choose a trait to transmute all of the Isle's current traits into.`,
         minimumRarity: null,
         maximumRarity: null,
@@ -1157,7 +1157,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         }
     },
     {
-        name: EnergyTotemItem.SMALL_TOTEM_OF_ENERGY,
+        name: EnergyTotemEnum.SMALL_TOTEM_OF_ENERGY,
         description: `Select an Isle and receive +2.5% Isle farming rate & -12.5% energy consumption for all bits there.`,
         minimumRarity: null,
         maximumRarity: null,
@@ -1267,7 +1267,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         }
     },
     {
-        name: EnergyTotemItem.BIG_TOTEM_OF_ENERGY,
+        name: EnergyTotemEnum.BIG_TOTEM_OF_ENERGY,
         description: `Select an Isle and receive +5% Isle farming rate & -25% energy consumption for all bits there.`,
         minimumRarity: null,
         maximumRarity: null,
@@ -1377,7 +1377,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         }
     },
     {
-        name: EnergyTotemItem.GRAND_TOTEM_OF_ENERGY,
+        name: EnergyTotemEnum.GRAND_TOTEM_OF_ENERGY,
         description: `Select an Isle and receive +7.5% Isle farming rate & -50% energy consumption for all bits there.`,
         minimumRarity: null,
         maximumRarity: null,
@@ -1487,7 +1487,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         }
     },
     {
-        name: ContinuumRelicItem.FADED_CONTINUUM_RELIC,
+        name: ContinuumRelicEnum.FADED_CONTINUUM_RELIC,
         description: `Select a Bit (rare rarity or below) and allow transfer to Season 1.`,
         minimumRarity: null,
         maximumRarity: BitRarity.RARE,
@@ -1596,7 +1596,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         }
     },
     {
-        name: ContinuumRelicItem.GLEAMING_CONTINUUM_RELIC,
+        name: ContinuumRelicEnum.GLEAMING_CONTINUUM_RELIC,
         description: `Select a Bit (epic rarity or below) and allow transfer to Season 1.`,
         minimumRarity: null,
         maximumRarity: BitRarity.EPIC,
@@ -1705,7 +1705,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         }
     },
     {
-        name: ContinuumRelicItem.MYTHIC_CONTINUUM_RELIC,
+        name: ContinuumRelicEnum.MYTHIC_CONTINUUM_RELIC,
         description: `Select a Bit (any rarity) and allow transfer to Season 1.`,
         minimumRarity: null,
         maximumRarity: null,
@@ -1814,7 +1814,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         }
     },
     {
-        name: PotionItem.POTION_OF_LUCK,
+        name: PotionEnum.POTION_OF_LUCK,
         description: `Select a Bit and reroll one trait randomly.`,
         minimumRarity: null,
         maximumRarity: null,
@@ -1923,7 +1923,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         }
     },
     {
-        name: PotionItem.POTION_OF_ENLIGHTENMENT,
+        name: PotionEnum.POTION_OF_ENLIGHTENMENT,
         description: `Select a Bit and reroll all traits randomly.`,
         minimumRarity: null,
         maximumRarity: null,
@@ -2032,7 +2032,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         }
     },
     {
-        name: PotionItem.POTION_OF_UNHOLY_ENLIGHTENMENT,
+        name: PotionEnum.POTION_OF_UNHOLY_ENLIGHTENMENT,
         description: `Select a Bit and select one trait to reroll randomly. A positive trait and no duplicate guaranteed.`,
         minimumRarity: null,
         maximumRarity: null,
@@ -2141,7 +2141,7 @@ export const SYNTHESIZING_ITEM_DATA: SynthesizingItemData[] = [
         }
     },
     {
-        name: PotionItem.POTION_OF_DIVINE_ENLIGHTENMENT,
+        name: PotionEnum.POTION_OF_DIVINE_ENLIGHTENMENT,
         description: `Select a Bit and reroll all traits randomly. Positive traits and no duplicates guaranteed.`,
         minimumRarity: null,
         maximumRarity: null,
