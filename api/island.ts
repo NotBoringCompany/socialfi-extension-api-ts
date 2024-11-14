@@ -23,7 +23,8 @@ import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '..
 import { TappingMastery } from '../models/mastery';
 import { updateReferredUsersData } from './user';
 import { redis } from '../utils/constants/redis';
-import { SYNTHESIZING_ITEM_DATA, SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE } from '../utils/constants/asset';
+import { SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE } from '../utils/constants/asset';
+import { CRAFTING_RECIPES } from '../utils/constants/craft';
 
 /**
  * Deletes the `islandEarningStats` field from all islands as well as earning modifiers.
@@ -902,7 +903,8 @@ export const addPlacedBitModifiersFromConsumedSynthesizingItems = async (userId:
         // for each consumed item, fetch the synthesizing item data and check if they have the `allowLaterPlacedBitsToObtainEffect` set to true.
         // if yes, based on what the item does, update the bit's modifiers.
         for (const consumedItem of consumedSynthesizingItems) {
-            const itemData = SYNTHESIZING_ITEM_DATA.find(item => item.name === consumedItem.item);
+            const craftingRecipe = CRAFTING_RECIPES.find(recipe => recipe.craftedAssetData.asset === consumedItem.item);
+            const itemData = craftingRecipe?.craftedAssetData.assetExtendedData;
 
             if (!itemData) {
                 continue;
@@ -911,7 +913,7 @@ export const addPlacedBitModifiersFromConsumedSynthesizingItems = async (userId:
             // if the synthesizing item has `placedBitsEnergyDepletionRateModifier.active` set to true and `allowLaterPlacedBitsToObtainEffect` set to true,
             // we need to update the bit's energy rate modifiers to include the synthesizing item's effects.
             if (itemData.effectValues.placedBitsEnergyDepletionRateModifier.active && itemData.effectValues.placedBitsEnergyDepletionRateModifier.allowLaterPlacedBitsToObtainEffect) {
-                console.log(`(updatePlacedBitModifiersFromConsumedSynthesizingItems) FOUND ITEM WHERE DEPLETION RATE MODIFIER ALLOWS LATER PLACED BITS TO OBTAIN EFFECT: ${itemData.name}`);
+                console.log(`(updatePlacedBitModifiersFromConsumedSynthesizingItems) FOUND ITEM WHERE DEPLETION RATE MODIFIER ALLOWS LATER PLACED BITS TO OBTAIN EFFECT: ${craftingRecipe.craftedAssetData.asset}`);
 
                 // get the placed bits of the island
                 const placedBits = island.placedBitIds;
@@ -924,7 +926,7 @@ export const addPlacedBitModifiersFromConsumedSynthesizingItems = async (userId:
                 // find any bull queues that have the `origin` starting with `Synthesizing Item: ${itemData.name}. Instance ID: ${consumedItem._id}` and `bitId` is in the `placedBits`
                 const relevantBullQueueData = bullQueueData
                     .filter(queue => queue.name === 'removeBitEnergyDepletionRateModifier')
-                    .filter(queue => queue.data.origin.startsWith(`Synthesizing Item: ${itemData.name}`))
+                    .filter(queue => queue.data.origin.startsWith(`Synthesizing Item: ${craftingRecipe.craftedAssetData.asset}`))
                     // check if the bit ID is in the placed bits
                     .filter(queue => placedBits.includes(queue.data.bitId));
 
@@ -933,7 +935,7 @@ export const addPlacedBitModifiersFromConsumedSynthesizingItems = async (userId:
 
                 // create the modifier
                 const energyRateModifier: Modifier = {
-                    origin: `Synthesizing Item: ${itemData.name}. Instance ID: ${consumedItem._id}`,
+                    origin: `Synthesizing Item: ${craftingRecipe.craftedAssetData.asset}. Instance ID: ${consumedItem._id}`,
                     value: 1 + (itemData.effectValues.placedBitsEnergyDepletionRateModifier.value / 100)
                 }
 
@@ -953,7 +955,7 @@ export const addPlacedBitModifiersFromConsumedSynthesizingItems = async (userId:
                         bitId,
                         islandId: island.islandId,
                         owner: userId,
-                        origin: `Synthesizing Item: ${itemData.name}. Instance ID: ${consumedItem._id}`,
+                        origin: `Synthesizing Item: ${craftingRecipe.craftedAssetData.asset}. Instance ID: ${consumedItem._id}`,
                         // for the end timestamp, we will match it with the `relevantBullQueueDataFirst`'s endTimestamp
                         // because we don't want it to last longer than the other bits.
                         endTimestamp: relevantBullQueueDataFirst.data.endTimestamp
@@ -1048,7 +1050,8 @@ export const removePlacedBitModifiersFromConsumedSynthesizingItems = async (bit:
             console.log(`(removePlacedBitModifiersFromConsumedSynthesizingItems) Consumed Item: ${JSON.stringify(consumedItem)}`);
 
             // check if this item has 'allowLaterUnplacedBitsToLoseEffect' set to true. if yes, remove the modifier.
-            const itemData = SYNTHESIZING_ITEM_DATA.find(item => item.name === consumedItem.item);
+            const craftingRecipe = CRAFTING_RECIPES.find(recipe => recipe.craftedAssetData.asset === consumedItem.item);
+            const itemData = craftingRecipe?.craftedAssetData.assetExtendedData;
 
             if (!itemData) {
                 continue;
