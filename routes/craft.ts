@@ -5,7 +5,7 @@ import { cancelCraft, claimCraftedAssets, craftAsset, fetchCraftingQueues } from
 import { CRAFTING_RECIPES } from '../utils/constants/craft';
 import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 import { CANCEL_CRAFTING_QUEUE_MIXPANEL_EVENT_HASH, CLAIM_CRAFTED_ASSET_MIXPANEL_EVENT_HASH, CRAFT_ASSET_MIXPANEL_EVENT_HASH, OPEN_CHEST_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
-import { IngotItem } from '../models/item';
+import { IngotEnum, IngotItem } from '../models/item';
 import { incrementProgressionByType } from '../api/quest';
 import { QuestRequirementType } from '../models/quest';
 
@@ -163,7 +163,7 @@ router.post('/claim_crafted_assets', async (req, res) => {
             const craftingResult: { queueId: string, craftedAsset: string, claimableAmount: number }[] = [...fullyClaimedCraftingData, ...partiallyClaimedCraftingData];
 
             craftingResult
-                .filter(({ craftedAsset }) => !Object.values(IngotItem).includes(craftedAsset as any)) // ignore ingot type
+                .filter(({ craftedAsset }) => !Object.values(IngotEnum).includes(craftedAsset as any)) // ignore ingot type
                 .forEach((item) => {
                     const rarity = CRAFTING_RECIPES.find((recipe) => recipe.craftedAssetData.asset === item.craftedAsset).craftedAssetData.assetRarity;
                     if (!rarity) return;
