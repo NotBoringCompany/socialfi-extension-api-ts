@@ -6,7 +6,6 @@ import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 import { getMainWallet } from '../api/user';
 import { UserWallet } from '../models/user';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
-import { CONSUME_TERRA_CAPSULATOR_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 
 import { incrementProgressionByType } from '../api/quest';
 import { QuestRequirementType } from '../models/quest';

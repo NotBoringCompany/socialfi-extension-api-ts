@@ -5,7 +5,6 @@ import { openChest } from '../api/chest';
 import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 import { getMainWallet } from '../api/user';
 import { UserWallet } from '../models/user';
-import { OPEN_CHEST_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 
 const router = express.Router();

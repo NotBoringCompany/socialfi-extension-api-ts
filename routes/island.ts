@@ -11,7 +11,6 @@ import { Bit } from '../models/bit';
 import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 import { authMiddleware } from '../middlewares/auth';
 import { getMainWallet } from '../api/user';
-import { APPLY_GATHERING_BOOSTER_MIXPANEL_EVENT_HASH, APPLY_ISLAND_MILESTONE, CLAIM_RESOURCES_MIXPANEL_EVENT_HASH, EVOLVE_ISLAND_MIXPANEL_EVENT_HASH, PLACE_BIT_MIXPANEL_EVENT_HASH, REMOVE_ISLAND_MIXPANEL_EVENT_HASH, REROLL_ISLAND_MILESTONE_BONUS, UNPLACE_BIT_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { UserWallet } from '../models/user';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { QuestRequirementType } from '../models/quest';

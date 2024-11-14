@@ -13,7 +13,6 @@ import { authMiddleware } from '../middlewares/auth';
 import { DEPLOYER_WALLET, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
 import { getMainWallet } from '../api/user';
 import { UserWallet } from '../models/user';
-import { BULK_FEED_BIT_MIXPANEL_EVENT_HASH, EVOLVE_BIT_MIXPANEL_EVENT_HASH, FEED_BIT_MIXPANEL_EVENT_HASH, RELEASE_BIT_MIXPANEL_EVENT_HASH, RENAME_BIT_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { generateHashSalt, generateWonderbitsDataHash } from '../utils/crypto';
 import { ethers } from 'ethers';
 import { incrementProgressionByType } from '../api/quest';

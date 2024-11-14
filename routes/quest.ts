@@ -20,7 +20,6 @@ import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 import { authMiddleware } from '../middlewares/auth';
 import { UserWallet } from '../models/user';
 import { getMainWallet } from '../api/user';
-import { COMPLETE_QUEST_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { QuestDailyQuery, questDailyQuery } from '../validations/quest';
 import { POIName } from '../models/poi';

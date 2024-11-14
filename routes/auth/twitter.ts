@@ -7,7 +7,6 @@ import { getMainWallet, handleTwitterLogin, updateLoginStreak } from '../../api/
 import { allowMixpanel, mixpanel } from '../../utils/mixpanel';
 import { UserWallet } from '../../models/user';
 import { WONDERBITS_CONTRACT } from '../../utils/constants/web3';
-import { TWITTER_LOGIN_CALLBACK_MIXPANEL_EVENT_HASH } from '../../utils/constants/mixpanelEvents';
 
 const router = express.Router();
 
