@@ -14,7 +14,7 @@ import { BitModel, ConsumedSynthesizingItemModel, IslandModel, LeaderboardModel,
 import { ObtainMethod } from '../models/obtainMethod';
 import { RELOCATION_COOLDOWN } from '../utils/constants/bit';
 import { ExtendedXCookieData, PlayerEnergy, PlayerMastery, User, XCookieSource } from '../models/user';
-import { getResource, resources } from '../utils/constants/resource';
+import { resources } from '../utils/constants/resource';
 import { Item } from '../models/item';
 import { BoosterItem } from '../models/booster';
 import { TAPPING_MASTERY_LEVEL } from '../utils/constants/mastery';

@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { generateObjectId } from '../utils/crypto';
+import { BitTraitData } from '../models/bit';
 
 /**
  * Bit schema. Represents closely to the `Bit` interface in `models/bit.ts`.
