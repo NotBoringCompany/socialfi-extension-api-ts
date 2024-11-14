@@ -21,7 +21,7 @@ router.post('/universal_asset_upgrade', async (req, res) => {
             })
         }
 
-        const { status, message, data } = await universalAssetUpgrade(validateData?.twitterId, asset, upgradeCostGroup, chosenFlexibleRequiredAssets, islandOrBitId, poi);
+        const { status, message, data } = await universalAssetUpgrade(validateData?.twitterId, asset, upgradeCostGroup, chosenFlexibleRequiredAssets, islandOrBitId);
 
         if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Currency Tracker', {
