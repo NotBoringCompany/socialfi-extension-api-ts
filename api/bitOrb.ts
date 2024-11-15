@@ -1,4 +1,4 @@
-import { Bit, BitType } from '../models/bit';
+import { Bit, BitTraitEnum, BitType } from '../models/bit';
 import { ObtainMethod } from '../models/obtainMethod';
 import { RANDOMIZE_GENDER, getBitStatsModifiersFromTraits, randomizeBitTraits, randomizeBitType } from '../utils/constants/bit';
 import { RANDOMIZE_RARITY_FROM_ORB } from '../utils/constants/bitOrb';
@@ -83,10 +83,10 @@ export const consumeBitOrb = async (twitterId: string, bitOrbType: BitOrbType): 
         const islands = user.inventory?.islandIds as number[];
 
         // check if the bit has the infuential, antagonistic, famous or mannerless traits
-        const hasInfluentialTrait = bit.traits.some(trait => trait.trait === 'Influential');
-        const hasAntagonisticTrait = bit.traits.some(trait => trait.trait === 'Antagonistic');
-        const hasFamousTrait = bit.traits.some(trait => trait.trait === 'Famous');
-        const hasMannerlessTrait = bit.traits.some(trait => trait.trait === 'Mannerless');
+        const hasInfluentialTrait = bit.traits.some(trait => trait.trait === BitTraitEnum.INFLUENTIAL);
+        const hasAntagonisticTrait = bit.traits.some(trait => trait.trait === BitTraitEnum.ANTAGONISTIC);
+        const hasFamousTrait = bit.traits.some(trait => trait.trait === BitTraitEnum.FAMOUS);
+        const hasMannerlessTrait = bit.traits.some(trait => trait.trait === BitTraitEnum.MANNERLESS);
 
         const gatheringRateModifiers: Modifier[] = [];
 

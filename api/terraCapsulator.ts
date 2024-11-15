@@ -158,14 +158,8 @@ export const summonIsland = async (
                         traitData.trait === BitTraitEnum.FAMOUS ||
                         traitData.trait === BitTraitEnum.MANNERLESS ||
                         traitData.trait === BitTraitEnum.ANTAGONISTIC
-                    // return traitData.trait === 'Influential' ||
-                    //     traitData.trait === 'Famous' ||
-                    //     traitData.trait === 'Mannerless' ||
-                    //     traitData.trait === 'Antagonistic'
                 })
             ) {
-                console.log(`bit #${bit.bitId} has either influential/famous/mannerless/antagonistic: `, bitTraits);
-
                 const gatheringRateModifier: Modifier = {
                     origin: `Bit ID #${bit.bitId}'s Trait: ${
                         bitTraits.some(traitData => traitData.trait === BitTraitEnum.INFLUENTIAL) ? 'Influential' :
@@ -178,17 +172,6 @@ export const summonIsland = async (
                         bitTraits.some(traitData => traitData.trait === BitTraitEnum.MANNERLESS) ? 0.995 :
                         0.99
                     };
-                    // origin: `Bit ID #${bit.bitId}'s Trait: ${
-                    //     bitTraits.some(traitData => traitData.trait === 'Influential') ? 'Influential' :
-                    //     bitTraits.some(traitData => traitData.trait === 'Famous') ? 'Famous' :
-                    //     bitTraits.some(traitData => traitData.trait === 'Mannerless') ? 'Mannerless' :
-                    //     'Antagonistic'
-                    // }`,
-                    // value: bitTraits.some(traitData => traitData.trait === 'Influential') ? 1.01 :
-                    //     bitTraits.some(traitData => traitData.trait === 'Famous') ? 1.005 :
-                    //     bitTraits.some(traitData => traitData.trait === 'Mannerless') ? 0.995 :
-                    //     0.99
-                    // }
 
                 islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
             }
