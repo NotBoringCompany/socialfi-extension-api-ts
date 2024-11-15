@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { Pagination } from '../utils/retVal';
 
 export const reportDTO = z.object({
+    reportedBy: z.string().optional(),
     reportedOn: z.string(),
     categories: z.array(z.string()).min(1, 'At least one category is required'),
     reason: z.string().min(1, 'Reason is required'),
