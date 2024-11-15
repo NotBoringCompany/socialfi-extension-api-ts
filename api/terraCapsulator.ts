@@ -154,26 +154,41 @@ export const summonIsland = async (
             // check if the `trait` within each bitTraits instance contain the following traits
             if (
                 bitTraits.some(traitData => {
-                    return traitData.trait === BitTraitEnum.INFLUENTIAL ||
-                        traitData.trait === BitTraitEnum.FAMOUS ||
-                        traitData.trait === BitTraitEnum.MANNERLESS ||
-                        traitData.trait === BitTraitEnum.ANTAGONISTIC
+                    // return traitData.trait === BitTraitEnum.INFLUENTIAL ||
+                    //     traitData.trait === BitTraitEnum.FAMOUS ||
+                    //     traitData.trait === BitTraitEnum.MANNERLESS ||
+                    //     traitData.trait === BitTraitEnum.ANTAGONISTIC
+                    return traitData.trait === 'Influential' ||
+                        traitData.trait === 'Famous' ||
+                        traitData.trait === 'Mannerless' ||
+                        traitData.trait === 'Antagonistic'
                 })
             ) {
                 console.log(`bit #${bit.bitId} has either influential/famous/mannerless/antagonistic: `, bitTraits);
 
                 const gatheringRateModifier: Modifier = {
+                    // origin: `Bit ID #${bit.bitId}'s Trait: ${
+                    //     bitTraits.some(traitData => traitData.trait === BitTraitEnum.INFLUENTIAL) ? 'Influential' :
+                    //     bitTraits.some(traitData => traitData.trait === BitTraitEnum.FAMOUS) ? 'Famous' :
+                    //     bitTraits.some(traitData => traitData.trait === BitTraitEnum.MANNERLESS) ? 'Mannerless' :
+                    //     'Antagonistic'
+                    // }`,
+                    // value: bitTraits.some(traitData => traitData.trait === BitTraitEnum.INFLUENTIAL) ? 1.01 :
+                    //     bitTraits.some(traitData => traitData.trait === BitTraitEnum.FAMOUS) ? 1.005 :
+                    //     bitTraits.some(traitData => traitData.trait === BitTraitEnum.MANNERLESS) ? 0.995 :
+                    //     0.99
+                    // };
                     origin: `Bit ID #${bit.bitId}'s Trait: ${
-                        bitTraits.some(traitData => traitData.trait === BitTraitEnum.INFLUENTIAL) ? 'Influential' :
-                        bitTraits.some(traitData => traitData.trait === BitTraitEnum.FAMOUS) ? 'Famous' :
-                        bitTraits.some(traitData => traitData.trait === BitTraitEnum.MANNERLESS) ? 'Mannerless' :
+                        bitTraits.some(traitData => traitData.trait === 'Influential') ? 'Influential' :
+                        bitTraits.some(traitData => traitData.trait === 'Famous') ? 'Famous' :
+                        bitTraits.some(traitData => traitData.trait === 'Mannerless') ? 'Mannerless' :
                         'Antagonistic'
                     }`,
-                    value: bitTraits.some(traitData => traitData.trait === BitTraitEnum.INFLUENTIAL) ? 1.01 :
-                        bitTraits.some(traitData => traitData.trait === BitTraitEnum.FAMOUS) ? 1.005 :
-                        bitTraits.some(traitData => traitData.trait === BitTraitEnum.MANNERLESS) ? 0.995 :
+                    value: bitTraits.some(traitData => traitData.trait === 'Influential') ? 1.01 :
+                        bitTraits.some(traitData => traitData.trait === 'Famous') ? 1.005 :
+                        bitTraits.some(traitData => traitData.trait === 'Mannerless') ? 0.995 :
                         0.99
-                };
+                    }
 
                 islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
             }
