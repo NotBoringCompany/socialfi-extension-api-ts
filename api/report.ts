@@ -112,8 +112,6 @@ export const deleteReport = async (reportId: string): Promise<ReturnValue> => {
  */
 export const submitReport = async (data: ReportDTO): Promise<ReturnValue> => {
     try {
-        console.log('(submitReport), reportDTO: ', JSON.stringify(data));
-
         const reportedBy = await UserModel.findOne({ twitterId: data.reportedBy });
         if (!reportedBy) {
             return {
@@ -130,7 +128,7 @@ export const submitReport = async (data: ReportDTO): Promise<ReturnValue> => {
             };
         }
 
-        const report = await ReportModel.create({
+        const reportPayload: Report = {
             _id: generateObjectId(),
             reportedBy: reportedBy._id,
             reportedOn: reportedOn._id,
@@ -138,7 +136,7 @@ export const submitReport = async (data: ReportDTO): Promise<ReturnValue> => {
             reason: data.reason,
             createdTimestamp: dayjs().unix(),
             status: ReportStatus.PENDING,
-        });
+        };
 
         // If data contain chatId data, add the data into ReportModel
         if (data.chatId) {
@@ -150,8 +148,11 @@ export const submitReport = async (data: ReportDTO): Promise<ReturnValue> => {
                 }
             }
 
-            report.chatId = data.chatId;
+            reportPayload.chatId = data.chatId;
         }
+
+        // Create the report with the complete payload
+        const report = await ReportModel.create(reportPayload);
 
         if (!report) {
             return {
