@@ -6,6 +6,7 @@ export const reportDTO = z.object({
     reportedOn: z.string(),
     categories: z.array(z.string()).min(1, 'At least one category is required'),
     reason: z.string().min(1, 'Reason is required'),
+    chatId: z.string().optional(),
 });
 
 export interface ReportDTO {
@@ -13,6 +14,7 @@ export interface ReportDTO {
     reportedOn?: string;
     categories?: string[];
     reason?: string;
+    chatId?: string;
 }
 
 export const reportQueryDTO = z.object({

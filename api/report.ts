@@ -138,6 +138,11 @@ export const submitReport = async (data: ReportDTO): Promise<ReturnValue> => {
             status: ReportStatus.PENDING,
         });
 
+        // If data contain chatId data, add the data into ReportModel
+        if (data.chatId) {
+            report.chatId = data.chatId;
+        }
+
         if (!report) {
             return {
                 status: Status.ERROR,

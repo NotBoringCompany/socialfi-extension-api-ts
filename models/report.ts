@@ -14,6 +14,8 @@ export interface Report {
     categories: string[];
     /** the reason why the user get reported */
     reason: string;
+    /** the reported chat _id data (Optional) */
+    chatId?: string;
     status: ReportStatus;
     createdTimestamp: number;
 }

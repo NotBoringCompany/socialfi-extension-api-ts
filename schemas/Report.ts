@@ -14,6 +14,7 @@ export const ReportSchema = new mongoose.Schema<Report & Document>({
     reportedOn: { type: String, ref: 'Users', required: true, index: true },
     categories: { type: [String], required: true },
     reason: { type: String, required: true },
+    chatId: { type: String, required: false },
     status: { type: String, required: true },
     createdTimestamp: { type: Number, default: () => Date.now() },
 });
