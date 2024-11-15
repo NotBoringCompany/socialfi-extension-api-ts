@@ -160,6 +160,8 @@ export const summonIsland = async (
                         traitData.trait === BitTraitEnum.ANTAGONISTIC
                 })
             ) {
+                console.log(`bit #${bit.bitId} has either influential/famous/mannerless/antagonistic: `, bitTraits);
+
                 const gatheringRateModifier: Modifier = {
                     origin: `Bit ID #${bit.bitId}'s Trait: ${
                         bitTraits.some(traitData => traitData.trait === BitTraitEnum.INFLUENTIAL) ? 'Influential' :
