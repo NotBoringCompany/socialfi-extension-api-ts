@@ -792,7 +792,7 @@ export const unplaceBit = async (twitterId: string, bitId: number): Promise<Retu
                 console.log(`unplaceBit ID ${bit.bitId}'s trait is ${trait}`);
 
                 // find the index of the modifier in the island's `gatheringRateModifiers`
-                const gatheringRateModifierIndex = (island.islandStatsModifiers?.gatheringRateModifiers as Modifier[]).findIndex(modifier => modifier.origin.includes(`Bit ID #${bit.bitId}`));
+                const gatheringRateModifierIndex = (island.islandStatsModifiers?.gatheringRateModifiers as Modifier[]).findIndex(modifier => modifier?.origin?.includes(`Bit ID #${bit.bitId}`));
 
                 console.log('gathering rate modifier index: ', gatheringRateModifierIndex);
 
@@ -809,7 +809,7 @@ export const unplaceBit = async (twitterId: string, bitId: number): Promise<Retu
             ) {
                 for (const otherBit of otherBits) {
                     // check the index of the modifier in the bit's `gatheringRateModifiers`
-                    const gatheringRateModifierIndex = (otherBit.bitStatsModifiers?.gatheringRateModifiers as Modifier[]).findIndex(modifier => modifier.origin.includes(`Bit ID #${bit.bitId}`));
+                    const gatheringRateModifierIndex = (otherBit.bitStatsModifiers?.gatheringRateModifiers as Modifier[]).findIndex(modifier => modifier?.origin?.includes(`Bit ID #${bit.bitId}`));
 
                     // if the modifier is found, remove it from the bit's `gatheringRateModifiers`
                     if (gatheringRateModifierIndex !== -1) {
