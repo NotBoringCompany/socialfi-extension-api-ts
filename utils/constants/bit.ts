@@ -134,7 +134,8 @@ export const populateBitTraitsData = async (): Promise<void> => {
 
         // populate the BitTrait enum with the trait's name
         bitTraits.forEach(trait => {
-            BitTraitEnum[trait.trait] = trait.trait;
+            // trait is in caps lock
+            BitTraitEnum[trait.trait.toUpperCase()] = trait.trait;
         });
 
         console.log(`(populateBitTraitsData) Successfully populated the BitTrait enum and Bit traits.`);

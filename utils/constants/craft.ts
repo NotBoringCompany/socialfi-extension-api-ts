@@ -198,27 +198,28 @@ export const populateCraftingRecipesAndAssetEnums = async (): Promise<void> => {
             // if the asset contains `Augmentation`, populate the AugmentationItem enum an dso on.
             const asset = recipe.craftedAssetData.asset;
 
+            // populate all keys in upper cases
             if (asset.includes('Potion')) {
                 // Populate PotionEnum
-                PotionEnum[asset] = asset;
+                PotionEnum[asset.toUpperCase()] = asset;
             } else if (asset.includes('Totem of Energy')) {
                 // Populate EnergyTotemEnum
-                EnergyTotemEnum[asset] = asset;
+                EnergyTotemEnum[asset.toUpperCase()] = asset;
             } else if (asset.includes('Transmutation')) {
                 // Populate TransmutationEnum
-                TransmutationEnum[asset] = asset;
+                TransmutationEnum[asset.toUpperCase()] = asset;
             } else if (asset.includes('Augmentation')) {
                 // Populate AugmentationEnum
-                AugmentationEnum[asset] = asset;
+                AugmentationEnum[asset.toUpperCase()] = asset;
             } else if (asset.includes('of Wonder')) {
                 // Populate WonderArtefactEnum
-                WonderArtefactEnum[asset] = asset;
+                WonderArtefactEnum[asset.toUpperCase()] = asset;
             } else if (asset.includes('Relic')) {
                 // Populate ContinuumRelicEnum
-                ContinuumRelicEnum[asset] = asset;
+                ContinuumRelicEnum[asset.toUpperCase()] = asset;
             } else if (asset.includes('Ingot')) {
                 // Populate IngotEnum
-                IngotEnum[asset] = asset;
+                IngotEnum[asset.toUpperCase()] = asset;
             }
         })
 
