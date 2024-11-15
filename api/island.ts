@@ -833,6 +833,10 @@ export const unplaceBit = async (twitterId: string, bitId: number): Promise<Retu
             return BitModel.updateOne({ bitId: op.bitId }, op.updateOperations);
         });
 
+        console.log(`(unplaceBit) bitUpdateOperations: ${JSON.stringify(bitUpdateOperations)}`);
+        console.log(`(unplaceBit) islandUpdateOperations: ${JSON.stringify(islandUpdateOperations)}`);
+        console.log(`(unplaceBit) userUpdateOperations: ${JSON.stringify(userUpdateOperations)}`);
+
         // execute the update operations
         await Promise.all([
             UserModel.updateOne({ twitterId }, {
