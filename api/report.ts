@@ -112,6 +112,8 @@ export const deleteReport = async (reportId: string): Promise<ReturnValue> => {
  */
 export const submitReport = async (data: ReportDTO): Promise<ReturnValue> => {
     try {
+        console.log('(submitReport), reportDTO: ', JSON.stringify(data));
+
         const reportedBy = await UserModel.findOne({ twitterId: data.reportedBy });
         if (!reportedBy) {
             return {
