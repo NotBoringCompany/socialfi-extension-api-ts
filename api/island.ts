@@ -861,10 +861,10 @@ export const unplaceBit = async (twitterId: string, bitId: number): Promise<Retu
         // if yes, do the updates.
         const { $pull, $inc, $set, $push } = await removePlacedBitModifiersFromConsumedSynthesizingItems(bit as Bit, islandId, user._id);
 
-        console.log(`(unplaceBit) $pull: ${JSON.stringify($pull)}`);
-        console.log(`(unplaceBit) $inc: ${JSON.stringify($inc)}`);
-        console.log(`(unplaceBit) $set: ${JSON.stringify($set)}`);
-        console.log(`(unplaceBit) $push: ${JSON.stringify($push)}`);
+        console.log(`(removePlacedBitModifiersFromConsumedSynthesizingItems - unplaceBit) $pull: ${JSON.stringify($pull)}`);
+        console.log(`(removePlacedBitModifiersFromConsumedSynthesizingItems - unplaceBit) $inc: ${JSON.stringify($inc)}`);
+        console.log(`(removePlacedBitModifiersFromConsumedSynthesizingItems - unplaceBit) $set: ${JSON.stringify($set)}`);
+        console.log(`(removePlacedBitModifiersFromConsumedSynthesizingItems - unplaceBit) $push: ${JSON.stringify($push)}`);
 
         // check, for each object, if there are any keys. if yes, execute the update operation.
         if (Object.keys($pull).length > 0 || Object.keys($push).length > 0) {
