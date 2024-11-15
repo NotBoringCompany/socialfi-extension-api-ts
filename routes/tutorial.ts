@@ -46,9 +46,6 @@ router.post('/complete_tutorial', async (req, res) => {
             mixpanel.track('Tutorial Completed', {
                 distinct_id: validateData?.twitterId,
             });
-
-            // increment the event counter in the wonderbits contract.
-            
         }
 
         return res.status(status).json({
@@ -81,8 +78,6 @@ router.post('/skip_tutorial', async (req, res) => {
             mixpanel.track('Tutorial Skipped', {
                 distinct_id: validateData?.twitterId,
             });
-
-            
         }
 
         return res.status(status).json({

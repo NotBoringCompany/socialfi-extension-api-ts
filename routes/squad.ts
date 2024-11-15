@@ -61,9 +61,6 @@ router.post('/accept_pending_squad_member', async (req, res) => {
                 '_type': 'Join',
                 '_data': data,
             });
-
-            // increment the event counter in the wonderbits contract.
-            
         }
 
         return res.status(status).json({
@@ -100,9 +97,6 @@ router.post('/rename_squad', async (req, res) => {
                 '_type': 'Rename Squad',
                 '_data': data,
             });
-
-            // increment the event counter in the wonderbits contract.
-            
         }
 
         return res.status(status).json({
@@ -140,9 +134,6 @@ router.post('/create_squad', async (req, res) => {
                 '_type': 'Create Squad',
                 '_data': data,
             });
-
-            // increment the event counter in the wonderbits contract.
-            
         }
 
         return res.status(status).json({
@@ -177,9 +168,6 @@ router.post('/leave_squad', async (req, res) => {
                 '_type': 'Leave',
                 '_data': data,
             });
-
-            // increment the event counter in the wonderbits contract.
-            
         }
 
         return res.status(status).json({
@@ -242,9 +230,6 @@ router.post('/delegate_leadership', async (req, res) => {
                 '_type': 'Delegate Leadership',
                 '_data': data,
             });
-
-            // increment the event counter in the wonderbits contract.
-            
         }
 
         return res.status(status).json({
@@ -281,9 +266,6 @@ router.post('/add_co_leader', async (req, res) => {
                 '_type': 'Add Co-Leader',
                 '_data': data,
             });
-
-            // increment the event counter in the wonderbits contract.
-            
         }
 
         return res.status(status).json({
@@ -320,9 +302,6 @@ router.post('/demote_co_leader', async (req, res) => {
                 '_type': 'Demote Co-Leader',
                 '_data': data,
             });
-
-            // increment the event counter in the wonderbits contract.
-            
         }
 
         return res.status(status).json({
@@ -360,9 +339,6 @@ router.post('/kick_member', async (req, res) => {
                 '_type': 'Kick',
                 '_data': data
             });
-
-            // increment the event counter in the wonderbits contract.
-            
         }
 
         return res.status(status).json({
@@ -389,9 +365,6 @@ router.get('/get_squad_data/:twitterId/:squadId', async (req, res) => {
                 '_data': data,
                 '_inSquad': status === Status.SUCCESS,
             });
-
-            // increment the event counter in the wonderbits contract.
-            
         }
 
         return res.status(status).json({

@@ -77,9 +77,6 @@ router.get('/callback', passport.authenticate('twitter', { failureRedirect: '/',
                     '_version': version,
                     '_data': data,
                 });
-
-                // increment the event counter in the wonderbits contract.
-                
             }
 
             // update user's login streak ingame data

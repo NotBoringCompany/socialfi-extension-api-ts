@@ -26,10 +26,7 @@ router.post('/universal_asset_upgrade', async (req, res) => {
                 distinct_id: validateData?.twitterId,
                 '_type': `Upgrade ${asset}`,
                 '_data': data
-            });
-
-            // increment the event counter in the wonderbits contract.
-            
+            });   
         }
 
         return res.status(status).json({

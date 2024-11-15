@@ -107,9 +107,6 @@ router.get('/callback', passport.authenticate('discord', { failureRedirect: '/',
                 distinct_id: validateData?.twitterId,
                 '_profile': profile,
             });
-
-            // increment the event counter in the wonderbits contract.
-            
         }
 
         return res.redirect(target.href);
@@ -139,9 +136,6 @@ router.post('/disconnect', async (req, res) => {
                 distinct_id: validateData?.twitterId,
                 '_data': data
             });
-
-            // increment the event counter in the wonderbits contract.
-            
         }
 
         return res.status(status).json({

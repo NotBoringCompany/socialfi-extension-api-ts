@@ -90,9 +90,6 @@ router.post('/evolve_raft', async (req, res) => {
                 '_type': 'Evolve Raft',
                 '_data': data,
             });
-
-            // increment the event counter in the wonderbits contract.
-            
         }
 
         return res.status(status).json({

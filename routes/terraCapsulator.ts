@@ -33,9 +33,6 @@ router.post('/consume', async (req, res) => {
                     '_type': type,
                     '_island': data?.island,
                 });
-    
-                // increment the event counter in the wonderbits contract.
-                
             }
 
             incrementProgressionByType(QuestRequirementType.SUMMON_ISLAND, validateData?.twitterId, 1, data.island.type);
