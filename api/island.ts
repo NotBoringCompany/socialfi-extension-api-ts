@@ -835,9 +835,26 @@ export const unplaceBit = async (twitterId: string, bitId: number): Promise<Retu
 
         // execute the update operations
         await Promise.all([
-            UserModel.updateOne({ twitterId }, userUpdateOperations),
-            IslandModel.updateOne({ islandId }, islandUpdateOperations),
+            UserModel.updateOne({ twitterId }, {
+                $set: userUpdateOperations.$set,
+                $inc: userUpdateOperations.$inc,
+            }),
+            IslandModel.updateOne({ islandId }, {
+                $set: islandUpdateOperations.$set,
+                $inc: islandUpdateOperations.$inc
+            }),
             ...bitUpdatePromises
+        ]);
+
+        await Promise.all([
+            UserModel.updateOne({ twitterId }, {
+                $push: userUpdateOperations.$push,
+                $pull: userUpdateOperations.$pull
+            }),
+            IslandModel.updateOne({ islandId }, {
+                $push: islandUpdateOperations.$push,
+                $pull: islandUpdateOperations.$pull
+            })
         ]);
 
         // check if there are synthesizing items (or other items) that impact the bit's modifiers.
