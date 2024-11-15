@@ -2,7 +2,7 @@ import { AssetType } from './asset';
 import { BitRarity } from './bit';
 import { FoodType } from './food';
 import { IslandType } from './island';
-import { ContinuumRelicItem, EnergyTotemItem, IngotItem, PotionItem, AugmentationItem, TransmutationItem } from './item';
+import { ContinuumRelicItem, EnergyTotemItem, IngotItem, PotionItem, AugmentationItem, TransmutationItem, SynthesizingItem, SmeltingItem } from './item';
 import { BarrenResource, ExtendedResource, FruitResource, LiquidResource, OreResource, Resource, ResourceRarity, ResourceType, SimplifiedResource } from "./resource";
 
 /**
@@ -575,7 +575,7 @@ export enum CraftingQueueStatus {
 /**
  * Represents a craftable asset.
  */
-export type CraftableAsset = AugmentationItem | TransmutationItem | EnergyTotemItem | ContinuumRelicItem | PotionItem | IngotItem;
+export type CraftableAsset = SynthesizingItem | SmeltingItem;
 
 /**
  * A list of different Synthesizing item groups.
