@@ -76,6 +76,7 @@ import { populateBitCosmeticEnum } from './utils/constants/cosmetic';
 import { initializeSocket } from './configs/socket';
 import { CRAFTING_RECIPES, populateCraftingRecipesAndAssetEnums } from './utils/constants/craft';
 import { populateBitTraitsData } from './utils/constants/bit';
+import { BitTraitEnum } from './models/bit';
 
 app.use('/auth/twitter', checkMaintenance, twitterAuth);
 app.use('/auth/discord', checkMaintenance, discordAuth);
@@ -131,6 +132,10 @@ httpServer.listen(port, async () => {
 
     // populates `BIT_TRAITS` and the `BitTrait` enum with the values from the database
     await populateBitTraitsData();
+
+    const bitTraitKeys = Object.keys(BitTraitEnum);
+
+    console.log(`BitTraitEnum keys: ${bitTraitKeys}`);
 
     // await schedulers();
 });
