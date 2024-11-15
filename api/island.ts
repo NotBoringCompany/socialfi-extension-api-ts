@@ -746,16 +746,19 @@ export const unplaceBit = async (twitterId: string, bitId: number): Promise<Retu
 
         // check if island `gatheringRateModifiers` containing `Rarity Deviation` origin && Reductions is greater than 0
         const gatheringRateModifierIndex = (island.islandStatsModifiers?.gatheringRateModifiers as Modifier[]).findIndex(modifier => modifier.origin === 'Rarity Deviation');
-        // check if this is the last placed bit in the island
-        if (island.placedBitIds.length === 1) {
-            // restore the value back to 1(100%) since we are unplacing the last bit placed in island
-            islandUpdateOperations.$set[`islandStatsModifiers.gatheringRateModifiers.${gatheringRateModifierIndex}.value`] = 1;
-        } else if (gatheringRateModifierIndex !== 1 && rarityDeviationReductions.gatheringRateReduction > 0) {
-            const currentValue = island.islandStatsModifiers?.gatheringRateModifiers[gatheringRateModifierIndex].value;
-            const newValue = currentValue + (rarityDeviationReductions.gatheringRateReduction / 100);
+        // Set the Operations only if `Rarity Deviation` gatheringRateModifierIndex is found
+        if (gatheringRateModifierIndex >= 0) {
+            // check if this is the last placed bit in the island
+            if (island.placedBitIds.length === 1) {
+                // restore the value back to 1(100%) since we are unplacing the last bit placed in island
+                islandUpdateOperations.$set[`islandStatsModifiers.gatheringRateModifiers.${gatheringRateModifierIndex}.value`] = 1;
+            } else if (gatheringRateModifierIndex !== 1 && rarityDeviationReductions.gatheringRateReduction > 0) {
+                const currentValue = island.islandStatsModifiers?.gatheringRateModifiers[gatheringRateModifierIndex].value ?? 1;
+                const newValue = currentValue + (rarityDeviationReductions.gatheringRateReduction / 100);
 
-            // added the value by the reduction amount since we are unplacing the bit from the isle
-            islandUpdateOperations.$set[`islandStatsModifiers.gatheringRateModifiers.${gatheringRateModifierIndex}.value`] = newValue;
+                // added the value by the reduction amount since we are unplacing the bit from the isle
+                islandUpdateOperations.$set[`islandStatsModifiers.gatheringRateModifiers.${gatheringRateModifierIndex}.value`] = newValue;
+            }
         }
 
         // remove the bit ID from the island's `placedBitIds`
