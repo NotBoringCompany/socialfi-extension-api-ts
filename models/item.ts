@@ -34,12 +34,8 @@ WonderspinTicketType |
 BitOrbType | 
 TerraCapsulatorType | 
 WonderArtefactItem | 
-AugmentationItem | 
-TransmutationItem | 
-EnergyTotemItem | 
-ContinuumRelicItem | 
-PotionItem |
-IngotItem;
+SynthesizingItem |
+SmeltingItem;
 
 /**
  * Represents all ticket types for the Wonderspin.
@@ -169,6 +165,11 @@ export type IngotItem = Extract<keyof typeof IngotEnum, string>;
  * Represents items that are made via the Synthesizing crafting line.
  */
 export type SynthesizingItem = AugmentationItem | TransmutationItem | EnergyTotemItem | ContinuumRelicItem | PotionItem;
+
+/**
+ * Represents items that are made via the Smelting crafting line.
+ */
+export type SmeltingItem = IngotItem;
 
 /**
  * Represents the data for a consumed synthesizing item.
