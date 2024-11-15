@@ -1,5 +1,5 @@
 import { Report, ReportStatus } from '../models/report';
-import { ReportModel, UserModel } from '../utils/constants/db';
+import { ChatModel, ReportModel, UserModel } from '../utils/constants/db';
 import { generateObjectId } from '../utils/crypto';
 import { dayjs } from '../utils/dayjs';
 import { Metadata, PaginatedResult, Pagination, ReturnValue, Status } from '../utils/retVal';
@@ -140,6 +140,14 @@ export const submitReport = async (data: ReportDTO): Promise<ReturnValue> => {
 
         // If data contain chatId data, add the data into ReportModel
         if (data.chatId) {
+            const chat = await ChatModel.findOne({ _id: data.chatId });
+            if (!chat) {
+                return {
+                    status: Status.ERROR,
+                    message: '(submitReport) Reporter User chat log not found.',
+                }
+            }
+
             report.chatId = data.chatId;
         }
 
