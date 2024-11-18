@@ -357,7 +357,7 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                             tokenId: null,
                             chain: null,
                             contractAddress: null,
-                            txHash: null,
+                            mintHash: null,
                         },
                         purchaseDate: Math.floor(Date.now() / 1000),
                         obtainMethod: ObtainMethod.QUEST,

@@ -72,7 +72,7 @@ export interface BitBlockchainData {
     /** the contract address of the bit (if minted) */
     contractAddress: string | null;
     /** the transaction hash of the minting transaction (if minted) */
-    txHash: string | null;
+    mintHash: string | null;
 }
 
 /**

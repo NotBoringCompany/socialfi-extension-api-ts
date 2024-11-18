@@ -229,7 +229,7 @@ export const completeTutorial = async (twitterId: string, tutorialId: number): P
                             tokenId: null,
                             chain: null,
                             contractAddress: null,
-                            txHash: null,
+                            mintHash: null,
                         },
                         purchaseDate: Math.floor(Date.now() / 1000),
                         obtainMethod: ObtainMethod.TUTORIAL,

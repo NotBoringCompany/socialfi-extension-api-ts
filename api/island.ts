@@ -27,6 +27,76 @@ import { SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE } from '../utils/constants/asset
 import { CRAFTING_RECIPES } from '../utils/constants/craft';
 
 /**
+ * Sets the new owner data and removes the current `owner` field for all islands.
+ */
+export const updateOwnerData = async (): Promise<void> => {
+    try {
+        const islands = await IslandModel.find({}).lean();
+
+        const islandUpdateOperations: Array<{
+            islandId: number,
+            updateOperations: {
+                $unset: {},
+                $set: {}
+            }
+        }> = [];
+
+        for (const island of islands) {
+            islandUpdateOperations.push({
+                islandId: island.islandId,
+                updateOperations: {
+                    $unset: {
+                        owner: 1
+                    },
+                    $set: {
+                        ownerData: {
+                            currentOwnerId: island.owner,
+                            originalOwnerId: island.owner,
+                            currentOwnerAddress: null,
+                            originalOwnerAddress: null
+                        },
+                    }
+                }
+            });
+        }
+
+        const islandUpdatePromises = islandUpdateOperations.map(async op => {
+            return IslandModel.updateOne({ islandId: op.islandId }, op.updateOperations);
+        });
+
+        await Promise.all(islandUpdatePromises);
+
+        console.log(`(updateOwnerData) Updated the 'ownerData' field and removed the 'owner' field from all islands.`);
+    } catch (err: any) {
+        console.error('Error in updateOwnerData:', err.message);
+    }
+}
+
+/**
+ * Adds the new `blockchainData` to all existing islands.
+ */
+export const addBlockchainData = async (): Promise<void> => {
+    try {
+        await IslandModel.updateMany({}, {
+            $set: {
+                blockchainData: {
+                    mintable: false,
+                    minted: false,
+                    tokenId: null,
+                    chain: null,
+                    contractAddress: null,
+                    mintHash: null
+                }
+            }
+        });
+
+        console.log(`(addBlockchainData) Added the 'blockchainData' field to all islands.`);
+    } catch (err: any) {
+        console.error('Error in addOwnerAndBlockchainData:', err.message);
+    }
+}
+
+/**
  * Deletes the `islandEarningStats` field from all islands as well as earning modifiers.
  */
 export const deleteEarningStatsFromAllIslands = async (): Promise<void> => {

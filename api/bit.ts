@@ -36,7 +36,7 @@ export const addBlockchainData = async (): Promise<void> => {
                 tokenId: null,
                 chain: null,
                 contractAddress: null,
-                txHash: null
+                mintHash: null
             } }
         })
     } catch (err: any) {
