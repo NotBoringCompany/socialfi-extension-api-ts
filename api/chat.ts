@@ -160,14 +160,15 @@ export const sendMessage = async (senderId: string, chatroomId: string, message:
         await session.commitTransaction();
         session.endSession();
 
-        const newMessage = await ChatModel.findById(chats[0]._id).populate('sender');
+        const newChat = await ChatModel.findById(chats[0]._id).populate('sender');
+        const newChatroom = await ChatModel.findById(chatroom._id).populate('participants.user').populate('lastSender');
 
         return {
             status: Status.SUCCESS,
             message: `(sendMessage) Message sent.`,
             data: {
-                chat: newMessage,
-                chatroom,
+                chat: newChat,
+                chatroom: newChatroom,
             },
         };
     } catch (err: any) {
@@ -255,15 +256,15 @@ export const sendDirectMessage = async (
             },
         });
 
-        await chatroom.populate('participants.user');
-        await chat.populate('sender');
+        const newChat = await ChatModel.findById(chat._id).populate('sender');
+        const newChatroom = await ChatModel.findById(chatroom._id).populate('participants.user').populate('lastSender');
 
         return {
             status: Status.SUCCESS,
             message: `(sendDirectMessage) Direct message sent.`,
             data: {
-                chat,
-                chatroom,
+                chat: newChat,
+                chatroom: newChatroom,
                 isNew,
             },
         };
