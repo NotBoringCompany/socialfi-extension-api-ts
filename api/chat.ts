@@ -399,25 +399,30 @@ export const leaveChatroom = async (twitterId: string, chatroomId: string): Prom
  * Bulk creates chatrooms for all registered squads.
  */
 export const bulkCreateFromSquad = async (): Promise<ReturnValue> => {
-    const session = await mongoose.startSession();
+    const session = await TEST_CONNECTION.startSession();
     session.startTransaction();
 
     try {
         const squads = await SquadModel.find().lean();
 
         for (const squad of squads) {
-            await ChatroomModel.create({
-                _id: generateObjectId(),
-                name: squad.name,
-                isGroup: true,
-                type: 'private',
-                participants: squad.members.map((member) => ({
-                    _id: generateObjectId(),
-                    user: member.userId,
-                    joinedTimestamp: member.joinedTimestamp,
-                })),
-                createdTimestamp: squad.formedTimestamp,
-            });
+            await ChatroomModel.create(
+                [
+                    {
+                        _id: generateObjectId(),
+                        name: squad.name,
+                        isGroup: true,
+                        type: ChatroomType.SQUAD,
+                        participants: squad.members.map((member) => ({
+                            _id: generateObjectId(),
+                            user: member.userId,
+                            joinedTimestamp: member.joinedTimestamp,
+                        })),
+                        createdTimestamp: squad.formedTimestamp,
+                    },
+                ],
+                { session }
+            );
         }
 
         await session.commitTransaction();
@@ -428,6 +433,8 @@ export const bulkCreateFromSquad = async (): Promise<ReturnValue> => {
             message: `(bulkCreateFromSquad) Operations executed successfully.`,
         };
     } catch (err: any) {
+        console.log(err);
+        
         await session.abortTransaction();
         session.endSession();
 

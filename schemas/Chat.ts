@@ -18,7 +18,7 @@ export const ChatroomSchema = new mongoose.Schema<Chatroom & mongoose.Document>(
     },
     name: { type: String, required: true },
     isGroup: { type: Boolean, required: true },
-    type: { type: String, enum: ['public', 'private'], required: true },
+    type: { type: String, enum: ['public', 'private', 'squad'], required: true },
     participants: [ChatroomParticipantSchema],
     lastSender: { type: String, ref: 'Users', default: null },
     lastMessage: { type: String, default: null },

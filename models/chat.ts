@@ -22,6 +22,7 @@ export interface Chat {
 export enum ChatroomType {
     PUBLIC = 'public',
     PRIVATE = 'private',
+    SQUAD = 'squad',
 }
 
 /**
