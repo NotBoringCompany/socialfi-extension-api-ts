@@ -8,8 +8,6 @@ import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { UserWallet } from '../models/user';
 
-import { EVOLVE_RAFT_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
-
 
 const router = express.Router();
 

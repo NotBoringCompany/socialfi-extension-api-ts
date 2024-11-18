@@ -5,7 +5,6 @@ import { claimWeeklyMVPRewards, fetchWeeklyMVPRankingData, getClaimableWeeklyMVP
 import { authMiddleware } from '../middlewares/auth';
 
 import { mixpanel, allowMixpanel } from '../utils/mixpanel';
-import { CLAIM_WEEKLY_MVP_REWARDS_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 
 const router = express.Router();
 

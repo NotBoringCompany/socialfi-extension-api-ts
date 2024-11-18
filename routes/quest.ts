@@ -6,7 +6,6 @@ import { QuestCategory } from '../models/quest';
 import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 import { authMiddleware } from '../middlewares/auth';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
-import { COMPLETE_QUEST_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { UserWallet } from '../models/user';
 
 

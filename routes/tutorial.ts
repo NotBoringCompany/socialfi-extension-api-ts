@@ -2,7 +2,6 @@ import express from 'express';
 import { completeTutorial, getTutorials, skipTutorial } from '../api/tutorial';
 import { Status } from '../utils/retVal';
 import { validateRequestAuth } from '../utils/auth';
-import { COMPLETE_QUEST_MIXPANEL_EVENT_HASH, TUTORIAL_COMPLETED_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { UserWallet } from '../models/user';
 

@@ -5,7 +5,6 @@ import { Status } from '../../utils/retVal';
 import passport from '../../configs/passport';
 import { handleTwitterLogin, updateLoginStreak } from '../../api/user';
 import { allowMixpanel, mixpanel } from '../../utils/mixpanel';
-import { TWITTER_LOGIN_CALLBACK_MIXPANEL_EVENT_HASH } from '../../utils/constants/mixpanelEvents';
 import { WONDERBITS_CONTRACT } from '../../utils/constants/web3';
 import { UserWallet } from '../../models/user';
 

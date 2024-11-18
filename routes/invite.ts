@@ -4,7 +4,6 @@ import { Status } from '../utils/retVal';
 import { claimReferralRewards, claimSuccessfulIndirectReferralRewards, fetchSuccessfulIndirectReferralRewards, getReferredUsersKOSCount } from '../api/invite';
 
 import { allowMixpanel, mixpanel } from '../utils/mixpanel';
-import { CLAIM_INDIRECT_REFERRAL_REWARDS_MIXPANEL_EVENT_HASH, CLAIM_REFERRAL_REWARDS_MIXPANEL_EVENT_HASH } from '../utils/constants/mixpanelEvents';
 
 const router = express.Router();
 
