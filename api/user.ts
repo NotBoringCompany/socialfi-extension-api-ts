@@ -2575,7 +2575,7 @@ export const consumeEnergyPotion = async (
         // If tappingProgress is passed, update islands' current tapping progress
         if (tappingProgress) {
             const islandIds = tappingProgress.map((progress) => progress.islandId);
-            const islands = await IslandModel.find({ islandId: { $in: islandIds }, owner: user._id });
+            const islands = await IslandModel.find({ islandId: { $in: islandIds }, 'ownerData.currentOwnerId': user._id });
             console.log('(consumeEnergyPotion) islands: ', JSON.stringify(islands));
 
             // Calculate the total energy required for tapping progress
