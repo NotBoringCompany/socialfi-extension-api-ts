@@ -200,7 +200,6 @@ export const summonBit = async (
             },
             rarity,
             gender,
-            premium: true,
             owner,
             purchaseDate: Math.floor(Date.now() / 1000),
             obtainMethod: ObtainMethod.BIT_ORB_I,
