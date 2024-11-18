@@ -2029,29 +2029,10 @@ export const claimResources = async (
     // this essentially allows the user to choose which resources to claim
     chosenResources?: SimplifiedResource[]
 ): Promise<ReturnValue> => {
-    const lockKey = `dropResourceOrClaimResources:${islandId}`;
-
-    console.log(`(claimResources) lockKey: `, lockKey);
-
-    // lock expiration time is 10 seconds
-    const lockTTL = 10000;
-
-    // acquire the lock
-    const lock = await redis.set(lockKey, 'locked', 'PX', lockTTL);
-
-    if (!lock) {
-        console.error(`(claimResources) Resources are either being claimed or a resource is being dropped. Please try again soon.`);
-        return {
-            status: Status.ERROR,
-            message: `(claimResources) Resources are either being claimed or a resource is being dropped. Please try again soon.`
-        }
-    }
-
     try {
         const job = await ISLAND_QUEUE.add(
             'dropResourceOrClaimResources', 
-            { queueType: 'claimResources', twitterId, islandId, claimType, chosenResources },
-            { delay: 3000 }
+            { queueType: 'claimResources', twitterId, islandId, claimType, chosenResources }
         );
 
         // wait until the job finishes processing
@@ -2076,12 +2057,7 @@ export const claimResources = async (
             status: Status.ERROR,
             message: `(claimResources) Error: ${err.message}`
         }
-    } 
-    // finally {
-    //     console.log(`(claimResources) releasing lock.`);
-    //     // release the lock
-    //     await redis.del(lockKey);
-    // }
+    }
 }
 
 /**
@@ -2129,29 +2105,10 @@ export const updateDailyBonusResourcesGathered = async (): Promise<void> => {
  * Should only be called when gathering progress has reached >= 100% (and then reset back to 0%). Scheduler/parent function will check this.
  */
 export const dropResource = async (islandId: number): Promise<ReturnValue> => {
-    const lockKey = `dropResourceOrClaimResources:${islandId}`;
-
-    console.log(`(dropResource) lockKey: `, lockKey);
-
-    // lock expiration time is 10 seconds
-    const lockTTL = 10000;
-
-    // acquire the lock
-    const lock = await redis.set(lockKey, 'locked', 'PX', lockTTL);
-
-    if (!lock) {
-        console.error(`(dropResource) Resources are either being claimed or a resource is being dropped. Please try again soon.`);
-        return {
-            status: Status.ERROR,
-            message: `(dropResource) Resources are either being claimed or a resource is being dropped. Please try again soon.`
-        }
-    }
-
     try {
         const job = await ISLAND_QUEUE.add(
             'dropResourceOrClaimResources', 
-            { queueType: 'dropResource', islandId },
-            { delay: 3000 }
+            { queueType: 'dropResource', islandId }
         );
 
         // wait until the job finishes processing
@@ -2176,12 +2133,7 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
             status: Status.ERROR,
             message: `(dropResource) Error: ${err.message}`
         };
-    } 
-    // finally {
-    //     console.log(`(claimResources) releasing lock.`);
-    //     // release the lock
-    //     await redis.del(lockKey);
-    // }
+    }
 }
 
 /**
