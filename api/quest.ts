@@ -351,6 +351,13 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                             currentOwnerAddress: null,
                             originalOwnerAddress: null,
                         },
+                        blockchainData: {
+                            mintable: false,
+                            minted: false,
+                            tokenId: null,
+                            contractAddress: null,
+                            txHash: null,
+                        },
                         purchaseDate: Math.floor(Date.now() / 1000),
                         obtainMethod: ObtainMethod.QUEST,
                         placedIslandId: 0,

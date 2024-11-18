@@ -21,6 +21,8 @@ export interface Bit {
     gender: BitGender;
     /** the owner data of this bit (current owner, original owner, etc.) */
     ownerData: BitOwnerData;
+    /** the blockchain data of this bit (if it's mintable, if it's already minted, the contract address, etc.) */
+    blockchainData: BitBlockchainData;
     /** purchase date of this bit (currently limited to when it was obtained from the bit orb) */
     purchaseDate: number;
     /** method of obtaining the bit */
@@ -53,6 +55,22 @@ export interface BitOwnerData {
     currentOwnerAddress: string | null;
     /** the address of the original owner which held this asset (if minted as an NFT; null otherwise) */
     originalOwnerAddress: string | null;
+}
+
+/**
+ * Represents the blockchain data of a Bit.
+ */
+export interface BitBlockchainData {
+    /** if the bit is mintable, this will be true */
+    mintable: boolean;
+    /** if the bit is already minted, this will be true */
+    minted: boolean;
+    /** the token id of the bit (if minted) */
+    tokenId: number | null;
+    /** the contract address of the bit (if minted) */
+    contractAddress: string | null;
+    /** the transaction hash of the minting transaction (if minted) */
+    txHash: string | null;
 }
 
 /**

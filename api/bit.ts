@@ -24,6 +24,25 @@ import { BitModel, BitTraitDataModel, IslandModel, UserModel } from '../utils/co
 import { ObtainMethod } from '../models/obtainMethod';
 import { redis } from '../utils/constants/redis';
 
+/**
+ * Adds the new `blockchainData` field with default values to all bits in the database.
+ */
+export const addBlockchainData = async (): Promise<void> => {
+    try {
+        await BitModel.updateMany({}, {
+            $set: { blockchainData: {
+                mintable: false,
+                minted: false,
+                tokenId: null,
+                contractAddress: null,
+                txHash: null
+            } }
+        })
+    } catch (err: any) {
+        console.log(`(addBlockchainData) Error: ${err.message}`);
+    }
+}
+
 // /**
 //  * Updates the existing `owner` data of all bits to include the new `ownerData`.
 //  */

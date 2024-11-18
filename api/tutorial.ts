@@ -223,6 +223,13 @@ export const completeTutorial = async (twitterId: string, tutorialId: number): P
                             currentOwnerAddress: null,
                             originalOwnerAddress: null,
                         },
+                        blockchainData: {
+                            mintable: false,
+                            minted: false,
+                            tokenId: null,
+                            contractAddress: null,
+                            txHash: null,
+                        },
                         purchaseDate: Math.floor(Date.now() / 1000),
                         obtainMethod: ObtainMethod.TUTORIAL,
                         placedIslandId: 0,
