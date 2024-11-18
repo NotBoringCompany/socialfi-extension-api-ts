@@ -210,6 +210,7 @@ export const summonBit = async (
                 mintable: false,
                 minted: false,
                 tokenId: null,
+                chain: null,
                 contractAddress: null,
                 txHash: null,
             },

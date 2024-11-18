@@ -16,6 +16,10 @@ export interface Island {
     type: IslandType;
     /** owner of this island; equates to the user's object ID in the database */
     owner: string;
+    // /** the owner data of this island (current owner, original owner, etc.) */
+    // ownerData: IslandOwnerData;
+    // /** the blockchain data of this bit (if it's mintable, if it's already minted, the contract address, etc.) */
+    // blockchainData: IslandBlockchainData;
     /** purchase date of this island (currently limited to when it was obtained from the terra cap) */
     purchaseDate: number;
     /** method of obtaining the island */
@@ -38,6 +42,36 @@ export interface Island {
     /** island tapping related data */
     islandTappingData: IslandTappingData;
 }
+
+// /**
+//  * Represents the data of this island's current and original owner and other owner-related data.
+//  */
+// export interface IslandOwnerData {
+//     /** the database ID of the current owner */
+//     currentOwnerId: string;
+//     /** the database ID of the original owner */
+//     originalOwnerId: string;
+//     /** the address of the current owner which holds this asset (if minted as an NFT; null otherwise) */
+//     currentOwnerAddress: string | null;
+//     /** the address of the original owner which held this asset (if minted as an NFT; null otherwise) */
+//     originalOwnerAddress: string | null;
+// }
+
+// /**
+//  * Represents the blockchain data of this island.
+//  */
+// export interface IslandBlockchainData {
+//     /** if the island is mintable as an NFT */
+//     mintable: boolean;
+//     /** if the island is already minted as an NFT */
+//     minted: boolean;
+//     /** the token ID of the island (if minted as an NFT; null otherwise) */
+//     tokenId: string | null;
+//     /** the contract address of the island (if minted as an NFT; null otherwise) */
+//     contractAddress: string | null;
+//     /** the transaction hash of the minting transaction (if minted as an NFT; null otherwise) */
+//     txHash: string | null;
+// }
 
 /**
  * Represents the type of island.

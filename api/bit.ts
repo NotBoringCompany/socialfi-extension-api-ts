@@ -34,6 +34,7 @@ export const addBlockchainData = async (): Promise<void> => {
                 mintable: false,
                 minted: false,
                 tokenId: null,
+                chain: null,
                 contractAddress: null,
                 txHash: null
             } }

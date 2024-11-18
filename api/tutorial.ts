@@ -227,6 +227,7 @@ export const completeTutorial = async (twitterId: string, tutorialId: number): P
                             mintable: false,
                             minted: false,
                             tokenId: null,
+                            chain: null,
                             contractAddress: null,
                             txHash: null,
                         },

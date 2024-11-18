@@ -67,6 +67,8 @@ export interface BitBlockchainData {
     minted: boolean;
     /** the token id of the bit (if minted) */
     tokenId: number | null;
+    /** the chain where this bit resides in (if minted) */
+    chain: string | null;
     /** the contract address of the bit (if minted) */
     contractAddress: string | null;
     /** the transaction hash of the minting transaction (if minted) */

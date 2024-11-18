@@ -355,6 +355,7 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                             mintable: false,
                             minted: false,
                             tokenId: null,
+                            chain: null,
                             contractAddress: null,
                             txHash: null,
                         },
