@@ -24,20 +24,17 @@ export const initializeSocket = (server: http.Server) => {
             const token = socket.handshake.query.token as string;
 
             if (!token) {
-                console.error('Authentication error: No token provided');
                 return next(new Error('Authentication error: No token provided'));
             }
 
             // validate JWT
             const validate = validateJWT(token);
             if (validate.status !== Status.SUCCESS) {
-                console.error('Authentication error: Invalid token');
                 return next(new Error('Authentication error: Invalid token'));
             }
 
             const user = await UserModel.findOne({ twitterId: validate.data.twitterId });
             if (!user) {
-                console.error('Authentication error: User not found');
                 return next(new Error('Authentication error: User not found'));
             }
 
@@ -45,7 +42,6 @@ export const initializeSocket = (server: http.Server) => {
             socket.data.userId = user._id.toString();
             next();
         } catch (error) {
-            console.error('Authentication error:', error);
             return next(new Error('Authentication error'));
         }
     });

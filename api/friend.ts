@@ -146,12 +146,34 @@ export const sendFriendRequest = async (userId: string, friendId: string): Promi
         // if exsitingFriendship found, check if status is rejected or not. if Rejected, simply set the status into Pending. else throw error
         if (existingFriendship) {
             if (existingFriendship.status === FriendStatus.REJECTED) {
+                // If rejected, update the status to PENDING
                 existingFriendship.status = FriendStatus.PENDING;
                 await existingFriendship.save();
-            } else {
+            } else if (existingFriendship.status === FriendStatus.PENDING) {
+                // Auto-accept if the friend sends a request back to the user
+                if (
+                    existingFriendship.userId1.toString() === friend._id.toString() &&
+                    existingFriendship.userId2.toString() === user._id.toString()
+                ) {
+                    existingFriendship.status = FriendStatus.ACCEPTED;
+                    await existingFriendship.save();
+        
+                    return {
+                        status: Status.SUCCESS,
+                        message: '(sendFriendRequest) Friend request auto-accepted.',
+                    };
+                }
+        
+                // If it’s a duplicate request from the same user
                 return {
                     status: Status.ERROR,
-                    message: '(sendFriendRequest) Friendship or pending request already exists.',
+                    message: '(sendFriendRequest) Pending request already exists.',
+                };
+            } else {
+                // If User A sends the request again while it’s already ACCEPTED
+                return {
+                    status: Status.ERROR,
+                    message: '(sendFriendRequest) Friendship already exists.',
                 };
             }
         } else {
