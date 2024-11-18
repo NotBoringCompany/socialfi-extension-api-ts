@@ -5,7 +5,6 @@ import { ExtendedResource } from './resource';
 import { InviteCodeData, ReferralData } from './invite';
 import { BerryFactoryMastery, CraftingMastery, TappingMastery } from './mastery';
 import { AssetType } from './asset';
-import { BitCosmeticInventory } from './cosmetic';
 
 /****************
  * USER-RELATED MODELS
@@ -91,8 +90,8 @@ export interface UserInventory {
     resources: ExtendedResource[];
     /** a list of items owned */
     items: Item[];
-    /** a list of bit cosmetics owned */
-    bitCosmetics: BitCosmeticInventory[];
+    /** a list of owned bit cosmetic IDs */
+    bitCosmeticIds: number[];
     /** a list of foods owned */
     foods: Food[];
     /** the owned raft ID */

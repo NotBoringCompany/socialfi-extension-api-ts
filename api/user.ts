@@ -377,7 +377,7 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
                             amount: 1,
                         },
                     ],
-                    bitCosmetics: [],
+                    bitCosmeticIds: [],
                     foods: [
                         {
                             type: FoodType['BURGER'],
@@ -2458,7 +2458,7 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
                         amount: 1,
                     },
                 ],
-                bitCosmetics: [],
+                bitCosmeticIds: [],
                 foods: [
                     {
                         type: FoodType['BURGER'],
@@ -3029,7 +3029,7 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                             amount: 1,
                         },
                     ],
-                    bitCosmetics: [],
+                    bitCosmeticIds: [],
                     foods: [
                         {
                             type: FoodType['BURGER'],

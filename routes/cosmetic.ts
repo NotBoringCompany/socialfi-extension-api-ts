@@ -1,107 +1,107 @@
 import express from 'express';
 import { authMiddleware } from '../middlewares/auth';
-import { addBitCosmetics, equipBitCosmetic, equipBitCosmeticSet, unequipBitCosmeticSlots } from '../api/cosmetic';
+// import { addBitCosmetics, equipBitCosmetic, equipBitCosmeticSet, unequipBitCosmeticSlots } from '../api/cosmetic';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 const router = express.Router();
 
-router.post('/add_bit_cosmetics', authMiddleware(3), async (req, res) => {
-    const { cosmetics } = req.body;
-    try {
-        const { status, message, data } = await addBitCosmetics(cosmetics);
-        return res.status(status).json({
-            status,
-            message,
-            data
-        });
+// router.post('/add_bit_cosmetics', authMiddleware(3), async (req, res) => {
+//     const { cosmetics } = req.body;
+//     try {
+//         const { status, message, data } = await addBitCosmetics(cosmetics);
+//         return res.status(status).json({
+//             status,
+//             message,
+//             data
+//         });
     
-    } catch (err: any) {
-        return res.status(500).json({
-            status: 500,
-            message: err.message
-        })
-    }
-})
+//     } catch (err: any) {
+//         return res.status(500).json({
+//             status: 500,
+//             message: err.message
+//         })
+//     }
+// })
 
-router.post('/equip_bit_cosmetic_set', async (req, res) => {
-    const { bitId, set } = req.body;
-    try {
-        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'equip_bit_cosmetic_set');
+// router.post('/equip_bit_cosmetic_set', async (req, res) => {
+//     const { bitId, set } = req.body;
+//     try {
+//         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'equip_bit_cosmetic_set');
 
-        if (validateStatus !== Status.SUCCESS) {
-            return res.status(validateStatus).json({
-                status: validateStatus,
-                message: validateMessage
-            });
-        }
+//         if (validateStatus !== Status.SUCCESS) {
+//             return res.status(validateStatus).json({
+//                 status: validateStatus,
+//                 message: validateMessage
+//             });
+//         }
 
-        const { status, message, data } = await equipBitCosmeticSet(validateData?.twitterId, bitId, set);
+//         const { status, message, data } = await equipBitCosmeticSet(validateData?.twitterId, bitId, set);
 
-        return res.status(status).json({
-            status,
-            message,
-            data
-        });
-    } catch (err: any) {
-        return res.status(500).json({
-            status: 500,
-            message: err.message
-        })
-    }
-})
+//         return res.status(status).json({
+//             status,
+//             message,
+//             data
+//         });
+//     } catch (err: any) {
+//         return res.status(500).json({
+//             status: 500,
+//             message: err.message
+//         })
+//     }
+// })
 
-router.post('/equip_bit_cosmetic', async (req, res) => {
-    const { bitId, cosmeticId } = req.body;
-    try {
-        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'equip_bit_cosmetic');
+// router.post('/equip_bit_cosmetic', async (req, res) => {
+//     const { bitId, cosmeticId } = req.body;
+//     try {
+//         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'equip_bit_cosmetic');
 
-        if (validateStatus !== Status.SUCCESS) {
-            return res.status(validateStatus).json({
-                status: validateStatus,
-                message: validateMessage
-            });
-        }
+//         if (validateStatus !== Status.SUCCESS) {
+//             return res.status(validateStatus).json({
+//                 status: validateStatus,
+//                 message: validateMessage
+//             });
+//         }
 
-        const { status, message, data } = await equipBitCosmetic(validateData?.twitterId, bitId, cosmeticId);
+//         const { status, message, data } = await equipBitCosmetic(validateData?.twitterId, bitId, cosmeticId);
 
-        return res.status(status).json({
-            status,
-            message,
-            data
-        });
-    } catch (err: any) {
-        return res.status(500).json({
-            status: 500,
-            message: err.message
-        })
-    }
-})
+//         return res.status(status).json({
+//             status,
+//             message,
+//             data
+//         });
+//     } catch (err: any) {
+//         return res.status(500).json({
+//             status: 500,
+//             message: err.message
+//         })
+//     }
+// })
 
-router.post('/unequip_bit_cosmetic_slots', async (req, res) => {
-    const { bitId, slots } = req.body;
-    try {
-        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'unequip_bit_cosmetic_slots');
+// router.post('/unequip_bit_cosmetic_slots', async (req, res) => {
+//     const { bitId, slots } = req.body;
+//     try {
+//         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'unequip_bit_cosmetic_slots');
 
-        if (validateStatus !== Status.SUCCESS) {
-            return res.status(validateStatus).json({
-                status: validateStatus,
-                message: validateMessage
-            });
-        }
+//         if (validateStatus !== Status.SUCCESS) {
+//             return res.status(validateStatus).json({
+//                 status: validateStatus,
+//                 message: validateMessage
+//             });
+//         }
 
-        const { status, message, data } = await unequipBitCosmeticSlots(validateData?.twitterId, bitId, slots);
+//         const { status, message, data } = await unequipBitCosmeticSlots(validateData?.twitterId, bitId, slots);
 
-        return res.status(status).json({
-            status,
-            message,
-            data
-        });
-    } catch (err: any) {
-        return res.status(500).json({
-            status: 500,
-            message: err.message
-        })
-    }
-})
+//         return res.status(status).json({
+//             status,
+//             message,
+//             data
+//         });
+//     } catch (err: any) {
+//         return res.status(500).json({
+//             status: 500,
+//             message: err.message
+//         })
+//     }
+// })
 
 export default router

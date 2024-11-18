@@ -1,3 +1,4 @@
+import { AssetBlockchainData, AssetOwnerData } from './asset';
 import { Modifier } from './modifier';
 import { ObtainMethod } from './obtainMethod';
 import { ExtendedResource, Resource } from './resource';
@@ -15,9 +16,9 @@ export interface Island {
     /** type of island; Raft is also included as an island type when the user has no island */
     type: IslandType;
     /** the owner data of this island (current owner, original owner, etc.) */
-    ownerData: IslandOwnerData;
+    ownerData: AssetOwnerData;
     /** the blockchain data of this bit (if it's mintable, if it's already minted, the contract address, etc.) */
-    blockchainData: IslandBlockchainData;
+    blockchainData: AssetBlockchainData;
     /** purchase date of this island (currently limited to when it was obtained from the terra cap) */
     purchaseDate: number;
     /** method of obtaining the island */
@@ -39,47 +40,6 @@ export interface Island {
     islandStatsModifiers: IslandStatsModifiers;
     /** island tapping related data */
     islandTappingData: IslandTappingData;
-}
-
-/**
- * Represents the data of this island's current and original owner and other owner-related data.
- */
-export interface IslandOwnerData {
-    /** the database ID of the current owner */
-    currentOwnerId: string;
-    /** the database ID of the original owner */
-    originalOwnerId: string;
-    /** the address of the current owner which holds this asset (if minted as an NFT; null otherwise) */
-    currentOwnerAddress: string | null;
-    /** 
-     * if this asset is in custody. in custody means that the asset is held by a custodial contract.
-     * 
-     * this is done when the asset is minted as an NFT and the user wants to use it in-game, preventing discrepancy 
-     * if the user decides to sell the NFT while it's still being used in-game.
-     * 
-     * if the asset has not been minted or is not in custody, this will be false.
-     */
-    inCustody: boolean;
-    /** the address of the original owner which held this asset (if minted as an NFT; null otherwise) */
-    originalOwnerAddress: string | null;
-}
-
-/**
- * Represents the blockchain data of this island.
- */
-export interface IslandBlockchainData {
-    /** if the island is mintable as an NFT */
-    mintable: boolean;
-    /** if the island is already minted as an NFT */
-    minted: boolean;
-    /** the token ID of the island (if minted as an NFT; null otherwise) */
-    tokenId: string | null;
-    /** the chain of the island where it resides in (if minted as an NFT; null otherwise) */
-    chain: string | null;
-    /** the contract address of the island (if minted as an NFT; null otherwise) */
-    contractAddress: string | null;
-    /** the transaction hash of the minting transaction (if minted as an NFT; null otherwise) */
-    mintHash: string | null;
 }
 
 /**

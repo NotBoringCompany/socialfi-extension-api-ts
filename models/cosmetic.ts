@@ -1,5 +1,7 @@
+import { AssetBlockchainData, AssetOwnerData } from './asset';
+
 /**
- * Represents a cosmetic item for a Bit.
+ * Represents a cosmetic item for a Bit (in the store).
  */
 export interface BitCosmetic {
   /** the database ID of the cosmetic */
@@ -17,21 +19,15 @@ export interface BitCosmetic {
 }
 
 /**
- * Represents a BitCosmetic instance stored in a user's inventory.
+ * Represents a BitCosmetic instance stored in a user's inventory, extends `BitCosmetic`.
  */
-export interface BitCosmeticInventory {
-  /** the database ID of the cosmetic in the `BitCosmetics` DB */
-  cosmeticId: string;
-  /** the name of the bit cosmetic */
-  cosmeticName: BitCosmeticType;
-  /** the amount of this cosmetic the user owns */
-  amount: number;
-  /**
-   * the total amount of this cosmetic that is equipped to any bit.
-   * 
-   * `equippedAmount` CANNOT exceed `amount`.
-   */
-  equippedAmount: number;
+export interface BitCosmeticInventory extends BitCosmetic {
+  /** the numerical ID of this cosmetic */
+  bitCosmeticId: number;
+  /** the owner data of the cosmetic (current owner, original owner, etc.) */
+  ownerData: AssetOwnerData;
+  /** the blockchain data of this cosmetic (current owner, original owner, etc.) */
+  blockchainData: AssetBlockchainData;
 }
 
 /**
