@@ -19,8 +19,6 @@ export interface Bit {
     rarity: BitRarity;
     /** bit gender */
     gender: BitGender;
-    /** if this bit is a premium bit or not (premium will allow them to be placed in non-barren islands.) */
-    premium: boolean;
     /** owner of this bit; equates to the user's object ID in the database */
     owner: string;
     /** purchase date of this bit (currently limited to when it was obtained from the bit orb) */

@@ -97,7 +97,6 @@ export const giftXterioBit = async (twitterId: string): Promise<ReturnValue> => 
             },
             rarity,
             gender,
-            premium: true,
             owner: user._id,
             purchaseDate: Math.floor(Date.now() / 1000),
             obtainMethod: ObtainMethod.XTERIO,

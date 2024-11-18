@@ -15,7 +15,6 @@ export const BitSchema = new mongoose.Schema({
     bitType: String,
     rarity: String,
     gender: String,
-    premium: Boolean,
     owner: String,
     purchaseDate: Number,
     obtainMethod: String,

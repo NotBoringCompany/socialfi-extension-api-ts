@@ -220,7 +220,6 @@ export const purchasePremiumWonderpass = async (twitterId: string): Promise<Retu
             }).filter(Boolean);
 
             await UserWonderpassDataModel.updateOne({ _id: userWonderpassData._id }, {
-                premium: true,
                 claimablePremiumLevels
             });
 
