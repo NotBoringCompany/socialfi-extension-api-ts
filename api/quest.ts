@@ -345,7 +345,12 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                         },
                         rarity,
                         gender: RANDOMIZE_GENDER(),
-                        owner: user._id,
+                        ownerData: {
+                            currentOwnerId: user._id,
+                            originalOwnerId: user._id,
+                            currentOwnerAddress: null,
+                            originalOwnerAddress: null,
+                        },
                         purchaseDate: Math.floor(Date.now() / 1000),
                         obtainMethod: ObtainMethod.QUEST,
                         placedIslandId: 0,

@@ -108,7 +108,7 @@ export const consumeSynthesizingItem = async (
 
         if (affectedAsset === 'bit') {
             // check if the user has the specified bit id
-            const bit = await BitModel.findOne({ bitId: islandOrBitId, owner: user._id }).lean();
+            const bit = await BitModel.findOne({ bitId: islandOrBitId, 'ownerData.currentOwnerId': user._id }).lean();
 
             if (!bit) {
                 return {

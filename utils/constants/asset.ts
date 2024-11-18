@@ -45,7 +45,7 @@ SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE.process('removeBitEnergyDepletionRateModi
 
     try {
         // directly remove energy depletion rate modifier with the given `origin` from the bit
-        const result = await BitModel.updateOne({ bitId, owner }, {
+        const result = await BitModel.updateOne({ bitId, 'ownerData.currentOwnerId': owner }, {
             $pull: {
                 'bitStatsModifiers.energyRateModifiers': { origin }
             }

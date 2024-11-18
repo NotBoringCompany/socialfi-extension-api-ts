@@ -217,7 +217,12 @@ export const completeTutorial = async (twitterId: string, tutorialId: number): P
                         },
                         rarity,
                         gender: RANDOMIZE_GENDER(),
-                        owner: user._id,
+                        ownerData: {
+                            currentOwnerId: user._id,
+                            originalOwnerId: user._id,
+                            currentOwnerAddress: null,
+                            originalOwnerAddress: null,
+                        },
                         purchaseDate: Math.floor(Date.now() / 1000),
                         obtainMethod: ObtainMethod.TUTORIAL,
                         placedIslandId: 0,

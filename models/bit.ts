@@ -19,8 +19,8 @@ export interface Bit {
     rarity: BitRarity;
     /** bit gender */
     gender: BitGender;
-    /** owner of this bit; equates to the user's object ID in the database */
-    owner: string;
+    /** the owner data of this bit (current owner, original owner, etc.) */
+    ownerData: BitOwnerData;
     /** purchase date of this bit (currently limited to when it was obtained from the bit orb) */
     purchaseDate: number;
     /** method of obtaining the bit */
@@ -39,6 +39,20 @@ export interface Bit {
     farmingStats: BitFarmingStats;
     /** stat modifiers for the bit's farming stats */
     bitStatsModifiers: BitStatsModifiers;
+}
+
+/**
+ * Represents the data of this bit's current and original owner and other owner-related data.
+ */
+export interface BitOwnerData {
+    /** the database ID of the current owner */
+    currentOwnerId: string;
+    /** the database ID of the original owner */
+    originalOwnerId: string;
+    /** the address of the current owner which holds this asset (if minted as an NFT; null otherwise) */
+    currentOwnerAddress: string | null;
+    /** the address of the original owner which held this asset (if minted as an NFT; null otherwise) */
+    originalOwnerAddress: string | null;
 }
 
 /**

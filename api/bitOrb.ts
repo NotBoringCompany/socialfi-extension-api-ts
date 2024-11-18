@@ -200,7 +200,12 @@ export const summonBit = async (
             },
             rarity,
             gender,
-            owner,
+            ownerData: {
+                currentOwnerId: owner,
+                originalOwnerId: owner,
+                currentOwnerAddress: null,
+                originalOwnerAddress: null
+            },
             purchaseDate: Math.floor(Date.now() / 1000),
             obtainMethod: ObtainMethod.BIT_ORB_I,
             placedIslandId: 0,

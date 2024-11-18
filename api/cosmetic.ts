@@ -65,7 +65,7 @@ export const equipBitCosmeticSet = async (twitterId: string, bitId: number, set:
     }
 
     // if the bit is not owned by the user, return an error.
-    if (bit.owner !== user._id) {
+    if (bit.ownerData.currentOwnerId !== user._id) {
       return {
         status: Status.ERROR,
         message: `(equipBitCosmeticSet) Bit with ID: ${bitId} is not owned by user with Twitter ID: ${twitterId}`,
@@ -173,7 +173,7 @@ export const equipBitCosmetic = async (twitterId: string, bitId: number, cosmeti
     }
 
     // if the bit is not owned by the user, return an error.
-    if (bit.owner !== user._id) {
+    if (bit.ownerData.currentOwnerId !== user._id) {
       return {
         status: Status.ERROR,
         message: `(equipBitCosmetic) Bit with ID: ${bitId} is not owned by user with Twitter ID: ${twitterId}`,
@@ -270,7 +270,7 @@ export const unequipBitCosmeticSlots = async (twitterId: string, bitId: number, 
     }
 
     // if the bit is not owned by the user, return an error.
-    if (bit.owner !== user._id) {
+    if (bit.ownerData.currentOwnerId !== user._id) {
       return {
         status: Status.ERROR,
         message: `(unequipBitCosmeticSlots) Bit with ID: ${bitId} is not owned by user with Twitter ID: ${twitterId}`,

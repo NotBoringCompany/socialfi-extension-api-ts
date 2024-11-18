@@ -24,6 +24,52 @@ import { BitModel, BitTraitDataModel, IslandModel, UserModel } from '../utils/co
 import { ObtainMethod } from '../models/obtainMethod';
 import { redis } from '../utils/constants/redis';
 
+// /**
+//  * Updates the existing `owner` data of all bits to include the new `ownerData`.
+//  */
+// export const updateOwnerData = async (): Promise<void> => {
+//     try {
+//         const bits = await BitModel.find({}).lean();
+
+//         const bitUpdateOperations: Array<{
+//             bitId: number,
+//             updateOperations: {
+//                 $set: {},
+//                 $unset: {}
+//             }
+//         }> = [];
+
+//         for (const bit of bits) {
+//             const ownerData = {
+//                 currentOwnerId: bit.owner,
+//                 originalOwnerId: bit.owner,
+//                 currentOwnerAddress: null,
+//                 originalOwnerAddress: null
+//             }
+
+//             // set the owner data and unset the old `owner` field.
+//             bitUpdateOperations.push({
+//                 bitId: bit.bitId,
+//                 updateOperations: {
+//                     $set: { ownerData },
+//                     $unset: { owner: 1 }
+//                 }
+//             });
+//         }
+
+//         // execute the update operations
+//         const bitUpdatePromises = bitUpdateOperations.map(async op => {
+//             return BitModel.updateOne({ bitId: op.bitId }, op.updateOperations);
+//         });
+
+//         await Promise.all(bitUpdatePromises);
+
+//         console.log(`(updateOwnerData) Updated owner data for all bits.`);
+//     } catch (err: any) {
+//         console.log(`(updateOwnerData) Error: ${err.message}`);
+//     }
+// }
+
 /**
  * Removes earning stats from all bits in the database.
  */
