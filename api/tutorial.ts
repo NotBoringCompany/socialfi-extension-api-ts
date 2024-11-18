@@ -221,7 +221,8 @@ export const completeTutorial = async (twitterId: string, tutorialId: number): P
                             currentOwnerId: user._id,
                             originalOwnerId: user._id,
                             currentOwnerAddress: null,
-                            originalOwnerAddress: null,
+                            inCustody: false,
+                            originalOwnerAddress: null
                         },
                         blockchainData: {
                             mintable: false,

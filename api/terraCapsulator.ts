@@ -185,7 +185,8 @@ export const summonIsland = async (
                 currentOwnerId: owner,
                 originalOwnerId: owner,
                 currentOwnerAddress: null,
-                originalOwnerAddress: null,
+                inCustody: false,
+                originalOwnerAddress: null
             },
             blockchainData: {
                 mintable: false,

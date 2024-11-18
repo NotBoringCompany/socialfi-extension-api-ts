@@ -53,6 +53,15 @@ export interface BitOwnerData {
     originalOwnerId: string;
     /** the address of the current owner which holds this asset (if minted as an NFT; null otherwise) */
     currentOwnerAddress: string | null;
+    /** 
+     * if this asset is in custody. in custody means that the asset is held by a custodial contract.
+     * 
+     * this is done when the asset is minted as an NFT and the user wants to use it in-game, preventing discrepancy 
+     * if the user decides to sell the NFT while it's still being used in-game.
+     * 
+     * if the asset has not been minted or is not in custody, this will be false.
+     */
+    inCustody: boolean;
     /** the address of the original owner which held this asset (if minted as an NFT; null otherwise) */
     originalOwnerAddress: string | null;
 }

@@ -64,6 +64,7 @@ export const addBlockchainData = async (): Promise<void> => {
 //                 currentOwnerId: bit.owner,
 //                 originalOwnerId: bit.owner,
 //                 currentOwnerAddress: null,
+//                 inCustody: false,
 //                 originalOwnerAddress: null
 //             }
 

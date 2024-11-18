@@ -204,6 +204,7 @@ export const summonBit = async (
                 currentOwnerId: owner,
                 originalOwnerId: owner,
                 currentOwnerAddress: null,
+                inCustody: false,
                 originalOwnerAddress: null
             },
             blockchainData: {
