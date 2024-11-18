@@ -181,7 +181,6 @@ export const summonIsland = async (
         const island: Island = {
             islandId: latestIslandId + 1,
             type: islandType,
-            owner,
             ownerData: {
                 currentOwnerId: owner,
                 originalOwnerId: owner,

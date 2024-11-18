@@ -283,7 +283,6 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
             } = await addIslandToDatabase({
                 islandId: islandIdData?.latestIslandId + 1,
                 type: IslandType.PRIMAL_ISLES,
-                owner: userObjectId,
                 ownerData: {
                     currentOwnerId: userObjectId,
                     originalOwnerId: userObjectId,
@@ -2932,7 +2931,6 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
             } = await addIslandToDatabase({
                 islandId: islandIdData?.latestIslandId + 1,
                 type: IslandType.PRIMAL_ISLES,
-                owner: userObjectId,
                 ownerData: {
                     currentOwnerId: userObjectId,
                     originalOwnerId: userObjectId,

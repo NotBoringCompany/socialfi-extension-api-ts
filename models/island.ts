@@ -14,8 +14,6 @@ export interface Island {
     islandId: number;
     /** type of island; Raft is also included as an island type when the user has no island */
     type: IslandType;
-    /** owner of this island; equates to the user's object ID in the database */
-    owner: string;
     /** the owner data of this island (current owner, original owner, etc.) */
     ownerData: IslandOwnerData;
     /** the blockchain data of this bit (if it's mintable, if it's already minted, the contract address, etc.) */

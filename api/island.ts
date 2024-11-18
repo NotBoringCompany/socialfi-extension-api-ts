@@ -26,51 +26,51 @@ import { redis } from '../utils/constants/redis';
 import { SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE } from '../utils/constants/asset';
 import { CRAFTING_RECIPES } from '../utils/constants/craft';
 
-/**
- * Sets the new owner data and removes the current `owner` field for all islands.
- */
-export const updateOwnerData = async (): Promise<void> => {
-    try {
-        const islands = await IslandModel.find({}).lean();
+// /**
+//  * Sets the new owner data and removes the current `owner` field for all islands.
+//  */
+// export const updateOwnerData = async (): Promise<void> => {
+//     try {
+//         const islands = await IslandModel.find({}).lean();
 
-        const islandUpdateOperations: Array<{
-            islandId: number,
-            updateOperations: {
-                $unset: {},
-                $set: {}
-            }
-        }> = [];
+//         const islandUpdateOperations: Array<{
+//             islandId: number,
+//             updateOperations: {
+//                 $unset: {},
+//                 $set: {}
+//             }
+//         }> = [];
 
-        for (const island of islands) {
-            islandUpdateOperations.push({
-                islandId: island.islandId,
-                updateOperations: {
-                    $unset: {
-                        owner: 1
-                    },
-                    $set: {
-                        ownerData: {
-                            currentOwnerId: island.owner,
-                            originalOwnerId: island.owner,
-                            currentOwnerAddress: null,
-                            originalOwnerAddress: null
-                        },
-                    }
-                }
-            });
-        }
+//         for (const island of islands) {
+//             islandUpdateOperations.push({
+//                 islandId: island.islandId,
+//                 updateOperations: {
+//                     $unset: {
+//                         owner: 1
+//                     },
+//                     $set: {
+//                         ownerData: {
+//                             currentOwnerId: island.owner,
+//                             originalOwnerId: island.owner,
+//                             currentOwnerAddress: null,
+//                             originalOwnerAddress: null
+//                         },
+//                     }
+//                 }
+//             });
+//         }
 
-        const islandUpdatePromises = islandUpdateOperations.map(async op => {
-            return IslandModel.updateOne({ islandId: op.islandId }, op.updateOperations);
-        });
+//         const islandUpdatePromises = islandUpdateOperations.map(async op => {
+//             return IslandModel.updateOne({ islandId: op.islandId }, op.updateOperations);
+//         });
 
-        await Promise.all(islandUpdatePromises);
+//         await Promise.all(islandUpdatePromises);
 
-        console.log(`(updateOwnerData) Updated the 'ownerData' field and removed the 'owner' field from all islands.`);
-    } catch (err: any) {
-        console.error('Error in updateOwnerData:', err.message);
-    }
-}
+//         console.log(`(updateOwnerData) Updated the 'ownerData' field and removed the 'owner' field from all islands.`);
+//     } catch (err: any) {
+//         console.error('Error in updateOwnerData:', err.message);
+//     }
+// }
 
 /**
  * Adds the new `blockchainData` to all existing islands.
@@ -2444,7 +2444,7 @@ export const getIslandTappingData = async (islandId: number): Promise<ReturnValu
             };
         }
 
-        const owner = await UserModel.findOne({ _id: island.owner }).lean();
+        const owner = await UserModel.findOne({ _id: island._id }).lean();
 
         if (!owner) {
             return {
@@ -3109,7 +3109,7 @@ export const resetDailyIslandTappingMilestone = async (): Promise<void> => {
         // Retrieve the owner and owner's tapping level for each island
         const bulkWriteOps = await Promise.all(islands.map(async (island) => {
             // Find the user who owns the island
-            const owner = await UserModel.findOne({ _id: island.owner }).lean();
+            const owner = await UserModel.findOne({ _id: island._id }).lean();
 
             if (!owner) {
                 console.error(`(resetDailyIslandTappingMilestone) Owner not found for island ${island.islandId}`);
