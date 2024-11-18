@@ -1,7 +1,16 @@
 import { Server, Socket } from 'socket.io';
 import { joinChatroom, sendDirectMessage, sendMessage } from '../api/chat';
 import { Status } from '../utils/retVal';
-import { joinChatroomDTO, JoinChatroomDTO, sendDirectMessageDTO, SendDirectMessageDTO, sendMessageDTO, SendMessageDTO } from '../validations/chat';
+import {
+    joinChatroomDTO,
+    JoinChatroomDTO,
+    sendDirectMessageDTO,
+    SendDirectMessageDTO,
+    sendMessageDTO,
+    SendMessageDTO,
+} from '../validations/chat';
+import { getSocketUsers } from '../configs/socket';
+import { Chatroom } from '../models/chat';
 
 export enum ChatEvent {
     /** send message */
@@ -53,14 +62,51 @@ export const handleChatEvents = (socket: Socket, io: Server) => {
         io.to(result.data.chatroom._id).emit(ChatEvent.NEW_MESSAGE, result.data);
     });
 
-    socket.on(ChatEvent.SEND_DIRECT_MESSAGE, async (request: SendDirectMessageDTO) => {
+    socket.on(ChatEvent.SEND_DIRECT_MESSAGE, async (request: SendDirectMessageDTO, callback?: CallbackEvent) => {
         const senderId = socket.data.userId;
         const validation = sendDirectMessageDTO.validate(request);
 
-        if (validation.status !== Status.SUCCESS) throw new Error('Invalid Payload');
+        if (validation.status !== Status.SUCCESS) {
+            if (callback) {
+                return callback({ error: 'Invalid Payload' });
+            }
+
+            return;
+        }
 
         const result = await sendDirectMessage(senderId, validation.data.receiverId, validation.data.message);
-        if (result.status !== Status.SUCCESS) throw new Error('Failed to send the message');
+
+        if (result.status !== Status.SUCCESS) {
+            if (callback) {
+                return callback({ error: result.message });
+            }
+            return;
+        }
+
+        if (callback) {
+            callback({ success: true, message: 'Message sent' });
+        }
+
+        const chatroom: Chatroom = result.data.chatroom;
+        const receiverId = validation.data.receiverId;
+
+        if (result.data.isNew) {
+            const senderSockets = await getSocketUsers(senderId);
+            for (const socketId of senderSockets) {
+                const socket = io.sockets.sockets.get(socketId);
+                if (socket) {
+                    await socket.join(chatroom._id);
+                }
+            }
+
+            const receiverSockets = await getSocketUsers(receiverId);
+            for (const socketId of receiverSockets) {
+                const socket = io.sockets.sockets.get(socketId);
+                if (socket) {
+                    await socket.join(chatroom._id);
+                }
+            }
+        }
 
         io.to(result.data.chatroom._id).emit(ChatEvent.NEW_MESSAGE, result.data);
     });
@@ -79,7 +125,7 @@ export const handleChatEvents = (socket: Socket, io: Server) => {
         }
 
         const result = await joinChatroom(senderId, validation.data.chatroomId);
-        if (result.status !== Status.SUCCESS) {            
+        if (result.status !== Status.SUCCESS) {
             if (callback) {
                 return callback({ error: result.message });
             }

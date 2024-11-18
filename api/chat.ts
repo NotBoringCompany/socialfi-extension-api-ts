@@ -22,7 +22,9 @@ export const getUserChatrooms = async (twitterId: string): Promise<ReturnValue> 
         // find the chatroom that user participated to, or all the public channel that available
         const chatrooms = await ChatroomModel.find({
             $or: [{ 'participants.user': user._id }, { type: ChatroomType.PUBLIC }],
-        }).populate('lastSender').populate('participants.user');
+        })
+            .populate('lastSender')
+            .populate('participants.user');
 
         return {
             status: Status.SUCCESS,
@@ -186,21 +188,16 @@ export const sendDirectMessage = async (
     receiverId: string,
     message: string
 ): Promise<ReturnValue> => {
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
     try {
-        let chatroom = await ChatroomModel.findOne(
-            {
-                participants: {
-                    $all: [{ $elemMatch: { user: senderId } }, { $elemMatch: { user: receiverId } }],
-                },
-                isGroup: false,
-                type: 'private',
+        let chatroom = await ChatroomModel.findOne({
+            participants: {
+                $all: [{ $elemMatch: { user: senderId } }, { $elemMatch: { user: receiverId } }],
             },
-            { session }
-        );
+            isGroup: false,
+            type: 'private',
+        });
 
+        let isNew = false;
         const currentTimestamp = dayjs().unix();
 
         // create a new chatroom if the chatroom didn't exist
@@ -224,6 +221,8 @@ export const sendDirectMessage = async (
                 ],
                 createdTimestamp: currentTimestamp,
             });
+
+            isNew = true;
         }
 
         // return error if somehow the chatroom still empty after re-creating
@@ -232,37 +231,31 @@ export const sendDirectMessage = async (
         }
 
         // create a new chat messsage
-        const chat = await ChatModel.create(
-            {
-                _id: generateObjectId(),
-                chatroom: chatroom._id,
-                receiver: receiverId,
-                sender: senderId,
-                createdTimestamp: currentTimestamp,
-                message,
-            },
-            { session }
-        );
+        const chat = await ChatModel.create({
+            _id: generateObjectId(),
+            chatroom: chatroom._id,
+            receiver: receiverId,
+            sender: senderId,
+            createdTimestamp: currentTimestamp,
+            message,
+        });
 
         if (!chat) {
             throw new Error('Failed to send the message.');
         }
 
         // cached the last message information in the chatroom
-        await chatroom.updateOne(
-            {
-                $inc: { messagesCount: 1 },
-                $set: {
-                    lastMessage: message,
-                    lastSender: senderId,
-                    lastMessageTimestamp: currentTimestamp,
-                },
+        await chatroom.updateOne({
+            $inc: { messagesCount: 1 },
+            $set: {
+                lastMessage: message,
+                lastSender: senderId,
+                lastMessageTimestamp: currentTimestamp,
             },
-            { session }
-        );
+        });
 
-        await session.commitTransaction();
-        session.endSession();
+        await chatroom.populate('participants.user');
+        await chat.populate('sender');
 
         return {
             status: Status.SUCCESS,
@@ -270,12 +263,10 @@ export const sendDirectMessage = async (
             data: {
                 chat,
                 chatroom,
+                isNew,
             },
         };
     } catch (err: any) {
-        await session.abortTransaction();
-        session.endSession();
-
         return {
             status: Status.ERROR,
             message: `(sendDirectMessage) ${err.message}`,
@@ -336,8 +327,8 @@ export const joinChatroom = async (
             status: Status.SUCCESS,
             message: `(joinChatroom) The user joined the chatroom successfully.`,
             data: {
-                chatroom
-            }
+                chatroom,
+            },
         };
     } catch (err: any) {
         await session.abortTransaction();
