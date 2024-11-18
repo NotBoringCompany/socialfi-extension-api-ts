@@ -1,3 +1,4 @@
+import { Squad } from './squad';
 import { User } from './user';
 
 /**
@@ -46,6 +47,7 @@ export interface Chatroom {
     /** the count of message sent to the chatroom, this is used for caching purpose */
     messagesCount: number;
     participants: ChatroomParticipant[];
+    squad?: Squad | string;
 }
 
 /**

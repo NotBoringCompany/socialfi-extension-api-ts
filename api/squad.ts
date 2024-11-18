@@ -9,6 +9,7 @@ import { generateObjectId } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
 import { explicitOwnershipsOfKOS, getAllExplicitOwnerships, getOwnedKeyIDs } from './kos';
 import { getWallets } from './user';
+import { addSquadChatroomParticipant, createSquadChatroom, removeSquadChatroom, removeSquadChatroomParticipant } from './chat';
 
 /**
  * Attempts to join the referrer's squad if possible.
@@ -82,6 +83,8 @@ export const joinReferrerSquad = async (
         await UserModel.updateOne({ _id: user._id }, {
             'inGameData.squadId': squad._id
         });
+
+        await addSquadChatroomParticipant(squad._id, user._id);
 
         return {
             status: Status.SUCCESS,
@@ -304,6 +307,8 @@ export const acceptPendingSquadMember = async (leaderTwitterId: string, memberTw
         await UserModel.updateOne({ _id: member._id }, {
             'inGameData.squadId': squad._id
         });
+
+        await addSquadChatroomParticipant(squad._id, member._id);
 
         return {
             status: Status.SUCCESS,
@@ -706,6 +711,8 @@ export const createSquad = async (twitterId: string, squadName: string): Promise
             }
         });
 
+        await createSquadChatroom(squad._id);
+
         return {
             status: Status.SUCCESS,
             message: `(createSquad) Created squad successfully.`,
@@ -784,6 +791,8 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
 
                 });
 
+                await removeSquadChatroom(squad._id);
+
                 return {
                     status: Status.SUCCESS,
                     message: `(leaveSquad) Disbanded squad successfully.`,
@@ -841,6 +850,8 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
 
                     });
 
+                    await removeSquadChatroomParticipant(squad._id, user._id);
+
                     return {
                         status: Status.SUCCESS,
                         message: `(leaveSquad) Left squad. Promoted member ${memberWithLongestTenure._id} to leader successfully.`
@@ -861,6 +872,8 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
                         'inGameData.lastLeftSquad': Math.floor(Date.now() / 1000)
 
                     });
+
+                    await removeSquadChatroomParticipant(squad._id, user._id);
 
                     return {
                         status: Status.SUCCESS,
@@ -891,6 +904,8 @@ export const leaveSquad = async (twitterId: string): Promise<ReturnValue> => {
                 'inGameData.lastLeftSquad': Math.floor(Date.now() / 1000)
 
             })
+
+            await removeSquadChatroomParticipant(squad._id, user._id);
 
             console.log(`User ${user._id} left the squad ${squad._id}`)
 
@@ -1392,6 +1407,8 @@ export const kickMember = async (leaderTwitterId: string, memberTwitterId: strin
         await UserModel.updateOne({ _id: member._id }, {
             'inGameData.squadId': null
         });
+
+        await removeSquadChatroomParticipant(squad._id, member._id);
 
         return {
             status: Status.SUCCESS,

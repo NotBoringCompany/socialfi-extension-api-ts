@@ -24,7 +24,8 @@ export const getUserChatrooms = async (twitterId: string): Promise<ReturnValue> 
             $or: [{ 'participants.user': user._id }, { type: ChatroomType.PUBLIC }],
         })
             .populate('lastSender')
-            .populate('participants.user');
+            .populate('participants.user')
+            .populate('squad');
 
         return {
             status: Status.SUCCESS,
@@ -345,7 +346,7 @@ export const joinChatroom = async (
  * Allows the user to leave the specified chatroom, removing them from the participant list.
  */
 export const leaveChatroom = async (twitterId: string, chatroomId: string): Promise<ReturnValue> => {
-    const session = await mongoose.startSession();
+    const session = await TEST_CONNECTION.startSession();
     session.startTransaction();
 
     try {
@@ -418,6 +419,7 @@ export const bulkCreateFromSquad = async (): Promise<ReturnValue> => {
                             user: member.userId,
                             joinedTimestamp: member.joinedTimestamp,
                         })),
+                        squad: squad._id,
                         createdTimestamp: squad.formedTimestamp,
                     },
                 ],
@@ -433,14 +435,173 @@ export const bulkCreateFromSquad = async (): Promise<ReturnValue> => {
             message: `(bulkCreateFromSquad) Operations executed successfully.`,
         };
     } catch (err: any) {
-        console.log(err);
-        
         await session.abortTransaction();
         session.endSession();
 
         return {
             status: Status.ERROR,
             message: `(bulkCreateFromSquad) ${err.message}`,
+        };
+    }
+};
+
+/**
+ * Create squad chatroom.
+ */
+export const createSquadChatroom = async (squadId: string): Promise<ReturnValue> => {
+    const session = await TEST_CONNECTION.startSession();
+    session.startTransaction();
+
+    try {
+        const squad = await SquadModel.findById(squadId);
+
+        if (!squad) throw new Error('Squad not found');
+
+        await ChatroomModel.create(
+            [
+                {
+                    _id: generateObjectId(),
+                    name: squad.name,
+                    isGroup: true,
+                    type: ChatroomType.SQUAD,
+                    participants: squad.members.map((member) => ({
+                        _id: generateObjectId(),
+                        user: member.userId,
+                        joinedTimestamp: member.joinedTimestamp,
+                    })),
+                    squad: squad._id,
+                    createdTimestamp: squad.formedTimestamp,
+                },
+            ],
+            { session }
+        );
+
+        await session.commitTransaction();
+        session.endSession();
+
+        return {
+            status: Status.SUCCESS,
+            message: `(createSquadChatroom) Chatroom created successfully.`,
+        };
+    } catch (err: any) {
+        await session.abortTransaction();
+        session.endSession();
+
+        return {
+            status: Status.ERROR,
+            message: `(createSquadChatroom) ${err.message}`,
+        };
+    }
+};
+
+/**
+ * Remove squad chatroom.
+ */
+export const removeSquadChatroom = async (squadId: string): Promise<ReturnValue> => {
+    const session = await TEST_CONNECTION.startSession();
+    session.startTransaction();
+
+    try {
+        await ChatroomModel.deleteOne({
+            squad: squadId,
+        });
+
+        await session.commitTransaction();
+        session.endSession();
+
+        return {
+            status: Status.SUCCESS,
+            message: `(removeSquadChatroom) Chatroom deleted successfully.`,
+        };
+    } catch (err: any) {
+        await session.abortTransaction();
+        session.endSession();
+
+        return {
+            status: Status.ERROR,
+            message: `(removeSquadChatroom) ${err.message}`,
+        };
+    }
+};
+
+/**
+ * Add squad chatroom participant.
+ */
+export const addSquadChatroomParticipant = async (squadId: string, memberId: string): Promise<ReturnValue> => {
+    const session = await TEST_CONNECTION.startSession();
+    session.startTransaction();
+
+    try {
+        const squad = await SquadModel.findById(squadId);
+        if (!squad) throw new Error('Squad not found');
+
+        const member = await UserModel.findById(memberId);
+        if (!member) throw new Error('Member not found');
+
+        if (!squad.members.some(({ userId }) => member._id === userId)) {
+            throw new Error(`You are not a member of this squad`);
+        }
+
+        const chatroom = await ChatroomModel.findOne({ squad: squad._id });
+        if (!chatroom) throw new Error('Chatroom not found');
+
+        await joinChatroom(member._id, chatroom._id);
+
+        await session.commitTransaction();
+        session.endSession();
+
+        return {
+            status: Status.SUCCESS,
+            message: `(addSquadChatroomParticipant) Member joined the chatroom successfully.`,
+        };
+    } catch (err: any) {
+        await session.abortTransaction();
+        session.endSession();
+
+        return {
+            status: Status.ERROR,
+            message: `(addSquadChatroomParticipant) ${err.message}`,
+        };
+    }
+};
+
+/**
+ * Remove squad chatroom participant.
+ */
+export const removeSquadChatroomParticipant = async (squadId: string, memberId: string): Promise<ReturnValue> => {
+    const session = await TEST_CONNECTION.startSession();
+    session.startTransaction();
+
+    try {
+        const squad = await SquadModel.findById(squadId);
+        if (!squad) throw new Error('Squad not found');
+
+        const member = await UserModel.findById(memberId);
+        if (!member) throw new Error('Member not found');
+
+        if (!squad.members.some(({ userId }) => member._id === userId)) {
+            throw new Error(`You are not a member of this squad`);
+        }
+
+        const chatroom = await ChatroomModel.findOne({ squad: squad._id });
+        if (!chatroom) throw new Error('Chatroom not found');
+
+        await leaveChatroom(member._id, chatroom._id);
+
+        await session.commitTransaction();
+        session.endSession();
+
+        return {
+            status: Status.SUCCESS,
+            message: `(removeSquadChatroomParticipant) Member joined the chatroom successfully.`,
+        };
+    } catch (err: any) {
+        await session.abortTransaction();
+        session.endSession();
+
+        return {
+            status: Status.ERROR,
+            message: `(removeSquadChatroomParticipant) ${err.message}`,
         };
     }
 };

@@ -24,6 +24,7 @@ export const ChatroomSchema = new mongoose.Schema<Chatroom & mongoose.Document>(
     lastMessage: { type: String, default: null },
     lastMessageTimestamp: { type: Number, default: null },
     messagesCount: { type: Number, default: 0 },
+    squad: { type: String, ref: 'Squads', default: null },
     createdTimestamp: { type: Number, required: true },
 });
 
