@@ -161,7 +161,7 @@ export const sendMessage = async (senderId: string, chatroomId: string, message:
         session.endSession();
 
         const newChat = await ChatModel.findById(chats[0]._id).populate('sender');
-        const newChatroom = await ChatModel.findById(chatroom._id).populate('participants.user').populate('lastSender');
+        const newChatroom = await ChatroomModel.findById(chatroom._id).populate('participants.user').populate('lastSender');
 
         return {
             status: Status.SUCCESS,
@@ -257,7 +257,7 @@ export const sendDirectMessage = async (
         });
 
         const newChat = await ChatModel.findById(chat._id).populate('sender');
-        const newChatroom = await ChatModel.findById(chatroom._id).populate('participants.user').populate('lastSender');
+        const newChatroom = await ChatroomModel.findById(chatroom._id).populate('participants.user').populate('lastSender');
 
         return {
             status: Status.SUCCESS,
