@@ -1,6 +1,6 @@
 import express from 'express';
 import { authMiddleware } from '../middlewares/auth';
-import { addBitCosmetics, equipBitCosmetic, unequipBitCosmeticSlots } from '../api/cosmetic';
+import { addBitCosmetics, equipBitCosmetics, unequipBitCosmeticSlots } from '../api/cosmetic';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 const router = express.Router();
@@ -23,8 +23,8 @@ router.post('/add_bit_cosmetics', authMiddleware(3), async (req, res) => {
     }
 })
 
-router.post('/equip_bit_cosmetic', async (req, res) => {
-    const { bitId, bitCosmeticId } = req.body;
+router.post('/equip_bit_cosmetics', async (req, res) => {
+    const { bitId, bitCosmeticIds } = req.body;
     try {
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'equip_bit_cosmetic');
 
@@ -35,7 +35,7 @@ router.post('/equip_bit_cosmetic', async (req, res) => {
             });
         }
 
-        const { status, message, data } = await equipBitCosmetic(validateData?.twitterId, bitId, bitCosmeticId);
+        const { status, message, data } = await equipBitCosmetics(validateData?.twitterId, bitId, bitCosmeticIds);
 
         return res.status(status).json({
             status,

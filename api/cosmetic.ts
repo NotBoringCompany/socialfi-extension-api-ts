@@ -68,15 +68,22 @@ export const addUserBitCosmeticToDatabase = async (cosmetic: BitCosmeticInventor
 }
 
 /**
- * Equips a single cosmetic item to one of the bit's slots.
+ * Equips one or more cosmetic items to one or more of the bit's slots.
  */
-export const equipBitCosmetic = async (twitterId: string, bitId: number, bitCosmeticId: number): Promise<ReturnValue> => {
+export const equipBitCosmetics = async (twitterId: string, bitId: number, bitCosmeticIds: number[]): Promise<ReturnValue> => {
+    if (!bitCosmeticIds || bitCosmeticIds.length === 0) {
+        return {
+            status: Status.ERROR,
+            message: `(equipBitCosmetics) No bit cosmetic IDs provided to equip`,
+        }
+    }
+
     try {
-        const [user, bit, cosmetic] = await Promise.all([
+        const [user, bit, cosmetics] = await Promise.all([
             UserModel.findOne({ twitterId }).lean(),
             BitModel.findOne({ bitId }).lean(),
-            UserBitCosmeticModel.findOne({ bitCosmeticId }).lean()
-        ]);
+            UserBitCosmeticModel.find({ bitCosmeticId: { $in: bitCosmeticIds } }).lean()
+        ])
 
         if (!user) {
             return {
@@ -92,10 +99,18 @@ export const equipBitCosmetic = async (twitterId: string, bitId: number, bitCosm
             }
         }
 
-        if (!cosmetic) {
+        if (!cosmetics || cosmetics.length === 0) {
             return {
                 status: Status.ERROR,
-                message: `(equipBitCosmetic) Cosmetic with ID: ${bitCosmeticId} not found`
+                message: `(equipBitCosmetic) No cosmetics with the provided IDs found`
+            }
+        }
+
+        // if the length of the bit cosmetic IDs array is not equal to the length of the cosmetics array, return an error.
+        if (bitCosmeticIds.length !== cosmetics.length) {
+            return {
+                status: Status.ERROR,
+                message: `(equipBitCosmetic) Number of bit cosmetic IDs does not match the number of cosmetics found`
             }
         }
 
@@ -107,33 +122,38 @@ export const equipBitCosmetic = async (twitterId: string, bitId: number, bitCosm
             };
         }
 
-        // if the user doesn't own the cosmetic, return an error.
-        if (cosmetic.ownerData.currentOwnerId !== user._id) {
+        // if the user doesn't own all the cosmetics, return an error.
+        if (cosmetics.some(cosmetic => cosmetic.ownerData.currentOwnerId !== user._id)) {
             return {
                 status: Status.ERROR,
-                message: `(equipBitCosmetic) User with Twitter ID: ${twitterId} does not own a cosmetic with ID: ${bitCosmeticId}`,
+                message: `(equipBitCosmetic) User with Twitter ID: ${twitterId} does not own all the provided cosmetics`,
             };
         }
 
-        // if the cosmetic is already used on another bit, return an error.
-        if (cosmetic.equippedBitId !== 0 && cosmetic.equippedBitId !== bitId) {
+        // if any of the cosmetics are already equipped on another bit, return an error.
+        if (cosmetics.some(cosmetic => cosmetic.equippedBitId !== 0 && cosmetic.equippedBitId !== bitId)) {
             return {
                 status: Status.ERROR,
-                message: `(equipBitCosmetic) Cosmetic with ID: ${bitCosmeticId} is already equipped on another bit`,
+                message: `(equipBitCosmetic) One or more cosmetics are already equipped on another bit`,
             };
         }
 
-        // if the cosmetic is already equipped on the bit, return an error.
-        if (cosmetic.equippedBitId === bitId) {
+        // if any of the cosmetics are already equipped on the bit, return an error.
+        if (cosmetics.some(cosmetic => cosmetic.equippedBitId === bitId)) {
             return {
                 status: Status.ERROR,
-                message: `(equipBitCosmetic) Cosmetic with ID: ${bitCosmeticId} is already equipped on this bit.`,
+                message: `(equipBitCosmetic) One or more cosmetics are already equipped on this bit`,
             };
         }
 
-        const cosmeticUpdateOperations = {
-            $set: {}
-        }
+        
+
+        const cosmeticUpdateOperations: Array<{
+            bitCosmeticId: number,
+            updateOperations: {
+                $set: {}
+            }
+        }> = [];
 
         const bitUpdateOperations: Array<{
             bitId: number,
@@ -142,54 +162,78 @@ export const equipBitCosmetic = async (twitterId: string, bitId: number, bitCosm
             }
         }> = [];
 
-        // get the slot of the cosmetic.
-        const slot = cosmetic.slot as BitCosmeticSlot;
+        // get the slots of each cosmetic.
+        // if they are not unique, return an error.
+        const slots = cosmetics.map(cosmetic => cosmetic.slot);
 
-        // check if there is already a cosmetic equipped in this slot.
-        const equippedCosmeticData: EquippedCosmeticData = bit.equippedCosmetics[slot.toLowerCase()];
-
-        if (equippedCosmeticData.cosmeticId !== null) {
-            // update the `equippedBitId` of the previously equipped cosmetic to 0.
-            bitUpdateOperations.push({
-                bitId: equippedCosmeticData.cosmeticId,
-                updateOperations: {
-                    $set: {
-                        equippedBitId: 0
-                    }
-                }
-            })
+        if (new Set(slots).size !== slots.length) {
+            return {
+                status: Status.ERROR,
+                message: `(equipBitCosmetic) One or more cosmetics have the same slot`,
+            };
         }
 
-        // update the `equippedBitId` of the cosmetic to the bit ID.
-        cosmeticUpdateOperations.$set['equippedBitId'] = bitId;
+        for (const cosmetic of cosmetics) {
+            // get the slot of the cosmetic.
+            const slot = cosmetic.slot as BitCosmeticSlot;
 
-        // update the bit with the new equipped cosmetic.
-        bitUpdateOperations.push({
-            bitId,
-            updateOperations: {
-                $set: {
-                    [`equippedCosmetics.${slot.toLowerCase()}`]: {
-                        cosmeticId: bitCosmeticId,
-                        cosmeticName: cosmetic.name,
-                        equippedAt: Math.floor(Date.now() / 1000),
+            // check if there is already a cosmetic equipped in this slot.
+            const equippedCosmeticData: EquippedCosmeticData = bit.equippedCosmetics[slot.toLowerCase()];
+
+            if (equippedCosmeticData.cosmeticId !== null) {
+                // update the `equippedBitId` of the previously equipped cosmetic to 0.
+                bitUpdateOperations.push({
+                    bitId: equippedCosmeticData.cosmeticId,
+                    updateOperations: {
+                        $set: {
+                            equippedBitId: 0
+                        }
+                    }
+                })
+            }
+
+            // update the `equippedBitId` of the cosmetic to the bit ID.
+            cosmeticUpdateOperations.push({
+                bitCosmeticId: cosmetic.bitCosmeticId,
+                updateOperations: {
+                    $set: {
+                        equippedBitId: bitId
                     }
                 }
-            }
-        });
+            });
+
+            // update the bit with the new equipped cosmetic.
+            bitUpdateOperations.push({
+                bitId,
+                updateOperations: {
+                    $set: {
+                        [`equippedCosmetics.${slot.toLowerCase()}`]: {
+                            cosmeticId: cosmetic.bitCosmeticId,
+                            cosmeticName: cosmetic.name,
+                            equippedAt: Math.floor(Date.now() / 1000),
+                        }
+                    }
+                }
+            });
+        }
 
         const bitUpdatePromises = bitUpdateOperations.map(async ({ bitId, updateOperations }) => {
             return BitModel.updateOne({ bitId, ownerData: { currentOwnerId: user._id } }, updateOperations);
         });
 
+        const cosmeticUpdatePromises = cosmeticUpdateOperations.map(async ({ bitCosmeticId, updateOperations }) => {
+            return UserBitCosmeticModel.updateOne({ bitCosmeticId, ownerData: { currentOwnerId: user._id } }, updateOperations);
+        })
+
         // update the cosmetic and the bit.
         await Promise.all([
-            UserBitCosmeticModel.updateOne({ bitCosmeticId }, cosmeticUpdateOperations),
+            ...cosmeticUpdatePromises,
             ...bitUpdatePromises
         ]);
 
         return {
             status: Status.SUCCESS,
-            message: `(equipBitCosmetic) Successfully equipped the cosmetic with ID ${bitCosmeticId} to bit ID ${bitId}`,
+            message: `(equipBitCosmetic) Successfully equipped cosmetics into bit with ID: ${bitId}`,
         }
     } catch (err: any) {
         return {
