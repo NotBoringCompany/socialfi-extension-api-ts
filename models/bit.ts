@@ -62,8 +62,8 @@ export interface EquippedCosmetics {
  * Represents the data of an equipped bit cosmetic.
  */
 export interface EquippedCosmeticData {
-    /** the id of the cosmetic. if none is equipped, this will be null. */
-    cosmeticId: string | null;
+    /** the NUMERICAL (not database) id of the cosmetic. if none is equipped, this will be null. */
+    cosmeticId: number | null;
     /** the name of the cosmetic. mostly required for frontend. if `cosmeticId` is null, this will also be null. */
     cosmeticName: string | null;
     /** when the cosmetic was equipped at. if none is equipped at the moment, this will be 0. */

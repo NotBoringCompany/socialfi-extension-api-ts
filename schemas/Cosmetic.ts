@@ -32,6 +32,7 @@ export const UserBitCosmeticSchema = new mongoose.Schema<BitCosmeticInventory>({
   rarity: String,
   imageUrl: String,
   bitCosmeticId: Number,
+  equippedBitId: Number,
   ownerData: {
     currentOwnerId: String,
     originalOwnerId: String,
