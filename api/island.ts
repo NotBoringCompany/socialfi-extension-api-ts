@@ -2444,7 +2444,7 @@ export const getIslandTappingData = async (islandId: number): Promise<ReturnValu
             };
         }
 
-        const owner = await UserModel.findOne({ _id: island._id }).lean();
+        const owner = await UserModel.findOne({ _id: island.ownerData.currentOwnerId }).lean();
 
         if (!owner) {
             return {
@@ -3085,7 +3085,7 @@ export const rerollBonusMilestoneReward = async (twitterId: string, islandId: nu
     } catch (err: any) {
         return {
             status: Status.ERROR,
-            message: `(getIslandTappingData) Error: ${err.message}`
+            message: `(rerollBonusMilestoneReward) Error: ${err.message}`
         }
     }
 }
@@ -3109,7 +3109,7 @@ export const resetDailyIslandTappingMilestone = async (): Promise<void> => {
         // Retrieve the owner and owner's tapping level for each island
         const bulkWriteOps = await Promise.all(islands.map(async (island) => {
             // Find the user who owns the island
-            const owner = await UserModel.findOne({ _id: island._id }).lean();
+            const owner = await UserModel.findOne({ _id: island.ownerData.currentOwnerId }).lean();
 
             if (!owner) {
                 console.error(`(resetDailyIslandTappingMilestone) Owner not found for island ${island.islandId}`);
