@@ -6,6 +6,28 @@ import { generateObjectId } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
 
 /**
+ * Fetches all of the user's owned bit cosmetics from the database.
+ */
+export const fetchOwnedBitCosmetics = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const cosmetics = await UserBitCosmeticModel.find({ 'ownerData.currentOwnerId': twitterId }).lean();
+
+        return {
+            status: Status.SUCCESS,
+            message: `(fetchOwnedBitCosmetics) Successfully fetched all owned bit cosmetics`,
+            data: {
+                ownedCosmetics: cosmetics
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(fetchOwnedBitCosmetics) Error: ${err.message}`
+        }
+    }
+}
+
+/**
  * Adds one or multiple bit cosmetics to the database.
  */
 export const addBitCosmetics = async (
