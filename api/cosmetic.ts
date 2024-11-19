@@ -40,39 +40,6 @@ export const addBitCosmetics = async (
   }
 }
 
-/**
- * fetches the latest bit cosmetic id from the database.
- */
-export const getLatestBitCosmeticId = async (): Promise<ReturnValue> => {
-    try {
-        const cosmeticId = await redis.get('counter.bitCosmeticId');
-
-        if (!cosmeticId) {
-            // sort the cosmetic ids in descending order and get the first one.
-            const latestCosmetic = await UserBitCosmeticModel.findOne().sort({ bitCosmeticId: -1 }).lean();
-
-            // set the counter to the latest cosmetic
-            await redis.set('counter.bitCosmeticId', latestCosmetic?.bitCosmeticId ?? 0);
-        }
-
-        // increment the next cosmetic id counter
-        const nextCosmeticId = await redis.incr('counter.bitCosmeticId');
-
-        return {
-            status: Status.SUCCESS,
-            message: `(getLatestBitCosmeticId) Successfully fetched the latest bit cosmetic id`,
-            data: {
-                bitCosmeticId: nextCosmeticId ?? 0
-            }
-        }
-    } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(getLatestBitCosmeticId) Error: ${err.message}`
-        }
-    }
-}
-
 // /**
 //  * Equips a cosmetic set to a user's bit.
 //  * 
@@ -360,3 +327,36 @@ export const getLatestBitCosmeticId = async (): Promise<ReturnValue> => {
 //     }
 //   }
 // }
+
+/**
+ * fetches the latest bit cosmetic id from the database.
+ */
+export const getLatestBitCosmeticId = async (): Promise<ReturnValue> => {
+    try {
+        const cosmeticId = await redis.get('counter.bitCosmeticId');
+
+        if (!cosmeticId) {
+            // sort the cosmetic ids in descending order and get the first one.
+            const latestCosmetic = await UserBitCosmeticModel.findOne().sort({ bitCosmeticId: -1 }).lean();
+
+            // set the counter to the latest cosmetic
+            await redis.set('counter.bitCosmeticId', latestCosmetic?.bitCosmeticId ?? 0);
+        }
+
+        // increment the next cosmetic id counter
+        const nextCosmeticId = await redis.incr('counter.bitCosmeticId');
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getLatestBitCosmeticId) Successfully fetched the latest bit cosmetic id`,
+            data: {
+                bitCosmeticId: nextCosmeticId ?? 0
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getLatestBitCosmeticId) Error: ${err.message}`
+        }
+    }
+}
