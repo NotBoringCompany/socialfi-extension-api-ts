@@ -5,7 +5,7 @@ import { AssetBlockchainData, AssetOwnerData } from './asset';
  */
 export interface BitCosmetic {
   /** the database ID of the cosmetic */
-  _id: string;
+  _id?: string;
   /** the name of the cosmetic */
   name: string;
   /** which set this cosmetic item belongs to */
