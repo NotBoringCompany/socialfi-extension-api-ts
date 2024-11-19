@@ -41,6 +41,33 @@ export const addBitCosmetics = async (
 }
 
 /**
+ * Adds a bit cosmetic owned by a user to the database.
+ */
+export const addUserBitCosmeticToDatabase = async (cosmetic: BitCosmeticInventory): Promise<ReturnValue> => {
+    try {
+        const newCosmetic = new UserBitCosmeticModel({
+            _id: generateObjectId(),
+            ...cosmetic
+        });
+
+        await newCosmetic.save();
+
+        return {
+            status: Status.SUCCESS,
+            message: `(addUserBitCosmeticToDatabase) Successfully added a new bit cosmetic to the database`,
+            data: {
+                cosmetic: newCosmetic
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(addUserBitCosmeticToDatabase) Error: ${err.message}`
+        }
+    }
+}
+
+/**
  * Equips a single cosmetic item to one of the bit's slots.
  */
 export const equipBitCosmetic = async (twitterId: string, bitId: number, bitCosmeticId: number): Promise<ReturnValue> => {
