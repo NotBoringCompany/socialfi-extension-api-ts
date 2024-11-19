@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { generateObjectId } from '../utils/crypto';
-import { BitCosmetic } from '../models/cosmetic';
+import { BitCosmetic, BitCosmeticInventory } from '../models/cosmetic';
 // import { Cosmetic, CosmeticEquip, CosmeticName, CosmeticSlot } from '../models/cosmetic';
 
 /**
@@ -16,6 +16,37 @@ export const BitCosmeticSchema = new mongoose.Schema<BitCosmetic>({
   slot: String,
   rarity: String,
   imageUrl: String
+});
+
+/**
+ * Bit Cosmetic schema for a user. Represents closely to the `BitCosmeticInventory` interface in `models/cosmetic.ts`.
+ */
+export const UserBitCosmeticSchema = new mongoose.Schema<BitCosmeticInventory>({
+  _id: {
+    type: String,
+    default: generateObjectId()
+  },
+  name: String,
+  set: String,
+  slot: String,
+  rarity: String,
+  imageUrl: String,
+  bitCosmeticId: Number,
+  ownerData: {
+    currentOwnerId: String,
+    originalOwnerId: String,
+    currentOwnerAddress: String,
+    inCustody: Boolean,
+    originalOwnerAddress: String
+  },
+  blockchainData: {
+    mintable: Boolean,
+    minted: Boolean,
+    tokenId: Number,
+    chain: String,
+    contractAddress: String,
+    transactionHash: String
+  }
 });
 
 // /**

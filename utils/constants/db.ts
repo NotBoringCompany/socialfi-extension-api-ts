@@ -27,7 +27,7 @@ import { BanSchema } from '../../schemas/Ban';
 import { MailReceiverDataSchema, MailSchema } from '../../schemas/Mail';
 import { ConsumedSynthesizingItemSchema } from '../../schemas/Asset';
 import { UserWonderspinDataSchema, WonderspinSchema } from '../../schemas/Gacha';
-import { BitCosmeticSchema } from '../../schemas/Cosmetic';
+import { BitCosmeticSchema, UserBitCosmeticSchema } from '../../schemas/Cosmetic';
 import { UserWonderpassDataSchema, WonderpassSchema } from '../../schemas/Wonderpass';
 import { FriendSchema } from '../../schemas/Friend';
 import { ReportSchema } from '../../schemas/Report';
@@ -118,3 +118,4 @@ export const FriendModel = TEST_CONNECTION.model('Friends', FriendSchema, 'Frien
 export const ReportModel = TEST_CONNECTION.model('Reports', ReportSchema, 'Reports');
 export const CraftingRecipeModel = TEST_CONNECTION.model('CraftingRecipes', CraftingRecipeSchema, 'CraftingRecipes');
 export const BitTraitDataModel = TEST_CONNECTION.model('BitTraitData', BitTraitDataSchema, 'BitTraitData');
+export const UserBitCosmeticModel = TEST_CONNECTION.model('UserBitCosmetics', UserBitCosmeticSchema, 'UserBitCosmetics');

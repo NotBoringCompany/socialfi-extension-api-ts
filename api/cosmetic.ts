@@ -1,43 +1,77 @@
 import { EquippedCosmeticData } from '../models/bit';
 import { BitCosmetic, BitCosmeticInventory, BitCosmeticRarity, BitCosmeticSlot } from '../models/cosmetic';
-import { BitCosmeticModel, BitModel, UserModel } from '../utils/constants/db';
+import { BitCosmeticModel, BitModel, UserBitCosmeticModel, UserModel } from '../utils/constants/db';
+import { redis } from '../utils/constants/redis';
 import { generateObjectId } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
 
-// /**
-//  * Adds one or multiple bit cosmetics to the database.
-//  */
-// export const addBitCosmetics = async (
-//   cosmetics: BitCosmetic[]
-// ): Promise<ReturnValue> => {
-//   try {
-//     // check if any of the cosmetics already exist.
-//     const existingCosmetics = await BitCosmeticModel.find().lean();
+/**
+ * Adds one or multiple bit cosmetics to the database.
+ */
+export const addBitCosmetics = async (
+  cosmetics: BitCosmetic[]
+): Promise<ReturnValue> => {
+  try {
+    // check if any of the cosmetics already exist.
+    const existingCosmetics = await BitCosmeticModel.find().lean();
 
-//     // filter out the cosmetics that already exist and only add the new ones.
-//     const newCosmeticsToAdd = cosmetics.filter(cosmetic => {
-//       return !existingCosmetics.some(existing => existing.name.toLowerCase() === cosmetic.name.toLowerCase());
-//     });
+    // filter out the cosmetics that already exist and only add the new ones.
+    const newCosmeticsToAdd = cosmetics.filter(cosmetic => {
+      return !existingCosmetics.some(existing => existing.name.toLowerCase() === cosmetic.name.toLowerCase());
+    });
 
-//     // add the new cosmetics to the database.
-//     await BitCosmeticModel.insertMany(newCosmeticsToAdd);
+    // add the new cosmetics to the database.
+    await BitCosmeticModel.insertMany(newCosmeticsToAdd);
 
-//     console.log(`(addBitCosmetics) Successfully added ${newCosmeticsToAdd.length} new bit cosmetics to the database.`);
-//     console.log(`(addBitCosmetics) Number of cosmetics that already exist: ${existingCosmetics.length - newCosmeticsToAdd.length}`);
+    console.log(`(addBitCosmetics) Successfully added ${newCosmeticsToAdd.length} new bit cosmetics to the database.`);
+    console.log(`(addBitCosmetics) Number of cosmetics that already exist: ${existingCosmetics.length - newCosmeticsToAdd.length}`);
 
-//     return {
-//       status: Status.SUCCESS,
-//       message: `(addBitCosmetics) Successfully added ${newCosmeticsToAdd.length} new bit cosmetics to the database`
-//     }
-//   } catch (err: any) {
-//     console.error(`(addBitCosmetic) Error: ${err.message}`);
+    return {
+      status: Status.SUCCESS,
+      message: `(addBitCosmetics) Successfully added ${newCosmeticsToAdd.length} new bit cosmetics to the database`
+    }
+  } catch (err: any) {
+    console.error(`(addBitCosmetic) Error: ${err.message}`);
     
-//     return {
-//       status: Status.ERROR,
-//       message: `(addBitCosmetics) Error: ${err.message}`
-//     }
-//   }
-// }
+    return {
+      status: Status.ERROR,
+      message: `(addBitCosmetics) Error: ${err.message}`
+    }
+  }
+}
+
+/**
+ * fetches the latest bit cosmetic id from the database.
+ */
+export const getLatestBitCosmeticId = async (): Promise<ReturnValue> => {
+    try {
+        const cosmeticId = await redis.get('counter.bitCosmeticId');
+
+        if (!cosmeticId) {
+            // sort the cosmetic ids in descending order and get the first one.
+            const latestCosmetic = await UserBitCosmeticModel.findOne().sort({ bitCosmeticId: -1 }).lean();
+
+            // set the counter to the latest cosmetic
+            await redis.set('counter.bitCosmeticId', latestCosmetic?.bitCosmeticId ?? 0);
+        }
+
+        // increment the next cosmetic id counter
+        const nextCosmeticId = await redis.incr('counter.bitCosmeticId');
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getLatestBitCosmeticId) Successfully fetched the latest bit cosmetic id`,
+            data: {
+                bitCosmeticId: nextCosmeticId ?? 0
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getLatestBitCosmeticId) Error: ${err.message}`
+        }
+    }
+}
 
 // /**
 //  * Equips a cosmetic set to a user's bit.
