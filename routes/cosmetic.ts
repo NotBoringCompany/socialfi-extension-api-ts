@@ -5,7 +5,7 @@ import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 const router = express.Router();
 
-router.post('/fetch_owned_bit_cosmetics', async (req, res) => {
+router.get('/fetch_owned_bit_cosmetics', async (req, res) => {
     try {
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'fetch_owned_bit_cosmetics');
 
