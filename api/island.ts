@@ -792,6 +792,33 @@ export const unplaceBit = async (twitterId: string, bitId: number): Promise<Retu
             }
         }
 
+        // fetch bit's rarity
+        const bitRarity = <BitRarity>bit.rarity;
+
+        // fetch rarityDeviationReductions based on bitRarity
+        // xTerio bit doesn't have reductions
+        const rarityDeviationReductions =
+            bit.bitType === BitType.XTERIO ? {
+                gatheringRateReduction: 0
+            } : RARITY_DEVIATION_REDUCTIONS(<IslandType>island.type, bitRarity);
+
+        // check if island `gatheringRateModifiers` containing `Rarity Deviation` origin && Reductions is greater than 0
+        const gatheringRateModifierIndex = (island.islandStatsModifiers?.gatheringRateModifiers as Modifier[]).findIndex(modifier => modifier.origin === 'Rarity Deviation');
+        // Set the Operations only if `Rarity Deviation` gatheringRateModifierIndex is found
+        if (gatheringRateModifierIndex >= 0) {
+            // check if this is the last placed bit in the island
+            if (island.placedBitIds.length === 1) {
+                // restore the value back to 1(100%) since we are unplacing the last bit placed in island
+                islandUpdateOperations.$set[`islandStatsModifiers.gatheringRateModifiers.${gatheringRateModifierIndex}.value`] = 1;
+            } else if (gatheringRateModifierIndex !== 1 && rarityDeviationReductions.gatheringRateReduction > 0) {
+                const currentValue = island.islandStatsModifiers?.gatheringRateModifiers[gatheringRateModifierIndex].value ?? 1;
+                const newValue = currentValue + (rarityDeviationReductions.gatheringRateReduction / 100);
+
+                // added the value by the reduction amount since we are unplacing the bit from the isle
+                islandUpdateOperations.$set[`islandStatsModifiers.gatheringRateModifiers.${gatheringRateModifierIndex}.value`] = newValue;
+            }
+        }
+
         // remove the bit ID from the island's `placedBitIds`
         islandUpdateOperations.$pull['placedBitIds'] = bitId;
 
@@ -2937,10 +2964,15 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
 
         // Destructure currentEnergy
         const { currentEnergy } = user.inGameData.energy as PlayerEnergy;
-        // Destructure islandTappingData
+        // Destructure islandTappingData & islandType
         const { caressEnergyMeter, currentCaressEnergyMeter, currentMilestone, milestoneReward } = island.islandTappingData as IslandTappingData;
-        const islandTappingLimit = ISLAND_TAPPING_MILESTONE_LIMIT(island.type as IslandType);
-        const boosterPercentage = milestoneReward.boosterReward;
+        const { type } = island as Island;
+
+        // Check islandTappingLimit & boosterPercentage.
+        // If island Type is Primal, add 100% booster on top of milestone Booster reward
+        const islandTappingLimit = ISLAND_TAPPING_MILESTONE_LIMIT(type);
+        const boosterPercentage = type === IslandType.PRIMAL_ISLES ? milestoneReward.boosterReward + 100 : milestoneReward.boosterReward;
+        console.log(`(applyIslandTapping), Island #${island.islandId} type ${type}. Apply ${boosterPercentage}% Booster`);
         let resourcesDropped: number = 0;
 
         // if caressMeter passed from FE isn't equal than current caressEnergyMeter return error.
