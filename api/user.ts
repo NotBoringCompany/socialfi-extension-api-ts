@@ -2872,7 +2872,7 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                 rarity,
                 gender: RANDOMIZE_GENDER(),
                 owner: userObjectId,
-                premium: false,
+                premium: true,
                 purchaseDate: Math.floor(Date.now() / 1000),
                 obtainMethod: ObtainMethod.SIGN_UP,
                 placedIslandId: 0,
