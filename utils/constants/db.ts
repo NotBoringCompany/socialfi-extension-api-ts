@@ -18,6 +18,9 @@ import { WeeklyMVPClaimableRewardSchema, WeeklyMVPRankingLeaderboardSchema } fro
 import { CollabBasketSchema, CollabParticipantSchema } from '../../schemas/Collab';
 import { ShopAssetPurchaseSchema, ShopAssetSchema } from '../../schemas/Shop';
 
+import * as dotenv from 'dotenv';
+dotenv.config({});
+
 export const WONDERBITS_DATABASE = process.env.WONDERBITS_MONGODB_URI!;
 // create a connection to the wonderbits database
 export const WONDERBITS_CONNECTION = mongoose.createConnection(WONDERBITS_DATABASE);

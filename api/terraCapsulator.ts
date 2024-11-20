@@ -145,7 +145,6 @@ export const summonIsland = async (
         const islandStatsModifiers: IslandStatsModifiers = {
             resourceCapModifiers: [],
             gatheringRateModifiers: [],
-            earningRateModifiers: []
         }
 
         // loop through each bit and see if they have these traits:
@@ -195,7 +194,6 @@ export const summonIsland = async (
                 };
 
                 islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
-                islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
             }
         });
 
@@ -220,21 +218,6 @@ export const summonIsland = async (
                 lastClaimed: 0,
                 gatheringProgress: 0,
                 lastUpdatedGatheringProgress: Math.floor(Date.now() / 1000),
-            },
-            islandEarningStats: {
-                totalXCookiesSpent: 0,
-                totalXCookiesEarnable,
-                totalXCookiesEarned: 0,
-                claimableXCookies: 0,
-                totalCookieCrumbsSpent: 0,
-                totalCookieCrumbsEarnable,
-                totalCookieCrumbsEarned: 0,
-                claimableCookieCrumbs: 0,
-                earningStart: Math.floor(Date.now() / 1000),
-                crumbsEarningStart: Math.floor(Date.now() / 1000),
-                earningEnd: 0,
-                crumbsEarningEnd: 0,
-                lastClaimed: 0,
             },
             islandStatsModifiers,
             islandTappingData: ISLAND_TAPPING_REQUIREMENT(1, tapping.level),

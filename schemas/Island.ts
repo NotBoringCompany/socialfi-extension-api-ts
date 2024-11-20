@@ -38,7 +38,6 @@ export const IslandSchema = new mongoose.Schema({
             default: 0
         }
     },
-    islandEarningStats: Object,
     islandStatsModifiers: Object,
     islandTappingData: Object
 })

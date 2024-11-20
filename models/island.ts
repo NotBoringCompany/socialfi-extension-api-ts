@@ -39,8 +39,6 @@ export interface Island {
     traits: IslandTrait[];
     /** resource stats related to the island, such as gathering rate */
     islandResourceStats: IslandResourceStats;
-    /** earning stats related to the island, such as earning rate */
-    islandEarningStats: IslandEarningStats;
     /** modifiers for both resource and earning stats (incl. boost and reduction) */
     islandStatsModifiers: IslandStatsModifiers;
     /** island tapping related data */
@@ -111,38 +109,6 @@ export interface IslandResourceStats {
     lastUpdatedGatheringProgress: number;
 }
 
-/**
- * Represents the earning stats of an island.
- */
-export interface IslandEarningStats {
-    /** total xCookies spent for this island (a % of the xCookies spent for a terra cap will go here. the rest comes from island upgrades) */
-    totalXCookiesSpent: number;
-    /** total xCookies earnable from this island. */
-    totalXCookiesEarnable: number;
-    /** total xCookies earned, incl. ones claimed already. end amount should equal total xCookies spent (even with tax since it's not calc. here) */
-    totalXCookiesEarned: number;
-    /** claimable xCookies that haven't been claimed yet to the inventory */
-    claimableXCookies: number;
-    /**  total cookie crumbs spent on this island */
-    totalCookieCrumbsSpent: number;
-    /** total cookie crumbs earnble on this island */
-    totalCookieCrumbsEarnable: number;
-    /** total cookie crumbs earned, incl. the ones claimed already. */
-    totalCookieCrumbsEarned: number;
-    /** claimable cookie crumbs that haven't been claimed yet to the inventory */
-    claimableCookieCrumbs: number;
-    /** start timestamp of earning (xCookies); 0 if not started yet */
-    earningStart: number;
-    /**  start timestamp of earning (cookie crumbs); 0 if not started yet; starts after gathering of resources and earning of xCookies are completed */
-    crumbsEarningStart: number;
-    /** end timestamp of earning (xCookies); 0 if not ended yet */
-    earningEnd: number;
-    /** end timestamp of earning (cookie crumbs); 0 if not ended yet */
-    crumbsEarningEnd: number;
-    /** timestamp of when `claimableXCookies` and/or `claimableCookieCrumbs` were last claimed */
-    lastClaimed: number;
-}
-
 /** 
  * Represents the modifiers for both resource and earning stats.
  * 
@@ -154,8 +120,6 @@ export interface IslandStatsModifiers {
     resourceCapModifiers: Modifier[];
     /** gathering rate modifiers */
     gatheringRateModifiers: Modifier[];
-    /** earning rate modifiers */
-    earningRateModifiers: Modifier[];
 }
 
 /**
