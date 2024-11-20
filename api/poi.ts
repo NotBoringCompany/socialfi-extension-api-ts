@@ -1279,7 +1279,7 @@ export const sellItemsInPOIShop = async (
 export const buyItemsInPOIShop = async (
     twitterId: string,
     items: POIShopActionItemData[],
-    paymentChoice: 'xCookies' | 'cookieCrumbs'
+    paymentChoice: 'xCookies'
 ): Promise<ReturnValue> => {
     try {
         if (items.some(item => item.amount < 1)) {
@@ -1392,12 +1392,10 @@ export const buyItemsInPOIShop = async (
             // check if depending on the payment method, the xCookies/cookie crumbs value of the item is unavailable.
             if (paymentChoice === 'xCookies' && itemData.buyingPrice.xCookies === 'unavailable') {
                 return true;
-            } else if (paymentChoice === 'cookieCrumbs' && itemData.buyingPrice.cookieCrumbs === 'unavailable') {
-                return true;
             }
 
             // get the total payment the user has to make.
-            totalPayment += item.amount * (paymentChoice === 'xCookies' ? itemData.buyingPrice.xCookies as number : itemData.buyingPrice.cookieCrumbs as number);
+            totalPayment += item.amount * (itemData.buyingPrice.xCookies as number);
         });
 
         if (invalidItems.length > 0) {
@@ -1412,11 +1410,6 @@ export const buyItemsInPOIShop = async (
             return {
                 status: Status.BAD_REQUEST,
                 message: `(buyItemsInPOIShop) User does not have enough xCookies.`
-            }
-        } else if (paymentChoice === 'cookieCrumbs' && user.inventory.cookieCrumbs < totalPayment) {
-            return {
-                status: Status.BAD_REQUEST,
-                message: `(buyItemsInPOIShop) User does not have enough cookie crumbs.`
             }
         }
 
@@ -1575,10 +1568,6 @@ export const buyItemsInPOIShop = async (
                 userUpdateOperations.$inc[`inventory.xCookieData.currentXCookies`] = -totalPayment;
                 userUpdateOperations.$inc[`inventory.xCookieData.totalXCookiesSpent`] = totalPayment;
                 userUpdateOperations.$inc[`inventory.xCookieData.weeklyXCookiesSpent`] = totalPayment;
-            } else if (paymentChoice === 'cookieCrumbs') {
-                currentCurrency = user.inventory.cookieCrumbs;
-                userUpdateOperations.$inc[`inventory.cookieCrumbs`] = -totalPayment;
-                // to do later: increment `totalCookieCrumbsSpent` and `weeklyCookieCrumbsSpent` by the total payment (not implemented yet).
             }
         });
 
