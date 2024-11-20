@@ -2410,7 +2410,6 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
             purchaseDate: Math.floor(Date.now() / 1000),
             obtainMethod: ObtainMethod.SIGN_UP,
             currentLevel: 1,
-            currentTax: 0,
             placedBitIds: [],
             traits: randomizeIslandTraits(),
             islandResourceStats: {

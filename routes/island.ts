@@ -1,5 +1,5 @@
 import express from 'express';
-import { applyGatheringProgressBooster, applyIslandTapping, calcEffectiveResourceDropChances, calcIslandCurrentRate, checkCurrentTax, claimResources, evolveIsland, getIslandTappingData, getIslands, giftXterioIsland, placeBit, removeIsland, rerollBonusMilestoneReward, unplaceBit, updateGatheringProgressAndDropResourceAlt } from '../api/island';
+import { applyGatheringProgressBooster, applyIslandTapping, calcEffectiveResourceDropChances, calcIslandCurrentRate, claimResources, evolveIsland, getIslandTappingData, getIslands, giftXterioIsland, placeBit, removeIsland, rerollBonusMilestoneReward, unplaceBit, updateGatheringProgressAndDropResourceAlt } from '../api/island';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { IslandType, RateType, ResourceDropChanceDiff } from '../models/island';
@@ -150,25 +150,6 @@ router.post('/remove_island', async (req, res) => {
         })
     }
 })
-
-router.get('/check_current_tax/:twitterId/:islandId', async (req, res) => {
-    const { twitterId, islandId } = req.params;
-
-    try {
-        const { status, message, data } = await checkCurrentTax(twitterId, parseInt(islandId));
-
-        return res.status(status).json({
-            status,
-            message,
-            data
-        });
-    } catch (err: any) {
-        return res.status(500).json({
-            status: 500,
-            message: err.message
-        })
-    }
-});
 
 router.post('/evolve_island', async (req, res) => {
     const { islandId, choice } = req.body;
@@ -356,25 +337,6 @@ router.get('/get_evolution_cost/:islandId', async (req, res) => {
             data: {
                 evolutionCost
             }
-        });
-    } catch (err: any) {
-        return res.status(500).json({
-            status: 500,
-            message: err.message
-        });
-    }
-})
-
-router.get('/get_x_cookie_tax/:twitterId/:islandId', async (req, res) => {
-    const { twitterId, islandId } = req.params;
-
-    try {
-        const { status, message, data } = await checkCurrentTax(twitterId, parseInt(islandId));
-        
-        return res.status(status).json({
-            status,
-            message,
-            data
         });
     } catch (err: any) {
         return res.status(500).json({

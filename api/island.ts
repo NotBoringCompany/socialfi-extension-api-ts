@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
 import { IslandSchema } from '../schemas/Island';
 import { Island, IslandStatsModifiers, IslandTappingData, IslandTrait, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
-import { BARREN_ISLE_COMMON_DROP_CHANCE, BASE_CARESS_PER_TAPPING, BASE_ENERGY_PER_TAPPING, BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DAILY_BONUS_RESOURCES_GATHERABLE, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLUTION_COST, ISLAND_RARITY_DEVIATION_MODIFIERS, ISLAND_TAPPING_MILESTONE_BONUS_REWARD, ISLAND_TAPPING_MILESTONE_LIMIT, ISLAND_TAPPING_REQUIREMENT, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN, X_COOKIE_TAX, randomizeIslandTraits } from '../utils/constants/island';
+import { BARREN_ISLE_COMMON_DROP_CHANCE, BASE_CARESS_PER_TAPPING, BASE_ENERGY_PER_TAPPING, BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DAILY_BONUS_RESOURCES_GATHERABLE, DEFAULT_RESOURCE_CAP, EARNING_RATE_REDUCTION_MODIFIER, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLUTION_COST, ISLAND_RARITY_DEVIATION_MODIFIERS, ISLAND_TAPPING_MILESTONE_BONUS_REWARD, ISLAND_TAPPING_MILESTONE_LIMIT, ISLAND_TAPPING_REQUIREMENT, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN, randomizeIslandTraits } from '../utils/constants/island';
 import { calcBitCurrentRate, getBits } from './bit';
 import { BarrenResource, ExtendedResource, ExtendedResourceOrigin, Resource, ResourceLine, ResourceRarity, ResourceRarityNumeric, ResourceType, SimplifiedResource } from '../models/resource';
 import { UserSchema } from '../schemas/User';
@@ -134,7 +134,6 @@ export const giftXterioIsland = async (
             purchaseDate: Math.floor(Date.now() / 1000),
             obtainMethod: ObtainMethod.XTERIO,
             currentLevel: 1,
-            currentTax: 0,
             placedBitIds: [],
             traits,
             islandResourceStats: {
@@ -1320,68 +1319,6 @@ export const updateExtendedTraitEffects = async (
  */
 export const checkBitRarityAllowed = (bitRarity: BitRarity, minRarityRequired: BitRarity): boolean => {
     return BitRarityNumeric[bitRarity] >= BitRarityNumeric[minRarityRequired];
-}
-
-/**
- * Checks how much tax the user has to pay when claiming xCookies based on the island type and the amount of active islands the user has.
- */
-export const checkCurrentTax = async (twitterId: string, islandId: number): Promise<ReturnValue> => {
-    try {
-        // check if user exists
-        const user = await UserModel.findOne({ twitterId }).lean();
-
-        if (!user) {
-            return {
-                status: Status.ERROR,
-                message: `(checkCurrentTax) User not found.`
-            }
-        }
-
-        // get the island ids from the user's inventory
-        const islandIds = user.inventory?.islandIds as number[];
-
-        if (islandIds.length === 0 || !islandIds) {
-            return {
-                status: Status.SUCCESS,
-                message: `(checkCurrentTax) User has no islands.`
-            }
-        }
-
-        // check if the user owns the island
-        if (!islandIds.includes(islandId)) {
-            return {
-                status: Status.UNAUTHORIZED,
-                message: `(checkCurrentTax) User does not own the island.`
-            }
-        }
-
-        // filter out the islands that have bits placed by querying the `Islands` collection to get the total amount of active islands
-        const activeIslands = await IslandModel.find(
-            {
-                islandId:
-                    { $in: islandIds },
-                placedBitIds: { $exists: true, $ne: [] }
-            }).lean();
-
-        // get the island from the `islandId` within the `activeIslands` array
-        const island = activeIslands.find(island => island.islandId === islandId);
-
-        // calculate the tax based on the amount of active islands
-        const tax = X_COOKIE_TAX(<IslandType>island.type, activeIslands.length);
-
-        return {
-            status: Status.SUCCESS,
-            message: `(checkCurrentTax) Tax calculated.`,
-            data: {
-                tax
-            }
-        }
-    } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(checkCurrentTax) Error: ${err.message}`
-        }
-    }
 }
 
 /**
