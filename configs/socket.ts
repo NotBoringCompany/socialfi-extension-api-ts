@@ -78,6 +78,13 @@ export const initializeSocket = (server: http.Server) => {
     });
 };
 
+/**
+ * gets the Socket.IO server instance.
+ */
+export const getSocket = () => {
+    return io;
+};
+
 // Add a socket ID to a specific user
 export const addSocketUser = async (userId: string, socketId: string) => {
     const key = `user_sockets:${userId}`;

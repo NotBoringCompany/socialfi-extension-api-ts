@@ -78,3 +78,12 @@ export const unmuteParticipantDTO = z.object({
     /** the user's unique identifier (_id or Twitter ID) representing the participant */
     userId: z.string(),
 });
+
+export interface SendBlastMessageDTO {
+    /** the blast message */
+    message: string;
+}
+
+export const sendBlastMessageDTO = z.object({
+    message: z.string().min(1, 'Message is required'),
+});

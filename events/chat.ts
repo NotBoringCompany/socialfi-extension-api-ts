@@ -9,7 +9,7 @@ import {
     sendMessageDTO,
     SendMessageDTO,
 } from '../validations/chat';
-import { getSocketUsers } from '../configs/socket';
+import { getSocket, getSocketUsers } from '../configs/socket';
 import { Chatroom } from '../models/chat';
 import { redis } from '../utils/constants/redis';
 
@@ -24,6 +24,7 @@ export enum ChatEvent {
     JOIN_CHATROOM = 'join_chatroom',
     /** new chatroom */
     NEW_CHATROOM = 'new_chatroom',
+    BLAST_MESSAGE = 'blast_message',
 }
 
 // the time window for rate-limiting in milliseconds (e.g., 10 seconds).
@@ -171,4 +172,14 @@ export const handleChatEvents = (socket: Socket, io: Server) => {
 
         io.to(result.data.chatroom._id).emit(ChatEvent.NEW_CHATROOM, result.data);
     });
+};
+
+/**
+ * Broadcasts a blast message to all connected clients.
+ */
+export const broadcastBlastMessage = (message: string): void => {
+    const io = getSocket();
+
+    // Emit the blast message event to all connected clients.
+    io.emit(ChatEvent.BLAST_MESSAGE, { message });
 };
