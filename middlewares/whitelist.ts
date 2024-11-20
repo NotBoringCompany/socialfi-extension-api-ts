@@ -28,19 +28,19 @@ export const whitelistMiddleware = async (req: Request, res: Response, next: Nex
 
         const { status, message, data } = validateJWT(token);
         if (status !== Status.SUCCESS) {
-            return {
-                status,
-                message: `(whitelistMiddleware) ${message}`,
-            };
+            return res.status(503).json({
+                status: 503,
+                message: 'The server is currently undergoing maintenance. Please try again later.'
+            });
         }
 
         const { twitterId } = data;
 
         if (!twitterId || !twitterIds.includes(twitterId)) {
-            return {
-                status: Status.UNAUTHORIZED,
-                message: `(whitelistMiddleware) You denied the app or the token is invalid/expired.`,
-            };
+            return res.status(503).json({
+                status: 503,
+                message: 'The server is currently undergoing maintenance. Please try again later.'
+            });
         }
 
         next();
