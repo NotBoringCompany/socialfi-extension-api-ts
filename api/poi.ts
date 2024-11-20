@@ -15,10 +15,53 @@ import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '..
 import { ReturnValue, Status } from '../utils/retVal';
 import { getLatestSquadWeeklyRanking, squadKOSData } from './squad';
 import { updateReferredUsersData } from './user';
-import * as dotenv from 'dotenv';
-import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
-import { UserWallet } from '../models/user';
-import { getUserCurrentPoints } from './leaderboard';
+
+/**
+ * Resets the `currentBuyableAmount` and `currentSellableAmount` of all global items in all POI shops.
+ * Also resets `userTransactionData` for all player items in all POI shops.
+ * 
+ * Called by a scheduler at random times at the given time ranges.
+ */
+export const resetPOIItemsData = async (): Promise<void> => {
+    try {
+        await mongoose.connect(process.env.MONGODB_URI);
+        const allPOIs = await POIModel.find().lean();
+
+        const bulkWriteOperations = allPOIs.map(poi => {
+            const {globalItems, playerItems} = poi.shop;
+
+            const updatedGlobalItems = globalItems.map(item => {
+                item.currentBuyableAmount = item.buyableAmount;
+                item.currentSellableAmount = item.sellableAmount;
+
+                return item;
+            });
+
+            const updatedPlayerItems = playerItems.map(item => {
+                // reset userTransactionData
+                item.userTransactionData.length = 0;
+                return item;
+            });
+
+            return {
+                updateOne: {
+                    filter: { name: poi.name },
+                    update: {
+                        'shop.globalItems': updatedGlobalItems,
+                        'shop.playerItems': updatedPlayerItems
+                    }
+                }
+            }
+        });
+
+        // execute the bulk write operations
+        await POIModel.bulkWrite(bulkWriteOperations);
+
+        console.log('resetPOIItemsData: Successfully reset all global items in all POI shops.');
+    } catch (err: any) {
+        console.error('Error in resetPOIItemsData:', err.message);
+    }
+}
 
 
 /**
