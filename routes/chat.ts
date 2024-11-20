@@ -3,6 +3,7 @@ import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { getChatMessages, getUserChatrooms, muteParticipant, unmuteParticipant } from '../api/chat';
 import { chatMessageQuery, muteParticipantDTO, unmuteParticipantDTO } from '../validations/chat';
+import { authMiddleware } from '../middlewares/auth';
 
 const router = express.Router();
 
@@ -54,7 +55,7 @@ router.get('/get_messages', async (req, res) => {
  * @description Mute a chatroom participant.
  * @param {MuteParticipantDTO} req.body - the data.
  */
-router.post('/mute_participant', async (req, res) => {
+router.post('/mute_participant', authMiddleware(3), async (req, res) => {
     try {
         const auth = await validateRequestAuth(req, res, 'mute_participant');
 
@@ -89,7 +90,7 @@ router.post('/mute_participant', async (req, res) => {
  * @description Unmute a chatroom participant.
  * @param {UnmuteParticipantDTO} req.body - the data.
  */
-router.post('/unmute_participant', async (req, res) => {
+router.post('/unmute_participant', authMiddleware(3), async (req, res) => {
     try {
         const auth = await validateRequestAuth(req, res, 'unmute_participant');
 
