@@ -13,8 +13,8 @@ import { TxParsedMessage } from './web3';
 export interface ShopAsset {
     // the name of the asset
     assetName: ShopAssetType;
-    // the type of asset (e.g. food, item, in-app package, etc.)
-    assetType: 'item' | 'food' | 'package';
+    // the type of asset (e.g. food, item, in-app package, wonderpass, etc.)
+    assetType: 'item' | 'food' | 'package' | 'wonderpass';
     // the price of the asset
     price: ShopPrice;
     // the image URL of the asset (for rendering in the frontend)
@@ -40,7 +40,7 @@ export interface ShopAsset {
     // the effect duration data of the asset
     // an asset can have a duration-based effect (e.g. 24 hour boost) or an effect that lasts until a certain date (e.g. battle passes).
     // if the asset has no effect duration, then this will be `null`.
-    effectDuration: ShopAssetEffectDuration;
+    effectDuration: ShopAssetEffectDuration | null;
     // the refresh interval of the asset
     refreshIntervalData: ShopAssetRefreshIntervalData;
     // the level requirement of the asset
@@ -56,6 +56,8 @@ export interface ShopAsset {
 export enum ShopAssetClassification {
     // non-IAP asset
     NON_IAP = 'nonIAP',
+    // wonderpass will have their own classification
+    WONDERPASS = 'wonderpass',
     // special assets with lower/base value for IAP, rendered with a base component (e.g. with just a background)
     SPECIAL_BASE_IAP = 'specialBaseIAP',
     // special higher value assets for IAP, rendered with a special component (e.g. showcasing its contents, with extra sparkling components, etc.)
@@ -69,6 +71,7 @@ export enum ShopAssetClassification {
  */
 export enum ShopAssetIGCPaymentMethod {
     X_COOKIES = 'xCookies',
+    DIAMONDS = 'diamonds',
 }
 
 /**
@@ -132,6 +135,11 @@ export interface ShopPrice {
     // the final price of the asset in xCookies after discounts (if no discount, then this will be the same as `xCookies`)
     // this will be the price used for the final purchase
     finalXCookies?: number;
+    // the base price of the asset in diamonds
+    diamonds: number;
+    // the final price of the asset in diamonds after discounts (if no discount, then this will be the same as `diamonds`)
+    // this will be the price used for the final purchase
+    finalDiamonds?: number;
     // base non-discounted USD value of the asset
     usd?: number;
     // final USD value of the asset. if discounted, this should be lower than `usd`.
@@ -192,18 +200,18 @@ export interface ShopAssetRefreshIntervalData {
 export interface ShopAssetGivenContentData {
     // the type of content. used to easily identify and handle operations for the content given by the asset.
     // igc = in-game currency.
-    contentType: 'item' | 'food' | 'igc' | 'monthlyPass';
+    contentType: 'item' | 'food' | 'igc' | 'wonderpass';
     // the actual content that the asset gives to the player
-    content: ItemType | FoodType | 'xCookies' | 'diamonds' | 'monthlyPass';
+    content: ItemType | FoodType | 'xCookies' | 'diamonds' | 'wonderpass';
     // the amount of content that the asset gives to the player
-    // for monthly passes and other non-quantity-based content, this will be 1
+    // for wonderpasses and other non-quantity-based content, this will be 1
     amount: number;
 }
 
 /**
  * A list of packages that can be bought in the shop.
  * 
- * These can range from monthly passes, special event packages, bundles, etc.
+ * These can range from wonderpasses, special event packages, bundles, etc.
  */
 export enum ShopPackageType {
     // test package
@@ -227,10 +235,13 @@ export interface ShopAssetPurchase {
     // if the payment is done via blockchain, this will contain the blockchain data (e.g. which chain the payment was done on, the purchaser's wallet address, etc.)
     // else, this will be null.
     blockchainData: ShopAssetPurchaseBlockchainData;
+    // if the payment is done via telegram stars, this will contain the telegram payment data (e.g. the payment ID, etc.)
+    // else, this will be null.
+    telegramData: ShopAssetPurchaseTelegramPaymentData;
     // the purchase timestamp (in unix format)
     purchaseTimestamp: number;
     // the expiration timestamp of the asset's effects (in unix format)
-    // used primarily for assets with effect durations (like monthly passes, etc)
+    // used primarily for assets with effect durations (like wonderpasses, etc)
     // for one-time use assets, this will be set to `never`.
     effectExpiration: number | 'never';
     // the data of the contents the player receives after this asset was purchased
@@ -266,6 +277,20 @@ export interface ShopAssetPurchaseBlockchainData {
 }
 
 /**
+ * Represents the telegram payment data of a shop asset purchase.
+ */
+export interface ShopAssetPurchaseTelegramPaymentData {
+    /** the invoice payload of the payment (contains the metadata/details of the purchase) */
+    invoicePayload: string;
+    /** the telegram payment charge ID */
+    telegramPaymentChargeId: string;
+    /** the provider payment charge ID */
+    providerPaymentChargeId: string;
+    // an array of differents trings that represent the status of each payment confirmation attempt.
+    confirmationAttempts: ShopAssetPurchaseConfirmationAttemptType[];
+}
+
+/**
  * Represents the different types of shop asset purchase confirmation attempts.
  */
 export enum ShopAssetPurchaseConfirmationAttemptType {
@@ -273,7 +298,7 @@ export enum ShopAssetPurchaseConfirmationAttemptType {
     SUCCESS = 'success',
     // error with the API to verify (blockchain)
     API_ERROR = 'apiError',
-    // no valid transaction with given params found
+    // no valid transaction with given params found (applies for blockchain AND telegram stars)
     NO_VALID_TX = 'noValidTx',
     // payment sent with the transaction is lower than the required amount to pay for the asset
     PAYMENT_MISMATCH = 'paymentMismatch',
@@ -302,4 +327,4 @@ export interface ShopAssetPurchaseTotalCostData {
 }
 
 // all available shop assets
-export type ShopAssetType = AssetType | ShopPackageType;
+export type ShopAssetType = AssetType | ShopPackageType | 'wonderpass';
