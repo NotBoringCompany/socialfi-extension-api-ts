@@ -34,10 +34,19 @@ export const GET_DAILY_LOGIN_REWARDS = (
     // 3. max is 125 leaderboard points, obtained after the 7th day. every day after the 7th day means the user will get 125 leaderboard points.
     // 4. for now, xCookies will be 0.
     const points = 50 + (12.5 * currentConsecutiveDays);
+    
+    // logic for xCookies, starting from 2 ConsecutiveDays will gave xCookies and start increasing by 1 from 4 ConsecutiveDays
+    const xCookies = 
+    currentConsecutiveDays <= 1 ? 0 :
+    currentConsecutiveDays <= 3 ? 1 :
+    currentConsecutiveDays <= 4 ? 2 :
+    currentConsecutiveDays <= 5 ? 3 :
+    currentConsecutiveDays <= 6 ? 4 : 5;
+
     return [
         {
             type: DailyLoginRewardType.X_COOKIES,
-            amount: 0
+            amount: xCookies
         },
         {
             type: DailyLoginRewardType.LEADERBOARD_POINTS,
