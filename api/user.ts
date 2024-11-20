@@ -1428,7 +1428,14 @@ export const linkInviteCode = async (twitterId: string, code: string): Promise<R
                             usedBy: user._id,
                         },
                     }
-                ),
+                ).catch(err => {
+                    console.log(`(linkInviteCode) Error when updating starter code's 'usedBy': ${err.message}`);
+
+                    return {
+                        status: Status.ERROR,
+                        message: `(linkInviteCode) Error when updating starter code's 'usedBy': ${err.message}`,
+                    }
+                })
             ]);
             return {
                 status: Status.SUCCESS,
@@ -1467,7 +1474,14 @@ export const linkInviteCode = async (twitterId: string, code: string): Promise<R
                         'inviteCodeData.referrerId': referrer._id,
                     },
                 }
-            );
+            ).catch(err => {
+                console.log(`(linkInviteCode) Error when updating user's 'usedReferralCode': ${err.message}`);
+
+                return {
+                    status: Status.ERROR,
+                    message: `(linkInviteCode) Error when updating user's 'usedReferralCode': ${err.message}`,
+                }
+            })
 
             // also update the referrer's data to include the referred user's data in the `referredUsersData` array
             await UserModel.updateOne(
@@ -1482,7 +1496,14 @@ export const linkInviteCode = async (twitterId: string, code: string): Promise<R
                         },
                     },
                 }
-            );
+            ).catch(err => {
+                console.log(`(linkInviteCode) Error when updating referrer's 'referredUsersData': ${err.message}`);
+
+                return {
+                    status: Status.ERROR,
+                    message: `(linkInviteCode) Error when updating referrer's 'referredUsersData': ${err.message}`,
+                }
+            })
 
             // attempt to join the referrer's squad if they have one.
             const { status, message, data } = await joinReferrerSquad(user.twitterId, referrer.twitterId);
