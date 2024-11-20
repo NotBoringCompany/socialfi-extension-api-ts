@@ -2888,7 +2888,6 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                 islandId: islandIdData?.latestIslandId + 1,
                 type: IslandType.PRIMAL_ISLES,
                 owner: user._id,
-                currentTax: 0,
                 purchaseDate: Math.floor(Date.now() / 1000),
                 obtainMethod: ObtainMethod.SIGN_UP,
                 currentLevel: 1,
