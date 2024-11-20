@@ -75,8 +75,6 @@ export const BASE_BERRY_TO_POINT_MULTIPLIER = 5;
  */
 export const DAILY_BONUS_RESOURCES_GATHERABLE = (type: IslandType) => {
   switch (type) {
-    case IslandType.BARREN:
-      return 0;
     case IslandType.PRIMAL_ISLES:
       return 2;
     case IslandType.VERDANT_ISLES:
@@ -91,83 +89,6 @@ export const DAILY_BONUS_RESOURCES_GATHERABLE = (type: IslandType) => {
   }
 };
 
-/**
- * Gets the total xCookies earnable back for an island based on its type (i.e. rarity) when opening from a Terra Capsulator.
- */
-export const GET_TOTAL_X_COOKIES_EARNABLE = (
-  terraCapType: TerraCapsulatorType,
-  islandType: IslandType
-) => {
-  // // check if the given terra cap type exists in the shop and get the price
-  // const terraCapsulatorPrice = shop.items.find((i) => i.type === terraCapType)
-  //   ?.price.xCookies;
-
-  // if (terraCapType === TerraCapsulatorType.TERRA_CAPSULATOR_I) {
-  //   switch (islandType) {
-  //     case IslandType.BARREN:
-  //       return 0;
-  //     case IslandType.PRIMAL_ISLES:
-  //       return 0 * terraCapsulatorPrice;
-  //     case IslandType.VERDANT_ISLES:
-  //       return 0 * terraCapsulatorPrice;
-  //     case IslandType.EXOTIC_ISLES:
-  //       return 0 * terraCapsulatorPrice;
-  //     case IslandType.CRYSTAL_ISLES:
-  //       return 0 * terraCapsulatorPrice;
-  //     case IslandType.CELESTIAL_ISLES:
-  //       return 0 * terraCapsulatorPrice;
-  //     default:
-  //       throw new Error(
-  //         `(GET_TOTAL_X_COOKIES_EARNABLE) Invalid Island Type: ${islandType}`
-  //       );
-  //   }
-  // } else if (terraCapType === TerraCapsulatorType.TERRA_CAPSULATOR_II) {
-  //   switch (islandType) {
-  //     case IslandType.BARREN:
-  //       return 0;
-  //     case IslandType.PRIMAL_ISLES:
-  //       return 0 * terraCapsulatorPrice;
-  //     case IslandType.VERDANT_ISLES:
-  //       return 0 * terraCapsulatorPrice;
-  //     case IslandType.EXOTIC_ISLES:
-  //       return 0 * terraCapsulatorPrice;
-  //     case IslandType.CRYSTAL_ISLES:
-  //       return 0 * terraCapsulatorPrice;
-  //     case IslandType.CELESTIAL_ISLES:
-  //       return 0 * terraCapsulatorPrice;
-  //     default:
-  //       throw new Error(
-  //         `(GET_TOTAL_X_COOKIES_EARNABLE) Invalid Island Type: ${islandType}`
-  //       );
-  //   }
-  // }
-  return 0;
-};
-
-/**
- * Gets the total cookie crumbs earnable for an island based on its type.
- */
-export const GET_TOTAL_COOKIE_CRUMBS_EARNABLE = (type: IslandType) => {
-  switch (type) {
-    case IslandType.BARREN:
-      return 0;
-    case IslandType.PRIMAL_ISLES:
-      return 0;
-    case IslandType.VERDANT_ISLES:
-      return 0;
-    case IslandType.EXOTIC_ISLES:
-    case IslandType.XTERIO_ISLES:
-      return 0;
-    case IslandType.CRYSTAL_ISLES:
-      return 0;
-    case IslandType.CELESTIAL_ISLES:
-      return 0;
-    default:
-      throw new Error(
-        `(GET_TOTAL_COOKIE_CRUMBS_EARNABLE) Invalid Island Type: ${type}`
-      );
-  }
-};
 
 /**
  * Randomizes 5 traits from the available island traits.
@@ -272,9 +193,6 @@ export const ISLAND_EVOLUTION_COST = (
  */
 export const DEFAULT_RESOURCE_CAP = (type: IslandType) => {
   switch (type) {
-    case IslandType.BARREN:
-      // 1000 resources but only seaweed with a small chance of dropping common resources each time.
-      return 1000;
     case IslandType.PRIMAL_ISLES:
       return 500;
     case IslandType.VERDANT_ISLES:
@@ -293,16 +211,6 @@ export const DEFAULT_RESOURCE_CAP = (type: IslandType) => {
  */
 export const RESOURCE_DROP_CHANCES = (type: IslandType): ResourceDropChance => {
   switch (type) {
-    case IslandType.BARREN:
-      return {
-        // barren islands will only drop common resources
-        // and this is also only with a very small chance
-        common: 100,
-        uncommon: 0,
-        rare: 0,
-        epic: 0,
-        legendary: 0,
-      };
     case IslandType.PRIMAL_ISLES:
       return {
         common: 77.5,
@@ -354,14 +262,6 @@ export const RESOURCE_DROP_CHANCES_LEVEL_DIFF = (
   type: IslandType
 ): ResourceDropChanceDiff => {
   switch (type) {
-    case IslandType.BARREN:
-      return {
-        common: 0,
-        uncommon: 0,
-        rare: 0,
-        epic: 0,
-        legendary: 0,
-      };
     case IslandType.PRIMAL_ISLES:
       return {
         common: -0.13,
@@ -413,8 +313,6 @@ export const BIT_PLACEMENT_MIN_RARITY_REQUIREMENT = (
   type: IslandType
 ): BitRarity => {
   switch (type) {
-    case IslandType.BARREN:
-      return BitRarity.COMMON;
     case IslandType.PRIMAL_ISLES:
       return BitRarity.COMMON;
     case IslandType.VERDANT_ISLES:
@@ -439,11 +337,6 @@ export const RARITY_DEVIATION_REDUCTIONS = (
   rarity: BitRarity
 ): RarityDeviationReduction => {
   switch (type) {
-    // for barren isles, all bits from common to legendary will NOT receive any reductions
-    case IslandType.BARREN:
-      return {
-        gatheringRateReduction: 0,
-      };
     // for primal isles, all bits from common to legendary will NOT receive any reductions
     case IslandType.PRIMAL_ISLES:
       return {
@@ -534,8 +427,6 @@ export const RARITY_DEVIATION_REDUCTIONS = (
  */
 export const ISLAND_RARITY_DEVIATION_MODIFIERS = (type: IslandType): number => {
   switch (type) {
-    case IslandType.BARREN:
-      return 1;
     case IslandType.PRIMAL_ISLES:
       return 5;
     case IslandType.VERDANT_ISLES:
@@ -727,8 +618,6 @@ export const ISLAND_TAPPING_MILESTONE_BONUS_REWARD = (milestoneTier: number, tap
  */
 export const ISLAND_TAPPING_MILESTONE_LIMIT = (type: IslandType): number => {
   switch(type){
-    case IslandType.BARREN: 
-      return 0;
     case IslandType.PRIMAL_ISLES:
       return 5;
     case IslandType.VERDANT_ISLES:

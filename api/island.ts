@@ -191,83 +191,6 @@ export const giftXterioIsland = async (
 }
 
 /**
- * Generates a barren island. This is called when a user signs up or when a user obtains and opens a bottled message.
- */
-export const generateBarrenIsland = async (
-    userId: string,
-    obtainMethod: ObtainMethod.SIGN_UP | ObtainMethod.BOTTLED_MESSAGE,
-    // leave empty if no modifiers are to be applied.
-    // however, when signing up, users will at times get bits that will impact the barren island's stats modifiers
-    islandStatsModifiers: IslandStatsModifiers,
-): Promise<ReturnValue> => {
-    try {
-        const { status, message, data } = await getLatestIslandId();
-
-        if (status !== Status.SUCCESS) {
-            return {
-                status,
-                message: `(createBarrenIsland) Error from getLatestIslandId: ${message}`
-            }
-        }
-
-        const newIsland = new IslandModel({
-            _id: generateObjectId(),
-            islandId: data.latestIslandId + 1,
-            type: IslandType.BARREN,
-            owner: userId,
-            purchaseDate: Math.floor(Date.now() / 1000),
-            obtainMethod,
-            currentLevel: 1,
-            currentTax: 0,
-            placedBitIds: [],
-            traits: randomizeIslandTraits(),
-            islandResourceStats: {
-                baseResourceCap: randomizeBaseResourceCap(IslandType.BARREN),
-                resourcesGathered: [],
-                dailyBonusResourcesGathered: 0,
-                claimableResources: [],
-                gatheringStart: 0,
-                gatheringEnd: 0,
-                lastClaimed: 0,
-                gatheringProgress: 0,
-                lastUpdatedGatheringProgress: Math.floor(Date.now() / 1000)
-            },
-            islandEarningStats: {
-                totalXCookiesSpent: 0,
-                totalXCookiesEarnable: 0,
-                totalXCookiesEarned: 0,
-                claimableXCookies: 0,
-                totalCookieCrumbsSpent: 0,
-                totalCookieCrumbsEarnable: 0,
-                totalCookieCrumbsEarned: 0,
-                claimableCookieCrumbs: 0,
-                earningStart: 0,
-                crumbsEarningStart: 0,
-                earningEnd: 0,
-                crumbsEarningEnd: 0,
-                lastClaimed: 0,
-            },
-            islandStatsModifiers: islandStatsModifiers
-        });
-
-        await newIsland.save();
-
-        return {
-            status: Status.SUCCESS,
-            message: `(createBarrenIsland) Barren island created.`,
-            data: {
-                island: newIsland
-            }
-        }
-    } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(createBarrenIsland) Error: ${err.message}`
-        }
-    }
-}
-
-/**
  * (User) Manually deletes an island. This is called when a user decides to remove/delete an island of their choice.
  */
 export const removeIsland = async (twitterId: string, islandId: number): Promise<ReturnValue> => {
@@ -448,14 +371,6 @@ export const evolveIsland = async (twitterId: string, islandId: number, choice: 
             }
         }
 
-        // check if island is barren. barren islands CANNOT be evolved.
-        if (island.type === IslandType.BARREN) {
-            return {
-                status: Status.ERROR,
-                message: `(evolveIsland) Barren islands cannot be evolved.`
-            }
-        }
-
         // check if the island is already max level, if it is, return an error.
         if (island.currentLevel >= MAX_ISLAND_LEVEL) {
             return {
@@ -605,14 +520,6 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
             return {
                 status: Status.ERROR,
                 message: `(placeBit) User has reached the maximum amount of islands with bits placed.`
-            }
-        }
-
-        // check if this bit is premium and the island is barren. if both are false, return an error.
-        if (!bit.premium && island.type !== IslandType.BARREN) {
-            return {
-                status: Status.ERROR,
-                message: `(placeBit) Non-premium bits cannot be placed on non-barren islands.`
             }
         }
 
@@ -2613,34 +2520,6 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
             // get the amount per `resourcesGathered` instance
             const resourcesGatheredAmount = resourcesGathered.reduce((acc, r) => acc + r.amount, 0);
 
-            // for barren isles, check only for resources gathered that are seaweed instead of the entire length.
-            // this is because for barren isles, there is a small chance to drop common resources that won't be counted towards the base resource cap.
-            if (<IslandType>island.type === IslandType.BARREN) {
-                const seaweedGathered = resourcesGathered.filter(r => r.type === BarrenResource.SEAWEED);
-                if (baseResourceCap - seaweedGathered.length <= 0) {
-                    console.log(`(dropResource) No resources left to drop for Island ${islandId}.`);
-
-                    // if the island's `gatheringEnd` is still equal to 0 at this point, update it to the current time.
-                    if (island.islandResourceStats?.gatheringEnd === 0) {
-                        await IslandModel.updateOne({ islandId }, {
-                            $set: {
-                                'islandResourceStats.gatheringEnd': Math.floor(Date.now() / 1000)
-                            }
-                        });
-
-                        return {
-                            status: Status.ERROR,
-                            message: `(dropResource) No resources left to drop. Updated gatheringEnd to current time.`
-                        }
-                    }
-
-                    return {
-                        status: Status.ERROR,
-                        message: `(dropResource) No resources left to drop.`
-                    }
-                }
-            }
-
             // for any other isles, check the entire length of resources gathered.
             if (baseResourceCap - resourcesGatheredAmount <= 0) {
                 console.log(`(dropResource) No resources left to drop for Island ${islandId}.`);
@@ -2743,60 +2622,6 @@ export const dropResource = async (islandId: number): Promise<ReturnValue> => {
 
                     // add the new resource to the island's `resourcesGathered`
                     gatheredResourcesToAdd.push(newResource);
-                }
-            }
-
-            // lastly, check if island is barren. if it is, they have an additional small chance to drop a common resource of any line.
-            if (<IslandType>island.type === IslandType.BARREN) {
-                // roll a dice between 1-100
-                const rand = Math.floor(Math.random() * 100 + 1);
-
-                // if dice lands under `BARREN_ISLE_COMMON_DROP_CHANCE`, drop a random common resource alongside the seaweed they're getting.
-                if (rand <= BARREN_ISLE_COMMON_DROP_CHANCE) {
-                    // randomize any common resource from `resources`
-                    const commonResources = resources.filter(r => r.rarity === ResourceRarity.COMMON);
-                    const commonResourceToDrop = commonResources[Math.floor(Math.random() * commonResources.length)];
-
-                    // check if the common resource already exists in `claimableResources`
-                    const existingResourceIndex = claimableResources.findIndex(r => r.type === commonResourceToDrop.type);
-
-                    console.log(`(dropResource) works #4`);
-
-                    // if the resource already exists, increment its amount
-                    if (existingResourceIndex !== -1) {
-                        islandUpdateOperations.$inc[`islandResourceStats.claimableResources.${existingResourceIndex}.amount`] = 1;
-                    } else {
-                        // if the resource doesn't exist, push a new resource
-                        const newResource: ExtendedResource = {
-                            ...commonResourceToDrop,
-                            origin: ExtendedResourceOrigin.NORMAL,
-                            amount: 1
-                        }
-
-                        // add the new resource to the island's `claimableResources`
-                        claimableResourcesToAdd.push(newResource);
-                    }
-
-                    // add to the island's `resourcesGathered` as well
-                    // check if the common resource already exists in `resourcesGathered`
-                    const existingGatheredResourceIndex = resourcesGathered.findIndex(r => r.type === commonResourceToDrop.type);
-
-                    // if the resource already exists, increment its amount
-                    if (existingGatheredResourceIndex !== -1) {
-                        islandUpdateOperations.$inc[`islandResourceStats.resourcesGathered.${existingGatheredResourceIndex}.amount`] = 1;
-                    } else {
-                        // if the resource doesn't exist, push a new resource
-                        const newResource: ExtendedResource = {
-                            ...commonResourceToDrop,
-                            origin: ExtendedResourceOrigin.NORMAL,
-                            amount: 1
-                        }
-
-                        // add the new resource to the island's `resourcesGathered`
-                        gatheredResourcesToAdd.push(newResource);
-                    }
-
-
                 }
             }
 
@@ -2988,10 +2813,6 @@ export const randomizeResourceFromChances = (
             // if trait is aquifer, find the liquid resource with the specified rarity.
             // if trait is fertile, find the fruit resource with the specified rarity
             const resource = resources.find(r => {
-                if (type === IslandType.BARREN) {
-                    return r.line === ResourceLine.BARREN;
-                }
-
                 if (trait === IslandTrait.MINERAL_RICH) {
                     return r.line === ResourceLine.ORE && r.rarity === <ResourceRarity>resourceRarity;
                 }

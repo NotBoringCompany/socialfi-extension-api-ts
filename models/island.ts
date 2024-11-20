@@ -49,8 +49,6 @@ export interface Island {
  * Represents the type of island.
  */
 export enum IslandType {
-    // for free to play players, generating very small amount of (possibly common) resources
-    BARREN = 'Barren',
     PRIMAL_ISLES = 'Primal Isles',
     VERDANT_ISLES = 'Verdant Isles',
     EXOTIC_ISLES = 'Exotic Isles',
