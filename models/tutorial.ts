@@ -32,4 +32,6 @@ export interface Tutorial {
     name: string;
     /** the rewards for this tutorial */
     rewards: TutorialReward[];
+    /** determine if the tutorial will be automatically accepted during first play */
+    autoAccept: boolean;
 }

@@ -2,8 +2,8 @@ import express from 'express';
 import { completeTutorial, getTutorials, skipTutorial } from '../api/tutorial';
 import { Status } from '../utils/retVal';
 import { validateRequestAuth } from '../utils/auth';
-import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { UserWallet } from '../models/user';
+import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 
 import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 
@@ -41,12 +41,10 @@ router.post('/complete_tutorial', async (req, res) => {
 
         const { status, message, data } = await completeTutorial(validateData?.twitterId, tutorialId);
 
-        if (status === Status.SUCCESS && allowMixpanel && tutorialId === 11) {
+        if (status === Status.SUCCESS && tutorialId === 11 && allowMixpanel) {
             mixpanel.track('Tutorial Completed', {
                 distinct_id: validateData?.twitterId,
             });
-
-            
         }
 
         return res.status(status).json({
@@ -79,8 +77,6 @@ router.post('/skip_tutorial', async (req, res) => {
             mixpanel.track('Tutorial Skipped', {
                 distinct_id: validateData?.twitterId,
             });
-
-            
         }
 
         return res.status(status).json({

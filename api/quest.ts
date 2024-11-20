@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import {
     Quest,
     QuestCategory,
+    QuestDaily,
     QuestRequirement,
     QuestRequirementType,
     QuestReward,
@@ -9,13 +10,11 @@ import {
     QuestType,
 } from '../models/quest';
 import { ReturnValue, Status } from '../utils/retVal';
-import { QuestSchema } from '../schemas/Quest';
 import { generateObjectId } from '../utils/crypto';
-import { ExtendedXCookieData, User, UserInventory, XCookieSource } from '../models/user';
-import { UserSchema } from '../schemas/User';
+import { ExtendedXCookieData, InGameData, UserInventory, XCookieSource } from '../models/user';
 import { Food, FoodType } from '../models/food';
-import { RANDOMIZE_FOOD_FROM_QUEST } from '../utils/constants/quest';
-import { IslandModel, QuestModel, QuestProgressionModel, UserModel } from '../utils/constants/db';
+import { DAILY_QUEST_LAPSE_PHASE, DAILY_QUEST_PER_POI, EXTRA_FACTORY_EXP_BENEFIT, EXTRA_LOCAL_EARNING_BENEFIT, EXTRA_QUESTS_BENEFIT, MAX_DAILY_QUEST_ACCEPTABLE } from '../utils/constants/quest';
+import { IslandModel, QuestDailyModel, QuestModel, QuestProgressionModel, UserModel } from '../utils/constants/db';
 import { Bit, BitRarity } from '../models/bit';
 import {
     RANDOMIZE_GENDER,
@@ -30,18 +29,20 @@ import { BoosterItem } from '../models/booster';
 import { ExtendedResource } from '../models/resource';
 import { POIName } from '../models/poi';
 import { TwitterHelper } from '../utils/twitterHelper';
+import { dayjs } from '../utils/dayjs';
+import { BerryFactoryMastery, BerryFactoryMasteryStats } from '../models/mastery';
+import { toCamelCase } from '../utils/strings';
 
 /**
  * Adds a quest to the database.
  */
 export const addQuest = async (quest: Quest): Promise<ReturnValue> => {
-    // get the amount of quests in the database to determine the `id` number
-    const questCount = await QuestModel.countDocuments();
+    const latestQuest = await QuestModel.findOne().sort({ questId: -1 }).lean();
 
     try {
         const newQuest = new QuestModel({
             _id: generateObjectId(),
-            questId: questCount + 1,
+            questId: latestQuest.questId + 1,
             ...quest,
             requirements: quest.requirements.map((item) => ({
                 ...item,
@@ -118,7 +119,7 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
 
         // check the POI allowance for the quest. if 'anywhere', then continue.
         // else, check if the user is in the correct POI to complete the quest. if not, return an error.
-        if (quest.poi && quest.poi !== 'anywhere' && (user.inGameData?.location as POIName) !== quest.poi) {
+        if (quest.poi && quest.poi !== null && !quest.poi.includes(user.inGameData?.location as POIName)) {
             return {
                 status: Status.ERROR,
                 message: `(completeQuest) User is not in the correct POI to complete the quest. Quest ID: ${questId}`,
@@ -199,37 +200,50 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
             }
         }
 
-        // check if the user has already completed this quest
-        // to do this:
-        // 1. get the `completedBy` array from the quest
-        // 2. check if the user's twitter id is in the array. if it is:
-        // 3. check if `timesCompleted` is equal to the quest's `limit`. if not, then the user can complete the quest again
-        // 4. if yes, then the user has already completed the quest
-        const userHasCompletedQuestAtLeastOnce = quest.completedBy.find((user) => user.twitterId === twitterId);
-        const userHasCompletedQuest =
-            userHasCompletedQuestAtLeastOnce && userHasCompletedQuestAtLeastOnce.timesCompleted >= quest.limit;
+        if (quest.type === QuestType.DAILY) {
+            const dailyQuest = await QuestDailyModel.findOne({ quest: quest._id, user: user._id });
 
-        console.log(`(completeQuest) User ${twitterId} has completed quest ${questId}: ${userHasCompletedQuest}`);
-
-        if (userHasCompletedQuest) {
-            return {
-                status: Status.ERROR,
-                message: `(completeQuest) User has already completed this quest. Quest ID: ${questId}`,
-            };
-        }
-
-        // if user doesn't exist in the `completedBy` array, add the user to the array and set `timesCompleted` to 1
-        // else, increment the `timesCompleted` by 1
-        if (!userHasCompletedQuestAtLeastOnce) {
-            questUpdateOperations.$push['completedBy'] = { twitterId, timesCompleted: 1 };
+            if (!dailyQuest) {
+                return {
+                    status: Status.ERROR,
+                    message: `(completeQuest) Daily Quest not found`,
+                };
+            }
         } else {
-            const userIndex = quest.completedBy.findIndex((user) => user.twitterId === twitterId);
+            // check if the user has already completed this quest
+            // to do this:
+            // 1. get the `completedBy` array from the quest
+            // 2. check if the user's twitter id is in the array. if it is:
+            // 3. check if `timesCompleted` is equal to the quest's `limit`. if not, then the user can complete the quest again
+            // 4. if yes, then the user has already completed the quest
+            const userHasCompletedQuestAtLeastOnce = quest.completedBy.find((user) => user.twitterId === twitterId);
+            const userHasCompletedQuest =
+                userHasCompletedQuestAtLeastOnce && userHasCompletedQuestAtLeastOnce.timesCompleted >= quest.limit;
 
-            questUpdateOperations.$inc[`completedBy.${userIndex}.timesCompleted`] = 1;
+            console.log(`(completeQuest) User ${twitterId} has completed quest ${questId}: ${userHasCompletedQuest}`);
+
+            if (userHasCompletedQuest) {
+                return {
+                    status: Status.ERROR,
+                    message: `(completeQuest) User has already completed this quest. Quest ID: ${questId}`,
+                };
+            }
+
+            // if user doesn't exist in the `completedBy` array, add the user to the array and set `timesCompleted` to 1
+            // else, increment the `timesCompleted` by 1
+            if (!userHasCompletedQuestAtLeastOnce) {
+                questUpdateOperations.$push['completedBy'] = { twitterId, timesCompleted: 1 };
+            } else {
+                const userIndex = quest.completedBy.findIndex((user) => user.twitterId === twitterId);
+
+                questUpdateOperations.$inc[`completedBy.${userIndex}.timesCompleted`] = 1;
+            }
         }
 
         // loop through the rewards and add them to the user's inventory
         const rewards: QuestReward[] = quest.rewards;
+        // Destructure User Data
+        const { location, mastery } = user.inGameData as InGameData;
 
         // the actual reward types and amounts obtained by the user (e.g. if food => then burger or chocolate etc)
         let obtainedRewards = [];
@@ -245,9 +259,44 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
             const userInventory: UserInventory = user.inventory;
 
             switch (rewardType) {
+                // add case for Experience rewards.
+                case QuestRewardType.EXP:
+                    // If Quest type isn't daily skip this process into next reward
+                    if (quest.type !== QuestType.DAILY) continue;
+                    // We already do the Quest POI & User current Location so no need to check it again
+                    // Check if user contain BerryFactoryMastery data
+                    const berryFactoryData = user?.inGameData?.mastery?.berryFactory as BerryFactoryMastery;
+                    const berryFactoryMastery = berryFactoryData ? berryFactoryData[toCamelCase(location)] : null;
+                    if (berryFactoryMastery) {
+                        // Destructure berryFactoryMastery
+                        const { level, totalExp } = berryFactoryMastery;
+                        
+                        // Calculate Extra Exp amount, if questType isn't Daily extraAmount will alwaya be 0.
+                        const extraAmount = EXTRA_FACTORY_EXP_BENEFIT(quest.type, mastery, location);
+                        const totalAmount = amount + extraAmount;
+                        console.log(`(completeQuest) Exp totalAmount: ${totalAmount} (base: ${amount} + extra: ${extraAmount})`);
+                        // sum totalExp
+                        const newTotalExp = totalExp + totalAmount;
+                        
+                        // Set newMasteryStats data into userUpdateOperations
+                        // Level isn't updated for now since we don't have the total exp requirement for next level.
+                        userUpdateOperations.$set[`inGameData.mastery.berryFactory.${toCamelCase(location)}`] = { level, totalExp: newTotalExp } as BerryFactoryMasteryStats;
+                        obtainedRewards.push({ type: rewardType, amount: totalAmount });
+                    } else {
+                        // Initialize new BerryFactoryMasteryStats data for User
+                        const newMasteryStats: BerryFactoryMasteryStats = { level: 1, totalExp: amount };
+                        // Set newMasteryStats into userUpdateOperations
+                        userUpdateOperations.$set[`inGameData.mastery.berryFactory.${toCamelCase(location)}`] = newMasteryStats;
+                        obtainedRewards.push({ type: rewardType, amount: amount });
+                    }
+                    break;
                 // add the cookie count into the user's inventory
                 case QuestRewardType.X_COOKIES:
-                    userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = amount;
+                    // Calculate Extra xCookies amount. if questType isn't Daily extraAmount will always be 0.
+                    const extraAmount = EXTRA_LOCAL_EARNING_BENEFIT(quest.type, mastery, location);
+                    const totalAmount = amount + extraAmount;
+                    console.log(`(completeQuest) xCookies totalAmount: ${totalAmount} (base: ${amount} + extra: ${extraAmount})`);
+                    userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = totalAmount;
 
                     // check if the user's `xCookieData.extendedXCookieData` contains a source called QUEST_REWARDS.
                     // if yes, we increment the amount, if not, we create a new entry for the source
@@ -258,15 +307,15 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                     if (questRewardsIndex !== -1) {
                         userUpdateOperations.$inc[
                             `inventory.xCookieData.extendedXCookieData.${questRewardsIndex}.xCookies`
-                        ] = amount;
+                        ] = totalAmount;
                     } else {
                         userUpdateOperations.$push['inventory.xCookieData.extendedXCookieData'] = {
-                            xCookies: amount,
+                            xCookies: totalAmount,
                             source: XCookieSource.QUEST_REWARDS,
                         };
                     }
 
-                    obtainedRewards.push({ type: rewardType, amount });
+                    obtainedRewards.push({ type: rewardType, amount: totalAmount });
                     break;
                 // give user a bit, TODO: might need to add looping for the amount of bits rewarded
                 case QuestRewardType.BIT:
@@ -295,8 +344,8 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                             lastChanged: 0,
                         },
                         rarity,
-                        gender: RANDOMIZE_GENDER(),
                         premium: true,
+                        gender: RANDOMIZE_GENDER(),
                         owner: user._id,
                         purchaseDate: Math.floor(Date.now() / 1000),
                         obtainMethod: ObtainMethod.QUEST,
@@ -350,24 +399,6 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                                 ? 1.005
                                 : 0.995,
                         };
-                        const earningRateModifier: Modifier = {
-                            origin: `Bit ID #${newBit.bitId}'s Trait: ${
-                                hasInfluentialTrait
-                                    ? 'Influential'
-                                    : hasAntagonisticTrait
-                                    ? 'Antagonistic'
-                                    : hasFamousTrait
-                                    ? 'Famous'
-                                    : 'Mannerless'
-                            }`,
-                            value: hasInfluentialTrait
-                                ? 1.01
-                                : hasAntagonisticTrait
-                                ? 0.99
-                                : hasFamousTrait
-                                ? 1.005
-                                : 0.995,
-                        };
 
                         for (const islandId of islands) {
                             islandUpdateOperations.push({
@@ -375,7 +406,6 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                                 updateOperations: {
                                     $push: {
                                         'islandStatsModifiers.gatheringRateModifiers': gatheringRateModifier,
-                                        'islandStatsModifiers.earningRateModifiers': earningRateModifier,
                                     },
                                     $set: {},
                                     $pull: {},
@@ -390,10 +420,10 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                     obtainedRewards.push({ type: rewardType, amount, data: bitData });
 
                     break;
-                // Default case when rewardType isn't X_COOKIES or BIT
+                // Default case when rewardType isn't Exp, X_COOKIES, or BIT
                 default:
                     // Check if the reward type is a part of FoodType
-                    if (Object.values(FoodType).includes(rewardType.toString() as FoodType)) {   
+                    if (Object.values(FoodType).includes(rewardType.toString() as FoodType)) {
                         // check if the food already exists in the user's inventory of `foods`
                         const foodIndex = userInventory.foods.findIndex((f: Food) => f.type === rewardType.toString());
                         // if the food exists, increment the amount; otherwise, push the food into the inventory
@@ -449,6 +479,13 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
             QuestModel.updateOne({ questId }, questUpdateOperations),
             ...islandUpdatePromises,
         ]);
+
+        if (quest.type === QuestType.DAILY) {
+            await QuestDailyModel.updateOne(
+                { quest: quest._id, user: user._id },
+                { claimed: true, claimedAt: dayjs().unix() }
+            );
+        }
 
         // Fetch quests that are unlockable and where the qualification.questId matches the completed questId
         const potentialQuests = await QuestModel.find({
@@ -605,11 +642,35 @@ export const getUserQuests = async (twitterId: string, category?: string): Promi
             return true;
         });
 
+        const questsWithProgress = await Promise.all(
+            filteredQuests.map(async (quest) => {
+                const requirementsWithProgress = await Promise.all(
+                    quest.requirements.map(async (req) => {
+                        const progression = await QuestProgressionModel.findOne({
+                            questId: quest._id,
+                            userId: user._id,
+                            requirementId: req._id,
+                        }).lean();
+
+                        return {
+                            ...req,
+                            progress: progression ?? null,
+                        };
+                    })
+                );
+
+                return {
+                    ...quest,
+                    requirements: requirementsWithProgress,
+                };
+            })
+        );
+
         return {
             status: Status.SUCCESS,
             message: `(getQuests) Quests fetched.`,
             data: {
-                quests: filteredQuests,
+                quests: questsWithProgress,
             },
         };
     } catch (err: any) {
@@ -705,21 +766,6 @@ export const checkQuestRequirements = async (twitterId: string, questId: number)
                 message: `(checkQuestRequirement) User not found. Twitter ID: ${twitterId}`,
             };
         }
-
-        // const relationshipPromises: Promise<any>[] = [];
-
-        // for (const requirement of quest.requirements as QuestRequirement[]) {
-        //     if (requirement.type === QuestRequirementType.FOLLOW_USER) {
-        //         const source = user.twitterUsername;
-        //         const target = requirement.parameters.twitterUsername;
-
-        //         relationshipPromises.push(
-        //             TwitterHelper.getRelationship({ source_screen_name: source, target_screen_name: target })
-        //         );
-        //     }
-        // }
-
-        // const relationships = await Promise.all(relationshipPromises);
 
         for (const [index, requirement] of (quest.requirements as QuestRequirement[]).entries()) {
             switch (requirement.type) {
@@ -1004,9 +1050,27 @@ export const incrementProgressionByType = async (
 
             // check if the user qualify
             if (quest.unlockable && !quest.qualifiedUsers.includes(user._id)) continue;
+
+            // additional step check for the daily quest
+            if (quest.type === QuestType.DAILY) {
+                const dailyQuest = await QuestDailyModel.findOne({ user: user._id, quest: quest._id });
+
+                if (!dailyQuest) continue;
+
+                // get current timestamp
+                const current = dayjs().unix();
+
+                // check if the daily quest was expired
+                if (current >= dailyQuest.expiredAt) continue;
+
+                // check if the user already accepted the quest
+                if (!dailyQuest.accepted) continue;
+            }
+
             const requirements = quest.requirements.filter((req) => req.type === type);
             for (const requirement of requirements) {
                 if (!requirement.parameters.count) continue;
+                if (params && requirement.parameters.type !== params) continue;
                 if (typeof requirement.parameters.type != typeof params) continue;
                 if (requirement.parameters.type && !requirement.parameters.type.includes(params)) continue;
 
@@ -1039,5 +1103,297 @@ export const incrementProgressionByType = async (
     } catch (error) {
         console.log(error);
         // intentionally ignore the error
+    }
+};
+
+/**
+ * Reset and randomize user's daily quest at the POI
+ */
+export const resetDailyQuest = async (twitterId: string, poi: POIName): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId });
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(resetDailyQuest) User not found.`,
+            };
+        }
+
+        // Initialize currentTimestamp
+        const currentTimestamp = dayjs().utc().unix();
+        const [prev, next] = DAILY_QUEST_LAPSE_PHASE();
+
+        // delete user's expired daily quests
+        await QuestDailyModel.deleteMany({
+            user: user._id,
+            expiredAt: { $lte: currentTimestamp },
+        });
+        console.log(`(resetDailyQuest) delete QuestDailyModel with expiredAt <= ${currentTimestamp}`);
+
+        // get user's available daily quest
+        const dailyQuests = (
+            await QuestDailyModel.find({
+                user: user._id,
+                expiredAt: { $gt: dayjs().unix() },
+            })
+                .populate('quest')
+                .lean()
+        ).map(({ quest }) => quest._id);
+
+        // get list of Quest with Daily type and Berry Factory category
+        const quests = await QuestModel.find({
+            type: QuestType.DAILY,
+            category: QuestCategory.BERRY_FACTORY,
+            $or: [{ poi: null }, { poi }],
+        });
+
+        // prevent the same quest appear at the same POI by filtering it
+        const uniqueQuests = quests.filter(({ _id }) => !dailyQuests.includes(_id));
+
+        // shuffle the quests randomly from uniqueQuests data
+        const shuffledQuests = uniqueQuests.sort(() => 0.5 - Math.random()).slice(0, DAILY_QUEST_PER_POI);
+
+        await QuestDailyModel.insertMany(
+            shuffledQuests.map((quest) => ({
+                _id: generateObjectId(),
+                quest: quest._id,
+                user: user._id,
+                accepted: false,
+                claimed: false,
+                poi,
+                createdAt: prev, // assign createdAt using the previous phase timestamp
+                expiredAt: next, // assign expiredAt using the next phase timestamp
+                acceptedAt: null,
+                claimedAt: null,
+            }))
+        );
+
+        // delete previous quest progression
+        await QuestProgressionModel.deleteMany({
+            questId: {  $in: shuffledQuests.map((quest) => quest._id) }
+        });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(resetDailyQuest) Quest updated.`,
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(resetDailyQuest) ${err.message}`,
+        };
+    }
+};
+
+/**
+ * Get user's daily quest based on the POI. each user have it's own unique quests based on the POI
+ */
+export const getDailyQuests = async (
+    twitterId: string,
+    poi: POIName
+): Promise<ReturnValue<{ quests: QuestDaily[] }>> => {
+    try {
+        const user = await UserModel.findOne({ twitterId });
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(getDailyQuest) User not found.`,
+            };
+        }
+
+        // Initialize currentTimestamp
+        const currentTimestamp = dayjs().utc().unix();
+
+        // Fetch quests that haven't expired yet and are valid for the current lapse phase
+        let quests = await QuestDailyModel.find({
+            poi,
+            user: user._id,
+            expiredAt: { $gt: currentTimestamp }
+        }).populate('quest');
+        console.log(`(getDailyQuests) available quests length with expiredAt > ${currentTimestamp}: ${quests.length}`);
+
+        // if the quests empty, then reset & randomize the daily quest
+        if (!quests || quests.length === 0) {
+            await resetDailyQuest(twitterId, poi);
+            console.log(`(getDailyQuests) resetting daily quest`);
+
+            // refetch the quests after reset
+            quests = await QuestDailyModel.find({
+                poi,
+                user: user._id,
+                expiredAt: { $gte: currentTimestamp },
+                createdAt: { $lte: currentTimestamp },
+            }).populate('quest');
+            console.log(`(getDailyQuests) refetch available quests length: ${quests.length}`);
+        }
+
+        // if the quests somehow still empty, even after refetch, then returns error
+        if (!quests || quests.length === 0) {
+            return {
+                status: Status.ERROR,
+                message: `(getDailyQuest) Failed to retrieve the daily quests`,
+            };
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getDailyQuest) Quests fetched.`,
+            data: {
+                quests,
+            },
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getDailyQuest) ${err.message}`,
+        };
+    }
+};
+
+/**
+ * used to accept user's daily quest
+ */
+export const acceptDailyQuest = async (twitterId: string, questId: number | string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId });
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(acceptDailyQuest) User not found.`,
+            };
+        }
+
+        const quest = await QuestModel.findOne({ questId });
+        if (!quest) {
+            return {
+                status: Status.ERROR,
+                message: `(acceptDailyQuest) Quest not found.`,
+            };
+        }
+
+        if (!quest.acceptable || quest.type !== QuestType.DAILY) {
+            return {
+                status: Status.ERROR,
+                message: '(acceptDailyQuest) This quest was not acceptable.',
+            };
+        }
+
+        // Initialize & Destructure Data
+        const [prev, next] = DAILY_QUEST_LAPSE_PHASE();
+        const { mastery } = user.inGameData as InGameData;
+        const maxAccepted = MAX_DAILY_QUEST_ACCEPTABLE + EXTRA_QUESTS_BENEFIT(mastery);
+
+        const acceptedQuests = await QuestDailyModel.countDocuments({
+            user: user._id,
+            accepted: true,
+            expiredAt: { $gte: prev },
+            createdAt: { $lte: next },
+        });
+
+        // check if the number of accepted quests exceeds the maximum allowed
+        console.log(`(acceptDailyQuest), maxAccepted limit: ${maxAccepted}`);
+        if (acceptedQuests >= maxAccepted) {
+            return {
+                status: Status.ERROR,
+                message: `(acceptDailyQuest) Maximum daily quests exceeded. accepted (${acceptedQuests}/${maxAccepted})`,
+            };
+        }
+
+        const dailyQuest = await QuestDailyModel.findOne({
+            user: user._id,
+            quest: quest._id,
+        });
+
+        // check if the daily quest already accepted
+        if (dailyQuest.accepted || dailyQuest.claimed) {
+            return {
+                status: Status.ERROR,
+                message: `(acceptDailyQuest) You've already accepted this quest.`,
+            };
+        }
+
+        await dailyQuest.updateOne({
+            accepted: true,
+            acceptedAt: dayjs().unix(),
+        });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(acceptDailyQuest) Quest accepted.`,
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(acceptDailyQuest) ${err.message}`,
+        };
+    }
+};
+
+/**
+ * Get user's accepted daily quest based on the POI
+ */
+export const getAcceptedQuest = async (twitterId: string): Promise<ReturnValue<{ quests: QuestDaily[] }>> => {
+    try {
+        const user = await UserModel.findOne({ twitterId });
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(getAcceptedQuest) User not found.`,
+            };
+        }
+
+        const [prev, next] = DAILY_QUEST_LAPSE_PHASE();
+
+        let quests = await QuestDailyModel.find({
+            user: user._id,
+            accepted: true,
+            expiredAt: { $gte: prev },
+            createdAt: { $lte: next },
+        })
+            .populate('quest')
+            .lean();
+
+        const questsWithProgress = (await Promise.all(
+            quests.map(async ({ quest, ...rest }) => {
+                const requirementsWithProgress = await Promise.all(
+                    quest.requirements.map(async (req) => {
+                        const progression = await QuestProgressionModel.findOne({
+                            questId: quest._id,
+                            userId: user._id,
+                            requirementId: req._id,
+                        }).lean();
+
+                        return {
+                            ...req,
+                            progress: progression ?? null,
+                        };
+                    })
+                );
+
+                return {
+                    ...rest,
+                    quest: {
+                        ...quest,
+                        requirements: requirementsWithProgress,
+                    },
+                };
+            })
+        )) as QuestDaily[];
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getAcceptedQuest) Quests fetched.`,
+            data: {
+                quests: questsWithProgress,
+            },
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getAcceptedQuest) ${err.message}`,
+        };
     }
 };

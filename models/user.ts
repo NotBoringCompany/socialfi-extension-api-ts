@@ -5,7 +5,7 @@ import { ExtendedResource } from './resource';
 import { InviteCodeData, ReferralData } from './invite';
 import { TerraCapsulatorType } from './terraCapsulator';
 import { BitOrbType } from './bitOrb';
-import { TappingMastery } from './mastery';
+import { BerryFactoryMastery, TappingMastery } from './mastery';
 
 /****************
  * USER-RELATED MODELS
@@ -306,4 +306,8 @@ export interface PlayerEnergy {
 
 export interface PlayerMastery {
     tapping: TappingMastery;
+    /**
+     * the berry factory mastery.
+     */
+    berryFactory: BerryFactoryMastery;
 }
