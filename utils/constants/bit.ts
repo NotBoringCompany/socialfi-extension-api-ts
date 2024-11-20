@@ -639,8 +639,23 @@ export const DEFAULT_EARNING_RATE_GROWTH = (rarity: BitRarity): number => {
     }
 }
 
-/** base energy depletion rate of bits in % of energy bar/hour (regardless of rarity) */
-export const BASE_ENERGY_DEPLETION_RATE: number = 5;
+/** base energy depletion rate of bits in % of energy bar/hour based on rarity */
+export const DEFAULT_ENERGY_DEPLETION_RATE = (rarity: BitRarity): number => {
+    switch (rarity) {
+        case BitRarity.COMMON:
+            return 5;
+        case BitRarity.UNCOMMON:
+            return 6;
+        case BitRarity.RARE:
+            return 7;
+        case BitRarity.EPIC:
+            return 8;
+        case BitRarity.LEGENDARY:
+            return 10;
+        default:
+            throw new Error(`(ENERGY_DEPLETION_RATE) Invalid rarity: ${rarity}`);
+    }
+};
 
 /** returns the reductions in earning and gathering rate (by a fixed %) if the bit's energy goes below a certain threshold */
 export const ENERGY_THRESHOLD_REDUCTIONS = (energy: number): EnergyThresholdReduction => {

@@ -1,7 +1,7 @@
 import { ReturnValue, Status } from '../utils/retVal';
 import { Bit, BitFarmingStats, BitNameData, BitRarity, BitType } from '../models/bit';
 import {
-    BASE_ENERGY_DEPLETION_RATE,
+    DEFAULT_ENERGY_DEPLETION_RATE,
     BIT_EVOLUTION_COST,
     DEFAULT_EARNING_RATE,
     DEFAULT_EARNING_RATE_GROWTH,
@@ -1096,7 +1096,7 @@ export const randomizeFarmingStats = (rarity: BitRarity): BitFarmingStats => {
     // get the default earning rate growth
     const defaultEarningRateGrowth = DEFAULT_EARNING_RATE_GROWTH(rarity);
     // get the base energy depletion rate
-    const baseEnergyDepletionRate = BASE_ENERGY_DEPLETION_RATE;
+    const baseEnergyDepletionRate = DEFAULT_ENERGY_DEPLETION_RATE;
 
     // rand from 0.9 to 1.1 to determine base gathering rate (and also current gathering rate since it's at level 1), gathering rate growth,
     // earning rate (and also current earning rate since it's at level 1) and earning rate growth
@@ -1119,7 +1119,7 @@ export const randomizeFarmingStats = (rarity: BitRarity): BitFarmingStats => {
         gatheringRateGrowth,
         baseEarningRate,
         earningRateGrowth,
-        currentEnergyDepletionRate: baseEnergyDepletionRate,
+        currentEnergyDepletionRate: baseEnergyDepletionRate(rarity),
         currentEnergy: 100,
     };
 };
