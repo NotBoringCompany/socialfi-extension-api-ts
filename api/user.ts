@@ -169,6 +169,105 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
                 };
             }
 
+            const islandStatsModifiers: IslandStatsModifiers = {
+                resourceCapModifiers: [],
+                gatheringRateModifiers: [],
+            };
+    
+            // check the bit's traits
+            // if it has influential, antagonistic, famous or mannerless, then:
+            // if influential, add 1% to gathering rate modifiers of the island
+            // if antagonistic, reduce 1% to gathering rate modifiers of the island
+            // if famous, add 0.5% to gathering rate modifiers of the island
+            // if mannerless, reduce 0.5% to gathering rate modifiers of the island
+            if (traits.some((trait) => trait.trait === BitTrait.INFLUENTIAL)) {
+                // add 1% to gathering rate modifiers of the island
+                const gatheringRateModifier: Modifier = {
+                    origin: `Bit ID ${bitData.bit.bitId}'s Trait: Influential`,
+                    value: 1.01,
+                };
+    
+                islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
+            }
+    
+            // if the bit has antagonistic trait
+            if (traits.some((trait) => trait.trait === BitTrait.ANTAGONISTIC)) {
+                // reduce 1% to gathering rate modifiers of the island
+                const gatheringRateModifier: Modifier = {
+                    origin: `Bit ID ${bitData.bit.bitId}'s Trait: Antagonistic`,
+                    value: 0.99,
+                };
+    
+                islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
+            }
+    
+            // if the bit has famous trait
+            if (traits.some((trait) => trait.trait === BitTrait.FAMOUS)) {
+                // add 0.5% to gathering rate modifiers of the island
+                const gatheringRateModifier: Modifier = {
+                    origin: `Bit ID ${bitData.bit.bitId}'s Trait: Famous`,
+                    value: 1.005,
+                };
+    
+                islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
+            }
+    
+            // if the bit has mannerless trait
+            if (traits.some((trait) => trait.trait === BitTrait.MANNERLESS)) {
+                // reduce 0.5% to gathering rate modifiers of the island
+                const gatheringRateModifier: Modifier = {
+                    origin: `Bit ID ${bitData.bit.bitId}'s Trait: Mannerless`,
+                    value: 0.995,
+                };
+    
+                islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
+            }
+
+            // creates a free primal island for the user
+            const { status: islandIdStatus, message: islandIdMessage, data: islandIdData } = await getLatestIslandId();
+
+            if (islandIdStatus !== Status.SUCCESS) {
+                return {
+                    status: islandIdStatus,
+                    message: `(handleTwitterLogin) Error from getLatestIslandId: ${islandIdMessage}`,
+                };
+            }
+
+            const {
+                status: islandStatus,
+                message: islandMessage,
+                data: islandData,
+            } = await addIslandToDatabase({
+                islandId: islandIdData?.latestIslandId + 1,
+                type: IslandType.PRIMAL_ISLES,
+                owner: user._id,
+                purchaseDate: Math.floor(Date.now() / 1000),
+                obtainMethod: ObtainMethod.SIGN_UP,
+                currentLevel: 1,
+                placedBitIds: [],
+                traits: randomizeIslandTraits(),
+                islandResourceStats: {
+                    baseResourceCap: randomizeBaseResourceCap(IslandType.PRIMAL_ISLES),
+                    resourcesGathered: [],
+                    dailyBonusResourcesGathered: 0,
+                    claimableResources: [],
+                    gatheringStart: 0,
+                    gatheringEnd: 0,
+                    lastClaimed: 0,
+                    gatheringProgress: 0,
+                    lastUpdatedGatheringProgress: Math.floor(Date.now() / 1000),
+                },
+                islandStatsModifiers,
+                islandTappingData: ISLAND_TAPPING_REQUIREMENT(1, 1),
+            });
+
+            if (islandStatus !== Status.SUCCESS) {
+                return {
+                    status: islandStatus,
+                    message: `(handleTwitterLogin) Error from createBarrenIsland: ${islandMessage}`,
+                };
+            }
+
             // creates the wallet for the user
             const { privateKey, address } = createUserWallet();
 
@@ -227,7 +326,7 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
                         },
                     ],
                     raftId: data.raft.raftId,
-                    islandIds: [],
+                    islandIds: [islandData.island.islandId],
                     bitIds: [bitIdData?.latestBitId + 1],
                 },
                 inGameData: {
