@@ -19,6 +19,7 @@ import { CollabBasketSchema, CollabParticipantSchema } from '../../schemas/Colla
 import { ShopAssetPurchaseSchema, ShopAssetSchema } from '../../schemas/Shop';
 
 import * as dotenv from 'dotenv';
+import { MailReceiverDataSchema, MailSchema } from '../../schemas/Mail';
 dotenv.config({});
 
 export const WONDERBITS_DATABASE = process.env.WONDERBITS_MONGODB_URI!;
@@ -57,3 +58,5 @@ export const WeeklyMVPRankingLeaderboardModel = WONDERBITS_CONNECTION.model('Wee
 export const SuccessfulIndirectReferralModel = WONDERBITS_CONNECTION.model('SuccessfulIndirectReferrals', SuccessfulIndirectReferralSchema, 'SuccessfulIndirectReferrals');
 export const ShopAssetModel = WONDERBITS_CONNECTION.model('ShopAssets', ShopAssetSchema, 'ShopAssets');
 export const ShopAssetPurchaseModel = WONDERBITS_CONNECTION.model('ShopAssetPurchases', ShopAssetPurchaseSchema, 'ShopAssetPurchases');
+export const MailModel = WONDERBITS_CONNECTION.model('Mails', MailSchema, 'Mails');
+export const MailReceiverDataModel = WONDERBITS_CONNECTION.model('MailReceiverData', MailReceiverDataSchema, 'MailReceiverData');
