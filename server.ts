@@ -28,7 +28,7 @@ app.use(session({
 
 app.use(passport.initialize());
 app.use(passport.session());
-app.use(whitelistMiddleware)
+// app.use(whitelistMiddleware)
 
 /** ROUTE IMPORTS */
 import twitterAuth from './routes/auth/twitter';
