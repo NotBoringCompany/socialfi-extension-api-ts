@@ -36,8 +36,16 @@ export interface SimplifiedResource {
  * Cumulative weight is not calculated here.
  */
 export interface ExtendedResource extends Resource {
-    /** the amount of this resource */
+    /** 
+     * the amount of this resource 
+     * 
+     * for the inventory, this includes both mintable and non-mintable amounts combined.
+     */
     amount: number;
+    /**
+     * the amount from `amount` of this resource that can be minted as SFTs.
+     */
+    mintableAmount?: number;
     /** 
      the origin of this resource. mostly used when claiming resources to check whether the origin is a bonus resource or rather gathered normally. 
      */

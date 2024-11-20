@@ -48,7 +48,59 @@ import { sendMailsToNewUser } from './mail';
 import { dayjs } from '../utils/dayjs';
 import { getOwnedKeyIDs } from './kos';
 
-dotenv.config();
+/**
+ * Adds `mintableAmount` to all inventory items, foods and resources.
+ */
+export const appendMintableAmount = async (): Promise<void> => {
+    const users = await UserModel.find().lean();
+
+    const bulkOperations: any[] = [];
+
+    users.forEach((user) => {
+        const updatedFoods = user.inventory?.foods?.length
+            ? user.inventory.foods.map((food: any) => ({
+                  ...food,
+                  mintableAmount: food.mintableAmount ?? 0,
+              }))
+            : undefined;
+
+        const updatedItems = user.inventory?.items?.length
+            ? user.inventory.items.map((item: any) => ({
+                  ...item,
+                  mintableAmount: item.mintableAmount ?? 0,
+              }))
+            : undefined;
+
+        const updatedResources = user.inventory?.resources?.length
+            ? user.inventory.resources.map((resource: any) => ({
+                  ...resource,
+                  mintableAmount: resource.mintableAmount ?? 0,
+              }))
+            : undefined;
+
+        const updateData: any = {};
+        if (updatedFoods) updateData['inventory.foods'] = updatedFoods;
+        if (updatedItems) updateData['inventory.items'] = updatedItems;
+        if (updatedResources) updateData['inventory.resources'] = updatedResources;
+
+        if (Object.keys(updateData).length > 0) {
+            bulkOperations.push({
+                updateOne: {
+                    filter: { _id: user._id },
+                    update: {
+                        $set: updateData,
+                    },
+                },
+            });
+        }
+    });
+
+    if (bulkOperations.length > 0) {
+        await UserModel.bulkWrite(bulkOperations);
+    }
+
+    console.log('Mintable amount added to all inventory items.');
+};
 
 /**
  * Initializes the diamond data for each user in the database.

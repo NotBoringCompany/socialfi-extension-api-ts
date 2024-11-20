@@ -10,8 +10,16 @@
 export interface Food {
     /** the type of food */
     type: FoodType;
-    /** the amount of food */
+    /** 
+     * the amount of food 
+     * 
+     * for the inventory, this includes both mintable and non-mintable amounts combined.
+     */
     amount: number;
+    /**
+     * the amount from `amount` of this food that can be minted as SFTs.
+     */
+    mintableAmount?: number;
 }
 
 /**

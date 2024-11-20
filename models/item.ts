@@ -13,8 +13,16 @@ import { ResourceLine, ResourceRarity } from './resource';
 export interface Item {
     /** the type of item */
     type: ItemType;
-    /** the amount of item (used only for methods that require amount, such as for rewards or in the inventory) */
+    /** 
+     * the amount of item (used only for methods that require amount, such as for rewards or in the inventory) 
+     * 
+     * this includes both mintable and non-mintable amounts combined.
+     */
     amount?: number;
+    /**
+     * the amount from `amount` of this item that can be minted as SFTs.
+     */
+    mintableAmount?: number;
     /** the amount of this item consumed by the user (used only for methods that require amount, such as for rewards or in the inventory) */
     totalAmountConsumed?: number;
     /** 
