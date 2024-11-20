@@ -37,6 +37,7 @@ interface CallbackResponse {
     success?: boolean;
     error?: string;
     message?: string;
+    data?: any;
 }
 
 type CallbackEvent = (response: CallbackResponse) => void;
@@ -53,17 +54,28 @@ export const handleChatEvents = (socket: Socket, io: Server) => {
         return count > MAX_MESSAGES_PER_WINDOW;
     };
 
-    const sendRateLimitResponse = (callback?: CallbackEvent) => {
+    const getNextAvailableTime = async (userId: string, event: ChatEvent): Promise<number> => {
+        const key = rateLimitKey(userId, event);
+        const ttl = await redis.ttl(key); // Get time-to-live (TTL) for the rate-limited key
+        const nextAvailableTime = Date.now() + ttl * 1000; // Convert TTL from seconds to milliseconds
+        return nextAvailableTime;
+    };
+
+    const sendRateLimitResponse = async (userId: string, event: ChatEvent, callback?: CallbackEvent) => {
+        const nextAvailableTime = await getNextAvailableTime(userId, event);
         if (callback) {
-            callback({ error: 'Too many requests. Please try again later.' });
+            callback({
+                error: 'Too many requests. Please try again later.',
+                data: nextAvailableTime
+            });
         }
     };
 
     socket.on(ChatEvent.SEND_MESSAGE, async (request: SendMessageDTO, callback?: CallbackEvent) => {
         const senderId = socket.data.userId;
 
-        if (await isRateLimited(senderId, ChatEvent.SEND_DIRECT_MESSAGE)) {
-            return sendRateLimitResponse(callback);
+        if (await isRateLimited(senderId, ChatEvent.SEND_MESSAGE)) {
+            return sendRateLimitResponse(senderId, ChatEvent.SEND_MESSAGE, callback);
         }
 
         const validation = sendMessageDTO.validate(request);
@@ -95,7 +107,7 @@ export const handleChatEvents = (socket: Socket, io: Server) => {
         const senderId = socket.data.userId;
 
         if (await isRateLimited(senderId, ChatEvent.SEND_DIRECT_MESSAGE)) {
-            return sendRateLimitResponse(callback);
+            return sendRateLimitResponse(senderId, ChatEvent.SEND_DIRECT_MESSAGE, callback);
         }
 
         const validation = sendDirectMessageDTO.validate(request);
