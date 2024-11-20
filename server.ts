@@ -92,5 +92,5 @@ app.use('/mail', checkMaintenance, mail);
 app.listen(port, async () => {
     console.log(`Server running on port ${port}`);
 
-    // await schedulers();
+    await schedulers();
 });
