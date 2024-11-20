@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
 import { IslandSchema } from '../schemas/Island';
 import { Island, IslandStatsModifiers, IslandTappingData, IslandTrait, IslandType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
-import { BARREN_ISLE_COMMON_DROP_CHANCE, BASE_CARESS_PER_TAPPING, BASE_ENERGY_PER_TAPPING, BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DAILY_BONUS_RESOURCES_GATHERABLE, DEFAULT_RESOURCE_CAP, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_EVOLUTION_COST, ISLAND_RARITY_DEVIATION_MODIFIERS, ISLAND_TAPPING_MILESTONE_BONUS_REWARD, ISLAND_TAPPING_MILESTONE_LIMIT, ISLAND_TAPPING_REQUIREMENT, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN, randomizeIslandTraits } from '../utils/constants/island';
+import { BARREN_ISLE_COMMON_DROP_CHANCE, BASE_CARESS_PER_TAPPING, BASE_ENERGY_PER_TAPPING, BIT_PLACEMENT_CAP, BIT_PLACEMENT_MIN_RARITY_REQUIREMENT, DAILY_BONUS_RESOURCES_GATHERABLE, DEFAULT_RESOURCE_CAP, GATHERING_RATE_REDUCTION_MODIFIER, ISLAND_RARITY_DEVIATION_MODIFIERS, ISLAND_TAPPING_MILESTONE_BONUS_REWARD, ISLAND_TAPPING_MILESTONE_LIMIT, ISLAND_TAPPING_REQUIREMENT, MAX_ISLAND_LEVEL, RARITY_DEVIATION_REDUCTIONS, RESOURCES_CLAIM_COOLDOWN, RESOURCE_DROP_CHANCES, RESOURCE_DROP_CHANCES_LEVEL_DIFF, TOTAL_ACTIVE_ISLANDS_ALLOWED, X_COOKIE_CLAIM_COOLDOWN, randomizeIslandTraits } from '../utils/constants/island';
 import { calcBitGatheringRate, getBits } from './bit';
 import { BarrenResource, ExtendedResource, ExtendedResourceOrigin, Resource, ResourceLine, ResourceRarity, ResourceRarityNumeric, ResourceType, SimplifiedResource } from '../models/resource';
 import { UserSchema } from '../schemas/User';
@@ -284,122 +284,6 @@ export const getIslands = async (islandIds: number[]): Promise<ReturnValue> => {
         return {
             status: Status.ERROR,
             message: `(getIsland) Error: ${err.message}`
-        }
-    }
-}
-
-/**
- * (User) Evolves an island (levelling it up). Allows either xCookies or cookie crumbs.
- * 
- * NOTE: Requires `twitterId` which is fetched via `req.user`, automatically giving us the user's Twitter ID. This will check if the user who calls this function owns the twitter ID that owns the island.
- */
-export const evolveIsland = async (twitterId: string, islandId: number, choice: 'xCookies'): Promise<ReturnValue> => {
-    try {
-        const [user, island] = await Promise.all([
-            UserModel.findOne({ twitterId }).lean(),
-            IslandModel.findOne({ islandId }).lean()
-        ]);
-
-        const userUpdateOperations = {
-            $pull: {},
-            $inc: {},
-            $set: {},
-            $push: {}
-        }
-
-        const islandUpdateOperations = {
-            $pull: {},
-            $inc: {},
-            $set: {},
-            $push: {}
-        }
-
-        // Track consumed Currency
-        let currentCurrency: number = 0;
-        let totalPaid: number = 0;
-        let paymentChoice: 'xCookies';
-
-        if (!user) {
-            return {
-                status: Status.ERROR,
-                message: `(evolveIsland) User not found.`
-            }
-        }
-
-        if (!(user.inventory?.islandIds as number[]).includes(islandId)) {
-            return {
-                status: Status.ERROR,
-                message: `(evolveIsland) User does not own the island.`
-            }
-        }
-
-        if (!island) {
-            return {
-                status: Status.ERROR,
-                message: `(evolveIsland) Island not found.`
-            }
-        }
-
-        // check if the island is already max level, if it is, return an error.
-        if (island.currentLevel >= MAX_ISLAND_LEVEL) {
-            return {
-                status: Status.ERROR,
-                message: `(evolveIsland) Island is already at max level.`
-            }
-        }
-
-        // if choice to evolve is using xCookies
-        if (choice === 'xCookies') {
-            // check if the user has enough xCookies
-            const userXCookies: number = user.inventory?.xCookieData.currentXCookies;
-            currentCurrency = userXCookies;
-
-            // calculate the cost to evolve the island based on its current level
-            const { xCookies: requiredXCookies } = ISLAND_EVOLUTION_COST(<IslandType>island.type, island.currentLevel);
-            totalPaid = requiredXCookies;
-            paymentChoice = 'xCookies';
-
-            // if not enough, return an error.
-            if (userXCookies < requiredXCookies) {
-                return {
-                    status: Status.ERROR,
-                    message: `(evolveIsland) Not enough xCookies to evolve island.`
-                }
-            }
-
-            // deduct the xCookies from the user and increment the `totalXCookiesSpent` and `weeklyXCookiesSpent` of the island by `requiredXCookies`
-            userUpdateOperations.$inc['inventory.xCookieData.currentXCookies'] = -requiredXCookies;
-            userUpdateOperations.$inc['inventory.xCookieData.totalXCookiesSpent'] = requiredXCookies;
-            userUpdateOperations.$inc['inventory.xCookieData.weeklyXCookiesSpent'] = requiredXCookies;
-
-            islandUpdateOperations.$inc['currentLevel'] = 1;
-        }
-
-        // execute the update operations
-        await Promise.all([
-            UserModel.updateOne({ twitterId }, userUpdateOperations),
-            IslandModel.updateOne({ islandId }, islandUpdateOperations)
-        ]);
-
-        return {
-            status: Status.SUCCESS,
-            message: `(evolveIsland) Island with ID ${islandId} successfully evolved.`,
-            data: {
-                island,
-                currentLevel: island.currentLevel,
-                nextLevel: island.currentLevel + 1,
-                totalPaid,
-                paymentChoice,
-                userCurrency: {
-                    currentValue: currentCurrency,
-                    updatedValue: Math.max(currentCurrency - totalPaid, 0),
-                }
-            }
-        }
-    } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(evolveIsland) Error: ${err.message}`
         }
     }
 }

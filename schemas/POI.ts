@@ -28,7 +28,6 @@ export const POISchema = new mongoose.Schema({
             buyingPrice: {
                 _id: false,
                 xCookies: { type: mongoose.SchemaTypes.Mixed },
-                cookieCrumbs: { type: mongoose.SchemaTypes.Mixed },
             },
             sellingPrice: {
                 _id: false,
@@ -43,7 +42,6 @@ export const POISchema = new mongoose.Schema({
             buyingPrice: {
                 _id: false,
                 xCookies: { type: mongoose.SchemaTypes.Mixed },
-                cookieCrumbs: { type: mongoose.SchemaTypes.Mixed },
             },
             sellingPrice: {
                 _id: false,
