@@ -10,7 +10,15 @@ import { ReturnValue, Status } from '../utils/retVal';
  */
 export const fetchOwnedBitCosmetics = async (twitterId: string): Promise<ReturnValue> => {
     try {
-        const cosmetics = await UserBitCosmeticModel.find({ 'ownerData.currentOwnerId': twitterId }).lean();
+        const user = await UserModel.findOne({ twitterId }).lean();
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(fetchOwnedBitCosmetics) User not found!`
+            }
+        }
+
+        const cosmetics = await UserBitCosmeticModel.find({ 'ownerData.currentOwnerId': user._id }).lean();
 
         return {
             status: Status.SUCCESS,
