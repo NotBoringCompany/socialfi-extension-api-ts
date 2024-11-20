@@ -3056,10 +3056,15 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
 
         // Destructure currentEnergy
         const { currentEnergy } = user.inGameData.energy as PlayerEnergy;
-        // Destructure islandTappingData
+        // Destructure islandTappingData & islandType
         const { caressEnergyMeter, currentCaressEnergyMeter, currentMilestone, milestoneReward } = island.islandTappingData as IslandTappingData;
-        const islandTappingLimit = ISLAND_TAPPING_MILESTONE_LIMIT(island.type as IslandType);
-        const boosterPercentage = milestoneReward.boosterReward;
+        const { type } = island as Island;
+
+        // Check islandTappingLimit & boosterPercentage.
+        // If island Type is Primal, add 100% booster on top of milestone Booster reward
+        const islandTappingLimit = ISLAND_TAPPING_MILESTONE_LIMIT(type);
+        const boosterPercentage = type === IslandType.PRIMAL_ISLES ? milestoneReward.boosterReward + 100 : milestoneReward.boosterReward;
+        console.log(`(applyIslandTapping), Island #${island.islandId} type ${type}. Apply ${boosterPercentage}% Booster`);
         let resourcesDropped: number = 0;
 
         // if caressMeter passed from FE isn't equal than current caressEnergyMeter return error.
