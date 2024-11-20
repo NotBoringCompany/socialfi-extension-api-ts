@@ -22,12 +22,6 @@ export interface Island {
     obtainMethod: ObtainMethod;
     /** current level of the island */
     currentLevel: number;
-    /** 
-     * current tax for this particular island (resulting xCookies claimed will be reduced by this tax) 
-     * 
-     * please note that this will be updated just before claiming xCookies everytime.
-     */
-    currentTax: number;
     /** the IDs of the bits that are placed (tied down) into this island to gather and earn */
     placedBitIds: number[];
     /** 

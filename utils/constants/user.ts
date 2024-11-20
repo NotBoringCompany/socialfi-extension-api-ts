@@ -8,10 +8,13 @@ export const MAX_INVENTORY_WEIGHT = 50000;
 export const MAX_BEGINNER_REWARD_DAY = 7;
 
 /** Maximum number of energy potions that can be stored */
-export const MAX_ENERGY_CAP = 1000;
+export const MAX_ENERGY_CAP = 4000;
 
 /** Maximum number of energy potions that can be stored */
 export const MAX_ENERGY_POTION_CAP = 4;
+
+/** Energy Potion recovery value when consumed */
+export const ENERGY_POTION_RECOVERY = 250;
 
 /** Base number of reroll milestone chance */
 export const BASE_REROLL_BONUS_MILESTONE = 6;
@@ -31,10 +34,19 @@ export const GET_DAILY_LOGIN_REWARDS = (
     // 3. max is 125 leaderboard points, obtained after the 7th day. every day after the 7th day means the user will get 125 leaderboard points.
     // 4. for now, xCookies will be 0.
     const points = 50 + (12.5 * currentConsecutiveDays);
+    
+    // logic for xCookies, starting from 2 ConsecutiveDays will gave xCookies and start increasing by 1 from 4 ConsecutiveDays
+    const xCookies = 
+    currentConsecutiveDays <= 1 ? 0 :
+    currentConsecutiveDays <= 3 ? 1 :
+    currentConsecutiveDays <= 4 ? 2 :
+    currentConsecutiveDays <= 5 ? 3 :
+    currentConsecutiveDays <= 6 ? 4 : 5;
+
     return [
         {
             type: DailyLoginRewardType.X_COOKIES,
-            amount: 0
+            amount: xCookies
         },
         {
             type: DailyLoginRewardType.LEADERBOARD_POINTS,
