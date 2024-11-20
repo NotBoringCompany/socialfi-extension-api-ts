@@ -46,3 +46,35 @@ export interface JoinChatroomDTO {
 export const joinChatroomDTO = z.object({
     chatroomId: z.string(),
 });
+
+export interface MuteParticipantDTO {
+    /** the ID of the chatroom where the participant is being muted */
+    chatroomId: string;
+    /** the user's unique identifier (_id or Twitter ID) representing the participant */
+    userId: string;
+    /** the UNIX timestamp until which the participant will remain muted */
+    mutedUntilTimestamp: number;
+}
+
+export interface UnmuteParticipantDTO {
+    /** the ID of the chatroom where the participant is being muted */
+    chatroomId: string;
+    /** the user's unique identifier (_id or Twitter ID) representing the participant */
+    userId: string;
+}
+
+export const muteParticipantDTO = z.object({
+    /** the ID of the chatroom where the participant is being muted */
+    chatroomId: z.string(),
+    /** the user's unique identifier (_id or Twitter ID) representing the participant */
+    userId: z.string(),
+    /** the UNIX timestamp until which the participant will remain muted */
+    mutedUntilTimestamp: z.number(),
+});
+
+export const unmuteParticipantDTO = z.object({
+    /** the ID of the chatroom where the participant is being muted */
+    chatroomId: z.string(),
+    /** the user's unique identifier (_id or Twitter ID) representing the participant */
+    userId: z.string(),
+});

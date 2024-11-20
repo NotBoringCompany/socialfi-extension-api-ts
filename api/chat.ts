@@ -122,7 +122,14 @@ export const sendMessage = async (senderId: string, chatroomId: string, message:
             throw new Error('Chatroom not found.');
         }
 
+        const participant = chatroom.participants.find((participant) => participant.user.toString() === user._id);
+
+        if (!participant) throw new Error(`You're not a participant in this chatroom.`);
+
         const currentTimestamp = dayjs().unix();
+        const isMuted = participant.mutedUntilTimestamp && participant.mutedUntilTimestamp > currentTimestamp;
+
+        if (isMuted) throw new Error(`You're muted`);
 
         // create a new chat messsage
         const chats = await ChatModel.create(
@@ -161,7 +168,9 @@ export const sendMessage = async (senderId: string, chatroomId: string, message:
         session.endSession();
 
         const newChat = await ChatModel.findById(chats[0]._id).populate('sender');
-        const newChatroom = await ChatroomModel.findById(chatroom._id).populate('participants.user').populate('lastSender');
+        const newChatroom = await ChatroomModel.findById(chatroom._id)
+            .populate('participants.user')
+            .populate('lastSender');
 
         return {
             status: Status.SUCCESS,
@@ -257,7 +266,9 @@ export const sendDirectMessage = async (
         });
 
         const newChat = await ChatModel.findById(chat._id).populate('sender');
-        const newChatroom = await ChatroomModel.findById(chatroom._id).populate('participants.user').populate('lastSender');
+        const newChatroom = await ChatroomModel.findById(chatroom._id)
+            .populate('participants.user')
+            .populate('lastSender');
 
         return {
             status: Status.SUCCESS,
@@ -603,6 +614,78 @@ export const removeSquadChatroomParticipant = async (squadId: string, memberId: 
         return {
             status: Status.ERROR,
             message: `(removeSquadChatroomParticipant) ${err.message}`,
+        };
+    }
+};
+
+/**
+ * Mutes a participant in the specified chatroom until the provided timestamp.
+ */
+export const muteParticipant = async (
+    userId: string,
+    chatroomId: string,
+    mutedUntilTimestamp: number
+): Promise<ReturnValue> => {
+    try {
+        const chatroom = await ChatroomModel.findById(chatroomId);
+        if (!chatroom) {
+            throw new Error('Chatroom not found.');
+        }
+
+        const user = await UserModel.findOne({ $or: [{ twitterId: userId }, { _id: userId }] });
+        if (!user) throw new Error('User not found');
+
+        const participant = chatroom.participants.find((participant) => participant.user.toString() === user._id);
+
+        if (!participant) {
+            throw new Error('Participant not found in this chatroom.');
+        }
+
+        participant.mutedUntilTimestamp = mutedUntilTimestamp;
+
+        await chatroom.save();
+
+        return {
+            status: Status.SUCCESS,
+            message: `(muteParticipant) Participant muted successfully.`,
+            data: { chatroom },
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(muteParticipant) ${err.message}`,
+        };
+    }
+};
+
+/**
+ * Unmutes a participant in the specified chatroom.
+ */
+export const unmuteParticipant = async (userId: string, chatroomId: string): Promise<ReturnValue> => {
+    try {
+        const chatroom = await ChatroomModel.findById(chatroomId);
+        if (!chatroom) {
+            throw new Error('Chatroom not found.');
+        }
+
+        const user = await UserModel.findOne({ $or: [{ twitterId: userId }, { _id: userId }] });
+        if (!user) throw new Error('User not found');
+
+        const participant = chatroom.participants.find((participant) => participant.user.toString() === user._id);
+
+        participant.mutedUntilTimestamp = null;
+
+        await chatroom.save();
+
+        return {
+            status: Status.SUCCESS,
+            message: `(unmuteParticipant) Participant unmuted successfully.`,
+            data: { chatroom },
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(unmuteParticipant) ${err.message}`,
         };
     }
 };
