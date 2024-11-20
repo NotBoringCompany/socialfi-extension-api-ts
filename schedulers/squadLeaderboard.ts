@@ -1,5 +1,5 @@
 import cron from 'node-cron';
-import { updateClaimableCrumbs, updateClaimableXCookies, updateDailyBonusResourcesGathered, updateGatheringProgressAndDropResource } from '../api/island';
+import { updateDailyBonusResourcesGathered, updateGatheringProgressAndDropResource } from '../api/island';
 import { addSquadLeaderboard, calculateWeeklySquadRankingAndGiveRewards } from '../api/squadLeaderboard';
 import Bull from 'bull';
 
