@@ -5,6 +5,7 @@ import passport from 'passport';
 import mongoose from 'mongoose';
 import session from 'express-session';
 import MongoStore from 'connect-mongo';
+import './utils/zod';
 import { whitelistMiddleware } from './middlewares/whitelist';
 
 dotenv.config();
