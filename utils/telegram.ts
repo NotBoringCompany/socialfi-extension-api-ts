@@ -26,9 +26,9 @@ export const validateTelegramData = (telegramInitData: string) => {
 
     const dataToCheck = [...initData.entries()].map(([key, value]) => key + '=' + value).join('\n');
 
-    const secretKey = crypto.createHmac('sha256', 'WebAppData').update(process.env.TELEGRAM_BOT_TOKEN).digest('hex');
+    const secretKey = crypto.createHmac('sha256', 'WebAppData').update(process.env.TELEGRAM_BOT_TOKEN).digest();
 
-    const _hash = crypto.createHmac('sha256', secretKey).update(dataToCheck).digest('hex');
+    const _hash = crypto.createHmac('sha256', secretKey as any).update(dataToCheck).digest('hex');
 
     return hash === _hash;
 };
