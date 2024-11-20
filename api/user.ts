@@ -13,6 +13,7 @@ import { resources } from '../utils/constants/resource';
 import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, PlayerEnergy, InGameData, PlayerMastery, UserWallet, XCookieSource, User } from '../models/user';
 import {
     DAILY_REROLL_BONUS_MILESTONE,
+    ENERGY_POTION_RECOVERY,
     GET_BEGINNER_REWARDS,
     GET_DAILY_LOGIN_REWARDS,
     GET_SEASON_0_PLAYER_LEVEL,
@@ -2567,6 +2568,8 @@ export const consumeEnergyPotion = async (
         
         // Destructure user's energy variables
         const { currentEnergy, maxEnergy, dailyEnergyPotion } = user.inGameData.energy as PlayerEnergy;
+        console.log(`(consumeEnergyPotion), userId ${user._id} | username ${user.twitterUsername}`);
+        console.log('(consumeEnergyPotion), tappingProgress: ', tappingProgress);
 
         if (dailyEnergyPotion <= 0) {
             return {
@@ -2586,6 +2589,7 @@ export const consumeEnergyPotion = async (
         if (tappingProgress) {
             const islandIds = tappingProgress.map((progress) => progress.islandId);
             const islands = await IslandModel.find({ islandId: { $in: islandIds }, owner: user._id });
+            console.log('(consumeEnergyPotion) islands: ', JSON.stringify(islands));
 
             // Calculate the total energy required for tapping progress
             totalTappingProgressEnergyRequired = tappingProgress.reduce((total, progress) => {
@@ -2622,7 +2626,7 @@ export const consumeEnergyPotion = async (
         const energyAfterTapping = currentEnergy >= totalTappingProgressEnergyRequired ? 
             currentEnergy - totalTappingProgressEnergyRequired : 
             currentEnergy;
-        const newCurrentEnergy = Math.min(maxEnergy, energyAfterTapping + 1000);
+        const newCurrentEnergy = Math.min(maxEnergy, energyAfterTapping + ENERGY_POTION_RECOVERY);
         const newEnergyPotionCount = Math.max(dailyEnergyPotion - 1, 0);
 
         // Set the new current energy and daily energy potion count in the update operations
@@ -2649,8 +2653,6 @@ export const consumeEnergyPotion = async (
             }
         };
     } catch (err: any) {
-        console.error('(consumeEnergyPotion), Error: ', err.message);
-
         return {
             status: Status.ERROR,
             message: `(consumeEnergyPotion) ${err.message}`,
