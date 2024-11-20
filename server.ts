@@ -5,6 +5,7 @@ import passport from 'passport';
 import mongoose from 'mongoose';
 import session from 'express-session';
 import MongoStore from 'connect-mongo';
+import { whitelistMiddleware } from './middlewares/whitelist';
 
 dotenv.config();
 
@@ -26,7 +27,7 @@ app.use(session({
 
 app.use(passport.initialize());
 app.use(passport.session());
-app.use(whitelistMiddleware())
+app.use(whitelistMiddleware)
 
 /** ROUTE IMPORTS */
 import twitterAuth from './routes/auth/twitter';
@@ -57,7 +58,6 @@ import weeklyMVPReward from './routes/weeklyMVPReward';
 import collab from './routes/collab';
 import { schedulers } from './schedulers/schedulers';
 import { checkMaintenance } from './middlewares/maintenance';
-import { whitelistMiddleware } from './middlewares/whitelist';
 
 app.use('/auth/twitter', checkMaintenance, twitterAuth);
 app.use('/auth/discord', checkMaintenance, discordAuth);
