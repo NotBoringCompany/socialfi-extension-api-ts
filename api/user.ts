@@ -216,7 +216,6 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
                         currentXCookies: 0,
                         extendedXCookieData: [],
                     },
-                    cookieCrumbs: 0,
                     resources: [],
                     items: [
                         {
@@ -2467,7 +2466,6 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
                     currentXCookies: 0,
                     extendedXCookieData: [],
                 },
-                cookieCrumbs: 0,
                 resources: [],
                 items: [
                     {
@@ -2866,7 +2864,6 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                         currentXCookies: 0,
                         extendedXCookieData: [],
                     },
-                    cookieCrumbs: 0,
                     resources: [],
                     items: [
                         {

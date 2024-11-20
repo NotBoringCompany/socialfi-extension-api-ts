@@ -65,8 +65,6 @@ export const giftXterioIsland = async (
 
         const baseResourceCap = randomizeBaseResourceCap(islandType);
         const traits = randomizeIslandTraits();
-        const totalXCookiesEarnable = 0;
-        const totalCookieCrumbsEarnable = 0;
 
         const userBitIds = user.inventory?.bitIds as number[];
 
@@ -149,21 +147,6 @@ export const giftXterioIsland = async (
                 lastClaimed: 0,
                 gatheringProgress: 0,
                 lastUpdatedGatheringProgress: Math.floor(Date.now() / 1000)
-            },
-            islandEarningStats: {
-                totalXCookiesSpent: 0,
-                totalXCookiesEarnable,
-                totalXCookiesEarned: 0,
-                claimableXCookies: 0,
-                totalCookieCrumbsSpent: 0,
-                totalCookieCrumbsEarnable,
-                totalCookieCrumbsEarned: 0,
-                claimableCookieCrumbs: 0,
-                earningStart: Math.floor(Date.now() / 1000),
-                crumbsEarningStart: Math.floor(Date.now() / 1000),
-                earningEnd: 0,
-                crumbsEarningEnd: 0,
-                lastClaimed: 0,
             },
             islandStatsModifiers,
             islandTappingData: ISLAND_TAPPING_REQUIREMENT(1, tapping.level),
@@ -348,7 +331,7 @@ export const evolveIsland = async (twitterId: string, islandId: number, choice: 
         // Track consumed Currency
         let currentCurrency: number = 0;
         let totalPaid: number = 0;
-        let paymentChoice: 'xCookies' | 'cookieCrumbs';
+        let paymentChoice: 'xCookies';
 
         if (!user) {
             return {
