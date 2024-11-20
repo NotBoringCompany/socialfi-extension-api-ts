@@ -58,7 +58,7 @@ export interface ChatroomParticipant {
     /** User ID or object representing the participant */
     user: User | string;
     /** Timestamp indicating when the user joined the chatroom */
-    joinedTimestamp: string;
+    joinedTimestamp: number;
     /** the timestamp until which the participant is muted, if applicable */
     mutedUntilTimestamp?: number | null;
 }

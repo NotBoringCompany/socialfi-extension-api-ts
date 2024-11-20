@@ -128,13 +128,6 @@ router.post('/unmute_participant', authMiddleware(3), async (req, res) => {
  */
 router.post('/send_blast_message', authMiddleware(3), async (req, res) => {
     try {
-        // Validate user authorization (assumes you have an auth validation system)
-        const auth = await validateRequestAuth(req, res, 'send_blast_message');
-
-        if (auth.status !== Status.SUCCESS) {
-            return res.status(auth.status).json(auth);
-        }
-
         // Validate the request body with Zod schema
         const validation = sendBlastMessageDTO.safeParse(req.body);
         if (!validation.success) {

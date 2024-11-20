@@ -8,7 +8,8 @@ export const ChatroomParticipantSchema = new mongoose.Schema<ChatroomParticipant
         default: generateObjectId(),
     },
     user: { type: String, ref: 'Users', required: true, index: true },
-    joinedTimestamp: { type: String, required: true },
+    joinedTimestamp: { type: Number, required: true },
+    mutedUntilTimestamp: { type: Number },
 });
 
 export const ChatroomSchema = new mongoose.Schema<Chatroom & mongoose.Document>({
