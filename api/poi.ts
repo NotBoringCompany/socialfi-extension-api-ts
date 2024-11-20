@@ -15,6 +15,8 @@ import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '..
 import { ReturnValue, Status } from '../utils/retVal';
 import { getLatestSquadWeeklyRanking, squadKOSData } from './squad';
 import { updateReferredUsersData } from './user';
+import { incrementProgressionByType } from './quest';
+import { QuestRequirementType } from '../models/quest';
 
 /**
  * Resets the `currentBuyableAmount` and `currentSellableAmount` of all global items in all POI shops.
@@ -212,6 +214,8 @@ export const travelToPOI = async (
         console.log('currentTime:', currentTime);
         console.log('timeToTravel:', timeToTravel);
         console.log('destinationArrival:', Math.ceil(currentTime + timeToTravel));
+
+        incrementProgressionByType(QuestRequirementType.TRAVEL_TIME, user.twitterId, timeToTravel / 60);
 
         // update the user's data
         // 1. set `travellingTo` in the user's inGameData to the destination

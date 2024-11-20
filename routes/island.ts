@@ -464,14 +464,15 @@ router.post('/apply_island_tapping_data', async (req, res) => {
 
         const { status, message, data } = await applyIslandTapping(validateData?.twitterId, parseInt(islandId), parseInt(caressMeter), bonus);
 
-        if (status === Status.SUCCESS && allowMixpanel) {
-            mixpanel.track('Apply Island Milestone', {
-                distinct_id: validateData?.twitterId,
-                '_data': data,
-            });
+        if (status === Status.SUCCESS) {
+            if (allowMixpanel) {
+                mixpanel.track('Apply Island Milestone', {
+                    distinct_id: validateData?.twitterId,
+                    '_data': data,
+                });
+            }
 
-            // increment the event counter in the wonderbits contract.
-            
+            incrementProgressionByType(QuestRequirementType.TAPPING_MILESTONE, validateData?.twitterId, 1);
         }
         
         return res.status(status).json({

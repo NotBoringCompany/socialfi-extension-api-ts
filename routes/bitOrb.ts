@@ -30,15 +30,14 @@ router.post('/consume', async (req, res) => {
             type
         );
 
-        if (status === Status.SUCCESS && allowMixpanel) {
-            mixpanel.track('Consume Bit Orb', {
-                distinct_id: validateData?.twitterId,
-                '_type': type,
-                '_bit': data?.bit,
-            });
-
-            // increment the event counter in the wonderbits contract.
-            
+        if (status === Status.SUCCESS) {
+            if (allowMixpanel) {
+                mixpanel.track('Consume Bit Orb', {
+                    distinct_id: validateData?.twitterId,
+                    '_type': type,
+                    '_bit': data?.bit,
+                });
+            }
 
             incrementProgressionByType(QuestRequirementType.CONSUME_ORB, validateData?.twitterId, 1);
             incrementProgressionByType(QuestRequirementType.HATCH_BIT, validateData?.twitterId, 1, data.bit.rarity);
