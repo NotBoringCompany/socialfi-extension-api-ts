@@ -182,15 +182,6 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
                 dailyEnergyPotion: MAX_ENERGY_POTION_CAP,
             }
 
-            // initialize PlayerMastery for new user
-            const newMastery: PlayerMastery = {
-                tapping: {
-                    level: 1,
-                    totalExp: 0,
-                    rerollCount: 6,
-                },
-            };
-
             const newUser = new UserModel({
                 _id: userObjectId,
                 twitterId,
@@ -246,7 +237,17 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
                 inGameData: {
                     level: 1,
                     energy: newEnergy,
-                    mastery: newMastery,
+                    mastery: {
+                        tapping: {
+                            level: 1,
+                            totalExp: 0,
+                            rerollCount: 6,
+                        },
+                        // empty crafting for now (so it can be more flexible)
+                        // crafting: {},
+                        // empty berry factory for now (so it can be more flexible)
+                        berryFactory: {},
+                    },
                     completedTutorialIds: [],
                     beginnerRewardData: {
                         lastClaimedTimestamp: 0,
@@ -2316,15 +2317,6 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
             dailyEnergyPotion: MAX_ENERGY_POTION_CAP,
         };
 
-        // initialize PlayerMastery for new user
-        const newMastery: PlayerMastery = {
-            tapping: {
-                level: 1,
-                totalExp: 0,
-                rerollCount: 6,
-            },
-        };
-
         const islandStatsModifiers: IslandStatsModifiers = {
             resourceCapModifiers: [],
             gatheringRateModifiers: [],
@@ -2496,7 +2488,17 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
             inGameData: {
                 level: 1,
                 energy: newEnergy,
-                mastery: newMastery,
+                mastery: {
+                    tapping: {
+                        level: 1,
+                        totalExp: 0,
+                        rerollCount: 6,
+                    },
+                    // empty crafting for now (so it can be more flexible)
+                    // crafting: {},
+                    // empty berry factory for now (so it can be more flexible)
+                    berryFactory: {},
+                },
                 completedTutorialIds: [],
                 beginnerRewardData: {
                     lastClaimedTimestamp: 0,
@@ -2829,15 +2831,6 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                 dailyEnergyPotion: MAX_ENERGY_POTION_CAP,
             };
 
-            // initialize PlayerMastery for new user
-            const newMastery: PlayerMastery = {
-                tapping: {
-                    level: 1,
-                    totalExp: 0,
-                    rerollCount: 6,
-                },
-            };
-
             const newUser = new UserModel({
                 _id: userObjectId,
                 twitterId: telegramUser.id,
@@ -2894,7 +2887,17 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                 inGameData: {
                     level: 1,
                     energy: newEnergy,
-                    mastery: newMastery,
+                    mastery: {
+                        tapping: {
+                            level: 1,
+                            totalExp: 0,
+                            rerollCount: 6,
+                        },
+                        // empty crafting for now (so it can be more flexible)
+                        // crafting: {},
+                        // empty berry factory for now (so it can be more flexible)
+                        berryFactory: {},
+                    },
                     completedTutorialIds: [],
                     beginnerRewardData: {
                         lastClaimedTimestamp: 0,
