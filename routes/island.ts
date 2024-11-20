@@ -1,10 +1,10 @@
 import express from 'express';
-import { applyGatheringProgressBooster, applyIslandTapping, calcEffectiveResourceDropChances, calcIslandGatheringRate, claimResources, evolveIsland, getIslandTappingData, getIslands, giftXterioIsland, placeBit, removeIsland, rerollBonusMilestoneReward, unplaceBit, updateGatheringProgressAndDropResourceAlt } from '../api/island';
+import { applyGatheringProgressBooster, applyIslandTapping, calcEffectiveResourceDropChances, calcIslandGatheringRate, claimResources, getIslandTappingData, getIslands, giftXterioIsland, placeBit, removeIsland, rerollBonusMilestoneReward, unplaceBit, updateGatheringProgressAndDropResourceAlt } from '../api/island';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { IslandType, ResourceDropChanceDiff } from '../models/island';
 import { Modifier } from '../models/modifier';
-import { ISLAND_EVOLUTION_COST, MAX_ISLAND_LEVEL } from '../utils/constants/island';;
+import { MAX_ISLAND_LEVEL } from '../utils/constants/island';;
 import { BitModel, IslandModel } from '../utils/constants/db';
 import { getBits } from '../api/bit';
 import { Bit } from '../models/bit';
@@ -150,44 +150,6 @@ router.post('/remove_island', async (req, res) => {
         })
     }
 })
-
-router.post('/evolve_island', async (req, res) => {
-    const { islandId, choice } = req.body;
-
-    try {
-        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'evolve_island');
-
-        if (validateStatus !== Status.SUCCESS) {
-            return res.status(validateStatus).json({
-                status: validateStatus,
-                message: validateMessage
-            })
-        }
-
-        const { status, message, data } = await evolveIsland(validateData?.twitterId, islandId, choice);
-        
-        if (status === Status.SUCCESS && allowMixpanel) {
-            mixpanel.track('Currency Tracker', {
-                distinct_id: validateData?.twitterId,
-                '_type': 'Evolve Island',
-                '_data': data,
-            });
-
-            
-        }
-
-        return res.status(status).json({
-            status,
-            message,
-            data
-        });
-    } catch (err: any) {
-        return res.status(500).json({
-            status: 500,
-            message: err.message
-        })
-    }
-});
 
 router.post('/claim_resources', async (req, res) => {
     const { islandId, claimType, chosenResources } = req.body;

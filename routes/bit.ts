@@ -1,5 +1,5 @@
 import express from 'express';
-import { calcBitGatheringRate, evolveBit, feedBit, getBits, giftXterioBit, releaseBit, renameBit } from '../api/bit';
+import { calcBitGatheringRate, feedBit, getBits, giftXterioBit, releaseBit, renameBit } from '../api/bit';
 import { FoodType } from '../models/food';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
@@ -110,44 +110,6 @@ router.post('/release_bit', async (req, res) => {
         })
     }
 })
-
-router.post('/evolve_bit', async (req, res) => {
-    const { bitId } = req.body;
-
-    try {
-        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'evolve_bit');
-
-        if (validateStatus !== Status.SUCCESS) {
-            return res.status(validateStatus).json({
-                status: validateStatus,
-                message: validateMessage
-            })
-        }
-
-        const { status, message, data } = await evolveBit(validateData?.twitterId, bitId);
-
-        if (status === Status.SUCCESS && allowMixpanel) {
-            mixpanel.track('Currency Tracker', {
-                distinct_id: validateData?.twitterId,
-                '_type': 'Evolve Bit',
-                '_data': data,
-            });
-
-            
-        }
-
-        return res.status(status).json({
-            status,
-            message,
-            data
-        });
-    } catch (err: any) {
-        return res.status(500).json({
-            status: 500,
-            message: err.message
-        })
-    }
-});
 
 router.post('/feed_bit', async (req, res) => {
     const { bitId, foodType } = req.body;
@@ -300,7 +262,7 @@ router.get('/get_next_gathering_rate_increases/:bitId', async (req, res) => {
             })
         }
 
-        // get the max current gathering and earning rates for the bit (with no modifiers applied)
+        // get the max current gathering rate for the bit (with no modifiers applied)
         const maxCurrentGatheringRate = calcBitGatheringRate(
             bit.farmingStats?.baseGatheringRate,
             bit.currentFarmingLevel,
@@ -308,7 +270,7 @@ router.get('/get_next_gathering_rate_increases/:bitId', async (req, res) => {
             bit.bitStatsModifiers?.gatheringRateModifiers
         );
 
-        // get the next max current gathering and earning rates for the bit (with no modifiers applied)
+        // get the next max current gathering rate for the bit (with no modifiers applied)
         const nextMaxCurrentGatheringRate = calcBitGatheringRate(
             bit.farmingStats?.baseGatheringRate,
             bit.currentFarmingLevel + 1,
