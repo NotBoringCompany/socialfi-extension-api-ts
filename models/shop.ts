@@ -17,10 +17,6 @@ export interface ShopAsset {
     assetType: 'item' | 'food' | 'package' | 'wonderpass';
     // the price of the asset
     price: ShopPrice;
-    // the image URL of the asset (for rendering in the frontend)
-    // if none, then a default one will be provided in the frontend
-    // used mostly for IAP asset backgrounds to differentiate the various categories of IAP assets
-    imageUrl: string;
     // the asset's classification.
     // this is mostly used in the frontend, where assets can be classified into non-IAP and IAP, and within IAP into more subcategories.
     // mostly for rendering classification purposes.

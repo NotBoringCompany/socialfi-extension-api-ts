@@ -9,6 +9,12 @@ import { generateObjectId } from '../utils/crypto';
 import { ExtendedXCookieData, XCookieSource } from '../models/user';
 import { fetchIAPTickers, verifyTONTransaction } from './web3';
 
+export const removeImageUrl = async (): Promise<void> => {
+    await ShopAssetModel.updateMany({}, { $unset: { imageUrl: 1 } });
+}
+
+removeImageUrl();
+
 /**
  * Fetches all shop assets from the database and return them as a shop instance.
  */
@@ -97,7 +103,6 @@ export const getShop = async (): Promise<ReturnValue> => {
                 assetName: asset.assetName,
                 assetType: asset.assetType,
                 price: asset.price,
-                imageUrl: asset.imageUrl ?? '',
                 assetClassification: asset.assetClassification,
                 availablePaymentMethods: asset.availablePaymentMethods,
                 expirationDate: asset.expirationDate,

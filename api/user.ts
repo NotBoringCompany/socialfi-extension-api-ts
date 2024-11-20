@@ -42,8 +42,6 @@ import * as dotenv from 'dotenv';
 import { TelegramAuthData } from '../utils/telegram';
 import { sendMailsToNewUser } from './mail';
 
-dotenv.config();
-
 /**
  * Returns the user's data.
  */
