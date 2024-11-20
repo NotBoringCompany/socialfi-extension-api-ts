@@ -266,36 +266,6 @@ router.get('/get_gathering_rate/:islandId', async (req, res) => {
     }
 })
 
-router.get('/get_evolution_cost/:islandId', async (req, res) => {
-    const { islandId } = req.params;
-
-    try {
-        const island = await IslandModel.findOne({ islandId: parseInt(islandId) }).lean();
-
-        if (!island) {
-            return res.status(404).json({
-                status: 404,
-                message: `(get_evolution_cost) Island with ID ${islandId} not found.`
-            });
-        }
-
-        const evolutionCost = ISLAND_EVOLUTION_COST(<IslandType>island.type, island.currentLevel);
-
-        return res.status(200).json({
-            status: 200,
-            message: `(get_evolution_cost) Successfully retrieved evolution cost for island with ID ${islandId}.`,
-            data: {
-                evolutionCost
-            }
-        });
-    } catch (err: any) {
-        return res.status(500).json({
-            status: 500,
-            message: err.message
-        });
-    }
-})
-
 router.get('/get_evolution_resource_drop_chances_diff/:islandId', async (req, res) => {
     const { islandId } = req.params;
 
