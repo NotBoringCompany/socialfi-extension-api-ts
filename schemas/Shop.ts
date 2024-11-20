@@ -32,7 +32,6 @@ export const ShopAssetSchema = new mongoose.Schema({
         enum: ['item', 'food', 'package'],
         index: true
     },
-    imageUrl: String,
     price: {
         xCookies: Number,
         finalXCookies: Number,
