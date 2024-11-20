@@ -11,6 +11,7 @@ import {
 } from '../validations/chat';
 import { getSocketUsers } from '../configs/socket';
 import { Chatroom } from '../models/chat';
+import { redis } from '../utils/constants/redis';
 
 export enum ChatEvent {
     /** send message */
@@ -25,6 +26,12 @@ export enum ChatEvent {
     NEW_CHATROOM = 'new_chatroom',
 }
 
+// the time window for rate-limiting in milliseconds (e.g., 10 seconds).
+const RATE_LIMIT_WINDOW = 10000;
+
+// the maximum number of messages a user is allowed to send within the rate-limit window.
+const MAX_MESSAGES_PER_WINDOW = 5;
+
 interface CallbackResponse {
     success?: boolean;
     error?: string;
@@ -34,8 +41,29 @@ interface CallbackResponse {
 type CallbackEvent = (response: CallbackResponse) => void;
 
 export const handleChatEvents = (socket: Socket, io: Server) => {
+    const rateLimitKey = (userId: string, event: ChatEvent) => `${event}:${userId}`;
+
+    const isRateLimited = async (userId: string, event: ChatEvent): Promise<boolean> => {
+        const key = rateLimitKey(userId, event);
+        const count = await redis.incr(key);
+        if (count === 1) {
+            await redis.expire(key, RATE_LIMIT_WINDOW / 1000);
+        }
+        return count > MAX_MESSAGES_PER_WINDOW;
+    };
+
+    const sendRateLimitResponse = (callback?: CallbackEvent) => {
+        if (callback) {
+            callback({ error: 'Too many requests. Please try again later.' });
+        }
+    };
+
     socket.on(ChatEvent.SEND_MESSAGE, async (request: SendMessageDTO, callback?: CallbackEvent) => {
         const senderId = socket.data.userId;
+
+        if (await isRateLimited(senderId, ChatEvent.SEND_DIRECT_MESSAGE)) {
+            return sendRateLimitResponse(callback);
+        }
 
         const validation = sendMessageDTO.validate(request);
 
@@ -64,6 +92,11 @@ export const handleChatEvents = (socket: Socket, io: Server) => {
 
     socket.on(ChatEvent.SEND_DIRECT_MESSAGE, async (request: SendDirectMessageDTO, callback?: CallbackEvent) => {
         const senderId = socket.data.userId;
+
+        if (await isRateLimited(senderId, ChatEvent.SEND_DIRECT_MESSAGE)) {
+            return sendRateLimitResponse(callback);
+        }
+
         const validation = sendDirectMessageDTO.validate(request);
 
         if (validation.status !== Status.SUCCESS) {
