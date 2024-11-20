@@ -1,8 +1,8 @@
 import express from 'express';
-import { applyGatheringProgressBooster, applyIslandTapping, calcEffectiveResourceDropChances, calcIslandCurrentRate, claimResources, evolveIsland, getIslandTappingData, getIslands, giftXterioIsland, placeBit, removeIsland, rerollBonusMilestoneReward, unplaceBit, updateGatheringProgressAndDropResourceAlt } from '../api/island';
+import { applyGatheringProgressBooster, applyIslandTapping, calcEffectiveResourceDropChances, calcIslandGatheringRate, claimResources, evolveIsland, getIslandTappingData, getIslands, giftXterioIsland, placeBit, removeIsland, rerollBonusMilestoneReward, unplaceBit, updateGatheringProgressAndDropResourceAlt } from '../api/island';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
-import { IslandType, RateType, ResourceDropChanceDiff } from '../models/island';
+import { IslandType, ResourceDropChanceDiff } from '../models/island';
 import { Modifier } from '../models/modifier';
 import { ISLAND_EVOLUTION_COST, MAX_ISLAND_LEVEL } from '../utils/constants/island';;
 import { BitModel, IslandModel } from '../utils/constants/db';
@@ -253,8 +253,8 @@ router.get('/get_islands', async (req, res) => {
     }
 })
 
-// get current gathering and earning rates of an island
-router.get('/get_current_rates/:islandId', async (req, res) => {
+// get current gathering rate of an island
+router.get('/get_gathering_rate/:islandId', async (req, res) => {
     const { islandId } = req.params;
 
     try {
@@ -263,7 +263,7 @@ router.get('/get_current_rates/:islandId', async (req, res) => {
         if (!island) {
             return res.status(404).json({
                 status: 404,
-                message: `(get_current_rates) Island with ID ${islandId} not found.`
+                message: `(get_gathering_rate) Island with ID ${islandId} not found.`
             });
         }
 
@@ -276,12 +276,11 @@ router.get('/get_current_rates/:islandId', async (req, res) => {
         if (bits.length === 0 || !bits) {
             return res.status(404).json({
                 status: 404,
-                message: `(get_current_rates) Bits not found in Island with ID ${islandId}.`
+                message: `(get_gathering_rate) Bits not found in Island with ID ${islandId}.`
             });
         }
 
-        const currentGatheringRate = calcIslandCurrentRate(
-            RateType.GATHERING,
+        const currentGatheringRate = calcIslandGatheringRate(
             <IslandType>island.type,
             bits.map(bit => bit.farmingStats?.baseGatheringRate),
             bits.map(bit => bit.currentFarmingLevel),
@@ -290,22 +289,11 @@ router.get('/get_current_rates/:islandId', async (req, res) => {
             island.islandStatsModifiers?.gatheringRateModifiers as Modifier[]
         );
 
-        const currentEarningRate = calcIslandCurrentRate(
-            RateType.EARNING,
-            <IslandType>island.type,
-            bits.map(bit => bit.farmingStats?.baseEarningRate),
-            bits.map(bit => bit.currentFarmingLevel),
-            bits.map(bit => bit.farmingStats?.earningRateGrowth),
-            bits.map(bit => bit.bitStatsModifiers?.earningRateModifiers),
-            island.islandStatsModifiers?.earningRateModifiers as Modifier[]
-        );
-
         return res.status(200).json({
             status: 200,
-            message: `(get_current_rates) Successfully retrieved current rates for island with ID ${islandId}.`,
+            message: `(get_gathering_rate) Successfully retrieved current rates for island with ID ${islandId}.`,
             data: {
                 currentGatheringRate,
-                currentEarningRate
             }
         });
     } catch (err: any) {
@@ -468,59 +456,6 @@ router.post('/update_gathering_progress_and_drop_resource_alt', async (req, res)
         });
     }
 });
-
-router.get('/calc_island_current_rate/:islandId/:rateType', async (req, res) => {
-    const { islandId, rateType } = req.params;
-
-    try {
-        const island = await IslandModel.findOne({ islandId }).lean();
-
-        if (!island) {
-            return res.status(404).json({
-                status: 404,
-                message: `(calc_island_current_rate) Island with ID ${islandId} not found.`
-            });
-        }
-
-        // get bits placed on island
-        const { status: bitStatus, message: bitMessage, data: bitData } = await getBits(island.placedBitIds as number[]);
-
-        if (bitStatus !== 200) {
-            return res.status(bitStatus).json({
-                status: bitStatus,
-                message: bitMessage
-            });
-        }
-
-        const bits = bitData?.bits as Bit[];
-
-        // get the island data
-        const islandType = <IslandType>island.type;
-
-        const currentRate = calcIslandCurrentRate(
-            <RateType>rateType,
-            islandType,
-            bits.map(bit => bit.farmingStats?.baseGatheringRate),
-            bits.map(bit => bit.currentFarmingLevel),
-            bits.map(bit => bit.farmingStats?.gatheringRateGrowth),
-            bits.map(bit => bit.bitStatsModifiers?.gatheringRateModifiers),
-            island.islandStatsModifiers?.gatheringRateModifiers as Modifier[]
-        );
-
-        return res.status(200).json({
-            status: 200,
-            message: `(calc_island_current_rate) Successfully calculated current rate for island with ID ${islandId}.`,
-            data: {
-                currentRate
-            }
-        });
-    } catch (err: any) {
-        return res.status(500).json({
-            status: 500,
-            message: err.message
-        });
-    }
-})
 
 router.get('/get_island_tapping_data/:islandId', async (req, res) => {
     const { islandId } = req.params;

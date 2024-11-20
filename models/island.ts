@@ -33,7 +33,7 @@ export interface Island {
     traits: IslandTrait[];
     /** resource stats related to the island, such as gathering rate */
     islandResourceStats: IslandResourceStats;
-    /** modifiers for both resource and earning stats (incl. boost and reduction) */
+    /** modifiers for both resource stats (incl. boost and reduction) */
     islandStatsModifiers: IslandStatsModifiers;
     /** island tapping related data */
     islandTappingData: IslandTappingData;
@@ -102,10 +102,10 @@ export interface IslandResourceStats {
 }
 
 /** 
- * Represents the modifiers for both resource and earning stats.
+ * Represents the modifiers for both resource stats.
  * 
- * NOTE: Calculating the final gathering and earning rates will be as follows:
- * current gathering/earning rate * modifier 1 * modifier 2 and so on... (same with resource cap)
+ * NOTE: Calculating the final gathering rates will be as follows:
+ * current gathering rate * modifier 1 * modifier 2 and so on... (same with resource cap)
  */
 export interface IslandStatsModifiers {
     /** resource cap modifiers */
@@ -138,14 +138,6 @@ export interface ResourceDropChance {
  * Exact same as `ResourceDropChance`, but is used just to differentiate the two in the code.
  */
 export interface ResourceDropChanceDiff extends ResourceDropChance {}
-
-/**
- * Used to determine whether to calculate effective earning or gathering rates for both bit and island.
- */
-export enum RateType {
-    GATHERING = 'Gathering',
-    EARNING = 'Earning',
-}
 
 export interface RarityDeviationReduction {
     /** the reduction in gathering rate (by a fixed %)  */

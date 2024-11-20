@@ -348,10 +348,6 @@ export const BIT_TRAIT_EFFECT_ON_SELF = (trait: BitTrait): BitTraitModifier => {
                     origin: 'Bit Trait: Productive',
                     value: 1.05
                 },
-                bitEarningRate: {
-                    origin: 'Bit Trait: Productive',
-                    value: 1.05
-                }
             }
         case BitTrait.ENTHUSIASTIC:
             return {
@@ -359,10 +355,6 @@ export const BIT_TRAIT_EFFECT_ON_SELF = (trait: BitTrait): BitTraitModifier => {
                     origin: 'Bit Trait: Enthusiastic',
                     value: 1.1
                 },
-                bitEarningRate: {
-                    origin: 'Bit Trait: Enthusiastic',
-                    value: 1.1
-                }
             }
         case BitTrait.FIT:
             return {
@@ -380,17 +372,9 @@ export const BIT_TRAIT_EFFECT_ON_SELF = (trait: BitTrait): BitTraitModifier => {
                     origin: 'Bit Trait: Lazy',
                     value: 0.95
                 },
-                bitEarningRate: {
-                    origin: 'Bit Trait: Lazy',
-                    value: 0.95
-                }
             }
         case BitTrait.UNINSPIRED:
             return {
-                bitEarningRate: {
-                    origin: 'Bit Trait: Uninspired',
-                    value: 0.9
-                },
                 bitGatheringRate: {
                     origin: 'Bit Trait: Uninspired',
                     value: 0.9
@@ -418,10 +402,6 @@ export const BIT_TRAIT_EFFECT_ON_SELF = (trait: BitTrait): BitTraitModifier => {
             return {}
         case BitTrait.TEAMWORKER:
             return {
-                bitEarningRate: {
-                    origin: 'Bit Trait: Teamworker',
-                    value: 1.05
-                },
                 bitGatheringRate: {
                     origin: 'Bit Trait: Teamworker',
                     value: 1.05
@@ -443,20 +423,12 @@ export const BIT_TRAIT_EFFECT_ON_SELF = (trait: BitTrait): BitTraitModifier => {
                     origin: 'Bit Trait: Leader',
                     value: 1.1
                 },
-                bitEarningRate: {
-                    origin: 'Bit Trait: Leader',
-                    value: 1.1
-                }
             }
         // cute trait only impacts other bits within the same isle
         case BitTrait.CUTE:
             return {}
         case BitTrait.GENIUS:
             return {
-                islandEarningRate: {
-                    origin: 'Bit Trait: Genius',
-                    value: 1.075
-                },
                 islandGatheringRate: {
                     origin: 'Bit Trait: Genius',
                     value: 1.075
@@ -469,10 +441,6 @@ export const BIT_TRAIT_EFFECT_ON_SELF = (trait: BitTrait): BitTraitModifier => {
                     origin: 'Bit Trait: Lonewolf',
                     value: 1.5
                 },
-                bitEarningRate: {
-                    origin: 'Bit Trait: Lonewolf',
-                    value: 1.5
-                }
             }
         // influential only increases the working rate of all islands owned
         case BitTrait.INFLUENTIAL:
@@ -522,7 +490,6 @@ export const getBitStatsModifiersFromTraits = (traits: BitTrait[]): BitStatsModi
 
     const bitStatsModifiers: BitStatsModifiers = {
         gatheringRateModifiers: [],
-        earningRateModifiers: [],
         energyRateModifiers: [],
         foodConsumptionEfficiencyModifiers: []
     }
@@ -530,9 +497,6 @@ export const getBitStatsModifiersFromTraits = (traits: BitTrait[]): BitStatsModi
     for (const traitEffect of traitEffects) {
         if (traitEffect.bitGatheringRate) {
             bitStatsModifiers.gatheringRateModifiers.push(traitEffect.bitGatheringRate);
-        }
-        if (traitEffect.bitEarningRate) {
-            bitStatsModifiers.earningRateModifiers.push(traitEffect.bitEarningRate);
         }
         if (traitEffect.energyDepletionRate) {
             bitStatsModifiers.energyRateModifiers.push(traitEffect.energyDepletionRate);
@@ -657,28 +621,24 @@ export const DEFAULT_ENERGY_DEPLETION_RATE = (rarity: BitRarity): number => {
     }
 };
 
-/** returns the reductions in earning and gathering rate (by a fixed %) if the bit's energy goes below a certain threshold */
+/** returns the reductions in gathering rate (by a fixed %) if the bit's energy goes below a certain threshold */
 export const ENERGY_THRESHOLD_REDUCTIONS = (energy: number): EnergyThresholdReduction => {
     switch (true) {
         case energy <= 0:
             return {
                 gatheringRateReduction: 100,
-                earningRateReduction: 100
             }
         case energy < 25:
             return {
                 gatheringRateReduction: 50,
-                earningRateReduction: 50
             }
         case energy < 50:
             return {
                 gatheringRateReduction: 20,
-                earningRateReduction: 20,
             }
         default: {
             return {
                 gatheringRateReduction: 0,
-                earningRateReduction: 0
             }
         }
     }

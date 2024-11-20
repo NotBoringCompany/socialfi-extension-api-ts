@@ -23,14 +23,8 @@ export const X_COOKIE_CLAIM_COOLDOWN = 10;
 /** reduction modifier for effective gathering rate for having multiple bits on an island */
 export const GATHERING_RATE_REDUCTION_MODIFIER = 0.1;
 
-/** reduction modifier for effective earning rate for having multiple bits on an island */
-export const EARNING_RATE_REDUCTION_MODIFIER = 0.1;
-
 /** exponential decay for gathering rate calculation (both bit and island) */
 export const GATHERING_RATE_EXPONENTIAL_DECAY = 0.015;
-
-/** exponential decay for earning rate calculation (both bit and island) */
-export const EARNING_RATE_EXPONENTIAL_DECAY = 0.015;
 
 /** the amount of bits that can be placed in an island */
 export const BIT_PLACEMENT_CAP = 5;
@@ -423,7 +417,7 @@ export const RARITY_DEVIATION_REDUCTIONS = (
 };
 
 /**
- * Increases the gathering/earning rate by a multiplier of an island based on its type (for calculation balancing).
+ * Increases the gathering rate by a multiplier of an island based on its type (for calculation balancing).
  */
 export const ISLAND_RARITY_DEVIATION_MODIFIERS = (type: IslandType): number => {
   switch (type) {

@@ -143,10 +143,10 @@ export const summonIsland = async (
 
         // loop through each bit and see if they have these traits:
         // influential, antagonistic, famous or mannerless
-        // if influential, add 1% to earning and gathering rate modifiers
-        // if antagonistic, reduce 1% to earning and gathering rate modifiers
-        // if famous, add 0.5% to earning and gathering rate modifiers
-        // if mannerless, reduce 0.5% to earning and gathering rate modifiers
+        // if influential, add 1% to gathering rate modifiers
+        // if antagonistic, reduce 1% to gathering rate modifiers
+        // if famous, add 0.5% to gathering rate modifiers
+        // if mannerless, reduce 0.5% to gathering rate modifiers
         const bits = await BitModel.find({ bitId: { $in: userBitIds } }).lean();
 
         bits.forEach(bit => {
@@ -173,20 +173,7 @@ export const summonIsland = async (
                         bitTraits.some(traitData => traitData.trait === BitTrait.MANNERLESS) ? 0.995 :
                         0.99
                 };
-            
-                const earningRateModifier: Modifier = {
-                    origin: `Bit ID #${bit.bitId}'s Trait: ${
-                        bitTraits.some(traitData => traitData.trait === BitTrait.INFLUENTIAL) ? 'Influential' :
-                        bitTraits.some(traitData => traitData.trait === BitTrait.FAMOUS) ? 'Famous' :
-                        bitTraits.some(traitData => traitData.trait === BitTrait.MANNERLESS) ? 'Mannerless' :
-                        'Antagonistic'
-                    }`,
-                    value: bitTraits.some(traitData => traitData.trait === BitTrait.INFLUENTIAL) ? 1.01 :
-                        bitTraits.some(traitData => traitData.trait === BitTrait.FAMOUS) ? 1.005 :
-                        bitTraits.some(traitData => traitData.trait === BitTrait.MANNERLESS) ? 0.995 :
-                        0.99
-                };
-
+                
                 islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
             }
         });

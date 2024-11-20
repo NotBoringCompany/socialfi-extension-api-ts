@@ -2324,18 +2324,13 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
 
         // check the bit's traits
         // if it has influential, antagonistic, famous or mannerless, then:
-        // if influential, add 1% to earning and gathering rate modifiers of the island
-        // if antagonistic, reduce 1% to earning and gathering rate modifiers of the island
-        // if famous, add 0.5% to earning and gathering rate modifiers of the island
-        // if mannerless, reduce 0.5% to earning and gathering rate modifiers of the island
+        // if influential, add 1% to gathering rate modifiers of the island
+        // if antagonistic, reduce 1% to gathering rate modifiers of the island
+        // if famous, add 0.5% to gathering rate modifiers of the island
+        // if mannerless, reduce 0.5% to gathering rate modifiers of the island
         if (traits.some((trait) => trait.trait === BitTrait.INFLUENTIAL)) {
-            // add 1% to earning and gathering rate modifiers of the island
+            // add 1% to gathering rate modifiers of the island
             const gatheringRateModifier: Modifier = {
-                origin: `Bit ID ${bitData.bit.bitId}'s Trait: Influential`,
-                value: 1.01,
-            };
-
-            const earningRateModifier: Modifier = {
                 origin: `Bit ID ${bitData.bit.bitId}'s Trait: Influential`,
                 value: 1.01,
             };
@@ -2345,13 +2340,8 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
 
         // if the bit has antagonistic trait
         if (traits.some((trait) => trait.trait === BitTrait.ANTAGONISTIC)) {
-            // reduce 1% to earning and gathering rate modifiers of the island
+            // reduce 1% to gathering rate modifiers of the island
             const gatheringRateModifier: Modifier = {
-                origin: `Bit ID ${bitData.bit.bitId}'s Trait: Antagonistic`,
-                value: 0.99,
-            };
-
-            const earningRateModifier: Modifier = {
                 origin: `Bit ID ${bitData.bit.bitId}'s Trait: Antagonistic`,
                 value: 0.99,
             };
@@ -2361,13 +2351,8 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
 
         // if the bit has famous trait
         if (traits.some((trait) => trait.trait === BitTrait.FAMOUS)) {
-            // add 0.5% to earning and gathering rate modifiers of the island
+            // add 0.5% to gathering rate modifiers of the island
             const gatheringRateModifier: Modifier = {
-                origin: `Bit ID ${bitData.bit.bitId}'s Trait: Famous`,
-                value: 1.005,
-            };
-
-            const earningRateModifier: Modifier = {
                 origin: `Bit ID ${bitData.bit.bitId}'s Trait: Famous`,
                 value: 1.005,
             };
@@ -2377,13 +2362,8 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
 
         // if the bit has mannerless trait
         if (traits.some((trait) => trait.trait === BitTrait.MANNERLESS)) {
-            // reduce 0.5% to earning and gathering rate modifiers of the island
+            // reduce 0.5% to gathering rate modifiers of the island
             const gatheringRateModifier: Modifier = {
-                origin: `Bit ID ${bitData.bit.bitId}'s Trait: Mannerless`,
-                value: 0.995,
-            };
-
-            const earningRateModifier: Modifier = {
                 origin: `Bit ID ${bitData.bit.bitId}'s Trait: Mannerless`,
                 value: 0.995,
             };
