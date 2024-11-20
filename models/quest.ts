@@ -6,11 +6,13 @@ import { BoosterItem } from './booster';
 import { FoodType } from './food';
 import { POIName } from './poi';
 import { ResourceType } from './resource';
+import { User } from './user';
 
 /**
  * Represents a Quest.
  */
 export interface Quest {
+    _id?: string;
     /** unique id to distinguish the quest, starts from 1 */
     questId: number;
     /** quest name */
@@ -20,14 +22,18 @@ export interface Quest {
     /** quest type */
     type: QuestType;
     /** quest tier */
-    tier: QuestTier;
+    tier: QuestTier | null;
     /** quest progression */
     progression: boolean;
+    /**
+     * Indicates whether the quest must be accepted in order to make progress.
+     */
+    acceptable: boolean;
     /** the status of the quest, the quest will be hidden when it set to false */
     status: boolean;
-    /** 
-     * the limit of the amount of times the user can complete this quest 
-     * 
+    /**
+     * the limit of the amount of times the user can complete this quest
+     *
      * NOTE: this should only be > 1 if the quest is a DAILY or REFRESHABLE quest.
      */
     limit: number;
@@ -37,10 +43,11 @@ export interface Quest {
     imageUrl: string;
     /** quest banner URL */
     bannerUrl?: string;
-    /** 
-     * the locations (POI) where the quest can be done. if 'anywhere', then the quest can be done anywhere.
+    /**
+     * POI where the quest is available.
+     * If set to null, the quest is available at all POIs.
      */
-    poi: 'anywhere' | POIName;
+    poi: POIName[] | null;
     /** start timestamp of the quest */
     start?: number;
     /** end timestamp of the quest */
@@ -51,7 +58,7 @@ export interface Quest {
     completedBy: Array<{
         twitterId: string;
         timesCompleted: number;
-    }>
+    }>;
     /** requirements to complete the quest */
     requirements: QuestRequirement[];
     qualification: QuestQualification;
@@ -83,7 +90,7 @@ export enum QuestTier {
     INTERMEDIATE = 'Intermediate',
     ADVANCED = 'Advanced',
     EXPERT = 'Expert',
-    MASTER = 'Master'
+    MASTER = 'Master',
 }
 
 /**
@@ -96,33 +103,36 @@ export enum QuestCategory {
     GAME = 'Game',
     /** board quest */
     BOARD = 'Board',
+    /** berry factory quest */
+    BERRY_FACTORY = 'Berry Factory',
 }
 
 /**
  * Represents a singular reward of a Quest.
- * 
+ *
  * NOTE: If `minReceived` and `maxReceived` is equal, the reward is fixed; otherwise, it will be randomized between those ranges.
  */
 export interface QuestReward {
     /** the asset that represents the reward (such as xCookies, food, resources etc) */
-    rewardType: QuestRewardType,
+    rewardType: QuestRewardType;
     /** minimum amount of the reward received */
-    minReceived: number,
+    minReceived: number;
     /** maximum amount of the reward received */
-    maxReceived: number,
+    maxReceived: number;
 }
 
 /**
  * Represents the type of a Quest Reward.
  */
 export enum QuestRewardType {
+    EXP = 'Exp',
     X_COOKIES = 'xCookies',
     BIT = 'Bit',
     GATHERING_PROGRESS_BOOSTER_25 = BoosterItem.GATHERING_PROGRESS_BOOSTER_25,
     BURGER = FoodType.BURGER,
     CANDY = FoodType.CANDY,
-    Chocolate = FoodType.CHOCOLATE,
-    JUICE = FoodType.JUICE
+    CHOCOLATE = FoodType.CHOCOLATE,
+    JUICE = FoodType.JUICE,
 }
 
 /**
@@ -186,7 +196,11 @@ export enum QuestRequirementType {
     HATCH_BIT = 'Hatch Bit',
     SUMMON_ISLAND = 'Summon Island',
     LEVEL_UP = 'Level Up',
+    CRAFT_ITEM = 'Craft Item',
     PURCHASE_ITEM = 'Purchase Item',
+    TAPPING_MILESTONE = 'Tapping Milestone',
+    TRAVEL_COUNT = 'Travel Count',
+    TRAVEL_TIME = 'Travel Time',
 }
 
 /**
@@ -239,4 +253,29 @@ export interface QuestProgression {
 export interface QuestQualification {
     questId?: string | number;
     level?: number;
+}
+
+/**
+ * Represents a user's daily quest.
+ */
+export interface QuestDaily {
+    _id?: string;
+    /** Reference to the associated Quest model. */
+    quest: Quest;
+    /** The user to whom the daily quest is assigned. */
+    user: User;
+    /** Indicates whether the user has accepted the quest. */
+    accepted: boolean;
+    /** Indicates whether the user has claimed the quest reward. */
+    claimed: boolean;
+    /** The point of interest (POI) where the quest is available, or null if it's available anywhere. */
+    poi: POIName | null;
+    /** Timestamp of when the daily quest was created. */
+    createdAt: number;
+    /** Timestamp of when the daily quest was expired. */
+    expiredAt: number;
+    /** Timestamp of when the user accepted the quest. */
+    acceptedAt?: number;
+    /** Timestamp of when the user claimed the reward. */
+    claimedAt?: number;
 }

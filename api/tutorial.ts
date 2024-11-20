@@ -86,7 +86,7 @@ export const updateTutorial = async (tutorialId: number, name?: string, rewards?
  */
 export const getTutorials = async (): Promise<ReturnValue> => {
     try {
-        const tutorials = await TutorialModel.find();
+        const tutorials = await TutorialModel.find({ autoAccept: true });
 
         if (!tutorials || tutorials.length === 0) {
             return {
@@ -216,8 +216,8 @@ export const completeTutorial = async (twitterId: string, tutorialId: number): P
                             lastChanged: 0,
                         },
                         rarity,
-                        gender: RANDOMIZE_GENDER(),
                         premium: true,
+                        gender: RANDOMIZE_GENDER(),
                         owner: user._id,
                         purchaseDate: Math.floor(Date.now() / 1000),
                         obtainMethod: ObtainMethod.TUTORIAL,
@@ -259,12 +259,6 @@ export const completeTutorial = async (twitterId: string, tutorialId: number): P
                             }`,
                             value: hasInfluentialTrait ? 1.01 : hasAntagonisticTrait ? 0.99 : hasFamousTrait ? 1.005 : 0.995,
                         };
-                        const earningRateModifier: Modifier = {
-                            origin: `Bit ID #${newBit.bitId}'s Trait: ${
-                                hasInfluentialTrait ? 'Influential' : hasAntagonisticTrait ? 'Antagonistic' : hasFamousTrait ? 'Famous' : 'Mannerless'
-                            }`,
-                            value: hasInfluentialTrait ? 1.01 : hasAntagonisticTrait ? 0.99 : hasFamousTrait ? 1.005 : 0.995,
-                        };
 
                         for (const islandId of islands) {
                             islandUpdateOperations.push({
@@ -272,7 +266,6 @@ export const completeTutorial = async (twitterId: string, tutorialId: number): P
                                 updateOperations: {
                                     $push: {
                                         'islandStatsModifiers.gatheringRateModifiers': gatheringRateModifier,
-                                        'islandStatsModifiers.earningRateModifiers': earningRateModifier,
                                     },
                                     $set: {},
                                     $pull: {},
