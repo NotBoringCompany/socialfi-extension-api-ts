@@ -26,6 +26,7 @@ app.use(session({
 
 app.use(passport.initialize());
 app.use(passport.session());
+app.use(whitelistMiddleware())
 
 /** ROUTE IMPORTS */
 import twitterAuth from './routes/auth/twitter';
@@ -56,6 +57,7 @@ import weeklyMVPReward from './routes/weeklyMVPReward';
 import collab from './routes/collab';
 import { schedulers } from './schedulers/schedulers';
 import { checkMaintenance } from './middlewares/maintenance';
+import { whitelistMiddleware } from './middlewares/whitelist';
 
 app.use('/auth/twitter', checkMaintenance, twitterAuth);
 app.use('/auth/discord', checkMaintenance, discordAuth);
