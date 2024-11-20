@@ -2328,7 +2328,6 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
         const islandStatsModifiers: IslandStatsModifiers = {
             resourceCapModifiers: [],
             gatheringRateModifiers: [],
-            earningRateModifiers: [],
         };
 
         // check the bit's traits
@@ -2350,7 +2349,6 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
             };
 
             islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
-            islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
         }
 
         // if the bit has antagonistic trait
@@ -2367,7 +2365,6 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
             };
 
             islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
-            islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
         }
 
         // if the bit has famous trait
@@ -2384,7 +2381,6 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
             };
 
             islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
-            islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
         }
 
         // if the bit has mannerless trait
@@ -2401,7 +2397,6 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
             };
 
             islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
-            islandStatsModifiers.earningRateModifiers.push(earningRateModifier);
         }
 
         const { status: islandIdStatus, message: islandIdMessage, data: islandIdData } = await getLatestIslandId();
@@ -2436,21 +2431,6 @@ export const handlePreRegister = async (twitterId: string, profile?: ExtendedPro
                 lastClaimed: 0,
                 gatheringProgress: 0,
                 lastUpdatedGatheringProgress: Math.floor(Date.now() / 1000),
-            },
-            islandEarningStats: {
-                totalXCookiesSpent: 0,
-                totalXCookiesEarnable: 0,
-                totalXCookiesEarned: 0,
-                claimableXCookies: 0,
-                totalCookieCrumbsSpent: 0,
-                totalCookieCrumbsEarnable: 0,
-                totalCookieCrumbsEarned: 0,
-                claimableCookieCrumbs: 0,
-                earningStart: 0,
-                crumbsEarningStart: 0,
-                earningEnd: 0,
-                crumbsEarningEnd: 0,
-                lastClaimed: 0,
             },
             islandStatsModifiers,
             islandTappingData: ISLAND_TAPPING_REQUIREMENT(1, 1),
