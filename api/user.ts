@@ -5,12 +5,12 @@ import { generateHashSalt, generateObjectId, generateReferralCode } from '../uti
 import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
 import { RANDOMIZE_GENDER, getBitStatsModifiersFromTraits, randomizeBitTraits, randomizeBitType } from '../utils/constants/bit';
 import { ObtainMethod } from '../models/obtainMethod';
-import { IslandModel, LeaderboardModel, SquadLeaderboardModel, SquadModel, StarterCodeModel, UserModel, WeeklyMVPClaimableRewardsModel } from '../utils/constants/db';
+import { IslandModel, LeaderboardModel, SquadLeaderboardModel, SquadModel, StarterCodeModel, UserModel } from '../utils/constants/db';
 import { addIslandToDatabase, getLatestIslandId, placeBit, randomizeBaseResourceCap } from './island';
 import { POIName } from '../models/poi';
 import { ExtendedResource, SimplifiedResource } from '../models/resource';
 import { resources } from '../utils/constants/resource';
-import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, PlayerEnergy, InGameData, PlayerMastery, UserWallet, XCookieSource, User } from '../models/user';
+import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, PlayerEnergy, XCookieSource } from '../models/user';
 import {
     DAILY_REROLL_BONUS_MILESTONE,
     GET_BEGINNER_REWARDS,
@@ -21,29 +21,25 @@ import {
     MAX_BEGINNER_REWARD_DAY,
     MAX_ENERGY_CAP,
     MAX_ENERGY_POTION_CAP,
-    MAX_INVENTORY_WEIGHT,
-    WEEKLY_MVP_REWARDS,
+    MAX_INVENTORY_WEIGHT
 } from '../utils/constants/user';
 import { ReferralData, ReferralReward, ReferredUserData } from '../models/invite';
 import { BitOrbType } from '../models/bitOrb';
 import { TerraCapsulatorType } from '../models/terraCapsulator';
 import { Item } from '../models/item';
 import { BitRarity, BitTrait } from '../models/bit';
-import { IslandStatsModifiers, IslandTappingData, IslandType } from '../models/island';
+import { IslandStatsModifiers, IslandType } from '../models/island';
 import { Modifier } from '../models/modifier';
-import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
+import { LeaderboardPointsSource } from '../models/leaderboard';
 import { FoodType } from '../models/food';
 import { BoosterItem } from '../models/booster';
 import { BASE_CARESS_PER_TAPPING, BASE_ENERGY_PER_TAPPING, ISLAND_TAPPING_REQUIREMENT, randomizeIslandTraits } from '../utils/constants/island';
 import { Signature, recoverMessageAddress } from 'viem';
-import { joinReferrerSquad, requestToJoinSquad } from './squad';
+import { joinReferrerSquad } from './squad';
 import { ExtendedDiscordProfile, ExtendedProfile } from '../utils/types';
-import { WeeklyMVPRewardType } from '../models/weeklyMVPReward';
-import mongoose from 'mongoose';
 import * as dotenv from 'dotenv';
-import { getUserCurrentPoints } from './leaderboard';
-import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
-import { parseTelegramData, TelegramAuthData, validateTelegramData } from '../utils/telegram';
+import { TelegramAuthData } from '../utils/telegram';
+import { sendMailsToNewUser } from './mail';
 
 dotenv.config();
 
@@ -2799,8 +2795,8 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                 },
                 rarity,
                 gender: RANDOMIZE_GENDER(),
-                premium: true,
-                owner: userObjectId,
+                owner: user._id,
+                premium: false,
                 purchaseDate: Math.floor(Date.now() / 1000),
                 obtainMethod: ObtainMethod.SIGN_UP,
                 placedIslandId: 0,
@@ -2821,6 +2817,106 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                 };
             }
 
+            const islandStatsModifiers: IslandStatsModifiers = {
+                resourceCapModifiers: [],
+                gatheringRateModifiers: [],
+            };
+
+            // check the bit's traits
+            // if it has influential, antagonistic, famous or mannerless, then:
+            // if influential, add 1% to earning and gathering rate modifiers of the island
+            // if antagonistic, reduce 1% to earning and gathering rate modifiers of the island
+            // if famous, add 0.5% to earning and gathering rate modifiers of the island
+            // if mannerless, reduce 0.5% to earning and gathering rate modifiers of the island
+            if (traits.some((trait) => trait.trait === BitTrait.INFLUENTIAL)) {
+                // add 1% to earning and gathering rate modifiers of the island
+                const gatheringRateModifier: Modifier = {
+                    origin: `Bit ID ${bitData.bit.bitId}'s Trait: Influential`,
+                    value: 1.01,
+                };
+
+                islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
+            }
+
+            // if the bit has antagonistic trait
+            if (traits.some((trait) => trait.trait === BitTrait.ANTAGONISTIC)) {
+                // reduce 1% to earning and gathering rate modifiers of the island
+                const gatheringRateModifier: Modifier = {
+                    origin: `Bit ID ${bitData.bit.bitId}'s Trait: Antagonistic`,
+                    value: 0.99,
+                };
+
+                islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
+            }
+
+            // if the bit has famous trait
+            if (traits.some((trait) => trait.trait === BitTrait.FAMOUS)) {
+                // add 0.5% to earning and gathering rate modifiers of the island
+                const gatheringRateModifier: Modifier = {
+                    origin: `Bit ID ${bitData.bit.bitId}'s Trait: Famous`,
+                    value: 1.005,
+                };
+
+                islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
+            }
+
+            // if the bit has mannerless trait
+            if (traits.some((trait) => trait.trait === BitTrait.MANNERLESS)) {
+                // reduce 0.5% to earning and gathering rate modifiers of the island
+                const gatheringRateModifier: Modifier = {
+                    origin: `Bit ID ${bitData.bit.bitId}'s Trait: Mannerless`,
+                    value: 0.995,
+                };
+
+                islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
+            }
+
+            // creates a free primal island for the user
+            const { status: islandIdStatus, message: islandIdMessage, data: islandIdData } = await getLatestIslandId();
+
+            if (islandIdStatus !== Status.SUCCESS) {
+                return {
+                    status: islandIdStatus,
+                    message: `(handleTwitterLogin) Error from getLatestIslandId: ${islandIdMessage}`,
+                };
+            }
+
+            const {
+                status: islandStatus,
+                message: islandMessage,
+                data: islandData,
+            } = await addIslandToDatabase({
+                islandId: islandIdData?.latestIslandId + 1,
+                type: IslandType.PRIMAL_ISLES,
+                owner: user._id,
+                currentTax: 0,
+                purchaseDate: Math.floor(Date.now() / 1000),
+                obtainMethod: ObtainMethod.SIGN_UP,
+                currentLevel: 1,
+                placedBitIds: [],
+                traits: randomizeIslandTraits(),
+                islandResourceStats: {
+                    baseResourceCap: randomizeBaseResourceCap(IslandType.PRIMAL_ISLES),
+                    resourcesGathered: [],
+                    dailyBonusResourcesGathered: 0,
+                    claimableResources: [],
+                    gatheringStart: 0,
+                    gatheringEnd: 0,
+                    lastClaimed: 0,
+                    gatheringProgress: 0,
+                    lastUpdatedGatheringProgress: Math.floor(Date.now() / 1000),
+                },
+                islandStatsModifiers,
+                islandTappingData: ISLAND_TAPPING_REQUIREMENT(1, 1),
+            });
+
+            if (islandStatus !== Status.SUCCESS) {
+                return {
+                    status: islandStatus,
+                    message: `(handleTwitterLogin) Error from createBarrenIsland: ${islandMessage}`,
+                };
+            }
+
             // creates the wallet for the user
             const { privateKey, address } = createUserWallet();
 
@@ -2836,7 +2932,7 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                 twitterId: telegramUser.id,
                 method: 'telegram',
                 twitterProfilePicture: 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png',
-                twitterUsername: telegramUser.username || telegramUser.id,
+                twitterUsername: telegramUser.username,
                 twitterDisplayName: `${telegramUser.first_name} ${telegramUser.last_name}`.trim(),
                 createdTimestamp: Math.floor(Date.now() / 1000),
                 // invite code data will be null until users input their invite code.
@@ -2866,7 +2962,6 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                         currentXCookies: 0,
                         extendedXCookieData: [],
                     },
-                    cookieCrumbs: 0,
                     resources: [],
                     items: [
                         {
@@ -2874,6 +2969,7 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                             amount: 1,
                         },
                     ],
+                    bitCosmeticIds: [],
                     foods: [
                         {
                             type: FoodType['BURGER'],
@@ -2881,8 +2977,14 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                         },
                     ],
                     raftId: data.raft.raftId,
-                    islandIds: [],
+                    islandIds: [islandData.island.islandId],
                     bitIds: [bitIdData?.latestBitId + 1],
+                    diamondData: {
+                        currentDiamonds: 0,
+                        totalDiamondsSpent: 0,
+                        weeklyDiamondsSpent: 0,
+                        extendedDiamondData: []
+                    }
                 },
                 inGameData: {
                     level: 1,
@@ -2894,7 +2996,7 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                             rerollCount: 6,
                         },
                         // empty crafting for now (so it can be more flexible)
-                        // crafting: {},
+                        crafting: {},
                         // empty berry factory for now (so it can be more flexible)
                         berryFactory: {},
                     },
@@ -2919,6 +3021,9 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
             });
 
             await newUser.save();
+
+            // send any necessary mails to the new user (mails with `includeNewUsers` set to true)
+            await sendMailsToNewUser(String(telegramUser.id));
 
             return {
                 status: Status.SUCCESS,
