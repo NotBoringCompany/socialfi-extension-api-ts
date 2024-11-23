@@ -31,7 +31,7 @@ export enum ChatEvent {
 const RATE_LIMIT_WINDOW = 10000;
 
 // the maximum number of messages a user is allowed to send within the rate-limit window.
-const MAX_MESSAGES_PER_WINDOW = 5;
+const MAX_MESSAGES_PER_WINDOW = 3;
 
 interface CallbackResponse {
     success?: boolean;
