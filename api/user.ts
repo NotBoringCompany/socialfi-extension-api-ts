@@ -1443,8 +1443,8 @@ export const linkInviteCode = async (twitterId: string, code: string): Promise<R
                 data: {
                     codeType: starterCode ? 'Starter' : 'Referrer',
                     starterCode,
-                    referrerId: referrer._id,
-                    referrerTwId: referrer.twitterId,
+                    referrerId: referrer?._id ?? null,
+                    referrerTwId: referrer?.twitterId ?? null,
                 }
             };
         } else if (referrer) {
