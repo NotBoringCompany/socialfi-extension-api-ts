@@ -19,7 +19,6 @@ import * as dotenv from 'dotenv';
 import { getUserCurrentPoints } from './leaderboard';
 import { ExtendedXCookieData, UserWallet, XCookieSource } from '../models/user';
 import { DEPLOYER_WALLET, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
-import { generateHashSalt, generateWonderbitsDataHash } from '../utils/crypto';
 import { ethers } from 'ethers';
 import { incrementProgressionByType } from './quest';
 import { QuestRequirementType } from '../models/quest';
