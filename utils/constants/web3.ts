@@ -38,12 +38,6 @@ export const SUPERIOR_KEYCHAIN_CONTRACT_ADDRESS = process.env.SUPERIOR_KEYCHAIN_
 // wonderbits address in XProtocol testnet
 export const WONDERBITS_CONTRACT_ADDRESS = process.env.WONDERBITS_CONTRACT!;
 
-export const COOKIE_ARTIFACT = JSON.parse(
-    fs.readFileSync(
-        path.join(__dirname, '../../artifacts/Cookie.json')
-    ).toString()
-);
-
 export const KOS_ARTIFACT = JSON.parse(
     fs.readFileSync(
         path.join(__dirname, '../../artifacts/KeyOfSalvation.json')
@@ -60,21 +54,6 @@ export const SUPERIOR_KEYCHAIN_ARTIFACT = JSON.parse(
     fs.readFileSync(
         path.join(__dirname, '../../artifacts/SuperiorKeychain.json')
     ).toString()
-);
-
-export const WONDERBITS_ARTIFACT = JSON.parse(
-    fs.readFileSync(
-        path.join(__dirname, '../../artifacts/Wonderbits.json')
-    ).toString()
-);
-
-/**
- * The cookie contract instance (using admin wallet)
- */
-export const COOKIE_CONTRACT = new ethers.Contract(
-    COOKIE_CONTRACT_ADDRESS,
-    COOKIE_ARTIFACT.abi,
-    DEPLOYER_WALLET(BLAST_TESTNET_PROVIDER)
 );
 
 /**
@@ -114,19 +93,6 @@ export const WONDERBITS_CONTRACT = new ethers.Contract(
 );
 
 /**
- * The cookie contract instance (using user wallet, requires their private key)
- */
-export const COOKIE_CONTRACT_USER = (privateKey: string) => {
-    const wallet = new ethers.Wallet(privateKey, BLAST_TESTNET_PROVIDER);
-
-    return new ethers.Contract(
-        COOKIE_CONTRACT_ADDRESS,
-        COOKIE_ARTIFACT.abi,
-        wallet
-    );
-}
-
-/**
  * The keychain contract instance (using user wallet, requires their private key)
  */
 export const KOS_CONTRACT_USER = (privateKey: string) => {
@@ -161,19 +127,6 @@ export const SUPERIOR_KEYCHAIN_CONTRACT_USER = (privateKey: string) => {
     return new ethers.Contract(
         SUPERIOR_KEYCHAIN_CONTRACT_ADDRESS,
         SUPERIOR_KEYCHAIN_ARTIFACT.abi,
-        wallet
-    );
-}
-
-/**
- * The wonderbits contract instance (using user wallet, requires their private key)
- */
-export const WONDERBITS_CONTRACT_USER = (privateKey: string) => {
-    const wallet = new ethers.Wallet(privateKey, XPROTOCOL_TESTNET_PROVIDER);
-
-    return new ethers.Contract(
-        WONDERBITS_CONTRACT_ADDRESS,
-        WONDERBITS_ARTIFACT.abi,
         wallet
     );
 }
