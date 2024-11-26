@@ -84,15 +84,6 @@ export const SUPERIOR_KEYCHAIN_CONTRACT = new ethers.Contract(
 );
 
 /**
- * The wonderbits contract instance (using admin wallet)
- */
-export const WONDERBITS_CONTRACT = new ethers.Contract(
-    WONDERBITS_CONTRACT_ADDRESS,
-    WONDERBITS_ARTIFACT.abi,
-    DEPLOYER_WALLET(XPROTOCOL_TESTNET_PROVIDER)
-);
-
-/**
  * The keychain contract instance (using user wallet, requires their private key)
  */
 export const KOS_CONTRACT_USER = (privateKey: string) => {
