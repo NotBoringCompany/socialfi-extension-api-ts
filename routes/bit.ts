@@ -13,7 +13,7 @@ import { authMiddleware } from '../middlewares/auth';
 import { DEPLOYER_WALLET, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
 import { getMainWallet } from '../api/user';
 import { UserWallet } from '../models/user';
-import { generateHashSalt, generateWonderbitsDataHash } from '../utils/crypto';
+import { generateHashSalt } from '../utils/crypto';
 import { ethers } from 'ethers';
 import { incrementProgressionByType } from '../api/quest';
 import { QuestRequirementType } from '../models/quest';

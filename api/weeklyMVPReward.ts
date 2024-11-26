@@ -1,5 +1,5 @@
 import { ReturnValue, Status } from '../utils/retVal';
-import { generateHashSalt, generateObjectId, generateWonderbitsDataHash } from '../utils/crypto';
+import { generateHashSalt, generateObjectId } from '../utils/crypto';
 import { LeaderboardModel, SquadLeaderboardModel, SquadModel, UserModel, WeeklyMVPClaimableRewardsModel, WeeklyMVPRankingLeaderboardModel } from '../utils/constants/db';
 import {
     GET_SEASON_0_PLAYER_LEVEL,

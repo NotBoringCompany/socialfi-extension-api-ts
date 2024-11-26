@@ -3,7 +3,6 @@ import { ReturnValue, Status } from '../utils/retVal';
 import { ShopAssetPurchaseModel, UserModel } from '../utils/constants/db';
 import { ExtendedXCookieData, UserWallet, XCookieSource } from '../models/user';
 import { getUserCurrentPoints } from './leaderboard';
-import { generateHashSalt, generateWonderbitsDataHash } from '../utils/crypto';
 import { BINANCE_API_BASE_URL, DEPLOYER_WALLET, GATEIO_API_BASE_URL, KUCOIN_API_BASE_URL, TON_RECEIVER_ADDRESS, TON_WEB, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
 import { ethers } from 'ethers';
 import { TxParsedMessage } from '../models/web3';
