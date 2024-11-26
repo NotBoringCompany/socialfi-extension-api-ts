@@ -110,41 +110,44 @@ export const mintBit = async (twitterId: string, bitId: number): Promise<ReturnV
         const userBalance = await KAIA_TESTNET_PROVIDER.getBalance(user.wallet?.address);
         const formattedUserBalance = ethers.utils.formatEther(userBalance);
 
-        if (Number(formattedUserBalance) < Number(gasFee)) {
-            console.log(`(mintBit) User does not have enough KAIA to pay for the gas fee.`);
-            return {
-                status: Status.ERROR,
-                message: `(mintBit) User does not have enough KAIA to pay for the gas fee. Required: ${gasFee} KAIA --- User Balance: ${formattedUserBalance} KAIA`
-            }
-        }
+        // if (Number(formattedUserBalance) < Number(gasFee)) {
+        //     console.log(`(mintBit) User does not have enough KAIA to pay for the gas fee.`);
+        //     return {
+        //         status: Status.ERROR,
+        //         message: `(mintBit) User does not have enough KAIA to pay for the gas fee. Required: ${gasFee} KAIA --- User Balance: ${formattedUserBalance} KAIA`
+        //     }
+        // }
 
-        // get the current token id
+        // get the next token ID (for minting)
+        const nextTokenId = await WONDERBITS_CONTRACT.nextTokenId();
 
-        // mint the bit
-        const mintTransaction = await WONDERBITS_CONTRACT.mint(
-            user.wallet?.address,
-            [salt, signature],
-            {
-                gasLimit: gasEstimation
-            }
-        );
+        console.log(`(mintBit) Next token ID: ${nextTokenId}`);
 
-        // wait for the transaction to be mined
-        const mintTransactionReceipt = await mintTransaction.wait();
+        // // mint the bit
+        // const mintTransaction = await WONDERBITS_CONTRACT.mint(
+        //     user.wallet?.address,
+        //     [salt, signature],
+        //     {
+        //         gasLimit: gasEstimation
+        //     }
+        // );
 
-        console.log(`(mintBit) Transaction mined: ${mintTransactionReceipt.transactionHash}`);
+        // // wait for the transaction to be mined
+        // const mintTransactionReceipt = await mintTransaction.wait();
 
-        // get the transaction hash
-        const mintHash = mintTransactionReceipt.txHash;
+        // console.log(`(mintBit) Transaction mined: ${mintTransactionReceipt.transactionHash}`);
 
-        console.log(`(mintBit) Mint hash: ${mintHash}`);
+        // // get the transaction hash
+        // const mintHash = mintTransactionReceipt.txHash;
 
-        // update the bit's blockchain data and owner data.
-        // set the `ownerData.currentOwnerAddress` and `ownerData.originalOwnerAddress` to the user's wallet address.
-        // set the `blockchainData.minted` to true, the `blockchainData.tokenId
-        const bitUpdateOperations = {
-            $
-        }
+        // console.log(`(mintBit) Mint hash: ${mintHash}`);
+
+        // // update the bit's blockchain data and owner data.
+        // // set the `ownerData.currentOwnerAddress` and `ownerData.originalOwnerAddress` to the user's wallet address.
+        // // set the `blockchainData.minted` to true, the `blockchainData.tokenId
+        // const bitUpdateOperations = {
+        //     $
+        // }
 
     } catch (err: any) {
         return {
