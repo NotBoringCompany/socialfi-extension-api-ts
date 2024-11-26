@@ -27,9 +27,9 @@ export const generateHashSalt = (): string => {
 }
 
 /**
- * Generates a data hash for Wonderbits-contract related actions given the `address` and `salt`.
+ * Generates a data hash for general operations in contracts given an address and salt.
  */
-export const generateWonderbitsDataHash = (address: string, salt: string): string => {
+export const generateOpHash = (address: string, salt: string): string => {
     return solidityKeccak256(['address', 'bytes'], [address, salt]);
 }
 

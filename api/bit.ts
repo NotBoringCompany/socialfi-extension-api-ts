@@ -19,10 +19,142 @@ import { Modifier } from '../models/modifier';
 import { Food, FoodType } from '../models/food';
 import { FOOD_ENERGY_REPLENISHMENT } from '../utils/constants/food';
 import { BarrenResource, ExtendedResource } from '../models/resource';
-import { generateObjectId } from '../utils/crypto';
+import { generateHashSalt, generateObjectId, generateOpHash } from '../utils/crypto';
 import { BitModel, BitTraitDataModel, IslandModel, UserModel } from '../utils/constants/db';
 import { ObtainMethod } from '../models/obtainMethod';
 import { redis } from '../utils/constants/redis';
+import { DEPLOYER_WALLET, KAIA_TESTNET_PROVIDER, WONDERBITS_CONTRACT } from '../utils/constants/web3';
+import { ethers } from 'ethers';
+
+/**
+ * Mints a bit into the Kaia Testnet blockchain for the user.
+ */
+export const mintBit = async (twitterId: string, bitId: number): Promise<ReturnValue> => {
+    try {
+        // get the user's data
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(mintBit) User not found.`
+            }
+        }
+
+        // check if the user owns the bit
+        if (!(user.inventory?.bitIds as number[]).includes(bitId)) {
+            console.log(`(mintBit) User does not own the bit.`);
+            return {
+                status: Status.ERROR,
+                message: `(mintBit) User does not own the bit.`
+            }
+        }
+
+        // get the bit data
+        const bit = await BitModel.findOne({ bitId }).lean();
+
+        if (!bit) {
+            console.log(`(mintBit) Bit not found.`);
+            return {
+                status: Status.ERROR,
+                message: `(mintBit) Bit not found.`
+            }
+        }
+
+        // check if the bit is mintable
+        if (!bit.blockchainData.mintable) {
+            console.log(`(mintBit) Bit is not mintable.`);
+            return {
+                status: Status.ERROR,
+                message: `(mintBit) Bit is not mintable.`
+            }
+        }
+
+        // check if the bit is already minted
+        if (bit.blockchainData.minted) {
+            console.log(`(mintBit) Bit is already minted.`);
+            return {
+                status: Status.ERROR,
+                message: `(mintBit) Bit is already minted.`
+            }
+        }
+
+        // check if the bit is placed in an island
+        if (bit.placedIslandId !== 0) {
+            console.log(`(mintBit) Bit is placed in an island.`);
+            return {
+                status: Status.ERROR,
+                message: `(mintBit) Bit is placed in an island.`
+            }
+        }
+
+        // create the hash salt
+        const salt = generateHashSalt();
+        // create the op hash
+        const opHash = generateOpHash(user.wallet?.address, salt);
+        // create the admin's signature
+        const signature = await DEPLOYER_WALLET(KAIA_TESTNET_PROVIDER).signMessage(ethers.utils.arrayify(opHash));
+
+        // estimate the gas required to mint the bit
+        const gasEstimation = await WONDERBITS_CONTRACT.estimateGas.mint(
+            user?.wallet?.address,
+            [salt, signature]
+        );
+        // get the current gas price
+        const gasPrice = await KAIA_TESTNET_PROVIDER.getGasPrice();
+
+        // calculate the gas fee in KAIA
+        const gasFee = ethers.utils.formatEther(gasEstimation.mul(gasPrice));
+
+        // check if the user has enough KAIA to pay for the gas fee
+        const userBalance = await KAIA_TESTNET_PROVIDER.getBalance(user.wallet?.address);
+        const formattedUserBalance = ethers.utils.formatEther(userBalance);
+
+        if (Number(formattedUserBalance) < Number(gasFee)) {
+            console.log(`(mintBit) User does not have enough KAIA to pay for the gas fee.`);
+            return {
+                status: Status.ERROR,
+                message: `(mintBit) User does not have enough KAIA to pay for the gas fee. Required: ${gasFee} KAIA --- User Balance: ${formattedUserBalance} KAIA`
+            }
+        }
+
+        // get the current token id
+
+        // mint the bit
+        const mintTransaction = await WONDERBITS_CONTRACT.mint(
+            user.wallet?.address,
+            [salt, signature],
+            {
+                gasLimit: gasEstimation
+            }
+        );
+
+        // wait for the transaction to be mined
+        const mintTransactionReceipt = await mintTransaction.wait();
+
+        console.log(`(mintBit) Transaction mined: ${mintTransactionReceipt.transactionHash}`);
+
+        // get the transaction hash
+        const mintHash = mintTransactionReceipt.txHash;
+
+        console.log(`(mintBit) Mint hash: ${mintHash}`);
+
+        // update the bit's blockchain data and owner data.
+        // set the `ownerData.currentOwnerAddress` and `ownerData.originalOwnerAddress` to the user's wallet address.
+        // set the `blockchainData.minted` to true, the `blockchainData.tokenId
+        const bitUpdateOperations = {
+            $
+        }
+
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(mintBit) Error: ${err.message}`
+        }
+    }
+}
+
+mintBit('1462755469102137357', 18);
 
 /**
  * Adds the new `blockchainData` field with default values to all bits in the database.
