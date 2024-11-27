@@ -119,7 +119,7 @@ export const mintBit = async (twitterId: string, bitId: number): Promise<ReturnV
         }
 
         // mint the bit
-        const mintTransaction = await WONDERBITS_CONTRACT.mint(
+        const mintTx = await WONDERBITS_CONTRACT.mint(
             user.wallet?.address,
             [salt, signature],
             {
@@ -128,9 +128,9 @@ export const mintBit = async (twitterId: string, bitId: number): Promise<ReturnV
         );
 
         // wait for the transaction to be mined
-        const mintTransactionReceipt = await mintTransaction.wait();
+        const mintTxReceipt = await mintTx.wait();
 
-        console.log(`(mintBit) Transaction mined: ${mintTransactionReceipt.transactionHash}`);
+        console.log(`(mintBit) Transaction mined: ${mintTxReceipt.transactionHash}`);
 
         // get the next token ID (for minting)
         // we will reduce 1 from the next token ID to get the token ID of the minted bit
@@ -142,7 +142,7 @@ export const mintBit = async (twitterId: string, bitId: number): Promise<ReturnV
         // 2. `blockchainData.minted` to true
         // 3. `blockchainData.tokenId` to `nextTokenId - 1`
         // 4. `blockchainData.mintHash` to `mintHash`
-        // 5. `blockchainData.chain` to `KAIA_TESTNET_PROVIDER.chainId`
+        // 5. `blockchainData.chain` to (await KAIA_TESTNET_PROVIDER.getNetwork()).chainId
         // 6. `blockchainData.contractAddress` to `WONDERBITS_CONTRACT.address`
         const bitUpdateOperations = {
             $set: {
@@ -150,7 +150,7 @@ export const mintBit = async (twitterId: string, bitId: number): Promise<ReturnV
                 'ownerData.originalOwnerAddress': user.wallet?.address,
                 'blockchainData.minted': true,
                 'blockchainData.tokenId': nextTokenId - 1,
-                'blockchainData.mintHash': mintTransactionReceipt.transactionHash,
+                'blockchainData.mintHash': mintTxReceipt.transactionHash,
                 'blockchainData.chain': (await KAIA_TESTNET_PROVIDER.getNetwork()).chainId,
                 'blockchainData.contractAddress': WONDERBITS_CONTRACT.address
             }
@@ -167,7 +167,7 @@ export const mintBit = async (twitterId: string, bitId: number): Promise<ReturnV
             data: {
                 bitId,
                 tokenId: nextTokenId - 1,
-                mintHash: mintTransactionReceipt.transactionHash,
+                mintHash: mintTxReceipt.transactionHash,
                 gasFee
             }
         }
