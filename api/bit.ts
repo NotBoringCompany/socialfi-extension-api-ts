@@ -110,45 +110,67 @@ export const mintBit = async (twitterId: string, bitId: number): Promise<ReturnV
         const userBalance = await KAIA_TESTNET_PROVIDER.getBalance(user.wallet?.address);
         const formattedUserBalance = ethers.utils.formatEther(userBalance);
 
-        // if (Number(formattedUserBalance) < Number(gasFee)) {
-        //     console.log(`(mintBit) User does not have enough KAIA to pay for the gas fee.`);
-        //     return {
-        //         status: Status.ERROR,
-        //         message: `(mintBit) User does not have enough KAIA to pay for the gas fee. Required: ${gasFee} KAIA --- User Balance: ${formattedUserBalance} KAIA`
-        //     }
-        // }
+        if (Number(formattedUserBalance) < Number(gasFee)) {
+            console.log(`(mintBit) User does not have enough KAIA to pay for the gas fee.`);
+            return {
+                status: Status.ERROR,
+                message: `(mintBit) User does not have enough KAIA to pay for the gas fee. Required: ${gasFee} KAIA --- User Balance: ${formattedUserBalance} KAIA`
+            }
+        }
+
+        // mint the bit
+        const mintTransaction = await WONDERBITS_CONTRACT.mint(
+            user.wallet?.address,
+            [salt, signature],
+            {
+                gasLimit: gasEstimation
+            }
+        );
+
+        // wait for the transaction to be mined
+        const mintTransactionReceipt = await mintTransaction.wait();
+
+        console.log(`(mintBit) Transaction mined: ${mintTransactionReceipt.transactionHash}`);
 
         // get the next token ID (for minting)
+        // we will reduce 1 from the next token ID to get the token ID of the minted bit
         const nextTokenId = await WONDERBITS_CONTRACT.nextTokenId();
 
-        console.log(`(mintBit) Next token ID: ${nextTokenId}`);
+        // update the bit's blockchain data and owner data.
+        // set the:
+        // 1. `ownerData.currentOwnerAddress` and `ownerData.originalOwnerAddress` to the user's wallet address.
+        // 2. `blockchainData.minted` to true
+        // 3. `blockchainData.tokenId` to `nextTokenId - 1`
+        // 4. `blockchainData.mintHash` to `mintHash`
+        // 5. `blockchainData.chain` to `KAIA_TESTNET_PROVIDER.chainId`
+        // 6. `blockchainData.contractAddress` to `WONDERBITS_CONTRACT.address`
+        const bitUpdateOperations = {
+            $set: {
+                'ownerData.currentOwnerAddress': user.wallet?.address,
+                'ownerData.originalOwnerAddress': user.wallet?.address,
+                'blockchainData.minted': true,
+                'blockchainData.tokenId': nextTokenId - 1,
+                'blockchainData.mintHash': mintTransactionReceipt.transactionHash,
+                'blockchainData.chain': (await KAIA_TESTNET_PROVIDER.getNetwork()).chainId,
+                'blockchainData.contractAddress': WONDERBITS_CONTRACT.address
+            }
+        }
 
-        // // mint the bit
-        // const mintTransaction = await WONDERBITS_CONTRACT.mint(
-        //     user.wallet?.address,
-        //     [salt, signature],
-        //     {
-        //         gasLimit: gasEstimation
-        //     }
-        // );
+        // execute the update operation
+        await BitModel.updateOne({ bitId }, bitUpdateOperations);
 
-        // // wait for the transaction to be mined
-        // const mintTransactionReceipt = await mintTransaction.wait();
+        console.log(`(mintBit) Bit successfully minted.`);
 
-        // console.log(`(mintBit) Transaction mined: ${mintTransactionReceipt.transactionHash}`);
-
-        // // get the transaction hash
-        // const mintHash = mintTransactionReceipt.txHash;
-
-        // console.log(`(mintBit) Mint hash: ${mintHash}`);
-
-        // // update the bit's blockchain data and owner data.
-        // // set the `ownerData.currentOwnerAddress` and `ownerData.originalOwnerAddress` to the user's wallet address.
-        // // set the `blockchainData.minted` to true, the `blockchainData.tokenId
-        // const bitUpdateOperations = {
-        //     $
-        // }
-
+        return {
+            status: Status.SUCCESS,
+            message: `(mintBit) Bit successfully minted.`,
+            data: {
+                bitId,
+                tokenId: nextTokenId - 1,
+                mintHash: mintTransactionReceipt.transactionHash,
+                gasFee
+            }
+        }
     } catch (err: any) {
         return {
             status: Status.ERROR,
@@ -156,8 +178,6 @@ export const mintBit = async (twitterId: string, bitId: number): Promise<ReturnV
         }
     }
 }
-
-mintBit('1462755469102137357', 18);
 
 /**
  * Adds the new `blockchainData` field with default values to all bits in the database.
