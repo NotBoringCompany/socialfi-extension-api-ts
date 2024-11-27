@@ -1,5 +1,5 @@
 import express from 'express';
-import { applyGatheringProgressBooster, applyIslandTapping, calcEffectiveResourceDropChances, calcIslandGatheringRate, claimResources, getIslandTappingData, getIslands, giftXterioIsland, placeBit, removeIsland, rerollBonusMilestoneReward, unplaceBit, updateGatheringProgressAndDropResourceAlt } from '../api/island';
+import { applyGatheringProgressBooster, applyIslandTapping, calcEffectiveResourceDropChances, calcIslandGatheringRate, claimResources, getIslandTappingData, getIslands, giftXterioIsland, mintIsland, placeBit, removeIsland, rerollBonusMilestoneReward, unplaceBit, updateGatheringProgressAndDropResourceAlt } from '../api/island';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { IslandType, RateType, ResourceDropChanceDiff } from '../models/island';
@@ -17,6 +17,34 @@ import { QuestRequirementType } from '../models/quest';
 import { incrementProgressionByType } from '../api/quest';
 
 const router = express.Router();
+
+router.post('/mint_island', async (req, res) => {
+    const { islandId } = req.body;
+
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'mint_island');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            });
+        }
+
+        const { status, message, data } = await mintIsland(validateData?.twitterId, islandId);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        })
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
 
 router.post('/gift_xterio_island', authMiddleware(3), async (req, res) => {
     const { twitterId } = req.body;
