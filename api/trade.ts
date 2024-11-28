@@ -336,8 +336,13 @@ export const cancelListing = async (listingId: string, userId: string): Promise<
     session.startTransaction();
 
     try {
+        const user = await UserModel.findOne({ $or: [{ twitterId: userId }, { _id: userId }] }).session(session);
+        if (!user) {
+            throw new Error('User not found.');
+        }
+
         // Check if the listing exists
-        const listing = await TradeListingModel.findOne({ _id: listingId, user: userId, status: TradeStatus.ACTIVE });
+        const listing = await TradeListingModel.findOne({ _id: listingId, user: user._id, status: TradeStatus.ACTIVE });
         if (!listing) {
             throw new Error('Listing not found or already sold.');
         }
