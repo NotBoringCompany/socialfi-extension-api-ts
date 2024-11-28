@@ -33,7 +33,7 @@ router.get('/get_listings', async (req, res) => {
             return res.status(validation.status).json(validation);
         }
 
-        const result = await getUserListings(validation.data);
+        const result = await getUserListings({ ...validation.data, user: auth.data.twitterId });
 
         return res.status(result.status).json(result);
     } catch (err: any) {
