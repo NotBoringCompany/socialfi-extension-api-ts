@@ -14,7 +14,7 @@ export const TradeListingSchema = new mongoose.Schema<TradeListing & mongoose.Do
     purchasedBy: [
         {
             user: { type: String, ref: 'Users', required: true },
-            amount: { type: Number, required: true, min: 1 },
+            amount: { type: Number, required: true, min: 0 },
             purchasedTimestamp: { type: Number, required: true },
             claimed: { type: Boolean, default: false },
         },
@@ -24,10 +24,9 @@ export const TradeListingSchema = new mongoose.Schema<TradeListing & mongoose.Do
         required: true,
     },
     amount: {
-        // Renamed from `quantity` to `amount`
         type: Number,
         required: true,
-        min: 1,
+        min: 0,
     },
     price: {
         type: Number,

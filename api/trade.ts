@@ -32,7 +32,7 @@ export const getListings = async (query: ListingsQuery): Promise<ReturnValue> =>
 
         if (query.user) {
             // If user is provided, filter by soldBy
-            const user = await UserModel.findOne({ twitterId: query.user });
+            const user = await UserModel.findOne({ $or: [{ twitterId: query.user }, { _id: query.user }] });
             if (!user) {
                 return {
                     status: Status.ERROR,
@@ -86,6 +86,7 @@ export const getUserListings = async (query: ListingsQuery): Promise<ReturnValue
         // Create query for fetching listings by the user
         const listingsQuery = TradeListingModel.find({
             user: user._id,
+            status: { $ne: TradeStatus.COMPLETED },
         });
 
         if (query.item) {
@@ -134,12 +135,10 @@ export const addListing = async (data: AddListingDTO): Promise<ReturnValue> => {
 
     try {
         // Ensure the user exists
-        const user = await UserModel.findOne({ $or: [{ twitterId: data.soldBy }, { _id: data.soldBy }] });
+        const user = await UserModel.findOne({ $or: [{ twitterId: data.soldBy }, { _id: data.soldBy }] }).session(
+            session
+        );
         if (!user) throw new Error('User not found.');
-
-        if (!user.inventory) {
-            throw new Error('User inventory is empty or invalid.');
-        }
 
         const isFood = Object.values(FoodType).includes(data.item as FoodType);
 
@@ -156,7 +155,9 @@ export const addListing = async (data: AddListingDTO): Promise<ReturnValue> => {
             }
 
             // Decrease the quantity of the item in the inventory based on the amount being listed for sale
-            (user.inventory.foods as Food[])[index].amount -= data.amount;
+            await user.updateOne({
+                $inc: { [`inventory.foods.${index}.amount`]: -data.amount },
+            });
         } else {
             // Find the index of the item in the user's general inventory
             const index = (user.inventory?.items as Item[]).findIndex((i) => i.type === data.item);
@@ -170,11 +171,10 @@ export const addListing = async (data: AddListingDTO): Promise<ReturnValue> => {
             }
 
             // Decrease the quantity of the item in the inventory based on the amount being listed for sale
-            (user.inventory.items as Item[])[index].amount -= data.amount;
+            await user.updateOne({
+                $inc: { [`inventory.items.${index}.amount`]: -data.amount },
+            });
         }
-
-        // Save the user inventory changes within the session
-        await user.save({ session });
 
         // Create the new trade listing
         const listing = new TradeListingModel(
@@ -191,7 +191,8 @@ export const addListing = async (data: AddListingDTO): Promise<ReturnValue> => {
             { session }
         );
 
-        // Commit the transaction
+        await listing.save({ session });
+
         await session.commitTransaction();
         session.endSession();
 
@@ -230,7 +231,7 @@ export const claimListing = async (listingId: string, userId: string): Promise<R
             throw new Error('The listing has already been completed.');
         }
 
-        const user = await UserModel.findOne({ twitterId: userId });
+        const user = await UserModel.findOne({ $or: [{ twitterId: userId }, { _id: userId }] });
         if (!user) {
             throw new Error('User not found.');
         }
@@ -253,21 +254,43 @@ export const claimListing = async (listingId: string, userId: string): Promise<R
             throw new Error('Invalid reward amount.');
         }
 
-        // Increase user's xCookies
-        (user.inventory as UserInventory).xCookieData.currentXCookies += totalReward;
+        // Increment user's xCookies
+        await user.updateOne(
+            {
+                $inc: { 'inventory.xCookieData.currentXCookies': totalReward },
+            },
+            { session }
+        );
 
         const index = (user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(
             (data) => data.source === XCookieSource.QUEST_REWARDS
         );
 
         if (index !== -1) {
-            (user.inventory as UserInventory).xCookieData.extendedXCookieData[index].xCookies = totalReward;
+            await user.updateOne(
+                {
+                    $set: {
+                        [`inventory.xCookieData.extendedXCookieData.${index}.xCookies`]: totalReward,
+                    },
+                },
+                { session }
+            );
         } else {
-            (user.inventory as UserInventory).xCookieData.extendedXCookieData.push({
-                xCookies: totalReward,
-                source: XCookieSource.QUEST_REWARDS,
-            });
+            await user.updateOne(
+                {
+                    $push: {
+                        'inventory.xCookieData.extendedXCookieData': {
+                            xCookies: totalReward,
+                            source: XCookieSource.QUEST_REWARDS,
+                        },
+                    },
+                },
+                { session }
+            );
         }
+
+        // Set the status to be Completed
+        listing.status = TradeStatus.COMPLETED;
 
         await listing.save({ session });
         await user.save({ session });
@@ -335,6 +358,9 @@ export const cancelListing = async (listingId: string, userId: string): Promise<
     }
 };
 
+/**
+ * Purchase items on the listing.
+ */
 export const purchaseListing = async (data: PurchaseListingDTO): Promise<ReturnValue> => {
     const session = await TEST_CONNECTION.startSession();
     session.startTransaction();
@@ -361,7 +387,7 @@ export const purchaseListing = async (data: PurchaseListingDTO): Promise<ReturnV
         }
 
         // Retrieve the user data
-        const user = await UserModel.findOne({ twitterId: userId }).session(session);
+        const user = await UserModel.findOne({ $or: [{ twitterId: userId }, { _id: userId }] }).session(session);
         if (!user) {
             throw new Error('User not found.');
         }
@@ -375,60 +401,89 @@ export const purchaseListing = async (data: PurchaseListingDTO): Promise<ReturnV
             throw new Error('Insufficient balance for this purchase.');
         }
 
-        // Deduct the amount from user's balance (assuming xCookies or Diamonds)
-        (user.inventory as UserInventory).xCookieData.currentXCookies -= totalCost;
-        (user.inventory as UserInventory).xCookieData.totalXCookiesSpent += totalCost;
-        (user.inventory as UserInventory).xCookieData.weeklyXCookiesSpent += totalCost;
+        // Deduct the amount from user's balance (assuming xCookies or Diamonds) using $inc
+        await UserModel.updateOne(
+            { _id: user._id },
+            {
+                $inc: {
+                    'inventory.xCookieData.currentXCookies': -totalCost,
+                    'inventory.xCookieData.totalXCookiesSpent': totalCost,
+                    'inventory.xCookieData.weeklyXCookiesSpent': totalCost,
+                },
+            },
+            { session }
+        );
 
         const isFood = Object.values(FoodType).includes(listing.item as FoodType);
 
         // Check if the listing item type was a food
         if (isFood) {
-            const index = (user.inventory?.foods as Food[]).findIndex((i) => i.type === listing.item);
+            // Use $inc to increase the amount of the purchased food
+            await UserModel.updateOne(
+                { _id: user._id, 'inventory.foods.type': listing.item },
+                { $inc: { 'inventory.foods.$.amount': purchaseAmount } },
+                { session }
+            );
 
-            if (index !== -1) {
-                (user.inventory.foods as Food[])[index].amount += purchaseAmount;
-            } else {
-                user.inventory.foods.push({
-                    type: listing.item,
-                    amount: purchaseAmount,
-                });
-            }
+            // If the food doesn't exist in the user's inventory, push the new food item
+            await UserModel.updateOne(
+                { _id: user._id, 'inventory.foods.type': { $ne: listing.item } },
+                {
+                    $push: {
+                        'inventory.foods': { type: listing.item, amount: purchaseAmount },
+                    },
+                },
+                { session }
+            );
         } else {
-            const index = (user.inventory?.items as Item[]).findIndex((i) => i.type === listing.item);
+            // Use $inc to increase the amount of the purchased item
+            await UserModel.updateOne(
+                { _id: user._id, 'inventory.items.type': listing.item },
+                { $inc: { 'inventory.items.$.amount': purchaseAmount } },
+                { session }
+            );
 
-            if (index !== -1) {
-                (user.inventory.items as Item[])[index].amount += purchaseAmount;
-            } else {
-                user.inventory.items.push({
-                    type: listing.item,
-                    amount: purchaseAmount,
-                    totalAmountConsumed: 0,
-                    weeklyAmountConsumed: 0,
-                });
-            }
+            // If the item doesn't exist in the user's inventory, push the new item
+            await UserModel.updateOne(
+                { _id: user._id, 'inventory.items.type': { $ne: listing.item } },
+                {
+                    $push: {
+                        'inventory.items': {
+                            type: listing.item,
+                            amount: purchaseAmount,
+                            totalAmountConsumed: 0,
+                            weeklyAmountConsumed: 0,
+                        },
+                    },
+                },
+                { session }
+            );
         }
 
-        await user.save({ session });
-
-        // Add the purchase to the listing
-        listing.purchasedBy?.push({
-            user: user._id,
-            amount: purchaseAmount,
-            purchasedTimestamp: Date.now(),
-            claimed: false,
-        });
-
-        // Decrease the amount of the item based on the purchase amount
-        listing.amount -= purchaseAmount;
+        await TradeListingModel.updateOne(
+            { _id: listing._id },
+            {
+                $push: {
+                    purchasedBy: {
+                        user: user._id,
+                        amount: purchaseAmount,
+                        purchasedTimestamp: Date.now(),
+                        claimed: false,
+                    },
+                },
+                $inc: { amount: -purchaseAmount }, // Decrease the amount in the listing
+            },
+            { session }
+        );
 
         // If no amount is left, mark the listing as sold
-        if (listing.amount <= 0) {
-            listing.status = TradeStatus.SOLD;
+        if (listing.amount - purchaseAmount <= 0) {
+            await TradeListingModel.updateOne(
+                { _id: listing._id },
+                { $set: { status: TradeStatus.SOLD } },
+                { session }
+            );
         }
-
-        // Save the updated listing
-        await listing.save({ session });
 
         // Commit the transaction to persist the changes
         await session.commitTransaction();
