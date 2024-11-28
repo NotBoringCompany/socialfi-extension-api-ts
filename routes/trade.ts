@@ -63,7 +63,7 @@ router.post('/add_listing', async (req, res) => {
             return res.status(validation.status).json(validation);
         }
 
-        const result = await addListing(validation.data as AddListingDTO);
+        const result = await addListing({ ...(validation.data as AddListingDTO), soldBy: auth.data.twitterId });
 
         return res.status(result.status).json(result);
     } catch (err: any) {
@@ -93,15 +93,10 @@ router.post('/purchase_listing', async (req, res) => {
             return res.status(validation.status).json(validation);
         }
 
-        // Check if the userId on the payload is the same as the authorized user
-        if (auth.data.twitterId !== validation.data.userId) {
-            return res.status(403).json({
-                status: 403,
-                message: '(purchase_listing) Forbidden',
-            });
-        }
-
-        const result = await purchaseListing(validation.data as PurchaseListingDTO);
+        const result = await purchaseListing({
+            ...(validation.data as PurchaseListingDTO),
+            userId: auth.data.twitterId,
+        });
 
         return res.status(result.status).json(result);
     } catch (err: any) {
@@ -131,15 +126,7 @@ router.post('/claim_listing', async (req, res) => {
             return res.status(validation.status).json(validation);
         }
 
-        // Check if the userId on the payload is the same as the authorized user
-        if (auth.data.twitterId !== validation.data.userId) {
-            return res.status(403).json({
-                status: 403,
-                message: '(claim_listing) Forbidden',
-            });
-        }
-
-        const result = await claimListing(validation.data.listingId, validation.data.userId);
+        const result = await claimListing(validation.data.listingId, auth.data.twitterId);
 
         return res.status(result.status).json(result);
     } catch (err: any) {
@@ -169,15 +156,7 @@ router.post('/cancel_listing', async (req, res) => {
             return res.status(validation.status).json(validation);
         }
 
-        // Check if the userId on the payload is the same as the authorized user
-        if (auth.data.twitterId !== validation.data.userId) {
-            return res.status(403).json({
-                status: 403,
-                message: '(cancel_listing) Forbidden',
-            });
-        }
-
-        const result = await cancelListing(validation.data.listingId, validation.data.userId);
+        const result = await cancelListing(validation.data.listingId, auth.data.twitterId);
 
         return res.status(result.status).json(result);
     } catch (err: any) {
