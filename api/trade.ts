@@ -76,7 +76,7 @@ export const getUserListings = async (query: ListingsQuery): Promise<ReturnValue
             };
         }
 
-        const user = await UserModel.findOne({ twitterId: query.user });
+        const user = await UserModel.findOne({ $or: [{ twitterId: query.user }, { _id: query.user }] });
         if (!user) {
             return {
                 status: Status.ERROR,
