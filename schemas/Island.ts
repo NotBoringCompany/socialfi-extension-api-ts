@@ -11,6 +11,7 @@ export const IslandSchema = new mongoose.Schema({
     },
     islandId: Number,
     type: String,
+    usable: Boolean,
     ownerData: Object,
     blockchainData: Object,
     purchaseDate: Number,

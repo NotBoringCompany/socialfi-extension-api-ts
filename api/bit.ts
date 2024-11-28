@@ -115,99 +115,6 @@ export const removeEarningStatsFromBit = async (): Promise<void> => {
 }
 
 /**
- * Gifts a user from Xterio an Xterio bit.
- */
-export const giftXterioBit = async (twitterId: string): Promise<ReturnValue> => {
-    try {
-        const user = await UserModel.findOne({ twitterId }).lean();
-
-        if (!user) {
-            return {
-                status: Status.ERROR,
-                message: `(giftXterioBit) User not found.`
-            }
-        }
-
-        const userUpdateOperations = {
-            $pull: {},
-            $inc: {},
-            $set: {},
-            $push: {}
-        }
-
-        const { status, message, data } = await getLatestBitId();
-
-        if (status !== Status.SUCCESS) {
-            return {
-                status: Status.ERROR,
-                message: `(giftXterioBit) Error: ${message}`
-            }
-        }
-
-        // get the latest bit id
-        const latestBitId = data?.latestBitId as number;
-        
-        // Xterio bits always has Rare rarity
-        const rarity = BitRarity.RARE;
-
-        const gender = RANDOMIZE_GENDER();
-
-        const traits = randomizeBitTraits(rarity);
-        const bitStatsModifiers = getBitStatsModifiersFromTraits(traits.map(trait => trait.trait));
-
-        const bit = new BitModel({
-            _id: generateObjectId(),
-            bitId: latestBitId + 1,
-            // the bit type will always be Xterio
-            bitType: BitType.XTERIO,
-            bitNameData: {
-                name: `Bit #${latestBitId + 1}`,
-                lastChanged: 0
-            },
-            rarity,
-            gender,
-            owner: user._id,
-            purchaseDate: Math.floor(Date.now() / 1000),
-            obtainMethod: ObtainMethod.XTERIO,
-            placedIslandId: 0,
-            lastRelocationTimestamp: 0,
-            currentFarmingLevel: 1,
-            farmingStats: randomizeFarmingStats(rarity),
-            traits,
-            equippedCosmetics: {
-                head: { cosmeticId: null, cosmeticName: null, equippedAt: 0 },
-                body: { cosmeticId: null, cosmeticName: null, equippedAt: 0 },
-                arms: { cosmeticId: null, cosmeticName: null, equippedAt: 0 },
-                back: { cosmeticId: null, cosmeticName: null, equippedAt: 0 },
-            },
-            bitStatsModifiers
-        })
-
-        // add the bit to the user's inventory
-        userUpdateOperations.$push['inventory.bitIds'] = bit.bitId;
-
-        // add the bit to the bit database
-        await bit.save();
-
-        // execute the user update operations
-        await UserModel.updateOne({ twitterId }, userUpdateOperations);
-
-        return {
-            status: Status.SUCCESS,
-            message: `(giftXterioBit) Xterio bit gifted.`,
-            data: {
-                bit
-            }
-        }
-    } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(giftXterioBit) Error: ${err.message}`
-        }
-    }
-}
-
-/**
  * (User) Renames a bit to a new name.
  */
 export const renameBit = async (
@@ -247,6 +154,14 @@ export const renameBit = async (
             return {
                 status: Status.ERROR,
                 message: `(renameBit) Bit not found.`,
+            };
+        }
+
+        // check if bit is usable
+        if (!bit.usable) {
+            return {
+                status: Status.ERROR,
+                message: `(renameBit) Bit is not usable.`,
             };
         }
 
@@ -453,6 +368,52 @@ export const releaseBit = async (twitterId: string, bitId: number): Promise<Retu
             return BitModel.updateOne({ bitId: op.bitId }, op.updateOperations);
         });
 
+        // only if the bit was minted and then burned in the next process
+        let burnTxHash = null;
+
+        // if the bit is minted, burn the NFT
+        if (bit.blockchainData?.minted) {
+            // if the token ID is null or 0, throw an error
+            if (!bit.blockchainData.tokenId || bit.blockchainData.tokenId === 0) {
+                return {
+                    status: Status.ERROR,
+                    message: `(releaseBit) Token ID not found.`
+                }
+            }
+
+            // if the user doesn't have enough KAIA to pay for the transaction, throw an error
+            // estimate the gas required to mint the cosmetic
+            const gasEstimation = await WONDERBITS_CONTRACT.estimateGas.burn(bit.blockchainData.tokenId);
+
+             // get the current gas price
+            const gasPrice = await KAIA_TESTNET_PROVIDER.getGasPrice();
+
+            // calculate the gas fee in KAIA
+            const gasFee = ethers.utils.formatEther(gasEstimation.mul(gasPrice));
+
+            // check if the user has enough KAIA to pay for the gas fee
+            const userBalance = await KAIA_TESTNET_PROVIDER.getBalance(user.wallet?.address);
+            const formattedUserBalance = ethers.utils.formatEther(userBalance);
+
+            if (Number(formattedUserBalance) < Number(gasFee)) {
+                console.log(`(releaseBit) User does not have enough KAIA to pay for the gas fee.`);
+                return {
+                    status: Status.ERROR,
+                    message: `(releaseBit) User does not have enough KAIA to pay for the gas fee. Required: ${gasFee} KAIA --- User Balance: ${formattedUserBalance} KAIA`
+                }
+            }
+
+            // burn the bit
+            const burnTx = await WONDERBITS_CONTRACT.burn(bit.blockchainData.tokenId);
+
+            // wait for the transaction to be mined
+            const burnTxReceipt = await burnTx.wait();
+
+            console.log(`(releaseBit) Bit NFT burned. Transaction hash: ${burnTxReceipt.transactionHash}`);
+
+            burnTxHash = burnTxReceipt.transactionHash;
+        }
+
         // execute the update operations
         await Promise.all([
             UserModel.updateOne({ twitterId }, userUpdateOperations),
@@ -468,6 +429,7 @@ export const releaseBit = async (twitterId: string, bitId: number): Promise<Retu
                 bitId: bitId,
                 bitRarity: bit.rarity,
                 bitTraits: bit.traits,
+                burnTxHash
             }
         }
     } catch (err: any) {
@@ -538,6 +500,14 @@ export const feedBit = async (twitterId: string, bitId: number, foodType: FoodTy
             return {
                 status: Status.ERROR,
                 message: `(feedBit) Bit not found.`
+            }
+        }
+
+        // check if the bit is usable
+        if (!bit.usable) {
+            return {
+                status: Status.ERROR,
+                message: `(feedBit) Bit is not usable.`
             }
         }
 
@@ -655,6 +625,16 @@ export const bulkFeedBits = async (userId: string, foodType: FoodType, bitIds: n
             return {
                 status: Status.ERROR,
                 message: `(bulkFeedBit) active Bits are not found.`
+            }
+        }
+
+        // if any of the working bits is not usable, return an error
+        const unusableBits = workingBits.filter(bit => !bit.usable);
+
+        if (unusableBits.length > 0) {
+            return {
+                status: Status.ERROR,
+                message: `(bulkFeedBit) Some bits are not usable.`
             }
         }
 

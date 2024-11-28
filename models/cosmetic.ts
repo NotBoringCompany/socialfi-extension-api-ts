@@ -26,6 +26,8 @@ export interface BitCosmeticInventory extends BitCosmetic {
   bitCosmeticId: number;
   /** if this cosmetic is equipped on a bit, this will be the bit ID the cosmetic is equipped on. if not, this will be 0 */
   equippedBitId: number;
+  /** only if `usable` is set to true can it be used in the game */
+  usable: boolean;
   /** the owner data of the cosmetic (current owner, original owner, etc.) */
   ownerData: AssetOwnerData;
   /** the blockchain data of this cosmetic (current owner, original owner, etc.) */

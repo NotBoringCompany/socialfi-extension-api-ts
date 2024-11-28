@@ -14,6 +14,35 @@ import { generateHashSalt, generateOpHash } from '../utils/crypto';
 import { ExtendedResource } from '../models/resource';
 
 /**
+ * Sets `usable` to `true` by default for all to-be-NFT assets (islands, bits and bit cosmetics) in the database.
+ */
+export const addUsableToNFTs = async (): Promise<void> => {
+    try {
+        await IslandModel.updateMany({}, {
+            $set: {
+                'usable': true
+            }
+        });
+
+        await BitModel.updateMany({}, {
+            $set: {
+                'usable': true
+            }
+        });
+
+        await UserBitCosmeticModel.updateMany({}, {
+            $set: {
+                'usable': true
+            }
+        });
+
+        console.log(`(addUsableToNFTs) Successfully set all NFTs to be usable.`);
+    } catch (err: any) {
+        console.error(`(addUsableToNFTs) ${err.message}`);
+    }
+}
+
+/**
  * Converts a BOC (bag of cells) for TON-related transactions into its corresponding transaction hash in hex format.
  */
 export const bocToTxHash = async (boc: string): Promise<string> => {

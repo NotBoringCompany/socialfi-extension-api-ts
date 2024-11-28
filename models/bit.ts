@@ -20,6 +20,8 @@ export interface Bit {
     rarity: BitRarity;
     /** bit gender */
     gender: BitGender;
+    /** only if `usable` is set to true can it be used in the game */
+    usable: boolean;
     /** the owner data of this bit (current owner, original owner, etc.) */
     ownerData: AssetOwnerData;
     /** the blockchain data of this bit (if it's mintable, if it's already minted, the contract address, etc.) */

@@ -117,6 +117,14 @@ export const consumeSynthesizingItem = async (
                 }
             }
 
+            // check if bit is usable
+            if (!bit.usable) {
+                return {
+                    status: Status.ERROR,
+                    message: `(consumeSynthesizingItem) Bit is not usable.`
+                }
+            }
+
             // check if the item has a min/max rarity requirement.
             const minRarity = synthesizingItemData.minimumRarity;
             const maxRarity = synthesizingItemData.maximumRarity;
@@ -839,6 +847,14 @@ export const consumeSynthesizingItem = async (
                 }
             }
 
+            // check if island is usable
+            if (!island.usable) {
+                return {
+                    status: Status.ERROR,
+                    message: `(consumeSynthesizingItem) Island is not usable.`
+                }
+            }
+            
             // check if the item being consumed has a minimum or maximum rarity requirement.
             // if it does, we need to check if the island's rarity is within the range.
             const minRarity = synthesizingItemData.minimumRarity;

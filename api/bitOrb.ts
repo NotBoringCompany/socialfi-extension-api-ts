@@ -200,6 +200,8 @@ export const summonBit = async (
             },
             rarity,
             gender,
+            // usable by default
+            usable: true,
             ownerData: {
                 currentOwnerId: owner,
                 originalOwnerId: owner,

@@ -21,26 +21,6 @@ import { calcIslandGatheringRate } from '../api/island';
 
 const router = express.Router();
 
-router.post('/gift_xterio_bit', authMiddleware(3), async (req, res) => {
-    const { twitterId } = req.body;
-
-    try {
-        const { status, message, data } = await giftXterioBit(twitterId);
-
-        return res.status(status).json({
-            status,
-            message,
-            data
-        });
-    } catch (err: any) {
-        return res.status(500).json({
-            status: 500,
-            message: err.message
-        })
-    }
-
-})
-
 router.post('/rename_bit', async (req, res) => {
     const { bitId, newName } = req.body;
 
