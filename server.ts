@@ -70,6 +70,7 @@ import gacha from './routes/gacha';
 import cosmetic from './routes/cosmetic';
 import friend from './routes/friend';
 import report from './routes/report';
+import trade from './routes/trade';
 import './utils/constants/shop';
 import { populateBitCosmeticEnum } from './utils/constants/cosmetic';
 import { initializeSocket } from './configs/socket';
@@ -112,6 +113,7 @@ app.use('/gacha', checkMaintenance, gacha);
 app.use('/cosmetic', checkMaintenance, cosmetic);
 app.use('/friend', checkMaintenance, friend);
 app.use('/report', checkMaintenance, report);
+app.use('/trade', checkMaintenance, trade);
 
 const httpServer = http.createServer(app);
 

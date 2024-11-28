@@ -145,6 +145,7 @@ export enum XCookieSource {
     DISCORD_ENGAGEMENT = 'Discord Engagement',
     SHOP_PURCHASE = 'Shop Purchase',
     WONDERSPIN = 'Wonderspin',
+    TRADING = 'Trading'
 }
 
 /**

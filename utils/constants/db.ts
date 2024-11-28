@@ -31,6 +31,7 @@ import { BitCosmeticSchema, UserBitCosmeticSchema } from '../../schemas/Cosmetic
 import { UserWonderpassDataSchema, WonderpassSchema } from '../../schemas/Wonderpass';
 import { FriendSchema } from '../../schemas/Friend';
 import { ReportSchema } from '../../schemas/Report';
+import { TradeListingSchema } from '../../schemas/Trade';
 
 
 const TEST_DATABASE = process.env.MONGODB_URI!;
@@ -119,3 +120,4 @@ export const ReportModel = TEST_CONNECTION.model('Reports', ReportSchema, 'Repor
 export const CraftingRecipeModel = TEST_CONNECTION.model('CraftingRecipes', CraftingRecipeSchema, 'CraftingRecipes');
 export const BitTraitDataModel = TEST_CONNECTION.model('BitTraitData', BitTraitDataSchema, 'BitTraitData');
 export const UserBitCosmeticModel = TEST_CONNECTION.model('UserBitCosmetics', UserBitCosmeticSchema, 'UserBitCosmetics');
+export const TradeListingModel = TEST_CONNECTION.model('TradeListings', TradeListingSchema, 'TradeListings');
