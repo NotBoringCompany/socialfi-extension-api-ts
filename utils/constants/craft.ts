@@ -1,7 +1,7 @@
 import Bull from 'bull';
 import { AssetType } from '../../models/asset';
 import { CraftedAssetData, CraftedAssetRarity, CraftingQueueStatus, CraftingRecipe, CraftingRecipeLine } from "../../models/craft";
-import { ContinuumRelicItem, EnergyTotemItem, IngotItem, Item, PotionItem, AugmentationItem, TransmutationItem, WonderArtefactItem, PotionEnum, EnergyTotemEnum, TransmutationEnum, AugmentationEnum, WonderArtefactEnum, ContinuumRelicEnum, IngotEnum } from '../../models/item';
+import { ContinuumRelicItem, EnergyTotemItem, IngotItem, Item, PotionItem, AugmentationItem, TransmutationItem, WonderArtefactItem, PotionEnum, EnergyTotemEnum, TransmutationEnum, AugmentationEnum, ContinuumRelicEnum, IngotEnum } from '../../models/item';
 import { BarrenResource, CombinedResources, ExtendedResource, FruitResource, LiquidResource, OreResource, ResourceRarity, ResourceType, SimplifiedResource } from "../../models/resource";
 import { FoodType } from '../../models/food';
 import { CraftingQueueModel, CraftingRecipeModel, UserModel } from './db';
@@ -211,9 +211,6 @@ export const populateCraftingRecipesAndAssetEnums = async (): Promise<void> => {
             } else if (asset.includes('Augmentation')) {
                 // Populate AugmentationEnum
                 AugmentationEnum[asset.toUpperCase()] = asset;
-            } else if (asset.includes('of Wonder')) {
-                // Populate WonderArtefactEnum
-                WonderArtefactEnum[asset.toUpperCase()] = asset;
             } else if (asset.includes('Relic')) {
                 // Populate ContinuumRelicEnum
                 ContinuumRelicEnum[asset.toUpperCase()] = asset;
