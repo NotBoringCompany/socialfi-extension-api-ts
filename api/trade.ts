@@ -3,6 +3,7 @@ import { Item } from '../models/item';
 import { TradeStatus } from '../models/trade';
 import { ExtendedXCookieData, UserInventory, XCookieSource } from '../models/user';
 import { TEST_CONNECTION, TradeListingModel, UserModel } from '../utils/constants/db';
+import { MAXIMUM_ACTIVE_TRADE_LISTING } from '../utils/constants/trade';
 import { generateObjectId } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
 import { AddListingDTO, ListingsQuery, PurchaseListingDTO } from '../validations/trade';
@@ -139,6 +140,17 @@ export const addListing = async (data: AddListingDTO): Promise<ReturnValue> => {
             session
         );
         if (!user) throw new Error('User not found.');
+
+        // Get user's active listing count
+        const activeListingCount = await TradeListingModel.countDocuments({
+            user: user._id,
+            status: { $in: [TradeStatus.ACTIVE, TradeStatus.SOLD] },
+        });
+
+        // Check if the active listing count didn't exceed the maximum limit
+        if (activeListingCount >= MAXIMUM_ACTIVE_TRADE_LISTING) {
+            throw new Error(`Maximum trade listings exceeded`);
+        }
 
         const isFood = Object.values(FoodType).includes(data.item as FoodType);
 
