@@ -178,6 +178,21 @@ export const equipBitCosmetics = async (twitterId: string, bitId: number, bitCos
             };
         }
 
+        // check if the bit is usable
+        if (!bit.usable) {
+            return {
+                status: Status.ERROR,
+                message: `(equipBitCosmetic) Bit with ID: ${bitId} is not usable`
+            }
+        }
+
+        // check if the cosmetics are usable
+        if (cosmetics.some(cosmetic => !cosmetic.usable)) {
+            return {
+                status: Status.ERROR,
+                message: `(equipBitCosmetic) One or more cosmetics are not usable`
+            }
+        }
         
 
         const cosmeticUpdateOperations: Array<{
@@ -312,6 +327,14 @@ export const unequipBitCosmeticSlots = async (twitterId: string, bitId: number, 
             status: Status.ERROR,
             message: `(unequipBitCosmeticSlots) Bit with ID: ${bitId} is not owned by user with Twitter ID: ${twitterId}`,
           };
+        }
+
+        // check if the bit is usable
+        if (!bit.usable) {
+            return {
+                status: Status.ERROR,
+                message: `(unequipBitCosmeticSlots) Bit with ID: ${bitId} is not usable`,
+            };
         }
 
         const bitUpdateOperations = {
