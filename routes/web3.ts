@@ -1,7 +1,7 @@
 import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
-import { mintBit, mintBitCosmetic, mintIsland } from '../api/web3';
+import { mintBit, mintBitCosmetic, mintIsland, mintSFT } from '../api/web3';
 
 const router = express.Router();
 
@@ -74,6 +74,34 @@ router.post('/mint_bit_cosmetic', async (req, res) => {
         }
 
         const { status, message, data } = await mintBitCosmetic(validateData?.twitterId, bitCosmeticId);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
+
+router.post('/mint_sft', async (req, res) => {
+    const { asset, amount } = req.body;
+
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'mint_sft');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            });
+        }
+
+        const { status, message, data } = await mintSFT(validateData?.twitterId, asset, amount);
 
         return res.status(status).json({
             status,

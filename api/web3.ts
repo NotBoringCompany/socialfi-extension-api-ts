@@ -3,7 +3,7 @@ import { ReturnValue, Status } from '../utils/retVal';
 import { BitModel, IslandModel, ShopAssetPurchaseModel, UserBitCosmeticModel, UserModel } from '../utils/constants/db';
 import { ExtendedXCookieData, UserWallet, XCookieSource } from '../models/user';
 import { getUserCurrentPoints } from './leaderboard';
-import { BINANCE_API_BASE_URL, BIT_COSMETICS_CONTRACT, DEPLOYER_WALLET, GATEIO_API_BASE_URL, ISLANDS_CONTRACT, KAIA_TESTNET_PROVIDER, KUCOIN_API_BASE_URL, TON_RECEIVER_ADDRESS, TON_WEB, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
+import { BINANCE_API_BASE_URL, BIT_COSMETICS_CONTRACT, DEPLOYER_WALLET, GATEIO_API_BASE_URL, ISLANDS_CONTRACT, KAIA_TESTNET_PROVIDER, KUCOIN_API_BASE_URL, TON_RECEIVER_ADDRESS, TON_WEB, WONDERBITS_CONTRACT, WONDERBITS_SFT_CONTRACT, WONDERBITS_SFT_IDS, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
 import { ethers } from 'ethers';
 import { TxParsedMessage } from '../models/web3';
 import { ShopAssetPurchaseConfirmationAttemptType } from '../models/shop';
@@ -11,6 +11,7 @@ import { Item } from '../models/item';
 import { Food } from '../models/food';
 import { AssetType } from '../models/asset';
 import { generateHashSalt, generateOpHash } from '../utils/crypto';
+import { ExtendedResource } from '../models/resource';
 
 /**
  * Converts a BOC (bag of cells) for TON-related transactions into its corresponding transaction hash in hex format.
@@ -1036,11 +1037,211 @@ export const mintBitCosmetic = async (twitterId: string, bitCosmeticId: number):
 
 
 /**
- * Mints an in-game asset into an SFT in the KAIA blockchain for the user.
+ * Mints a specific amount of an in-game asset into an SFT in the KAIA blockchain for the user.
  */
 export const mintSFT = async (twitterId: string, asset: AssetType, amount: number): Promise<ReturnValue> => {
-    try {
+    // check the WONDERBITS_SFT_IDS to see if the asset data is there
+    const assetData = WONDERBITS_SFT_IDS.find(data => data.asset === asset);
 
+    if (!assetData) {
+        return {
+            status: Status.ERROR,
+            message: `(mintSFT) Asset data not found.`
+        }
+    }
+
+    try {
+        // get the user's data
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(mintSFT) User not found.`
+            }
+        }
+
+        // check if the user has the asset
+        const assetType = assetData.type;
+        let assetIndex = -1;
+
+        // create the update operations to deduct the `mintableAmount` and `amount` of the asset from the user's inventory
+        const userUpdateOperations = {
+            $inc: {}
+        }
+
+        if (assetType === 'resource') {
+            // check the user's inventory for the resource
+            assetIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(r => r.type === asset);
+
+            if (assetIndex === -1) {
+                return {
+                    status: Status.ERROR,
+                    message: `(mintSFT) User does not have the specified resource to mint.`
+                }
+            }
+
+            // check if the user has enough `mintableAmount` of the resource
+            // NOTE: `mintableAmount` is just a value to state the amount of the resource that can be minted into an SFT.
+            // this doesn't mean that the user owns `mintableAmount` of the resource.
+            // we will still need to check if the user has enough `amount` of the resource to mint.
+            if ((user.inventory?.resources as ExtendedResource[])[assetIndex].mintableAmount < amount) {
+                return {
+                    status: Status.ERROR,
+                    message: '(mintSFT) User doesn\'t have enough `mintableAmount` of the asset to mint.'
+                }
+            }
+
+            // check if the user has enough `amount` of the resource
+            if ((user.inventory?.resources as ExtendedResource[])[assetIndex].amount < amount) {
+                return {
+                    status: Status.ERROR,
+                    message: `(mintSFT) User doesn't have enough of the asset to mint.`
+                }
+            }
+
+            // deduct the `mintableAmount` and `amount` of the resource from the user's inventory
+            userUpdateOperations.$inc[`inventory.resources.${assetIndex}.mintableAmount`] = -amount;
+            userUpdateOperations.$inc[`inventory.resources.${assetIndex}.amount`] = -amount;
+        } else if (assetType === 'item') {
+            // check the user's inventory for the item
+            assetIndex = (user.inventory?.items as Item[]).findIndex(i => i.type === asset);
+
+            if (assetIndex === -1) {
+                return {
+                    status: Status.ERROR,
+                    message: `(mintSFT) User does not have the specified item to mint.`
+                }
+            }
+
+            // check if the user has enough `mintableAmount` of the item
+            // NOTE: `mintableAmount` is just a value to state the amount of the item that can be minted into an SFT.
+            // this doesn't mean that the user owns `mintableAmount` of the item.
+            // we will still need to check if the user has enough `amount` of the item to mint.
+            if ((user.inventory?.items as Item[])[assetIndex].mintableAmount < amount) {
+                return {
+                    status: Status.ERROR,
+                    message: '(mintSFT) User doesn\'t have enough `mintableAmount` of the asset to mint.'
+                }
+            }
+
+            // check if the user has enough `amount` of the item
+            if ((user.inventory?.items as Item[])[assetIndex].amount < amount) {
+                return {
+                    status: Status.ERROR,
+                    message: `(mintSFT) User doesn't have enough of the asset to mint.`
+                }
+            }
+
+            // deduct the `mintableAmount` and `amount` of the item from the user's inventory
+            userUpdateOperations.$inc[`inventory.items.${assetIndex}.mintableAmount`] = -amount;
+            userUpdateOperations.$inc[`inventory.items.${assetIndex}.amount`]
+        } else if (assetType === 'food') {
+            // check the user's inventory for the food
+            assetIndex = (user.inventory?.foods as Food[]).findIndex(f => f.type === asset);
+
+            if (assetIndex === -1) {
+                return {
+                    status: Status.ERROR,
+                    message: `(mintSFT) User does not have the specified food to mint.`
+                }
+            }
+
+            // check if the user has enough `mintableAmount` of the food
+            // NOTE: `mintableAmount` is just a value to state the amount of the food that can be minted into an SFT.
+            // this doesn't mean that the user owns `mintableAmount` of the food.
+            // we will still need to check if the user has enough `amount` of the food to mint.
+            if ((user.inventory?.foods as Food[])[assetIndex].mintableAmount < amount) {
+                return {
+                    status: Status.ERROR,
+                    message: '(mintSFT) User doesn\'t have enough `mintableAmount` of the asset to mint.'
+                }
+            }
+
+            // check if the user has enough `amount` of the food
+            if ((user.inventory?.foods as Food[])[assetIndex].amount < amount) {
+                return {
+                    status: Status.ERROR,
+                    message: `(mintSFT) User doesn't have enough of the asset to mint.`
+                }
+            }
+
+            // deduct the `mintableAmount` and `amount` of the food from the user's inventory
+            userUpdateOperations.$inc[`inventory.foods.${assetIndex}.mintableAmount`] = -amount;
+            userUpdateOperations.$inc[`inventory.foods.${assetIndex}.amount`] = -amount;
+        } else {
+            return {
+                status: Status.ERROR,
+                message: `(mintSFT) Asset type not found.`
+            }
+        }
+
+        // create the hash salt
+        const salt = generateHashSalt();
+        // create the op hash
+        const opHash = generateOpHash(user.wallet?.address, salt);
+        // create the admin's signature
+        const signature = await DEPLOYER_WALLET(KAIA_TESTNET_PROVIDER).signMessage(ethers.utils.arrayify(opHash));
+
+        // estimate the gas required to mint the SFT
+        const gasEstimation = await WONDERBITS_SFT_CONTRACT.estimateGas.mint(
+            user?.wallet?.address,
+            assetData.id,
+            amount,
+            '0x',
+            [salt, signature]
+        );
+
+        // get the current gas price
+        const gasPrice = await KAIA_TESTNET_PROVIDER.getGasPrice();
+
+        // calculate the gas fee in KAIA
+        const gasFee = ethers.utils.formatEther(gasEstimation.mul(gasPrice));
+
+        // check if the user has enough KAIA to pay for the gas fee
+        const userBalance = await KAIA_TESTNET_PROVIDER.getBalance(user.wallet?.address);
+        const formattedUserBalance = ethers.utils.formatEther(userBalance);
+
+        if (Number(formattedUserBalance) < Number(gasFee)) {
+            console.log(`(mintSFT) User does not have enough KAIA to pay for the gas fee.`);
+            return {
+                status: Status.ERROR,
+                message: `(mintSFT) User does not have enough KAIA to pay for the gas fee. Required: ${gasFee} KAIA --- User Balance: ${formattedUserBalance} KAIA`
+            }
+        }
+
+        // mint the SFT
+        const mintTx = await WONDERBITS_SFT_CONTRACT.mint(
+            user.wallet?.address,
+            assetData.id,
+            amount,
+            '0x',
+            [salt, signature],
+            {
+                gasLimit: gasEstimation
+            }
+        );
+
+        // wait for the transaction to be mined
+        const mintTxReceipt = await mintTx.wait();
+
+        console.log(`(mintSFT) Transaction mined: ${mintTxReceipt.transactionHash}`);
+
+        // do the update operations
+        await UserModel.updateOne({ twitterId }, userUpdateOperations);
+
+        console.log(`(mintSFT) SFT successfully minted.`);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(mintSFT) SFT successfully minted.`,
+            data: {
+                asset,
+                amount,
+                mintHash: mintTxReceipt.transactionHash,
+                gasFee
+            }
+        }
     } catch (err: any) {
         console.error(`(mintSFT) ${err.message}`);
         return {
