@@ -495,6 +495,28 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
             }
         }
 
+        // check if the bit is minted and if `inCustody` is true.
+        // if the bit is not minted, continue.
+        // if the bit is minted and `inCustody` is true, continue.
+        // if the bit is minted and `inCustody` is false, return an error.
+        if (bit.blockchainData?.minted && !bit.ownerData?.inCustody) {
+            return {
+                status: Status.ERROR,
+                message: `(placeBit) Bit is minted but not in custody.`
+            }
+        }
+
+        // check if the island is minted and if `inCustody` is true.
+        // if the island is not minted, continue.
+        // if the island is minted and `inCustody` is true, continue.
+        // if the island is minted and `inCustody` is false, return an error.
+        if (island.blockchainData?.minted && !island.ownerData?.inCustody) {
+            return {
+                status: Status.ERROR,
+                message: `(placeBit) Island is minted but not in custody.`
+            }
+        }
+
         // check if the bit is already placed on an island.
         // if yes, we will relocate them here automatically, assuming their moving cooldown has passed.
         // we do the following checks:
