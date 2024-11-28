@@ -6,7 +6,7 @@ export interface ListingsQuery {
     startTimestamp?: number;
     endTimestamp?: number;
     limit?: number;
-    /** the twitterId or _id of the person who listed the listing */
+    /** the _id of the person who listed the listing */
     user?: string;
 }
 
@@ -53,7 +53,7 @@ export const purchaseListingDTO = z.object({
 export interface ClaimListingDTO {
     /** the listing unique object id */
     listingId: string;
-    /** the twitterId or _id of the person who listed the listing */
+    /** the _id of the person who listed the listing */
     userId: string;
 }
 
@@ -65,7 +65,7 @@ export const claimListingDTO = z.object({
 export interface CancelListingDTO {
     /** the listing unique object id */
     listingId: string;
-    /** the twitterId or _id of the person who listed the listing */
+    /** the _id of the person who listed the listing */
     userId: string;
 }
 

@@ -147,7 +147,7 @@ export const addListing = async (data: AddListingDTO): Promise<ReturnValue> => {
             status: { $in: [TradeStatus.ACTIVE, TradeStatus.SOLD] },
         });
 
-        // Check if the active listing count didn't exceed the maximum limit
+        // Check if the active listing count exceed the maximum limit
         if (activeListingCount >= MAXIMUM_ACTIVE_TRADE_LISTING) {
             throw new Error(`Maximum trade listings exceeded`);
         }
