@@ -72,11 +72,12 @@ export enum TerraCapsulatorType {
 }
 
 /**
- * a runtime-populated object representing wonder artefact items.
- * each key is a unique wonder artefact item name, and each value is the same wonder artefact item name as a string,
- * allowing it to behave similarly to a typescript enum.
+ * Represents all Wonder Artefact types in the game.
  */
-export const WonderArtefactEnum: { [key: string]: string } = {}
+export enum WonderArtefactItem {
+    ESSENCE_OF_WONDER = 'Essence of Wonder',
+    LIGHT_OF_WONDER = 'Light of Wonder',
+}
 
 /**
  * a runtime-populated object representing augmentation items.
@@ -119,13 +120,6 @@ export const PotionEnum: { [key: string]: string } = {}
  * allowing it to behave similarly to a typescript enum.
  */
 export const IngotEnum: { [key: string]: string } = {}
-
-/**
- * represents the type of a wonder artefact key from `WonderArtefactEnum`,
- * acting as a union of all valid wonder artefact names once populated at runtime.
- * this allows `WonderArtefactItem` to behave similarly to an enum type.
- */
-export type WonderArtefactItem = Extract<keyof typeof WonderArtefactEnum, string>;
 
 /**
  * represents the type of an augmentation key from `AugmentationEnum`,
