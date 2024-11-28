@@ -54,5 +54,5 @@ export enum TradeStatus {
  * Represents the supported currencies for trade.
  */
 export enum TradeCurrency {
-    COOKIE = 'Cookie',
+    X_COOKIES = 'xCookies',
 }
