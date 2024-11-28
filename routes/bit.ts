@@ -1,5 +1,5 @@
 import express from 'express';
-import { bulkFeedBits, calcBitGatheringRate, feedBit, getBits, giftXterioBit, mintBit, releaseBit, renameBit } from '../api/bit';
+import { bulkFeedBits, calcBitGatheringRate, feedBit, getBits, giftXterioBit, releaseBit, renameBit } from '../api/bit';
 import { FoodType } from '../models/food';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
@@ -20,33 +20,6 @@ import { QuestRequirementType } from '../models/quest';
 import { calcIslandGatheringRate } from '../api/island';
 
 const router = express.Router();
-
-router.post('/mint_bit', async (req, res) => {
-    const { bitId } = req.body;
-    try {
-        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'mint_bit');
-
-        if (validateStatus !== Status.SUCCESS) {
-            return res.status(validateStatus).json({
-                status: validateStatus,
-                message: validateMessage
-            })
-        }
-
-        const { status, message, data } = await mintBit(validateData?.twitterId, bitId);
-
-        return res.status(status).json({
-            status,
-            message,
-            data
-        })
-    } catch (err: any) {
-        return res.status(500).json({
-            status: 500,
-            message: err.message
-        })
-    }
-})
 
 router.post('/gift_xterio_bit', authMiddleware(3), async (req, res) => {
     const { twitterId } = req.body;

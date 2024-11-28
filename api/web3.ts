@@ -1,14 +1,16 @@
 import axios from 'axios';
 import { ReturnValue, Status } from '../utils/retVal';
-import { ShopAssetPurchaseModel, UserModel } from '../utils/constants/db';
+import { BitModel, IslandModel, ShopAssetPurchaseModel, UserBitCosmeticModel, UserModel } from '../utils/constants/db';
 import { ExtendedXCookieData, UserWallet, XCookieSource } from '../models/user';
 import { getUserCurrentPoints } from './leaderboard';
-import { BINANCE_API_BASE_URL, DEPLOYER_WALLET, GATEIO_API_BASE_URL, KUCOIN_API_BASE_URL, TON_RECEIVER_ADDRESS, TON_WEB, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
+import { BINANCE_API_BASE_URL, BIT_COSMETICS_CONTRACT, DEPLOYER_WALLET, GATEIO_API_BASE_URL, ISLANDS_CONTRACT, KAIA_TESTNET_PROVIDER, KUCOIN_API_BASE_URL, TON_RECEIVER_ADDRESS, TON_WEB, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
 import { ethers } from 'ethers';
 import { TxParsedMessage } from '../models/web3';
 import { ShopAssetPurchaseConfirmationAttemptType } from '../models/shop';
 import { Item } from '../models/item';
 import { Food } from '../models/food';
+import { AssetType } from '../models/asset';
+import { generateHashSalt, generateOpHash } from '../utils/crypto';
 
 /**
  * Converts a BOC (bag of cells) for TON-related transactions into its corresponding transaction hash in hex format.
@@ -573,6 +575,477 @@ export const fetchIAPTickers = async (): Promise<ReturnValue> => {
         return {
             status: Status.ERROR,
             message: `(fetchIAPTickers) ${err.message}`
+        }
+    }
+}
+
+/**
+ * Mints a bit into the Kaia Testnet blockchain for the user.
+ */
+export const mintBit = async (twitterId: string, bitId: number): Promise<ReturnValue> => {
+    try {
+        // get the user's data
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(mintBit) User not found.`
+            }
+        }
+
+        // check if the user owns the bit
+        if (!(user.inventory?.bitIds as number[]).includes(bitId)) {
+            console.log(`(mintBit) User does not own the bit.`);
+            return {
+                status: Status.ERROR,
+                message: `(mintBit) User does not own the bit.`
+            }
+        }
+
+        // get the bit data
+        const bit = await BitModel.findOne({ bitId }).lean();
+
+        if (!bit) {
+            console.log(`(mintBit) Bit not found.`);
+            return {
+                status: Status.ERROR,
+                message: `(mintBit) Bit not found.`
+            }
+        }
+
+        // check if the bit is mintable
+        if (!bit.blockchainData.mintable) {
+            console.log(`(mintBit) Bit is not mintable.`);
+            return {
+                status: Status.ERROR,
+                message: `(mintBit) Bit is not mintable.`
+            }
+        }
+
+        // check if the bit is already minted
+        if (bit.blockchainData.minted) {
+            console.log(`(mintBit) Bit is already minted.`);
+            return {
+                status: Status.ERROR,
+                message: `(mintBit) Bit is already minted.`
+            }
+        }
+
+        // check if the bit is placed in an island
+        if (bit.placedIslandId !== 0) {
+            console.log(`(mintBit) Bit is placed in an island.`);
+            return {
+                status: Status.ERROR,
+                message: `(mintBit) Bit is placed in an island.`
+            }
+        }
+
+        // create the hash salt
+        const salt = generateHashSalt();
+        // create the op hash
+        const opHash = generateOpHash(user.wallet?.address, salt);
+        // create the admin's signature
+        const signature = await DEPLOYER_WALLET(KAIA_TESTNET_PROVIDER).signMessage(ethers.utils.arrayify(opHash));
+
+        // estimate the gas required to mint the bit
+        const gasEstimation = await WONDERBITS_CONTRACT.estimateGas.mint(
+            user?.wallet?.address,
+            [salt, signature]
+        );
+        // get the current gas price
+        const gasPrice = await KAIA_TESTNET_PROVIDER.getGasPrice();
+
+        // calculate the gas fee in KAIA
+        const gasFee = ethers.utils.formatEther(gasEstimation.mul(gasPrice));
+
+        // check if the user has enough KAIA to pay for the gas fee
+        const userBalance = await KAIA_TESTNET_PROVIDER.getBalance(user.wallet?.address);
+        const formattedUserBalance = ethers.utils.formatEther(userBalance);
+
+        if (Number(formattedUserBalance) < Number(gasFee)) {
+            console.log(`(mintBit) User does not have enough KAIA to pay for the gas fee.`);
+            return {
+                status: Status.ERROR,
+                message: `(mintBit) User does not have enough KAIA to pay for the gas fee. Required: ${gasFee} KAIA --- User Balance: ${formattedUserBalance} KAIA`
+            }
+        }
+
+        // mint the bit
+        const mintTx = await WONDERBITS_CONTRACT.mint(
+            user.wallet?.address,
+            [salt, signature],
+            {
+                gasLimit: gasEstimation
+            }
+        );
+
+        // wait for the transaction to be mined
+        const mintTxReceipt = await mintTx.wait();
+
+        console.log(`(mintBit) Transaction mined: ${mintTxReceipt.transactionHash}`);
+
+        // get the next token ID (for minting)
+        // we will reduce 1 from the next token ID to get the token ID of the minted bit
+        const nextTokenId = await WONDERBITS_CONTRACT.nextTokenId();
+
+        // update the bit's blockchain data and owner data.
+        // set the:
+        // 1. `ownerData.currentOwnerAddress` and `ownerData.originalOwnerAddress` to the user's wallet address.
+        // 2. `blockchainData.minted` to true
+        // 3. `blockchainData.tokenId` to `nextTokenId - 1`
+        // 4. `blockchainData.mintHash` to `mintHash`
+        // 5. `blockchainData.chain` to (await KAIA_TESTNET_PROVIDER.getNetwork()).chainId
+        // 6. `blockchainData.contractAddress` to `WONDERBITS_CONTRACT.address`
+        const bitUpdateOperations = {
+            $set: {
+                'ownerData.currentOwnerAddress': user.wallet?.address,
+                'ownerData.originalOwnerAddress': user.wallet?.address,
+                'blockchainData.minted': true,
+                'blockchainData.tokenId': nextTokenId - 1,
+                'blockchainData.mintHash': mintTxReceipt.transactionHash,
+                'blockchainData.chain': (await KAIA_TESTNET_PROVIDER.getNetwork()).chainId,
+                'blockchainData.contractAddress': WONDERBITS_CONTRACT.address
+            }
+        }
+
+        // execute the update operation
+        await BitModel.updateOne({ bitId }, bitUpdateOperations);
+
+        console.log(`(mintBit) Bit successfully minted.`);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(mintBit) Bit successfully minted.`,
+            data: {
+                bitId,
+                tokenId: nextTokenId - 1,
+                mintHash: mintTxReceipt.transactionHash,
+                gasFee
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(mintBit) Error: ${err.message}`
+        }
+    }
+}
+
+/**
+ * Mints an island into the KAIA blockchain for the user.
+ */
+export const mintIsland = async (twitterId: string, islandId: number): Promise<ReturnValue> => {
+    try {
+        // get the user's data
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(mintIsland) User not found.`
+            }
+        }
+
+        // check if the user owns the island
+        if (!(user.inventory?.islandIds as number[]).includes(islandId)) {
+            return {
+                status: Status.UNAUTHORIZED,
+                message: `(mintIsland) User does not own the island.`
+            }
+        }
+
+        // get the island data
+        const island = await IslandModel.findOne({ islandId }).lean();
+
+        if (!island) {
+            return {
+                status: Status.ERROR,
+                message: `(mintIsland) Island not found.`
+            }
+        }
+
+        // check if the island is mintable
+        if (!island.blockchainData.mintable) {
+            return {
+                status: Status.ERROR,
+                message: `(mintIsland) Island is not mintable.`
+            }
+        }
+
+        // check if the island is already minted
+        if (island.blockchainData.minted) {
+            return {
+                status: Status.ERROR,
+                message: `(mintIsland) Island is already minted.`
+            }
+        }
+
+        // check if there are any placed bits on the island
+        if (island.placedBitIds.length > 0) {
+            return {
+                status: Status.ERROR,
+                message: `(mintIsland) Island has bits placed on it.`
+            }
+        }
+
+        // create the hash salt
+        const salt = generateHashSalt();
+        // create the op hash
+        const opHash = generateOpHash(user.wallet?.address, salt);
+        // create the admin's signature
+        const signature = await DEPLOYER_WALLET(KAIA_TESTNET_PROVIDER).signMessage(ethers.utils.arrayify(opHash));
+
+        // estimate the gas required to mint the island
+        const gasEstimation = await ISLANDS_CONTRACT.estimateGas.mint(
+            user?.wallet?.address,
+            [salt, signature]
+        );
+
+        // get the current gas price
+        const gasPrice = await KAIA_TESTNET_PROVIDER.getGasPrice();
+
+        // calculate the gas fee in KAIA
+        const gasFee = ethers.utils.formatEther(gasEstimation.mul(gasPrice));
+
+        // check if the user has enough KAIA to pay for the gas fee
+        const userBalance = await KAIA_TESTNET_PROVIDER.getBalance(user.wallet?.address);
+        const formattedUserBalance = ethers.utils.formatEther(userBalance);
+
+        if (Number(formattedUserBalance) < Number(gasFee)) {
+            console.log(`(mintIsland) User does not have enough KAIA to pay for the gas fee.`);
+            return {
+                status: Status.ERROR,
+                message: `(mintIsland) User does not have enough KAIA to pay for the gas fee. Required: ${gasFee} KAIA --- User Balance: ${formattedUserBalance} KAIA`
+            }
+        }
+
+        // mint the island
+        const mintTx = await ISLANDS_CONTRACT.mint(
+            user.wallet?.address,
+            [salt, signature],
+            {
+                gasLimit: gasEstimation
+            }
+        );
+
+        // wait for the transaction to be mined
+        const mintTxReceipt = await mintTx.wait();
+
+        console.log(`(mintBit) Transaction mined: ${mintTxReceipt.transactionHash}`);
+
+        // get the next token ID (for minting)
+        // we will reduce 1 from the next token ID to get the token ID of the minted island
+        const nextTokenId = await ISLANDS_CONTRACT.nextTokenId();
+
+        // update the island's blockchain data and owner data.
+        // set the:
+        // 1. `ownerData.currentOwnerAddress` and `ownerData.originalOwnerAddress` to the user's wallet address.
+        // 2. `blockchainData.minted` to true
+        // 3. `blockchainData.tokenId` to `nextTokenId - 1`
+        // 4. `blockchainData.mintHash` to `mintHash`
+        // 5. `blockchainData.chain` to (await KAIA_TESTNET_PROVIDER.getNetwork()).chainId
+        // 6. `blockchainData.contractAddress` to `ISLANDS_CONTRACT.address`
+        const islandUpdateOperations = {
+            $set: {
+                'ownerData.currentOwnerAddress': user.wallet?.address,
+                'ownerData.originalOwnerAddress': user.wallet?.address,
+                'blockchainData.minted': true,
+                'blockchainData.tokenId': nextTokenId - 1,
+                'blockchainData.mintHash': mintTxReceipt.transactionHash,
+                'blockchainData.chain': (await KAIA_TESTNET_PROVIDER.getNetwork()).chainId,
+                'blockchainData.contractAddress': ISLANDS_CONTRACT.address
+            }
+        }
+
+        // update the island
+        await IslandModel.updateOne({ islandId }, islandUpdateOperations);
+
+        console.log(`(mintIsland) Island minted successfully.`);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(mintIsland) Island minted successfully.`,
+            data: {
+                mintedIsland: {
+                    islandId,
+                    tokenId: nextTokenId - 1,
+                    mintHash: mintTxReceipt.transactionHash,
+                    gasFee
+                }
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(mintIsland) Error: ${err.message}`
+        }
+    }
+}
+
+/**
+ * Mints a bit cosmetic into the KAIA blockchain for the user.
+ */
+export const mintBitCosmetic = async (twitterId: string, bitCosmeticId: number): Promise<ReturnValue> => {
+    try {
+        // get the user's data
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(mintIsland) User not found.`
+            }
+        }
+
+        // check if the user owns the bit cosmetic.
+        if (!(user.inventory?.bitCosmeticIds as number[]).includes(bitCosmeticId)) {
+            return {
+                status: Status.ERROR,
+                message: `(mintBitCosmetic) User does not own bit cosmetic with ID: ${bitCosmeticId}`
+            }
+        }
+
+        // get the bit cosmetic data
+        const cosmetic = await UserBitCosmeticModel.findOne({ bitCosmeticId, ownerData: { currentOwnerId: user._id } }).lean();
+
+        if (!cosmetic) {
+            return {
+                status: Status.ERROR,
+                message: `(mintBitCosmetic) Bit cosmetic with ID: ${bitCosmeticId} not found`
+            }
+        }
+
+        // check if the cosmetic is mintable
+        if (!cosmetic.blockchainData.mintable) {
+            return {
+                status: Status.ERROR,
+                message: `(mintBitCosmetic) Bit cosmetic with ID: ${bitCosmeticId} is not mintable`
+            }
+        }
+
+        // check if the cosmetic is already minted
+        if (cosmetic.blockchainData.minted) {
+            return {
+                status: Status.ERROR,
+                message: `(mintBitCosmetic) Bit cosmetic with ID: ${bitCosmeticId} is already minted`
+            }
+        }
+
+        // check if the cosmetic is being used
+        if (cosmetic.equippedBitId !== 0) {
+            return {
+                status: Status.ERROR,
+                message: `(mintBitCosmetic) Bit cosmetic with ID: ${bitCosmeticId} is being used on a bit`
+            }
+        }
+
+        // create the hash salt
+        const salt = generateHashSalt();
+        // create the op hash
+        const opHash = generateOpHash(user.wallet?.address, salt);
+        // create the admin's signature
+        const signature = await DEPLOYER_WALLET(KAIA_TESTNET_PROVIDER).signMessage(ethers.utils.arrayify(opHash));
+
+        // estimate the gas required to mint the cosmetic
+        const gasEstimation = await BIT_COSMETICS_CONTRACT.estimateGas.mint(
+            user?.wallet?.address,
+            [salt, signature]
+        );
+
+        // get the current gas price
+        const gasPrice = await KAIA_TESTNET_PROVIDER.getGasPrice();
+
+        // calculate the gas fee in KAIA
+        const gasFee = ethers.utils.formatEther(gasEstimation.mul(gasPrice));
+
+        // check if the user has enough KAIA to pay for the gas fee
+        const userBalance = await KAIA_TESTNET_PROVIDER.getBalance(user.wallet?.address);
+        const formattedUserBalance = ethers.utils.formatEther(userBalance);
+
+        if (Number(formattedUserBalance) < Number(gasFee)) {
+            console.log(`(mintBitCosmetic) User does not have enough KAIA to pay for the gas fee.`);
+            return {
+                status: Status.ERROR,
+                message: `(mintBitCosmetic) User does not have enough KAIA to pay for the gas fee. Required: ${gasFee} KAIA --- User Balance: ${formattedUserBalance} KAIA`
+            }
+        }
+
+        // mint the cosmetic
+        const mintTx = await BIT_COSMETICS_CONTRACT.mint(
+            user.wallet?.address,
+            [salt, signature],
+            {
+                gasLimit: gasEstimation
+            }
+        );
+
+        // wait for the transaction to be mined
+        const mintTxReceipt = await mintTx.wait();
+
+        console.log(`(mintBitCosmetic) Transaction mined: ${mintTxReceipt.transactionHash}`);
+
+        // get the next token ID (for minting)
+        // we will reduce 1 from the next token ID to get the token ID of the minted island
+        const nextTokenId = await BIT_COSMETICS_CONTRACT.nextTokenId();
+
+        // update the cosmetic's blockchain data and owner data.
+        // set the:
+        // 1. `ownerData.currentOwnerAddress` and `ownerData.originalOwnerAddress` to the user's wallet address.
+        // 2. `blockchainData.minted` to true
+        // 3. `blockchainData.tokenId` to `nextTokenId - 1`
+        // 4. `blockchainData.mintHash` to `mintHash`
+        // 5. `blockchainData.chain` to (await KAIA_TESTNET_PROVIDER.getNetwork()).chainId
+        // 6. `blockchainData.contractAddress` to `BIT_COSMETICS_CONTRACT.address`
+        const bitCosmeticsUpdateOperations = {
+            $set: {
+                'ownerData.currentOwnerAddress': user.wallet?.address,
+                'ownerData.originalOwnerAddress': user.wallet?.address,
+                'blockchainData.minted': true,
+                'blockchainData.tokenId': nextTokenId - 1,
+                'blockchainData.mintHash': mintTxReceipt.transactionHash,
+                'blockchainData.chain': (await KAIA_TESTNET_PROVIDER.getNetwork()).chainId,
+                'blockchainData.contractAddress': BIT_COSMETICS_CONTRACT.address
+            }
+        }
+
+        // update the cosmetic in the database
+        await UserBitCosmeticModel.updateOne({ bitCosmeticId, ownerData: { currentOwnerId: user._id } }, bitCosmeticsUpdateOperations);
+
+        console.log(`(mintBitCosmetic) Bit Cosmetic minted successfully.`);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(mintBitCosmetic) Bit Cosmetic minted successfully.`,
+            data: {
+                mintedCosmetic: {
+                    bitCosmeticId,
+                    tokenId: nextTokenId - 1,
+                    mintHash: mintTxReceipt.transactionHash,
+                    gasFee
+                }
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(mintBitCosmetic) Error: ${err.message}`
+        }
+    }
+}
+
+
+/**
+ * Mints an in-game asset into an SFT in the KAIA blockchain for the user.
+ */
+export const mintSFT = async (twitterId: string, asset: AssetType, amount: number): Promise<ReturnValue> => {
+    try {
+
+    } catch (err: any) {
+        console.error(`(mintSFT) ${err.message}`);
+        return {
+            status: Status.ERROR,
+            message: `(mintSFT) ${err.message}`
         }
     }
 }
