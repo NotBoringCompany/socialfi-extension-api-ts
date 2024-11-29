@@ -382,7 +382,7 @@ export const releaseBit = async (twitterId: string, bitId: number): Promise<Retu
             }
 
             // if the user doesn't have enough KAIA to pay for the transaction, throw an error
-            // estimate the gas required to mint the cosmetic
+            // estimate the gas required to burn the bit
             const gasEstimation = await WONDERBITS_CONTRACT.estimateGas.burn(bit.blockchainData.tokenId);
 
              // get the current gas price

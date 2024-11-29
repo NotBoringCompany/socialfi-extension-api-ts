@@ -224,6 +224,53 @@ export const removeIsland = async (twitterId: string, islandId: number): Promise
             return BitModel.updateOne({ bitId: op.bitId }, op.updateOperations);
         })
 
+        // only if the island was minted and then burned in the next process
+        let burnTxHash = null;
+
+        // if the island is minted, burn the NFT
+        // if the bit is minted, burn the NFT
+        if (island.blockchainData?.minted) {
+            // if the token ID is null or 0, throw an error
+            if (!island.blockchainData.tokenId || island.blockchainData.tokenId === 0) {
+                return {
+                    status: Status.ERROR,
+                    message: `(releaseBit) Token ID not found.`
+                }
+            }
+
+            // if the user doesn't have enough KAIA to pay for the transaction, throw an error
+            // estimate the gas required to burn the island
+            const gasEstimation = await ISLANDS_CONTRACT.estimateGas.burn(island.blockchainData.tokenId);
+
+             // get the current gas price
+            const gasPrice = await KAIA_TESTNET_PROVIDER.getGasPrice();
+
+            // calculate the gas fee in KAIA
+            const gasFee = ethers.utils.formatEther(gasEstimation.mul(gasPrice));
+
+            // check if the user has enough KAIA to pay for the gas fee
+            const userBalance = await KAIA_TESTNET_PROVIDER.getBalance(user.wallet?.address);
+            const formattedUserBalance = ethers.utils.formatEther(userBalance);
+
+            if (Number(formattedUserBalance) < Number(gasFee)) {
+                console.log(`(removeIsland) User does not have enough KAIA to pay for the gas fee.`);
+                return {
+                    status: Status.ERROR,
+                    message: `(removeIsland) User does not have enough KAIA to pay for the gas fee. Required: ${gasFee} KAIA --- User Balance: ${formattedUserBalance} KAIA`
+                }
+            }
+
+            // burn the island
+            const burnTx = await ISLANDS_CONTRACT.burn(island.blockchainData.tokenId);
+
+            // wait for the transaction to be mined
+            const burnTxReceipt = await burnTx.wait();
+
+            console.log(`(removeIsland) Island NFT burned. Transaction hash: ${burnTxReceipt.transactionHash}`);
+
+            burnTxHash = burnTxReceipt.transactionHash;
+        }
+
         await Promise.all([
             IslandModel.deleteOne({ islandId }),
             UserModel.updateOne({ twitterId }, userUpdateOperations),
@@ -236,7 +283,8 @@ export const removeIsland = async (twitterId: string, islandId: number): Promise
             data: {
                 islandId: islandId,
                 islandType: island.type,
-                islandTraits: island.traits
+                islandTraits: island.traits,
+                burnTxHash
             }
         }
     } catch (err: any) {
