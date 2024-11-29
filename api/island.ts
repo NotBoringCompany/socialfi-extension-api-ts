@@ -387,6 +387,22 @@ export const placeBit = async (twitterId: string, islandId: number, bitId: numbe
             }
         }
 
+        // check if the bit is usable
+        if (!bit.usable) {
+            return {
+                status: Status.ERROR,
+                message: `(placeBit) Bit is not usable.`
+            }
+        }
+
+        // check if the island is usable
+        if (!island.usable) {
+            return {
+                status: Status.ERROR,
+                message: `(placeBit) Island is not usable.`
+            }
+        }
+
         // check if the user has more than TOTAL_ACTIVE_ISLANDS_ALLOWED active islands. if yes, return an error.
         const ownedIslands = user.inventory?.islandIds as number[];
 
@@ -721,6 +737,22 @@ export const unplaceBit = async (twitterId: string, bitId: number): Promise<Retu
             return {
                 status: Status.ERROR,
                 message: `(unplaceBit) Island not found.`
+            }
+        }
+
+        // check if the bit is usable
+        if (!bit.usable) {
+            return {
+                status: Status.ERROR,
+                message: `(unplaceBit) Bit is not usable.`
+            }
+        }
+
+        // check if the island is usable
+        if (!island.usable) {
+            return {
+                status: Status.ERROR,
+                message: `(unplaceBit) Island is not usable.`
             }
         }
 
@@ -1749,6 +1781,14 @@ export const applyGatheringProgressBooster = async (
             }
         }
 
+        // check if the island is usable
+        if (!island.usable) {
+            return {
+                status: Status.ERROR,
+                message: `(applyGatheringProgressBooster) Island ID ${islandId} is not usable.`
+            }
+        }
+
         // check if the gathering of the island has started. if not, return an error
         if (island.islandResourceStats?.gatheringStart === 0) {
             return {
@@ -2465,6 +2505,14 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
             };
         }
 
+        // check if island is usable
+        if (!island.usable) {
+            return {
+                status: Status.ERROR,
+                message: `(applyIslandTapping) Island ID ${islandId} is not usable.`
+            }
+        }
+
         if (!user) {
             return {
                 status: Status.ERROR,
@@ -2964,6 +3012,14 @@ export const rerollBonusMilestoneReward = async (twitterId: string, islandId: nu
                 status: Status.ERROR,
                 message: `(rerollBonusMilestoneReward) Island with ID ${islandId} not found.`
             };
+        }
+
+        // check if the island is usable
+        if (!island.usable) {
+            return {
+                status: Status.ERROR,
+                message: `(rerollBonusMilestoneReward) Island ID ${islandId} is not usable.`
+            }
         }
 
         // Destructure necessary data

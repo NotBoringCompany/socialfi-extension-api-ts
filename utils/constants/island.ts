@@ -431,6 +431,14 @@ ISLAND_QUEUE.process('dropResourceOrClaimResources', async (job) => {
         }
       }
 
+      // check if the island is usable
+      if (!island.usable) {
+        return {
+          status: Status.ERROR,
+          message: `(ISLAND_QUEUE/claimResources) Island is not usable.`
+        }
+      }
+
       console.log(`(ISLAND_QUEUE/claimResources) Island ID ${islandId}'s claimableResources: ${island.islandResourceStats.claimableResources} `);
   
       // check if the user owns the island
