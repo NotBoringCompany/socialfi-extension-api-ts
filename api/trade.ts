@@ -372,6 +372,54 @@ export const cancelListing = async (listingId: string, userId: string): Promise<
 
         const totalReward = claimedAmount * listing.price; // Calculate total reward
 
+        if (listing.amount > 0) {
+            const isFood = Object.values(FoodType).includes(listing.item as FoodType);
+
+            // Check if the listing item type was a food
+            if (isFood) {
+                // Use $inc to increase the amount of the purchased food
+                await UserModel.updateOne(
+                    { _id: user._id, 'inventory.foods.type': listing.item },
+                    { $inc: { 'inventory.foods.$.amount': listing.amount } },
+                    { session }
+                );
+
+                // If the food doesn't exist in the user's inventory, push the new food item
+                await UserModel.updateOne(
+                    { _id: user._id, 'inventory.foods.type': { $ne: listing.item } },
+                    {
+                        $push: {
+                            'inventory.foods': { type: listing.item, amount: listing.amount },
+                        },
+                    },
+                    { session }
+                );
+            } else {
+                // Use $inc to increase the amount of the purchased item
+                await UserModel.updateOne(
+                    { _id: user._id, 'inventory.items.type': listing.item },
+                    { $inc: { 'inventory.items.$.amount': listing.amount } },
+                    { session }
+                );
+
+                // If the item doesn't exist in the user's inventory, push the new item
+                await UserModel.updateOne(
+                    { _id: user._id, 'inventory.items.type': { $ne: listing.item } },
+                    {
+                        $push: {
+                            'inventory.items': {
+                                type: listing.item,
+                                amount: listing.amount,
+                                totalAmountConsumed: 0,
+                                weeklyAmountConsumed: 0,
+                            },
+                        },
+                    },
+                    { session }
+                );
+            }
+        }
+
         if (totalReward > 0) {
             // Set the claimed status to 'true'
             await listing.updateOne({
