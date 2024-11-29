@@ -1,3 +1,4 @@
+import { ClientSession } from 'mongoose';
 import { Food, FoodType } from '../models/food';
 import { Item } from '../models/item';
 import { TradeStatus } from '../models/trade';
@@ -257,7 +258,8 @@ export const claimListing = async (listingId: string, userId: string): Promise<R
             .filter(({ claimed }) => !claimed)
             .reduce((prev, curr) => prev + curr.amount, 0);
 
-        if (claimedAmount === listing.amount) {
+        // Set the status to be Completed when the status sold
+        if (listing.status === TradeStatus.SOLD) {
             listing.status = TradeStatus.COMPLETED;
         }
 
@@ -265,6 +267,13 @@ export const claimListing = async (listingId: string, userId: string): Promise<R
         if (totalReward <= 0) {
             throw new Error('Invalid reward amount.');
         }
+
+        // Set the claimed status to 'true'
+        await listing.updateOne({
+            $set: {
+                'purchasedBy.$[].claimed': true,
+            },
+        });
 
         // Increment user's xCookies
         await user.updateOne(
@@ -300,9 +309,6 @@ export const claimListing = async (listingId: string, userId: string): Promise<R
                 { session }
             );
         }
-
-        // Set the status to be Completed
-        listing.status = TradeStatus.COMPLETED;
 
         await listing.save({ session });
         await user.save({ session });
@@ -342,17 +348,79 @@ export const cancelListing = async (listingId: string, userId: string): Promise<
         }
 
         // Check if the listing exists
-        const listing = await TradeListingModel.findOne({ _id: listingId, user: user._id, status: TradeStatus.ACTIVE });
+        const listing = await TradeListingModel.findOne({
+            _id: listingId,
+            user: user._id,
+            status: TradeStatus.ACTIVE,
+        }).session(session);
         if (!listing) {
             throw new Error('Listing not found or already sold.');
         }
 
-        // Claim the existing purchase
-        await claimListing(listingId, userId);
+        if (listing.status === TradeStatus.COMPLETED) {
+            throw new Error('The listing has already been completed.');
+        }
+
+        if (listing.user !== user._id) {
+            throw new Error('You are not authorized to claim this listing.');
+        }
+
+        // Get the claimed amount by summing the unclaimed amount
+        const claimedAmount = listing.purchasedBy
+            .filter(({ claimed }) => !claimed)
+            .reduce((prev, curr) => prev + curr.amount, 0);
+
+        const totalReward = claimedAmount * listing.price; // Calculate total reward
+        if (totalReward <= 0) {
+            throw new Error('Invalid reward amount.');
+        }
+
+        // Set the claimed status to 'true'
+        await listing.updateOne({
+            $set: {
+                'purchasedBy.$[].claimed': true,
+            },
+        });
+
+        // Increment user's xCookies
+        await user.updateOne(
+            {
+                $inc: { 'inventory.xCookieData.currentXCookies': totalReward },
+            },
+            { session }
+        );
+
+        const index = (user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(
+            (data) => data.source === XCookieSource.QUEST_REWARDS
+        );
+
+        if (index !== -1) {
+            await user.updateOne(
+                {
+                    $set: {
+                        [`inventory.xCookieData.extendedXCookieData.${index}.xCookies`]: totalReward,
+                    },
+                },
+                { session }
+            );
+        } else {
+            await user.updateOne(
+                {
+                    $push: {
+                        'inventory.xCookieData.extendedXCookieData': {
+                            xCookies: totalReward,
+                            source: XCookieSource.QUEST_REWARDS,
+                        },
+                    },
+                },
+                { session }
+            );
+        }
 
         // Mark the listing as completed
         listing.status = TradeStatus.COMPLETED;
         await listing.save({ session });
+        await user.save({ session });
 
         await session.commitTransaction();
         session.endSession();
