@@ -346,6 +346,7 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                         usable: true,
                         rarity,
                         gender: RANDOMIZE_GENDER(),
+                        usable: true,
                         ownerData: {
                             currentOwnerId: user._id,
                             originalOwnerId: user._id,

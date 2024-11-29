@@ -229,6 +229,7 @@ export const giftXterioIsland = async (
         const island = new IslandModel({
             islandId: latestIslandId + 1,
             type: islandType,
+            usable: true,
             owner: user._id,
             purchaseDate: Math.floor(Date.now() / 1000),
             obtainMethod: ObtainMethod.XTERIO,
