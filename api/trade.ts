@@ -371,50 +371,49 @@ export const cancelListing = async (listingId: string, userId: string): Promise<
             .reduce((prev, curr) => prev + curr.amount, 0);
 
         const totalReward = claimedAmount * listing.price; // Calculate total reward
-        if (totalReward <= 0) {
-            throw new Error('Invalid reward amount.');
-        }
 
-        // Set the claimed status to 'true'
-        await listing.updateOne({
-            $set: {
-                'purchasedBy.$[].claimed': true,
-            },
-        });
+        if (totalReward > 0) {
+            // Set the claimed status to 'true'
+            await listing.updateOne({
+                $set: {
+                    'purchasedBy.$[].claimed': true,
+                },
+            });
 
-        // Increment user's xCookies
-        await user.updateOne(
-            {
-                $inc: { 'inventory.xCookieData.currentXCookies': totalReward },
-            },
-            { session }
-        );
-
-        const index = (user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(
-            (data) => data.source === XCookieSource.QUEST_REWARDS
-        );
-
-        if (index !== -1) {
+            // Increment user's xCookies
             await user.updateOne(
                 {
-                    $set: {
-                        [`inventory.xCookieData.extendedXCookieData.${index}.xCookies`]: totalReward,
-                    },
+                    $inc: { 'inventory.xCookieData.currentXCookies': totalReward },
                 },
                 { session }
             );
-        } else {
-            await user.updateOne(
-                {
-                    $push: {
-                        'inventory.xCookieData.extendedXCookieData': {
-                            xCookies: totalReward,
-                            source: XCookieSource.QUEST_REWARDS,
+
+            const index = (user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(
+                (data) => data.source === XCookieSource.QUEST_REWARDS
+            );
+
+            if (index !== -1) {
+                await user.updateOne(
+                    {
+                        $set: {
+                            [`inventory.xCookieData.extendedXCookieData.${index}.xCookies`]: totalReward,
                         },
                     },
-                },
-                { session }
-            );
+                    { session }
+                );
+            } else {
+                await user.updateOne(
+                    {
+                        $push: {
+                            'inventory.xCookieData.extendedXCookieData': {
+                                xCookies: totalReward,
+                                source: XCookieSource.QUEST_REWARDS,
+                            },
+                        },
+                    },
+                    { session }
+                );
+            }
         }
 
         // Mark the listing as completed
