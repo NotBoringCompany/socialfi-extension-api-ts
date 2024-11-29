@@ -284,7 +284,7 @@ export const claimListing = async (listingId: string, userId: string): Promise<R
         );
 
         const index = (user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(
-            (data) => data.source === XCookieSource.QUEST_REWARDS
+            (data) => data.source === XCookieSource.TRADING
         );
 
         if (index !== -1) {
@@ -302,7 +302,7 @@ export const claimListing = async (listingId: string, userId: string): Promise<R
                     $push: {
                         'inventory.xCookieData.extendedXCookieData': {
                             xCookies: totalReward,
-                            source: XCookieSource.QUEST_REWARDS,
+                            source: XCookieSource.TRADING,
                         },
                     },
                 },
@@ -437,7 +437,7 @@ export const cancelListing = async (listingId: string, userId: string): Promise<
             );
 
             const index = (user.inventory?.xCookieData.extendedXCookieData as ExtendedXCookieData[]).findIndex(
-                (data) => data.source === XCookieSource.QUEST_REWARDS
+                (data) => data.source === XCookieSource.TRADING
             );
 
             if (index !== -1) {
@@ -455,7 +455,7 @@ export const cancelListing = async (listingId: string, userId: string): Promise<
                         $push: {
                             'inventory.xCookieData.extendedXCookieData': {
                                 xCookies: totalReward,
-                                source: XCookieSource.QUEST_REWARDS,
+                                source: XCookieSource.TRADING,
                             },
                         },
                     },
