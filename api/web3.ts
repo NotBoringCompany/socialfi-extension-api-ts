@@ -3,7 +3,7 @@ import { ReturnValue, Status } from '../utils/retVal';
 import { BitModel, IslandModel, ShopAssetPurchaseModel, UserBitCosmeticModel, UserModel } from '../utils/constants/db';
 import { ExtendedXCookieData, UserWallet, XCookieSource } from '../models/user';
 import { getUserCurrentPoints } from './leaderboard';
-import { BINANCE_API_BASE_URL, BIT_COSMETICS_CONTRACT, DEPLOYER_WALLET, GATEIO_API_BASE_URL, ISLANDS_CONTRACT, KAIA_TESTNET_PROVIDER, KUCOIN_API_BASE_URL, TON_RECEIVER_ADDRESS, TON_WEB, WONDERBITS_CONTRACT, WONDERBITS_SFT_CONTRACT, WONDERBITS_SFT_IDS, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
+import { BINANCE_API_BASE_URL, BIT_COSMETICS_CONTRACT, CUSTODIAL_CONTRACT, DEPLOYER_WALLET, GATEIO_API_BASE_URL, ISLANDS_CONTRACT, KAIA_TESTNET_PROVIDER, KUCOIN_API_BASE_URL, TON_RECEIVER_ADDRESS, TON_WEB, WONDERBITS_CONTRACT, WONDERBITS_SFT_CONTRACT, WONDERBITS_SFT_IDS, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
 import { ethers } from 'ethers';
 import { TxParsedMessage } from '../models/web3';
 import { ShopAssetPurchaseConfirmationAttemptType } from '../models/shop';
@@ -1276,6 +1276,135 @@ export const mintSFT = async (twitterId: string, asset: AssetType, amount: numbe
         return {
             status: Status.ERROR,
             message: `(mintSFT) ${err.message}`
+        }
+    }
+}
+
+/**
+ * Stores a minted bit, island or bit cosmetic in the custodial contract to allow it to be used in-game (i.e. for `usable` to be true).
+ */
+export const storeInCustody = async (twitterId: string, asset: 'bit' | 'island' | 'bitCosmetic', assetId: number): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(storeInCustody) User not found.`
+            }
+        }
+
+        // check if the user owns the asset on the database-level (contract will then also check if the user owns it on the blockchain-level)
+        const assetData = 
+            asset === 'bit' ? await BitModel.findOne({ bitId: assetId, 'ownerData.currentOwnerAddress': user.wallet?.address }).lean() :
+            asset === 'island' ? await IslandModel.findOne({ islandId: assetId, 'ownerData.currentOwnerAddress': user.wallet?.address }).lean() :
+            asset === 'bitCosmetic' ? await UserBitCosmeticModel.findOne({ bitCosmeticId: assetId, 'ownerData.currentOwnerAddress': user.wallet?.address }).lean() :
+            null;
+
+        if (!assetData || assetData.ownerData.currentOwnerId !== user._id) {
+            return {
+                status: Status.ERROR,
+                message: `(storeInCustody) User does not own the asset.`
+            }
+        }
+
+        // create the hash salt
+        const salt = generateHashSalt();
+        // create the op hash
+        const opHash = generateOpHash(user.wallet?.address, salt);
+        // create the admin's signature
+        const signature = await DEPLOYER_WALLET(KAIA_TESTNET_PROVIDER).signMessage(ethers.utils.arrayify(opHash));
+
+        const nftContractAddress = 
+            asset === 'bit' ? WONDERBITS_CONTRACT.address :
+            asset === 'island' ? ISLANDS_CONTRACT.address :
+            asset === 'bitCosmetic' ? BIT_COSMETICS_CONTRACT.address :
+            null;
+
+        if (!nftContractAddress) {
+            return {
+                status: Status.ERROR,
+                message: `(storeInCustody) NFT contract address not found.`
+            }
+        }
+
+        // estimate the gas required to store the asset in custody
+        const gasEstimation = await CUSTODIAL_CONTRACT.estimateGas.storeInCustody(
+            nftContractAddress,
+            assetData.blockchainData?.tokenId,
+            [salt, signature]
+        );
+
+        // get the current gas price
+        const gasPrice = await KAIA_TESTNET_PROVIDER.getGasPrice();
+
+        // calculate the gas fee in KAIA
+        const gasFee = ethers.utils.formatEther(gasEstimation.mul(gasPrice));
+
+        // check if the user has enough KAIA to pay for the gas fee
+        const userBalance = await KAIA_TESTNET_PROVIDER.getBalance(user.wallet?.address);
+        const formattedUserBalance = ethers.utils.formatEther(userBalance);
+
+        if (Number(formattedUserBalance) < Number(gasFee)) {
+            console.log(`(storeInCustody) User does not have enough KAIA to pay for the gas fee.`);
+            return {
+                status: Status.ERROR,
+                message: `(storeInCustody) User does not have enough KAIA to pay for the gas fee. Required: ${gasFee} KAIA --- User Balance: ${formattedUserBalance} KAIA`
+            }
+        }
+
+        // store the asset in custody
+        const storeTx = await CUSTODIAL_CONTRACT.storeInCustody(
+            nftContractAddress,
+            assetData.blockchainData?.tokenId,
+            [salt, signature],
+            {
+                gasLimit: gasEstimation
+            }
+        );
+
+        // wait for the transaction to be mined
+        const storeTxReceipt = await storeTx.wait();
+
+        console.log(`(storeInCustody) Transaction mined: ${storeTxReceipt.transactionHash}`);
+
+        // update the `usable` field of the asset to true
+        if (asset === 'bit') {
+            await BitModel.updateOne({ bitId: assetId }, {
+                $set: {
+                    usable: true
+                }
+            });
+        } else if (asset === 'island') {
+            await IslandModel.updateOne({ islandId: assetId }, {
+                $set: {
+                    usable: true
+                }
+            });
+        } else if (asset === 'bitCosmetic') {
+            await UserBitCosmeticModel.updateOne({ bitCosmeticId: assetId }, {
+                $set: {
+                    usable: true
+                }
+            });
+        }
+
+        console.log(`(storeInCustody) Asset stored in custody successfully.`);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(storeInCustody) Asset stored in custody successfully.`,
+            data: {
+                asset,
+                assetId,
+                storeHash: storeTxReceipt.transactionHash,
+                gasFee
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(storeInCustody) ${err.message}`
         }
     }
 }
