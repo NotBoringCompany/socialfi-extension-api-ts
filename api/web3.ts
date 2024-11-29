@@ -1372,19 +1372,22 @@ export const storeInCustody = async (twitterId: string, asset: 'bit' | 'island' 
         if (asset === 'bit') {
             await BitModel.updateOne({ bitId: assetId }, {
                 $set: {
-                    usable: true
+                    usable: true,
+                    'ownerData.inCustody': true
                 }
             });
         } else if (asset === 'island') {
             await IslandModel.updateOne({ islandId: assetId }, {
                 $set: {
-                    usable: true
+                    usable: true,
+                    'ownerData.inCustody': true
                 }
             });
         } else if (asset === 'bitCosmetic') {
             await UserBitCosmeticModel.updateOne({ bitCosmeticId: assetId }, {
                 $set: {
-                    usable: true
+                    usable: true,
+                    'ownerData.inCustody': true
                 }
             });
         }
