@@ -1,5 +1,5 @@
 import express from 'express';
-import { applyGatheringProgressBooster, applyIslandTapping, calcEffectiveResourceDropChances, calcIslandGatheringRate, claimResources, getIslandTappingData, getIslands, giftXterioIsland, placeBit, removeIsland, rerollBonusMilestoneReward, unplaceBit, updateGatheringProgressAndDropResourceAlt } from '../api/island';
+import { applyGatheringProgressBooster, applyIslandTapping, calcEffectiveResourceDropChances, calcIslandGatheringRate, claimResources, getIslandTappingData, getIslands, placeBit, removeIsland, rerollBonusMilestoneReward, unplaceBit, updateGatheringProgressAndDropResourceAlt } from '../api/island';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
 import { IslandType, RateType, ResourceDropChanceDiff } from '../models/island';
@@ -17,25 +17,6 @@ import { QuestRequirementType } from '../models/quest';
 import { incrementProgressionByType } from '../api/quest';
 
 const router = express.Router();
-
-router.post('/gift_xterio_island', authMiddleware(3), async (req, res) => {
-    const { twitterId } = req.body;
-
-    try {
-        const { status, message, data } = await giftXterioIsland(twitterId);
-
-        return res.status(status).json({
-            status,
-            message,
-            data
-        });
-    } catch (err: any) {
-        return res.status(500).json({
-            status: 500,
-            message: err.message
-        });
-    }
-})
 
 router.post('/place_bit', async (req, res) => {
     const { islandId, bitId } = req.body;
