@@ -216,7 +216,6 @@ export const completeTutorial = async (twitterId: string, tutorialId: number): P
                             lastChanged: 0,
                         },
                         rarity,
-                        usable: true,
                         gender: RANDOMIZE_GENDER(),
                         usable: true,
                         ownerData: {
