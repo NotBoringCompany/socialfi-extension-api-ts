@@ -1,5 +1,5 @@
 import express from 'express';
-import { bulkFeedBits, calcBitGatheringRate, feedBit, getBits, giftXterioBit, releaseBit, renameBit } from '../api/bit';
+import { bulkFeedBits, calcBitGatheringRate, feedBit, getBits, releaseBit, renameBit } from '../api/bit';
 import { FoodType } from '../models/food';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
