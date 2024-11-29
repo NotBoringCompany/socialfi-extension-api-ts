@@ -121,6 +121,14 @@ export const universalAssetUpgrade = async (
                     message: `(universalAssetUpgrade) Bit not found in the database.`,
                 };
             }
+            
+            // check if bit is usable
+            if (!bit.usable) {
+                return {
+                    status: Status.ERROR,
+                    message: `(universalAssetUpgrade) Bit is not usable.`,
+                };
+            }
 
             // bit needs to be placed in an island to start evolving.
             if (bit.placedIslandId === 0) {
@@ -172,6 +180,14 @@ export const universalAssetUpgrade = async (
                 return {
                     status: Status.ERROR,
                     message: `(universalAssetUpgrade) Island not found in the database.`,
+                };
+            }
+
+            // check if island is usable
+            if (!island.usable) {
+                return {
+                    status: Status.ERROR,
+                    message: `(universalAssetUpgrade) Island is not usable.`,
                 };
             }
 
