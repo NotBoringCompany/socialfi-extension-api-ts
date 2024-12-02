@@ -740,6 +740,7 @@ export const mintBit = async (twitterId: string, bitId: number): Promise<ReturnV
         // 4. `blockchainData.mintHash` to `mintHash`
         // 5. `blockchainData.chain` to (await KAIA_TESTNET_PROVIDER.getNetwork()).chainId
         // 6. `blockchainData.contractAddress` to `WONDERBITS_CONTRACT.address`
+        // 7. `usable` to false
         const bitUpdateOperations = {
             $set: {
                 'ownerData.currentOwnerAddress': user.wallet?.address,
@@ -748,7 +749,8 @@ export const mintBit = async (twitterId: string, bitId: number): Promise<ReturnV
                 'blockchainData.tokenId': nextTokenId - 1,
                 'blockchainData.mintHash': mintTxReceipt.transactionHash,
                 'blockchainData.chain': (await KAIA_TESTNET_PROVIDER.getNetwork()).chainId,
-                'blockchainData.contractAddress': WONDERBITS_CONTRACT.address
+                'blockchainData.contractAddress': WONDERBITS_CONTRACT.address,
+                'usable': false
             }
         }
 
@@ -902,6 +904,7 @@ export const mintIsland = async (twitterId: string, islandId: number): Promise<R
         // 4. `blockchainData.mintHash` to `mintHash`
         // 5. `blockchainData.chain` to (await KAIA_TESTNET_PROVIDER.getNetwork()).chainId
         // 6. `blockchainData.contractAddress` to `ISLANDS_CONTRACT.address`
+        // 7. `usable` to false
         const islandUpdateOperations = {
             $set: {
                 'ownerData.currentOwnerAddress': user.wallet?.address,
@@ -910,7 +913,8 @@ export const mintIsland = async (twitterId: string, islandId: number): Promise<R
                 'blockchainData.tokenId': nextTokenId - 1,
                 'blockchainData.mintHash': mintTxReceipt.transactionHash,
                 'blockchainData.chain': (await KAIA_TESTNET_PROVIDER.getNetwork()).chainId,
-                'blockchainData.contractAddress': ISLANDS_CONTRACT.address
+                'blockchainData.contractAddress': ISLANDS_CONTRACT.address,
+                'usable': false
             }
         }
 
@@ -1066,6 +1070,7 @@ export const mintBitCosmetic = async (twitterId: string, bitCosmeticId: number):
         // 4. `blockchainData.mintHash` to `mintHash`
         // 5. `blockchainData.chain` to (await KAIA_TESTNET_PROVIDER.getNetwork()).chainId
         // 6. `blockchainData.contractAddress` to `BIT_COSMETICS_CONTRACT.address`
+        // 7. `usable` to false
         const bitCosmeticsUpdateOperations = {
             $set: {
                 'ownerData.currentOwnerAddress': user.wallet?.address,
@@ -1074,7 +1079,8 @@ export const mintBitCosmetic = async (twitterId: string, bitCosmeticId: number):
                 'blockchainData.tokenId': nextTokenId - 1,
                 'blockchainData.mintHash': mintTxReceipt.transactionHash,
                 'blockchainData.chain': (await KAIA_TESTNET_PROVIDER.getNetwork()).chainId,
-                'blockchainData.contractAddress': BIT_COSMETICS_CONTRACT.address
+                'blockchainData.contractAddress': BIT_COSMETICS_CONTRACT.address,
+                'usable': false
             }
         }
 
