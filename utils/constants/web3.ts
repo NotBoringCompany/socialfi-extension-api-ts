@@ -1,4 +1,4 @@
-import { ethers } from 'ethers';
+import { BigNumber, ethers, Event } from 'ethers';
 import fs from 'fs';
 import path from 'path';
 
@@ -16,6 +16,8 @@ export const XPROTOCOL_TESTNET_PROVIDER = new ethers.providers.JsonRpcProvider(`
  * temporary public testnet provider for Kairos (kaia's testnet)
  */
 export const KAIA_TESTNET_PROVIDER = new ethers.providers.JsonRpcProvider(`https://kaia-kairos.blockpi.network/v1/rpc/public`);
+/** websocket instance of the Kaia Testnet Provider */
+export const KAIA_TESTNET_PROVIDER_WS = new ethers.providers.JsonRpcProvider(`wss://public-en-kairos.node.kaia.io/ws`);
 
 /// TonWeb instance with API Key
 export const TON_WEB = new TonWeb(new TonWeb.HttpProvider('https://toncenter.com/api/v2/jsonRPC', { apiKey: process.env.TON_API_KEY} ));
@@ -129,6 +131,15 @@ export const WONDERBITS_CONTRACT = new ethers.Contract(
 );
 
 /**
+ * The wonderbits contract instance using KAIA Testnet's Websocket provider
+ */
+export const WONDERBITS_CONTRACT_WS = new ethers.Contract(
+    WONDERBITS_CONTRACT_ADDRESS,
+    WONDERBITS_ARTIFACT.abi,
+    KAIA_TESTNET_PROVIDER_WS
+)
+
+/**
  * The islands contract instance (using admin wallet)
  */
 export const ISLANDS_CONTRACT = new ethers.Contract(
@@ -138,6 +149,15 @@ export const ISLANDS_CONTRACT = new ethers.Contract(
 );
 
 /**
+ * The islands contract instance using KAIA Testnet's Websocket provider
+ */
+export const ISLANDS_CONTRACT_WS = new ethers.Contract(
+    ISLANDS_CONTRACT_ADDRESS,
+    ISLANDS_ARTIFACT.abi,
+    KAIA_TESTNET_PROVIDER_WS
+)
+
+/**
  * The bit cosmetics contract instance (using admin wallet)
  */
 export const BIT_COSMETICS_CONTRACT = new ethers.Contract(
@@ -145,6 +165,15 @@ export const BIT_COSMETICS_CONTRACT = new ethers.Contract(
     BIT_COSMETICS_ARTIFACT.abi,
     DEPLOYER_WALLET(KAIA_TESTNET_PROVIDER)
 );
+
+/**
+ * The bit cosmetics contract instance using KAIA Testnet's Websocket provider
+ */
+export const BIT_COSMETICS_CONTRACT_WS = new ethers.Contract(
+    BIT_COSMETICS_CONTRACT_ADDRESS,
+    BIT_COSMETICS_ARTIFACT.abi,
+    KAIA_TESTNET_PROVIDER_WS
+)
 
 /**
  * The wonderbits SFT contract instance (using admin wallet)
@@ -207,7 +236,7 @@ export const SUPERIOR_KEYCHAIN_CONTRACT_USER = (privateKey: string) => {
  * The wonderbits contract instance (using user wallet, requires their private key)
  */
 export const WONDERBITS_CONTRACT_USER = (privateKey: string) => {
-    const wallet = new ethers.Wallet(privateKey, ETH_MAINNET_PROVIDER);
+    const wallet = new ethers.Wallet(privateKey, KAIA_TESTNET_PROVIDER);
 
     return new ethers.Contract(
         WONDERBITS_CONTRACT_ADDRESS,
@@ -220,7 +249,7 @@ export const WONDERBITS_CONTRACT_USER = (privateKey: string) => {
  * The islands contract instance (using user wallet, requires their private key)
  */
 export const ISLANDS_CONTRACT_USER = (privateKey: string) => {
-    const wallet = new ethers.Wallet(privateKey, ETH_MAINNET_PROVIDER);
+    const wallet = new ethers.Wallet(privateKey, KAIA_TESTNET_PROVIDER);
 
     return new ethers.Contract(
         ISLANDS_CONTRACT_ADDRESS,
@@ -233,7 +262,7 @@ export const ISLANDS_CONTRACT_USER = (privateKey: string) => {
  * The bit cosmetics contract instance (using user wallet, requires their private key)
  */
 export const BIT_COSMETICS_CONTRACT_USER = (privateKey: string) => {
-    const wallet = new ethers.Wallet(privateKey, ETH_MAINNET_PROVIDER);
+    const wallet = new ethers.Wallet(privateKey, KAIA_TESTNET_PROVIDER);
 
     return new ethers.Contract(
         BIT_COSMETICS_CONTRACT_ADDRESS,
@@ -246,7 +275,7 @@ export const BIT_COSMETICS_CONTRACT_USER = (privateKey: string) => {
  * The wonderbits SFT contract instance (using user wallet, requires their private key)
  */
 export const WONDERBITS_SFT_CONTRACT_USER = (privateKey: string) => {
-    const wallet = new ethers.Wallet(privateKey, ETH_MAINNET_PROVIDER);
+    const wallet = new ethers.Wallet(privateKey, KAIA_TESTNET_PROVIDER);
 
     return new ethers.Contract(
         WONDERBITS_SFT_CONTRACT_ADDRESS,
@@ -259,7 +288,7 @@ export const WONDERBITS_SFT_CONTRACT_USER = (privateKey: string) => {
  * The custodial contract instance (using user wallet, requires their private key)
  */
 export const CUSTODIAL_CONTRACT_USER = (privateKey: string) => {
-    const wallet = new ethers.Wallet(privateKey, ETH_MAINNET_PROVIDER);
+    const wallet = new ethers.Wallet(privateKey, KAIA_TESTNET_PROVIDER);
 
     return new ethers.Contract(
         CUSTODIAL_CONTRACT_ADDRESS,
@@ -348,3 +377,41 @@ export const WONDERBITS_SFT_IDS: Array<{
     {id: 68, asset: 'Staff of Transmutation', type: 'item'},
     {id: 69, asset: 'Potion of Divine Enlightenment', type: 'item'}
 ]
+
+/**
+ * Event listeners for NFT contracts in KAIA Testnet.
+ */
+export const kaiaTestnetNFTListeners = () => {
+    /**
+     * Event listener for Wonderbits contract to listen to Transfer events for sales/purchases.
+     * 
+     * Excludes 0x0 from and to address as those are for minting/burning.
+     */
+    WONDERBITS_CONTRACT.on('Transfer', (from: string, to: string, tokenId: BigNumber, event: Event) => {
+        console.log(`Transfer event fired for Wonderbits contract: ${from} -> ${to} with token ID: ${tokenId.toString()}`);
+
+        console.log(`Event data: ${JSON.stringify(event, null, 2)}`);
+    });
+
+    /**
+     * Event listener for Islands contract to listen to Transfer events for sales/purchases.
+     * 
+     * Excludes 0x0 from and to address as those are for minting/burning.
+     */
+    ISLANDS_CONTRACT.on('Transfer', (from: string, to: string, tokenId: BigNumber, event: Event) => {
+        console.log(`Transfer event fired for Islands contract: ${from} -> ${to} with token ID: ${tokenId.toString()}`);
+
+        console.log(`Event data: ${JSON.stringify(event, null, 2)}`);
+    });
+
+    /**
+     * Event listener for Bit Cosmetics contract to listen to Transfer events for sales/purchases.
+     * 
+     * Excludes 0x0 from and to address as those are for minting/burning.
+     */
+    BIT_COSMETICS_CONTRACT.on('Transfer', (from: string, to: string, tokenId: BigNumber, event: Event) => {
+        console.log(`Transfer event fired for Bit Cosmetics contract: ${from} -> ${to} with token ID: ${tokenId.toString()}`);
+
+        console.log(`Event data: ${JSON.stringify(event, null, 2)}`);
+    });
+}

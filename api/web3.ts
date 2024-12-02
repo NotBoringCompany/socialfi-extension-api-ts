@@ -3,14 +3,14 @@ import { ReturnValue, Status } from '../utils/retVal';
 import { BitModel, IslandModel, ShopAssetPurchaseModel, UserBitCosmeticModel, UserModel } from '../utils/constants/db';
 import { ExtendedXCookieData, UserWallet, XCookieSource } from '../models/user';
 import { getUserCurrentPoints } from './leaderboard';
-import { BINANCE_API_BASE_URL, BIT_COSMETICS_CONTRACT, CUSTODIAL_CONTRACT, DEPLOYER_WALLET, GATEIO_API_BASE_URL, ISLANDS_CONTRACT, KAIA_TESTNET_PROVIDER, KUCOIN_API_BASE_URL, TON_RECEIVER_ADDRESS, TON_WEB, WONDERBITS_CONTRACT, WONDERBITS_SFT_CONTRACT, WONDERBITS_SFT_IDS, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
+import { BINANCE_API_BASE_URL, BIT_COSMETICS_CONTRACT, BIT_COSMETICS_CONTRACT_USER, CUSTODIAL_CONTRACT, CUSTODIAL_CONTRACT_USER, DEPLOYER_WALLET, GATEIO_API_BASE_URL, ISLANDS_CONTRACT, ISLANDS_CONTRACT_USER, KAIA_TESTNET_PROVIDER, KUCOIN_API_BASE_URL, TON_RECEIVER_ADDRESS, TON_WEB, WONDERBITS_CONTRACT, WONDERBITS_CONTRACT_USER, WONDERBITS_SFT_CONTRACT, WONDERBITS_SFT_CONTRACT_USER, WONDERBITS_SFT_IDS, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
 import { ethers } from 'ethers';
 import { TxParsedMessage } from '../models/web3';
 import { ShopAssetPurchaseConfirmationAttemptType } from '../models/shop';
 import { Item } from '../models/item';
 import { Food } from '../models/food';
 import { AssetType } from '../models/asset';
-import { generateHashSalt, generateOpHash } from '../utils/crypto';
+import { decryptPrivateKey, generateHashSalt, generateOpHash } from '../utils/crypto';
 import { ExtendedResource } from '../models/resource';
 
 /**
@@ -701,8 +701,21 @@ export const mintBit = async (twitterId: string, bitId: number): Promise<ReturnV
             }
         }
 
+        // get the user's private key
+        const { encryptedPrivateKey } = user?.wallet as UserWallet;
+
+        if (!encryptedPrivateKey) {
+            return {
+                status: Status.ERROR,
+                message: `(mintBit) User's private key not found.`
+            }
+        }
+
+        // decrypt the user's private key
+        const decryptedPrivateKey = decryptPrivateKey(encryptedPrivateKey);
+
         // mint the bit
-        const mintTx = await WONDERBITS_CONTRACT.mint(
+        const mintTx = await WONDERBITS_CONTRACT_USER(decryptedPrivateKey).mint(
             user.wallet?.address,
             [salt, signature],
             {
@@ -850,8 +863,21 @@ export const mintIsland = async (twitterId: string, islandId: number): Promise<R
             }
         }
 
+        // get the user's private key
+        const { encryptedPrivateKey } = user?.wallet as UserWallet;
+
+        if (!encryptedPrivateKey) {
+            return {
+                status: Status.ERROR,
+                message: `(mintIsland) User's private key not found.`
+            }
+        }
+
+        // decrypt the user's private key
+        const decryptedPrivateKey = decryptPrivateKey(encryptedPrivateKey);
+
         // mint the island
-        const mintTx = await ISLANDS_CONTRACT.mint(
+        const mintTx = await ISLANDS_CONTRACT_USER(decryptedPrivateKey).mint(
             user.wallet?.address,
             [salt, signature],
             {
@@ -1001,8 +1027,21 @@ export const mintBitCosmetic = async (twitterId: string, bitCosmeticId: number):
             }
         }
 
+        // get the user's private key
+        const { encryptedPrivateKey } = user?.wallet as UserWallet;
+
+        if (!encryptedPrivateKey) {
+            return {
+                status: Status.ERROR,
+                message: `(mintBitCosmetic) User's private key not found.`
+            }
+        }
+
+        // decrypt the user's private key
+        const decryptedPrivateKey = decryptPrivateKey(encryptedPrivateKey);
+
         // mint the cosmetic
-        const mintTx = await BIT_COSMETICS_CONTRACT.mint(
+        const mintTx = await BIT_COSMETICS_CONTRACT_USER(decryptedPrivateKey).mint(
             user.wallet?.address,
             [salt, signature],
             {
@@ -1239,8 +1278,21 @@ export const mintSFT = async (twitterId: string, asset: AssetType, amount: numbe
             }
         }
 
+        // get the user's private key
+        const { encryptedPrivateKey } = user?.wallet as UserWallet;
+
+        if (!encryptedPrivateKey) {
+            return {
+                status: Status.ERROR,
+                message: `(mintSFT) User's private key not found.`
+            }
+        }
+
+        // decrypt the user's private key
+        const decryptedPrivateKey = decryptPrivateKey(encryptedPrivateKey);
+
         // mint the SFT
-        const mintTx = await WONDERBITS_SFT_CONTRACT.mint(
+        const mintTx = await WONDERBITS_SFT_CONTRACT_USER(decryptedPrivateKey).mint(
             user.wallet?.address,
             assetData.id,
             amount,
@@ -1353,8 +1405,21 @@ export const storeInCustody = async (twitterId: string, asset: 'bit' | 'island' 
             }
         }
 
+        // get the user's private key
+        const { encryptedPrivateKey } = user?.wallet as UserWallet;
+
+        if (!encryptedPrivateKey) {
+            return {
+                status: Status.ERROR,
+                message: `(storeInCustody) User's private key not found.`
+            }
+        }
+
+        // decrypt the user's private key
+        const decryptedPrivateKey = decryptPrivateKey(encryptedPrivateKey);
+
         // store the asset in custody
-        const storeTx = await CUSTODIAL_CONTRACT.storeInCustody(
+        const storeTx = await CUSTODIAL_CONTRACT_USER(decryptedPrivateKey).storeInCustody(
             nftContractAddress,
             assetData.blockchainData?.tokenId,
             [salt, signature],
@@ -1493,8 +1558,21 @@ export const releaseFromCustody = async (twitterId: string, asset: 'bit' | 'isla
             }
         }
 
+        // get the user's private key
+        const { encryptedPrivateKey } = user?.wallet as UserWallet;
+
+        if (!encryptedPrivateKey) {
+            return {
+                status: Status.ERROR,
+                message: `(releaseFromCustody) User's private key not found.`
+            }
+        }
+
+        // decrypt the user's private key
+        const decryptedPrivateKey = decryptPrivateKey(encryptedPrivateKey);
+
         // release the asset from custody
-        const releaseTx = await CUSTODIAL_CONTRACT.releaseFromCustody(
+        const releaseTx = await CUSTODIAL_CONTRACT_USER(decryptedPrivateKey).releaseFromCustody(
             nftContractAddress,
             assetData.blockchainData?.tokenId,
             [salt, signature],
@@ -1551,3 +1629,4 @@ export const releaseFromCustody = async (twitterId: string, asset: 'bit' | 'isla
         }
     }
 }
+

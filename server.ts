@@ -77,6 +77,7 @@ import { initializeSocket } from './configs/socket';
 import { CRAFTING_RECIPES, populateCraftingRecipesAndAssetEnums } from './utils/constants/craft';
 import { populateBitTraitsData } from './utils/constants/bit';
 import { BitTraitEnum } from './models/bit';
+import { kaiaTestnetNFTListeners } from './utils/constants/web3';
 
 app.use('/auth/twitter', checkMaintenance, twitterAuth);
 app.use('/auth/discord', checkMaintenance, discordAuth);
@@ -134,8 +135,10 @@ httpServer.listen(port, async () => {
     await populateBitTraitsData();
 
     const bitTraitKeys = Object.keys(BitTraitEnum);
-
     console.log(`BitTraitEnum keys: ${bitTraitKeys}`);
+
+    // event listeners for NFT contracts in KAIA Testnet
+    kaiaTestnetNFTListeners();
 
     // await schedulers();
 });
