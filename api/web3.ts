@@ -1411,3 +1411,143 @@ export const storeInCustody = async (twitterId: string, asset: 'bit' | 'island' 
         }
     }
 }
+
+/**
+ * Releases a minted bit, island or bit cosmetic out of custody from the custodial contract, transferring it back to the user's wallet.
+ */
+export const releaseFromCustody = async (twitterId: string, asset: 'bit' | 'island' | 'bitCosmetic', assetId: number): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(releaseFromCustody) User not found.`
+            }
+        }
+
+        // check if the user owns the asset on the database-level (contract will then also check if the user owns it on the blockchain-level)
+        const assetData = 
+            asset === 'bit' ? await BitModel.findOne({ bitId: assetId, 'ownerData.currentOwnerAddress': user.wallet?.address }).lean() :
+            asset === 'island' ? await IslandModel.findOne({ islandId: assetId, 'ownerData.currentOwnerAddress': user.wallet?.address }).lean() :
+            asset === 'bitCosmetic' ? await UserBitCosmeticModel.findOne({ bitCosmeticId: assetId, 'ownerData.currentOwnerAddress': user.wallet?.address }).lean() :
+            null;
+
+        if (!assetData || assetData.ownerData.currentOwnerId !== user._id) {
+            return {
+                status: Status.ERROR,
+                message: `(releaseFromCustody) User does not own the asset.`
+            }
+        }
+
+        // check if the asset is in custody (from the database level)
+        if (!assetData.ownerData.inCustody) {
+            return {
+                status: Status.ERROR,
+                message: `(releaseFromCustody) Asset is not in custody.`
+            }
+        }
+
+        // create the hash salt
+        const salt = generateHashSalt();
+        // create the op hash
+        const opHash = generateOpHash(user.wallet?.address, salt);
+        // create the admin's signature
+        const signature = await DEPLOYER_WALLET(KAIA_TESTNET_PROVIDER).signMessage(ethers.utils.arrayify(opHash));
+
+        const nftContractAddress = 
+            asset === 'bit' ? WONDERBITS_CONTRACT.address :
+            asset === 'island' ? ISLANDS_CONTRACT.address :
+            asset === 'bitCosmetic' ? BIT_COSMETICS_CONTRACT.address :
+            null;
+
+        if (!nftContractAddress) {
+            return {
+                status: Status.ERROR,
+                message: `(releaseFromCustody) NFT contract address not found.`
+            }
+        }
+
+        // estimate the gas required to release the asset from custody
+        const gasEstimation = await CUSTODIAL_CONTRACT.estimateGas.releaseFromCustody(
+            nftContractAddress,
+            assetData.blockchainData?.tokenId,
+            [salt, signature]
+        );
+
+        // get the current gas price
+        const gasPrice = await KAIA_TESTNET_PROVIDER.getGasPrice();
+
+        // calculate the gas fee in KAIA
+        const gasFee = ethers.utils.formatEther(gasEstimation.mul(gasPrice));
+
+        // check if the user has enough KAIA to pay for the gas fee
+        const userBalance = await KAIA_TESTNET_PROVIDER.getBalance(user.wallet?.address);
+        const formattedUserBalance = ethers.utils.formatEther(userBalance);
+
+        if (Number(formattedUserBalance) < Number(gasFee)) {
+            console.log(`(releaseFromCustody) User does not have enough KAIA to pay for the gas fee.`);
+            return {
+                status: Status.ERROR,
+                message: `(releaseFromCustody) User does not have enough KAIA to pay for the gas fee. Required: ${gasFee} KAIA --- User Balance: ${formattedUserBalance} KAIA`
+            }
+        }
+
+        // release the asset from custody
+        const releaseTx = await CUSTODIAL_CONTRACT.releaseFromCustody(
+            nftContractAddress,
+            assetData.blockchainData?.tokenId,
+            [salt, signature],
+            {
+                gasLimit: gasEstimation
+            }
+        );
+
+        // wait for the transaction to be mined
+        const releaseTxReceipt = await releaseTx.wait();
+
+        console.log(`(releaseFromCustody) Transaction mined: ${releaseTxReceipt.transactionHash}`);
+
+        // update the `usable` field of the asset to false
+        if (asset === 'bit') {
+            await BitModel.updateOne({ bitId: assetId }, {
+                $set: {
+                    usable: false,
+                    'ownerData.inCustody': false
+                }
+            });
+        } else if (asset === 'island') {
+            await IslandModel.updateOne({ islandId: assetId }, {
+                $set: {
+                    usable: false,
+                    'ownerData.inCustody': false
+                }
+            });
+        } else if (asset === 'bitCosmetic') {
+            await UserBitCosmeticModel.updateOne({ bitCosmeticId: assetId }, {
+                $set: {
+                    usable: false,
+                    'ownerData.inCustody': false
+                }
+            });
+        }
+
+        console.log(`(releaseFromCustody) Asset released from custody successfully.`);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(releaseFromCustody) Asset released from custody successfully.`,
+            data: {
+                asset,
+                assetId,
+                releaseHash: releaseTxReceipt.transactionHash,
+                gasFee
+            }
+        }
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(releaseFromCustody) ${err.message}`
+        }
+    }
+}

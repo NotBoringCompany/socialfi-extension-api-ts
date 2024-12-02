@@ -1,7 +1,7 @@
 import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
-import { mintBit, mintBitCosmetic, mintIsland, mintSFT, storeInCustody } from '../api/web3';
+import { mintBit, mintBitCosmetic, mintIsland, mintSFT, releaseFromCustody, storeInCustody } from '../api/web3';
 
 const router = express.Router();
 
@@ -130,6 +130,34 @@ router.post('/store_in_custody', async (req, res) => {
         }
 
         const { status, message, data } = await storeInCustody(validateData?.twitterId, asset, assetId);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        })
+    }
+})
+
+router.post('/release_from_custody', async (req, res) => {
+    const { asset, assetId } = req.body;
+
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'release_from_custody');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            });
+        }
+
+        const { status, message, data } = await releaseFromCustody(validateData?.twitterId, asset, assetId);
 
         return res.status(status).json({
             status,
