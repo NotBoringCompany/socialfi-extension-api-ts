@@ -5,6 +5,7 @@ import path from 'path';
 import * as dotenv from 'dotenv';
 import TonWeb from 'tonweb';
 import { AssetType } from '../../models/asset';
+import { BitCosmeticModel, BitModel, IslandModel, UserModel } from './db';
 
 dotenv.config();
 
@@ -387,10 +388,46 @@ export const kaiaTestnetNFTListeners = () => {
      * 
      * Excludes 0x0 from and to address as those are for minting/burning.
      */
-    WONDERBITS_CONTRACT.on('Transfer', (from: string, to: string, tokenId: BigNumber, event: Event) => {
-        console.log(`Transfer event fired for Wonderbits contract: ${from} -> ${to} with token ID: ${tokenId.toString()}`);
+    WONDERBITS_CONTRACT.on('Transfer', async (from: string, to: string, tokenId: BigNumber, event: Event) => {
+        try {
+            // ignore minting/burning events
+            if (from === '0x0000000000000000000000000000000000000000' || to === '0x0000000000000000000000000000000000000000') {
+                return;
+            }
 
-        console.log(`Event data: ${JSON.stringify(event, null, 2)}`);
+            console.log(`Transfer event fired for Wonderbits contract: ${from} -> ${to} with token ID: ${tokenId.toString()}`);
+
+            // update the bit given the token id.
+            // the update should include:
+            // 1. ownerData.currentOwnerId = `to`'s user id from the database. if the user has no account, then put `null`.
+            // 2. ownerData.currentOwnerAddress = `to`
+            
+            // to search for the user, try to match the `wallet.address` and any `secondaryWallet.address` in `secondaryWallets`.
+            // if the user is not found, then put `null` in `currentOwnerId`.
+            const user = await UserModel.findOne({
+                $or: [
+                    { 'wallet.address': to },
+                    { 'secondaryWallets.address': to }
+                ]
+            }).lean();
+
+            const userId = user ? user._id : null;
+
+            const updateResult = await BitModel.updateOne({ 'blockchainData.tokenId': tokenId.toNumber() }, {
+                $set: {
+                    'ownerData.currentOwnerId': userId,
+                    'ownerData.currentOwnerAddress': to
+                }
+            });
+
+            if (updateResult.modifiedCount !== 0) {
+                console.log(`(Wonderbits Transfer event listener) Updated bit with token ID ${tokenId.toString()} with new owner data: ${JSON.stringify({ currentOwnerId: userId, currentOwnerAddress: to }, null, 2)}`);
+            } else {
+                console.log(`(Wonderbits Transfer event listener) Failed to update bit with token ID ${tokenId.toString()}`);
+            }
+        } catch (err: any) {
+            console.error(`Error in Wonderbits Transfer event listener: ${err.message}`);
+        }
     });
 
     /**
@@ -398,10 +435,46 @@ export const kaiaTestnetNFTListeners = () => {
      * 
      * Excludes 0x0 from and to address as those are for minting/burning.
      */
-    ISLANDS_CONTRACT.on('Transfer', (from: string, to: string, tokenId: BigNumber, event: Event) => {
-        console.log(`Transfer event fired for Islands contract: ${from} -> ${to} with token ID: ${tokenId.toString()}`);
+    ISLANDS_CONTRACT.on('Transfer', async (from: string, to: string, tokenId: BigNumber, event: Event) => {
+        try {
+            // ignore minting/burning events
+            if (from === '0x0000000000000000000000000000000000000000' || to === '0x0000000000000000000000000000000000000000') {
+                return;
+            }
 
-        console.log(`Event data: ${JSON.stringify(event, null, 2)}`);
+            console.log(`Transfer event fired for Islands contract: ${from} -> ${to} with token ID: ${tokenId.toString()}`);
+
+            // update the island given the token id.
+            // the update should include:
+            // 1. ownerData.currentOwnerId = `to`'s user id from the database. if the user has no account, then put `null`.
+            // 2. ownerData.currentOwnerAddress = `to`
+            
+            // to search for the user, try to match the `wallet.address` and any `secondaryWallet.address` in `secondaryWallets`.
+            // if the user is not found, then put `null` in `currentOwnerId`.
+            const user = await UserModel.findOne({
+                $or: [
+                    { 'wallet.address': to },
+                    { 'secondaryWallets.address': to }
+                ]
+            }).lean();
+
+            const userId = user ? user._id : null;
+
+            const updateResult = await IslandModel.updateOne({ 'blockchainData.tokenId': tokenId.toNumber() }, {
+                $set: {
+                    'ownerData.currentOwnerId': userId,
+                    'ownerData.currentOwnerAddress': to
+                }
+            });
+
+            if (updateResult.modifiedCount !== 0) {
+                console.log(`(Island Transfer event listener) Updated island with token ID ${tokenId.toString()} with new owner data: ${JSON.stringify({ currentOwnerId: userId, currentOwnerAddress: to }, null, 2)}`);
+            } else {
+                console.log(`(Island Transfer event listener) Failed to update island with token ID ${tokenId.toString()}`);
+            }
+        } catch (err: any) {
+            console.error(`Error in Island Transfer event listener: ${err.message}`);
+        }
     });
 
     /**
@@ -409,9 +482,45 @@ export const kaiaTestnetNFTListeners = () => {
      * 
      * Excludes 0x0 from and to address as those are for minting/burning.
      */
-    BIT_COSMETICS_CONTRACT.on('Transfer', (from: string, to: string, tokenId: BigNumber, event: Event) => {
-        console.log(`Transfer event fired for Bit Cosmetics contract: ${from} -> ${to} with token ID: ${tokenId.toString()}`);
+    BIT_COSMETICS_CONTRACT.on('Transfer', async (from: string, to: string, tokenId: BigNumber, event: Event) => {
+        try {
+            // ignore minting/burning events
+            if (from === '0x0000000000000000000000000000000000000000' || to === '0x0000000000000000000000000000000000000000') {
+                return;
+            }
 
-        console.log(`Event data: ${JSON.stringify(event, null, 2)}`);
+            console.log(`Transfer event fired for Bit Cosmetics contract: ${from} -> ${to} with token ID: ${tokenId.toString()}`);
+
+            // update the bit cosmetic given the token id.
+            // the update should include:
+            // 1. ownerData.currentOwnerId = `to`'s user id from the database. if the user has no account, then put `null`.
+            // 2. ownerData.currentOwnerAddress = `to`
+            
+            // to search for the user, try to match the `wallet.address` and any `secondaryWallet.address` in `secondaryWallets`.
+            // if the user is not found, then put `null` in `currentOwnerId`.
+            const user = await UserModel.findOne({
+                $or: [
+                    { 'wallet.address': to },
+                    { 'secondaryWallets.address': to }
+                ]
+            }).lean();
+
+            const userId = user ? user._id : null;
+
+            const updateResult = await BitCosmeticModel.updateOne({ 'blockchainData.tokenId': tokenId.toNumber() }, {
+                $set: {
+                    'ownerData.currentOwnerId': userId,
+                    'ownerData.currentOwnerAddress': to
+                }
+            });
+
+            if (updateResult.modifiedCount !== 0) {
+                console.log(`(Bit Cosmetics Transfer event listener) Updated bit cosmetic with token ID ${tokenId.toString()} with new owner data: ${JSON.stringify({ currentOwnerId: userId, currentOwnerAddress: to }, null, 2)}`);
+            } else {
+                console.log(`(Bit Cosmetics Transfer event listener) Failed to update bit cosmetic with token ID ${tokenId.toString()}`);
+            }
+        } catch (err: any) {
+            console.error(`Error in Bit Cosmetics Transfer event listener: ${err.message}`);
+        }
     });
 }
