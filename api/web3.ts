@@ -1875,5 +1875,38 @@ export const syncInventoryWithNFT = async (twitterId: string): Promise<ReturnVal
     }
 }
 
-// syncInventoryWithNFT('1462755469102137357');
+/**
+ * Fetch the user's owned SFTs (from their main wallet only) 
+ * from the blockchain (SFTs available to be fetched are based on `WONDERBITS_SFT_IDS`).
+ */
+export const fetchOwnedSFTs = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
 
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(fetchOwnedSFTs) User not found.`
+            }
+        }
+
+        const ids = WONDERBITS_SFT_IDS.map(data => data.id);
+        // create an array of addresses with the same length as `ids` pointing to `user.wallet.address`.
+        // this is a requirement from ERC1155's `balanceOfBatch`.
+        const addresses = Array(ids.length).fill(user?.wallet?.address);
+
+        // batch fetch the user's owned SFTs
+        const batchFetch = await WONDERBITS_SFT_CONTRACT.balanceOfBatch(
+            addresses,
+            ids
+        );
+
+        console.log(`(fetchOwnedSFTs) batchFetch: ${batchFetch}`);
+    } catch (err: any) {
+        console.log(`(fetchOwnedSFTs) ${err.message}`);
+        return {
+            status: Status.ERROR,
+            message: `(fetchOwnedSFTs) ${err.message}`
+        }
+    }
+}
