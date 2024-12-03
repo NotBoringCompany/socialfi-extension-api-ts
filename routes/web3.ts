@@ -1,7 +1,7 @@
 import express from 'express';
 import { validateRequestAuth } from '../utils/auth';
 import { Status } from '../utils/retVal';
-import { mintBit, mintBitCosmetic, mintIsland, mintSFT, releaseFromCustody, storeInCustody } from '../api/web3';
+import { mintBit, mintBitCosmetic, mintIsland, mintSFT, releaseFromCustody, storeInCustody, syncInventoryWithNFT } from '../api/web3';
 
 const router = express.Router();
 
@@ -169,6 +169,32 @@ router.post('/release_from_custody', async (req, res) => {
             status: 500,
             message: err.message
         })
+    }
+})
+
+router.post('/sync_inventory_with_nft', async (req, res) => {
+    try {
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'sync_inventory_with_nft');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            });
+        }
+
+        const { status, message, data } = await syncInventoryWithNFT(validateData?.twitterId);
+
+        return res.status(status).json({
+            status,
+            message,
+            data
+        });
+    } catch (err: any) {
+        return res.status(500).json({
+            status: 500,
+            message: err.message
+        });
     }
 })
 

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { ReturnValue, Status } from '../utils/retVal';
 import { BitModel, IslandModel, ShopAssetPurchaseModel, UserBitCosmeticModel, UserModel } from '../utils/constants/db';
-import { ExtendedXCookieData, UserWallet, XCookieSource } from '../models/user';
+import { ExtendedXCookieData, UserSecondaryWallet, UserWallet, XCookieSource } from '../models/user';
 import { getUserCurrentPoints } from './leaderboard';
 import { BINANCE_API_BASE_URL, BIT_COSMETICS_CONTRACT, BIT_COSMETICS_CONTRACT_USER, CUSTODIAL_CONTRACT, CUSTODIAL_CONTRACT_USER, DEPLOYER_WALLET, GATEIO_API_BASE_URL, ISLANDS_CONTRACT, ISLANDS_CONTRACT_USER, KAIA_TESTNET_PROVIDER, KUCOIN_API_BASE_URL, TON_RECEIVER_ADDRESS, TON_WEB, WONDERBITS_CONTRACT, WONDERBITS_CONTRACT_USER, WONDERBITS_SFT_CONTRACT, WONDERBITS_SFT_CONTRACT_USER, WONDERBITS_SFT_IDS, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
 import { ethers } from 'ethers';
@@ -1635,4 +1635,245 @@ export const releaseFromCustody = async (twitterId: string, asset: 'bit' | 'isla
         }
     }
 }
+
+/**
+ * For any NFTs (bit cosmetics, islands, bits, etc.) that we not synced properly (e.g. user purchased the NFT but they didn't make their account yet),
+ * this function will manually help them sync their inventory, updating the owner data of the NFTs to their current account if applicable.
+ * 
+ * NOTE: to save API costs, this will only fetch the user's MAIN WALLET. any NFTs stored in secondary wallets that were not synced properly will NOT be updatable via this function.
+ */
+export const syncInventoryWithNFT = async (twitterId: string): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(syncInventoryWithNFT) User not found.`
+            }
+        }
+
+        // fetch the user's main address
+        const mainWallet = user?.wallet as UserWallet;
+
+        // for each NFT (bit cosmetic, island, bit), fetch the user's owned token IDs
+        const rawBitTokenIds = await WONDERBITS_CONTRACT.tokensOfOwner(mainWallet.address);
+        const rawIslandTokenIds = await ISLANDS_CONTRACT.tokensOfOwner(mainWallet.address);
+        const rawBitCosmeticTokenIds = await BIT_COSMETICS_CONTRACT.tokensOfOwner(mainWallet.address);
+
+        // converted to string just in case of very large numbers in the future
+        const blockchainBitTokenIds: string[] = rawBitTokenIds.map((id: ethers.BigNumber) => id.toString());
+        const blockchainIslandTokenIds: string[] = rawIslandTokenIds.map((id: ethers.BigNumber) => id.toString());
+        const blockchainBitCosmeticTokenIds: string[] = rawBitCosmeticTokenIds.map((id: ethers.BigNumber) => id.toString());
+
+        const bits = await BitModel.find({ 'ownerData.currentOwnerId': user._id }).lean();
+        const islands = await IslandModel.find({ 'ownerData.currentOwnerId': user._id }).lean();
+        const bitCosmetics = await UserBitCosmeticModel.find({ 'ownerData.currentOwnerId': user._id }).lean();
+
+        // fetch the owned token ids for each nft that are already inputted in the database
+        // filter out the ones with `null` because those haven't been minted yet
+        // note: at the end, all token ids will be converted to string because the token ids obtained from the contract (above) are all strings.
+        const dbBitTokenIds = bits.map(bit => bit.blockchainData.tokenId).filter(id => id !== null).map(id => id.toString())
+        const dbIslandTokenIds = islands.map(island => island.blockchainData.tokenId).filter(id => id !== null).map(id => id.toString());
+        const dbBitCosmeticTokenIds = bitCosmetics.map(cosmetic => cosmetic.blockchainData.tokenId).filter(id => id !== null).map(id => id.toString());
+
+        // for each of the bits, islands and bit cosmetic token ids, check if the owner data properly points to this user.
+        // any that aren't will be updated.
+        // we will divide them into two arrays each, one for ids no longer owned by this user, and one for ids that need to be updated to point to this user.
+        const bitTokenIdsToUpdate = blockchainBitTokenIds.filter(id => !dbBitTokenIds.includes(id));
+        const notOwnedBitTokenIds = dbBitTokenIds.filter(id => !blockchainBitTokenIds.includes(id));
+
+        const islandTokenIdsToUpdate = blockchainIslandTokenIds.filter(id => !dbIslandTokenIds.includes(id));
+        const notOwnedIslandTokenIds = dbIslandTokenIds.filter(id => !blockchainIslandTokenIds.includes(id));
+
+        const bitCosmeticTokenIdsToUpdate = blockchainBitCosmeticTokenIds.filter(id => !dbBitCosmeticTokenIds.includes(id));
+        const notOwnedBitCosmeticTokenIds = dbBitCosmeticTokenIds.filter(id => !blockchainBitCosmeticTokenIds.includes(id));
+
+        console.log(`(syncInventoryWithNFT) notOwnedBitTokenIds: ${notOwnedBitTokenIds}`);
+        console.log(`(syncInventoryWithNFT) bitTokenIdsToUpdate: ${bitTokenIdsToUpdate}`);
+        console.log(`(syncInventoryWithNFT) notOwnedIslandTokenIds: ${notOwnedIslandTokenIds}`);
+        console.log(`(syncInventoryWithNFT) islandTokenIdsToUpdate: ${islandTokenIdsToUpdate}`);
+        console.log(`(syncInventoryWithNFT) notOwnedBitCosmeticTokenIds: ${notOwnedBitCosmeticTokenIds}`);
+        console.log(`(syncInventoryWithNFT) bitCosmeticTokenIdsToUpdate: ${bitCosmeticTokenIdsToUpdate}`);
+    
+        // for token ids that are no longer owned, we will update the owner data's user id to null and owner address also to null.
+        // rather than trying to fetch the owner of every single id within all the `notOwned...` arrays, we want to save time and API costs.
+        // therefore, the user of those IDs will then have to manually call this function in order for it to be synced with their inventory,
+        // converting those data instances from null to their actual owner data.
+        const bitUpdateOperations: Array<{
+            bitId: number;
+            updateOperations: {
+                $set: {}
+            }
+        }> = [];
+
+        const islandUpdateOperations: Array<{
+            islandId: number;
+            updateOperations: {
+                $set: {}
+            }
+        }> = [];
+
+        const bitCosmeticUpdateOperations: Array<{
+            bitCosmeticId: number;
+            updateOperations: {
+                $set: {}
+            }
+        }> = [];
+
+        if (notOwnedBitTokenIds.length > 0) {
+            for (const notOwnedBitTokenId of notOwnedBitTokenIds) {
+                const bit = bits.find(bit => bit.blockchainData.tokenId === parseInt(notOwnedBitTokenId));
+    
+                if (bit) {
+                    bitUpdateOperations.push({
+                        bitId: bit.bitId,
+                        updateOperations: {
+                            $set: {
+                                'ownerData.currentOwnerId': null,
+                                'ownerData.currentOwnerAddress': null
+                            }
+                        }
+                    });
+                }
+            }
+        }
+
+        if (notOwnedIslandTokenIds.length > 0) {
+            for (const notOwnedIslandTokenId of notOwnedIslandTokenIds) {
+                const island = islands.find(island => island.blockchainData.tokenId === parseInt(notOwnedIslandTokenId));
+    
+                if (island) {
+                    islandUpdateOperations.push({
+                        islandId: island.islandId,
+                        updateOperations: {
+                            $set: {
+                                'ownerData.currentOwnerId': null,
+                                'ownerData.currentOwnerAddress': null
+                            }
+                        }
+                    });
+                }
+            }
+        }
+
+        if (notOwnedBitCosmeticTokenIds.length > 0) {
+            for (const notOwnedBitCosmeticTokenId of notOwnedBitCosmeticTokenIds) {
+                const bitCosmetic = bitCosmetics.find(cosmetic => cosmetic.blockchainData.tokenId === parseInt(notOwnedBitCosmeticTokenId));
+    
+                if (bitCosmetic) {
+                    bitCosmeticUpdateOperations.push({
+                        bitCosmeticId: bitCosmetic.bitCosmeticId,
+                        updateOperations: {
+                            $set: {
+                                'ownerData.currentOwnerId': null,
+                                'ownerData.currentOwnerAddress': null
+                            }
+                        }
+                    });
+                }
+            }
+        }
+
+        // for token ids that need to be updated, we will update the owner data's user id to this user's id and owner address to this user's wallet address.
+        // this will allow the user to properly see their NFTs in their inventory.
+        if (bitTokenIdsToUpdate.length > 0) {
+            for (const bitTokenIdToUpdate of bitTokenIdsToUpdate) {
+                const bit = bits.find(bit => bit.blockchainData.tokenId === parseInt(bitTokenIdToUpdate));
+    
+                if (bit) {
+                    bitUpdateOperations.push({
+                        bitId: bit.bitId,
+                        updateOperations: {
+                            $set: {
+                                'ownerData.currentOwnerId': user._id,
+                                'ownerData.currentOwnerAddress': mainWallet.address
+                            }
+                        }
+                    });
+                }
+            }
+        }
+
+        if (islandTokenIdsToUpdate.length > 0) {
+            for (const islandTokenIdToUpdate of islandTokenIdsToUpdate) {
+                const island = islands.find(island => island.blockchainData.tokenId === parseInt(islandTokenIdToUpdate));
+    
+                if (island) {
+                    islandUpdateOperations.push({
+                        islandId: island.islandId,
+                        updateOperations: {
+                            $set: {
+                                'ownerData.currentOwnerId': user._id,
+                                'ownerData.currentOwnerAddress': mainWallet.address
+                            }
+                        }
+                    });
+                }
+            }
+        }
+
+        if (bitCosmeticTokenIdsToUpdate.length > 0) {
+            for (const bitCosmeticTokenIdToUpdate of bitCosmeticTokenIdsToUpdate) {
+                const bitCosmetic = bitCosmetics.find(cosmetic => cosmetic.blockchainData.tokenId === parseInt(bitCosmeticTokenIdToUpdate));
+    
+                if (bitCosmetic) {
+                    bitCosmeticUpdateOperations.push({
+                        bitCosmeticId: bitCosmetic.bitCosmeticId,
+                        updateOperations: {
+                            $set: {
+                                'ownerData.currentOwnerId': user._id,
+                                'ownerData.currentOwnerAddress': mainWallet.address
+                            }
+                        }
+                    });
+                }
+            }
+        }
+
+        console.log(`(syncInventoryWithNFT) bitUpdateOperations: ${JSON.stringify(bitUpdateOperations)}`);
+        console.log(`(syncInventoryWithNFT) islandUpdateOperations: ${JSON.stringify(islandUpdateOperations)}`);
+        console.log(`(syncInventoryWithNFT) bitCosmeticUpdateOperations: ${JSON.stringify(bitCosmeticUpdateOperations)}`);
+        
+        // execute the update operations
+        const bitUpdatePromises = bitUpdateOperations.length > 0 ? bitUpdateOperations.map(async op => {
+            return BitModel.updateOne({ bitId: op.bitId }, op.updateOperations);
+        }) : [];
+        const islandUpdatePromises = islandUpdateOperations.length > 0 ? islandUpdateOperations.map(async op => {
+            return IslandModel.updateOne({ islandId: op.islandId }, op.updateOperations);
+        }) : [];
+        const bitCosmeticUpdatePromises = bitCosmeticUpdateOperations.length > 0 ? bitCosmeticUpdateOperations.map(async op => {
+            return UserBitCosmeticModel.updateOne({ bitCosmeticId: op.bitCosmeticId }, op.updateOperations);
+        }) : [];
+
+        await Promise.all([...bitUpdatePromises, ...islandUpdatePromises, ...bitCosmeticUpdatePromises]);
+
+        console.log(`(syncInventoryWithNFT) Inventory synced successfully.`);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(syncInventoryWithNFT) Inventory synced successfully.`,
+            data: {
+                newIdsAdded: {
+                    bitIds: bitTokenIdsToUpdate,
+                    islandIds: islandTokenIdsToUpdate,
+                    bitCosmeticIds: bitCosmeticTokenIdsToUpdate
+                },
+                oldIdsRemoved: {
+                    bitIds: notOwnedBitTokenIds,
+                    islandIds: notOwnedIslandTokenIds,
+                    bitCosmeticIds: notOwnedBitCosmeticTokenIds
+                }
+            }
+        }
+    } catch (err: any) {
+        console.log(`(syncInventoryWithNFT) ${err.message}`);
+        return {
+            status: Status.ERROR,
+            message: `(syncInventoryWithNFT) ${err.message}`
+        }
+    }
+}
+
+// syncInventoryWithNFT('1462755469102137357');
 
