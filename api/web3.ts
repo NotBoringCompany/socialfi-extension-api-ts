@@ -8,7 +8,7 @@ import { ethers } from 'ethers';
 import { TxParsedMessage } from '../models/web3';
 import { ShopAssetPurchaseConfirmationAttemptType } from '../models/shop';
 import { Item } from '../models/item';
-import { Food } from '../models/food';
+import { Food, FoodType } from '../models/food';
 import { AssetType } from '../models/asset';
 import { decryptPrivateKey, generateHashSalt, generateOpHash } from '../utils/crypto';
 import { ExtendedResource, ExtendedResourceOrigin, Resource } from '../models/resource';
@@ -1948,30 +1948,6 @@ export const depositSFT = async (twitterId: string, asset: AssetType, amount: nu
             }
         }
 
-        // estimate the gas required to burn the SFT
-        const gasEstimation = await WONDERBITS_SFT_CONTRACT.estimateGas.burn(
-            sftData.id,
-            amount
-        );
-
-        // get the current gas price
-        const gasPrice = await KAIA_TESTNET_PROVIDER.getGasPrice();
-
-        // calculate the gas fee in KAIA
-        const gasFee = ethers.utils.formatEther(gasEstimation.mul(gasPrice));
-
-        // check if the user has enough KAIA to pay for the gas fee
-        const userBalance = await KAIA_TESTNET_PROVIDER.getBalance(user.wallet?.address);
-        const formattedUserBalance = ethers.utils.formatEther(userBalance);
-
-        if (Number(formattedUserBalance) < Number(gasFee)) {
-            console.log(`(depositSFT) User does not have enough KAIA to pay for the gas fee.`);
-            return {
-                status: Status.ERROR,
-                message: `(depositSFT) User does not have enough KAIA to pay for the gas fee. Required: ${gasFee} KAIA --- User Balance: ${formattedUserBalance} KAIA`
-            }
-        }
-
         // get the user's private key
         const { encryptedPrivateKey } = user?.wallet as UserWallet;
 
@@ -1985,6 +1961,32 @@ export const depositSFT = async (twitterId: string, asset: AssetType, amount: nu
         // decrypt the user's private key
         const decryptedPrivateKey = decryptPrivateKey(encryptedPrivateKey);
 
+        // estimate the gas required to burn the SFT
+        const gasEstimation = await WONDERBITS_SFT_CONTRACT_USER(decryptedPrivateKey).estimateGas.burn(
+            sftData.id,
+            amount
+        );
+
+        // get the current gas price
+        const gasPrice = await KAIA_TESTNET_PROVIDER.getGasPrice();
+
+        // calculate the gas fee in KAIA
+        const gasFee = ethers.utils.formatEther(gasEstimation.mul(gasPrice));
+
+        console.log(`(depositSFT) Gas Fee Estimation: ${gasFee} KAIA`);
+
+        // check if the user has enough KAIA to pay for the gas fee
+        const userBalance = await KAIA_TESTNET_PROVIDER.getBalance(user.wallet?.address);
+        const formattedUserBalance = ethers.utils.formatEther(userBalance);
+
+        if (Number(formattedUserBalance) < Number(gasFee)) {
+            console.log(`(depositSFT) User does not have enough KAIA to pay for the gas fee.`);
+            return {
+                status: Status.ERROR,
+                message: `(depositSFT) User does not have enough KAIA to pay for the gas fee. Required: ${gasFee} KAIA --- User Balance: ${formattedUserBalance} KAIA`
+            }
+        }
+
         // call `burn` on the contract
         const burnTx = await WONDERBITS_SFT_CONTRACT_USER(decryptedPrivateKey).burn(
             sftData.id,
@@ -1997,7 +1999,7 @@ export const depositSFT = async (twitterId: string, asset: AssetType, amount: nu
         // wait for the transaction to be mined
         const burnTxReceipt = await burnTx.wait();
 
-        console.log(`(depositSFT) Burn transaction mined: ${burnTx.hash}`);
+        console.log(`(depositSFT) Burn transaction mined: ${burnTxReceipt.transactionHash}`);
 
         // update the user's inventory
         const userUpdateOperations = {
@@ -2084,5 +2086,3 @@ export const depositSFT = async (twitterId: string, asset: AssetType, amount: nu
         }
     }
 }
-
-// depositSFT('1462755469102137357', 1, 1);
