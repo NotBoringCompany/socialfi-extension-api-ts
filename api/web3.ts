@@ -2081,4 +2081,4 @@ export const depositSFT = async (twitterId: string, sftId: number, amount: numbe
     }
 }
 
-depositSFT('1462755469102137357', 1, 1);
+// depositSFT('1462755469102137357', 1, 1);
