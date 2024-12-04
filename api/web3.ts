@@ -2014,6 +2014,7 @@ export const depositSFT = async (twitterId: string, asset: AssetType, amount: nu
 
             if (existingFoodIndex !== -1) {
                 userUpdateOperations.$inc[`inventory.foods.${existingFoodIndex}.amount`] = amount;
+                userUpdateOperations.$inc[`inventory.foods.${existingFoodIndex}.mintableAmount`] = amount;
             } else {
                 userUpdateOperations.$push = {
                     'inventory.foods': {
@@ -2032,6 +2033,7 @@ export const depositSFT = async (twitterId: string, asset: AssetType, amount: nu
 
             if (existingResourceIndex !== -1) {
                 userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = amount;
+                userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.mintableAmount`] = amount;
             } else {
                 userUpdateOperations.$push = {
                     'inventory.resources': {
@@ -2048,6 +2050,7 @@ export const depositSFT = async (twitterId: string, asset: AssetType, amount: nu
 
             if (existingItemIndex !== -1) {
                 userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = amount;
+                userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.mintableAmount`] = amount;
             } else {
                 userUpdateOperations.$push = {
                     'inventory.items': {
