@@ -1,7 +1,7 @@
 import { ReturnValue, Status } from '../utils/retVal';
 import { MAXIMUM_DAILY_CHEST_LIMIT, RANDOMIZE_CHEST_ITEM } from '../utils/constants/chest';
 import { Food, FoodType } from '../models/food';
-import { BarrenResource, CombinedResources, ExtendedResource, Resource, ResourceType } from '../models/resource';
+import { BarrenResource, CombinedResources, ExtendedResource, ExtendedResourceOrigin, Resource, ResourceType } from '../models/resource';
 import { UserModel } from '../utils/constants/db';
 import { resources } from '../utils/constants/resource';
 import { BitOrbType } from '../models/bitOrb';
@@ -97,7 +97,8 @@ export const openChest = async (twitterId: string, tweetId: string): Promise<Ret
                     $push: {
                         'inventory.resources': {
                             ...resource,
-                            amount
+                            amount,
+                            origin: ExtendedResourceOrigin.NORMAL,
                         }
                     }
                 })
