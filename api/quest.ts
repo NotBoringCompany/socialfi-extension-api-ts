@@ -450,7 +450,7 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                         if (foodIndex !== -1) {
                             userUpdateOperations.$inc[`inventory.foods.${foodIndex}.amount`] = amount;
                         } else {
-                            userUpdateOperations.$push['inventory.foods'] = { type: rewardType.toString(), amount };
+                            userUpdateOperations.$push['inventory.foods'] = { type: rewardType.toString(), amount, mintableAmount: 0 };
                         }
 
                         obtainedRewards.push({ type: rewardType.toString(), amount });
