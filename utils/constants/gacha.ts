@@ -852,7 +852,8 @@ WONDERSPIN_QUEUE.process('rollWonderspin', async (job) => {
                         type: obtainedAsset.asset,
                         amount: obtainedAsset.amount,
                         totalAmountConsumed: 0,
-                        weeklyAmountConsumed: 0
+                        weeklyAmountConsumed: 0,
+                        mintableAmount: 0,
                     })
                 } else {
                     userUpdateOperations.$inc[`inventory.items.${itemIndex}.amount`] = obtainedAsset.amount;
@@ -865,7 +866,8 @@ WONDERSPIN_QUEUE.process('rollWonderspin', async (job) => {
                 if (foodIndex === -1) {
                     userUpdateOperations.$push['inventory.foods'].$each.push({
                         type: obtainedAsset.asset,
-                        amount: obtainedAsset.amount
+                        amount: obtainedAsset.amount,
+                        mintableAmount: 0,
                     })
                 } else {
                     userUpdateOperations.$inc[`inventory.foods.${foodIndex}.amount`] = obtainedAsset.amount;
@@ -889,7 +891,8 @@ WONDERSPIN_QUEUE.process('rollWonderspin', async (job) => {
                     userUpdateOperations.$push['inventory.resources'].$each.push({
                         ...resourceData,
                         amount: obtainedAsset.amount,
-                        origin: ExtendedResourceOrigin.NORMAL
+                        origin: ExtendedResourceOrigin.NORMAL,
+                        mintableAmount: 0
                     })
                 } else {
                     userUpdateOperations.$inc[`inventory.resources.${resourceIndex}.amount`] = obtainedAsset.amount;

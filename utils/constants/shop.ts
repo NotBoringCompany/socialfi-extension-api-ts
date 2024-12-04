@@ -79,7 +79,8 @@ SHOP_QUEUE.process('deliverShopAssetViaSuccessfulTelegramStarsPayment', async (j
                         type: givenContent.content,
                         amount: givenContent.amount * amount,
                         totalAmountConsumed: 0,
-                        weeklyAmountConsumed: 0
+                        weeklyAmountConsumed: 0,
+                        mintableAmount: 0,
                     });
                 }
             } else if (givenContent.contentType === 'food') {
@@ -89,7 +90,7 @@ SHOP_QUEUE.process('deliverShopAssetViaSuccessfulTelegramStarsPayment', async (j
                 if (existingFoodIndex !== -1) {
                     userUpdateOperations.$inc[`inventory.foods.${existingFoodIndex}.amount`] = (givenContent.amount * amount);
                 } else {
-                    userUpdateOperations.$push['inventory.foods'].$each.push({ type: givenContent.content, amount: (givenContent.amount * amount) });
+                    userUpdateOperations.$push['inventory.foods'].$each.push({ type: givenContent.content, amount: (givenContent.amount * amount), mintableAmount: 0 });
                 }
             } else if (givenContent.contentType === 'igc') {
                 switch (givenContent.content) {

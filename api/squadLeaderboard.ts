@@ -384,7 +384,8 @@ export const claimWeeklySquadMemberRewards = async (twitterId: string): Promise<
                         type: reward.type,
                         amount: reward.amount,
                         totalAmountConsumed: 0,
-                        weeklyAmountConsumed: 0
+                        weeklyAmountConsumed: 0,
+                        mintableAmount: 0,
                     });
                 } else {
                     userUpdateOperations.$inc[`inventory.items.${itemIndex}.amount`] = reward.amount;
@@ -398,6 +399,7 @@ export const claimWeeklySquadMemberRewards = async (twitterId: string): Promise<
                     userUpdateOperations.$push['inventory.foods'].$each.push({
                         type: reward.type,
                         amount: reward.amount,
+                        mintableAmount: 0,
                     });
                 } else {
                     userUpdateOperations.$inc[`inventory.foods.${foodIndex}.amount`] = reward.amount;

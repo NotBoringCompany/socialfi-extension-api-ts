@@ -394,7 +394,8 @@ export const verifyTONTransaction = async (
                                 type: givenContent.content, 
                                 amount: givenContent.amount,
                                 totalAmountConsumed: 0,
-                                weeklyAmountConsumed: 0
+                                weeklyAmountConsumed: 0,
+                                mintableAmount: 0,
                             });
                         }
                     } else if (givenContent.contentType === 'food') {
@@ -404,7 +405,7 @@ export const verifyTONTransaction = async (
                         if (existingFoodIndex !== -1) {
                             userUpdateOperations.$inc[`inventory.foods.${existingFoodIndex}.amount`] = givenContent.amount;
                         } else {
-                            userUpdateOperations.$push['inventory.foods'].$each.push({ type: givenContent.content, amount: givenContent.amount });
+                            userUpdateOperations.$push['inventory.foods'].$each.push({ type: givenContent.content, amount: givenContent.amount, mintableAmount: 0 });
                         }
                     } else if (givenContent.contentType === 'igc') {
                         // check if xCookies.

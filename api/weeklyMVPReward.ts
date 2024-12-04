@@ -64,7 +64,7 @@ export const distributeWeeklyMVPRewards = async (): Promise<void> => {
 
         // loop through each user and find the users with:
         // 1. the most xCookies spent (i.e. `inventory.xCookieData.weeklyXCookiesSpent`)
-        // 2. the most bit orbs consumed (i.e. `inventory.items.weeklyAmountConsumed` for Bit Orb (I), (II), and (III))
+        // 2. the most bit orbs consumed (i.e. `inventory.weeklyAmountConsumed` for Bit Orb (I), (II), and (III))
         // 3. the most terra capsulators consumed (i.e. `inventory.items.weeklyAmountConsumed` for Terra Capsulator (I), (II))
         const mvpData: {
             userId: string;

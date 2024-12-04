@@ -1860,6 +1860,7 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
                         amount: reward.amount,
                         totalAmountConsumed: 0,
                         weeklyAmountConsumed: 0,
+                        mintableAmount: 0,
                     });
                 }
             }
@@ -1878,6 +1879,7 @@ export const claimBeginnerRewards = async (twitterId: string): Promise<ReturnVal
                         amount: reward.amount,
                         totalAmountConsumed: 0,
                         weeklyAmountConsumed: 0,
+                        mintableAmount: 0
                     });
                 }
             }

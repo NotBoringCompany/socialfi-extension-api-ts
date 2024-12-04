@@ -389,7 +389,7 @@ export const cancelListing = async (listingId: string, userId: string): Promise<
                     { _id: user._id, 'inventory.foods.type': { $ne: listing.item } },
                     {
                         $push: {
-                            'inventory.foods': { type: listing.item, amount: listing.amount },
+                            'inventory.foods': { type: listing.item, amount: listing.amount, mintableAmount: 0 },
                         },
                     },
                     { session }
@@ -412,6 +412,7 @@ export const cancelListing = async (listingId: string, userId: string): Promise<
                                 amount: listing.amount,
                                 totalAmountConsumed: 0,
                                 weeklyAmountConsumed: 0,
+                                mintableAmount: 0,
                             },
                         },
                     },
@@ -562,7 +563,7 @@ export const purchaseListing = async (data: PurchaseListingDTO): Promise<ReturnV
                 { _id: user._id, 'inventory.foods.type': { $ne: listing.item } },
                 {
                     $push: {
-                        'inventory.foods': { type: listing.item, amount: purchaseAmount },
+                        'inventory.foods': { type: listing.item, amount: purchaseAmount, mintableAmount: 0 },
                     },
                 },
                 { session }
@@ -585,6 +586,7 @@ export const purchaseListing = async (data: PurchaseListingDTO): Promise<ReturnV
                             amount: purchaseAmount,
                             totalAmountConsumed: 0,
                             weeklyAmountConsumed: 0,
+                            mintableAmount: 0
                         },
                     },
                 },

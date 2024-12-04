@@ -472,6 +472,7 @@ export const completeQuest = async (twitterId: string, questId: number): Promise
                                 amount,
                                 totalAmountConsumed: 0,
                                 weeklyAmountConsumed: 0,
+                                mintableAmount: 0,
                             };
                         }
 
