@@ -4,7 +4,7 @@ import { Food } from '../models/food';
 import { Item } from '../models/item';
 import { LeaderboardPointsSource } from '../models/leaderboard';
 import { POIName, POIShop, POIShopActionItemData, POIShopItemName } from '../models/poi';
-import { ExtendedResource } from '../models/resource';
+import { ExtendedResource, ExtendedResourceOrigin } from '../models/resource';
 import { Squad, SquadRole } from '../models/squad';
 import { LeaderboardModel, POIModel, RaftModel, SquadLeaderboardModel, SquadModel, UserModel } from '../utils/constants/db';
 import { POI_TRAVEL_LEVEL_REQUIREMENT } from '../utils/constants/poi';
@@ -22,6 +22,7 @@ import { DEPLOYER_WALLET, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from
 import { ethers } from 'ethers';
 import { incrementProgressionByType } from './quest';
 import { QuestRequirementType } from '../models/quest';
+import { resources } from '../utils/constants/resource';
 
 /**
  * Resets the `currentBuyableAmount` and `currentSellableAmount` of all global items in all POI shops.
@@ -1349,9 +1350,14 @@ export const buyItemsInPOIShop = async (
                 const resourceIndex = (user.inventory.resources as ExtendedResource[]).findIndex(resource => resource.type === item.item as string);
 
                 if (resourceIndex === -1) {
+                    // get the resource data
+                    const resource = resources.find(resource => resource.type === item.item as string);
+
                     userUpdateOperations.$push[`inventory.resources`] = {
-                        type: item.item,
-                        amount: item.amount
+                        ...resource,
+                        amount: item.amount,
+                        origin: ExtendedResourceOrigin.NORMAL,
+                        mintableAmount: 0,
                     }
                 } else {
                     userUpdateOperations.$inc[`inventory.resources.${resourceIndex}.amount`] = item.amount;
@@ -1370,7 +1376,8 @@ export const buyItemsInPOIShop = async (
                 if (foodIndex === -1) {
                     userUpdateOperations.$push[`inventory.foods`] = {
                         type: item.item,
-                        amount: item.amount
+                        amount: item.amount,
+                        mintableAmount: 0,
                     }
                 } else {
                     userUpdateOperations.$inc[`inventory.foods.${foodIndex}.amount`] = item.amount;
@@ -1389,7 +1396,8 @@ export const buyItemsInPOIShop = async (
                         type: item.item,
                         amount: item.amount,
                         totalAmountConsumed: 0,
-                        weeklyAmountConsumed: 0
+                        weeklyAmountConsumed: 0,
+                        mintableAmount: 0
                     }
                 } else {
                     userUpdateOperations.$inc[`inventory.items.${terraCapsulatorIndex}.amount`] = item.amount;
@@ -1409,7 +1417,8 @@ export const buyItemsInPOIShop = async (
                         type: item.item,
                         amount: item.amount,
                         totalAmountConsumed: 0,
-                        weeklyAmountConsumed: 0
+                        weeklyAmountConsumed: 0,
+                        mintableAmount: 0,
                     }
                 } else {
                     userUpdateOperations.$inc[`inventory.items.${bitOrbIndex}.amount`] = item.amount;
@@ -1428,7 +1437,8 @@ export const buyItemsInPOIShop = async (
                         type: item.item,
                         amount: item.amount,
                         totalAmountConsumed: 0,
-                        weeklyAmountConsumed: 0
+                        weeklyAmountConsumed: 0,
+                        mintableAmount: 0,
                     }
                 } else {
                     userUpdateOperations.$inc[`inventory.items.${boosterIndex}.amount`] = item.amount;

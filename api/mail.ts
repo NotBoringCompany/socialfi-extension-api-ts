@@ -326,7 +326,8 @@ export const claimMail = async (mailId: string, twitterId: string): Promise<Retu
         } else {
           userUpdateOperations.$push['inventory.foods'].$each.push({ 
             type: attachment.name, 
-            amount: attachment.amount 
+            amount: attachment.amount,
+            mintableAmount: 0,
           });
         }
       } else if (type === 'item') {
@@ -341,7 +342,8 @@ export const claimMail = async (mailId: string, twitterId: string): Promise<Retu
             type: attachment.name, 
             amount: attachment.amount,
             totalAmountConsumed: 0,
-            weeklyAmountConsumed: 0
+            weeklyAmountConsumed: 0,
+            mintableAmount: 0,
           });
         }
       } else if (type === 'resource') {
@@ -366,7 +368,8 @@ export const claimMail = async (mailId: string, twitterId: string): Promise<Retu
           userUpdateOperations.$push['inventory.resources'].$each.push({ 
             ...resourceData,
             amount: attachment.amount,
-            origin: ExtendedResourceOrigin.NORMAL
+            origin: ExtendedResourceOrigin.NORMAL,
+            mintableAmount: 0,
           });
         }
       } else if (type === 'xCookies') {
@@ -608,7 +611,8 @@ export const readAndClaimAllMails = async (twitterId: string): Promise<ReturnVal
                 // else, push the new food to the update operations
                 userUpdateOperations.$push['inventory.foods'].$each.push({ 
                   type: attachment.name, 
-                  amount: attachment.amount 
+                  amount: attachment.amount,
+                  mintableAmount: 0,
                 });
               }
             }
@@ -633,7 +637,8 @@ export const readAndClaimAllMails = async (twitterId: string): Promise<ReturnVal
                   type: attachment.name, 
                   amount: attachment.amount,
                   totalAmountConsumed: 0,
-                  weeklyAmountConsumed: 0
+                  weeklyAmountConsumed: 0,
+                  mintableAmount: 0,
                 });
               }
             }
@@ -666,7 +671,8 @@ export const readAndClaimAllMails = async (twitterId: string): Promise<ReturnVal
                 userUpdateOperations.$push['inventory.resources'].$each.push({ 
                   ...resourceData,
                   amount: attachment.amount,
-                  origin: ExtendedResourceOrigin.NORMAL
+                  origin: ExtendedResourceOrigin.NORMAL,
+                  mintableAmount: 0,
                 });
               }
             }

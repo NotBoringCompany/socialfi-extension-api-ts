@@ -1139,7 +1139,8 @@ export const claimCraftedAssets = async (
                             type: asset,
                             amount: claimableAmount,
                             totalAmountConsumed: 0,
-                            weeklyAmountConsumed: 0
+                            weeklyAmountConsumed: 0,
+                            mintableAmount: 0,
                         })
                     } else {
                         userUpdateOperations.$inc[`inventory.items.${itemIndex}.amount`] = claimableAmount;
@@ -1152,7 +1153,8 @@ export const claimCraftedAssets = async (
                     if (foodIndex === -1) {
                         userUpdateOperations.$push['inventory.foods'].$each.push({
                             type: asset,
-                            amount: claimableAmount
+                            amount: claimableAmount,
+                            mintableAmount: 0,
                         })
                     } else {
                         userUpdateOperations.$inc[`inventory.foods.${foodIndex}.amount`] = claimableAmount;
@@ -1176,7 +1178,8 @@ export const claimCraftedAssets = async (
                         userUpdateOperations.$push['inventory.resources'].$each.push({
                             ...resourceData,
                             amount: claimableAmount,
-                            origin: ExtendedResourceOrigin.NORMAL
+                            origin: ExtendedResourceOrigin.NORMAL,
+                            mintableAmount: 0,
                         })
                     } else {
                         userUpdateOperations.$inc[`inventory.resources.${resourceIndex}.amount`] = claimableAmount;
@@ -1291,7 +1294,8 @@ export const claimCraftedAssets = async (
                                 type: asset,
                                 amount: finalizedClaimableAmount,
                                 totalAmountConsumed: 0,
-                                weeklyAmountConsumed: 0
+                                weeklyAmountConsumed: 0,
+                                mintableAmount: 0,
                             })
                         } else {
                             userUpdateOperations.$inc[`inventory.items.${itemIndex}.amount`] = finalizedClaimableAmount;
@@ -1304,7 +1308,8 @@ export const claimCraftedAssets = async (
                         if (foodIndex === -1) {
                             userUpdateOperations.$push['inventory.foods'].$each.push({
                                 type: asset,
-                                amount: finalizedClaimableAmount
+                                amount: finalizedClaimableAmount,
+                                mintableAmount: 0,
                             })
                         } else {
                             userUpdateOperations.$inc[`inventory.foods.${foodIndex}.amount`] = finalizedClaimableAmount;
@@ -1328,7 +1333,8 @@ export const claimCraftedAssets = async (
                             userUpdateOperations.$push['inventory.resources'].$each.push({
                                 ...resourceData,
                                 amount: finalizedClaimableAmount,
-                                origin: ExtendedResourceOrigin.NORMAL
+                                origin: ExtendedResourceOrigin.NORMAL,
+                                mintableAmount: 0,
                             })
                         } else {
                             userUpdateOperations.$inc[`inventory.resources.${resourceIndex}.amount`] = finalizedClaimableAmount;
@@ -1371,7 +1377,8 @@ export const claimCraftedAssets = async (
                                 type: asset,
                                 amount: finalizedClaimableAmount,
                                 totalAmountConsumed: 0,
-                                weeklyAmountConsumed: 0
+                                weeklyAmountConsumed: 0,
+                                mintableAmount: 0,
                             })
                         } else {
                             userUpdateOperations.$inc[`inventory.items.${itemIndex}.amount`] = finalizedClaimableAmount;
@@ -1384,7 +1391,8 @@ export const claimCraftedAssets = async (
                         if (foodIndex === -1) {
                             userUpdateOperations.$push['inventory.foods'].$each.push({
                                 type: asset,
-                                amount: finalizedClaimableAmount
+                                amount: finalizedClaimableAmount,
+                                mintableAmount: 0,
                             })
                         } else {
                             userUpdateOperations.$inc[`inventory.foods.${foodIndex}.amount`] = finalizedClaimableAmount;
@@ -1408,7 +1416,8 @@ export const claimCraftedAssets = async (
                             userUpdateOperations.$push['inventory.resources'].$each.push({
                                 ...resourceData,
                                 amount: finalizedClaimableAmount,
-                                origin: ExtendedResourceOrigin.NORMAL
+                                origin: ExtendedResourceOrigin.NORMAL,
+                                mintableAmount: 0,
                             })
                         } else {
                             userUpdateOperations.$inc[`inventory.resources.${resourceIndex}.amount`] = finalizedClaimableAmount;
@@ -1661,7 +1670,8 @@ export const cancelCraft = async (twitterId: string, craftingQueueId: string): P
                     userUpdateOperations.$push['inventory.resources'].$each.push({
                         ...resource,
                         amount: refundableAmount,
-                        origin: ExtendedResourceOrigin.NORMAL
+                        origin: ExtendedResourceOrigin.NORMAL,
+                        mintableAmount: 0,
                     })
                 }
 
@@ -1676,7 +1686,8 @@ export const cancelCraft = async (twitterId: string, craftingQueueId: string): P
                 } else {
                     userUpdateOperations.$push['inventory.foods'].$each.push({
                         type: requiredAssetType,
-                        amount: refundableAmount
+                        amount: refundableAmount,
+                        mintableAmount: 0,
                     })
                 }
 
@@ -1694,7 +1705,8 @@ export const cancelCraft = async (twitterId: string, craftingQueueId: string): P
                         type: requiredAssetType,
                         amount: refundableAmount,
                         totalAmountConsumed: 0,
-                        weeklyAmountConsumed: 0
+                        weeklyAmountConsumed: 0,
+                        mintableAmount: 0,
                     })
                 }
 

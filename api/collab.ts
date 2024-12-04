@@ -447,6 +447,7 @@ export const claimCollabReward = async (twitterId: string): Promise<ReturnValue>
                                 amount: reward.amount,
                                 totalAmountConsumed: 0,
                                 weeklyAmountConsumed: 0,
+                                mintableAmount: 0,
                             });
                         }
                         break;

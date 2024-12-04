@@ -164,6 +164,7 @@ export const claimDailyKOSRewards = async (twitterId: string): Promise<ReturnVal
                             amount: reward.amount,
                             totalAmountConsumed: 0,
                             weeklyAmountConsumed: 0,
+                            mintableAmount: 0,
                         });
                     }
                     break;
@@ -450,6 +451,7 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
                         amount: reward.amount,
                         totalAmountConsumed: 0,
                         weeklyAmountConsumed: 0,
+                        mintableAmount: 0,
                     });
                 }
                 // if reward is terra capsulator I or II
@@ -472,6 +474,7 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
                         amount: reward.amount,
                         totalAmountConsumed: 0,
                         weeklyAmountConsumed: 0,
+                        mintableAmount: 0,
                     });
                 }
                 // if reward type is raft speed booster 60 min
@@ -494,6 +497,7 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
                         amount: reward.amount,
                         totalAmountConsumed: 0,
                         weeklyAmountConsumed: 0,
+                        mintableAmount: 0,
                     });
                 }
                 // if reward type is xCookies
