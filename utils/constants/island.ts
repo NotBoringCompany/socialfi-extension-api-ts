@@ -545,7 +545,7 @@ ISLAND_QUEUE.process('dropResourceOrClaimResources', async (job) => {
           if (existingResourceIndex !== -1) {
             userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = chosenResource.amount;
           } else {
-            userUpdateOperations.$push['inventory.resources'].$each.push({ ...chosenResourceData, amount: chosenResource.amount, origin: ExtendedResourceOrigin.NORMAL });
+            userUpdateOperations.$push['inventory.resources'].$each.push({ ...chosenResourceData, amount: chosenResource.amount, origin: ExtendedResourceOrigin.NORMAL, mintableAmount: 0 });
           }
   
           // now, check if the amount to claim for this resource equals the max claimable amount for this resource.
@@ -610,7 +610,7 @@ ISLAND_QUEUE.process('dropResourceOrClaimResources', async (job) => {
             } else {
               console.log(`(ISLAND_QUEUE/claimResources) New resource. found. Adding resource to inventory... Resource: ${JSON.stringify(resource, null, 2)}`);
               /// CHECK THIS!!!!!
-              userUpdateOperations.$push['inventory.resources'].$each.push(resource);
+              userUpdateOperations.$push['inventory.resources'].$each.push({...resource, mintableAmount: 0});
             }
           }
   
@@ -679,7 +679,7 @@ ISLAND_QUEUE.process('dropResourceOrClaimResources', async (job) => {
   
                   userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = amountToClaim;
                 } else {
-                  userUpdateOperations.$push['inventory.resources'].$each.push({ ...resource, amount: amountToClaim, origin: ExtendedResourceOrigin.NORMAL });
+                  userUpdateOperations.$push['inventory.resources'].$each.push({ ...resource, amount: amountToClaim, origin: ExtendedResourceOrigin.NORMAL, mintableAmount: 0 });
                 }
   
                 // increment the current weight by the total weight of this resource
@@ -708,7 +708,7 @@ ISLAND_QUEUE.process('dropResourceOrClaimResources', async (job) => {
                   console.log('existing resource index #3: ', existingResourceIndex);
                   userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = resource.amount;
                 } else {
-                  userUpdateOperations.$push['inventory.resources'].$each.push({ ...resource, origin: ExtendedResourceOrigin.NORMAL });
+                  userUpdateOperations.$push['inventory.resources'].$each.push({ ...resource, origin: ExtendedResourceOrigin.NORMAL, mintableAmount: 0 });
                 }
   
                 // increment the current weight by the total weight of this resource
