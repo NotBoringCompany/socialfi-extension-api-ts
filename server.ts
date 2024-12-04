@@ -60,6 +60,7 @@ import collab from './routes/collab';
 import mail from './routes/mail';
 import { schedulers } from './schedulers/schedulers';
 import { checkMaintenance } from './middlewares/maintenance';
+import upgrade from './routes/upgrade';
 
 app.use('/auth/twitter', checkMaintenance, twitterAuth);
 app.use('/auth/discord', checkMaintenance, discordAuth);
@@ -88,6 +89,7 @@ app.use('/squad_leaderboard', checkMaintenance, squadLeaderboard);
 app.use('/weekly_mvp_reward', checkMaintenance, weeklyMVPReward);
 app.use('/collab', checkMaintenance, collab);
 app.use('/mail', checkMaintenance, mail);
+app.use('/upgrade', checkMaintenance, upgrade);
 
 app.listen(port, async () => {
     console.log(`Server running on port ${port}`);
