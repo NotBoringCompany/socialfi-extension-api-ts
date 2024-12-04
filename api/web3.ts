@@ -11,7 +11,8 @@ import { Item } from '../models/item';
 import { Food } from '../models/food';
 import { AssetType } from '../models/asset';
 import { decryptPrivateKey, generateHashSalt, generateOpHash } from '../utils/crypto';
-import { ExtendedResource } from '../models/resource';
+import { ExtendedResource, ExtendedResourceOrigin, Resource } from '../models/resource';
+import { resources } from '../utils/constants/resource';
 
 /**
  * Sets `usable` to `true` by default for all to-be-NFT assets (islands, bits and bit cosmetics) in the database.
@@ -1910,3 +1911,174 @@ export const fetchOwnedSFTs = async (twitterId: string): Promise<ReturnValue> =>
         }
     }
 }
+
+/**
+ * Deposits `amount` of an SFT in-game, burning the equivalent amount of SFT in the blockchain.
+ */
+export const depositSFT = async (twitterId: string, sftId: number, amount: number): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(depositSFT) User not found.`
+            }
+        }
+
+        // check if the user owns `amount` of `sftId`
+        const balance = await WONDERBITS_SFT_CONTRACT.balanceOf(user?.wallet.address, sftId);
+
+        if (balance < amount) {
+            console.log(`(depositSFT) User does not have enough of the SFT to deposit.`);
+            return {
+                status: Status.ERROR,
+                message: `(depositSFT) User does not have enough of the SFT to deposit.`
+            }
+        }
+
+        // check which asset the SFT corresponds to
+        const sftData = WONDERBITS_SFT_IDS.find(data => data.id === sftId);
+
+        if (!sftData) {
+            return {
+                status: Status.ERROR,
+                message: `(depositSFT) SFT data not found.`
+            }
+        }
+
+        // estimate the gas required to burn the SFT
+        const gasEstimation = await WONDERBITS_SFT_CONTRACT.estimateGas.burn(
+            sftId,
+            amount
+        );
+
+        // get the current gas price
+        const gasPrice = await KAIA_TESTNET_PROVIDER.getGasPrice();
+
+        // calculate the gas fee in KAIA
+        const gasFee = ethers.utils.formatEther(gasEstimation.mul(gasPrice));
+
+        // check if the user has enough KAIA to pay for the gas fee
+        const userBalance = await KAIA_TESTNET_PROVIDER.getBalance(user.wallet?.address);
+        const formattedUserBalance = ethers.utils.formatEther(userBalance);
+
+        if (Number(formattedUserBalance) < Number(gasFee)) {
+            console.log(`(depositSFT) User does not have enough KAIA to pay for the gas fee.`);
+            return {
+                status: Status.ERROR,
+                message: `(depositSFT) User does not have enough KAIA to pay for the gas fee. Required: ${gasFee} KAIA --- User Balance: ${formattedUserBalance} KAIA`
+            }
+        }
+
+        // get the user's private key
+        const { encryptedPrivateKey } = user?.wallet as UserWallet;
+
+        if (!encryptedPrivateKey) {
+            return {
+                status: Status.ERROR,
+                message: `(depositSFT) User's private key not found.`
+            }
+        }
+
+        // decrypt the user's private key
+        const decryptedPrivateKey = decryptPrivateKey(encryptedPrivateKey);
+
+        // call `burn` on the contract
+        const burnTx = await WONDERBITS_SFT_CONTRACT_USER(decryptedPrivateKey).burn(
+            sftId,
+            amount,
+            {
+                gasLimit: gasEstimation
+            }
+        );
+
+        // wait for the transaction to be mined
+        const burnTxReceipt = await burnTx.wait();
+
+        console.log(`(depositSFT) Burn transaction mined: ${burnTx.hash}`);
+
+        // update the user's inventory
+        const userUpdateOperations = {
+            $push: {},
+            $inc: {}
+        }
+
+        // check which asset's amount should be incremented based on the asset type
+        if (sftData.type === 'food') {
+            // check if the user already owns the food instance
+            const existingFoodIndex = (user.inventory?.foods as Food[]).findIndex(food => food.type === sftData.asset);
+
+            if (existingFoodIndex !== -1) {
+                userUpdateOperations.$inc[`inventory.foods.${existingFoodIndex}.amount`] = amount;
+            } else {
+                userUpdateOperations.$push = {
+                    'inventory.foods': {
+                        type: sftData.asset,
+                        amount
+                    }
+                }
+            }
+        } else if (sftData.type === 'resource') {
+            // check if the user already owns the resource instance
+            const existingResourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(resource => resource.type === sftData.asset);
+
+            // get the full resource based on the sft data
+            const resource: Resource = resources.find(resource => resource.type === sftData.asset);
+
+            if (existingResourceIndex !== -1) {
+                userUpdateOperations.$inc[`inventory.resources.${existingResourceIndex}.amount`] = amount;
+            } else {
+                userUpdateOperations.$push = {
+                    'inventory.resources': {
+                        ...resource,
+                        amount,
+                        origin: ExtendedResourceOrigin.NORMAL
+                    }
+                }
+            }
+        } else if (sftData.type === 'item') {
+            // check if the user already owns the item instance
+            const existingItemIndex = (user.inventory?.items as Item[]).findIndex(item => item.type === sftData.asset);
+
+            if (existingItemIndex !== -1) {
+                userUpdateOperations.$inc[`inventory.items.${existingItemIndex}.amount`] = amount;
+            } else {
+                userUpdateOperations.$push = {
+                    'inventory.items': {
+                        type: sftData.asset,
+                        amount,
+                        totalAmountConsumed: 0,
+                        weeklyAmountConsumed: 0
+                    }
+                }
+            }
+        }
+
+        // divide into push and inc separately to prevent conflicts
+        await UserModel.updateOne({ twitterId }, {
+            $push: userUpdateOperations.$push
+        });
+
+        await UserModel.updateOne({ twitterId }, {
+            $inc: userUpdateOperations.$inc
+        });
+
+        return {
+            status: Status.SUCCESS,
+            message: `(depositSFT) SFT deposited succesfully in-game.`,
+            data: {
+                sftData,
+                gasFee
+            }
+        }
+    } catch (err: any) {
+        console.log(`(depositSFT) ${err.message}`);
+        return {
+            status: Status.ERROR,
+            message: `(depositSFT) ${err.message}`
+        }
+    }
+}
+
+depositSFT('1462755469102137357', 1, 1);
