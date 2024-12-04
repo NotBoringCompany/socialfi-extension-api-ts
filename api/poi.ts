@@ -4,7 +4,7 @@ import { Food } from '../models/food';
 import { Item } from '../models/item';
 import { LeaderboardPointsSource } from '../models/leaderboard';
 import { POIName, POIShop, POIShopActionItemData, POIShopItemName } from '../models/poi';
-import { ExtendedResource } from '../models/resource';
+import { ExtendedResource, ExtendedResourceOrigin } from '../models/resource';
 import { Squad, SquadRole } from '../models/squad';
 import { LeaderboardModel, POIModel, RaftModel, SquadLeaderboardModel, SquadModel, UserModel } from '../utils/constants/db';
 import { POI_TRAVEL_LEVEL_REQUIREMENT } from '../utils/constants/poi';
@@ -17,6 +17,7 @@ import { getLatestSquadWeeklyRanking, squadKOSData } from './squad';
 import { updateReferredUsersData } from './user';
 import { incrementProgressionByType } from './quest';
 import { QuestRequirementType } from '../models/quest';
+import { resources } from '../utils/constants/resource';
 
 /**
  * Resets the `currentBuyableAmount` and `currentSellableAmount` of all global items in all POI shops.
@@ -1488,9 +1489,19 @@ export const buyItemsInPOIShop = async (
                 const resourceIndex = (user.inventory.resources as ExtendedResource[]).findIndex(resource => resource.type === item.item as string);
 
                 if (resourceIndex === -1) {
+                    const resource = resources.find(resource => resource.type === item.item as string);
+
+                    if (!resource) {
+                        return {
+                            status: Status.BAD_REQUEST,
+                            message: `(buyItemsInPOIShop) Resource not found in resources list.`
+                        }
+                    }
+
                     userUpdateOperations.$push[`inventory.resources`] = {
-                        type: item.item,
-                        amount: item.amount
+                        ...resource,
+                        amount: item.amount,
+                        origin: ExtendedResourceOrigin.NORMAL
                     }
                 } else {
                     userUpdateOperations.$inc[`inventory.resources.${resourceIndex}.amount`] = item.amount;
