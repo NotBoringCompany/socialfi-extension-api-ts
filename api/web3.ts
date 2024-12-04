@@ -2015,7 +2015,8 @@ export const depositSFT = async (twitterId: string, sftId: number, amount: numbe
                 userUpdateOperations.$push = {
                     'inventory.foods': {
                         type: sftData.asset,
-                        amount
+                        amount,
+                        mintableAmount: amount,
                     }
                 }
             }
@@ -2033,7 +2034,8 @@ export const depositSFT = async (twitterId: string, sftId: number, amount: numbe
                     'inventory.resources': {
                         ...resource,
                         amount,
-                        origin: ExtendedResourceOrigin.NORMAL
+                        origin: ExtendedResourceOrigin.NORMAL,
+                        mintableAmount: amount,
                     }
                 }
             }
@@ -2049,7 +2051,8 @@ export const depositSFT = async (twitterId: string, sftId: number, amount: numbe
                         type: sftData.asset,
                         amount,
                         totalAmountConsumed: 0,
-                        weeklyAmountConsumed: 0
+                        weeklyAmountConsumed: 0,
+                        mintableAmount: amount,
                     }
                 }
             }
