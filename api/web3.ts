@@ -1916,7 +1916,7 @@ export const fetchOwnedSFTs = async (twitterId: string): Promise<ReturnValue> =>
 /**
  * Deposits `amount` of an SFT in-game, burning the equivalent amount of SFT in the blockchain.
  */
-export const depositSFT = async (twitterId: string, sftId: number, amount: number): Promise<ReturnValue> => {
+export const depositSFT = async (twitterId: string, asset: AssetType, amount: number): Promise<ReturnValue> => {
     try {
         const user = await UserModel.findOne({ twitterId }).lean();
 
@@ -1927,8 +1927,18 @@ export const depositSFT = async (twitterId: string, sftId: number, amount: numbe
             }
         }
 
-        // check if the user owns `amount` of `sftId`
-        const balance = await WONDERBITS_SFT_CONTRACT.balanceOf(user?.wallet.address, sftId);
+        // check which asset the SFT corresponds to
+        const sftData = WONDERBITS_SFT_IDS.find(data => data.asset === asset);
+
+        if (!sftData) {
+            return {
+                status: Status.ERROR,
+                message: `(depositSFT) SFT data not found.`
+            }
+        }
+
+        // check if the user owns `amount` of the SFT
+        const balance = await WONDERBITS_SFT_CONTRACT.balanceOf(user?.wallet.address, sftData.id);
 
         if (balance < amount) {
             console.log(`(depositSFT) User does not have enough of the SFT to deposit.`);
@@ -1938,19 +1948,9 @@ export const depositSFT = async (twitterId: string, sftId: number, amount: numbe
             }
         }
 
-        // check which asset the SFT corresponds to
-        const sftData = WONDERBITS_SFT_IDS.find(data => data.id === sftId);
-
-        if (!sftData) {
-            return {
-                status: Status.ERROR,
-                message: `(depositSFT) SFT data not found.`
-            }
-        }
-
         // estimate the gas required to burn the SFT
         const gasEstimation = await WONDERBITS_SFT_CONTRACT.estimateGas.burn(
-            sftId,
+            sftData.id,
             amount
         );
 
@@ -1987,7 +1987,7 @@ export const depositSFT = async (twitterId: string, sftId: number, amount: numbe
 
         // call `burn` on the contract
         const burnTx = await WONDERBITS_SFT_CONTRACT_USER(decryptedPrivateKey).burn(
-            sftId,
+            sftData.id,
             amount,
             {
                 gasLimit: gasEstimation

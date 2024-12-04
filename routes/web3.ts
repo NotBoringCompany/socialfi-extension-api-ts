@@ -225,7 +225,7 @@ router.get('/fetch_owned_sfts', async (req, res) => {
 })
 
 router.post('/deposit_sft', async (req, res) => {
-    const { sftId, amount } = req.body;
+    const { asset, amount } = req.body;
 
     try {
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'deposit_sft');
@@ -237,7 +237,7 @@ router.post('/deposit_sft', async (req, res) => {
             });
         }
 
-        const { status, message, data } = await depositSFT(validateData?.twitterId, sftId, amount);
+        const { status, message, data } = await depositSFT(validateData?.twitterId, asset, amount);
 
         return res.status(status).json({
             status,
