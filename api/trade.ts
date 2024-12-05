@@ -159,21 +159,23 @@ export const addListing = async (data: AddListingDTO): Promise<ReturnValue> => {
         const isResource = Object.values(CombinedResources).includes(data.item as ResourceType);
 
         if (isFood) {
-            // Find the index of the item in the user's food inventory
-            const index = (user.inventory?.foods as Food[]).findIndex((i) => i.type === data.item);
+            throw new Error('Food cannot be listed for trade');
 
-            if (index === -1) {
-                throw new Error(`You don't have the specified item in your inventory.`);
-            }
+            // // Find the index of the item in the user's food inventory
+            // const index = (user.inventory?.foods as Food[]).findIndex((i) => i.type === data.item);
 
-            if ((user.inventory?.foods as Food[])[index].amount < data.amount) {
-                throw new Error(`You don't have enough of this item to list for sale.`);
-            }
+            // if (index === -1) {
+            //     throw new Error(`You don't have the specified item in your inventory.`);
+            // }
 
-            // Decrease the quantity of the item in the inventory based on the amount being listed for sale
-            await user.updateOne({
-                $inc: { [`inventory.foods.${index}.amount`]: -data.amount },
-            });
+            // if ((user.inventory?.foods as Food[])[index].amount < data.amount) {
+            //     throw new Error(`You don't have enough of this item to list for sale.`);
+            // }
+
+            // // Decrease the quantity of the item in the inventory based on the amount being listed for sale
+            // await user.updateOne({
+            //     $inc: { [`inventory.foods.${index}.amount`]: -data.amount },
+            // });
         } else if (isResource) {
             // Find the index of the item in the user's general inventory
             const index = (user.inventory?.resources as ExtendedResource[]).findIndex((i) => i.type === data.item);
