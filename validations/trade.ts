@@ -20,10 +20,15 @@ export const listingsQuery = z.object({
 });
 
 export interface AddListingDTO {
+    /** the unique identifier (_id) of the user creating the listing */
     soldBy: string;
+    /** the name of the item being listed for trade */
     item: string;
+    /** the total quantity of the item available for trade */
     amount: number;
+    /** the price for a single unit of the item */
     price: number;
+    /** the currency used for the item's price */
     currency: string;
 }
 

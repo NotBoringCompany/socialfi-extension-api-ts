@@ -1,5 +1,7 @@
+import { CraftableAsset } from './craft';
 import { FoodType } from './food';
 import { SmeltingItem, SynthesizingItem } from './item';
+import { ResourceType } from './resource';
 import { User } from './user';
 
 /**
@@ -39,7 +41,7 @@ export interface TradeListing {
 /**
  * Represents a trade listing item type.
  */
-export type ItemType = FoodType | SynthesizingItem | SmeltingItem;
+export type ItemType = ResourceType | CraftableAsset;
 
 /**
  * Represents the status of a trade listing.

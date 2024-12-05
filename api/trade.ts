@@ -1,4 +1,3 @@
-import { ClientSession } from 'mongoose';
 import { Food, FoodType } from '../models/food';
 import { Item } from '../models/item';
 import { TradeStatus } from '../models/trade';
@@ -8,6 +7,9 @@ import { MAXIMUM_ACTIVE_TRADE_LISTING } from '../utils/constants/trade';
 import { generateObjectId } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
 import { AddListingDTO, ListingsQuery, PurchaseListingDTO } from '../validations/trade';
+import { CombinedResources, ExtendedResource, ExtendedResourceOrigin, ResourceType } from '../models/resource';
+import { CRAFTING_RECIPES } from '../utils/constants/craft';
+import { resources } from '../utils/constants/resource';
 
 /**
  * Retrieves all active trade listings.
@@ -154,6 +156,7 @@ export const addListing = async (data: AddListingDTO): Promise<ReturnValue> => {
         }
 
         const isFood = Object.values(FoodType).includes(data.item as FoodType);
+        const isResource = Object.values(CombinedResources).includes(data.item as ResourceType);
 
         if (isFood) {
             // Find the index of the item in the user's food inventory
@@ -171,7 +174,30 @@ export const addListing = async (data: AddListingDTO): Promise<ReturnValue> => {
             await user.updateOne({
                 $inc: { [`inventory.foods.${index}.amount`]: -data.amount },
             });
+        } else if (isResource) {
+            // Find the index of the item in the user's general inventory
+            const index = (user.inventory?.resources as ExtendedResource[]).findIndex((i) => i.type === data.item);
+
+            if (index === -1) {
+                throw new Error(`You don't have the specified item in your inventory.`);
+            }
+
+            if ((user.inventory?.items as Item[])[index].amount < data.amount) {
+                throw new Error(`You don't have enough of this item to list for sale.`);
+            }
+
+            // Decrease the quantity of the item in the inventory based on the amount being listed for sale
+            await user.updateOne({
+                $inc: { [`inventory.resources.${index}.amount`]: -data.amount },
+            });
         } else {
+            // If the item is not a resource or food, then assume it is craftable asset
+            const item = CRAFTING_RECIPES.find((recipe) => recipe.craftedAssetData.asset === data.item)
+                ?.craftedAssetData.asset;
+
+            // Check if the item exists in the crafting recipes
+            if (!item) throw new Error('Item invalid');
+
             // Find the index of the item in the user's general inventory
             const index = (user.inventory?.items as Item[]).findIndex((i) => i.type === data.item);
 
@@ -183,7 +209,7 @@ export const addListing = async (data: AddListingDTO): Promise<ReturnValue> => {
                 throw new Error(`You don't have enough of this item to list for sale.`);
             }
 
-            // Decrease the quantity of the item in the inventory based on the amount being listed for sale
+            // Cecrease the quantity of the item in the inventory based on the amount being listed for sale
             await user.updateOne({
                 $inc: { [`inventory.items.${index}.amount`]: -data.amount },
             });
@@ -374,6 +400,7 @@ export const cancelListing = async (listingId: string, userId: string): Promise<
 
         if (listing.amount > 0) {
             const isFood = Object.values(FoodType).includes(listing.item as FoodType);
+            const isResource = Object.values(CombinedResources).includes(listing.item as ResourceType);
 
             // Check if the listing item type was a food
             if (isFood) {
@@ -390,6 +417,36 @@ export const cancelListing = async (listingId: string, userId: string): Promise<
                     {
                         $push: {
                             'inventory.foods': { type: listing.item, amount: listing.amount, mintableAmount: 0 },
+                        },
+                    },
+                    { session }
+                );
+            } else if (isResource) {
+                const resource = resources.find((resource) => resource.type === listing.item);
+
+                if (!resource) throw new Error('Item not valid');
+
+                // use $inc to increase the amount of the purchased item
+                await UserModel.updateOne(
+                    { _id: user._id, 'inventory.resources.type': resource.type },
+                    { $inc: { 'inventory.resources.$.amount': listing.amount } },
+                    { session }
+                );
+
+                // if the item doesn't exist in the user's inventory, push the new item
+                await UserModel.updateOne(
+                    { _id: user._id, 'inventory.resources.type': { $ne: resource.type } },
+                    {
+                        $push: {
+                            'inventory.resources': {
+                                type: resource.type,
+                                amount: listing.amount,
+                                line: resource.line,
+                                origin: ExtendedResourceOrigin.NORMAL,
+                                rarity: resource.rarity,
+                                weight: resource.weight,
+                                mintableAmount: 0,
+                            } as ExtendedResource,
                         },
                     },
                     { session }
@@ -548,6 +605,7 @@ export const purchaseListing = async (data: PurchaseListingDTO): Promise<ReturnV
         );
 
         const isFood = Object.values(FoodType).includes(listing.item as FoodType);
+        const isResource = Object.values(CombinedResources).includes(listing.item as ResourceType);
 
         // Check if the listing item type was a food
         if (isFood) {
@@ -564,6 +622,36 @@ export const purchaseListing = async (data: PurchaseListingDTO): Promise<ReturnV
                 {
                     $push: {
                         'inventory.foods': { type: listing.item, amount: purchaseAmount, mintableAmount: 0 },
+                    },
+                },
+                { session }
+            );
+        } else if (isResource) {
+            const resource = resources.find((resource) => resource.type === listing.item);
+
+            if (!resource) throw new Error('Item not valid');
+
+            // Use $inc to increase the amount of the purchased item
+            await UserModel.updateOne(
+                { _id: user._id, 'inventory.resources.type': resource.type },
+                { $inc: { 'inventory.resources.$.amount': purchaseAmount } },
+                { session }
+            );
+
+            // If the item doesn't exist in the user's inventory, push the new item
+            await UserModel.updateOne(
+                { _id: user._id, 'inventory.resources.type': { $ne: resource.type } },
+                {
+                    $push: {
+                        'inventory.resources': {
+                            type: resource.type,
+                            amount: purchaseAmount,
+                            line: resource.line,
+                            origin: ExtendedResourceOrigin.NORMAL,
+                            rarity: resource.rarity,
+                            weight: resource.weight,
+                            mintableAmount: 0,
+                        } as ExtendedResource,
                     },
                 },
                 { session }
@@ -586,7 +674,7 @@ export const purchaseListing = async (data: PurchaseListingDTO): Promise<ReturnV
                             amount: purchaseAmount,
                             totalAmountConsumed: 0,
                             weeklyAmountConsumed: 0,
-                            mintableAmount: 0
+                            mintableAmount: 0,
                         },
                     },
                 },
