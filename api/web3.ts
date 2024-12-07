@@ -1264,8 +1264,7 @@ export const mintSFT = async (twitterId: string, asset: AssetType, amount: numbe
             user?.wallet?.address,
             assetData.id,
             amount,
-            '0x',
-            [salt, signature]
+            [salt, signature, '0x']
         );
 
         // get the current gas price
@@ -1304,8 +1303,7 @@ export const mintSFT = async (twitterId: string, asset: AssetType, amount: numbe
             user.wallet?.address,
             assetData.id,
             amount,
-            '0x',
-            [salt, signature],
+            [salt, signature, '0x'],
             {
                 gasLimit: gasEstimation
             }
@@ -1903,7 +1901,26 @@ export const fetchOwnedSFTs = async (twitterId: string): Promise<ReturnValue> =>
             ids
         );
 
-        console.log(`(fetchOwnedSFTs) batchFetch: ${batchFetch}`);
+        // for each ID, remap the balance to the corresponding asset type
+        const sfts = batchFetch.map((balance: ethers.BigNumber, index: number) => {
+            const assetData = WONDERBITS_SFT_IDS.find(data => data.id === ids[index]);
+
+            return {
+                asset: assetData?.asset,
+                id: assetData?.id,
+                balance: balance.toNumber()
+            }
+        });
+
+        console.log(`(fetchOwnedSFTs) batchFetch: ${JSON.stringify(sfts, null, 2)}`);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(fetchOwnedSFTs) SFTs fetched successfully.`,
+            data: {
+
+            }
+        }
     } catch (err: any) {
         console.log(`(fetchOwnedSFTs) ${err.message}`);
         return {
