@@ -138,10 +138,15 @@ export const CANCEL_CRAFT_X_COOKIES_COST = (craftedAssetRarity: CraftedAssetRari
  */
 export const REQUIRED_POI_FOR_CRAFTING_LINE = (craftingRecipeLine: CraftingRecipeLine): POIName => {
     switch (craftingRecipeLine) {
-        case CraftingRecipeLine.SYNTHESIZING:
+        case CraftingRecipeLine.CRAFTSMAN:
             return POIName.HOME;
-        case CraftingRecipeLine.SMELTING:
+        case CraftingRecipeLine.SYNTHESIZING:
+        case CraftingRecipeLine.ALCHEMY:
+        case CraftingRecipeLine.CARPENTRY:
+        case CraftingRecipeLine.BLACKSMITHING:
             return POIName.EVERGREEN_VILLAGE;
+        case CraftingRecipeLine.JEWELER:
+            return POIName.PALMSHADE_VILLAGE;
         // by default just throw an error
         default:
             throw new Error(`(REQUIRED_POI_FOR_CRAFTING_LINE) Crafting line ${craftingRecipeLine} not implemented yet or not found.`);
