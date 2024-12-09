@@ -1331,7 +1331,7 @@ export const consumeSynthesizingItem = async (
                         'removeIslandGatheringRateModifier',
                         {
                             islandId: island.islandId,
-                            owner: user._id,
+                            'ownerData.currentOwnerId': user._id,
                             origin: `Synthesizing Item: ${item}. Instance ID: ${randomId}`,
                             endTimestamp: Math.floor(Date.now() / 1000) + synthesizingItemData.effectValues.effectDuration
                         },
@@ -1373,7 +1373,7 @@ export const consumeSynthesizingItem = async (
                                 {
                                     bitId,
                                     islandId: island.islandId,
-                                    owner: user._id,
+                                    'ownerData.currentOwnerId': user._id,
                                     origin: `Synthesizing Item: ${item}. Instance ID: ${randomId}`,
                                     endTimestamp: Math.floor(Date.now() / 1000) + synthesizingItemData.effectValues.effectDuration
                                 },
@@ -1408,28 +1408,28 @@ export const consumeSynthesizingItem = async (
 
         // do the update operations.
         const islandUpdatePromisesSetInc = islandUpdateOperations.length > 0 ? islandUpdateOperations.map(async op => {
-            return IslandModel.updateOne({ islandId: op.islandId, owner: user._id }, {
+            return IslandModel.updateOne({ islandId: op.islandId, 'ownerData.currentOwnerId': user._id }, {
                 $set: op.updateOperations.$set,
                 $inc: op.updateOperations.$inc
             });
         }) : [];
 
         const bitUpdatePromisesSetInc = bitUpdateOperations.length > 0 ? bitUpdateOperations.map(async op => {
-            return BitModel.updateOne({ bitId: op.bitId, owner: user._id }, {
+            return BitModel.updateOne({ bitId: op.bitId, 'ownerData.currentOwnerId': user._id }, {
                 $set: op.updateOperations.$set,
                 $inc: op.updateOperations.$inc
             });
         }) : [];
 
         const islandUpdatePromisesPushPull = islandUpdateOperations.length > 0 ? islandUpdateOperations.map(async op => {
-            return IslandModel.updateOne({ islandId: op.islandId, owner: user._id }, {
+            return IslandModel.updateOne({ islandId: op.islandId, 'ownerData.currentOwnerId': user._id }, {
                 $push: op.updateOperations.$push,
                 $pull: op.updateOperations.$pull
             });
         }) : [];
 
         const bitUpdatePromisesPushPull = bitUpdateOperations.length > 0 ? bitUpdateOperations.map(async op => {
-            return BitModel.updateOne({ bitId: op.bitId, owner: user._id }, {
+            return BitModel.updateOne({ bitId: op.bitId, 'ownerData.currentOwnerId': user._id }, {
                 $push: op.updateOperations.$push,
                 $pull: op.updateOperations.$pull
             });
