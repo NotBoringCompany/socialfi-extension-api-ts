@@ -1,13 +1,13 @@
 import { ClientSession } from 'mongoose';
 import { AssetType } from '../models/asset';
-import { CraftableAsset, CraftingRecipe, CraftingRecipeRequiredAssetData, CraftingQueueStatus, CraftedAssetData, CraftingRecipeLine, CraftingQueueUsedAssetData } from "../models/craft";
+import { CraftableAsset, CraftingRecipe, CraftingRecipeRequiredAssetData, CraftingQueueStatus, CraftedAssetData, CraftingRecipeLine, CraftingQueueUsedAssetData, CraftedAssetRarity } from "../models/craft";
 import { Food } from '../models/food';
 import { Item } from '../models/item';
 import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
 import { CraftingMastery, CraftingMasteryStats } from '../models/mastery';
 import { POIName } from '../models/poi';
 import { BarrenResource, ExtendedResource, ExtendedResourceOrigin, FruitResource, LiquidResource, OreResource, ResourceType, SimplifiedResource } from "../models/resource";
-import { BASE_CRAFTABLE_PER_SLOT, BASE_CRAFTABLE_PER_SLOT_SMELTING, BASE_CRAFTING_SLOTS, CANCEL_CRAFT_X_COOKIES_COST, CRAFT_QUEUE, CRAFTING_RECIPES, GET_CRAFTING_LEVEL, GET_PROFESSION_REQUIRED_XP, REQUIRED_POI_FOR_CRAFTING_LINE } from '../utils/constants/craft';
+import { BASE_CRAFTABLE_PER_SLOT, BASE_CRAFTABLE_PER_SLOT_SMELTING, BASE_CRAFTING_SLOTS, CANCEL_CRAFT_X_COOKIES_COST, CRAFT_QUEUE, CRAFTING_RECIPES, GET_CRAFTING_LEVEL, GET_CRAFTING_SUCCESS_RATE, GET_PROFESSION_REQUIRED_XP, REQUIRED_POI_FOR_CRAFTING_LINE } from '../utils/constants/craft';
 import { LeaderboardModel, CraftingQueueModel, SquadLeaderboardModel, SquadModel, UserModel, CraftingRecipeModel, TEST_CONNECTION } from "../utils/constants/db";
 import { resources } from "../utils/constants/resource";
 import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
@@ -491,30 +491,24 @@ export const craftAsset = async (
 
         let obtainedAssetCount = 0;
 
-        // at this point, all base checks should pass. proceed with the crafting logic.
-        // per each amount of the asset to craft, we will roll the first dice to determine if the user successfully crafts 1 of this asset.
-        // for instance, if the user wants to craft 5 (amount = 5) of asset A, we will roll the dice of 0-9999 5 times.
-        // any dice that rolls below the `baseSuccessChance` will be considered a success, and the user will obtain 1 of the asset.
-        // for instance, if the user rolls 7900, 5500, 3200, 8800, 9100, and the `baseSuccessChance` is 7000 (70%), the user will obtain 2 of the asset instead of 5,
-        // because only 2 of the rolls (5500 and 3200) are below 7000 (or 70%).
-        const successRolls = [];
+        // calculate the number of successful crafts by rolling against the success rate
+        // based on the crafting recipe, asset rarity, mastery level, and requested amount
+        let successfulCrafts = rollCraftingChance(
+            craftingRecipe.craftingRecipeLine,
+            craftingRecipe.craftedAssetData.assetRarity,
+            masteryData.level,
+            amount
+        );
 
-        for (let i = 0; i < amount; i++) {
-            const roll = Math.floor(Math.random() * 10000);
-            successRolls.push(roll);
-        }
-
-        // get the amount of successful crafts based on the rolls below the `baseSuccessChance`
-        const successfulCrafts = successRolls.length > 0 ? successRolls.filter(roll => roll <= craftingRecipe.baseSuccessChance).length : 0;
-
-        // if successfulCrafts is 0, the user failed to craft the asset. return an error.
+        // check if no crafts were successful
         if (successfulCrafts === 0) {
             return {
                 status: Status.ERROR,
-                message: `(craftAsset) User failed to craft ${amount}x ${assetToCraft}. Rolls: ${successRolls.join(', ')}`
+                message: `(craftAsset) User failed to craft ${amount}x ${assetToCraft}.`
             }
         }
 
+        // update the obtained asset count with the number of successful crafts
         obtainedAssetCount += successfulCrafts;
 
         // if successfulCrafts > 0, the user successfully crafted the asset. if baseCritChance > 0, roll another dice to determine if, for each successful craft, the user obtains an extra asset.
@@ -815,30 +809,9 @@ export const craftAsset = async (
         // finally, we give the user XP only if the user has failed to craft some assets.
         // this is because successfully crafted assets will give the user XP once they are claimed (to prevent exploitation of unlimited XP via continuous crafting and cancelling).
         if (amount > successfulCrafts) {
-            const currentCraftingLineData = user?.inGameData?.mastery?.crafting?.[toCamelCase(craftingRecipe.craftingRecipeLine)] ?? null;
             const failedCrafts = amount - successfulCrafts;
 
-            // if the data exists, update. else, create a new entry.
-            if (currentCraftingLineData) {
-                const newCraftingLevel = GET_CRAFTING_LEVEL(craftingRecipe.craftingRecipeLine, currentCraftingLineData.xp + (craftingRecipe.earnedXP * failedCrafts));
-
-                // set the new XP for the crafting line
-                userUpdateOperations.$inc[`inGameData.mastery.crafting.${toCamelCase(craftingRecipe.craftingRecipeLine)}.xp`] = craftingRecipe.earnedXP * failedCrafts;
-
-                // if the user will level up, set the new level
-                if (newCraftingLevel > currentCraftingLineData.level) {
-                    userUpdateOperations.$set[`inGameData.mastery.crafting.${toCamelCase(craftingRecipe.craftingRecipeLine)}.level`] = newCraftingLevel;
-                }
-            } else {
-                userUpdateOperations.$set[`inGameData.mastery.crafting.${toCamelCase(craftingRecipe.craftingRecipeLine)}`] = {
-                    level: GET_CRAFTING_LEVEL(craftingRecipe.craftingRecipeLine, (craftingRecipe.earnedXP * failedCrafts)),
-                    xp: craftingRecipe.earnedXP * failedCrafts,
-                    // instantiate craftingSlots AND craftablePerSlot to the base values.
-                    craftingSlots: BASE_CRAFTING_SLOTS,
-                    // smelting has different base values for craftablePerSlot
-                    craftablePerSlot: BASE_CRAFTABLE_PER_SLOT
-                }
-            }
+            await updateCraftingLevel(user._id, [{ craftingLine: craftingRecipe.craftingRecipeLine, xp: craftingRecipe.earnedXP * failedCrafts }]);
         }
 
         console.log(`(craftAsset) User update operations: ${JSON.stringify(userUpdateOperations, null, 2)}`);
@@ -1747,6 +1720,38 @@ export const cancelCraft = async (twitterId: string, craftingQueueId: string): P
 }
 
 /**
+ * Simulates crafting success for a given number of attempts.
+ * Rolls against the crafting success rate for the specified level and rarity.
+ *
+ * @param {CraftingRecipeLine} line - The crafting profession line (e.g., Craftsman).
+ * @param {CraftedAssetRarity} rarity - The rarity of the crafted asset (e.g., Common, Rare).
+ * @param {number} level - The crafting mastery level (1-15).
+ * @param {number} attempts - The number of times to roll the chance.
+ * 
+ * @returns {number} The total number of successful rolls.
+ */
+export const rollCraftingChance = (
+    line: CraftingRecipeLine,
+    rarity: CraftedAssetRarity,
+    level: number,
+    attempts: number
+): number => {
+    // Validate level range
+    if (level < 1 || level > 15) {
+        throw new Error("Crafting level must be between 1 and 15.");
+    }
+
+    // get success rates for the given profession and rarity
+    const successRates = GET_CRAFTING_SUCCESS_RATE(line, rarity);
+
+    // determine the success rate for the specified level
+    const successRate = successRates[level - 1];
+
+    // simulate the crafting attempts
+    return Array.from({ length: attempts }, () => Math.random() < successRate).filter((v) => v).length;
+};
+
+/**
  * Processes the XP gained by the user through crafting activities
  * and handles leveling up if the required XP threshold is met.
  */
@@ -1771,13 +1776,13 @@ export const updateCraftingLevel = async (
         }
 
         for (const line of acquiredXP) {
-            const craftingLine = line.craftingLine;
+            const craftingLine = toCamelCase(line.craftingLine);
             const currentMastery: CraftingMastery | null = user?.inGameData?.mastery?.crafting ?? null;
             const currentMasteryStats: CraftingMasteryStats | null = currentMastery[craftingLine] ?? null;
             const currentXP = currentMasteryStats.xp;
 
             if (currentMasteryStats) {
-                const requiredXP = GET_PROFESSION_REQUIRED_XP(craftingLine, currentMasteryStats.level + 1, currentMastery);
+                const requiredXP = GET_PROFESSION_REQUIRED_XP(line.craftingLine, currentMasteryStats.level + 1, currentMastery);
 
                 await user.updateOne(
                     {
@@ -1796,7 +1801,7 @@ export const updateCraftingLevel = async (
                                 // reset xp to 0 each the user level up
                                 [`inGameData.mastery.crafting.${craftingLine}.xp`]: 0, 
                                 // update xpToNextLevel
-                                [`inGameData.mastery.crafting.${craftingLine}.xpToNextLevel`]: GET_PROFESSION_REQUIRED_XP(craftingLine, currentMasteryStats.level, currentMastery)
+                                [`inGameData.mastery.crafting.${craftingLine}.xpToNextLevel`]: GET_PROFESSION_REQUIRED_XP(line.craftingLine, currentMasteryStats.level, currentMastery)
                             },
                         },
                         { session }
