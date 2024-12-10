@@ -23,6 +23,8 @@ export interface CraftingMasteryStats {
     level: number;
     /** the total experience points of a specific crafting mastery */
     xp: number;
+    /** the total amount of experience points required to reach the next level.  */
+    xpToNextLevel: number | null;
     /** 
      * the number of crafting slots for this particular line that the user owns. 
      * 

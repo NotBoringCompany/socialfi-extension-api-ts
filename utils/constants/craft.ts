@@ -10,6 +10,7 @@ import { POIName } from '../../models/poi';
 import { generateObjectId } from '../crypto';
 import { IslandType } from '../../models/island';
 import { BitRarity } from '../../models/bit';
+import { CraftingMastery, CraftingMasteryStats } from '../../models/mastery';
 
 /**
  * this is the base amount of crafting slots users get per crafting line.
@@ -72,6 +73,23 @@ export const EARNED_XP_UNCOMMON_INGOT = 5;
 export const EARNED_XP_RARE_INGOT = 15;
 export const EARNED_XP_EPIC_INGOT = 30;
 export const EARNED_XP_LEGENDARY_INGOT = 50;
+
+/**
+ * Defines the base XP required for each level in different Crafting Lines/Professions.
+ * Each index in the array represents the XP required for the corresponding level.
+ * For example:
+ * - Index 0: Level 0 (no XP required)
+ * - Index 1: Level 1 (250 XP required)
+ * - Index 2: Level 2 (250 XP required), and so on.
+ */
+export const PROFESSION_BASE_REQUIRED_XP: Record<CraftingRecipeLine, number[]> = {
+    [CraftingRecipeLine.CRAFTSMAN]: [0, 250, 550, 850, 1150, 1500, 2250, 3000, 3750, 4500, 5000, 5000, 5000, 5000, 5000],
+    [CraftingRecipeLine.SYNTHESIZING]: [0, 500, 1100, 1700, 2300, 3000, 4500, 6000, 7500, 9000, 10000, 10000, 10000, 10000, 10000],
+    [CraftingRecipeLine.ALCHEMY]: [0, 500, 1100, 1700, 2300, 3000, 4500, 6000, 7500, 9000, 10000, 10000, 10000, 10000, 10000],
+    [CraftingRecipeLine.CARPENTRY]: [0, 500, 1100, 1700, 2300, 3000, 4500, 6000, 7500, 9000, 10000, 10000, 10000, 10000, 10000],
+    [CraftingRecipeLine.BLACKSMITHING]: [0, 500, 1100, 1700, 2300, 3000, 4500, 6000, 7500, 9000, 10000, 10000, 10000, 10000, 10000],
+    [CraftingRecipeLine.JEWELER]: [0, 500, 1100, 1700, 2300, 3000, 4500, 6000, 7500, 9000, 10000, 10000, 10000, 10000, 10000],
+}
 
 /**
  * Creates a new Bull instance for crafting assets to be queued.
@@ -152,6 +170,74 @@ export const REQUIRED_POI_FOR_CRAFTING_LINE = (craftingRecipeLine: CraftingRecip
             throw new Error(`(REQUIRED_POI_FOR_CRAFTING_LINE) Crafting line ${craftingRecipeLine} not implemented yet or not found.`);
     }
 }
+
+/**
+ * Retrieves the required XP multiplier for each level in a given crafting profession.
+ * Each index in the returned array represents the multiplier for the corresponding level.
+ * 
+ * Example:
+ * - Index 0: Base multiplier for level 0 (1.0)
+ * - Index 1: Multiplier for level 1
+ * - Index 2: Multiplier for level 2, and so on.
+ * 
+ * @param line - The target crafting profession (CraftingRecipeLine).
+ * @returns A record mapping each crafting profession to an array of XP multipliers by level.
+ */
+export const GET_PROFESSION_REQUIRED_XP_MULTIPLIER = (line: CraftingRecipeLine): Record<CraftingRecipeLine, number[]> => {
+    // return the fondation profession XP multiplier if the profession is Craftsman
+    if (line === CraftingRecipeLine.CRAFTSMAN) {
+        return {
+            [CraftingRecipeLine.CRAFTSMAN]: [0, 2.0, 2.0, 2.0, 2.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0],
+            [CraftingRecipeLine.SYNTHESIZING]: [0, 2.0, 2.0, 2.0, 2.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0],
+            [CraftingRecipeLine.ALCHEMY]: [0, 2.0, 2.0, 2.0, 2.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0],
+            [CraftingRecipeLine.CARPENTRY]: [0, 2.0, 2.0, 2.0, 2.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0],
+            [CraftingRecipeLine.BLACKSMITHING]: [0, 2.0, 2.0, 2.0, 2.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0],
+            [CraftingRecipeLine.JEWELER]: [0, 2.0, 2.0, 2.0, 2.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0],
+        };
+    }
+
+    return {
+        [CraftingRecipeLine.CRAFTSMAN]: [0, 2.0, 2.0, 2.0, 2.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0],
+        [CraftingRecipeLine.SYNTHESIZING]: [0, 2.5, 2.5, 2.5, 2.5, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0],
+        [CraftingRecipeLine.ALCHEMY]: [0, 2.5, 2.5, 2.5, 2.5, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0],
+        [CraftingRecipeLine.CARPENTRY]: [0, 2.5, 2.5, 2.5, 2.5, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0],
+        [CraftingRecipeLine.BLACKSMITHING]: [0, 2.5, 2.5, 2.5, 2.5, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0],
+        [CraftingRecipeLine.JEWELER]: [0, 2.5, 2.5, 2.5, 2.5, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0],
+    };
+};
+
+/**
+ * Retrieves the required XP for leveling up based on the crafting line and user's mastery level.
+ * 
+ * This function calculates the required XP by:
+ * - Using the base XP for the current level of the specified crafting line.
+ * - Applying multipliers based on the user's current mastery level in all relevant crafting lines.
+ * 
+ * @param craftingLine - The target crafting line.
+ * @param currentLevel - The current level of user's profession mastery.
+ * @param craftingMastery - The current mastery of the user.
+ */
+export const GET_PROFESSION_REQUIRED_XP = (craftingLine: CraftingRecipeLine, currentLevel: number, craftingMastery: CraftingMastery) => {
+    // get the XP multipliers for the given crafting line
+    const multipliers = GET_PROFESSION_REQUIRED_XP_MULTIPLIER(craftingLine);
+    let multiplier = 0;
+
+    // loop through all crafting lines to calculate the combined multiplier
+    for (const [key, value] of Object.entries(craftingMastery)) {
+        const profession = key as CraftingRecipeLine;
+        const stats = value as CraftingMasteryStats;
+
+        // skip if the current crafting line is the same with targeted crafting line
+        if (craftingLine === profession) continue;        
+
+        // sum the XP multiplier by the relevant multipliers for each line
+        multiplier += multipliers[profession][stats.level - 1]
+    }
+
+    // return the calculated required XP for leveling up
+    return PROFESSION_BASE_REQUIRED_XP[craftingLine][currentLevel - 1] * multiplier;
+}
+
 
 /**
  * Get the crafting level for a specific crafting line for a user's crafting mastery based on their current XP for that line.

@@ -1,13 +1,14 @@
+import { ClientSession } from 'mongoose';
 import { AssetType } from '../models/asset';
 import { CraftableAsset, CraftingRecipe, CraftingRecipeRequiredAssetData, CraftingQueueStatus, CraftedAssetData, CraftingRecipeLine, CraftingQueueUsedAssetData } from "../models/craft";
 import { Food } from '../models/food';
 import { Item } from '../models/item';
 import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
-import { CraftingMasteryStats } from '../models/mastery';
+import { CraftingMastery, CraftingMasteryStats } from '../models/mastery';
 import { POIName } from '../models/poi';
 import { BarrenResource, ExtendedResource, ExtendedResourceOrigin, FruitResource, LiquidResource, OreResource, ResourceType, SimplifiedResource } from "../models/resource";
-import { BASE_CRAFTABLE_PER_SLOT, BASE_CRAFTABLE_PER_SLOT_SMELTING, BASE_CRAFTING_SLOTS, CANCEL_CRAFT_X_COOKIES_COST, CRAFT_QUEUE, CRAFTING_RECIPES, GET_CRAFTING_LEVEL, REQUIRED_POI_FOR_CRAFTING_LINE } from '../utils/constants/craft';
-import { LeaderboardModel, CraftingQueueModel, SquadLeaderboardModel, SquadModel, UserModel, CraftingRecipeModel } from "../utils/constants/db";
+import { BASE_CRAFTABLE_PER_SLOT, BASE_CRAFTABLE_PER_SLOT_SMELTING, BASE_CRAFTING_SLOTS, CANCEL_CRAFT_X_COOKIES_COST, CRAFT_QUEUE, CRAFTING_RECIPES, GET_CRAFTING_LEVEL, GET_PROFESSION_REQUIRED_XP, REQUIRED_POI_FOR_CRAFTING_LINE } from '../utils/constants/craft';
+import { LeaderboardModel, CraftingQueueModel, SquadLeaderboardModel, SquadModel, UserModel, CraftingRecipeModel, TEST_CONNECTION } from "../utils/constants/db";
 import { resources } from "../utils/constants/resource";
 import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
 import { generateObjectId } from '../utils/crypto';
@@ -835,7 +836,7 @@ export const craftAsset = async (
                     // instantiate craftingSlots AND craftablePerSlot to the base values.
                     craftingSlots: BASE_CRAFTING_SLOTS,
                     // smelting has different base values for craftablePerSlot
-                    craftablePerSlot: craftingRecipe.craftingRecipeLine === CraftingRecipeLine.SMELTING ? BASE_CRAFTABLE_PER_SLOT_SMELTING : BASE_CRAFTABLE_PER_SLOT
+                    craftablePerSlot: BASE_CRAFTABLE_PER_SLOT
                 }
             }
         }
@@ -1480,32 +1481,7 @@ export const claimCraftedAssets = async (
             userUpdateOperations.$inc['inventory.weight'] = finalizedTotalWeight;
         }
 
-        // increase the user's crafting XP (and potentially level) for the crafting lines that are impacted in the `craftingLinesToIncrementXP` array.
-        for (const line of craftingLinesToIncrementXP) {
-            const currentCraftingLineData = user?.inGameData?.mastery?.crafting?.[toCamelCase(line.craftingLine)] ?? null;
-
-            // if the data exists, update. else, create a new entry.
-            if (currentCraftingLineData) {
-                const newCraftingLevel = GET_CRAFTING_LEVEL(line.craftingLine, currentCraftingLineData.xp + line.xp);
-
-                // set the new XP for the crafting line
-                userUpdateOperations.$inc[`inGameData.mastery.crafting.${toCamelCase(line.craftingLine)}.xp`] = line.xp;
-
-                // if the user will level up, set the new level
-                if (newCraftingLevel > currentCraftingLineData.level) {
-                    userUpdateOperations.$set[`inGameData.mastery.crafting.${toCamelCase(line.craftingLine)}.level`] = newCraftingLevel;
-                }
-            } else {
-                userUpdateOperations.$set[`inGameData.mastery.crafting.${toCamelCase(line.craftingLine)}`] = {
-                    level: GET_CRAFTING_LEVEL(line.craftingLine, line.xp),
-                    xp: line.xp,
-                    // instantiate craftingSlots AND craftablePerSlot to the base values.
-                    craftingSlots: BASE_CRAFTING_SLOTS,
-                    // smelting has different base values for craftablePerSlot
-                    craftablePerSlot: line.craftingLine === CraftingRecipeLine.SMELTING ? BASE_CRAFTABLE_PER_SLOT_SMELTING : BASE_CRAFTABLE_PER_SLOT
-                }
-            }
-        }
+        await updateCraftingLevel(user._id, craftingLinesToIncrementXP);
 
         const craftingQueueUpdatePromises = craftingQueueUpdateOperations.length > 0 && craftingQueueUpdateOperations.map(async op => {
             return CraftingQueueModel.updateOne({ _id: op.queueId }, op.updateOperations);
@@ -1769,3 +1745,93 @@ export const cancelCraft = async (twitterId: string, craftingQueueId: string): P
         }
     }
 }
+
+/**
+ * Processes the XP gained by the user through crafting activities
+ * and handles leveling up if the required XP threshold is met.
+ */
+export const updateCraftingLevel = async (
+    userId: string,
+    acquiredXP: Array<{ craftingLine: CraftingRecipeLine; xp: number }>,
+    _session?: ClientSession
+) => {
+    let session = _session ?? (await TEST_CONNECTION.startSession());
+
+    if (!session) session.startTransaction();
+
+    try {
+        const user = await UserModel.findOne({ $or: [{ twitterId: userId }, { _id: userId }] }, { session });
+        if (!user) {
+            throw new Error('User not found.');
+        }
+
+        if (!session) {
+            await session.commitTransaction();
+            session.endSession();
+        }
+
+        for (const line of acquiredXP) {
+            const craftingLine = line.craftingLine;
+            const currentMastery: CraftingMastery | null = user?.inGameData?.mastery?.crafting ?? null;
+            const currentMasteryStats: CraftingMasteryStats | null = currentMastery[craftingLine] ?? null;
+            const currentXP = currentMasteryStats.xp;
+
+            if (currentMasteryStats) {
+                const requiredXP = GET_PROFESSION_REQUIRED_XP(craftingLine, currentMasteryStats.level + 1, currentMastery);
+
+                await user.updateOne(
+                    {
+                        $inc: {
+                            [`inGameData.mastery.crafting.${craftingLine}.xp`]: line.xp,
+                        },
+                    },
+                    { session }
+                );
+
+                if (currentXP + line.xp >= requiredXP) {
+                    await user.updateOne(
+                        {
+                            $set: {
+                                [`inGameData.mastery.crafting.${craftingLine}.level`]: currentMasteryStats.level + 2,
+                                // reset xp to 0 each the user level up
+                                [`inGameData.mastery.crafting.${craftingLine}.xp`]: 0, 
+                                // update xpToNextLevel
+                                [`inGameData.mastery.crafting.${craftingLine}.xpToNextLevel`]: GET_PROFESSION_REQUIRED_XP(craftingLine, currentMasteryStats.level, currentMastery)
+                            },
+                        },
+                        { session }
+                    );
+                }
+            } else {
+                await user.updateOne(
+                    {
+                        $set: {
+                            [`inGameData.mastery.crafting.${craftingLine}`]: {
+                                level: 1,
+                                xp: currentXP,
+                                craftingSlots: BASE_CRAFTING_SLOTS,
+                                craftablePerSlot: BASE_CRAFTABLE_PER_SLOT,
+                            },
+                        },
+                    },
+                    { session }
+                );
+            }
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(updateCraftingLevel) User's crafting level updated successfully.`,
+        };
+    } catch (err: any) {
+        if (!_session) {
+            await session.abortTransaction();
+            session.endSession();
+        }
+
+        return {
+            status: Status.ERROR,
+            message: `(updateCraftingLevel) ${err.message}`,
+        };
+    }
+};
