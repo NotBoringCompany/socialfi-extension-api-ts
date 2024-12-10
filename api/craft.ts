@@ -7,7 +7,7 @@ import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderbo
 import { CraftingMastery, CraftingMasteryStats } from '../models/mastery';
 import { POIName } from '../models/poi';
 import { BarrenResource, ExtendedResource, ExtendedResourceOrigin, FruitResource, LiquidResource, OreResource, ResourceType, SimplifiedResource } from "../models/resource";
-import { BASE_CRAFTABLE_PER_SLOT, BASE_CRAFTABLE_PER_SLOT_SMELTING, BASE_CRAFTING_SLOTS, CANCEL_CRAFT_X_COOKIES_COST, CRAFT_QUEUE, CRAFTING_RECIPES, GET_CRAFTING_LEVEL, GET_CRAFTING_SUCCESS_RATE, GET_PROFESSION_REQUIRED_XP, REQUIRED_POI_FOR_CRAFTING_LINE } from '../utils/constants/craft';
+import { BASE_CRAFTABLE_PER_SLOT, BASE_CRAFTABLE_PER_SLOT_SMELTING, BASE_CRAFTING_SLOTS, CANCEL_CRAFT_X_COOKIES_COST, CRAFT_QUEUE, CRAFTING_RECIPES, GET_CRAFTING_CRITICAL_RATE, GET_CRAFTING_LEVEL, GET_CRAFTING_SUCCESS_RATE, GET_PROFESSION_REQUIRED_XP, REQUIRED_POI_FOR_CRAFTING_LINE } from '../utils/constants/craft';
 import { LeaderboardModel, CraftingQueueModel, SquadLeaderboardModel, SquadModel, UserModel, CraftingRecipeModel, TEST_CONNECTION } from "../utils/constants/db";
 import { resources } from "../utils/constants/resource";
 import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
@@ -511,23 +511,11 @@ export const craftAsset = async (
         // update the obtained asset count with the number of successful crafts
         obtainedAssetCount += successfulCrafts;
 
-        // if successfulCrafts > 0, the user successfully crafted the asset. if baseCritChance > 0, roll another dice to determine if, for each successful craft, the user obtains an extra asset.
-        // for instance, if the user successfully crafts 2 of the asset, and the `baseCritChance` is 3000 (30%), we will roll the dice 2 times.
-        // if both dices fall below 3000, the user will obtain 4 of the asset instead of 2 (1 extra for each successful craft).
-        const critRolls = [];
+        // calculate the number of extra crafts based on the critical success rate
+        const extraCrafts = rollCriticalChance(craftingRecipe.craftingRecipeLine, masteryData.level, successfulCrafts);
 
-        // only if baseCritChance > 0, roll the dice for each successful craft
-        if (craftingRecipe.baseCritChance > 0) {
-            for (let i = 0; i < successfulCrafts; i++) {
-                const roll = Math.floor(Math.random() * 10000);
-                critRolls.push(roll);
-            }
-
-            // get the amount of extra crafts based on the rolls below the `baseCritChance`
-            const extraCrafts = critRolls.length > 0 && critRolls.filter(roll => roll <= craftingRecipe.baseCritChance).length;
-
-            obtainedAssetCount += extraCrafts;
-        }
+        // add the extra crafts to the total obtained asset count
+        obtainedAssetCount += extraCrafts;
 
         //// TO DO: USER COMPENSATION FOR FAILED CRAFTS (check logic with team)
         // FOR EACH `amount` (NOT successfulCrafts) OF THE ASSET TO CRAFT:
@@ -1723,12 +1711,12 @@ export const cancelCraft = async (twitterId: string, craftingQueueId: string): P
  * Simulates crafting success for a given number of attempts.
  * Rolls against the crafting success rate for the specified level and rarity.
  *
- * @param {CraftingRecipeLine} line - The crafting profession line (e.g., Craftsman).
- * @param {CraftedAssetRarity} rarity - The rarity of the crafted asset (e.g., Common, Rare).
- * @param {number} level - The crafting mastery level (1-15).
- * @param {number} attempts - The number of times to roll the chance.
+ * @param line - The crafting profession line (e.g., Craftsman).
+ * @param rarity - The rarity of the crafted asset (e.g., Common, Rare).
+ * @param level - The crafting mastery level (1-15).
+ * @param attempts - The number of times to roll the chance.
  * 
- * @returns {number} The total number of successful rolls.
+ * @returns The total number of successful rolls.
  */
 export const rollCraftingChance = (
     line: CraftingRecipeLine,
@@ -1749,6 +1737,31 @@ export const rollCraftingChance = (
 
     // simulate the crafting attempts
     return Array.from({ length: attempts }, () => Math.random() < successRate).filter((v) => v).length;
+};
+
+/**
+ * Rolls to determine the number of critical successes for a given number of crafting attempts.
+ * Each attempt is compared against the critical success rate for the crafting level.
+ *
+ * @param line - The crafting profession line (e.g., Craftsman).
+ * @param level - The crafting mastery level (1 to 15).
+ * @param attempts - The number of crafting attempts to roll for critical success.
+ * @returns The total number of critical successes achieved.
+ *
+ */
+export const rollCriticalChance = (
+    line: CraftingRecipeLine,
+    level: number,
+    attempts: number
+): number => {
+    // retrieve the critical success rates for the crafting profession
+    const criticalRates = GET_CRAFTING_CRITICAL_RATE(line);
+
+    // ensure the level is valid and retrieve the corresponding critical rate
+    const criticalRate = criticalRates[Math.min(level - 1)];
+
+    // Simulate the crafting attempts and count critical successes
+    return Array.from({ length: attempts }, () => Math.random() < criticalRate).filter((v) => v).length;
 };
 
 /**
