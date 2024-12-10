@@ -1876,8 +1876,7 @@ export const syncInventoryWithNFT = async (twitterId: string): Promise<ReturnVal
 }
 
 /**
- * Fetch the user's owned SFTs (from their main wallet only) 
- * from the blockchain (SFTs available to be fetched are based on `WONDERBITS_SFT_IDS`).
+ * Fetch the user's owned SFTs (from their main wallet only) from the blockchain (SFTs available to be fetched are based on `WONDERBITS_SFT_IDS`).
  */
 export const fetchOwnedSFTs = async (twitterId: string): Promise<ReturnValue> => {
     try {
