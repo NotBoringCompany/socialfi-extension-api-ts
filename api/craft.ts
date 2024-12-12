@@ -14,6 +14,7 @@ import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '..
 import { generateObjectId } from '../utils/crypto';
 import { ReturnValue, Status } from "../utils/retVal";
 import { toCamelCase } from '../utils/strings';
+import { addToInventory } from './inventory';
 
 /**
  * Crafts a craftable asset for the user.
@@ -1850,6 +1851,212 @@ export const updateCraftingLevel = async (
         return {
             status: Status.ERROR,
             message: `(updateCraftingLevel) ${err.message}`,
+        };
+    }
+};
+
+export const claimCraftingQueueByIds = async (
+    twitterId: string,
+    craftingLine: CraftingRecipeLine,
+    claimType: 'manual' | 'auto',
+    craftingQueueIds: string[],
+    _session: ClientSession
+) => {
+    const session = _session ?? (await TEST_CONNECTION.startSession());
+    if (!_session) session.startTransaction();
+
+    try {
+        if (!craftingLine) {
+            throw new Error('Crafting line must be provided.');
+        }
+
+        if (!craftingQueueIds || craftingQueueIds.length === 0) {
+            throw new Error('Valid crafting queue IDs must be provided when claiming crafted assets manually');
+        }
+
+        const user = await UserModel.findOne({ twitterId }).lean();
+        if (!user) {
+            throw new Error('User not found.');
+        }
+
+        const fullyClaimedCraftingData: {
+            queueId: string;
+            craftedAsset: string;
+            claimableAmount: number;
+        }[] = [];
+        const partiallyClaimedCraftingData: {
+            queueId: string;
+            craftedAsset: string;
+            claimableAmount: number;
+        }[] = [];
+
+        // find all claimable crafting queues for a user given the crafting line (which can be queried under `craftingRecipeLine`)
+        // NOTE: `PARTIALLY_CANCELLED_CLAIMABLE` queues also have to be included because the user can still claim the assets before the queue was cancelled.
+        const claimableCraftingQueues = await CraftingQueueModel.find({
+            userId: user._id,
+            craftingRecipeLine: craftingLine,
+            status: { $in: [CraftingQueueStatus.CLAIMABLE, CraftingQueueStatus.PARTIALLY_CANCELLED_CLAIMABLE] },
+        })
+            .sort('craftingStart')
+            .lean();
+
+        if (claimableCraftingQueues.length === 0) {
+            throw new Error(`No claimable crafted assets found for the chosen line: ${craftingLine}.`);
+        }
+
+        // for each crafting line, check if the user is in the right POI. if not, throw an error.
+        const requiredPOI = REQUIRED_POI_FOR_CRAFTING_LINE(craftingLine);
+        if (user.inGameData.location !== requiredPOI) {
+            throw new Error(`User must be in ${requiredPOI} to claim crafted assets of this line.`);
+        }
+
+        // we want to calculate how much XP the user has earned so far when claiming all the crafted assets.
+        // we give them XP here instead of in `craftAsset` because the user might exploit crafting lots of assets and cancelling them while still getting XP.
+        // they cannot cancel claimable crafted assets, so we give them the XP here.
+        const craftingLinesToIncrementXP: Array<{
+            craftingLine: CraftingRecipeLine;
+            xp: number;
+        }> = [];
+
+        const craftingQueues =
+            claimType === 'auto'
+                ? claimableCraftingQueues
+                : claimableCraftingQueues.filter((queue) => craftingQueueIds.includes(queue._id));
+
+        if (claimType === 'manual' && craftingQueues.length !== craftingQueueIds.length) {
+            throw new Error(`Valid crafting queue IDs must be provided when claiming crafted assets manually.`);
+        }
+
+        // the maximum weight that can be carried in the user's inventory
+        let availableWeight = user.inventory.maxWeight - user.inventory.weight;
+
+        // get the total weight of the assets to claim
+        const claimableTotalWeight = craftingQueues.reduce((acc, queue) => {
+            // because the total weight depends on the claimable amount per each queue, we will need to calculate the weight for each asset (craftedAssetData.totalWeight / craftedAssetData.amount)
+            // and then multiply it by the claimable amount.
+            return (
+                acc +
+                (queue.craftedAssetData.totalWeight / queue.craftedAssetData.amount) * queue.claimData.claimableAmount
+            );
+        }, 0);
+
+        // check if the user's inventory weight + the totalWeight of the assets to claim exceeds the limit
+        if (claimType === 'manual' && claimableTotalWeight > availableWeight) {
+            throw new Error('Claiming the assets will exceed the inventory weight limit.');
+        }
+
+        for (const queue of craftingQueues) {
+            const { asset, totalWeight, amount } = queue.craftedAssetData;
+
+            // the total number of items that can be claimed from the queue
+            const claimableAmount = queue.claimData.claimableAmount;
+
+            // skip if claimableAmount is 0
+            if (claimableAmount === 0) continue;
+
+            // the weight of each individual item
+            const weightPerItem = (totalWeight / amount) * queue.claimData.claimableAmount;
+
+            // the number of items that can be claimed based on the available weight
+            const claimedAmount = Math.floor(availableWeight / weightPerItem);
+
+            await addToInventory(user._id, asset, claimedAmount);
+
+            // do three things to the crafting queue:
+            // 1. reduce the `claimData.claimableAmount` by the `claimableAmount` via $inc
+            // 2. increase the `claimData.claimedAmount` by the `claimableAmount` via $inc
+            await CraftingQueueModel.updateOne(
+                {
+                    _id: queue._id,
+                },
+                {
+                    $inc: {
+                        'claimData.claimableAmount': -claimableAmount,
+                        'claimData.claimedAmount': claimableAmount,
+                    },
+                    $set: {
+                        // 1. check if the previous status was `PARTIALLY_CANCELLED_CLAIMABLE`. if yes, check the following:
+                        // a. if the `claimableAmount` < `claimData.claimableAmount`, keep the status as `PARTIALLY_CANCELLED_CLAIMABLE`. else,
+                        // b. if the `claimableAmount` === `claimData.claimableAmount`, set the status to `PARTIALLY_CANCELLED`. else,
+                        // 2. check if `claimData.claimedAmount` + `claimData.claimableAmount` === `craftedAssetData.amount`. if yes, set the status to `CLAIMED`. else, set the status to `ONGOING`.
+                        status:
+                            queue.status === CraftingQueueStatus.PARTIALLY_CANCELLED_CLAIMABLE
+                                ? claimableAmount < queue.claimData.claimableAmount
+                                    ? CraftingQueueStatus.PARTIALLY_CANCELLED_CLAIMABLE
+                                    : CraftingQueueStatus.PARTIALLY_CANCELLED
+                                : queue.claimData.claimedAmount + claimableAmount === queue.craftedAssetData.amount
+                                ? CraftingQueueStatus.CLAIMED
+                                : CraftingQueueStatus.ONGOING,
+                    },
+                }
+            );
+
+            // add the crafting queue data into partiallyClaimedCraftingData
+            partiallyClaimedCraftingData.push({
+                queueId: queue._id,
+                craftedAsset: queue.craftedAssetData.asset,
+                claimableAmount: claimedAmount,
+            });
+
+            // add the crafting queue data into fullyClaimedCraftingData
+            fullyClaimedCraftingData.push({
+                queueId: queue._id,
+                craftedAsset: queue.craftedAssetData.asset,
+                claimableAmount: claimedAmount,
+            });
+
+            // get this asset's crafting line and increment the player's crafting XP (and potentially level) for the specific line.
+            const craftingRecipe = CRAFTING_RECIPES.find((recipe) => recipe.craftedAssetData.asset === asset);
+
+            // ignore if crafting recipe doesn't exists, only if crafting recipe exists we increment the XP
+            if (!craftingRecipe) continue;
+
+            // check if the `craftingLinesToIncrementXP` array already has the crafting line. if yes, increment the XP. if not, add the crafting line to the array.
+            const craftingLineIndex = craftingLinesToIncrementXP.findIndex(
+                (line) => line.craftingLine === craftingRecipe.craftingRecipeLine
+            );
+
+            if (craftingLineIndex !== -1) {
+                craftingLinesToIncrementXP[craftingLineIndex].xp += craftingRecipe.earnedXP * claimableAmount;
+            } else {
+                craftingLinesToIncrementXP.push({
+                    craftingLine: craftingRecipe.craftingRecipeLine,
+                    xp: craftingRecipe.earnedXP * claimableAmount,
+                });
+            }
+        }
+
+        await updateCraftingLevel(user._id, craftingLinesToIncrementXP, session);
+
+        // commit the transaction only if this function started it
+        if (!_session) {
+            await session.commitTransaction();
+            session.endSession();
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(claimCraftedAssets) Successfully claimed claimable crafted assets. ${
+                partiallyClaimedCraftingData.length > 0
+                    ? `Some assets from crafting queues could not be claimed fully due to inventory weight limitations.`
+                    : ``
+            }`,
+            data: {
+                fullyClaimedCraftingData: fullyClaimedCraftingData,
+                partiallyClaimedCraftingData: partiallyClaimedCraftingData,
+                poi: user.inGameData.location,
+            },
+        };
+    } catch (err: any) {
+        // abort the transaction if an error occurs
+        if (!_session) {
+            await session.abortTransaction();
+            session.endSession();
+        }
+
+        return {
+            status: Status.ERROR,
+            message: `(addItem) ${err.message}`,
         };
     }
 };

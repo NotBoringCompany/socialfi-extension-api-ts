@@ -1,0 +1,101 @@
+import { ClientSession } from 'mongoose';
+import { TEST_CONNECTION, UserModel } from '../utils/constants/db';
+import { ReturnValue, Status } from '../utils/retVal';
+import { CombinedResources, ResourceType } from '../models/resource';
+import { FoodType } from '../models/food';
+import { AssetType } from '../models/asset';
+import { resources } from '../utils/constants/resource';
+
+/**
+ * Add items to the user's inventory.
+ */
+export const addToInventory = async (
+    userId: string,
+    asset: AssetType | string,
+    amount: number,
+    _session?: ClientSession
+): Promise<ReturnValue> => {
+    const session = _session ?? (await TEST_CONNECTION.startSession());
+    if (!_session) session.startTransaction();
+
+    try {
+        // determine the asset type dynamically (food, resource, or item)
+        const isFood = Object.values(FoodType).includes(asset as FoodType);
+        const isResource = Object.values(CombinedResources).includes(asset as ResourceType);
+
+        const assetType = isFood ? 'food' : isResource ? 'resource' : 'item';
+
+        const resource = isResource && resources.find((resource) => resource.type === asset);
+
+        if (isResource) {
+            if (!resource) throw new Error('Asset not found');
+
+            // increase user's weight if the asset is resource
+            const user = await UserModel.findOneAndUpdate(
+                { _id: userId },
+                {
+                    $inc: {
+                        ['inventory.weight']: resource.weight,
+                    },
+                },
+                { session, new: true }
+            );
+
+            // if after the operation the weight exceed the maximum weight, then abort the operation
+            if (user.inventory.weight > user.inventory.maxWeight) {
+                throw new Error(`Inventory full`);
+            }
+        }
+
+        // dynamically get the inventory key: items, foods, resources
+        const inventoryKey = `inventory.${assetType}s`;
+
+        // match criteria for the asset
+        const matchCriteria = {
+            _id: userId,
+            [`${inventoryKey}.type`]: asset,
+        };
+
+        // attempt to increment the asset amount if it exists
+        const updateResult = await UserModel.updateOne(
+            matchCriteria,
+            { $inc: { [`${inventoryKey}.$.amount`]: amount } },
+            { session }
+        ).exec();
+
+        if (updateResult.modifiedCount === 0) {
+            // asset does not exist, push a new one into the inventory
+            const newAsset = {
+                type: asset,
+                amount,
+                mintableAmount: 0,
+                ...(assetType === 'item' && { totalAmountConsumed: 0, weeklyAmountConsumed: 0 }),
+                ...(isResource && resource),
+            };
+
+            await UserModel.updateOne({ _id: userId }, { $push: { [inventoryKey]: newAsset } }, { session }).exec();
+        }
+
+        // commit the transaction only if this function started it
+        if (!_session) {
+            await session.commitTransaction();
+            session.endSession();
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(addItem) Item added to the inventory successfully`,
+        };
+    } catch (err: any) {
+        // abort the transaction if an error occurs
+        if (!_session) {
+            await session.abortTransaction();
+            session.endSession();
+        }
+
+        return {
+            status: Status.ERROR,
+            message: `(addItem) ${err.message}`,
+        };
+    }
+};

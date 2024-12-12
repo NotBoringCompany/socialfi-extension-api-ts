@@ -621,3 +621,18 @@ export enum AlchemyItemGroup {
  * A list of different Continuum Relic item groups.
  */
 export enum JewelryItemGroup {}
+
+export enum CraftingResultType {
+    SUCCESSFUL = 'Successful',
+    FAILED = 'Failed',
+    CRITICAL = 'Critical'
+}
+
+/**
+ * Represents crafting result upon claiming.
+ */
+export interface CraftingResult {
+    asset: AssetType;
+    amount: number;
+    type: CraftingResultType;
+}

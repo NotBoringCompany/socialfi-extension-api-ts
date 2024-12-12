@@ -157,9 +157,10 @@ export const CraftingQueueSchema = new mongoose.Schema({
     status: String,
     craftingRecipeLine: String,
     craftedAssetData: {
-        asset: String,
+        asset: Object,
         amount: Number,
         assetType: String,
+        assetRarity: String,
         totalWeight: Number,
     },
     assetsUsed: {
