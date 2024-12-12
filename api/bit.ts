@@ -607,7 +607,7 @@ export const bulkFeedBits = async (userId: string, foodType: FoodType, bitIds: n
         const [user, workingBits] = await Promise.all([
             UserModel.findOne({ _id: userId }).lean(),
             BitModel.find({ 
-                owner: userId, 
+                'ownerData.currentOwnerId': userId, 
                 placedIslandId: { $ne: 0 },
                 "farmingStats.currentEnergy": {$lt: 100},
                 bitId: { $in: bitIds }

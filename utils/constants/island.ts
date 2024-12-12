@@ -865,14 +865,14 @@ export const DEFAULT_RESOURCE_CAP = (type: IslandType) => {
     case IslandType.PRIMAL_ISLES:
       return 500;
     case IslandType.VERDANT_ISLES:
-      return 1250;
+      return 750;
     case IslandType.EXOTIC_ISLES:
     case IslandType.XTERIO_ISLES:
-      return 2500;
+      return 750;
     case IslandType.CRYSTAL_ISLES:
-      return 2500;
+      return 750;
     case IslandType.CELESTIAL_ISLES:
-      return 2500;
+      return 500;
   }
 };
 /**

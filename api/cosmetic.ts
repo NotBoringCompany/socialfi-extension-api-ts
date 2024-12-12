@@ -265,11 +265,11 @@ export const equipBitCosmetics = async (twitterId: string, bitId: number, bitCos
         }
 
         const bitUpdatePromises = bitUpdateOperations.map(async ({ bitId, updateOperations }) => {
-            return BitModel.updateOne({ bitId, ownerData: { currentOwnerId: user._id } }, updateOperations);
+            return BitModel.updateOne({ bitId, 'ownerData.currentOwnerId': user._id }, updateOperations);
         });
 
         const cosmeticUpdatePromises = cosmeticUpdateOperations.map(async ({ bitCosmeticId, updateOperations }) => {
-            return UserBitCosmeticModel.updateOne({ bitCosmeticId, ownerData: { currentOwnerId: user._id } }, updateOperations);
+            return UserBitCosmeticModel.updateOne({ bitCosmeticId, 'ownerData.currentOwnerId': user._id }, updateOperations);
         })
 
         // update the cosmetic and the bit.
@@ -383,7 +383,7 @@ export const unequipBitCosmeticSlots = async (twitterId: string, bitId: number, 
 
         // update the bit and the cosmetics.
         await Promise.all([
-            BitModel.updateOne({ bitId, ownerData: { currentOwnerId: user._id } }, bitUpdateOperations),
+            BitModel.updateOne({ bitId, 'ownerData.currentOwnerId': user._id }, bitUpdateOperations),
             ...cosmeticUpdatePromises
         ]);
 
