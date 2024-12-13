@@ -176,9 +176,9 @@ export const REQUIRED_POI_FOR_CRAFTING_LINE = (craftingRecipeLine: CraftingRecip
  * Each index in the returned array represents the multiplier for the corresponding level.
  * 
  * Example:
- * - Index 0: Base multiplier for level 0 (1.0)
- * - Index 1: Multiplier for level 1
- * - Index 2: Multiplier for level 2, and so on.
+ * - Index 0: Base multiplier for level 1 (1.0)
+ * - Index 1: Multiplier for level 2
+ * - Index 2: Multiplier for level 3, and so on.
  * 
  * @param line - The target crafting profession (CraftingRecipeLine).
  * @returns A record mapping each crafting profession to an array of XP multipliers by level.
@@ -238,6 +238,84 @@ export const GET_PROFESSION_REQUIRED_XP = (craftingLine: CraftingRecipeLine, cur
     return PROFESSION_BASE_REQUIRED_XP[craftingLine][currentLevel - 1] * multiplier;
 }
 
+/**
+ * Retrieves the crafting success rate for each level in a given crafting profession
+ * based on the asset's rarity. The returned array contains success rates for levels
+ * starting from 1 up to 15, where each index corresponds to a specific level.
+ *
+ * - For example:
+ *   - Index 0: Success rate for level 1
+ *   - Index 1: Success rate for level 2
+ *   - Index 2: Success rate for level 3, and so on.
+ *
+ * @param line - The crafting profession line (e.g., Craftsman).
+ * @param rarity - The rarity of the crafted asset (e.g., Common, Rare).
+ * @returns An array of success rates for each crafting level (1 to 15).
+ *
+ * Notes:
+ * - Success rates are represented as decimal values (e.g., 0.75 = 75% success rate).
+ * - Rarity-specific rates apply to all professions except "Craftsman", which has unique rates.
+ */
+export const GET_CRAFTING_SUCCESS_RATE = (line: CraftingRecipeLine, rarity: CraftedAssetRarity) => {
+    // return the fondation profession success rate if the profession is Craftsman
+    if (line === CraftingRecipeLine.CRAFTSMAN) {
+        switch (rarity) {
+            case CraftedAssetRarity.COMMON:
+            case CraftedAssetRarity.UNCOMMON:
+                return [0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00];
+            case CraftedAssetRarity.RARE:
+                return [0.20, 0.20, 0.20, 0.30, 0.40, 0.70, 0.85, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00];
+            case CraftedAssetRarity.EPIC:
+                return [0.10, 0.10, 0.10, 0.15, 0.20, 0.40, 0.50, 0.60, 0.70, 0.85, 1.00, 1.00, 1.00, 1.00, 1.00];
+            case CraftedAssetRarity.LEGENDARY:
+                return [0.05, 0.05, 0.05, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00];
+            default:
+                return Array(15).fill(0.00); // return 0% success for unknown rarity
+        }
+    }
+
+    switch (rarity) {
+        case CraftedAssetRarity.COMMON:
+        case CraftedAssetRarity.UNCOMMON:
+            return [0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00];
+        case CraftedAssetRarity.RARE:
+            return [0.20, 0.20, 0.20, 0.30, 0.40, 0.70, 0.85, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00];
+        case CraftedAssetRarity.EPIC:
+            return [0.10, 0.10, 0.10, 0.15, 0.20, 0.40, 0.50, 0.60, 0.70, 0.85, 1.00, 1.00, 1.00, 1.00, 1.00];
+        case CraftedAssetRarity.LEGENDARY:
+            return [0.05, 0.05, 0.05, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00];
+        default:
+            return Array(15).fill(0.00); // return 0% success for unknown rarity
+    }
+}
+
+/**
+ * Retrieves the crafting critical rate for each level in a given crafting profession
+ * The returned array contains critical rates for levels
+ * starting from 1 up to 15, where each index corresponds to a specific level.
+ *
+ * - For example:
+ *   - Index 0: Critical rate for level 1
+ *   - Index 1: Critical rate for level 2
+ *   - Index 2: Critical rate for level 3, and so on.
+ *
+ * @param line - The crafting profession line (e.g., Craftsman).
+ * @returns An array of critical rates for each crafting level (1 to 15).
+ *
+ * Notes:
+ * - Critical rates are represented as decimal values (e.g., 0.005 = 5% critical rate).
+ * - Rarity-specific rates apply to all professions except "Craftsman", which has unique rates.
+ */
+export const GET_CRAFTING_CRITICAL_RATE = (line: CraftingRecipeLine) => {
+    return Array(15).fill(0.6);
+
+    // return the fondation profession critical rate if the profession is Craftsman
+    if (line === CraftingRecipeLine.CRAFTSMAN) {
+        return [0.00, 0.00, 0.00, 0.00, 0.00, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.01, 0.01, 0.01, 0.01, 0.01];
+    }
+
+    return [0.00, 0.00, 0.00, 0.00, 0.00, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.01, 0.01, 0.01, 0.01, 0.01];
+}
 
 /**
  * Get the crafting level for a specific crafting line for a user's crafting mastery based on their current XP for that line.
