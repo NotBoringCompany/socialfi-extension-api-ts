@@ -1,6 +1,9 @@
-import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
-import { LeaderboardModel, UserModel } from '../utils/constants/db';
+import { ClientSession } from 'mongoose';
+import { LeaderboardPointsData, LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
+import { LeaderboardModel, SquadLeaderboardModel, SquadModel, TEST_CONNECTION, UserModel } from '../utils/constants/db';
 import { ReturnValue, Status } from '../utils/retVal';
+import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
+import { InGameData } from '../models/user';
 
 /**
  * Adds a new leaderboard to the database. Only callable by admin.
@@ -233,5 +236,210 @@ export const getUserCurrentPoints = async (twitterId: string): Promise<ReturnVal
             status: Status.ERROR,
             message: `(getUserCurrentPoints) ${err.message}`
         }
+    }
+}
+
+/**
+ * Add user's leaderpoints, also update the points from the squad leaderboard
+ * 
+ * @param userId User's twitterId or _id
+ * @param data the obtained points
+ */
+export const addPoints = async (userId: string, data: LeaderboardPointsData[], _session?: ClientSession): Promise<ReturnValue> => {
+    const session = _session ?? (await TEST_CONNECTION.startSession());
+    if (!_session) session.startTransaction();
+
+    try {
+        const leaderboard = await LeaderboardModel.findOne({ name: 'Season 0' }, { session });
+        if (!leaderboard) {
+            throw new Error('Leaderboard not found.');
+        }
+
+        const user = await UserModel.findOne({ $or: [{ twitterId: userId }, { _id: userId }] }, { session });
+        if (user) {
+            throw new Error('User not found');
+        }
+
+        const { level: currentLevel } = (user.inGameData as InGameData);
+
+        // get the index of the user in the leaderboard data
+        const userIndex = (leaderboard.userData as LeaderboardUserData[]).findIndex(
+            (userData) => userData.userId === user._id
+        );
+
+        const totalObtainedPoints = data.reduce((prev, curr) => prev + curr.points, 0);
+        let additionalPoints = 0;
+
+        // if not found, create a new entry
+        if (userIndex === -1) {
+            // check if the user is eligible to level up to the next level
+            const newLevel = GET_SEASON_0_PLAYER_LEVEL(totalObtainedPoints);
+
+            if (newLevel > currentLevel) {
+                // set the user's `inGameData.level` to the new level
+                await user.updateOne({ 'inGameData.level': newLevel });
+
+                // add the additional points based on the rewards obtainable
+                additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
+            }
+
+            await leaderboard.updateOne({
+                $push: {
+                    'userData': {
+                        userId: user._id,
+                        username: user.twitterUsername,
+                        twitterProfilePicture: user.twitterProfilePicture,
+                        pointsData: [
+                            ...data,
+                            {
+                                points: additionalPoints,
+                                source: LeaderboardPointsSource.LEVELLING_UP,
+                            },
+                        ],
+                    }
+                }
+            }, { session })
+
+            // if the user is found, increment the points
+        } else {
+            // get the user's total leaderboard points
+            // this is done by summing up all the points from the `pointsData` array, BUT EXCLUDING SOURCES FROM:
+            // 1. LeaderboardPointsSource.LEVELLING_UP
+            const totalLeaderboardPoints = leaderboard.userData[userIndex].pointsData.reduce((acc, pointsData) => {
+                if (pointsData.source !== LeaderboardPointsSource.LEVELLING_UP) {
+                    return acc + pointsData.points;
+                }
+
+                return acc;
+            }, 0);
+
+            const newLevel = GET_SEASON_0_PLAYER_LEVEL(
+                totalLeaderboardPoints + totalObtainedPoints
+            );
+
+            if (newLevel > currentLevel) {
+                // set the user's `inGameData.level` to the new level
+                await user.updateOne({ 'inGameData.level': newLevel }, { session });
+
+                // add the additional points based on the rewards obtainable
+                additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
+            }
+
+            const pointsData: LeaderboardPointsData[] = [
+                ...data,
+                { source: LeaderboardPointsSource.LEVELLING_UP, points: additionalPoints }
+            ]
+
+            for (const point of pointsData) {
+                // ignore if the point amount empty
+                if (point.points === 0) continue;
+
+                // get the source index for the obtained point
+                const sourceIndex = leaderboard.userData[userIndex].pointsData.findIndex(
+                    ({ source }) => source === point.source
+                );
+
+                if (sourceIndex !== -1) {
+                    await leaderboard.updateOne({
+                        $inc: {
+                            [`userData.${userIndex}.pointsData.${sourceIndex}.points`]: point.points
+                        }
+                    }, { session });
+                } else {
+                    await leaderboard.updateOne({
+                        $push: {
+                            [`userData.${userIndex}.pointsData`]: {
+                                points: point.points,
+                                source: point.source,
+                            }
+                        }
+                    }, { session });
+                }
+            }
+        }
+
+        // if the user also has a squad, add the points to the squad's total points
+        if (user.inGameData.squad !== null) {
+            // get the squad
+            const squad = await SquadModel.findOne({ _id: user.inGameData.squadId });
+            if (!squad) {
+                throw new Error('Squad not found');
+            }
+
+            const latestSquadLeaderboard = await SquadLeaderboardModel.findOne().sort({ week: -1 });
+
+            // add only the points to the squad's total points
+            await squad.updateOne({
+                $inc: {
+                    [`squadPoints`]: totalObtainedPoints
+                }
+            });
+
+            // check if the squad exists in the squad leaderboard's `pointsData`. if not, we create a new instance.
+            const squadIndex = latestSquadLeaderboard.pointsData.findIndex((data) => data.squadId === squad._id);
+
+            if (squadIndex === -1) {
+                await latestSquadLeaderboard.updateOne({
+                    $push: {
+                        'pointsData': {
+                            squadId: squad._id,
+                            squadName: squad.name,
+                            memberPoints: [
+                                {
+                                    userId: user._id,
+                                    username: user.twitterUsername,
+                                    points: totalObtainedPoints,
+                                },
+                            ],
+                        }
+                    }
+                });
+            } else {
+                // otherwise, we increment the points for the user in the squad
+                const userIndex = latestSquadLeaderboard.pointsData[squadIndex].memberPoints.findIndex(
+                    (member) => member.userId === user._id
+                );
+
+                if (userIndex !== -1) {
+                    await latestSquadLeaderboard.updateOne({
+                        $inc: {
+                            [`pointsData.${squadIndex}.memberPoints.${userIndex}.points`]: totalObtainedPoints
+                        }
+                    });
+                } else {
+                    await latestSquadLeaderboard.updateOne({
+                        $push: {
+                            [`pointsData.${squadIndex}.memberPoints`]: {
+                                userId: user._id,
+                                username: user.twitterUsername,
+                                points: totalObtainedPoints,
+                            }
+                        }
+                    });
+                }
+            }
+        }
+
+        // commit the transaction only if this function started it
+        if (!_session) {
+            await session.commitTransaction();
+            session.endSession();
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(addItem) Item added to the inventory successfully`,
+        };
+    } catch (err: any) {
+        // abort the transaction if an error occurs
+        if (!_session) {
+            await session.abortTransaction();
+            session.endSession();
+        }
+
+        return {
+            status: Status.ERROR,
+            message: `(addItem) ${err.message}`,
+        };
     }
 }

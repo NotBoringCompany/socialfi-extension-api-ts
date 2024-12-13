@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { generateObjectId } from '../utils/crypto';
-import { CraftingRecipe, CraftingRecipeLine } from '../models/craft';
+import { CraftingRecipe, CraftingQueue } from '../models/craft';
 
 export const CraftingRecipeSchema = new mongoose.Schema<CraftingRecipe>({
     _id: {
@@ -148,7 +148,7 @@ export const CraftingRecipeSchema = new mongoose.Schema<CraftingRecipe>({
 /**
  * CraftingQueue schema. Represents closely to the `CraftingQueue` interface in `models/craft.ts`.
  */
-export const CraftingQueueSchema = new mongoose.Schema({
+export const CraftingQueueSchema = new mongoose.Schema<CraftingQueue>({
     _id: {
         type: String,
         default: generateObjectId()
@@ -184,5 +184,14 @@ export const CraftingQueueSchema = new mongoose.Schema({
         claimedAmount: Number,
     },
     craftingStart: Number,
-    craftingEnd: Number
+    craftingEnd: Number,
+    craftingResults: [
+        {
+            _id: false,
+            asset: String,
+            type: { type: String },
+            amount: Number,
+            weight: Number
+        }
+    ]
 })

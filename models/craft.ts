@@ -487,6 +487,8 @@ export interface CraftingRecipeRequiredAssetData {
  * NOTE: CraftingQueue instances that have the status `CLAIMABLE` means that the player can claim the asset.
  */
 export interface CraftingQueue {
+    /** the database ID of the crafting recipe */
+    _id: string;
     /** the user's database ID */
     userId: string;
     /** the status of the ongoing craft */
@@ -503,6 +505,8 @@ export interface CraftingQueue {
     craftingStart: number;
     /** when the crafting will be completed; the user will receive the asset then */
     craftingEnd: number;
+    /** the crafting results, including successful, failed, bonus (critical), and refunded materials. */
+    craftingResults: CraftingResult[];
 }
 
 /**
@@ -527,6 +531,7 @@ export interface CraftingQueueAssetData {
      * the resulting asset from crafting via this recipe.
      */
     asset: CraftableAsset;
+    assetRarity: CraftedAssetRarity;
     /** the number of `asset` being crafted in this instance. */
     amount: number;
     /**
@@ -625,7 +630,8 @@ export enum JewelryItemGroup {}
 export enum CraftingResultType {
     SUCCESSFUL = 'Successful',
     FAILED = 'Failed',
-    CRITICAL = 'Critical'
+    BONUS = 'Bonus',
+    REFUNDED = 'Refunded'
 }
 
 /**
@@ -635,4 +641,6 @@ export interface CraftingResult {
     asset: AssetType;
     amount: number;
     type: CraftingResultType;
+    /** weight per item */
+    weight: number;
 }
