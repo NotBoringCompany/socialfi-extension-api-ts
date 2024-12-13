@@ -307,6 +307,8 @@ export const GET_CRAFTING_SUCCESS_RATE = (line: CraftingRecipeLine, rarity: Craf
  * - Rarity-specific rates apply to all professions except "Craftsman", which has unique rates.
  */
 export const GET_CRAFTING_CRITICAL_RATE = (line: CraftingRecipeLine) => {
+    return Array(15).fill(0.6);
+
     // return the fondation profession critical rate if the profession is Craftsman
     if (line === CraftingRecipeLine.CRAFTSMAN) {
         return [0.00, 0.00, 0.00, 0.00, 0.00, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.01, 0.01, 0.01, 0.01, 0.01];
