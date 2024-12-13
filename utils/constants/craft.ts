@@ -11,6 +11,8 @@ import { generateObjectId } from '../crypto';
 import { IslandType } from '../../models/island';
 import { BitRarity } from '../../models/bit';
 import { CraftingMastery, CraftingMasteryStats } from '../../models/mastery';
+import { completeCraft } from '../../api/craft';
+import { Status } from '../retVal';
 
 /**
  * this is the base amount of crafting slots users get per crafting line.
@@ -108,19 +110,12 @@ CRAFT_QUEUE.process('completeCraft', async (job) => {
     const { craftingQueueId } = job.data;
 
     try {
-        // increment `claimData.claimableAmount` by 1 and update the status of the crafting queue to 'CLAIMABLE'.
-        const craftingQueue = await CraftingQueueModel.findOneAndUpdate(
-            { _id: craftingQueueId },
-            {
-                $inc: { 'claimData.claimableAmount': 1 },
-                status: CraftingQueueStatus.CLAIMABLE
-            },
-            { new: true }
-        );
+        const result = await completeCraft(craftingQueueId);
 
         // check if the `craftingQueue` instance is modified.
-        if (!craftingQueue) {
+        if (result.status !== Status.SUCCESS) {
             console.error(`(CRAFT_QUEUE, completeCraft) craftingQueue ${craftingQueueId} not found.`);
+            console.error(result.message);
             return;
         }
 

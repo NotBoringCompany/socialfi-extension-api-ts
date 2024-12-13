@@ -612,15 +612,15 @@ export const craftAsset = async (
         // for each `amount` being crafted, create a new `completeCraft` task in the queue to increment the `claimData.claimableAmount` by 1 each time the queue is completed.
         // for example, if the user crafts 10 of asset A and each craft takes 1 minute, 10 queues will be created, each with a 1 minute delay. each time the queue is completed, the `claimData.claimableAmount` will be incremented by 1.
         // queue 1 will be completed after 1 minute, queue 2 after 2 minutes, and so on.
-        // for (let i = 0; i < amount; i++) {
-        //     CRAFT_QUEUE.add(
-        //         'completeCraft',
-        //         {
-        //             craftingQueueId: newCraftingQueue._id,
-        //         },
-        //         { delay: craftingRecipe.craftingDuration * 1000 * (i + 1) }
-        //     );
-        // }
+        for (let i = 0; i < amount; i++) {
+            CRAFT_QUEUE.add(
+                'completeCraft',
+                {
+                    craftingQueueId: newCraftingQueue._id,
+                },
+                { delay: craftingRecipe.craftingDuration * 1000 * (i + 1) }
+            );
+        }
 
         console.log(`(craftAsset) Added ${amount}x ${assetToCraft} to the crafting queue.`);
 
