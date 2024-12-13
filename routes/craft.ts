@@ -1,12 +1,13 @@
 import express from 'express';
 import { Status } from '../utils/retVal';
 import { validateRequestAuth } from '../utils/auth';
-import { cancelCraft, claimCraftedAssets, craftAsset, fetchCraftingQueues } from '../api/craft';
+import { cancelCraft, claimCraftedAssets, craftAsset, fetchCraftingQueues, claimCraftedAssetsV2 } from '../api/craft';
 import { CRAFTING_RECIPES } from '../utils/constants/craft';
 import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 import { IngotEnum, IngotItem } from '../models/item';
 import { incrementProgressionByType } from '../api/quest';
 import { QuestRequirementType } from '../models/quest';
+import { CraftingResult, CraftingResultType } from '../models/craft';
 
 const router = express.Router();
 
@@ -148,7 +149,7 @@ router.post('/claim_crafted_assets', async (req, res) => {
             })
         }
 
-        const { status, message, data } = await claimCraftedAssets(validateData?.twitterId, claimType, craftingLine, craftingQueueIds);
+        const { status, message, data } = await claimCraftedAssetsV2(validateData?.twitterId, claimType, craftingLine, craftingQueueIds);
 
         if (status === Status.SUCCESS) {
             if (allowMixpanel) {
@@ -158,17 +159,16 @@ router.post('/claim_crafted_assets', async (req, res) => {
                 });
             }
 
-            const { fullyClaimedCraftingData, partiallyClaimedCraftingData } = data;
-            const craftingResult: { queueId: string, craftedAsset: string, claimableAmount: number }[] = [...fullyClaimedCraftingData, ...partiallyClaimedCraftingData];
+            const craftingResults: CraftingResult[] = data.craftingResults.filter(({ type }) => type === CraftingResultType.SUCCESSFUL);
 
-            craftingResult
-                .filter(({ craftedAsset }) => !Object.values(IngotEnum).includes(craftedAsset as any)) // ignore ingot type
+            craftingResults
+                .filter(({ asset }) => !Object.values(IngotEnum).includes(asset as any)) // ignore ingot type
                 .forEach((item) => {
-                    const rarity = CRAFTING_RECIPES.find((recipe) => recipe.craftedAssetData.asset === item.craftedAsset).craftedAssetData.assetRarity;
+                    const rarity = CRAFTING_RECIPES.find((recipe) => recipe.craftedAssetData.asset === item.asset).craftedAssetData.assetRarity;
                     if (!rarity) return;
 
-                    incrementProgressionByType(QuestRequirementType.CRAFT_ITEM, validateData?.twitterId, item.claimableAmount);
-                    incrementProgressionByType(QuestRequirementType.CRAFT_ITEM, validateData?.twitterId, item.claimableAmount, rarity);
+                    incrementProgressionByType(QuestRequirementType.CRAFT_ITEM, validateData?.twitterId, item.amount);
+                    incrementProgressionByType(QuestRequirementType.CRAFT_ITEM, validateData?.twitterId, item.amount, rarity);
                 });
         }
 

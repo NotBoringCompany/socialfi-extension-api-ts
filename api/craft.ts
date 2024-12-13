@@ -1821,8 +1821,9 @@ export const updateCraftingLevel = async (
 /**
  * Manually claim the crafting results from the queue
  */
-export const manualClaim = async (
+export const claimCraftedAssetsV2 = async (
     twitterId: string,
+    claimType: string,
     craftingLine: CraftingRecipeLine,
     craftingQueueIds: string[],
     _session?: ClientSession
