@@ -60,36 +60,36 @@ router.post('/complete_tutorial', async (req, res) => {
     }
 })
 
-router.post('/skip_tutorial', async (req, res) => {
-    try {
-        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'skip_tutorial');
+// router.post('/skip_tutorial', async (req, res) => {
+//     try {
+//         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'skip_tutorial');
 
-        if (validateStatus !== Status.SUCCESS) {
-            return res.status(validateStatus).json({
-                status: validateStatus,
-                message: validateMessage
-            })
-        }
+//         if (validateStatus !== Status.SUCCESS) {
+//             return res.status(validateStatus).json({
+//                 status: validateStatus,
+//                 message: validateMessage
+//             })
+//         }
 
-        const { status, message, data } = await skipTutorial(validateData?.twitterId);
+//         const { status, message, data } = await skipTutorial(validateData?.twitterId);
 
-        if (status === Status.SUCCESS && allowMixpanel) {
-            mixpanel.track('Tutorial Skipped', {
-                distinct_id: validateData?.twitterId,
-            });
-        }
+//         if (status === Status.SUCCESS && allowMixpanel) {
+//             mixpanel.track('Tutorial Skipped', {
+//                 distinct_id: validateData?.twitterId,
+//             });
+//         }
 
-        return res.status(status).json({
-            status,
-            message,
-            data
-        });
-    } catch (err: any) {
-        return res.status(500).json({
-            status: 500,
-            message: err.message
-        })
-    }
-})
+//         return res.status(status).json({
+//             status,
+//             message,
+//             data
+//         });
+//     } catch (err: any) {
+//         return res.status(500).json({
+//             status: 500,
+//             message: err.message
+//         })
+//     }
+// })
 
 export default router;
