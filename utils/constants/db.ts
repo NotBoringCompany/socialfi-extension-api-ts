@@ -10,7 +10,7 @@ import { RaftSchema } from '../../schemas/Raft';
 import { CookieDepositSchema, CookieWithdrawalSchema } from '../../schemas/Cookie';
 import { QuestDailySchema, QuestProgressionSchema, QuestSchema } from '../../schemas/Quest';
 import { POISchema } from '../../schemas/POI';
-import { LeaderboardSchema } from '../../schemas/Leaderboard';
+import { LeaderboardSchema, UserLeaderboardDataSchema } from '../../schemas/Leaderboard';
 import { StarterCodeSchema, SuccessfulIndirectReferralSchema } from '../../schemas/Invite';
 import { TutorialSchema } from '../../schemas/Tutorial';
 import { SquadSchema } from '../../schemas/Squad';
@@ -121,3 +121,4 @@ export const CraftingRecipeModel = TEST_CONNECTION.model('CraftingRecipes', Craf
 export const BitTraitDataModel = TEST_CONNECTION.model('BitTraitData', BitTraitDataSchema, 'BitTraitData');
 export const UserBitCosmeticModel = TEST_CONNECTION.model('UserBitCosmetics', UserBitCosmeticSchema, 'UserBitCosmetics');
 export const TradeListingModel = TEST_CONNECTION.model('TradeListings', TradeListingSchema, 'TradeListings');
+export const UserLeaderboardDataModel = TEST_CONNECTION.model('UserLeaderboardData', UserLeaderboardDataSchema, 'UserLeaderboardData');

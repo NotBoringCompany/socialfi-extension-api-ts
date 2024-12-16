@@ -1,445 +1,449 @@
 import { ClientSession } from 'mongoose';
-import { LeaderboardPointsData, LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
-import { LeaderboardModel, SquadLeaderboardModel, SquadModel, TEST_CONNECTION, UserModel } from '../utils/constants/db';
+import { LeaderboardPointsData, LeaderboardPointsSource } from '../models/leaderboard';
+import { LeaderboardModel, SquadLeaderboardModel, SquadModel, TEST_CONNECTION, UserLeaderboardDataModel, UserModel } from '../utils/constants/db';
 import { ReturnValue, Status } from '../utils/retVal';
 import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
 import { InGameData } from '../models/user';
 
 /**
- * Adds a new leaderboard to the database. Only callable by admin.
+ * Migrates all data from Leaderboard to UserLeaderboardData.
  */
-export const addLeaderboard = async (
-    leaderboardName: string,
-    startTimestamp: number | null,
-    adminKey: string,
-): Promise<ReturnValue> => {
-    if (adminKey !== process.env.ADMIN_KEY) {
-        return {
-            status: Status.UNAUTHORIZED,
-            message: `(addLeaderboard) Admin key is incorrect.`
-        }
-    }
+export const migrateLeaderboardData = async (): Promise<void> => {
     try {
-        // check if leaderboard with the same name (regardless of casing) already exists
-        const leaderboardExists = await LeaderboardModel.exists({ name: { $regex: new RegExp(`^${leaderboardName}$`, 'i') }});
-
-        if (leaderboardExists) {
-            return {
-                status: Status.ERROR,
-                message: `(addLeaderboard) Leaderboard with the same name already exists.`
-            }
-        }
-
-        const leaderboard = new LeaderboardModel({
-            name: leaderboardName,
-            startTimestamp: startTimestamp || Math.floor(Date.now() / 1000),
-            userData: []
-        });
-
-        await leaderboard.save();
-
-        return {
-            status: Status.SUCCESS,
-            message: `(addLeaderboard) Leaderboard added.`,
-            data: {
-                leaderboard
-            }
-        }
-    } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(addLeaderboard) ${err.message}`
-        }
-    }
-}
-
-/**
- * Gets a leaderboard's rankings for users.
- * 
- * Sorts the user data by points in descending order.
- */
-export const getLeaderboardRanking = async (leaderboardName: string): Promise<ReturnValue> => {
-    try {
-        const leaderboard = await LeaderboardModel.findOne({ name: leaderboardName }).lean();
-
-        if (!leaderboard) {
-            return {
-                status: Status.ERROR,
-                message: `(getLeaderboardRanking) Leaderboard not found.`
-            };
-        }
-
-        // Sort the user data by points in descending order
-        // userData contains `pointsData` which is an array of points data for different sources
-        // we loop through each `pointsData` and sum up the points to get the total points for each user
-        const descendingPoints = leaderboard.userData.sort((a, b) => {
-            const aTotalPoints = a.pointsData?.reduce((acc, data) => acc + data.points, 0) ?? 0;
-            const bTotalPoints = b.pointsData?.reduce((acc, data) => acc + data.points, 0) ?? 0;
-            return bTotalPoints - aTotalPoints;
-        });
-
-        // Add a rank to each user data
-        const rankedUserData = descendingPoints.map((userData, index) => ({
-            rank: index + 1,
-            userId: userData.userId,
-            username: userData.username,
-            twitterProfilePicture: userData.twitterProfilePicture,
-            points: userData.pointsData?.reduce((acc, data) => acc + data.points, 0) ?? 0,
-        }));
-
-        return {
-            status: Status.SUCCESS,
-            message: `(getLeaderboardRanking) Leaderboard found.`,
-            data: {
-                ranking: rankedUserData
-            }
-        };
-    } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(getLeaderboardRanking) ${err.message}`
-        }
-    }
-}
-
-/**
- * (User) Gets the user's own ranking in a leaderboard.
- */
-export const getOwnLeaderboardRanking = async (
-    twitterId: string,
-    leaderboardName: string,
-): Promise<ReturnValue> => {
-    try {
-        const user = await UserModel.findOne({ twitterId }).lean();
-
-        if (!user) {
-            return {
-                status: Status.ERROR,
-                message: `(getOwnLeaderboardRanking) User not found.`
-            };
-        }
-
-        const leaderboard = await LeaderboardModel.findOne({ name: leaderboardName }).lean();
-
-        if (!leaderboard) {
-            return {
-                status: Status.ERROR,
-                message: `(getOwnLeaderboardRanking) Leaderboard not found.`
-            };
-        }
-
-        // Sort the user data by points in descending order
-        // userData contains `pointsData` which is an array of points data for different sources
-        // we loop through each `pointsData` and sum up the points to get the total points for each user
-        const descendingPoints = leaderboard.userData.sort((a, b) => {
-            const aTotalPoints = a.pointsData?.reduce((acc, data) => acc + data.points, 0) ?? 0;
-            const bTotalPoints = b.pointsData?.reduce((acc, data) => acc + data.points, 0) ?? 0;
-            return bTotalPoints - aTotalPoints;
-        });
-
-        // Find the user's data and determine the rank simultaneously
-        let userRank = -1; // Default value indicating not found
-        const userData = descendingPoints.find((data, index) => {
-            if (data.userId === user._id.toString()) {
-                userRank = index + 1; // Adjust for zero-based index
-                return true;
-            }
-            return false;
-        });
-
-        if (!userData || userRank === -1) {
-            return {
-                status: Status.ERROR,
-                message: `(getOwnLeaderboardRanking) User data not found in leaderboard.`
-            };
-        }
-
-        return {
-            status: Status.SUCCESS,
-            message: `(getOwnLeaderboardRanking) User data found.`,
-            data: {
-                ranking: {
-                    rank: userRank,
-                    userId: user._id,
-                    username: user.twitterUsername,
-                    twitterId: user.twitterId,
-                    twitterProfilePicture: userData.twitterProfilePicture,
-                    points: userData.pointsData?.reduce((acc, data) => acc + data.points, 0) ?? 0,
-                    pointsData: userData.pointsData
-                }
-            }
-        };
-    } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(getOwnLeaderboardRanking) ${err.message}`
-        }
-    }
-}
-
-/**
- * Gets the amount of leaderboard points the user currently has (FOR SEASON 0 LEADERBOARD ONLY).
- * 
- * Excludes the points earned from levelling up.
- */
-export const getUserCurrentPoints = async (twitterId: string): Promise<ReturnValue> => {
-    try {
+        // for now, there is only 1 season
         const leaderboard = await LeaderboardModel.findOne({ name: 'Season 0' }).lean();
 
-        if (!leaderboard) {
-            return {
-                status: Status.ERROR,
-                message: `(getUserCurrentPoints) Leaderboard not found.`
-            };
-        }
-
-        const user = await UserModel.findOne({ twitterId }).lean();
-
-        if (!user) {
-            return {
-                status: Status.ERROR,
-                message: `(getUserCurrentPoints) User not found.`
-            };
-        }
-        
-        // get the leaderboard's user data.
-        const leaderboardUserData = leaderboard.userData;
-
-        // Find the user's data
-        const data = leaderboardUserData.find(data => data.userId === user._id);
-
-        if (!data) {
-            // return 0 points
-            return {
-                status: Status.SUCCESS,
-                message: `(getUserCurrentPoints) User has 0 points.`,
-                data: {
-                    points: 0
-                }
-            }
-        }
-
-        // Sum up the points from different sources
-        const points = data.pointsData.reduce((acc, data) => {
-            return acc + data.points;
-        }, 0);
-
-        return {
-            status: Status.SUCCESS,
-            message: `(getUserCurrentPoints) User has ${points} points.`,
-            data: {
-                points: typeof points === 'number' ? points : 0
-            }
-        }
-    } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(getUserCurrentPoints) ${err.message}`
-        }
-    }
-}
-
-/**
- * Add user's leaderpoints, also update the points from the squad leaderboard
- * 
- * @param userId User's twitterId or _id
- * @param data the obtained points
- */
-export const addPoints = async (userId: string, data: LeaderboardPointsData[], _session?: ClientSession): Promise<ReturnValue> => {
-    const session = _session ?? (await TEST_CONNECTION.startSession());
-    if (!_session) session.startTransaction();
-
-    try {
-        const leaderboard = await LeaderboardModel.findOne({ name: 'Season 0' }, { session });
         if (!leaderboard) {
             throw new Error('Leaderboard not found.');
         }
 
-        const user = await UserModel.findOne({ $or: [{ twitterId: userId }, { _id: userId }] }, { session });
-        if (user) {
-            throw new Error('User not found');
+        // create an array of UserLeaderboardData instances
+        const userLeaderboardDataArray = [];
+
+        // for each user data, we create a new UserLeaderboardData instance
+        for (const userData of leaderboard.userData) {
+            const user = await UserModel.findOne({ _id: userData.userId }).lean();
+
+            if (!user) {
+                console.log(`(migrateLeaderboardData) User not found for userId: ${userData.userId}`);
+                // skip
+                continue;
+            }
+
+            // create the UserLeaderboardData instance
+            const userLeaderboardData = {
+                userId: userData.userId,
+                username: userData.username,
+                twitterProfilePicture: userData.twitterProfilePicture,
+                season: 0,
+                pointsData: userData.pointsData.map((data) => ({
+                    points: data.points,
+                    source: data.source,
+                })),
+            };
+
+            userLeaderboardDataArray.push(userLeaderboardData);
         }
 
-        const { level: currentLevel } = (user.inGameData as InGameData);
+        // add the user leaderboard data to the `UserLeaderboardData` collection
+        await UserLeaderboardDataModel.insertMany(userLeaderboardDataArray);
 
-        // get the index of the user in the leaderboard data
-        const userIndex = (leaderboard.userData as LeaderboardUserData[]).findIndex(
-            (userData) => userData.userId === user._id
-        );
+        // delete the leaderboard data
+        await LeaderboardModel.deleteOne({ name: 'Season 0' });
 
-        const totalObtainedPoints = data.reduce((prev, curr) => prev + curr.points, 0);
-        let additionalPoints = 0;
-
-        // if not found, create a new entry
-        if (userIndex === -1) {
-            // check if the user is eligible to level up to the next level
-            const newLevel = GET_SEASON_0_PLAYER_LEVEL(totalObtainedPoints);
-
-            if (newLevel > currentLevel) {
-                // set the user's `inGameData.level` to the new level
-                await user.updateOne({ 'inGameData.level': newLevel });
-
-                // add the additional points based on the rewards obtainable
-                additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
-            }
-
-            await leaderboard.updateOne({
-                $push: {
-                    'userData': {
-                        userId: user._id,
-                        username: user.twitterUsername,
-                        twitterProfilePicture: user.twitterProfilePicture,
-                        pointsData: [
-                            ...data,
-                            {
-                                points: additionalPoints,
-                                source: LeaderboardPointsSource.LEVELLING_UP,
-                            },
-                        ],
-                    }
-                }
-            }, { session })
-
-            // if the user is found, increment the points
-        } else {
-            // get the user's total leaderboard points
-            // this is done by summing up all the points from the `pointsData` array, BUT EXCLUDING SOURCES FROM:
-            // 1. LeaderboardPointsSource.LEVELLING_UP
-            const totalLeaderboardPoints = leaderboard.userData[userIndex].pointsData.reduce((acc, pointsData) => {
-                if (pointsData.source !== LeaderboardPointsSource.LEVELLING_UP) {
-                    return acc + pointsData.points;
-                }
-
-                return acc;
-            }, 0);
-
-            const newLevel = GET_SEASON_0_PLAYER_LEVEL(
-                totalLeaderboardPoints + totalObtainedPoints
-            );
-
-            if (newLevel > currentLevel) {
-                // set the user's `inGameData.level` to the new level
-                await user.updateOne({ 'inGameData.level': newLevel }, { session });
-
-                // add the additional points based on the rewards obtainable
-                additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
-            }
-
-            const pointsData: LeaderboardPointsData[] = [
-                ...data,
-                { source: LeaderboardPointsSource.LEVELLING_UP, points: additionalPoints }
-            ]
-
-            for (const point of pointsData) {
-                // ignore if the point amount empty
-                if (point.points === 0) continue;
-
-                // get the source index for the obtained point
-                const sourceIndex = leaderboard.userData[userIndex].pointsData.findIndex(
-                    ({ source }) => source === point.source
-                );
-
-                if (sourceIndex !== -1) {
-                    await leaderboard.updateOne({
-                        $inc: {
-                            [`userData.${userIndex}.pointsData.${sourceIndex}.points`]: point.points
-                        }
-                    }, { session });
-                } else {
-                    await leaderboard.updateOne({
-                        $push: {
-                            [`userData.${userIndex}.pointsData`]: {
-                                points: point.points,
-                                source: point.source,
-                            }
-                        }
-                    }, { session });
-                }
-            }
-        }
-
-        // if the user also has a squad, add the points to the squad's total points
-        if (user.inGameData.squad !== null) {
-            // get the squad
-            const squad = await SquadModel.findOne({ _id: user.inGameData.squadId });
-            if (!squad) {
-                throw new Error('Squad not found');
-            }
-
-            const latestSquadLeaderboard = await SquadLeaderboardModel.findOne().sort({ week: -1 });
-
-            // add only the points to the squad's total points
-            await squad.updateOne({
-                $inc: {
-                    [`squadPoints`]: totalObtainedPoints
-                }
-            });
-
-            // check if the squad exists in the squad leaderboard's `pointsData`. if not, we create a new instance.
-            const squadIndex = latestSquadLeaderboard.pointsData.findIndex((data) => data.squadId === squad._id);
-
-            if (squadIndex === -1) {
-                await latestSquadLeaderboard.updateOne({
-                    $push: {
-                        'pointsData': {
-                            squadId: squad._id,
-                            squadName: squad.name,
-                            memberPoints: [
-                                {
-                                    userId: user._id,
-                                    username: user.twitterUsername,
-                                    points: totalObtainedPoints,
-                                },
-                            ],
-                        }
-                    }
-                });
-            } else {
-                // otherwise, we increment the points for the user in the squad
-                const userIndex = latestSquadLeaderboard.pointsData[squadIndex].memberPoints.findIndex(
-                    (member) => member.userId === user._id
-                );
-
-                if (userIndex !== -1) {
-                    await latestSquadLeaderboard.updateOne({
-                        $inc: {
-                            [`pointsData.${squadIndex}.memberPoints.${userIndex}.points`]: totalObtainedPoints
-                        }
-                    });
-                } else {
-                    await latestSquadLeaderboard.updateOne({
-                        $push: {
-                            [`pointsData.${squadIndex}.memberPoints`]: {
-                                userId: user._id,
-                                username: user.twitterUsername,
-                                points: totalObtainedPoints,
-                            }
-                        }
-                    });
-                }
-            }
-        }
-
-        // commit the transaction only if this function started it
-        if (!_session) {
-            await session.commitTransaction();
-            session.endSession();
-        }
-
-        return {
-            status: Status.SUCCESS,
-            message: `(addItem) Item added to the inventory successfully`,
-        };
+        console.log('(migrateLeaderboardData) Data migrated successfully.');
     } catch (err: any) {
-        // abort the transaction if an error occurs
-        if (!_session) {
-            await session.abortTransaction();
-            session.endSession();
-        }
-
-        return {
-            status: Status.ERROR,
-            message: `(addItem) ${err.message}`,
-        };
+        console.error(`(migrateLeaderboardData) ${err.message}`);
     }
 }
+
+// /**
+//  * Gets a leaderboard's rankings for users.
+//  * 
+//  * Sorts the user data by points in descending order.
+//  */
+// export const getLeaderboardRanking = async (leaderboardName: string): Promise<ReturnValue> => {
+//     try {
+//         const leaderboard = await LeaderboardModel.findOne({ name: leaderboardName }).lean();
+
+//         if (!leaderboard) {
+//             return {
+//                 status: Status.ERROR,
+//                 message: `(getLeaderboardRanking) Leaderboard not found.`
+//             };
+//         }
+
+//         // Sort the user data by points in descending order
+//         // userData contains `pointsData` which is an array of points data for different sources
+//         // we loop through each `pointsData` and sum up the points to get the total points for each user
+//         const descendingPoints = leaderboard.userData.sort((a, b) => {
+//             const aTotalPoints = a.pointsData?.reduce((acc, data) => acc + data.points, 0) ?? 0;
+//             const bTotalPoints = b.pointsData?.reduce((acc, data) => acc + data.points, 0) ?? 0;
+//             return bTotalPoints - aTotalPoints;
+//         });
+
+//         // Add a rank to each user data
+//         const rankedUserData = descendingPoints.map((userData, index) => ({
+//             rank: index + 1,
+//             userId: userData.userId,
+//             username: userData.username,
+//             twitterProfilePicture: userData.twitterProfilePicture,
+//             points: userData.pointsData?.reduce((acc, data) => acc + data.points, 0) ?? 0,
+//         }));
+
+//         return {
+//             status: Status.SUCCESS,
+//             message: `(getLeaderboardRanking) Leaderboard found.`,
+//             data: {
+//                 ranking: rankedUserData
+//             }
+//         };
+//     } catch (err: any) {
+//         return {
+//             status: Status.ERROR,
+//             message: `(getLeaderboardRanking) ${err.message}`
+//         }
+//     }
+// }
+
+// /**
+//  * (User) Gets the user's own ranking in a leaderboard.
+//  */
+// export const getOwnLeaderboardRanking = async (
+//     twitterId: string,
+//     leaderboardName: string,
+// ): Promise<ReturnValue> => {
+//     try {
+//         const user = await UserModel.findOne({ twitterId }).lean();
+
+//         if (!user) {
+//             return {
+//                 status: Status.ERROR,
+//                 message: `(getOwnLeaderboardRanking) User not found.`
+//             };
+//         }
+
+//         const leaderboard = await LeaderboardModel.findOne({ name: leaderboardName }).lean();
+
+//         if (!leaderboard) {
+//             return {
+//                 status: Status.ERROR,
+//                 message: `(getOwnLeaderboardRanking) Leaderboard not found.`
+//             };
+//         }
+
+//         // Sort the user data by points in descending order
+//         // userData contains `pointsData` which is an array of points data for different sources
+//         // we loop through each `pointsData` and sum up the points to get the total points for each user
+//         const descendingPoints = leaderboard.userData.sort((a, b) => {
+//             const aTotalPoints = a.pointsData?.reduce((acc, data) => acc + data.points, 0) ?? 0;
+//             const bTotalPoints = b.pointsData?.reduce((acc, data) => acc + data.points, 0) ?? 0;
+//             return bTotalPoints - aTotalPoints;
+//         });
+
+//         // Find the user's data and determine the rank simultaneously
+//         let userRank = -1; // Default value indicating not found
+//         const userData = descendingPoints.find((data, index) => {
+//             if (data.userId === user._id.toString()) {
+//                 userRank = index + 1; // Adjust for zero-based index
+//                 return true;
+//             }
+//             return false;
+//         });
+
+//         if (!userData || userRank === -1) {
+//             return {
+//                 status: Status.ERROR,
+//                 message: `(getOwnLeaderboardRanking) User data not found in leaderboard.`
+//             };
+//         }
+
+//         return {
+//             status: Status.SUCCESS,
+//             message: `(getOwnLeaderboardRanking) User data found.`,
+//             data: {
+//                 ranking: {
+//                     rank: userRank,
+//                     userId: user._id,
+//                     username: user.twitterUsername,
+//                     twitterId: user.twitterId,
+//                     twitterProfilePicture: userData.twitterProfilePicture,
+//                     points: userData.pointsData?.reduce((acc, data) => acc + data.points, 0) ?? 0,
+//                     pointsData: userData.pointsData
+//                 }
+//             }
+//         };
+//     } catch (err: any) {
+//         return {
+//             status: Status.ERROR,
+//             message: `(getOwnLeaderboardRanking) ${err.message}`
+//         }
+//     }
+// }
+
+// /**
+//  * Gets the amount of leaderboard points the user currently has (FOR SEASON 0 LEADERBOARD ONLY).
+//  * 
+//  * Excludes the points earned from levelling up.
+//  */
+// export const getUserCurrentPoints = async (twitterId: string): Promise<ReturnValue> => {
+//     try {
+//         const leaderboard = await LeaderboardModel.findOne({ name: 'Season 0' }).lean();
+
+//         if (!leaderboard) {
+//             return {
+//                 status: Status.ERROR,
+//                 message: `(getUserCurrentPoints) Leaderboard not found.`
+//             };
+//         }
+
+//         const user = await UserModel.findOne({ twitterId }).lean();
+
+//         if (!user) {
+//             return {
+//                 status: Status.ERROR,
+//                 message: `(getUserCurrentPoints) User not found.`
+//             };
+//         }
+        
+//         // get the leaderboard's user data.
+//         const leaderboardUserData = leaderboard.userData;
+
+//         // Find the user's data
+//         const data = leaderboardUserData.find(data => data.userId === user._id);
+
+//         if (!data) {
+//             // return 0 points
+//             return {
+//                 status: Status.SUCCESS,
+//                 message: `(getUserCurrentPoints) User has 0 points.`,
+//                 data: {
+//                     points: 0
+//                 }
+//             }
+//         }
+
+//         // Sum up the points from different sources
+//         const points = data.pointsData.reduce((acc, data) => {
+//             return acc + data.points;
+//         }, 0);
+
+//         return {
+//             status: Status.SUCCESS,
+//             message: `(getUserCurrentPoints) User has ${points} points.`,
+//             data: {
+//                 points: typeof points === 'number' ? points : 0
+//             }
+//         }
+//     } catch (err: any) {
+//         return {
+//             status: Status.ERROR,
+//             message: `(getUserCurrentPoints) ${err.message}`
+//         }
+//     }
+// }
+
+// /**
+//  * Add user's leaderpoints, also update the points from the squad leaderboard
+//  * 
+//  * @param userId User's twitterId or _id
+//  * @param data the obtained points
+//  */
+// export const addPoints = async (userId: string, data: LeaderboardPointsData[], _session?: ClientSession): Promise<ReturnValue> => {
+//     const session = _session ?? (await TEST_CONNECTION.startSession());
+//     if (!_session) session.startTransaction();
+
+//     try {
+//         const leaderboard = await LeaderboardModel.findOne({ name: 'Season 0' }, { session });
+//         if (!leaderboard) {
+//             throw new Error('Leaderboard not found.');
+//         }
+
+//         const user = await UserModel.findOne({ $or: [{ twitterId: userId }, { _id: userId }] }, { session });
+//         if (user) {
+//             throw new Error('User not found');
+//         }
+
+//         const { level: currentLevel } = (user.inGameData as InGameData);
+
+//         // get the index of the user in the leaderboard data
+//         const userIndex = (leaderboard.userData as LeaderboardUserData[]).findIndex(
+//             (userData) => userData.userId === user._id
+//         );
+
+//         const totalObtainedPoints = data.reduce((prev, curr) => prev + curr.points, 0);
+//         let additionalPoints = 0;
+
+//         // if not found, create a new entry
+//         if (userIndex === -1) {
+//             // check if the user is eligible to level up to the next level
+//             const newLevel = GET_SEASON_0_PLAYER_LEVEL(totalObtainedPoints);
+
+//             if (newLevel > currentLevel) {
+//                 // set the user's `inGameData.level` to the new level
+//                 await user.updateOne({ 'inGameData.level': newLevel });
+
+//                 // add the additional points based on the rewards obtainable
+//                 additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
+//             }
+
+//             await leaderboard.updateOne({
+//                 $push: {
+//                     'userData': {
+//                         userId: user._id,
+//                         username: user.twitterUsername,
+//                         twitterProfilePicture: user.twitterProfilePicture,
+//                         pointsData: [
+//                             ...data,
+//                             {
+//                                 points: additionalPoints,
+//                                 source: LeaderboardPointsSource.LEVELLING_UP,
+//                             },
+//                         ],
+//                     }
+//                 }
+//             }, { session })
+
+//             // if the user is found, increment the points
+//         } else {
+//             // get the user's total leaderboard points
+//             // this is done by summing up all the points from the `pointsData` array, BUT EXCLUDING SOURCES FROM:
+//             // 1. LeaderboardPointsSource.LEVELLING_UP
+//             const totalLeaderboardPoints = leaderboard.userData[userIndex].pointsData.reduce((acc, pointsData) => {
+//                 if (pointsData.source !== LeaderboardPointsSource.LEVELLING_UP) {
+//                     return acc + pointsData.points;
+//                 }
+
+//                 return acc;
+//             }, 0);
+
+//             const newLevel = GET_SEASON_0_PLAYER_LEVEL(
+//                 totalLeaderboardPoints + totalObtainedPoints
+//             );
+
+//             if (newLevel > currentLevel) {
+//                 // set the user's `inGameData.level` to the new level
+//                 await user.updateOne({ 'inGameData.level': newLevel }, { session });
+
+//                 // add the additional points based on the rewards obtainable
+//                 additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
+//             }
+
+//             const pointsData: LeaderboardPointsData[] = [
+//                 ...data,
+//                 { source: LeaderboardPointsSource.LEVELLING_UP, points: additionalPoints }
+//             ]
+
+//             for (const point of pointsData) {
+//                 // ignore if the point amount empty
+//                 if (point.points === 0) continue;
+
+//                 // get the source index for the obtained point
+//                 const sourceIndex = leaderboard.userData[userIndex].pointsData.findIndex(
+//                     ({ source }) => source === point.source
+//                 );
+
+//                 if (sourceIndex !== -1) {
+//                     await leaderboard.updateOne({
+//                         $inc: {
+//                             [`userData.${userIndex}.pointsData.${sourceIndex}.points`]: point.points
+//                         }
+//                     }, { session });
+//                 } else {
+//                     await leaderboard.updateOne({
+//                         $push: {
+//                             [`userData.${userIndex}.pointsData`]: {
+//                                 points: point.points,
+//                                 source: point.source,
+//                             }
+//                         }
+//                     }, { session });
+//                 }
+//             }
+//         }
+
+//         // if the user also has a squad, add the points to the squad's total points
+//         if (user.inGameData.squad !== null) {
+//             // get the squad
+//             const squad = await SquadModel.findOne({ _id: user.inGameData.squadId });
+//             if (!squad) {
+//                 throw new Error('Squad not found');
+//             }
+
+//             const latestSquadLeaderboard = await SquadLeaderboardModel.findOne().sort({ week: -1 });
+
+//             // add only the points to the squad's total points
+//             await squad.updateOne({
+//                 $inc: {
+//                     [`squadPoints`]: totalObtainedPoints
+//                 }
+//             });
+
+//             // check if the squad exists in the squad leaderboard's `pointsData`. if not, we create a new instance.
+//             const squadIndex = latestSquadLeaderboard.pointsData.findIndex((data) => data.squadId === squad._id);
+
+//             if (squadIndex === -1) {
+//                 await latestSquadLeaderboard.updateOne({
+//                     $push: {
+//                         'pointsData': {
+//                             squadId: squad._id,
+//                             squadName: squad.name,
+//                             memberPoints: [
+//                                 {
+//                                     userId: user._id,
+//                                     username: user.twitterUsername,
+//                                     points: totalObtainedPoints,
+//                                 },
+//                             ],
+//                         }
+//                     }
+//                 });
+//             } else {
+//                 // otherwise, we increment the points for the user in the squad
+//                 const userIndex = latestSquadLeaderboard.pointsData[squadIndex].memberPoints.findIndex(
+//                     (member) => member.userId === user._id
+//                 );
+
+//                 if (userIndex !== -1) {
+//                     await latestSquadLeaderboard.updateOne({
+//                         $inc: {
+//                             [`pointsData.${squadIndex}.memberPoints.${userIndex}.points`]: totalObtainedPoints
+//                         }
+//                     });
+//                 } else {
+//                     await latestSquadLeaderboard.updateOne({
+//                         $push: {
+//                             [`pointsData.${squadIndex}.memberPoints`]: {
+//                                 userId: user._id,
+//                                 username: user.twitterUsername,
+//                                 points: totalObtainedPoints,
+//                             }
+//                         }
+//                     });
+//                 }
+//             }
+//         }
+
+//         // commit the transaction only if this function started it
+//         if (!_session) {
+//             await session.commitTransaction();
+//             session.endSession();
+//         }
+
+//         return {
+//             status: Status.SUCCESS,
+//             message: `(addItem) Item added to the inventory successfully`,
+//         };
+//     } catch (err: any) {
+//         // abort the transaction if an error occurs
+//         if (!_session) {
+//             await session.abortTransaction();
+//             session.endSession();
+//         }
+
+//         return {
+//             status: Status.ERROR,
+//             message: `(addItem) ${err.message}`,
+//         };
+//     }
+// }

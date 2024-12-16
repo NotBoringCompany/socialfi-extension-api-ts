@@ -1,28 +1,9 @@
 import express from 'express';
 import { Status } from '../utils/retVal';
 import { validateRequestAuth } from '../utils/auth';
-import { addLeaderboard, getLeaderboardRanking, getOwnLeaderboardRanking } from '../api/leaderboard';
+import { getLeaderboardRanking, getOwnLeaderboardRanking } from '../api/leaderboard';
 
 const router = express.Router();
-
-router.post('/add_leaderboard', async (req, res) => {
-    const { leaderboardName, startTimestamp, adminKey } = req.body;
-
-    try {
-        const { status, message, data } = await addLeaderboard(leaderboardName, startTimestamp, adminKey);
-
-        return res.status(status).json({
-            status,
-            message,
-            data
-        });
-    } catch (err: any) {
-        return res.status(500).json({
-            status: Status.ERROR,
-            message: err.message
-        })
-    }
-});
 
 router.get('/get_leaderboard_ranking/:leaderboardName', async (req, res) => {
     const { leaderboardName } = req.params;
