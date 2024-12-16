@@ -9,7 +9,7 @@ router.get('/get_leaderboard_ranking/:season', async (req, res) => {
     const { season } = req.params;
 
     try {
-        const { status, message, data } = await getLeaderboardRanking(season);
+        const { status, message, data } = await getLeaderboardRanking(parseInt(season));
 
         return res.status(status).json({
             status,
