@@ -59,7 +59,7 @@ export const migrateLeaderboardData = async (): Promise<void> => {
 }
 
 /**
- * Gets a leaderboard's rankings for users of the current season.
+ * Gets a leaderboard's rankings for users of a specific season.
  * 
  * Sorts the user data by points in descending order.
  */
@@ -71,7 +71,7 @@ export const getLeaderboardRanking = async (season: number): Promise<ReturnValue
         if (!leaderboardData || leaderboardData.length === 0) {
             return {
                 status: Status.ERROR,
-                message: `(getLeaderboardRanking) Leaderboard for current season not found.`
+                message: `(getLeaderboardRanking) Leaderboard for season ${season} not found.`
             };
         }
 
@@ -108,80 +108,79 @@ export const getLeaderboardRanking = async (season: number): Promise<ReturnValue
     }
 }
 
-// /**
-//  * (User) Gets the user's own ranking in a leaderboard.
-//  */
-// export const getOwnLeaderboardRanking = async (
-//     twitterId: string,
-//     leaderboardName: string,
-// ): Promise<ReturnValue> => {
-//     try {
-//         const user = await UserModel.findOne({ twitterId }).lean();
+/**
+ * (User) Gets the user's own ranking in a leaderboard.
+ */
+export const getOwnLeaderboardRanking = async (
+    twitterId: string,
+    season: number,
+): Promise<ReturnValue> => {
+    try {
+        const user = await UserModel.findOne({ twitterId }).lean();
 
-//         if (!user) {
-//             return {
-//                 status: Status.ERROR,
-//                 message: `(getOwnLeaderboardRanking) User not found.`
-//             };
-//         }
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(getOwnLeaderboardRanking) User not found.`
+            };
+        }
 
-//         const leaderboard = await LeaderboardModel.findOne({ name: leaderboardName }).lean();
+        const leaderboardData = await UserLeaderboardDataModel.find({ season }).lean();
 
-//         if (!leaderboard) {
-//             return {
-//                 status: Status.ERROR,
-//                 message: `(getOwnLeaderboardRanking) Leaderboard not found.`
-//             };
-//         }
+        if (!leaderboardData || leaderboardData.length === 0) {
+            return {
+                status: Status.ERROR,
+                message: `(getOwnLeaderboardRanking) Leaderboard for season ${season} not found.`
+            };
+        }
 
-//         // Sort the user data by points in descending order
-//         // userData contains `pointsData` which is an array of points data for different sources
-//         // we loop through each `pointsData` and sum up the points to get the total points for each user
-//         const descendingPoints = leaderboard.userData.sort((a, b) => {
-//             const aTotalPoints = a.pointsData?.reduce((acc, data) => acc + data.points, 0) ?? 0;
-//             const bTotalPoints = b.pointsData?.reduce((acc, data) => acc + data.points, 0) ?? 0;
-//             return bTotalPoints - aTotalPoints;
-//         });
+        // Sort the user data by points in descending order
+        const descendingPoints = leaderboardData.sort((a, b) => {
+            const aTotalPoints = a.pointsData.reduce((acc, data) => acc + data.points, 0);
+            const bTotalPoints = b.pointsData.reduce((acc, data) => acc + data.points, 0);
+            return bTotalPoints - aTotalPoints;
+        });
 
-//         // Find the user's data and determine the rank simultaneously
-//         let userRank = -1; // Default value indicating not found
-//         const userData = descendingPoints.find((data, index) => {
-//             if (data.userId === user._id.toString()) {
-//                 userRank = index + 1; // Adjust for zero-based index
-//                 return true;
-//             }
-//             return false;
-//         });
+        // Find the user's data and determine the rank simultaneously
+        let userRank = -1; // Default value indicating not found
 
-//         if (!userData || userRank === -1) {
-//             return {
-//                 status: Status.ERROR,
-//                 message: `(getOwnLeaderboardRanking) User data not found in leaderboard.`
-//             };
-//         }
+        const userData = descendingPoints.find((data, index) => {
+            if (data.userId === user._id.toString()) {
+                userRank = index + 1; // Adjust for zero-based index
+                return true;
+            }
+            return false;
+        });
 
-//         return {
-//             status: Status.SUCCESS,
-//             message: `(getOwnLeaderboardRanking) User data found.`,
-//             data: {
-//                 ranking: {
-//                     rank: userRank,
-//                     userId: user._id,
-//                     username: user.twitterUsername,
-//                     twitterId: user.twitterId,
-//                     twitterProfilePicture: userData.twitterProfilePicture,
-//                     points: userData.pointsData?.reduce((acc, data) => acc + data.points, 0) ?? 0,
-//                     pointsData: userData.pointsData
-//                 }
-//             }
-//         };
-//     } catch (err: any) {
-//         return {
-//             status: Status.ERROR,
-//             message: `(getOwnLeaderboardRanking) ${err.message}`
-//         }
-//     }
-// }
+        if (!userData || userRank === -1) {
+            return {
+                status: Status.ERROR,
+                message: `(getOwnLeaderboardRanking) User data not found in leaderboard.`
+            };
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getOwnLeaderboardRanking) User data found.`,
+            data: {
+                ranking: {
+                    rank: userRank,
+                    userId: user._id,
+                    username: user.twitterUsername,
+                    twitterId: user.twitterId,
+                    twitterProfilePicture: userData.twitterProfilePicture,
+                    points: userData.pointsData?.reduce((acc, data) => acc + data.points, 0) ?? 0,
+                    pointsData: userData.pointsData
+                }
+            }
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getOwnLeaderboardRanking) ${err.message}`
+        }
+    }
+}
 
 // /**
 //  * Gets the amount of leaderboard points the user currently has (FOR SEASON 0 LEADERBOARD ONLY).

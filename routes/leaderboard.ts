@@ -24,8 +24,8 @@ router.get('/get_leaderboard_ranking/:season', async (req, res) => {
     }
 })
 
-router.get('/get_own_leaderboard_ranking/:leaderboardName', async (req, res) => {
-    const { leaderboardName } = req.params;
+router.get('/get_own_leaderboard_ranking/:season', async (req, res) => {
+    const { season } = req.params;
 
     try {
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'get_own_leaderboard_ranking');
@@ -37,7 +37,7 @@ router.get('/get_own_leaderboard_ranking/:leaderboardName', async (req, res) => 
             })
         }
 
-        const { status, message, data } = await getOwnLeaderboardRanking(validateData?.twitterId, leaderboardName.toLocaleString());
+        const { status, message, data } = await getOwnLeaderboardRanking(validateData?.twitterId, parseInt(season));
 
         return res.status(status).json({
             status,
