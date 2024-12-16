@@ -11,7 +11,6 @@ import {
 } from '../models/craft';
 import { Food } from '../models/food';
 import { Item } from '../models/item';
-import { LeaderboardPointsSource } from '../models/leaderboard';
 import { CraftingMastery, CraftingMasteryStats } from '../models/mastery';
 import { ExtendedResource, ExtendedResourceOrigin } from '../models/resource';
 import {
@@ -32,6 +31,7 @@ import { ReturnValue, Status } from '../utils/retVal';
 import { toCamelCase } from '../utils/strings';
 import { batchAddToInventory, batchDeductFromInventory } from './inventory';
 import { addPoints } from './leaderboard';
+import { PointsSource } from '../models/user';
 
 /**
  * Crafts a craftable asset for the user.
@@ -1962,7 +1962,10 @@ export const claimCraftedAssetsV2 = async (
         if (obtainedPoints > 0) {
             await addPoints(
                 user._id,
-                [{ points: obtainedPoints, source: LeaderboardPointsSource.CRAFTING_RECIPES }],
+                {
+                    points: obtainedPoints,
+                    source: PointsSource.CRAFTING_RECIPES,
+                },
                 session
             );
         }

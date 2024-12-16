@@ -1,136 +1,136 @@
 import { ClientSession } from 'mongoose';
-import { LeaderboardModel, SquadLeaderboardModel, SquadModel, TEST_CONNECTION, UserLeaderboardDataModel, UserModel } from '../utils/constants/db';
+import {SquadLeaderboardModel, SquadModel, TEST_CONNECTION, UserLeaderboardDataModel, UserModel } from '../utils/constants/db';
 import { ReturnValue, Status } from '../utils/retVal';
 import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
 import { InGameData, PointsData, PointsSource } from '../models/user';
 import { CURRENT_SEASON } from '../utils/constants/leaderboard';
 
-/**
- * Migrates all data from Leaderboard to UserLeaderboardData.
- */
-export const migrateLeaderboardData = async (): Promise<void> => {
-    try {
-        // for now, there is only 1 season
-        const leaderboard = await LeaderboardModel.findOne({ name: 'Season 0' }).lean();
+// /**
+//  * Migrates all data from Leaderboard to UserLeaderboardData.
+//  */
+// export const migrateLeaderboardData = async (): Promise<void> => {
+//     try {
+//         // for now, there is only 1 season
+//         const leaderboard = await LeaderboardModel.findOne({ name: 'Season 0' }).lean();
 
-        if (!leaderboard) {
-            throw new Error('Leaderboard not found.');
-        }
+//         if (!leaderboard) {
+//             throw new Error('Leaderboard not found.');
+//         }
 
-        // create an array of UserLeaderboardData instances
-        const userLeaderboardDataArray = [];
+//         // create an array of UserLeaderboardData instances
+//         const userLeaderboardDataArray = [];
 
-        // for each user data, we create a new UserLeaderboardData instance
-        for (const userData of leaderboard.userData) {
-            const user = await UserModel.findOne({ _id: userData.userId }).lean();
+//         // for each user data, we create a new UserLeaderboardData instance
+//         for (const userData of leaderboard.userData) {
+//             const user = await UserModel.findOne({ _id: userData.userId }).lean();
 
-            if (!user) {
-                console.log(`(migrateLeaderboardData) User not found for userId: ${userData.userId}`);
-                // skip
-                continue;
-            }
+//             if (!user) {
+//                 console.log(`(migrateLeaderboardData) User not found for userId: ${userData.userId}`);
+//                 // skip
+//                 continue;
+//             }
 
-            // create the UserLeaderboardData instance
-            const userLeaderboardData = {
-                userId: userData.userId,
-                username: userData.username,
-                twitterProfilePicture: userData.twitterProfilePicture,
-                season: 0,
-                points: userData.pointsData.reduce((acc, data) => acc + data.points, 0),
-            };
+//             // create the UserLeaderboardData instance
+//             const userLeaderboardData = {
+//                 userId: userData.userId,
+//                 username: userData.username,
+//                 twitterProfilePicture: userData.twitterProfilePicture,
+//                 season: 0,
+//                 points: userData.pointsData.reduce((acc, data) => acc + data.points, 0),
+//             };
 
-            userLeaderboardDataArray.push(userLeaderboardData);
-        }
+//             userLeaderboardDataArray.push(userLeaderboardData);
+//         }
 
-        // add the user leaderboard data to the `UserLeaderboardData` collection
-        await UserLeaderboardDataModel.insertMany(userLeaderboardDataArray);
+//         // add the user leaderboard data to the `UserLeaderboardData` collection
+//         await UserLeaderboardDataModel.insertMany(userLeaderboardDataArray);
 
-        // delete the leaderboard data
-        await LeaderboardModel.deleteOne({ name: 'Season 0' });
+//         // delete the leaderboard data
+//         await LeaderboardModel.deleteOne({ name: 'Season 0' });
 
-        console.log('(migrateLeaderboardData) Data migrated successfully.');
-    } catch (err: any) {
-        console.error(`(migrateLeaderboardData) ${err.message}`);
-    }
-}
+//         console.log('(migrateLeaderboardData) Data migrated successfully.');
+//     } catch (err: any) {
+//         console.error(`(migrateLeaderboardData) ${err.message}`);
+//     }
+// }
 
-/**
- * Adds the user's points data to the user's inventory.
- */
-export const addUserPointsToInventory = async (): Promise<void> => {
-    try {
-        const leaderboardData = await LeaderboardModel.findOne({ name: 'Season 0' }).lean();
+// /**
+//  * Adds the user's points data to the user's inventory.
+//  */
+// export const addUserPointsToInventory = async (): Promise<void> => {
+//     try {
+//         const leaderboardData = await LeaderboardModel.findOne({ name: 'Season 0' }).lean();
 
-        if (!leaderboardData) {
-            throw new Error('Leaderboard data not found.');
-        }
+//         if (!leaderboardData) {
+//             throw new Error('Leaderboard data not found.');
+//         }
 
-        const users = await UserModel.find().lean();
+//         const users = await UserModel.find().lean();
 
-        // for each user, we set the pointsData.
-        const userUpdateOperations: Array<{
-            userId: string;
-            updateOperations: {
-                $set: {}
-            }
-        }> = [];
+//         // for each user, we set the pointsData.
+//         const userUpdateOperations: Array<{
+//             userId: string;
+//             updateOperations: {
+//                 $set: {}
+//             }
+//         }> = [];
 
-        for (const user of users) {
-            const userData = leaderboardData.userData.find((data) => data.userId === user._id);
+//         for (const user of users) {
+//             const userData = leaderboardData.userData.find((data) => data.userId === user._id);
 
-            if (!userData) {
-                // create a new pointsData structure
-                const pointsData: PointsData = {
-                    currentPoints: 0,
-                    totalPointsSpent: 0,
-                    weeklyPointsSpent: 0,
-                    extendedPointsData: []
-                }
+//             if (!userData) {
+//                 // create a new pointsData structure
+//                 const pointsData: PointsData = {
+//                     currentPoints: 0,
+//                     totalPointsSpent: 0,
+//                     weeklyPointsSpent: 0,
+//                     extendedPointsData: []
+//                 }
 
-                userUpdateOperations.push({
-                    userId: user._id,
-                    updateOperations: {
-                        $set: {
-                            'inventory.pointsData': pointsData
-                        }
-                    }
-                });
-            }
+//                 userUpdateOperations.push({
+//                     userId: user._id,
+//                     updateOperations: {
+//                         $set: {
+//                             'inventory.pointsData': pointsData
+//                         }
+//                     }
+//                 });
+//             }
 
-            const pointsData: PointsData = {
-                currentPoints: userData.pointsData.reduce((acc, data) => acc + data.points, 0),
-                totalPointsSpent: 0,
-                weeklyPointsSpent: 0,
-                extendedPointsData: userData.pointsData.map((pd) => ({
-                    points: pd.points,
-                    source: pd.source as PointsSource,
-                }))
-            }
+//             const pointsData: PointsData = {
+//                 currentPoints: userData.pointsData.reduce((acc, data) => acc + data.points, 0),
+//                 totalPointsSpent: 0,
+//                 weeklyPointsSpent: 0,
+//                 extendedPointsData: userData.pointsData.map((pd) => ({
+//                     points: pd.points,
+//                     source: pd.source as PointsSource,
+//                 }))
+//             }
 
-            userUpdateOperations.push({
-                userId: user._id,
-                updateOperations: {
-                    $set: {
-                        'inventory.pointsData': pointsData
-                    }
-                }
-            });
-        }
+//             userUpdateOperations.push({
+//                 userId: user._id,
+//                 updateOperations: {
+//                     $set: {
+//                         'inventory.pointsData': pointsData
+//                     }
+//                 }
+//             });
+//         }
 
-        console.log(`(addUserPointsToInventory) userUpdateOperations: ${JSON.stringify(userUpdateOperations, null, 2)}`);
+//         console.log(`(addUserPointsToInventory) userUpdateOperations: ${JSON.stringify(userUpdateOperations, null, 2)}`);
 
-        // perform the update operations
-        const promises = userUpdateOperations.map(async ({ userId, updateOperations }) => {
-            await UserModel.updateOne({ _id: userId }, updateOperations);
-        })
+//         // perform the update operations
+//         const promises = userUpdateOperations.map(async ({ userId, updateOperations }) => {
+//             await UserModel.updateOne({ _id: userId }, updateOperations);
+//         })
 
-        await Promise.all(promises);
+//         await Promise.all(promises);
 
-        console.log('(addUserPointsToInventory) Data updated successfully.');
-    } catch (err: any) {
-        console.error(`(addUserPointsToInventory) ${err.message}`);
-    }
-}
+//         console.log('(addUserPointsToInventory) Data updated successfully.');
+//     } catch (err: any) {
+//         console.error(`(addUserPointsToInventory) ${err.message}`);
+//     }
+// }
 
 /**
  * Gets a leaderboard's rankings for users of a specific season.
@@ -279,8 +279,6 @@ export const addPoints = async (
 
         const userLeaderboardDataUpdateOperations = {
             $inc: {},
-            $set: {},
-            $push: {}
         }
 
         const userLeaderboardData = await UserLeaderboardDataModel.findOne({ userId, season: CURRENT_SEASON }).lean();
@@ -414,6 +412,23 @@ export const addPoints = async (
                     });
                 }
             }
+        }
+
+        await UserModel.updateOne({ _id: user._id }, {
+            $set: userUpdateOperations.$set,
+            $inc: userUpdateOperations.$inc,
+        }, { session });
+
+        await UserModel.updateOne({ _id: user._id }, {
+            $push: userUpdateOperations.$push,
+        }, { session });
+
+        if (Object.keys(userLeaderboardDataUpdateOperations.$inc).length > 0) {
+            await UserLeaderboardDataModel.updateOne(
+                { userId: user._id, season: CURRENT_SEASON }, 
+                userLeaderboardDataUpdateOperations, 
+                { session }
+            );
         }
 
         // commit the transaction only if this function started it

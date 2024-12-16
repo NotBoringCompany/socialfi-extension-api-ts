@@ -1,14 +1,13 @@
 import mongoose from 'mongoose';
 import { IndirectReferralData, ReferralData, ReferralReward, ReferredUserData, StarterCodeData } from '../models/invite';
-import { LeaderboardModel, StarterCodeModel, SuccessfulIndirectReferralModel, UserModel } from '../utils/constants/db';
+import { StarterCodeModel, SuccessfulIndirectReferralModel, UserLeaderboardDataModel, UserModel } from '../utils/constants/db';
 import { generateObjectId, generateStarterCode } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
-import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
-import { ExtendedXCookieData, UserWallet, XCookieSource } from '../models/user';
+import { ExtendedPointsData, ExtendedXCookieData, PointsSource, UserWallet, XCookieSource } from '../models/user';
 import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS, GET_SEASON_0_REFERRAL_REWARDS } from '../utils/constants/user';
-import { getUserCurrentPoints } from './leaderboard';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { updateReferredUsersData } from './user';
+import { CURRENT_SEASON } from '../utils/constants/leaderboard';
 
 /**
  * Generates starter codes and stores them in the database.
@@ -89,11 +88,9 @@ export const claimReferralRewards = async (twitterId: string): Promise<ReturnVal
             $pull: {}
         }
 
-        const leaderboardUpdateOperations = {
+        const userLeaderboardDataUpdateOperations = {
             $set: {},
             $inc: {},
-            $push: {},
-            $pull: {}
         }
 
         // check if the user's `referralData.claimableReferralRewards` is empty
@@ -120,93 +117,52 @@ export const claimReferralRewards = async (twitterId: string): Promise<ReturnVal
             userUpdateOperations.$set['referralData.claimableReferralRewards.xCookies'] = 0;
         }
 
-        // if the user has claimable leaderboard points, add to the Season 0 leaderboard and reset the claimable leaderboard points
+        // if the user has claimable points, add to the leaderboard data and reset the claimable leaderboard points
         if (claimableReferralRewards.leaderboardPoints > 0) {
-            // get the leaderboard for season 0
-            const leaderboard = await LeaderboardModel.findOne({ name: 'Season 0' }).lean();
+            // check if the userboard has a leaderboard data for the current season 
+            const leaderboardData = await UserLeaderboardDataModel.findOne({ userId: user._id, season: CURRENT_SEASON }).lean();
 
-            if (!leaderboard) {
-                return {
-                    status: Status.ERROR,
-                    message: `(claimReferralRewards) Leaderboard not found.`
-                }
-            }
+            // if the user doesn't have a leaderboard data, we create a new entry
+            if (!leaderboardData) {
+                await UserLeaderboardDataModel.create({
+                    _id: generateObjectId(),
+                    userId: user._id,
+                    username: user.twitterUsername,
+                    twitterProfilePicture: user.twitterProfilePicture,
+                    season: CURRENT_SEASON,
+                    points: claimableReferralRewards.leaderboardPoints
+                });
 
-            // check if the user exists in the leaderboard's `userData`
-            const userIndex = (leaderboard.userData as LeaderboardUserData[]).findIndex(userData => userData.userId === user._id);
-
-            let additionalPoints = 0;
-
-            const currentLevel = user.inGameData.level;
-
-            // if the user is not found, we create a new entry for the user
-            if (userIndex === -1) {
                 const newLevel = GET_SEASON_0_PLAYER_LEVEL(claimableReferralRewards.leaderboardPoints);
 
                 // if user levelled up, set the user's `inGameData.level` to the new level
-                if (newLevel > currentLevel) {
+                if (newLevel > user.inGameData.level) {
                     userUpdateOperations.$set['inGameData.level'] = newLevel;
-                    additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
-                }
-
-                leaderboardUpdateOperations.$push['userData'] = {
-                    userId: user._id,
-                    twitterProfilePicture: user.twitterProfilePicture,
-                    pointsData: [
-                        {
-                            points: claimableReferralRewards.leaderboardPoints,
-                            source: LeaderboardPointsSource.REFERRAL_REWARDS
-                        }, {
-                            points: additionalPoints,
-                            source: LeaderboardPointsSource.LEVELLING_UP
-                        }
-                    ]
                 }
             } else {
-                // get the user's total leaderboard points
-                // this is done by summing up all the points from the `pointsData` array, BUT EXCLUDING SOURCES FROM:
-                // 1. LeaderboardPointsSource.LEVELLING_UP
-                const totalLeaderboardPoints = leaderboard.userData[userIndex].pointsData.reduce((acc, pointsData) => {
-                    if (pointsData.source !== LeaderboardPointsSource.LEVELLING_UP) {
-                        return acc + pointsData.points;
-                    }
+                // if the user has a leaderboard data, we increment the points
+                userLeaderboardDataUpdateOperations.$inc['points'] = claimableReferralRewards.leaderboardPoints;
 
-                    return acc;
-                }, 0);
+                const newLevel = GET_SEASON_0_PLAYER_LEVEL(leaderboardData.points + claimableReferralRewards.leaderboardPoints);
 
-                const newLevel = GET_SEASON_0_PLAYER_LEVEL(totalLeaderboardPoints + claimableReferralRewards.leaderboardPoints);
-
-                if (newLevel > currentLevel) {
+                // if user levelled up, set the user's `inGameData.level` to the new level
+                if (newLevel > user.inGameData.level) {
                     userUpdateOperations.$set['inGameData.level'] = newLevel;
-                    additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
                 }
+            }
 
-                // if the user is found, we increment the points
+            // update the points data for the user too
+            userUpdateOperations.$inc['inventory.pointsData.currentPoints'] = claimableReferralRewards.leaderboardPoints;
+            
+            // check if the source exists in the extended points data
+            const referralRewardsIndex = (user.inventory?.pointsData.extendedPointsData as ExtendedPointsData[]).findIndex(data => data.source === PointsSource.REFERRAL_REWARDS);
 
-                const pointsData = leaderboard.userData[userIndex].pointsData;
-
-                const sourceIndex = pointsData.findIndex(pointsData => pointsData.source === LeaderboardPointsSource.REFERRAL_REWARDS);
-
-                if (sourceIndex === -1) {
-                    leaderboardUpdateOperations.$push[`userData.${userIndex}.pointsData`] = {
-                        points: claimableReferralRewards.leaderboardPoints,
-                        source: LeaderboardPointsSource.REFERRAL_REWARDS
-                    }
-                } else {
-                    leaderboardUpdateOperations.$inc[`userData.${userIndex}.pointsData.${sourceIndex}.points`] = claimableReferralRewards.leaderboardPoints;
-                }
-
-                if (additionalPoints > 0) {
-                    const levelUpIndex = pointsData.findIndex(pointsData => pointsData.source === LeaderboardPointsSource.LEVELLING_UP);
-
-                    if (levelUpIndex === -1) {
-                        leaderboardUpdateOperations.$push[`userData.${userIndex}.pointsData`] = {
-                            points: additionalPoints,
-                            source: LeaderboardPointsSource.LEVELLING_UP
-                        }
-                    } else {
-                        leaderboardUpdateOperations.$inc[`userData.${userIndex}.pointsData.${levelUpIndex}.points`] = additionalPoints;
-                    }
+            if (referralRewardsIndex !== -1) {
+                userUpdateOperations.$inc[`inventory.pointsData.extendedPointsData.${referralRewardsIndex}.points`] = claimableReferralRewards.leaderboardPoints;
+            } else {
+                userUpdateOperations.$push['inventory.pointsData.extendedPointsData'] = {
+                    points: claimableReferralRewards.leaderboardPoints,
+                    source: PointsSource.REFERRAL_REWARDS
                 }
             }
 
@@ -215,10 +171,19 @@ export const claimReferralRewards = async (twitterId: string): Promise<ReturnVal
         }
 
         // execute the update operations
-        await Promise.all([
-            UserModel.updateOne({ twitterId }, userUpdateOperations),
-            LeaderboardModel.updateOne({ name: 'Season 0' }, leaderboardUpdateOperations)
-        ]);
+        await UserModel.updateOne({ twitterId }, {
+            $set: userUpdateOperations.$set,
+            $inc: userUpdateOperations.$inc,
+        });
+
+        await UserModel.updateOne({ twitterId }, {
+            $push: userUpdateOperations.$push,
+            $pull: userUpdateOperations.$pull
+        });
+
+        if (Object.keys(userLeaderboardDataUpdateOperations.$set).length > 0 || Object.keys(userLeaderboardDataUpdateOperations.$inc).length > 0) {
+            UserLeaderboardDataModel.updateOne({ userId: user._id, season: CURRENT_SEASON }, userLeaderboardDataUpdateOperations)
+        }
 
         // check if the user update operations included a level up
         const setUserLevel = userUpdateOperations.$set['inGameData.level'];
