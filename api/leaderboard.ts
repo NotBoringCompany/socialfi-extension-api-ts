@@ -4,6 +4,7 @@ import { LeaderboardModel, SquadLeaderboardModel, SquadModel, TEST_CONNECTION, U
 import { ReturnValue, Status } from '../utils/retVal';
 import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
 import { InGameData } from '../models/user';
+import { CURRENT_SEASON } from '../utils/constants/leaderboard';
 
 /**
  * Migrates all data from Leaderboard to UserLeaderboardData.
@@ -57,54 +58,55 @@ export const migrateLeaderboardData = async (): Promise<void> => {
     }
 }
 
-// /**
-//  * Gets a leaderboard's rankings for users.
-//  * 
-//  * Sorts the user data by points in descending order.
-//  */
-// export const getLeaderboardRanking = async (leaderboardName: string): Promise<ReturnValue> => {
-//     try {
-//         const leaderboard = await LeaderboardModel.findOne({ name: leaderboardName }).lean();
+/**
+ * Gets a leaderboard's rankings for users of the current season.
+ * 
+ * Sorts the user data by points in descending order.
+ */
+export const getLeaderboardRanking = async (season: number): Promise<ReturnValue> => {
+    try {
+        // fetch all the data from UserLeaderboardData for the current season
+        const leaderboardData = await UserLeaderboardDataModel.find({ season }).lean();
 
-//         if (!leaderboard) {
-//             return {
-//                 status: Status.ERROR,
-//                 message: `(getLeaderboardRanking) Leaderboard not found.`
-//             };
-//         }
+        if (!leaderboardData || leaderboardData.length === 0) {
+            return {
+                status: Status.ERROR,
+                message: `(getLeaderboardRanking) Leaderboard for current season not found.`
+            };
+        }
 
-//         // Sort the user data by points in descending order
-//         // userData contains `pointsData` which is an array of points data for different sources
-//         // we loop through each `pointsData` and sum up the points to get the total points for each user
-//         const descendingPoints = leaderboard.userData.sort((a, b) => {
-//             const aTotalPoints = a.pointsData?.reduce((acc, data) => acc + data.points, 0) ?? 0;
-//             const bTotalPoints = b.pointsData?.reduce((acc, data) => acc + data.points, 0) ?? 0;
-//             return bTotalPoints - aTotalPoints;
-//         });
+        // Sort the user data by points in descending order
+        const descendingPoints = leaderboardData.sort((a, b) => {
+            const aTotalPoints = a.pointsData.reduce((acc, data) => acc + data.points, 0);
+            const bTotalPoints = b.pointsData.reduce((acc, data) => acc + data.points, 0);
+            return bTotalPoints - aTotalPoints;
+        })
 
-//         // Add a rank to each user data
-//         const rankedUserData = descendingPoints.map((userData, index) => ({
-//             rank: index + 1,
-//             userId: userData.userId,
-//             username: userData.username,
-//             twitterProfilePicture: userData.twitterProfilePicture,
-//             points: userData.pointsData?.reduce((acc, data) => acc + data.points, 0) ?? 0,
-//         }));
+        // Add a rank to each user data
+        const rankedUserData = descendingPoints.map((userData, index) => ({
+            rank: index + 1,
+            userId: userData.userId,
+            username: userData.username,
+            twitterProfilePicture: userData.twitterProfilePicture,
+            points: userData.pointsData.reduce((acc, data) => acc + data.points, 0),
+        }));
 
-//         return {
-//             status: Status.SUCCESS,
-//             message: `(getLeaderboardRanking) Leaderboard found.`,
-//             data: {
-//                 ranking: rankedUserData
-//             }
-//         };
-//     } catch (err: any) {
-//         return {
-//             status: Status.ERROR,
-//             message: `(getLeaderboardRanking) ${err.message}`
-//         }
-//     }
-// }
+        console.log(`ranked data: ${JSON.stringify(rankedUserData, null, 2)}`);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getLeaderboardRanking) Leaderboard found.`,
+            data: {
+                ranking: rankedUserData
+            }
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(getLeaderboardRanking) ${err.message}`
+        }
+    }
+}
 
 // /**
 //  * (User) Gets the user's own ranking in a leaderboard.

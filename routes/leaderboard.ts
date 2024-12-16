@@ -5,11 +5,11 @@ import { getLeaderboardRanking, getOwnLeaderboardRanking } from '../api/leaderbo
 
 const router = express.Router();
 
-router.get('/get_leaderboard_ranking/:leaderboardName', async (req, res) => {
-    const { leaderboardName } = req.params;
+router.get('/get_leaderboard_ranking/:season', async (req, res) => {
+    const { season } = req.params;
 
     try {
-        const { status, message, data } = await getLeaderboardRanking(leaderboardName);
+        const { status, message, data } = await getLeaderboardRanking(season);
 
         return res.status(status).json({
             status,
