@@ -67,21 +67,21 @@ export const GET_SYNTHESIZING_ITEM_TYPE = (item: string): SynthesizingItemGroup 
         return SynthesizingItemGroup.AUGMENTATION_ITEM;
     }
 
-    if (Object.values(TransmutationEnum).includes(item as TransmutationItem)) {
-        return SynthesizingItemGroup.TRANSMUTATION_ITEM;
-    }
+    // if (Object.values(TransmutationEnum).includes(item as TransmutationItem)) {
+    //     return SynthesizingItemGroup.TRANSMUTATION_ITEM;
+    // }
 
-    if (Object.values(EnergyTotemEnum).includes(item as EnergyTotemItem)) {
-        return SynthesizingItemGroup.ENERGY_TOTEM_ITEM;
-    }
+    // if (Object.values(EnergyTotemEnum).includes(item as EnergyTotemItem)) {
+    //     return SynthesizingItemGroup.ENERGY_TOTEM_ITEM;
+    // }
 
-    if (Object.values(ContinuumRelicEnum).includes(item as ContinuumRelicItem)) {
-        return SynthesizingItemGroup.CONTINUUM_RELIC_ITEM;
-    }
+    // if (Object.values(ContinuumRelicEnum).includes(item as ContinuumRelicItem)) {
+    //     return SynthesizingItemGroup.CONTINUUM_RELIC_ITEM;
+    // }
 
-    if (Object.values(PotionEnum).includes(item as PotionItem)) {
-        return SynthesizingItemGroup.POTION_ITEM;
-    }
+    // if (Object.values(PotionEnum).includes(item as PotionItem)) {
+    //     return SynthesizingItemGroup.POTION_ITEM;
+    // }
 
     return undefined;
 }
@@ -91,10 +91,11 @@ export const GET_SYNTHESIZING_ITEM_TYPE = (item: string): SynthesizingItemGroup 
  */
 export const SYNTHESIZING_ITEM_ENUM_MAP: { [ key in SynthesizingItemGroup]: object } = {
     [SynthesizingItemGroup.AUGMENTATION_ITEM]: AugmentationEnum,
-    [SynthesizingItemGroup.TRANSMUTATION_ITEM]: TransmutationEnum,
-    [SynthesizingItemGroup.ENERGY_TOTEM_ITEM]: EnergyTotemEnum,
-    [SynthesizingItemGroup.CONTINUUM_RELIC_ITEM]: ContinuumRelicEnum,
-    [SynthesizingItemGroup.POTION_ITEM]: PotionEnum,
+    [SynthesizingItemGroup.REROLLING_POTION_ITEM]: AugmentationEnum,
+    // [SynthesizingItemGroup.TRANSMUTATION_ITEM]: TransmutationEnum,
+    // [SynthesizingItemGroup.ENERGY_TOTEM_ITEM]: EnergyTotemEnum,
+    // [SynthesizingItemGroup.CONTINUUM_RELIC_ITEM]: ContinuumRelicEnum,
+    // [SynthesizingItemGroup.POTION_ITEM]: PotionEnum,
 }
 
 

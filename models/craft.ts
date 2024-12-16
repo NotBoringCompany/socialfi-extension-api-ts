@@ -408,13 +408,12 @@ export interface CraftedAssetEffectValues {
  * The different types of crafting recipe lines.
  */
 export enum CraftingRecipeLine {
-    /** related to consumables or any basic assets */
+    CRAFTSMAN = 'Craftsman',
     SYNTHESIZING = 'Synthesizing',
-    /** related to refining/purification of ore resources */
-    SMELTING = 'Smelting',
+    ALCHEMY = 'Alchemy',
+    CARPENTRY = 'Carpentry',
     BLACKSMITHING = 'Blacksmithing',
-    COOKING = 'Cooking',
-    TAILORING = 'Tailoring'
+    JEWELER = 'Jeweler',
 }
 
 /**
@@ -488,6 +487,8 @@ export interface CraftingRecipeRequiredAssetData {
  * NOTE: CraftingQueue instances that have the status `CLAIMABLE` means that the player can claim the asset.
  */
 export interface CraftingQueue {
+    /** the database ID of the crafting recipe */
+    _id: string;
     /** the user's database ID */
     userId: string;
     /** the status of the ongoing craft */
@@ -504,6 +505,8 @@ export interface CraftingQueue {
     craftingStart: number;
     /** when the crafting will be completed; the user will receive the asset then */
     craftingEnd: number;
+    /** the crafting results, including successful, failed, bonus (critical), and refunded materials. */
+    craftingResults: CraftingResult[];
 }
 
 /**
@@ -528,6 +531,7 @@ export interface CraftingQueueAssetData {
      * the resulting asset from crafting via this recipe.
      */
     asset: CraftableAsset;
+    assetRarity: CraftedAssetRarity;
     /** the number of `asset` being crafted in this instance. */
     amount: number;
     /**
@@ -578,12 +582,65 @@ export enum CraftingQueueStatus {
 export type CraftableAsset = SynthesizingItem | SmeltingItem;
 
 /**
+ * A list of different Craftsman item groups.
+ */
+export enum CraftsmanItemGroup {
+    INGOT_ITEM = 'Ingot Item',
+    WOODWORKING_ITEM = 'Woodworking Item',
+    PAPERMAKING_ITEM = 'Papermaking Item',
+    MATERIALISTIC_FLASK_ITEM = 'Materialistic Flask Item',
+}
+
+/**
  * A list of different Synthesizing item groups.
  */
 export enum SynthesizingItemGroup {
     AUGMENTATION_ITEM = 'Augmentation Item',
-    TRANSMUTATION_ITEM = 'Transmutation Item',
+    REROLLING_POTION_ITEM = 'Rerolling Potion Item',
+}
+
+/**
+ * A list of different Carpentry item groups.
+ */
+export enum CarpentryItemGroup {
     ENERGY_TOTEM_ITEM = 'Energy Totem Item',
+    TRANSMUTATION_ITEM = 'Transmutation Item',
+}
+
+/**
+ * A list of different Blacksmithing item groups.
+ */
+export enum BlacksmithingItemGroup {
+    RUNES_ITEM = 'Runes Item',
     CONTINUUM_RELIC_ITEM = 'Continuum Relic Item',
+}
+
+/**
+ * A list of different Synthesizing item groups.
+ */
+export enum AlchemyItemGroup {
     POTION_ITEM = 'Potion Item',
+}
+
+/**
+ * A list of different Continuum Relic item groups.
+ */
+export enum JewelryItemGroup {}
+
+export enum CraftingResultType {
+    SUCCESSFUL = 'Successful',
+    FAILED = 'Failed',
+    BONUS = 'Bonus',
+    REFUNDED = 'Refunded'
+}
+
+/**
+ * Represents crafting result upon claiming.
+ */
+export interface CraftingResult {
+    asset: AssetType;
+    amount: number;
+    type: CraftingResultType;
+    /** weight per item */
+    weight: number;
 }
