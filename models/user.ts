@@ -82,6 +82,8 @@ export interface UserInventory {
     weight: number;
     /** the maximum inventory weight the user can have */
     maxWeight: number;
+    /** the user's current points data */
+    pointsData: PointsData;
     /** the user's xCookies data (i.e. the current xCookies owned, the total xCookies earned from different sources etc.) */
     xCookieData: XCookieData;
     /** the user's diamonds data (i.e. the current diamonds owned, the total diamonds earned from different sources etc.) */
@@ -100,6 +102,20 @@ export interface UserInventory {
     islandIds: number[];
     /** a list of owned bit IDs */
     bitIds: number[];
+}
+
+/**
+ * Represents the user's points data.
+ */
+export interface PointsData {
+    /** the user's current points */
+    currentPoints: number;
+    /** the total amount of points the user has spent */
+    totalPointsSpent: number;
+    /** the weekly amount of points the user has spent. resets every sunday 23:59 utc */
+    weeklyPointsSpent: number;
+    /** the extended points data (shows how many points have been obtained from what source) */
+    extendedPointsData: ExtendedPointsData[];
 }
 
 /**
@@ -122,6 +138,33 @@ export interface XCookieData {
 export interface ExtendedXCookieData {
     xCookies: number;
     source: XCookieSource;
+}
+
+/**
+ * Represents the extended points data.
+ */
+export interface ExtendedPointsData {
+    points: number;
+    source: PointsSource;
+}
+
+/**
+ * Represents the source of points for a user.
+ */
+export enum PointsSource {
+    RESOURCE_SELLING = 'Resource Selling',
+    REFERRAL_REWARDS = 'Referral Rewards',
+    INDIRECT_REFERRAL_REWARDS = 'Indirect Referral Rewards',
+    DAILY_LOGIN_REWARDS = 'Daily Login Rewards',
+    BEGINNER_REWARDS = 'Beginner Rewards',
+    CHEST_REWARDS = 'Chest Rewards',
+    COLLAB_REWARDS = 'Collab Rewards',
+    LEVELLING_UP = 'Levelling Up',
+    ISLAND_TAPPING = 'Island Tapping',
+    KOS_BENEFITS = 'KOS Benefits',
+    DISCORD_ENGAGEMENT = 'Discord Engagement',
+    WEEKLY_MVP_REWARDS = 'Weekly MVP Rewards',
+    CRAFTING_RECIPES = 'Crafting Recipes',
 }
 
 /**

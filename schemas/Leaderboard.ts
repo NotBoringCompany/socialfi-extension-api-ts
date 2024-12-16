@@ -32,9 +32,5 @@ export const UserLeaderboardDataSchema = new mongoose.Schema({
     username: String,
     twitterProfilePicture: String,
     season: Number,
-    pointsData: [{
-        _id: false,
-        points: Number,
-        source: String
-    }]
+    points: Number,
 });
