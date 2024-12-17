@@ -242,7 +242,7 @@ router.post('/sell_items_in_poi_shop', async (req, res) => {
             if (allowMixpanel) {
                 mixpanel.track('Points Earned (POI Shop)', {
                     distinct_id: validateData?.twitterId,
-                    leaderboardSeason: CURRENT_SEASON,
+                    leaderboardName: `Season ${CURRENT_SEASON}`,
                     '_data': data,
                 });
             }
