@@ -150,8 +150,6 @@ router.get('/get_in_game_data', async (req, res) => {
 })
 
 router.post('/claim_daily_rewards', async (req, res) => {
-    const { leaderboardName } = req.body;
-    
     try {
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'claim_daily_rewards');
 
@@ -162,7 +160,7 @@ router.post('/claim_daily_rewards', async (req, res) => {
             })
         }
 
-        const { status, message, data } = await claimDailyRewards(validateData?.twitterId, leaderboardName);
+        const { status, message, data } = await claimDailyRewards(validateData?.twitterId);
 
         if (status === Status.SUCCESS && allowMixpanel) {
             mixpanel.track('Claim Daily Rewards', {
