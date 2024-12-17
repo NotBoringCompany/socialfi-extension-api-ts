@@ -1,21 +1,20 @@
 import { ReturnValue, Status } from '../utils/retVal';
 import { generateHashSalt, generateObjectId } from '../utils/crypto';
-import { LeaderboardModel, SquadLeaderboardModel, SquadModel, UserModel, WeeklyMVPClaimableRewardsModel, WeeklyMVPRankingLeaderboardModel } from '../utils/constants/db';
+import { SquadLeaderboardModel, SquadModel, UserLeaderboardDataModel, UserModel, WeeklyMVPClaimableRewardsModel, WeeklyMVPRankingLeaderboardModel } from '../utils/constants/db';
 import {
     GET_SEASON_0_PLAYER_LEVEL,
     GET_SEASON_0_PLAYER_LEVEL_REWARDS,
     WEEKLY_MVP_REWARDS,
 } from '../utils/constants/user';
 import { BitOrbType, Item, TerraCapsulatorType } from '../models/item';
-import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
 import { WeeklyMVPRanking, WeeklyMVPRankingData, WeeklyMVPReward, WeeklyMVPRewardType } from '../models/weeklyMVPReward';
-import { ExtendedXCookieData, UserWallet, XCookieData, XCookieSource } from '../models/user';
+import { ExtendedPointsData, ExtendedXCookieData, PointsSource, UserWallet, XCookieData, XCookieSource } from '../models/user';
 import mongoose from 'mongoose';
 import * as dotenv from 'dotenv';
-import { getUserCurrentPoints } from './leaderboard';
 import { DEPLOYER_WALLET, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
 import { ethers } from 'ethers';
 import { updateReferredUsersData } from './user';
+import { CURRENT_SEASON } from '../utils/constants/leaderboard';
 
 dotenv.config();
 
@@ -307,7 +306,7 @@ export const claimWeeklyMVPRewards = async (twitterId: string): Promise<ReturnVa
         }
 
         // for now, because `WeeklyMVPRewardType` only has `LEADERBOARD_POINTS`, we only check for that.
-        const leaderboardUpdateOperations = {
+        const userLeaderboardDataUpdateOperations = {
             $inc: {},
             $push: {},
             $pull: {},
@@ -347,96 +346,50 @@ export const claimWeeklyMVPRewards = async (twitterId: string): Promise<ReturnVa
             };
         }
 
+        const userLeaderboardData = await UserLeaderboardDataModel.findOne({ userId: user._id, season: CURRENT_SEASON }).lean();
 
-        // check if the user exists in the season 0 leaderboard's `userData` array.
-        // if not, create a new entry. else:
-        // check if the source `WEEKLY_MVP_REWARDS` exists in the user's points data.
-        // if it does, increment the points. if not, create a new entry.
-        // also, if the user is eligible for additional points, add the additional points to `points`.
-        const leaderboard = await LeaderboardModel.findOne({ name: 'Season 0' }).lean();
-
-        if (!leaderboard) {
-            return {
-                status: Status.ERROR,
-                message: `(claimWeeklyMVPRewards) Leaderboard not found.`,
-            };
-        }
-
-        const userIndex = (leaderboard.userData as LeaderboardUserData[]).findIndex(data => data.userId === user._id);
-
-        let additionalPoints = 0;
-
-        const currentLevel = user.inGameData.level;
-
-        if (userIndex === -1) {
-            // check if the user is eligible to level up to the next level
-            const newLevel = GET_SEASON_0_PLAYER_LEVEL(claimableLeaderboardPoints);
-
-            if (newLevel > currentLevel) {
-                userUpdateOperations.$set['inGameData.level'] = newLevel;
-
-                // add the additional points based on the rewards obtainable
-                additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
-            }
-
-            leaderboardUpdateOperations.$push['userData'] = {
+        // if the user doesn't exist in the leaderboard, we create a new user data.
+        if (!userLeaderboardData) {
+            await UserLeaderboardDataModel.create({
+                _id: generateObjectId(),
                 userId: user._id,
                 username: user.twitterUsername,
                 twitterProfilePicture: user.twitterProfilePicture,
-                pointsData: [
-                    {
-                        points: claimableLeaderboardPoints,
-                        source: LeaderboardPointsSource.WEEKLY_MVP_REWARDS
-                    },
-                    {
-                        points: additionalPoints,
-                        source: LeaderboardPointsSource.LEVELLING_UP
-                    }
-                ]
+                season: CURRENT_SEASON,
+                points: claimableLeaderboardPoints
+            });
+
+            const newLevel = GET_SEASON_0_PLAYER_LEVEL(claimableLeaderboardPoints);
+
+            // if user levelled up, set the user's `inGameData.level` to the new level
+            if (newLevel > user.inGameData.level) {
+                userUpdateOperations.$set['inGameData.level'] = newLevel;
             }
         } else {
-            // if user is found, get the user's total leaderboard points
-            // this is done by summing up all the points from the `pointsData` array, BUT EXCLUDING SOURCES FROM:
-            // 1. LeaderboardPointsSource.LEVELLING_UP
-            const totalLeaderboardPoints = leaderboard.userData[userIndex].pointsData.reduce((acc, pointsData) => {
-                if (pointsData.source !== LeaderboardPointsSource.LEVELLING_UP) {
-                    return acc + pointsData.points;
-                }
+            // increment the user's points in the leaderboard
+            userLeaderboardDataUpdateOperations.$inc['points'] = claimableLeaderboardPoints;
 
-                return acc;
-            }, 0);
+            const newLevel = GET_SEASON_0_PLAYER_LEVEL(userLeaderboardData.points + claimableLeaderboardPoints);
 
-            const newLevel = GET_SEASON_0_PLAYER_LEVEL(totalLeaderboardPoints + claimableLeaderboardPoints);
-
-            if (newLevel > currentLevel) {
+            // if user levelled up, set the user's `inGameData.level` to the new level
+            if (newLevel > user.inGameData.level) {
                 userUpdateOperations.$set['inGameData.level'] = newLevel;
-                additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
             }
+        }
 
-            // get the source index for `WEEKLY_MVP_REWARDS`
-            const sourceIndex = leaderboard.userData[userIndex].pointsData.findIndex(data => data.source === LeaderboardPointsSource.WEEKLY_MVP_REWARDS);
+        // update the points data for the user too
+        userUpdateOperations.$inc['inventory.pointsData.currentPoints'] = claimableLeaderboardPoints;
 
-            if (sourceIndex !== -1) {
-                leaderboardUpdateOperations.$inc[`userData.${userIndex}.pointsData.${sourceIndex}.points`] = claimableLeaderboardPoints;
-            } else {
-                leaderboardUpdateOperations.$push[`userData.${userIndex}.pointsData`] = {
-                    points: claimableLeaderboardPoints,
-                    source: LeaderboardPointsSource.KOS_BENEFITS
-                }
+        // check if the source exists in the extended points data
+        const sourceIndex = (user.inventory?.pointsData.extendedPointsData as ExtendedPointsData[]).findIndex(data => data.source === PointsSource.WEEKLY_MVP_REWARDS);
+
+        if (sourceIndex === -1) {
+            userUpdateOperations.$push['inventory.pointsData.extendedPointsData'] = {
+                points: claimableLeaderboardPoints,
+                source: PointsSource.RESOURCE_SELLING,
             }
-
-            if (additionalPoints > 0) {
-                const levellingUpIndex = leaderboard.userData[userIndex].pointsData.findIndex(data => data.source === LeaderboardPointsSource.LEVELLING_UP);
-
-                if (levellingUpIndex !== -1) {
-                    leaderboardUpdateOperations.$inc[`userData.${userIndex}.pointsData.${levellingUpIndex}.points`] = additionalPoints;
-                } else {
-                    leaderboardUpdateOperations.$push[`userData.${userIndex}.pointsData`] = {
-                        points: additionalPoints,
-                        source: LeaderboardPointsSource.LEVELLING_UP
-                    }
-                }
-            }
+        } else {
+            userUpdateOperations.$inc[`inventory.pointsData.extendedPointsData.${sourceIndex}.points`] = claimableLeaderboardPoints;
         }
 
         // if the user is also in a squad, add the points to the squad's total points
@@ -486,9 +439,9 @@ export const claimWeeklyMVPRewards = async (twitterId: string): Promise<ReturnVa
 
         // execute the update operations ($set and $inc, then $push and $pull to prevent conflicts)
         await Promise.all([
-            LeaderboardModel.updateOne({ name: 'Season 0' }, {
-                $set: leaderboardUpdateOperations.$set,
-                $inc: leaderboardUpdateOperations.$inc,
+            UserLeaderboardDataModel.updateOne({ userId: user._id, season: CURRENT_SEASON }, {
+                $set: userLeaderboardDataUpdateOperations.$set,
+                $inc: userLeaderboardDataUpdateOperations.$inc,
             }),
             SquadModel.updateOne({ _id: user.inGameData.squadId }, {
                 $set: squadUpdateOperations.$set,
@@ -505,9 +458,9 @@ export const claimWeeklyMVPRewards = async (twitterId: string): Promise<ReturnVa
         ]);
 
         await Promise.all([
-            LeaderboardModel.updateOne({ name: 'Season 0' }, {
-                $push: leaderboardUpdateOperations.$push,
-                $pull: leaderboardUpdateOperations.$pull,
+            UserLeaderboardDataModel.updateOne({ userId: user._id, season: CURRENT_SEASON }, {
+                $push: userLeaderboardDataUpdateOperations.$push,
+                $pull: userLeaderboardDataUpdateOperations.$pull,
             }),
             SquadModel.updateOne({ _id: user.inGameData.squadId }, {
                 $push: squadUpdateOperations.$push,
@@ -574,7 +527,6 @@ export const claimWeeklyMVPRewards = async (twitterId: string): Promise<ReturnVa
             message: `(claimWeeklyMVPRewards) Weekly MVP rewards claimed.`,
             data: {
                 leaderboardPoints: claimableLeaderboardPoints,
-                additionalPoints
             }
         }
     } catch (err: any) {

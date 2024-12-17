@@ -2,7 +2,6 @@ import axios from 'axios';
 import { ReturnValue, Status } from '../utils/retVal';
 import { BitModel, IslandModel, ShopAssetPurchaseModel, UserBitCosmeticModel, UserModel } from '../utils/constants/db';
 import { ExtendedXCookieData, UserSecondaryWallet, UserWallet, XCookieSource } from '../models/user';
-import { getUserCurrentPoints } from './leaderboard';
 import { BINANCE_API_BASE_URL, BIT_COSMETICS_CONTRACT, BIT_COSMETICS_CONTRACT_USER, CUSTODIAL_CONTRACT, CUSTODIAL_CONTRACT_USER, DEPLOYER_WALLET, GATEIO_API_BASE_URL, ISLANDS_CONTRACT, ISLANDS_CONTRACT_USER, KAIA_TESTNET_PROVIDER, KUCOIN_API_BASE_URL, TON_RECEIVER_ADDRESS, TON_WEB, WONDERBITS_CONTRACT, WONDERBITS_CONTRACT_USER, WONDERBITS_SFT_CONTRACT, WONDERBITS_SFT_CONTRACT_USER, WONDERBITS_SFT_IDS, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
 import { ethers } from 'ethers';
 import { TxParsedMessage } from '../models/web3';
