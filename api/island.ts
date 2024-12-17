@@ -10,15 +10,14 @@ import { Modifier } from '../models/modifier';
 import { BitSchema } from '../schemas/Bit';
 import { Bit, BitRarity, BitRarityNumeric, BitStatsModifiers, BitTraitEnum, BitTraitData, BitType } from '../models/bit';
 import { generateHashSalt, generateObjectId, generateOpHash } from '../utils/crypto';
-import { BitModel, ConsumedSynthesizingItemModel, IslandModel, LeaderboardModel, SquadLeaderboardModel, SquadModel, UserModel } from '../utils/constants/db';
+import { BitModel, ConsumedSynthesizingItemModel, IslandModel, SquadLeaderboardModel, SquadModel, UserLeaderboardDataModel, UserModel } from '../utils/constants/db';
 import { ObtainMethod } from '../models/obtainMethod';
 import { RELOCATION_COOLDOWN } from '../utils/constants/bit';
-import { ExtendedXCookieData, PlayerEnergy, PlayerMastery, User, XCookieSource } from '../models/user';
+import { ExtendedPointsData, ExtendedXCookieData, PlayerEnergy, PlayerMastery, PointsSource, User, XCookieSource } from '../models/user';
 import { resources } from '../utils/constants/resource';
 import { Item } from '../models/item';
 import { BoosterItem } from '../models/booster';
 import { TAPPING_MASTERY_LEVEL } from '../utils/constants/mastery';
-import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
 import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
 import { TappingMastery } from '../models/mastery';
 import { updateReferredUsersData } from './user';
@@ -27,6 +26,7 @@ import { SYNTHESIZING_ITEM_EFFECT_REMOVAL_QUEUE } from '../utils/constants/asset
 import { CRAFTING_RECIPES } from '../utils/constants/craft';
 import { DEPLOYER_WALLET, ISLANDS_CONTRACT, KAIA_TESTNET_PROVIDER } from '../utils/constants/web3';
 import { ethers } from 'ethers';
+import { CURRENT_SEASON } from '../utils/constants/leaderboard';
 
 // /**
 //  * Sets the new owner data and removes the current `owner` field for all islands.
@@ -2472,7 +2472,7 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
             $push: {}
         }
 
-        const leaderboardUpdateOperations = {
+        const userLeaderboardDataUpdateOperations = {
             $pull: {},
             $inc: {},
             $set: {},
@@ -2495,7 +2495,7 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
 
         const user = await UserModel.findOne({ twitterId }).lean();
         const island = await IslandModel.findOne({ islandId: islandId }).lean();
-        const leaderboard = await LeaderboardModel.findOne().sort({ startTimestamp: -1 });
+        const leaderboardData = await UserLeaderboardDataModel.findOne({ userId: user._id, season: CURRENT_SEASON }).lean();
         const latestSquadLeaderboard = await SquadLeaderboardModel.findOne().sort({ week: -1 }).lean();
 
         if (!island) {
@@ -2518,13 +2518,6 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
                 status: Status.ERROR,
                 message: `(getIslandTappingData) User not found.`
             };
-        }
-
-        if (!leaderboard) {
-            return {
-                status: Status.ERROR,
-                message: `(getIslandTappingData) Leaderboard not found.`
-            }
         }
 
         if (!latestSquadLeaderboard) {
@@ -2701,83 +2694,51 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
                 // Always increment currentXCookies
                 userUpdateOperations.$inc[`inventory.xCookieData.currentXCookies`] = berryDropAmount;
             } else if (secondOptionReward.pointDrop) {
-                const userIndex = (leaderboard.userData as LeaderboardUserData[]).findIndex(userData => userData.userId === user._id);
-
-                let additionalPoints = 0;
-
-                const currentLevel = user.inGameData.level;
-
-                // if not found, create a new entry
-                if (userIndex === -1) {
-                    // check if the user is eligible to level up to the next level
-                    const newLevel = GET_SEASON_0_PLAYER_LEVEL(secondOptionReward.pointDrop);
-
-                    if (newLevel > currentLevel) {
-                        // set the user's `inGameData.level` to the new level
-                        userUpdateOperations.$set['inGameData.level'] = newLevel;
-
-                        // add the additional points based on the rewards obtainable
-                        additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
-                    }
-
-                    leaderboardUpdateOperations.$push['userData'] = {
+                // add the points to the user's leaderboard data and the user's `points` in the inventory
+                if (!leaderboardData) {
+                    // create a new leaderboard data instance
+                    await UserLeaderboardDataModel.create({
+                        _id: generateObjectId(),
                         userId: user._id,
                         username: user.twitterUsername,
                         twitterProfilePicture: user.twitterProfilePicture,
-                        pointsData: [
-                            {
-                                points: secondOptionReward.pointDrop,
-                                source: LeaderboardPointsSource.ISLAND_TAPPING
-                            },
-                            {
-                                points: additionalPoints,
-                                source: LeaderboardPointsSource.LEVELLING_UP
-                            }
-                        ]
-                    }
-                    // if the user is found, increment the points
-                } else {
-                    // get the user's total leaderboard points
-                    // this is done by summing up all the points from the `pointsData` array, BUT EXCLUDING SOURCES FROM:
-                    // 1. LeaderboardPointsSource.LEVELLING_UP
-                    const totalLeaderboardPoints = leaderboard.userData[userIndex].pointsData.reduce((acc, pointsData) => {
-                        if (pointsData.source !== LeaderboardPointsSource.LEVELLING_UP) {
-                            return acc + pointsData.points;
-                        }
+                        season: CURRENT_SEASON,
+                        points: secondOptionReward.pointDrop
+                    });
 
-                        return acc;
-                    }, 0);
+                    const newLevel = GET_SEASON_0_PLAYER_LEVEL(secondOptionReward.pointDrop);
 
-                    const newLevel = GET_SEASON_0_PLAYER_LEVEL(totalLeaderboardPoints + secondOptionReward.pointDrop);
-
-                    if (newLevel > currentLevel) {
+                    // if user levelled up, set the user's `inGameData.level` to the new level
+                    if (newLevel > user.inGameData.level) {
                         userUpdateOperations.$set['inGameData.level'] = newLevel;
-                        additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
                     }
+                } else {
+                    // increment the user's points in the leaderboard data
+                    userLeaderboardDataUpdateOperations.$inc['points'] = secondOptionReward.pointDrop;
 
-                    // get the source index for ISLAND_TAPPING
-                    const sourceIndex = leaderboard.userData[userIndex].pointsData.findIndex(pointsData => pointsData.source === LeaderboardPointsSource.ISLAND_TAPPING);
-                    console.log('Points Index: ', sourceIndex);
-                    if (sourceIndex !== -1) {
-                        leaderboardUpdateOperations.$inc[`userData.${userIndex}.pointsData.${sourceIndex}.points`] = secondOptionReward.pointDrop;
-                    } else {
-                        leaderboardUpdateOperations.$push[`userData.${userIndex}.pointsData`] = {
-                            points: secondOptionReward.pointDrop,
-                            source: LeaderboardPointsSource.ISLAND_TAPPING
-                        }
+                    // check if the user is eligible to level up to the next level
+                    const newLevel = GET_SEASON_0_PLAYER_LEVEL(leaderboardData.points + secondOptionReward.pointDrop);
+
+                    // if user levelled up, set the user's `inGameData.level` to the new level
+                    if (newLevel > user.inGameData.level) {
+                        userUpdateOperations.$set['inGameData.level'] = newLevel;
                     }
+                }
 
-                    if (additionalPoints > 0) {
-                        const levellingUpIndex = leaderboard.userData[userIndex].pointsData.findIndex(pointsData => pointsData.source === LeaderboardPointsSource.LEVELLING_UP);
+                // update the points data for the user too
+                userUpdateOperations.$inc['inventory.pointsData.currentPoints'] = secondOptionReward.pointDrop;
+                
+                // check if the source exists in the extended points data
+                const rewardsIndex = (user.inventory?.pointsData.extendedPointsData as ExtendedPointsData[]).findIndex(data => data.source === PointsSource.ISLAND_TAPPING);
 
-                        if (levellingUpIndex !== -1) {
-                            leaderboardUpdateOperations.$inc[`userData.${userIndex}.pointsData.${levellingUpIndex}.points`] = additionalPoints;
-                        } else {
-                            leaderboardUpdateOperations.$push[`userData.${userIndex}.pointsData`] = {
-                                points: additionalPoints,
-                                source: LeaderboardPointsSource.LEVELLING_UP
-                            }
-                        }
+                if (rewardsIndex !== -1) {
+                    // increment the points
+                    userUpdateOperations.$inc[`inventory.pointsData.extendedPointsData.${rewardsIndex}.points`] = secondOptionReward.pointDrop;
+                } else {
+                    // push a new instance to the array
+                    userUpdateOperations.$push[`inventory.pointsData.extendedPointsData`] = {
+                        source: PointsSource.ISLAND_TAPPING,
+                        points: secondOptionReward.pointDrop
                     }
                 }
 
@@ -2872,9 +2833,9 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
                 $inc: islandUpdateOperations.$inc,
             }),
 
-            LeaderboardModel.updateOne({ _id: leaderboard._id }, {
-                $set: leaderboardUpdateOperations.$set,
-                $inc: leaderboardUpdateOperations.$inc,
+            UserLeaderboardDataModel.updateOne({ userId: user._id, season: CURRENT_SEASON }, {
+                $set: userLeaderboardDataUpdateOperations.$set,
+                $inc: userLeaderboardDataUpdateOperations.$inc
             }),
 
             SquadModel.updateOne({ _id: user.inGameData.squadId }, {
@@ -2899,9 +2860,9 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
                 $pull: islandUpdateOperations.$pull,
             }),
 
-            LeaderboardModel.updateOne({ _id: leaderboard._id }, {
-                $push: leaderboardUpdateOperations.$push,
-                $pull: leaderboardUpdateOperations.$pull,
+            UserLeaderboardDataModel.updateOne({ userId: user._id, season: CURRENT_SEASON }, {
+                $push: userLeaderboardDataUpdateOperations.$push,
+                $pull: userLeaderboardDataUpdateOperations.$pull
             }),
 
             SquadModel.updateOne({ _id: user.inGameData.squadId }, {
