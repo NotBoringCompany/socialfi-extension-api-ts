@@ -1,9 +1,8 @@
 import { Document, FlattenMaps } from 'mongoose';
 import { KOSExplicitOwnership } from '../models/kos';
-import { Leaderboard, LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
 import { PendingSquadMember, SquadCreationMethod, SquadMember, SquadRank, SquadRole } from '../models/squad';
 import { User, UserSecondaryWallet, UserWallet } from '../models/user';
-import { LeaderboardModel, SquadLeaderboardModel, SquadModel, UserModel } from '../utils/constants/db';
+import { SquadLeaderboardModel, SquadModel, UserLeaderboardDataModel, UserModel } from '../utils/constants/db';
 import { CREATE_SQUAD_COST, INITIAL_MAX_MEMBERS, MAX_CO_LEADERS_LIMIT, MAX_LEADERS_LIMIT, MAX_MEMBERS_INCREASE_UPON_UPGRADE, MAX_MEMBERS_LIMIT, RENAME_SQUAD_COOLDOWN, RENAME_SQUAD_COST, SQUAD_LEAVE_COOLDOWN, UPGRADE_SQUAD_MAX_MEMBERS_COST } from '../utils/constants/squad';
 import { generateObjectId } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
@@ -1608,9 +1607,9 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
             }
         }
 
-        const [leaderboards, ownershipResponse] = await Promise.all([
-            // fetch all leaderboards
-            LeaderboardModel.find().lean(),
+        const [userLeaderboardData, ownershipResponse] = await Promise.all([
+            // fetch all user leaderboard data of users from the squad
+            UserLeaderboardDataModel.find({ userId: { $in: squad.members.map(member => member.userId) } }).lean(),
             // fetch all explicit ownerships of KOS.
             // ID from 1 to 5000
             explicitOwnershipsOfKOS(Array.from({ length: 5000 }, (_, i) => i + 1))
@@ -1622,17 +1621,13 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
         if (ownershipResponse.status !== Status.SUCCESS) {
             return {
                 status: ownershipResponse.status,
-                message: `(getPendingSquadMemberData) Error from explicitOwnershipsOfKOS: ${ownershipResponse.message}`
+                message: `(getSquadMemberData) Error from explicitOwnershipsOfKOS: ${ownershipResponse.message}`
             };
         }
 
-        // get the latest leaderboard
-        const latestLeaderboard = leaderboards[leaderboards.length - 1];
-
         // preprocess leaderboard data to get the total points of each user.
-        const leaderboardPointsMap = new Map(latestLeaderboard.userData.map(user => {
-            const totalPoints = user.pointsData?.filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP).reduce((prev, current) => prev + current.points, 0) ?? 0;
-            return [user.userId, { totalPoints, rank: 0 }];
+        const leaderboardPointsMap = new Map(userLeaderboardData.map(user => {
+            return [user.userId, { totalPoints: user.points, rank: 0 }];
         }));
 
         // sort the latest leaderboard based on points to determine ranking.
@@ -1645,6 +1640,7 @@ export const getSquadMemberData = async (squadId: string): Promise<ReturnValue> 
 
         // map all user IDs of the squad members and pending members.
         const userIds = [...squad.members, ...squad.pendingMembers].map(member => member.userId);
+
         const userData = await UserModel.find({ _id: { $in: userIds } }).lean();
 
         const getUserData = (userId: string) => {
@@ -1721,11 +1717,11 @@ export const getAllSquadData = async (): Promise<ReturnValue> => {
             }
         }
 
-        const [explicitOwnerships, leaderboards, users] = await Promise.all([
+        const [explicitOwnerships, userLeaderboardData, users] = await Promise.all([
             // fetch all explicit ownerships of keys
             // ID from 1 to 5000
             explicitOwnershipsOfKOS(Array.from({ length: 5000 }, (_, i) => i + 1)).then(res => res.data.keyOwnerships ?? []),
-            LeaderboardModel.find().lean(),
+            UserLeaderboardDataModel.find().lean(),
             UserModel.find().lean()
         ]);
 
@@ -1745,14 +1741,11 @@ export const getAllSquadData = async (): Promise<ReturnValue> => {
         });
 
         const leaderboardPointsMap = new Map();
-        for (const leaderboard of leaderboards) {
-            for (const userData of leaderboard.userData) {
-                const totalPoints = userData.pointsData
-                    .filter(pointsData => pointsData.source !== LeaderboardPointsSource.LEVELLING_UP)
-                    .reduce((prev, current) => prev + current.points, 0);
 
-                leaderboardPointsMap.set(userData.userId, (leaderboardPointsMap.get(userData.userId) || 0) + totalPoints);
-            }
+        for (const userData of userLeaderboardData) {
+            const totalPoints = userData.points;
+
+            leaderboardPointsMap.set(userData.userId, (leaderboardPointsMap.get(userData.userId) || 0) + totalPoints);
         }
 
         const squadData = squads.map(squad => {
