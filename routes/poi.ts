@@ -223,7 +223,7 @@ router.get('/get_current_poi', async (req, res) => {
 });
 
 router.post('/sell_items_in_poi_shop', async (req, res) => {
-    const { items, leaderboardName } = req.body;
+    const { items } = req.body;
 
     try {
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'sell_items_in_poi_shop');
@@ -235,7 +235,7 @@ router.post('/sell_items_in_poi_shop', async (req, res) => {
             })
         }
 
-        const { status, message, data } = await sellItemsInPOIShop(validateData?.twitterId, items, leaderboardName);
+        const { status, message, data } = await sellItemsInPOIShop(validateData?.twitterId, items);
 
         if (status === Status.SUCCESS) {
             if (allowMixpanel) {
