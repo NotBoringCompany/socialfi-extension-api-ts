@@ -4,19 +4,18 @@ import { getWallets, updateReferredUsersData } from './user';
 import { KOSExplicitOwnership, KOSMetadata, KOSReward, KOSRewardType } from '../models/kos';
 import fs from 'fs';
 import path from 'path';
-import { KOSClaimableDailyRewardsModel, KOSClaimableWeeklyRewardsModel, LeaderboardModel, SquadLeaderboardModel, SquadModel, UserModel } from '../utils/constants/db';
+import { KOSClaimableDailyRewardsModel, KOSClaimableWeeklyRewardsModel, SquadLeaderboardModel, SquadModel, UserLeaderboardDataModel, UserModel } from '../utils/constants/db';
 import { KOS_DAILY_BENEFITS, KOS_WEEKLY_BENEFITS } from '../utils/constants/kos';
-import { ExtendedXCookieData, InGameData, UserKeyData, UserWallet, XCookieSource } from '../models/user';
+import { ExtendedPointsData, ExtendedXCookieData, InGameData, PointsSource, UserKeyData, UserWallet, XCookieSource } from '../models/user';
 import { Item } from '../models/item';
 import { BoosterItem } from '../models/booster';
-import { LeaderboardPointsSource, LeaderboardUserData } from '../models/leaderboard';
 import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
 import { generateHashSalt, generateObjectId } from '../utils/crypto';
 import mongoose from 'mongoose';
 import * as dotenv from 'dotenv';
 import { BigNumber, ethers } from 'ethers';
-import { getUserCurrentPoints } from './leaderboard';
 import { dayjs } from '../utils/dayjs';
+import { CURRENT_SEASON } from '../utils/constants/leaderboard';
 
 dotenv.config();
 
@@ -230,14 +229,7 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
             }
         }
 
-        const leaderboard = await LeaderboardModel.findOne({ name: 'Season 0' }).lean();
-
-        if (!leaderboard) {
-            return {
-                status: Status.ERROR,
-                message: `(claimWeeklyKOSRewards) Leaderboard not found.`
-            }
-        }
+        const userLeaderboardData = await UserLeaderboardDataModel.findOne({ userId: user._id, season: CURRENT_SEASON }).lean();
 
         const latestSquadLeaderboard = await SquadLeaderboardModel.findOne().sort({ week: -1 }).lean();
 
@@ -269,7 +261,7 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
             $push: {}
         }
 
-        const leaderboardUpdateOperations = {
+        const userLeaderboardDataUpdateOperations = {
             $pull: {},
             $inc: {},
             $set: {},
@@ -300,89 +292,47 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
         // filter out rewards with the amount of 0 and map the remaining to add the rewards to the user's account
         rewards.filter(reward => reward.amount > 0).map(async reward => {
             if (reward.type === KOSRewardType.LEADERBOARD_POINTS) {
-                // if points, do a few things.
-                // check if the user exists in the season 0 leaderboard's `userData` array.
-                // if it doesn't, create a new entry, else:
-                // check if the source `KOS_BENEFITS` exists in the user's points data.
-                // if it does, increment the points, else create a new entry.
-                // also, if the user is eligible for additional points, add the additional points to the `points`.
-                const userIndex = (leaderboard.userData as LeaderboardUserData[]).findIndex(userData => userData.userId === user._id);
-
-                let additionalPoints = 0;
-
-                const currentLevel = user.inGameData.level;
-
-                // if not found, create a new entry
-                if (userIndex === -1) {
-                    // check if the user is eligible to level up to the next level
-                    const newLevel = GET_SEASON_0_PLAYER_LEVEL(reward.amount);
-
-                    if (newLevel > currentLevel) {
-                        // set the user's `inGameData.level` to the new level
-                        userUpdateOperations.$set['inGameData.level'] = newLevel;
-
-                        // add the additional points based on the rewards obtainable
-                        additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
-                    }
-
-                    leaderboardUpdateOperations.$push['userData'] = {
+                if (!userLeaderboardData) {
+                    // create a new UserLeaderboardData entry for the user
+                    await UserLeaderboardDataModel.create({
+                        _id: generateObjectId(),
                         userId: user._id,
                         username: user.twitterUsername,
                         twitterProfilePicture: user.twitterProfilePicture,
-                        pointsData: [
-                            {
-                                points: reward.amount,
-                                source: LeaderboardPointsSource.KOS_BENEFITS
-                            },
-                            {
-                                points: additionalPoints,
-                                source: LeaderboardPointsSource.LEVELLING_UP
-                            }
-                        ]
-                    }
-                    // if the user is found, increment the points
-                } else {
-                    // get the user's total leaderboard points
-                    // this is done by summing up all the points from the `pointsData` array, BUT EXCLUDING SOURCES FROM:
-                    // 1. LeaderboardPointsSource.LEVELLING_UP
-                    const totalLeaderboardPoints = leaderboard.userData[userIndex].pointsData.reduce((acc, pointsData) => {
-                        if (pointsData.source !== LeaderboardPointsSource.LEVELLING_UP) {
-                            return acc + pointsData.points;
-                        }
+                        season: CURRENT_SEASON,
+                        points: reward.amount,
+                    });
 
-                        return acc;
-                    }, 0);
+                    const newLevel = GET_SEASON_0_PLAYER_LEVEL(reward.amount);
 
-                    const newLevel = GET_SEASON_0_PLAYER_LEVEL(totalLeaderboardPoints + reward.amount);
-
-                    if (newLevel > currentLevel) {
+                    // if user levelled up, set the user's level to the new level
+                    if (newLevel > user.inGameData.level) {
                         userUpdateOperations.$set['inGameData.level'] = newLevel;
-                        additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
                     }
+                } else {
+                    // increment the user's points
+                    userLeaderboardDataUpdateOperations.$inc['points'] = reward.amount;
 
-                    // get the source index for KOS_BENEFITS
-                    const sourceIndex = leaderboard.userData[userIndex].pointsData.findIndex(pointsData => pointsData.source === LeaderboardPointsSource.KOS_BENEFITS);
+                    const newLevel = GET_SEASON_0_PLAYER_LEVEL(userLeaderboardData.points + reward.amount);
 
-                    if (sourceIndex !== -1) {
-                        leaderboardUpdateOperations.$inc[`userData.${userIndex}.pointsData.${sourceIndex}.points`] = reward.amount;
-                    } else {
-                        leaderboardUpdateOperations.$push[`userData.${userIndex}.pointsData`] = {
-                            points: reward.amount,
-                            source: LeaderboardPointsSource.KOS_BENEFITS
-                        }
+                    // if user levelled up, set the user's level to the new level
+                    if (newLevel > user.inGameData.level) {
+                        userUpdateOperations.$set['inGameData.level'] = newLevel;
                     }
+                }
+                
+                // update the points data for the user too
+                userUpdateOperations.$inc['inventory.pointsData.currentPoints'] = reward.amount;
 
-                    if (additionalPoints > 0) {
-                        const levellingUpIndex = leaderboard.userData[userIndex].pointsData.findIndex(pointsData => pointsData.source === LeaderboardPointsSource.LEVELLING_UP);
+                // check if the source exists in the extended points data.
+                const rewardIndex = (user.inventory?.pointsData.extendedPointsData as ExtendedPointsData[]).findIndex(data => data.source === PointsSource.KOS_BENEFITS);
 
-                        if (levellingUpIndex !== -1) {
-                            leaderboardUpdateOperations.$inc[`userData.${userIndex}.pointsData.${levellingUpIndex}.points`] = additionalPoints;
-                        } else {
-                            leaderboardUpdateOperations.$push[`userData.${userIndex}.pointsData`] = {
-                                points: additionalPoints,
-                                source: LeaderboardPointsSource.LEVELLING_UP
-                            }
-                        }
+                if (rewardIndex !== -1) {
+                    userUpdateOperations.$inc[`inventory.pointsData.extendedPointsData.${rewardIndex}.points`] = reward.amount;
+                } else {
+                    userUpdateOperations.$push['inventory.pointsData.extendedPointsData'] = {
+                        points: reward.amount,
+                        source: PointsSource.KOS_BENEFITS
                     }
                 }
 
@@ -523,12 +473,12 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
         // execute the update operations. $set and $inc first, then $push and $pull to avoid conflicts.
         await Promise.all([
             await UserModel.updateOne({ twitterId }, { $set: userUpdateOperations.$set, $inc: userUpdateOperations.$inc }),
-            await LeaderboardModel.updateOne({ name: 'Season 0' }, { $set: leaderboardUpdateOperations.$set, $inc: leaderboardUpdateOperations.$inc }),
+            await UserLeaderboardDataModel.updateOne({ userId: user._id, season: CURRENT_SEASON }, { $set: userLeaderboardDataUpdateOperations.$set, $inc: userLeaderboardDataUpdateOperations.$inc }),
         ]);
 
         await Promise.all([
             await UserModel.updateOne({ twitterId }, { $push: userUpdateOperations.$push, $pull: userUpdateOperations.$pull }),
-            await LeaderboardModel.updateOne({ name: 'Season 0' }, { $push: leaderboardUpdateOperations.$push, $pull: leaderboardUpdateOperations.$pull }),
+            await UserLeaderboardDataModel.updateOne({ userId: user._id, season: CURRENT_SEASON }, { $push: userLeaderboardDataUpdateOperations.$push, $pull: userLeaderboardDataUpdateOperations.$pull }),
         ]);
 
         // if the user has a squad, update the squad and squad leaderboard models
