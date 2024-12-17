@@ -2,11 +2,10 @@ import mongoose from 'mongoose';
 import { BoosterItem } from '../models/booster';
 import { Food } from '../models/food';
 import { Item } from '../models/item';
-import { LeaderboardPointsSource } from '../models/leaderboard';
 import { POIName, POIShop, POIShopActionItemData, POIShopItemName } from '../models/poi';
 import { ExtendedResource, ExtendedResourceOrigin } from '../models/resource';
 import { Squad, SquadRole } from '../models/squad';
-import { LeaderboardModel, POIModel, RaftModel, SquadLeaderboardModel, SquadModel, UserModel } from '../utils/constants/db';
+import { POIModel, RaftModel, SquadLeaderboardModel, SquadModel, UserLeaderboardDataModel, UserModel } from '../utils/constants/db';
 import { POI_TRAVEL_LEVEL_REQUIREMENT } from '../utils/constants/poi';
 import { ACTUAL_RAFT_SPEED } from '../utils/constants/raft';
 import { SQUAD_KOS_BENEFITS } from '../utils/constants/squad';
@@ -16,13 +15,14 @@ import { ReturnValue, Status } from '../utils/retVal';
 import { getLatestSquadWeeklyRanking, squadKOSData } from './squad';
 import { updateReferredUsersData } from './user';
 import * as dotenv from 'dotenv';
-import { getUserCurrentPoints } from './leaderboard';
-import { ExtendedXCookieData, UserWallet, XCookieSource } from '../models/user';
+import { ExtendedPointsData, ExtendedXCookieData, PointsSource, UserWallet, XCookieSource } from '../models/user';
 import { DEPLOYER_WALLET, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
 import { ethers } from 'ethers';
 import { incrementProgressionByType } from './quest';
 import { QuestRequirementType } from '../models/quest';
 import { resources } from '../utils/constants/resource';
+import { CURRENT_SEASON } from '../utils/constants/leaderboard';
+import { generateObjectId } from '../utils/crypto';
 
 /**
  * Resets the `currentBuyableAmount` and `currentSellableAmount` of all global items in all POI shops.
@@ -568,7 +568,6 @@ export const getCurrentPOI = async (twitterId: string): Promise<ReturnValue> => 
 export const sellItemsInPOIShop = async (
     twitterId: string,
     items: POIShopActionItemData[],
-    leaderboardName: string | null,
 ): Promise<ReturnValue> => {
     try {
         const user = await UserModel.findOne({ twitterId }).lean();
@@ -580,7 +579,7 @@ export const sellItemsInPOIShop = async (
             $push: {}
         }
 
-        const leaderboardUpdateOperations = {
+        const userLeaderboardDataUpdateOperations = {
             $pull: {},
             $inc: {},
             $set: {},
@@ -780,110 +779,50 @@ export const sellItemsInPOIShop = async (
         // if we just add the boosts directly, the minimum boost will be 2. this is not what we want (because it means a 2x multiplier). therefore, we subtract 1 at the end.
         const leaderboardPoints = ((itemsPOIPointsBoostData.ownedKOSPointsBoost + itemsPOIPointsBoostData.squadWeeklyRankingPointsBoost) - 1) * baseLeaderboardPoints;
 
-        // check if leaderboard is specified
-        // if not, we find the most recent one.
-        const leaderboard = leaderboardName === null ?
-            await LeaderboardModel.findOne().sort({ startTimestamp: -1 }) :
-            await LeaderboardModel.findOne({ name: leaderboardName });
+        const userLeaderboardData = await UserLeaderboardDataModel.findOne({ userId: user._id, season: CURRENT_SEASON }).lean();
 
-        if (!leaderboard) {
-            return {
-                status: Status.BAD_REQUEST,
-                message: `(sellItemsInPOIShop) Leaderboard not found.`
+        // if the user doesn't exist in the leaderboard, we create a new user data.
+        if (!userLeaderboardData) {
+            await UserLeaderboardDataModel.create({
+                _id: generateObjectId(),
+                userId: user._id,
+                username: user.twitterUsername,
+                twitterProfilePicture: user.twitterProfilePicture,
+                season: CURRENT_SEASON,
+                points: leaderboardPoints
+            });
+
+            const newLevel = GET_SEASON_0_PLAYER_LEVEL(leaderboardPoints);
+
+            // if user levelled up, set the user's `inGameData.level` to the new level
+            if (newLevel > user.inGameData.level) {
+                userUpdateOperations.$set['inGameData.level'] = newLevel;
+            }
+        } else {
+            // increment the user's points in the leaderboard
+            userLeaderboardDataUpdateOperations.$inc['points'] = leaderboardPoints;
+
+            const newLevel = GET_SEASON_0_PLAYER_LEVEL(userLeaderboardData.points + leaderboardPoints);
+
+            // if user levelled up, set the user's `inGameData.level` to the new level
+            if (newLevel > user.inGameData.level) {
+                userUpdateOperations.$set['inGameData.level'] = newLevel;
             }
         }
 
-        // check if user exists in leaderboard. if not, we create a new user data.
-        const userExistsInLeaderboard = leaderboard.userData.find(userData => userData.userId === user._id);
+        // update the points data for the user too
+        userUpdateOperations.$inc['inventory.pointsData.currentPoints'] = leaderboardPoints;
 
-        if (!userExistsInLeaderboard) {
-            let additionalPoints = 0;
+        // check if the source exists in the extended points data
+        const sourceIndex = (user.inventory?.pointsData.extendedPointsData as ExtendedPointsData[]).findIndex(data => data.source === PointsSource.RESOURCE_SELLING);
 
-            // check if this is enough to level the user up to the next player level.
-            const currentLevel = user.inGameData.level;
-            // use `leaderboardPoints` since the user has just created a new user instance in the leaderboard
-            // meaning that they prev had no points.
-            const newLevel = GET_SEASON_0_PLAYER_LEVEL(leaderboardPoints);
-
-            // if new level is greater than (or different, just in case) the current level, we update the user's data
-            // 1. set the new level
-            // 2. add the `additionalPoints` to give the user in the leaderboard with the source `LeaderboardPointsSource.LEVELLING_UP`
-            if (newLevel !== currentLevel) {
-                userUpdateOperations.$set[`inGameData.level`] = newLevel;
-                additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
-            }
-
-            leaderboardUpdateOperations.$push = {
-                'userData': {
-                    userId: user._id,
-                    username: user.twitterUsername,
-                    twitterProfilePicture: user.twitterProfilePicture,
-                    pointsData: [
-                        {
-                            points: leaderboardPoints,
-                            source: LeaderboardPointsSource.RESOURCE_SELLING
-                        },
-                        {
-                            points: additionalPoints,
-                            source: LeaderboardPointsSource.LEVELLING_UP
-                        }
-                    ],
-                }
+        if (sourceIndex === -1) {
+            userUpdateOperations.$push['inventory.pointsData.extendedPointsData'] = {
+                points: leaderboardPoints,
+                source: PointsSource.RESOURCE_SELLING,
             }
         } else {
-            let additionalPoints = 0;
-
-            // check if this is enough to level the user up to the next player level.
-            const currentLevel = user.inGameData.level;
-
-            // get the user's total leaderboard points
-            // this is done by summing up all the points from the `pointsData` array, BUT EXCLUDING SOURCES FROM:
-            // 1. LeaderboardPointsSource.LEVELLING_UP
-            const totalLeaderboardPoints = userExistsInLeaderboard.pointsData.reduce((acc, pointsData) => {
-                if (pointsData.source !== LeaderboardPointsSource.LEVELLING_UP) {
-                    return acc + pointsData.points;
-                }
-
-                return acc;
-            }, 0);
-
-            const newLevel = GET_SEASON_0_PLAYER_LEVEL(leaderboardPoints + totalLeaderboardPoints);
-
-            // if new level is greater than (or different, just in case) the current level, we update the user's data
-            // 1. set the new level
-            // 2. increment the `additionalPoints` to give the user in the leaderboard
-            if (newLevel !== currentLevel) {
-                userUpdateOperations.$set[`inGameData.level`] = newLevel;
-                additionalPoints = GET_SEASON_0_PLAYER_LEVEL_REWARDS(newLevel);
-            }
-
-            // get the index of the user in the leaderboard
-            const userIndex = leaderboard.userData.findIndex(userData => userData.userId === user._id);
-
-            // increment the user's points for source `LeaderboardPointsSource.RESOURCE_SELLING`
-            // additionally, if the user did get additionalPoints (i.e. they levelled up), we increment the source LEVELLING_UP as well.
-            const resourceSellingIndex = leaderboard.userData[userIndex].pointsData.findIndex(pointsData => pointsData.source === LeaderboardPointsSource.RESOURCE_SELLING);
-            const levellingUpIndex = leaderboard.userData[userIndex].pointsData.findIndex(pointsData => pointsData.source === LeaderboardPointsSource.LEVELLING_UP);
-
-            if (resourceSellingIndex === -1) {
-                leaderboardUpdateOperations.$push[`userData.${userIndex}.pointsData`] = {
-                    points: leaderboardPoints,
-                    source: LeaderboardPointsSource.RESOURCE_SELLING
-                }
-            } else {
-                leaderboardUpdateOperations.$inc[`userData.${userIndex}.pointsData.${resourceSellingIndex}.points`] = leaderboardPoints;
-            }
-
-            if (additionalPoints > 0) {
-                if (levellingUpIndex === -1) {
-                    leaderboardUpdateOperations.$push[`userData.${userIndex}.pointsData`] = {
-                        points: additionalPoints,
-                        source: LeaderboardPointsSource.LEVELLING_UP
-                    }
-                } else {
-                    leaderboardUpdateOperations.$inc[`userData.${userIndex}.pointsData.${levellingUpIndex}.points`] = additionalPoints;
-                }
-            }
+            userUpdateOperations.$inc[`inventory.pointsData.extendedPointsData.${sourceIndex}.points`] = leaderboardPoints;
         }
 
         // total weight from the user's inventory to reduce if resources are removed.
@@ -1027,9 +966,9 @@ export const sellItemsInPOIShop = async (
                 $inc: userUpdateOperations.$inc
             }),
 
-            await LeaderboardModel.updateOne({ _id: leaderboard._id }, {
-                $set: leaderboardUpdateOperations.$set,
-                $inc: leaderboardUpdateOperations.$inc
+            await UserLeaderboardDataModel.updateOne({ userId: user._id, season: CURRENT_SEASON }, {
+                $set: userLeaderboardDataUpdateOperations.$set,
+                $inc: userLeaderboardDataUpdateOperations.$inc
             }),
 
             await POIModel.updateOne({ name: user.inGameData.location }, {
@@ -1044,9 +983,9 @@ export const sellItemsInPOIShop = async (
                 $pull: userUpdateOperations.$pull
             }),
     
-            await LeaderboardModel.updateOne({ _id: leaderboard._id }, {
-                $push: leaderboardUpdateOperations.$push,
-                $pull: leaderboardUpdateOperations.$pull
+            await UserLeaderboardDataModel.updateOne({ userId: user._id, season: CURRENT_SEASON }, {
+                $push: userLeaderboardDataUpdateOperations.$push,
+                $pull: userLeaderboardDataUpdateOperations.$pull
             }),
     
             await POIModel.updateOne({ name: user.inGameData.location }, {
