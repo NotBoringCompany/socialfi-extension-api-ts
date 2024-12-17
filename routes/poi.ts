@@ -10,6 +10,7 @@ import { UserWallet } from '../models/user';
 import { incrementProgressionByType } from '../api/quest';
 import { QuestRequirementType } from '../models/quest';
 import { POIShopActionItemData } from '../models/poi';
+import { CURRENT_SEASON } from '../utils/constants/leaderboard';
 
 const router = express.Router();
 
@@ -241,7 +242,7 @@ router.post('/sell_items_in_poi_shop', async (req, res) => {
             if (allowMixpanel) {
                 mixpanel.track('Points Earned (POI Shop)', {
                     distinct_id: validateData?.twitterId,
-                    '_leaderboardName': leaderboardName,
+                    leaderboardSeason: CURRENT_SEASON,
                     '_data': data,
                 });
             }
