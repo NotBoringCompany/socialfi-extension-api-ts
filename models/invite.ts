@@ -75,9 +75,9 @@ export interface ReferralReward {
  * 
  * For example, User A refers User B, and User B refers User C and User D. User C and D are indirect referrals of User A.
  * 
- * Once User C and D reaches level 4, User B gets rewards, while User A gets 25% of the rewards User B gets.
+ * Once User C and D reaches level `REQUIRED_REFFERAL_LEVEL`, User B gets rewards, while User A gets 25% of the rewards User B gets.
  * 
- * NOTE: In order for this to happen, User B must be level 4 first anyways.
+ * NOTE: In order for this to happen, User B must be level `REQUIRED_REFFERAL_LEVEL` first anyways.
  */
 export interface SuccessfulIndirectReferral {
     /** the main referrer's user ID (i.e. User A) */

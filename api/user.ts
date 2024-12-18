@@ -46,6 +46,7 @@ import { sendMailsToNewUser } from './mail';
 import { dayjs } from '../utils/dayjs';
 import { getOwnedKeyIDs } from './kos';
 import { CURRENT_SEASON } from '../utils/constants/leaderboard';
+import { REFERRAL_REQUIRED_LEVEL } from '../utils/constants/invite';
 
 /**
  * Adds `mintableAmount` to all inventory items, foods and resources.
@@ -1933,7 +1934,7 @@ export const updateBeginnerRewardsData = async (): Promise<void> => {
 };
 
 /**
- * (Season 0) Updates and sets the referred user's `hasReachedLevel4` of the referrer's `referredUsersData` to true IF not already true.
+ * Updates and sets the referred user's `hasReachedRequiredLevel` of the referrer's `referredUsersData` to true IF not already true.
  *
  * Additionally, give the referrer their referral rewards to claim if applicable.
  */
@@ -1968,59 +1969,61 @@ export const updateReferredUsersData = async (referrerUserId: string, referredUs
             };
         }
 
-        // at this point, the level of the referred user should already be set to level 5 from the parent function.
+        // at this point, the level of the referred user should already be set to level `REFERRAL_REQUIRED_LEVEL` from the parent function.
         // we double check it here just in case.
-        if (referredUser.inGameData.level < 5) {
+        if (referredUser.inGameData.level < REFERRAL_REQUIRED_LEVEL) {
             return {
                 status: Status.BAD_REQUEST,
                 message: `(updateReferredUsersData) Referred user is not level 5.`,
             };
         }
 
-        if ((referrer.referralData.referredUsersData as ReferredUserData[])[referredUserIndex].hasReachedLevel4) {
+        // because required levels are dynamic and may change based on balancing,
+        // the `hasReachedRequiredLevel` will stay true even if the required level is now higher and the referred user hasn't reached this level yet.
+        // this is to prevent extra rewards from being given if the required level is increased.
+        if ((referrer.referralData.referredUsersData as ReferredUserData[])[referredUserIndex].hasReachedRequiredLevel) {
             return {
                 status: Status.BAD_REQUEST,
-                message: `(updateReferredUsersData) Referred user already reached level 5.`,
+                message: `(updateReferredUsersData) Referred user already reached level ${REFERRAL_REQUIRED_LEVEL} or previous required level prior to changes.`,
             }
         }
 
-        // set `hasReachedLevel4` to true
-        // NAMING IS `hasReachedLevel4`, but users ARE REQUIRED TO BE LEVEL 5. THIS IS TEMPORARY ONLY.
-        referrerUpdateOperations.$set[`referralData.referredUsersData.${referredUserIndex}.hasReachedLevel4`] = true;
+        // set `hasReachedRequiredLevel` to true
+        referrerUpdateOperations.$set[`referralData.referredUsersData.${referredUserIndex}.hasReachedRequiredLevel`] = true;
 
-        // now check the amount of referred users the referrer has that reached level 5.
+        // now check the amount of referred users the referrer has that reached level `REFERRAL_REQUIRED_LEVEL`.
         // we add 1 because the set operation for the newest referred user hasn't been executed yet.
-        /// NOTE: NAMING IS TEMPORARILY `hasReachedLevel4`, but users are required to be level 5. naming will be fixed later!!!!
-        const totalReferredUsersReachedLevel5 =
-            (referrer.referralData.referredUsersData as ReferredUserData[]).filter((data) => data.hasReachedLevel4).length + 1;
+        const totalReferredUsersReachedRequiredLevel =
+            (referrer.referralData.referredUsersData as ReferredUserData[]).filter((data) => data.hasReachedRequiredLevel).length + 1;
 
         // get the milestones for the referral rewards
         const milestones = [0, 1, 3, 5, 10, 20, 50, 100, 200, 300, 500];
 
-        // check the nearest (rounded down milestone) for the total referred users that reached level 5.
-        // e.g. if referred users who reached level 5 is 190, then milestone will be 100.
-        const milestone = milestones.reduce((prev, curr) => (curr <= totalReferredUsersReachedLevel5 ? curr : prev), milestones[0]);
+        // check the nearest (rounded down milestone) for the total referred users that reached level `REFERRAL_REQUIRED_LEVEL`.
+        // e.g. if referred users who reached level `REFERRAL_REQUIRED_LEVEL` is 190, then milestone will be 100.
+        let milestone = milestones.reduce((prev, curr) => (curr <= totalReferredUsersReachedRequiredLevel ? curr : prev), milestones[0]);
 
         let referralRewards: ReferralReward;
 
         // set the new milestone if it's greater than the current milestone
-        if (milestone > (referrer.referralData as ReferralData).level5ReferredUsersLatestMilestone) {
+        // this already covers the case where the REFERRAL_REQUIRED_LEVEL is increased and thus the milestone count gets reduced because a portion of the
+        // referred users didn't reach the new required level. this means that the referrer's milestone will still be stuck at this number and only
+        // increases once `milestone` is greater than the current milestone (`referrer.referralData.requiredLevelReferredUsersLatestMilestone`).
+        if (milestone > (referrer.referralData as ReferralData).requiredLevelReferredUsersLatestMilestone) {
             // ONLY GET referral rewards if a new milestone is reached.
-            // get the referral rewards based on the total referred users that reached level 5.
-            referralRewards = GET_SEASON_0_REFERRAL_REWARDS(totalReferredUsersReachedLevel5);
+            // get the referral rewards based on the total referred users that reached level `REFERRAL_REQUIRED_LEVEL`.
+            referralRewards = GET_SEASON_0_REFERRAL_REWARDS(totalReferredUsersReachedRequiredLevel);
 
             // if any of the rewards aren't 0, update the referrer's `referralData.claimableReferralRewards`
             if (referralRewards.leaderboardPoints !== 0) {
-                // NOTE: 250% MULTIPLIER FOR THE FIRST WEEK. THIS WILL BE CHANGED.
                 referrerUpdateOperations.$inc['referralData.claimableReferralRewards.leaderboardPoints'] = referralRewards.leaderboardPoints;
             }
 
             if (referralRewards.xCookies !== 0) {
-                // NOTE: 250% MULTIPLIER FOR THE FIRST WEEK. THIS WILL BE CHANGED.
                 referrerUpdateOperations.$inc['referralData.claimableReferralRewards.xCookies'] = referralRewards.xCookies;
             }
 
-            referrerUpdateOperations.$set['referralData.level5ReferredUsersLatestMilestone'] = milestone;
+            referrerUpdateOperations.$set['referralData.requiredLevelReferredUsersLatestMilestone'] = milestone;
         }
 
         // execute the update operations
