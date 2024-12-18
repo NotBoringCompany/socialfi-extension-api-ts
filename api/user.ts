@@ -1286,11 +1286,12 @@ export const claimDailyRewards = async (twitterId: string): Promise<ReturnValue>
             }
         }
 
-        // if it includes a level, check if it's set to 5.
+        // if it includes a level, check if it's set to REFERRAL_REQUIRED_LEVEL.
         // if it is, check if the user has a referrer.
-        // the referrer will then have this user's `hasReachedLevel4` set to true.
-        // NOTE: naming is `hasReachedLevel4`, but users are required to be level 5 anyway. this is temporary.
-        if (setUserLevel && setUserLevel === 5) {
+        // the referrer will then have this user's `hasReachedRequiredLevel` set to true.
+        // if upon dynamic changes of the required level the user's referrer's data is already updated, the `updateReferredUsersData` function will return a success anyway
+        // but do nothing else.
+        if (setUserLevel && setUserLevel >= REFERRAL_REQUIRED_LEVEL) {
             // check if the user has a referrer
             const referrerId: string | null = user.inviteCodeData.referrerId;
 
@@ -1974,7 +1975,7 @@ export const updateReferredUsersData = async (referrerUserId: string, referredUs
         if (referredUser.inGameData.level < REFERRAL_REQUIRED_LEVEL) {
             return {
                 status: Status.BAD_REQUEST,
-                message: `(updateReferredUsersData) Referred user is not level 5.`,
+                message: `(updateReferredUsersData) Referred user is not level ${REFERRAL_REQUIRED_LEVEL}.`,
             };
         }
 
@@ -1983,7 +1984,7 @@ export const updateReferredUsersData = async (referrerUserId: string, referredUs
         // this is to prevent extra rewards from being given if the required level is increased.
         if ((referrer.referralData.referredUsersData as ReferredUserData[])[referredUserIndex].hasReachedRequiredLevel) {
             return {
-                status: Status.BAD_REQUEST,
+                status: Status.SUCCESS,
                 message: `(updateReferredUsersData) Referred user already reached level ${REFERRAL_REQUIRED_LEVEL} or previous required level prior to changes.`,
             }
         }

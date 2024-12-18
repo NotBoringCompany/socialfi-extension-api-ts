@@ -23,6 +23,7 @@ import { resources } from '../utils/constants/resource';
 import { CURRENT_SEASON } from '../utils/constants/leaderboard';
 import { generateObjectId } from '../utils/crypto';
 import { GET_PLAYER_LEVEL } from '../utils/constants/user';
+import { REFERRAL_REQUIRED_LEVEL } from '../utils/constants/invite';
 
 /**
  * Resets the `currentBuyableAmount` and `currentSellableAmount` of all global items in all POI shops.
@@ -1086,11 +1087,12 @@ export const sellItemsInPOIShop = async (
                 }
             }
         }
-        // if it included a level, check if it's set to 5.
+        // if it included a level, check if it's set to `REFERRAL_REQUIRED_LEVEL`.
         // if it is, check if the user has a referrer.
-        // the referrer will then have this user's `hasReachedLevel4` set to true.
-        // NOTE: naming is currently `hasReachedLevel4`, but the requirement is that they need to be level 5.
-        if (setUserLevel && setUserLevel === 5) {
+        // the referrer will then have this user's `hasReachedRequiredLevel` set to true.
+        // if upon dynamic changes of the required level the user's referrer's data is already updated, the `updateReferredUsersData` function will return a success anyway
+        // but do nothing else.
+        if (setUserLevel && setUserLevel >= REFERRAL_REQUIRED_LEVEL) {
             // check if the user has a referrer
             const referrerId: string | null = user.inviteCodeData.referrerId;
 

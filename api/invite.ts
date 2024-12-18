@@ -208,11 +208,12 @@ export const claimReferralRewards = async (twitterId: string): Promise<ReturnVal
             }
         }
 
-        // if it included a level, check if it's set to 5.
+        // if it included a level, check if it's set to `REFERRAL_REQUIRED_LEVEL`.
         // if it is, check if the user has a referrer.
-        // the referrer will then have this user's `hasReachedLevel4` set to true.
-        // NOTE: naming is `hasReachedLevel4`, but users are required to be level 5 anyway. this is temporary.
-        if (setUserLevel && setUserLevel === 5) {
+        // the referrer will then have this user's `hasReachedRequiredLevel` set to true.
+        // if upon dynamic changes of the required level the user's referrer's data is already updated, the `updateReferredUsersData` function will return a success anyway
+        // but do nothing else.
+        if (setUserLevel && setUserLevel >= REFERRAL_REQUIRED_LEVEL) {
             // check if the user has a referrer
             const referrerId: string | null = user.inviteCodeData.referrerId;
 

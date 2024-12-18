@@ -27,6 +27,7 @@ import { DEPLOYER_WALLET, ISLANDS_CONTRACT, KAIA_TESTNET_PROVIDER } from '../uti
 import { ethers } from 'ethers';
 import { CURRENT_SEASON } from '../utils/constants/leaderboard';
 import { GET_PLAYER_LEVEL } from '../utils/constants/user';
+import { REFERRAL_REQUIRED_LEVEL } from '../utils/constants/invite';
 
 // /**
 //  * Sets the new owner data and removes the current `owner` field for all islands.
@@ -2898,11 +2899,12 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
             }
         }
 
-        // if it included a level, check if it's set to 5.
+        // if it included a level, check if it's set to `REFERRAL_REQUIRED_LEVEL`.
         // if it is, check if the user has a referrer.
-        // the referrer will then have this user's `hasReachedLevel4` set to true.
-        // NOTE: naming is `hasReachedLevel4`, but users are required to be level 5 anyway. this is temporary.
-        if (setUserLevel && setUserLevel === 5) {
+        // the referrer will then have this user's `hasReachedRequiredLevel` set to true.
+        // if upon dynamic changes of the required level the user's referrer's data is already updated, the `updateReferredUsersData` function will return a success anyway
+        // but do nothing else.
+        if (setUserLevel && setUserLevel >= REFERRAL_REQUIRED_LEVEL) {
             // check if the user has a referrer
             const referrerId: string | null = user.inviteCodeData.referrerId;
 
@@ -2913,7 +2915,7 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
                 if (status === Status.ERROR) {
                     return {
                         status,
-                        message: `(claimDailyRewards) Err from updateReferredUsersData: ${message}`,
+                        message: `(applyIslandTapping) Err from updateReferredUsersData: ${message}`,
                     };
                 }
             }
