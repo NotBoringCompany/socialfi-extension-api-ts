@@ -2,8 +2,7 @@ import { ReturnValue, Status } from '../utils/retVal';
 import { generateHashSalt, generateObjectId } from '../utils/crypto';
 import { SquadLeaderboardModel, SquadModel, UserLeaderboardDataModel, UserModel, WeeklyMVPClaimableRewardsModel, WeeklyMVPRankingLeaderboardModel } from '../utils/constants/db';
 import {
-    GET_SEASON_0_PLAYER_LEVEL,
-    GET_SEASON_0_PLAYER_LEVEL_REWARDS,
+    GET_PLAYER_LEVEL,
     WEEKLY_MVP_REWARDS,
 } from '../utils/constants/user';
 import { BitOrbType, Item, TerraCapsulatorType } from '../models/item';
@@ -359,7 +358,7 @@ export const claimWeeklyMVPRewards = async (twitterId: string): Promise<ReturnVa
                 points: claimableLeaderboardPoints
             });
 
-            const newLevel = GET_SEASON_0_PLAYER_LEVEL(claimableLeaderboardPoints);
+            const newLevel = GET_PLAYER_LEVEL(claimableLeaderboardPoints);
 
             // if user levelled up, set the user's `inGameData.level` to the new level
             if (newLevel > user.inGameData.level) {
@@ -369,7 +368,7 @@ export const claimWeeklyMVPRewards = async (twitterId: string): Promise<ReturnVa
             // increment the user's points in the leaderboard
             userLeaderboardDataUpdateOperations.$inc['points'] = claimableLeaderboardPoints;
 
-            const newLevel = GET_SEASON_0_PLAYER_LEVEL(userLeaderboardData.points + claimableLeaderboardPoints);
+            const newLevel = GET_PLAYER_LEVEL(userLeaderboardData.points + claimableLeaderboardPoints);
 
             // if user levelled up, set the user's `inGameData.level` to the new level
             if (newLevel > user.inGameData.level) {
