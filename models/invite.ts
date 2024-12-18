@@ -40,8 +40,8 @@ export interface ReferralData {
     referralCode: string;
     /** the data of the users who got referred by this user (i.e. the users who use this user's referral code to sign up) */
     referredUsersData: ReferredUserData[];
-    /** the latest milestone of the amount of referred users who reached level 5. used as benchmarking to check if new rewards should be given. */
-    level5ReferredUsersLatestMilestone: number;
+    /** the latest milestone of the amount of referred users who reached level `REQUIRED_REFERRAL_LEVEL`. used as benchmarking to check if new rewards should be given. */
+    requiredLevelReferredUsersLatestMilestone: number;
     /** the claimable referral rewards based on referred users */
     claimableReferralRewards: ReferralReward;
 }
@@ -56,8 +56,8 @@ export interface ReferredUserData {
     username: string;
     /** when the user was referred */
     referredTimestamp: number;
-    /** if the user has reached level 4 (requirement to receive referral rewards from this user) */
-    hasReachedLevel4: boolean;
+    /** if the user has reached level `REQUIRED_REFERRAL_LEVEL` (requirement to receive referral rewards from this user) */
+    hasReachedRequiredLevel: boolean;
 }
 
 /**
