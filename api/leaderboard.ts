@@ -4,6 +4,7 @@ import { ReturnValue, Status } from '../utils/retVal';
 import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
 import { InGameData, PointsData, PointsSource } from '../models/user';
 import { CURRENT_SEASON } from '../utils/constants/leaderboard';
+import { generateObjectId } from '../utils/crypto';
 
 // /**
 //  * Migrates all data from Leaderboard to UserLeaderboardData.
@@ -299,6 +300,7 @@ export const addPoints = async (
 
             // create a new entry for the user leaderboard data
             await UserLeaderboardDataModel.create([{
+                _id: generateObjectId(),
                 userId: user._id,
                 username: user.twitterUsername,
                 twitterProfilePicture: user.twitterProfilePicture,
