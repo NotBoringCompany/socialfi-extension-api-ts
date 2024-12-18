@@ -115,7 +115,7 @@ export const GET_BEGINNER_REWARDS = (day: number): BeginnerReward[] => {
  * Gets Season 0's referral rewards.
  * 
  * The current referral system works where:
- * The more referred users the user has, the more rewards they can obtain once the referred users reach Level 4.
+ * The more referred users the user has, the more rewards they can obtain once the referred users reach REFERRAL_REQUIRED_LEVEL.
  */
 export const GET_SEASON_0_REFERRAL_REWARDS = (userCount: number): ReferralReward => {
     if (userCount === 1) {

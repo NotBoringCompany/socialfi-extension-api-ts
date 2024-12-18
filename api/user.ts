@@ -49,6 +49,40 @@ import { CURRENT_SEASON } from '../utils/constants/leaderboard';
 import { REFERRAL_REQUIRED_LEVEL } from '../utils/constants/invite';
 
 /**
+ * Renames `hasReachedLevel4` to `hasReachedRequiredLevel` in `referredUsersData` in `referralData`.
+ */
+export const renameHasReachedRequiredLevel = async (): Promise<void> => {
+    try {
+        // find all documents where `hasReachedLevel4` exists in `referredUsersData`
+        const users = await UserModel.find({
+            'referralData.referredUsersData.hasReachedLevel4': { $exists: true }
+        });
+
+        for (const user of users) {
+            // map through referredUsersData and rename the field
+            const updatedReferredUsersData = user.referralData.referredUsersData.map((data: any) => {
+                if (data.hasReachedLevel4 !== undefined) {
+                    // copy to new field and delete old field
+                    data.hasReachedRequiredLevel = data.hasReachedLevel4; 
+                    delete data.hasReachedLevel4;
+                }
+                return data;
+            });
+
+            // update the user document with the modified referredUsersData
+            await UserModel.updateOne(
+                { _id: user._id },
+                { 'referralData.referredUsersData': updatedReferredUsersData }
+            );
+        }
+
+        console.log(`(renameHasReachedRequiredLevel) Successfully renamed 'hasReachedLevel4' to 'hasReachedRequiredLevel' in 'referredUsersData'.`);
+    } catch (err: any) {
+        console.error(`(renameHasReachedRequiredLevel) ${err.message}`);
+    }
+}
+
+/**
  * Adds `mintableAmount` to all inventory items, foods and resources.
  */
 export const appendMintableAmount = async (): Promise<void> => {
