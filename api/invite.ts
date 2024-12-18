@@ -8,6 +8,7 @@ import { GET_PLAYER_LEVEL, GET_SEASON_0_REFERRAL_REWARDS } from '../utils/consta
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { updateReferredUsersData } from './user';
 import { CURRENT_SEASON } from '../utils/constants/leaderboard';
+import { REFERRAL_REQUIRED_LEVEL } from '../utils/constants/invite';
 
 /**
  * Generates starter codes and stores them in the database.
@@ -306,9 +307,9 @@ export const getReferredUsersKOSCount = async (twitterId: string): Promise<Retur
 /**
  * Updates the successful indirect referrals of each user (if applicable).
  * 
- * This requires the referred users to reach Level 4 first before counting the indirect referrals (i.e. the referrals from each referred user).
+ * This requires the referred users to reach Level REFERRAL_REQUIRED_LEVEL first before counting the indirect referrals (i.e. the referrals from each referred user).
  * 
- * For example, User A refers User B. User B refers User C, D and E. If C, D and E have reached Level 4 but User B hasn't, then User A won't get the rewards.
+ * For example, User A refers User B. User B refers User C, D and E. If C, D and E have reached Level REFERRAL_REQUIRED_LEVEL but User B hasn't, then User A won't get the rewards.
  */
 export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
     try {
@@ -337,8 +338,8 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
         const successfulIndirectReferralsNewEntries = [];
 
         // loop through each user.
-        // check if they have referred users that have reached level 4. if none, skip this user.
-        // if they have, check if these referred users have referred users that have reached level 4.
+        // check if they have referred users that have reached level REFERRAL_REQUIRED_LEVEL. if none, skip this user.
+        // if they have, check if these referred users have referred users that have reached level REFERRAL_REQUIRED_LEVEL.
         // if they have, check if the main user already has an entry in `successfulIndirectReferrals`.
         // if they don't, create a new entry.
         // if they do, skip the existing entries and only add new indirect referrals.
@@ -350,18 +351,18 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
                 return;
             }
 
-            // if the user has no referred users OR all referred users have not reached level 4, skip this user.
-            // to check if the referred users have reached level 4, we filter the referred users by `hasReachedLevel4`.
-            const referredUsersReachedLevel4 = referredUsersData.filter(referredUserData => referredUserData.hasReachedLevel4);
+            // if the user has no referred users OR all referred users have not reached level `REFERRAL_REQUIRED_LEVEL` skip this user.
+            // to check if the referred users have reached level `REFERRAL_REQUIRED_LEVEL`, we filter the referred users by `hasReachedRequiredLevel`.
+            const referredUsersReachedRequiredLevel = referredUsersData.filter(referredUserData => referredUserData.hasReachedRequiredLevel);
 
-            if (referredUsersReachedLevel4.length === 0) {
+            if (referredUsersReachedRequiredLevel.length === 0) {
                 return;
             }
 
             // create the `indirectReferralData` array for the user.
-            // this essentially loops through all of the referred users of User A that have reached level 4.
-            // then, it checks for any referred users of the referred users of User A that have reached level 4.
-            const indirectReferralData: IndirectReferralData[] = referredUsersReachedLevel4.map(successfulReferredUserData => {
+            // this essentially loops through all of the referred users of User A that have reached level `REFERRAL_REQUIRED_LEVEL`.
+            // then, it checks for any referred users of the referred users of User A that have reached level `REFERRAL_REQUIRED_LEVEL`.
+            const indirectReferralData: IndirectReferralData[] = referredUsersReachedRequiredLevel.map(successfulReferredUserData => {
                 // get this referred user's user instance
                 const referredUser = users.find(u => u._id === successfulReferredUserData.userId);
 
@@ -395,10 +396,10 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
                     }
                 }
 
-                // filter these indirect referred users by `hasReachedLevel4`
-                const indirectUsersReachedLevel4 = indirectReferredUserData.filter(data => data.hasReachedLevel4);
+                // filter these indirect referred users by `hasReachedRequiredLevel`
+                const indirectUsersReachedRequiredLevel = indirectReferredUserData.filter(data => data.hasReachedRequiredLevel);
 
-                if (indirectUsersReachedLevel4.length === 0) {
+                if (indirectUsersReachedRequiredLevel.length === 0) {
                     return {
                         obtainedRewardMilestone: 0,
                         claimableRewardData: {
@@ -411,10 +412,10 @@ export const updateSuccessfulIndirectReferrals = async (): Promise<void> => {
                     }
                 }
 
-                console.log(`User ${user.twitterUsername} has ${indirectUsersReachedLevel4.length} indirect referred users that have reached level 4.`);
+                console.log(`User ${user.twitterUsername} has ${indirectUsersReachedRequiredLevel.length} indirect referred users that have reached level ${REFERRAL_REQUIRED_LEVEL}.`);
 
                 // get the indirect referred users' user IDs
-                const indirectReferredUserIds = indirectUsersReachedLevel4.map(data => data.userId);
+                const indirectReferredUserIds = indirectUsersReachedRequiredLevel.map(data => data.userId);
 
                 // firstly, check if the main user already has an entry in `successfulIndirectReferrals` for this referred user.
                 const existingIndirectReferralData = successfulIndirectReferrals.find(data => data.userId === user._id)?.indirectReferralData.find(data => data.referredUserId === successfulReferredUserData.userId) as IndirectReferralData;
