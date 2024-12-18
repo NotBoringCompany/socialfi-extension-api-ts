@@ -386,7 +386,7 @@ export const claimWeeklyMVPRewards = async (twitterId: string): Promise<ReturnVa
         if (sourceIndex === -1) {
             userUpdateOperations.$push['inventory.pointsData.extendedPointsData'] = {
                 points: claimableLeaderboardPoints,
-                source: PointsSource.RESOURCE_SELLING,
+                source: PointsSource.WEEKLY_MVP_REWARDS,
             }
         } else {
             userUpdateOperations.$inc[`inventory.pointsData.extendedPointsData.${sourceIndex}.points`] = claimableLeaderboardPoints;
