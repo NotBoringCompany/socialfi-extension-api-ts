@@ -18,7 +18,6 @@ import { resources } from '../utils/constants/resource';
 import { Item } from '../models/item';
 import { BoosterItem } from '../models/booster';
 import { TAPPING_MASTERY_LEVEL } from '../utils/constants/mastery';
-import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
 import { TappingMastery } from '../models/mastery';
 import { updateReferredUsersData } from './user';
 import { redis } from '../utils/constants/redis';
@@ -27,6 +26,7 @@ import { CRAFTING_RECIPES } from '../utils/constants/craft';
 import { DEPLOYER_WALLET, ISLANDS_CONTRACT, KAIA_TESTNET_PROVIDER } from '../utils/constants/web3';
 import { ethers } from 'ethers';
 import { CURRENT_SEASON } from '../utils/constants/leaderboard';
+import { GET_PLAYER_LEVEL } from '../utils/constants/user';
 
 // /**
 //  * Sets the new owner data and removes the current `owner` field for all islands.
@@ -2706,7 +2706,7 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
                         points: secondOptionReward.pointDrop
                     });
 
-                    const newLevel = GET_SEASON_0_PLAYER_LEVEL(secondOptionReward.pointDrop);
+                    const newLevel = GET_PLAYER_LEVEL(secondOptionReward.pointDrop);
 
                     // if user levelled up, set the user's `inGameData.level` to the new level
                     if (newLevel > user.inGameData.level) {
@@ -2717,7 +2717,7 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
                     userLeaderboardDataUpdateOperations.$inc['points'] = secondOptionReward.pointDrop;
 
                     // check if the user is eligible to level up to the next level
-                    const newLevel = GET_SEASON_0_PLAYER_LEVEL(leaderboardData.points + secondOptionReward.pointDrop);
+                    const newLevel = GET_PLAYER_LEVEL(leaderboardData.points + secondOptionReward.pointDrop);
 
                     // if user levelled up, set the user's `inGameData.level` to the new level
                     if (newLevel > user.inGameData.level) {

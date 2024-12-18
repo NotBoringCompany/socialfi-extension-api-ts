@@ -16,8 +16,7 @@ import {
     ENERGY_POTION_RECOVERY,
     GET_BEGINNER_REWARDS,
     GET_DAILY_LOGIN_REWARDS,
-    GET_SEASON_0_PLAYER_LEVEL,
-    GET_SEASON_0_PLAYER_LEVEL_REWARDS,
+    GET_PLAYER_LEVEL,
     GET_SEASON_0_REFERRAL_REWARDS,
     MAX_BEGINNER_REWARD_DAY,
     MAX_ENERGY_CAP,
@@ -1108,7 +1107,7 @@ export const claimDailyRewards = async (twitterId: string): Promise<ReturnValue>
                         points: reward.amount,
                     });
 
-                    const newLevel = GET_SEASON_0_PLAYER_LEVEL(reward.amount);
+                    const newLevel = GET_PLAYER_LEVEL(reward.amount);
 
                     // if user levelled up, set the user's `inGameData.level` to the new level
                     if (newLevel > user.inGameData.level) {
@@ -1118,7 +1117,7 @@ export const claimDailyRewards = async (twitterId: string): Promise<ReturnValue>
                     // increment the user's points in the leaderboard
                     userLeaderboardDataUpdateOperations.$inc['points'] = reward.amount;
 
-                    const newLevel = GET_SEASON_0_PLAYER_LEVEL(userLeaderboardData.points + reward.amount);
+                    const newLevel = GET_PLAYER_LEVEL(userLeaderboardData.points + reward.amount);
 
                     // if user levelled up, set the user's `inGameData.level` to the new level
                     if (newLevel > user.inGameData.level) {

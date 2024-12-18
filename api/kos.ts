@@ -9,13 +9,13 @@ import { KOS_DAILY_BENEFITS, KOS_WEEKLY_BENEFITS } from '../utils/constants/kos'
 import { ExtendedPointsData, ExtendedXCookieData, InGameData, PointsSource, UserKeyData, UserWallet, XCookieSource } from '../models/user';
 import { Item } from '../models/item';
 import { BoosterItem } from '../models/booster';
-import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
 import { generateHashSalt, generateObjectId } from '../utils/crypto';
 import mongoose from 'mongoose';
 import * as dotenv from 'dotenv';
 import { BigNumber, ethers } from 'ethers';
 import { dayjs } from '../utils/dayjs';
 import { CURRENT_SEASON } from '../utils/constants/leaderboard';
+import { GET_PLAYER_LEVEL } from '../utils/constants/user';
 
 dotenv.config();
 
@@ -303,7 +303,7 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
                         points: reward.amount,
                     });
 
-                    const newLevel = GET_SEASON_0_PLAYER_LEVEL(reward.amount);
+                    const newLevel = GET_PLAYER_LEVEL(reward.amount);
 
                     // if user levelled up, set the user's level to the new level
                     if (newLevel > user.inGameData.level) {
@@ -313,7 +313,7 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
                     // increment the user's points
                     userLeaderboardDataUpdateOperations.$inc['points'] = reward.amount;
 
-                    const newLevel = GET_SEASON_0_PLAYER_LEVEL(userLeaderboardData.points + reward.amount);
+                    const newLevel = GET_PLAYER_LEVEL(userLeaderboardData.points + reward.amount);
 
                     // if user levelled up, set the user's level to the new level
                     if (newLevel > user.inGameData.level) {

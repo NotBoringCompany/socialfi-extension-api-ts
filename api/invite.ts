@@ -4,7 +4,7 @@ import { StarterCodeModel, SuccessfulIndirectReferralModel, UserLeaderboardDataM
 import { generateObjectId, generateStarterCode } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
 import { ExtendedPointsData, ExtendedXCookieData, PointsSource, UserWallet, XCookieSource } from '../models/user';
-import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS, GET_SEASON_0_REFERRAL_REWARDS } from '../utils/constants/user';
+import { GET_PLAYER_LEVEL, GET_SEASON_0_REFERRAL_REWARDS } from '../utils/constants/user';
 import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { updateReferredUsersData } from './user';
 import { CURRENT_SEASON } from '../utils/constants/leaderboard';
@@ -133,7 +133,7 @@ export const claimReferralRewards = async (twitterId: string): Promise<ReturnVal
                     points: claimableReferralRewards.leaderboardPoints
                 });
 
-                const newLevel = GET_SEASON_0_PLAYER_LEVEL(claimableReferralRewards.leaderboardPoints);
+                const newLevel = GET_PLAYER_LEVEL(claimableReferralRewards.leaderboardPoints);
 
                 // if user levelled up, set the user's `inGameData.level` to the new level
                 if (newLevel > user.inGameData.level) {
@@ -143,7 +143,7 @@ export const claimReferralRewards = async (twitterId: string): Promise<ReturnVal
                 // if the user has a leaderboard data, we increment the points
                 userLeaderboardDataUpdateOperations.$inc['points'] = claimableReferralRewards.leaderboardPoints;
 
-                const newLevel = GET_SEASON_0_PLAYER_LEVEL(leaderboardData.points + claimableReferralRewards.leaderboardPoints);
+                const newLevel = GET_PLAYER_LEVEL(leaderboardData.points + claimableReferralRewards.leaderboardPoints);
 
                 // if user levelled up, set the user's `inGameData.level` to the new level
                 if (newLevel > user.inGameData.level) {

@@ -10,7 +10,6 @@ import { POI_TRAVEL_LEVEL_REQUIREMENT } from '../utils/constants/poi';
 import { ACTUAL_RAFT_SPEED } from '../utils/constants/raft';
 import { SQUAD_KOS_BENEFITS } from '../utils/constants/squad';
 import { GET_LEADER_SQUAD_WEEKLY_RANKING_POI_POINTS_BOOST } from '../utils/constants/squadLeaderboard';
-import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
 import { ReturnValue, Status } from '../utils/retVal';
 import { getLatestSquadWeeklyRanking, squadKOSData } from './squad';
 import { updateReferredUsersData } from './user';
@@ -23,6 +22,7 @@ import { QuestRequirementType } from '../models/quest';
 import { resources } from '../utils/constants/resource';
 import { CURRENT_SEASON } from '../utils/constants/leaderboard';
 import { generateObjectId } from '../utils/crypto';
+import { GET_PLAYER_LEVEL } from '../utils/constants/user';
 
 /**
  * Resets the `currentBuyableAmount` and `currentSellableAmount` of all global items in all POI shops.
@@ -792,7 +792,7 @@ export const sellItemsInPOIShop = async (
                 points: leaderboardPoints
             });
 
-            const newLevel = GET_SEASON_0_PLAYER_LEVEL(leaderboardPoints);
+            const newLevel = GET_PLAYER_LEVEL(leaderboardPoints);
 
             // if user levelled up, set the user's `inGameData.level` to the new level
             if (newLevel > user.inGameData.level) {
@@ -802,7 +802,7 @@ export const sellItemsInPOIShop = async (
             // increment the user's points in the leaderboard
             userLeaderboardDataUpdateOperations.$inc['points'] = leaderboardPoints;
 
-            const newLevel = GET_SEASON_0_PLAYER_LEVEL(userLeaderboardData.points + leaderboardPoints);
+            const newLevel = GET_PLAYER_LEVEL(userLeaderboardData.points + leaderboardPoints);
 
             // if user levelled up, set the user's `inGameData.level` to the new level
             if (newLevel > user.inGameData.level) {

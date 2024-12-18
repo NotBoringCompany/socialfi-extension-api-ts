@@ -162,49 +162,50 @@ export const GET_SEASON_0_REFERRAL_REWARDS = (userCount: number): ReferralReward
 }
 
 /**
- * Gets a user's player level based on the amount of points they have on the Season 0 leaderboard.
+ * Gets a user's player level based on the amount of points they have on the current season's leaderboard.
  */
-export const GET_SEASON_0_PLAYER_LEVEL = (points: number): number => {
+export const GET_PLAYER_LEVEL = (points: number): number => {
     if (points < 0) return 0; // Handle negative points
+
     const levels = [
-        { min: 0, max: 149, level: 1 },
-        { min: 150, max: 499, level: 2 },
-        { min: 500, max: 999, level: 3 },
-        { min: 1000, max: 2999, level: 4 },
-        { min: 3000, max: 5499, level: 5 },
-        { min: 5500, max: 8499, level: 6 },
-        { min: 8500, max: 11999, level: 7 },
-        { min: 12000, max: 15999, level: 8 },
-        { min: 16000, max: 20499, level: 9 },
-        { min: 20500, max: 25499, level: 10 }
-    ];
-    
+        { min: 0, max: 4, level: 1 },
+        { min: 5, max: 24, level: 2 },
+        { min: 25, max: 49, level: 3 },
+        { min: 50, max: 99, level: 4 },
+        { min: 100, max: 149, level: 5 },
+        { min: 150, max: 249, level: 6 },
+        { min: 250, max: 399, level: 7 },
+        { min: 400, max: 599, level: 8 },
+        { min: 600, max: 899, level: 9 },
+        { min: 900, max: 1209, level: 10 },
+    ]
+
     for (let i = 0; i < levels.length; i++) {
         if (points >= levels[i].min && points <= levels[i].max) {
             return levels[i].level;
         }
     }
 
-    // for every 5000 points obtained after 20500, the player level increases by 1
-    return Math.floor((points - 20500) / 5000) + 10;
-};
+    // for levels beyond 10, formula is P = 10 * L^2.
+    return Math.floor(Math.sqrt(points / 10));
+}
 
-/**
- * Gets the `additionalPoints` to give to the user for Season 0 based on their player level.
- * 
- * Will be given once the user reaches that level.
- */
-export const GET_SEASON_0_PLAYER_LEVEL_REWARDS = (level: number): number => {
-    const rewards = [0, 15, 50, 100, 300, 550, 850, 1200, 1600, 2050];
+// /**
+//  * Gets the `additionalPoints` to give to the user for Season 0 based on their player level.
+//  * 
+//  * Will be given once the user reaches that level.
+//  */
+// export const GET_SEASON_0_PLAYER_LEVEL_REWARDS = (level: number): number => {
+//     const rewards = [0, 15, 50, 100, 300, 550, 850, 1200, 1600, 2050];
     
-    if (level >= 1 && level <= 10) {
-        return rewards[level - 1];
-    } else if (level > 10) {
-        return 2050 + (500 * (level - 10));
-    } else {
-        return 0;
-    }
-};
+//     if (level >= 1 && level <= 10) {
+//         return rewards[level - 1];
+//     } else if (level > 10) {
+//         return 2050 + (500 * (level - 10));
+//     } else {
+//         return 0;
+//     }
+// };
 
 /**
  * Returns the rewards for a weekly MVP that consumed/spent the most of a specific item.
