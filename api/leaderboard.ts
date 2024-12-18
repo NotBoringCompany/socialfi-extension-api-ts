@@ -1,10 +1,10 @@
 import { ClientSession } from 'mongoose';
 import {SquadLeaderboardModel, SquadModel, TEST_CONNECTION, UserLeaderboardDataModel, UserModel } from '../utils/constants/db';
 import { ReturnValue, Status } from '../utils/retVal';
-import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '../utils/constants/user';
 import { InGameData, PointsData, PointsSource } from '../models/user';
 import { CURRENT_SEASON } from '../utils/constants/leaderboard';
 import { generateObjectId } from '../utils/crypto';
+import { GET_PLAYER_LEVEL } from '../utils/constants/user';
 
 // /**
 //  * Migrates all data from Leaderboard to UserLeaderboardData.
@@ -287,7 +287,7 @@ export const addPoints = async (
         if (!userLeaderboardData) {
             // if user leaderboard doesn't exist, we create a new entry.
             // check if the user is eligible to level up to the next level
-            const newLevel = GET_SEASON_0_PLAYER_LEVEL(pointsData.points);
+            const newLevel = GET_PLAYER_LEVEL(pointsData.points);
 
             // set the user's `inGameData.level` to the new level
             if (newLevel > user.inGameData.level) {
@@ -309,7 +309,7 @@ export const addPoints = async (
             }], { session });
         } else {
             // check if the user is eligible to level up to the next level
-            const newLevel = GET_SEASON_0_PLAYER_LEVEL(userLeaderboardData.points + pointsData.points);
+            const newLevel = GET_PLAYER_LEVEL(userLeaderboardData.points + pointsData.points);
 
             // set the user's `inGameData.level` to the new level
             if (newLevel > user.inGameData.level) {
