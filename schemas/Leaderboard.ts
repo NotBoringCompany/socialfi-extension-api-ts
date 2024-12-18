@@ -28,6 +28,10 @@ export const LeaderboardSchema = new mongoose.Schema({
  * User leaderboard data schema. Represents closely to the `UserLeaderboardData` interface in `models/leaderboard.ts`.
  */
 export const UserLeaderboardDataSchema = new mongoose.Schema({
+    _id: {
+        type: String,
+        default: generateObjectId()
+    },
     userId: String,
     username: String,
     twitterProfilePicture: String,
