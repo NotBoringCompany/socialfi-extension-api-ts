@@ -83,6 +83,28 @@ export const renameHasReachedRequiredLevel = async (): Promise<void> => {
 }
 
 /**
+ * Renames `level5ReferredUsersLatestMilestone` to `requiredLevelReferredUsersLatestMilestone` in `referralData`.
+ */
+export const renameRequiredLevelReferredUsersLatestMilestone = async (): Promise<void> => {
+    try {
+        await UserModel.updateMany(
+            { 'referralData.level5ReferredUsersLatestMilestone': { $exists: true } }, // filter for documents with `level5ReferredUsersLatestMilestone`
+            {
+                $rename: {
+                    'referralData.level5ReferredUsersLatestMilestone': 'referralData.requiredLevelReferredUsersLatestMilestone'
+                }
+            }
+        );
+
+        console.log(
+            `(renameLevel5ToRequiredLevel) Successfully renamed 'level5ReferredUsersLatestMilestone' to 'requiredLevelReferredUsersLatestMilestone'.`
+        );
+    } catch (err: any) {
+        console.error(`(renameLevel5ToRequiredLevel) ${err.message}`);
+    }
+}
+
+/**
  * Adds `mintableAmount` to all inventory items, foods and resources.
  */
 export const appendMintableAmount = async (): Promise<void> => {
