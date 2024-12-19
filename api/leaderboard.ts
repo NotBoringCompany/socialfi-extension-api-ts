@@ -358,7 +358,7 @@ export const addPoints = async (
         }
 
         // if the user also has a squad, add the points to the squad's total points
-        if (!pointsData.excludeSquad && user.inGameData.squad !== null) {
+        if (!pointsData.excludeSquad && user.inGameData.squadId !== null) {
             // get the squad
             const squad = await SquadModel.findOne({ _id: user.inGameData.squadId });
             if (!squad) {
@@ -482,7 +482,7 @@ export const addPoints = async (
 
         return {
             status: Status.SUCCESS,
-            message: `(addItem) Item added to the inventory successfully`,
+            message: `(addPoints) Item added to the inventory successfully`,
         };
     } catch (err: any) {
         // abort the transaction if an error occurs
@@ -492,7 +492,7 @@ export const addPoints = async (
 
         return {
             status: Status.ERROR,
-            message: `(addItem) ${err.message}`,
+            message: `(addPoints) ${err.message}`,
         };
     } finally {
         if (!_session) {
