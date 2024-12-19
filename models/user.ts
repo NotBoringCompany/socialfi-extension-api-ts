@@ -219,6 +219,7 @@ export interface ExtendedDiamondData {
 export enum DiamondSource {
     SHOP_PURCHASE = 'Shop Purchase',
     WONDERSPIN = 'Wonderspin',
+    LEVELLING_UP = 'Levelling Up',
 }
 
 /**

@@ -20,10 +20,10 @@ export const POI_TRAVEL_LEVEL_REQUIREMENT = (poi: POIName): number => {
         case POIName.EVERGREEN_VILLAGE:
             return 1;
         case POIName.PALMSHADE_VILLAGE:
-            return 3;
+            return 9;
         case POIName.SEABREEZE_HARBOR:
-            return 6;
+            return 20;
         case POIName.STARFALL_SANCTUARY:
-            return 10;
+            return 40;
     }
 }

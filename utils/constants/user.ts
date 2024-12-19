@@ -1,4 +1,5 @@
 import { ReferralReward } from '../../models/invite';
+import { POIName } from '../../models/poi';
 import { BeginnerReward, BeginnerRewardType, DailyLoginReward, DailyLoginRewardType } from '../../models/user';
 
 /** The maximum weight a user's inventory can be */
@@ -190,22 +191,31 @@ export const GET_PLAYER_LEVEL = (points: number): number => {
     return Math.floor(Math.sqrt(points / 10));
 }
 
-// /**
-//  * Gets the `additionalPoints` to give to the user for Season 0 based on their player level.
-//  * 
-//  * Will be given once the user reaches that level.
-//  */
-// export const GET_SEASON_0_PLAYER_LEVEL_REWARDS = (level: number): number => {
-//     const rewards = [0, 15, 50, 100, 300, 550, 850, 1200, 1600, 2050];
-    
-//     if (level >= 1 && level <= 10) {
-//         return rewards[level - 1];
-//     } else if (level > 10) {
-//         return 2050 + (500 * (level - 10));
-//     } else {
-//         return 0;
-//     }
-// };
+/**
+ * Gets the rewards and potential unlocks for a player based on their level.
+ * 
+ * For example, if `maxPlayerEnergy`, this will be the new maxPlayerEnergy the user will have.
+ */
+export const GET_PLAYER_LEVEL_REWARDS_AND_UNLOCKS = (newLevel: number): {
+    // the new max player energy at this level
+    maxPlayerEnergy: number;
+    // the new base inventory weight cap at this level
+    baseInventoryWeightCap: number;
+    // how many diamonds the user earns for reaching this level
+    diamonds: number;
+} => {
+    // starts at 500, increase of 50 per level until level 9; 1000 at level 10 and stagnant at 1000 after level 10
+    const baseInventoryWeightCap = newLevel <= 9 ? 500 + (newLevel - 1) * 50 : newLevel === 10 ? 1000 : 1000;
+    const maxPlayerEnergy = newLevel >= 6 ? (newLevel - 4) * 5 : 0;
+    // 3 diamonds for levels 2 to 9, 6 diamonds for level 10, else 0
+    const diamonds = newLevel >= 2 && newLevel <= 9 ? 3 : newLevel === 10 ? 6 : 0;
+
+    return {
+        maxPlayerEnergy,
+        baseInventoryWeightCap,
+        diamonds
+    };
+}
 
 /**
  * Returns the rewards for a weekly MVP that consumed/spent the most of a specific item.

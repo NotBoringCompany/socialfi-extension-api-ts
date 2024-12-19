@@ -1,10 +1,10 @@
 import { ClientSession } from 'mongoose';
 import {SquadLeaderboardModel, SquadModel, TEST_CONNECTION, UserLeaderboardDataModel, UserModel } from '../utils/constants/db';
 import { ReturnValue, Status } from '../utils/retVal';
-import { InGameData, PointsData, PointsSource } from '../models/user';
+import { DiamondData, DiamondSource, InGameData, PointsData, PointsSource } from '../models/user';
 import { CURRENT_SEASON } from '../utils/constants/leaderboard';
 import { generateObjectId } from '../utils/crypto';
-import { GET_PLAYER_LEVEL } from '../utils/constants/user';
+import { GET_PLAYER_LEVEL, GET_PLAYER_LEVEL_REWARDS_AND_UNLOCKS } from '../utils/constants/user';
 import { REFERRAL_REQUIRED_LEVEL } from '../utils/constants/invite';
 import { updateReferredUsersData } from './user';
 
@@ -295,6 +295,27 @@ export const addPoints = async (
             // set the user's `inGameData.level` to the new level
             if (newLevel > user.inGameData.level) {
                 userUpdateOperations.$set['inGameData.level'] = newLevel;
+
+                // check for unlocks and rewards at this level
+                const { maxPlayerEnergy, baseInventoryWeightCap, diamonds } = GET_PLAYER_LEVEL_REWARDS_AND_UNLOCKS(newLevel);
+
+                // we do a hard set so that if the energy goes down because the new level has been updated to a lower level and thus
+                // the max energy is lower, we set it to the new lower max energy, and vice versa. (same with the other variables)
+                userUpdateOperations.$set['inGameData.energy.maxEnergy'] = maxPlayerEnergy;
+                userUpdateOperations.$set['inventory.maxWeight'] = baseInventoryWeightCap;
+                userUpdateOperations.$inc['inventory.diamondData.currentDiamonds'] = diamonds;
+
+                // for diamonds, check if the source `LEVELLING_UP` exists. if not, we add it.
+                const sourceIndex = (user.inventory.diamondData as DiamondData).extendedDiamondData.findIndex((data) => data.source === DiamondSource.LEVELLING_UP);
+
+                if (sourceIndex !== -1) {
+                    userUpdateOperations.$inc[`inventory.diamondData.extendedDiamondData.${sourceIndex}.diamonds`] = diamonds;
+                } else {
+                    userUpdateOperations.$push['inventory.diamondData.extendedDiamondData'] = {
+                        diamonds,
+                        source: DiamondSource.LEVELLING_UP
+                    }
+                }
             }
 
             // TEMPORARY DISABLE THE ADDITIONAL POINTS SYSTEM!!!
@@ -317,6 +338,27 @@ export const addPoints = async (
             // set the user's `inGameData.level` to the new level
             if (newLevel > user.inGameData.level) {
                 userUpdateOperations.$set['inGameData.level'] = newLevel;
+
+                // check for unlocks and rewards at this level
+                const { maxPlayerEnergy, baseInventoryWeightCap, diamonds } = GET_PLAYER_LEVEL_REWARDS_AND_UNLOCKS(newLevel);
+
+                // we do a hard set so that if the energy goes down because the new level has been updated to a lower level and thus
+                // the max energy is lower, we set it to the new lower max energy, and vice versa. (same with the other variables)
+                userUpdateOperations.$set['inGameData.energy.maxEnergy'] = maxPlayerEnergy;
+                userUpdateOperations.$set['inventory.maxWeight'] = baseInventoryWeightCap;
+                userUpdateOperations.$inc['inventory.diamondData.currentDiamonds'] = diamonds;
+
+                // for diamonds, check if the source `LEVELLING_UP` exists. if not, we add it.
+                const sourceIndex = (user.inventory.diamondData as DiamondData).extendedDiamondData.findIndex((data) => data.source === DiamondSource.LEVELLING_UP);
+
+                if (sourceIndex !== -1) {
+                    userUpdateOperations.$inc[`inventory.diamondData.extendedDiamondData.${sourceIndex}.diamonds`] = diamonds;
+                } else {
+                    userUpdateOperations.$push['inventory.diamondData.extendedDiamondData'] = {
+                        diamonds,
+                        source: DiamondSource.LEVELLING_UP
+                    }
+                }
             }
 
             // TEMPORARY DISABLE THE ADDITIONAL POINTS SYSTEM!!!
