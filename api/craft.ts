@@ -1738,24 +1738,20 @@ export const updateCraftingLevel = async (
             throw new Error('User not found.');
         }
 
-        if (!session) {
-            await session.commitTransaction();
-            session.endSession();
-        }
-
+        
         for (const line of acquiredXP) {
             const craftingLine = toCamelCase(line.craftingLine);
             const currentMastery: CraftingMastery | null = user?.inGameData?.mastery?.crafting ?? null;
             const currentMasteryStats: CraftingMasteryStats | null = currentMastery[craftingLine] ?? null;
             const currentXP = currentMasteryStats.xp;
-
+            
             if (currentMasteryStats) {
                 const requiredXP = GET_PROFESSION_REQUIRED_XP(
                     line.craftingLine,
                     currentMasteryStats.level + 1,
                     currentMastery
                 );
-
+                
                 await user.updateOne(
                     {
                         $inc: {
@@ -1764,7 +1760,7 @@ export const updateCraftingLevel = async (
                     },
                     { session }
                 );
-
+                
                 if (currentXP + line.xp >= requiredXP) {
                     await user.updateOne(
                         {
@@ -1774,11 +1770,11 @@ export const updateCraftingLevel = async (
                                 [`inGameData.mastery.crafting.${craftingLine}.xp`]: 0,
                                 // update xpToNextLevel
                                 [`inGameData.mastery.crafting.${craftingLine}.xpToNextLevel`]:
-                                    GET_PROFESSION_REQUIRED_XP(
-                                        line.craftingLine,
-                                        currentMasteryStats.level,
-                                        currentMastery
-                                    ),
+                                GET_PROFESSION_REQUIRED_XP(
+                                    line.craftingLine,
+                                    currentMasteryStats.level,
+                                    currentMastery
+                                ),
                             },
                         },
                         { session }
@@ -1800,6 +1796,10 @@ export const updateCraftingLevel = async (
                 );
             }
         }
+        
+        if (!session) {
+            await session.commitTransaction();
+        }
 
         return {
             status: Status.SUCCESS,
@@ -1808,13 +1808,16 @@ export const updateCraftingLevel = async (
     } catch (err: any) {
         if (!_session) {
             await session.abortTransaction();
-            session.endSession();
         }
 
         return {
             status: Status.ERROR,
             message: `(updateCraftingLevel) ${err.message}`,
         };
+    } finally {
+        if (!_session) {
+            await session.endSession();
+        }
     }
 };
 
@@ -1990,7 +1993,6 @@ export const claimCraftedAssetsV2 = async (
         // commit the transaction only if this function started it
         if (!_session) {
             await session.commitTransaction();
-            session.endSession();
         }
 
         return {
@@ -2005,13 +2007,16 @@ export const claimCraftedAssetsV2 = async (
         // abort the transaction if an error occurs
         if (!_session) {
             await session.abortTransaction();
-            session.endSession();
         }
 
         return {
             status: Status.ERROR,
             message: `(addItem) ${err.message}`,
         };
+    } finally {
+        if (!_session) {
+            await session.endSession();
+        }
     }
 };
 

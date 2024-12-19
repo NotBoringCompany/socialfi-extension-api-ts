@@ -2778,7 +2778,6 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
         // commit the transaction only if this function started it
         if (!_session) {
             await session.commitTransaction();
-            session.endSession();
         }
 
         return {
@@ -2800,12 +2799,15 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
         // abort the transaction if an error occurs
         if (!_session) {
             await session.abortTransaction();
-            session.endSession();
         }
 
         return {
             status: Status.ERROR,
             message: `(getIslandTappingData) Error: ${err.message}`
+        }
+    } finally {
+        if (!_session) {
+            await session.endSession();
         }
     }
 };

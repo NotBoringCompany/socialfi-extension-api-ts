@@ -1174,7 +1174,6 @@ export const claimDailyRewards = async (twitterId: string, _session?: ClientSess
         // commit the transaction only if this function started it
         if (!_session) {
             await session.commitTransaction();
-            session.endSession();
         }
 
         return {
@@ -1189,13 +1188,16 @@ export const claimDailyRewards = async (twitterId: string, _session?: ClientSess
         // abort the transaction if an error occurs
         if (!_session) {
             await session.abortTransaction();
-            session.endSession();
         }
 
         return {
             status: Status.ERROR,
             message: `(claimDailyRewards) ${err.message}`,
         };
+    } finally {
+        if (!_session) {
+            await session.endSession();
+        }
     }
 };
 
@@ -1931,7 +1933,9 @@ export const updateReferredUsersData = async (referrerUserId: string, referredUs
             message: `(updateReferredUsersData) ${err.message}`,
         };
     } finally {
-        session.endSession();
+        if (!_session) {
+            await session.endSession();
+        }
     }
 };
 

@@ -439,7 +439,6 @@ export const addPoints = async (
         // commit the transaction only if this function started it
         if (!_session) {
             await session.commitTransaction();
-            session.endSession();
         }
 
         return {
@@ -450,12 +449,15 @@ export const addPoints = async (
         // abort the transaction if an error occurs
         if (!_session) {
             await session.abortTransaction();
-            session.endSession();
         }
 
         return {
             status: Status.ERROR,
             message: `(addItem) ${err.message}`,
         };
+    } finally {
+        if (!_session) {
+            await session.endSession();
+        }
     }
 }

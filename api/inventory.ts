@@ -79,7 +79,6 @@ export const addToInventory = async (
         // commit the transaction only if this function started it
         if (!_session) {
             await session.commitTransaction();
-            session.endSession();
         }
 
         return {
@@ -90,13 +89,16 @@ export const addToInventory = async (
         // abort the transaction if an error occurs
         if (!_session) {
             await session.abortTransaction();
-            session.endSession();
         }
 
         return {
             status: Status.ERROR,
             message: `(addItem) ${err.message}`,
         };
+    } finally {
+        if (!_session) {
+            await session.endSession();
+        }
     }
 };
 
@@ -180,7 +182,6 @@ export const batchAddToInventory = async (
         // commit the transaction only if this function started it
         if (!_session) {
             await session.commitTransaction();
-            session.endSession();
         }
 
         return {
@@ -191,13 +192,16 @@ export const batchAddToInventory = async (
         // abort the transaction if an error occurs
         if (!_session) {
             await session.abortTransaction();
-            session.endSession();
         }
 
         return {
             status: Status.ERROR,
             message: `(batchAdd) ${err.message}`,
         };
+    } finally {
+        if (!_session) {
+            await session.endSession();
+        }
     }
 };
 
@@ -270,7 +274,6 @@ export const batchDeductFromInventory = async (
         // commit the transaction only if this function started it
         if (!_session) {
             await session.commitTransaction();
-            session.endSession();
         }
 
         return {
@@ -281,13 +284,16 @@ export const batchDeductFromInventory = async (
         // abort the transaction if an error occurs
         if (!_session) {
             await session.abortTransaction();
-            session.endSession();
         }
 
         return {
             status: Status.ERROR,
             message: `(batchDeduct) ${err.message}`,
         };
+    } finally {
+        if (!_session) {
+            await session.endSession();
+        }
     }
 };
 
