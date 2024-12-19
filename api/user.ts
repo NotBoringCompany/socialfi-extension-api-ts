@@ -140,13 +140,13 @@ export const recalibrateUserLevelAndRewards = async (): Promise<void> => {
             if (oldLevel === level) continue;
 
             // get the rewards and unlocks from the new level (diamonds will be calculated separately because it needs to be accumulated)
-            const { maxPlayerEnergyIncrease, baseInventoryWeightCapIncrease } = GET_PLAYER_LEVEL_REWARDS_AND_UNLOCKS(level);
+            const { maxPlayerEnergyIncrease, baseInventoryWeightCap } = GET_PLAYER_LEVEL_REWARDS_AND_UNLOCKS(level);
 
             // calculate max energy cap
             const maxEnergyCap = MAX_ENERGY_CAP + maxPlayerEnergyIncrease;
 
             // calculate max inventory weight
-            const maxInventoryWeight = MAX_INVENTORY_WEIGHT + baseInventoryWeightCapIncrease;
+            const maxInventoryWeight = baseInventoryWeightCap;
 
             // diamonds earned per level is currently as follows:
             // 3 diamonds for levels 2 to 9, 6 diamonds for level 10, else 0
