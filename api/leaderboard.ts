@@ -412,7 +412,7 @@ export const addPoints = async (
             // add only the points to the squad's total points
             await squad.updateOne({
                 $inc: {
-                    [`squadPoints`]: pointsData.points
+                    totalSquadPoints: pointsData.points
                 }
             }, { session });
 
