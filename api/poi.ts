@@ -1,11 +1,11 @@
-import mongoose from 'mongoose';
+import mongoose, { ClientSession } from 'mongoose';
 import { BoosterItem } from '../models/booster';
 import { Food } from '../models/food';
 import { Item } from '../models/item';
 import { POIName, POIShop, POIShopActionItemData, POIShopItemName } from '../models/poi';
 import { ExtendedResource, ExtendedResourceOrigin } from '../models/resource';
 import { Squad, SquadRole } from '../models/squad';
-import { POIModel, RaftModel, SquadLeaderboardModel, SquadModel, UserLeaderboardDataModel, UserModel } from '../utils/constants/db';
+import { POIModel, RaftModel, SquadLeaderboardModel, SquadModel, TEST_CONNECTION, UserModel } from '../utils/constants/db';
 import { POI_TRAVEL_LEVEL_REQUIREMENT } from '../utils/constants/poi';
 import { ACTUAL_RAFT_SPEED } from '../utils/constants/raft';
 import { SQUAD_KOS_BENEFITS } from '../utils/constants/squad';
@@ -24,6 +24,7 @@ import { CURRENT_SEASON } from '../utils/constants/leaderboard';
 import { generateObjectId } from '../utils/crypto';
 import { GET_PLAYER_LEVEL } from '../utils/constants/user';
 import { REFERRAL_REQUIRED_LEVEL } from '../utils/constants/invite';
+import { addPoints } from './leaderboard';
 
 /**
  * Resets the `currentBuyableAmount` and `currentSellableAmount` of all global items in all POI shops.
@@ -569,7 +570,11 @@ export const getCurrentPOI = async (twitterId: string): Promise<ReturnValue> => 
 export const sellItemsInPOIShop = async (
     twitterId: string,
     items: POIShopActionItemData[],
+    _session?: ClientSession
 ): Promise<ReturnValue> => {
+    const session = _session ?? (await TEST_CONNECTION.startSession());
+    if (!_session) session.startTransaction();
+
     try {
         const user = await UserModel.findOne({ twitterId }).lean();
 
@@ -580,28 +585,7 @@ export const sellItemsInPOIShop = async (
             $push: {}
         }
 
-        const userLeaderboardDataUpdateOperations = {
-            $pull: {},
-            $inc: {},
-            $set: {},
-            $push: {}
-        }
-
         const poiUpdateOperations = {
-            $pull: {},
-            $inc: {},
-            $set: {},
-            $push: {}
-        }
-
-        const squadUpdateOperations = {
-            $pull: {},
-            $inc: {},
-            $set: {},
-            $push: {}
-        }
-
-        const squadLeaderboardUpdateOperations = {
             $pull: {},
             $inc: {},
             $set: {},
@@ -780,50 +764,9 @@ export const sellItemsInPOIShop = async (
         // if we just add the boosts directly, the minimum boost will be 2. this is not what we want (because it means a 2x multiplier). therefore, we subtract 1 at the end.
         const leaderboardPoints = ((itemsPOIPointsBoostData.ownedKOSPointsBoost + itemsPOIPointsBoostData.squadWeeklyRankingPointsBoost) - 1) * baseLeaderboardPoints;
 
-        const userLeaderboardData = await UserLeaderboardDataModel.findOne({ userId: user._id, season: CURRENT_SEASON }).lean();
-
-        // if the user doesn't exist in the leaderboard, we create a new user data.
-        if (!userLeaderboardData) {
-            await UserLeaderboardDataModel.create({
-                _id: generateObjectId(),
-                userId: user._id,
-                username: user.twitterUsername,
-                twitterProfilePicture: user.twitterProfilePicture,
-                season: CURRENT_SEASON,
-                points: leaderboardPoints
-            });
-
-            const newLevel = GET_PLAYER_LEVEL(leaderboardPoints);
-
-            // if user levelled up, set the user's `inGameData.level` to the new level
-            if (newLevel > user.inGameData.level) {
-                userUpdateOperations.$set['inGameData.level'] = newLevel;
-            }
-        } else {
-            // increment the user's points in the leaderboard
-            userLeaderboardDataUpdateOperations.$inc['points'] = leaderboardPoints;
-
-            const newLevel = GET_PLAYER_LEVEL(userLeaderboardData.points + leaderboardPoints);
-
-            // if user levelled up, set the user's `inGameData.level` to the new level
-            if (newLevel > user.inGameData.level) {
-                userUpdateOperations.$set['inGameData.level'] = newLevel;
-            }
-        }
-
-        // update the points data for the user too
-        userUpdateOperations.$inc['inventory.pointsData.currentPoints'] = leaderboardPoints;
-
-        // check if the source exists in the extended points data
-        const sourceIndex = (user.inventory?.pointsData.extendedPointsData as ExtendedPointsData[]).findIndex(data => data.source === PointsSource.RESOURCE_SELLING);
-
-        if (sourceIndex === -1) {
-            userUpdateOperations.$push['inventory.pointsData.extendedPointsData'] = {
-                points: leaderboardPoints,
-                source: PointsSource.RESOURCE_SELLING,
-            }
-        } else {
-            userUpdateOperations.$inc[`inventory.pointsData.extendedPointsData.${sourceIndex}.points`] = leaderboardPoints;
+        const result =  await addPoints(user._id, { source: PointsSource.RESOURCE_SELLING, points: leaderboardPoints }, session);
+        if (result.status !== Status.SUCCESS) {
+            throw new Error(result.message);
         }
 
         // total weight from the user's inventory to reduce if resources are removed.
@@ -967,11 +910,6 @@ export const sellItemsInPOIShop = async (
                 $inc: userUpdateOperations.$inc
             }),
 
-            await UserLeaderboardDataModel.updateOne({ userId: user._id, season: CURRENT_SEASON }, {
-                $set: userLeaderboardDataUpdateOperations.$set,
-                $inc: userLeaderboardDataUpdateOperations.$inc
-            }),
-
             await POIModel.updateOne({ name: user.inGameData.location }, {
                 $set: poiUpdateOperations.$set,
                 $inc: poiUpdateOperations.$inc
@@ -984,133 +922,18 @@ export const sellItemsInPOIShop = async (
                 $pull: userUpdateOperations.$pull
             }),
     
-            await UserLeaderboardDataModel.updateOne({ userId: user._id, season: CURRENT_SEASON }, {
-                $push: userLeaderboardDataUpdateOperations.$push,
-                $pull: userLeaderboardDataUpdateOperations.$pull
-            }),
-    
             await POIModel.updateOne({ name: user.inGameData.location }, {
                 $push: poiUpdateOperations.$push,
                 $pull: poiUpdateOperations.$pull
             })
         ]);
-        
-        // add the points to the squad's `totalSquadPoints` as well (excluding the additional points)
-        // also, update the squad's total points.
-        if (squadId) {
-            // get the squad
-            const squad = await SquadModel.findOne({ _id: squadId }).lean();
 
-            if (!squad) {
-                return {
-                    status: Status.BAD_REQUEST,
-                    message: `(sellItemsInPOIShop) Squad not found.`
-                }
-            }
-
-            squadUpdateOperations.$inc[`totalSquadPoints`] = leaderboardPoints;
-
-            // get the latest week of the squad leaderboard
-            const latestSquadLeaderboard = await SquadLeaderboardModel.findOne().sort({ week: -1 });
-
-            // if no leaderboard exists somehow, return an error
-            if (!latestSquadLeaderboard) {
-                return {
-                    status: Status.BAD_REQUEST,
-                    message: `(sellItemsInPOIShop) Squad leaderboard not found.`
-                }
-            }
-
-            // check if the squad exists in the leaderboard's `pointsData`. if not, we create a new instance.
-            const squadIndex = latestSquadLeaderboard.pointsData.findIndex(pointsData => pointsData.squadId === squadId);
-
-            // if not found, we create a new instance.
-            if (squadIndex === -1) {
-                squadLeaderboardUpdateOperations.$push[`pointsData`] = {
-                    squadId,
-                    squadName: squad.name,
-                    memberPoints: [{
-                        userId: user._id,
-                        username: user.twitterUsername,
-                        points: leaderboardPoints
-                    }]
-                }
-            } else {
-                // otherwise, we increment the user's points in the squad leaderboard.
-                const userIndex = latestSquadLeaderboard.pointsData[squadIndex].memberPoints.findIndex(memberPoints => memberPoints.userId === user._id);
-
-                // if user is not found, we create a new instance.
-                if (userIndex === -1) {
-                    squadLeaderboardUpdateOperations.$push[`pointsData.${squadIndex}.memberPoints`] = {
-                        userId: user._id,
-                        username: user.twitterUsername,
-                        points: leaderboardPoints
-                    }
-                } else {
-                    squadLeaderboardUpdateOperations.$inc[`pointsData.${squadIndex}.memberPoints.${userIndex}.points`] = leaderboardPoints;
-                }
-            }
-
-            await SquadModel.updateOne({ _id: squadId }, squadUpdateOperations).catch((err) => {
-                return {
-                    status: Status.ERROR,
-                    message: `(sellItemsInPOIShop) Error updating squad model: ${err.message}`
-                }
-            });
-
-            await SquadLeaderboardModel.updateOne({ _id: latestSquadLeaderboard._id }, squadLeaderboardUpdateOperations).catch((err) => {
-                return {
-                    status: Status.ERROR,
-                    message: `(sellItemsInPOIShop) Error updating squad leaderboard model: ${err.message}`
-                }
-            });
+        // commit the transaction only if this function started it
+        if (!_session) {
+            await session.commitTransaction();
+            session.endSession();
         }
 
-        // check if the user update operations included a level up
-        const setUserLevel = userUpdateOperations.$set['inGameData.level'];
-
-        // if the user just reached level 3 or 4, give 5 xCookies to the referrer
-        if (setUserLevel && (setUserLevel === 3 || setUserLevel === 4)) {
-            const referrerId: string | null = user.inviteCodeData.referrerId;
-
-            if (referrerId) {
-                // add the rewards to the referrer's `referralData.claimableReferralRewards.xCookies`.
-                const referrer = await UserModel.findOne({ _id: referrerId }).lean();
-
-                // only continue if the referrer exists
-                if (referrer) {
-                    await UserModel.updateOne({ _id: referrerId }, {
-                        $inc: {
-                            'referralData.claimableReferralRewards.xCookies': 5
-                        }
-                    })
-                }
-            }
-        }
-        // if it included a level, check if it's set to `REFERRAL_REQUIRED_LEVEL`.
-        // if it is, check if the user has a referrer.
-        // the referrer will then have this user's `hasReachedRequiredLevel` set to true.
-        // if upon dynamic changes of the required level the user's referrer's data is already updated, the `updateReferredUsersData` function will return a success anyway
-        // but do nothing else.
-        if (setUserLevel && setUserLevel >= REFERRAL_REQUIRED_LEVEL) {
-            // check if the user has a referrer
-            const referrerId: string | null = user.inviteCodeData.referrerId;
-
-            if (referrerId) {
-                // update the referrer's referred users data where applicable
-                const { status, message } = await updateReferredUsersData(
-                    referrerId,
-                    user._id
-                );
-
-                if (status === Status.ERROR) {
-                    return {
-                        status,
-                        message: `(claimDailyRewards) Err from updateReferredUsersData: ${message}`
-                    }
-                }
-            }
-        }
 
         return {
             status: Status.SUCCESS,
@@ -1122,6 +945,12 @@ export const sellItemsInPOIShop = async (
             }
         }
     } catch (err: any) {
+        // abort the transaction if an error occurs
+        if (!_session) {
+            await session.abortTransaction();
+            session.endSession();
+        }
+
         console.log('error from sellItemsInPOIShop: ', err.message);
         return {
             status: Status.ERROR,

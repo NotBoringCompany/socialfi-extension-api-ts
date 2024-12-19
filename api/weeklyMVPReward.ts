@@ -1,6 +1,6 @@
 import { ReturnValue, Status } from '../utils/retVal';
 import { generateHashSalt, generateObjectId } from '../utils/crypto';
-import { SquadLeaderboardModel, SquadModel, UserLeaderboardDataModel, UserModel, WeeklyMVPClaimableRewardsModel, WeeklyMVPRankingLeaderboardModel } from '../utils/constants/db';
+import { SquadLeaderboardModel, SquadModel, TEST_CONNECTION, UserModel, WeeklyMVPClaimableRewardsModel, WeeklyMVPRankingLeaderboardModel } from '../utils/constants/db';
 import {
     GET_PLAYER_LEVEL,
     WEEKLY_MVP_REWARDS,
@@ -8,13 +8,14 @@ import {
 import { BitOrbType, Item, TerraCapsulatorType } from '../models/item';
 import { WeeklyMVPRanking, WeeklyMVPRankingData, WeeklyMVPReward, WeeklyMVPRewardType } from '../models/weeklyMVPReward';
 import { ExtendedPointsData, ExtendedXCookieData, PointsSource, UserWallet, XCookieData, XCookieSource } from '../models/user';
-import mongoose from 'mongoose';
+import mongoose, { ClientSession } from 'mongoose';
 import * as dotenv from 'dotenv';
 import { DEPLOYER_WALLET, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
 import { ethers } from 'ethers';
 import { updateReferredUsersData } from './user';
 import { CURRENT_SEASON } from '../utils/constants/leaderboard';
 import { REFERRAL_REQUIRED_LEVEL } from '../utils/constants/invite';
+import { addPoints } from './leaderboard';
 
 dotenv.config();
 
@@ -277,7 +278,10 @@ export const distributeWeeklyMVPRewards = async (): Promise<void> => {
 /**
  * Claims the weekly MVP rewards for the user.
  */
-export const claimWeeklyMVPRewards = async (twitterId: string): Promise<ReturnValue> => {
+export const claimWeeklyMVPRewards = async (twitterId: string, _session?: ClientSession): Promise<ReturnValue> => {
+    const session = _session ?? (await TEST_CONNECTION.startSession());
+    if (!_session) session.startTransaction();
+
     try {
         const user = await UserModel.findOne({ twitterId }).lean();
 
@@ -305,28 +309,6 @@ export const claimWeeklyMVPRewards = async (twitterId: string): Promise<ReturnVa
             };
         }
 
-        // for now, because `WeeklyMVPRewardType` only has `LEADERBOARD_POINTS`, we only check for that.
-        const userLeaderboardDataUpdateOperations = {
-            $inc: {},
-            $push: {},
-            $pull: {},
-            $set: {}
-        }
-
-        const squadUpdateOperations = {
-            $inc: {},
-            $push: {},
-            $pull: {},
-            $set: {}
-        }
-
-        const squadLeaderboardUpdateOperations = {
-            $inc: {},
-            $push: {},
-            $pull: {},
-            $set: {}
-        }
-
         const userUpdateOperations = {
             $inc: {},
             $push: {},
@@ -337,6 +319,9 @@ export const claimWeeklyMVPRewards = async (twitterId: string): Promise<ReturnVa
         const claimableLeaderboardPointsIndex = (weeklyMVPRewards.claimableRewards as WeeklyMVPReward[]).findIndex(reward => reward.type === WeeklyMVPRewardType.LEADERBOARD_POINTS);
         const claimableLeaderboardPoints = (weeklyMVPRewards.claimableRewards as WeeklyMVPReward[])[claimableLeaderboardPointsIndex].amount;
 
+        
+
+
         const latestSquadLeaderboard = await SquadLeaderboardModel.findOne().sort({ week: -1 }).lean();
 
         if (!latestSquadLeaderboard) {
@@ -346,111 +331,13 @@ export const claimWeeklyMVPRewards = async (twitterId: string): Promise<ReturnVa
             };
         }
 
-        const userLeaderboardData = await UserLeaderboardDataModel.findOne({ userId: user._id, season: CURRENT_SEASON }).lean();
-
-        // if the user doesn't exist in the leaderboard, we create a new user data.
-        if (!userLeaderboardData) {
-            await UserLeaderboardDataModel.create({
-                _id: generateObjectId(),
-                userId: user._id,
-                username: user.twitterUsername,
-                twitterProfilePicture: user.twitterProfilePicture,
-                season: CURRENT_SEASON,
-                points: claimableLeaderboardPoints
-            });
-
-            const newLevel = GET_PLAYER_LEVEL(claimableLeaderboardPoints);
-
-            // if user levelled up, set the user's `inGameData.level` to the new level
-            if (newLevel > user.inGameData.level) {
-                userUpdateOperations.$set['inGameData.level'] = newLevel;
-            }
-        } else {
-            // increment the user's points in the leaderboard
-            userLeaderboardDataUpdateOperations.$inc['points'] = claimableLeaderboardPoints;
-
-            const newLevel = GET_PLAYER_LEVEL(userLeaderboardData.points + claimableLeaderboardPoints);
-
-            // if user levelled up, set the user's `inGameData.level` to the new level
-            if (newLevel > user.inGameData.level) {
-                userUpdateOperations.$set['inGameData.level'] = newLevel;
-            }
-        }
-
-        // update the points data for the user too
-        userUpdateOperations.$inc['inventory.pointsData.currentPoints'] = claimableLeaderboardPoints;
-
-        // check if the source exists in the extended points data
-        const sourceIndex = (user.inventory?.pointsData.extendedPointsData as ExtendedPointsData[]).findIndex(data => data.source === PointsSource.WEEKLY_MVP_REWARDS);
-
-        if (sourceIndex === -1) {
-            userUpdateOperations.$push['inventory.pointsData.extendedPointsData'] = {
-                points: claimableLeaderboardPoints,
-                source: PointsSource.WEEKLY_MVP_REWARDS,
-            }
-        } else {
-            userUpdateOperations.$inc[`inventory.pointsData.extendedPointsData.${sourceIndex}.points`] = claimableLeaderboardPoints;
-        }
-
-        // if the user is also in a squad, add the points to the squad's total points
-        if (user.inGameData.squadId !== null) {
-            const squad = await SquadModel.findOne({ _id: user.inGameData.squadId }).lean();
-
-            if (!squad) {
-                return {
-                    status: Status.ERROR,
-                    message: `(claimWeeklyMVPRewards) Squad not found.`,
-                };
-            }
-
-            // add only the reward amount (i.e. claimableLeaderboardPoints) to the squad's total points
-            squadUpdateOperations.$inc['totalSquadPoints'] = claimableLeaderboardPoints;
-
-            // check if the squad exists in the squad leaderboard's `pointsData`. if not, we create a new instance.
-            const squadIndex = latestSquadLeaderboard.pointsData.findIndex(data => data.squadId === squad._id);
-
-            if (squadIndex === -1) {
-                squadLeaderboardUpdateOperations.$push['pointsData'] = {
-                    squadId: squad._id,
-                    squadName: squad.name,
-                    memberPoints: [
-                        {
-                            userId: user._id,
-                            username: user.twitterUsername,
-                            points: claimableLeaderboardPoints
-                        }
-                    ]
-                }
-            } else {
-                // otherwise, we increment the points for the user in the squad
-                const userIndex = latestSquadLeaderboard.pointsData[squadIndex].memberPoints.findIndex(data => data.userId === user._id);
-
-                if (userIndex !== -1) {
-                    squadLeaderboardUpdateOperations.$inc[`pointsData.${squadIndex}.memberPoints.${userIndex}.points`] = claimableLeaderboardPoints;
-                } else {
-                    squadLeaderboardUpdateOperations.$push[`pointsData.${squadIndex}.memberPoints`] = {
-                        userId: user._id,
-                        username: user.twitterUsername,
-                        points: claimableLeaderboardPoints
-                    }
-                }
-            }
+        const result =  await addPoints(user._id, { source: PointsSource.WEEKLY_MVP_REWARDS, points: claimableLeaderboardPoints }, session);
+        if (result.status !== Status.SUCCESS) {
+            throw new Error(result.message);
         }
 
         // execute the update operations ($set and $inc, then $push and $pull to prevent conflicts)
         await Promise.all([
-            UserLeaderboardDataModel.updateOne({ userId: user._id, season: CURRENT_SEASON }, {
-                $set: userLeaderboardDataUpdateOperations.$set,
-                $inc: userLeaderboardDataUpdateOperations.$inc,
-            }),
-            SquadModel.updateOne({ _id: user.inGameData.squadId }, {
-                $set: squadUpdateOperations.$set,
-                $inc: squadUpdateOperations.$inc,
-            }),
-            SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, {
-                $set: squadLeaderboardUpdateOperations.$set,
-                $inc: squadLeaderboardUpdateOperations.$inc,
-            }),
             UserModel.updateOne({ twitterId }, {
                 $set: userUpdateOperations.$set,
                 $inc: userUpdateOperations.$inc,
@@ -458,18 +345,6 @@ export const claimWeeklyMVPRewards = async (twitterId: string): Promise<ReturnVa
         ]);
 
         await Promise.all([
-            UserLeaderboardDataModel.updateOne({ userId: user._id, season: CURRENT_SEASON }, {
-                $push: userLeaderboardDataUpdateOperations.$push,
-                $pull: userLeaderboardDataUpdateOperations.$pull,
-            }),
-            SquadModel.updateOne({ _id: user.inGameData.squadId }, {
-                $push: squadUpdateOperations.$push,
-                $pull: squadUpdateOperations.$pull,
-            }),
-            SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, {
-                $push: squadLeaderboardUpdateOperations.$push,
-                $pull: squadLeaderboardUpdateOperations.$pull,
-            }),
             UserModel.updateOne({ twitterId }, {
                 $push: userUpdateOperations.$push,
                 $pull: userUpdateOperations.$pull,
@@ -479,48 +354,10 @@ export const claimWeeklyMVPRewards = async (twitterId: string): Promise<ReturnVa
         // set the claimableRewards back to an empty array.
         await WeeklyMVPClaimableRewardsModel.updateOne({ userId: user._id }, { $set: { claimableRewards: [] } });
 
-        // check if the user update operations included a level up
-        const setUserLevel = userUpdateOperations.$set['inGameData.level'];
-
-        // if the user just reached level 3 or 4, give 5 xCookies to the referrer
-        if (setUserLevel && (setUserLevel === 3 || setUserLevel === 4)) {
-            const referrerId: string | null = user.inviteCodeData.referrerId;
-
-            if (referrerId) {
-                // add the rewards to the referrer's `referralData.claimableReferralRewards.xCookies`.
-                const referrer = await UserModel.findOne({ _id: referrerId }).lean();
-
-                // only continue if the referrer exists
-                if (referrer) {
-                    await UserModel.updateOne({ _id: referrerId }, {
-                        $inc: {
-                            'referralData.claimableReferralRewards.xCookies': 5
-                        }
-                    })
-                }
-            }
-        }
-
-        // if it included a level, check if it's set to `REFERRAL_REQUIRED_LEVEL`.
-        // if it is, check if the user has a referrer.
-        // the referrer will then have this user's `hasReachedRequiredLevel` set to true.
-        // if upon dynamic changes of the required level the user's referrer's data is already updated, the `updateReferredUsersData` function will return a success anyway
-        // but do nothing else.
-        if (setUserLevel && setUserLevel >= REFERRAL_REQUIRED_LEVEL) {
-            // check if the user has a referrer
-            const referrerId: string | null = user.inviteCodeData.referrerId;
-
-            if (referrerId) {
-                // update the referrer's referred users data where applicable
-                const { status, message } = await updateReferredUsersData(referrerId, user._id);
-
-                if (status === Status.ERROR) {
-                    return {
-                        status,
-                        message: `(claimDailyRewards) Err from updateReferredUsersData: ${message}`,
-                    };
-                }
-            }
+        // commit the transaction only if this function started it
+        if (!_session) {
+            await session.commitTransaction();
+            session.endSession();
         }
 
         return {
@@ -531,6 +368,12 @@ export const claimWeeklyMVPRewards = async (twitterId: string): Promise<ReturnVa
             }
         }
     } catch (err: any) {
+        // abort the transaction if an error occurs
+        if (!_session) {
+            await session.abortTransaction();
+            session.endSession();
+        }
+
         return {
             status: Status.ERROR,
             message: `(claimWeeklyMVPRewards) ${err.message}`

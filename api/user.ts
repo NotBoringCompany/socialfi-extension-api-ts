@@ -5,7 +5,7 @@ import { decryptPrivateKey, encryptPrivateKey, generateHashSalt, generateObjectI
 import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
 import { RANDOMIZE_GENDER, getBitStatsModifiersFromTraits, randomizeBitTraits, randomizeBitType } from '../utils/constants/bit';
 import { ObtainMethod } from '../models/obtainMethod';
-import { IslandModel, SquadLeaderboardModel, SquadModel, StarterCodeModel, UserLeaderboardDataModel, UserModel, WeeklyMVPClaimableRewardsModel } from '../utils/constants/db';
+import { IslandModel, SquadLeaderboardModel, SquadModel, StarterCodeModel, TEST_CONNECTION, UserModel, WeeklyMVPClaimableRewardsModel } from '../utils/constants/db';
 import { addIslandToDatabase, getLatestIslandId, randomizeBaseResourceCap } from './island';
 import { POIName } from '../models/poi';
 import { ExtendedResource, SimplifiedResource } from '../models/resource';
@@ -36,9 +36,9 @@ import { Signature, recoverMessageAddress } from 'viem';
 import { joinReferrerSquad, requestToJoinSquad } from './squad';
 import { ExtendedDiscordProfile, ExtendedProfile } from '../utils/types';
 import { WeeklyMVPRewardType } from '../models/weeklyMVPReward';
-import mongoose from 'mongoose';
+import mongoose, { ClientSession } from 'mongoose';
 import * as dotenv from 'dotenv';
-import { getOwnLeaderboardRanking } from './leaderboard';
+import { addPoints, getOwnLeaderboardRanking } from './leaderboard';
 import { DEPLOYER_WALLET, WONDERBITS_CONTRACT, XPROTOCOL_TESTNET_PROVIDER } from '../utils/constants/web3';
 import { parseTelegramData, TelegramAuthData, validateTelegramData } from '../utils/telegram';
 import { ethers } from 'ethers';
@@ -1068,32 +1068,14 @@ export const removeResources = async (twitterId: string, resourcesToRemove: Simp
  * As daily rewards can contain leaderboard points, optionally specify the leaderboard name to add the points to.
  * If no leaderboard name is specified, the points will be added to the newest leaderboard.
  */
-export const claimDailyRewards = async (twitterId: string): Promise<ReturnValue> => {
+export const claimDailyRewards = async (twitterId: string, _session?: ClientSession): Promise<ReturnValue> => {
+    const session = _session ?? (await TEST_CONNECTION.startSession());
+    if (!_session) session.startTransaction();
+
     try {
         const user = await UserModel.findOne({ twitterId }).lean();
 
         const userUpdateOperations = {
-            $set: {},
-            $inc: {},
-            $push: {},
-            $pull: {},
-        };
-
-        const userLeaderboardDataUpdateOperations = {
-            $set: {},
-            $inc: {},
-            $push: {},
-            $pull: {},
-        };
-
-        const squadUpdateOperations = {
-            $set: {},
-            $inc: {},
-            $push: {},
-            $pull: {},
-        };
-
-        const squadLeaderboardUpdateOperations = {
             $set: {},
             $inc: {},
             $push: {},
@@ -1106,11 +1088,6 @@ export const claimDailyRewards = async (twitterId: string): Promise<ReturnValue>
                 message: `(claimDailyRewards) User not found.`,
             };
         }
-
-        // get the user's squad ID
-        const squadId: string | null = user.inGameData.squadId;
-
-        const userLeaderboardData = await UserLeaderboardDataModel.findOne({ userId: user._id, season: CURRENT_SEASON }).lean();
 
         // get the user's daily login reward data
         const dailyLoginRewardData = user.inGameData.dailyLoginRewardData as DailyLoginRewardData;
@@ -1153,106 +1130,9 @@ export const claimDailyRewards = async (twitterId: string): Promise<ReturnValue>
                     };
                 }
             } else if (reward.type === DailyLoginRewardType.LEADERBOARD_POINTS) {
-                // if the user doesn't exist in the leaderboard, we create a new user data.
-                if (!userLeaderboardData) {
-                    await UserLeaderboardDataModel.create({
-                        _id: generateObjectId(),
-                        userId: user._id,
-                        username: user.twitterUsername,
-                        twitterProfilePicture: user.twitterProfilePicture,
-                        season: CURRENT_SEASON,
-                        points: reward.amount,
-                    });
-
-                    const newLevel = GET_PLAYER_LEVEL(reward.amount);
-
-                    // if user levelled up, set the user's `inGameData.level` to the new level
-                    if (newLevel > user.inGameData.level) {
-                        userUpdateOperations.$set['inGameData.level'] = newLevel;
-                    }
-                } else {
-                    // increment the user's points in the leaderboard
-                    userLeaderboardDataUpdateOperations.$inc['points'] = reward.amount;
-
-                    const newLevel = GET_PLAYER_LEVEL(userLeaderboardData.points + reward.amount);
-
-                    // if user levelled up, set the user's `inGameData.level` to the new level
-                    if (newLevel > user.inGameData.level) {
-                        userUpdateOperations.$set['inGameData.level'] = newLevel;
-                    }
-                }
-
-                // update the points data for the user too
-                userUpdateOperations.$inc['inventory.pointsData.currentPoints'] = reward.amount;
-
-                // check if the source exists in the extended points data
-                const sourceIndex = (user.inventory?.pointsData.extendedPointsData as ExtendedPointsData[]).findIndex(data => data.source === PointsSource.DAILY_LOGIN_REWARDS);
-
-                if (sourceIndex === -1) {
-                    userUpdateOperations.$push['inventory.pointsData.extendedPointsData'] = {
-                        points: reward.amount,
-                        source: PointsSource.DAILY_LOGIN_REWARDS,
-                    }
-                } else {
-                    userUpdateOperations.$inc[`inventory.pointsData.extendedPointsData.${sourceIndex}.points`] = reward.amount;
-                }
-
-
-                // if user is in a squad, add to squad's `totalSquadPoints`
-                if (squadId) {
-                    // get the squad
-                    const squad = await SquadModel.findOne({ _id: squadId }).lean();
-
-                    if (!squad) {
-                        return {
-                            status: Status.ERROR,
-                            message: `(claimDailyRewards) Squad not found.`,
-                        };
-                    }
-
-                    squadUpdateOperations.$inc['totalSquadPoints'] = reward.amount;
-
-                    // get the latest week of the squad leaderboard
-                    const latestSquadLeaderboard = await SquadLeaderboardModel.findOne().sort({ week: -1 });
-
-                    if (!latestSquadLeaderboard) {
-                        return {
-                            status: Status.ERROR,
-                            message: `(claimDailyRewards) Latest squad leaderboard not found.`,
-                        };
-                    }
-
-                    // check if the squad exists in the leaderboard's `pointsData`. if not, we create a new instance.
-                    const squadIndex = latestSquadLeaderboard.pointsData.findIndex((data) => data.squadId === squadId);
-
-                    if (squadIndex === -1) {
-                        squadLeaderboardUpdateOperations.$push[`pointsData`] = {
-                            squadId,
-                            squadName: squad.name,
-                            memberPoints: [
-                                {
-                                    userId: user._id,
-                                    username: user.twitterUsername,
-                                    points: reward.amount,
-                                },
-                            ],
-                        };
-                    } else {
-                        // otherwise, we increment the users points in the squad leaderboard.
-                        const userIndex = latestSquadLeaderboard.pointsData[squadIndex].memberPoints.findIndex((data) => data.userId === user._id);
-
-                        // if user is not found, we create a new instance.
-                        if (userIndex === -1) {
-                            squadLeaderboardUpdateOperations.$push[`pointsData.${squadIndex}.memberPoints`] = {
-                                userId: user._id,
-                                username: user.twitterUsername,
-                                points: reward.amount,
-                            };
-                        } else {
-                            // otherwise, we increment the points
-                            squadLeaderboardUpdateOperations.$inc[`pointsData.${squadIndex}.memberPoints.${userIndex}.points`] = reward.amount;
-                        }
-                    }
+                const result =  await addPoints(user._id, { source: PointsSource.DAILY_LOGIN_REWARDS, points: reward.amount }, session);
+                if (result.status !== Status.SUCCESS) {
+                    throw new Error(result.message);
                 }
                 
                 // if the reward is not xCookies or leaderboard points, return an error (for now)
@@ -1291,77 +1171,10 @@ export const claimDailyRewards = async (twitterId: string): Promise<ReturnValue>
             }
         );
 
-        await UserLeaderboardDataModel.updateOne({ userId: user._id, season: CURRENT_SEASON }, {
-            $set: userLeaderboardDataUpdateOperations.$set,
-            $inc: userLeaderboardDataUpdateOperations.$inc,
-        });
-
-        await UserLeaderboardDataModel.updateOne({ userId: user._id, season: CURRENT_SEASON }, {
-            $push: userLeaderboardDataUpdateOperations.$push,
-            $pull: userLeaderboardDataUpdateOperations.$pull,
-        });
-
-        // if user is in a squad, update the squad's total points
-        if (squadId) {
-            await SquadModel.updateOne({ _id: squadId }, squadUpdateOperations);
-
-            // get the latest week of the squad leaderboard and update it with the points
-            const latestSquadLeaderboard = await SquadLeaderboardModel.findOne().sort({ week: -1 });
-
-            if (!latestSquadLeaderboard) {
-                return {
-                    status: Status.ERROR,
-                    message: `(claimDailyRewards) Latest squad leaderboard not found.`,
-                };
-            }
-
-            await SquadLeaderboardModel.updateOne({ _id: latestSquadLeaderboard._id }, squadLeaderboardUpdateOperations).catch((err) => {
-                console.error(`Error from squad leaderboard model: ${err.message}`);
-            });
-        }
-
-        // check if the user update operations included a level up
-        const setUserLevel = userUpdateOperations.$set['inGameData.level'];
-
-        // if the user just reached level 3 or 4, give 5 xCookies to the referrer
-        if (setUserLevel && (setUserLevel === 3 || setUserLevel === 4)) {
-            const referrerId: string | null = user.inviteCodeData.referrerId;
-
-            if (referrerId) {
-                // add the rewards to the referrer's `referralData.claimableReferralRewards.xCookies`.
-                const referrer = await UserModel.findOne({ _id: referrerId }).lean();
-
-                // only continue if the referrer exists
-                if (referrer) {
-                    await UserModel.updateOne({ _id: referrerId }, {
-                        $inc: {
-                            'referralData.claimableReferralRewards.xCookies': 5
-                        }
-                    })
-                }
-            }
-        }
-
-        // if it includes a level, check if it's set to REFERRAL_REQUIRED_LEVEL.
-        // if it is, check if the user has a referrer.
-        // the referrer will then have this user's `hasReachedRequiredLevel` set to true.
-        // if upon dynamic changes of the required level the user's referrer's data is already updated, the `updateReferredUsersData` function will return a success anyway
-        // but do nothing else.
-        if (setUserLevel && setUserLevel >= REFERRAL_REQUIRED_LEVEL) {
-            // check if the user has a referrer
-            const referrerId: string | null = user.inviteCodeData.referrerId;
-
-            if (referrerId) {
-                // update the referrer's referred users data where applicable
-                const { status, message } = await updateReferredUsersData(referrerId, user._id);
-
-                if (status === Status.ERROR) {
-                    return {
-                        status,
-                        message: `(claimDailyRewards) Err from updateReferredUsersData: ${message}`,
-                    };
-                }
-            }
+        // commit the transaction only if this function started it
+        if (!_session) {
+            await session.commitTransaction();
+            session.endSession();
         }
 
         return {
@@ -1373,6 +1186,12 @@ export const claimDailyRewards = async (twitterId: string): Promise<ReturnValue>
             },
         };
     } catch (err: any) {
+        // abort the transaction if an error occurs
+        if (!_session) {
+            await session.abortTransaction();
+            session.endSession();
+        }
+
         return {
             status: Status.ERROR,
             message: `(claimDailyRewards) ${err.message}`,
@@ -1995,7 +1814,10 @@ export const updateBeginnerRewardsData = async (): Promise<void> => {
  *
  * Additionally, give the referrer their referral rewards to claim if applicable.
  */
-export const updateReferredUsersData = async (referrerUserId: string, referredUserUserId: string): Promise<ReturnValue> => {
+export const updateReferredUsersData = async (referrerUserId: string, referredUserUserId: string, _session?: ClientSession): Promise<ReturnValue> => {
+    const session = _session ?? (await TEST_CONNECTION.startSession());
+    if (!_session) session.startTransaction();
+
     try {
         const [referrer, referredUser] = await Promise.all([
             UserModel.findOne({ _id: referrerUserId }).lean(),
@@ -2084,7 +1906,12 @@ export const updateReferredUsersData = async (referrerUserId: string, referredUs
         }
 
         // execute the update operations
-        await UserModel.updateOne({ _id: referrerUserId }, referrerUpdateOperations);
+        await UserModel.updateOne({ _id: referrerUserId }, referrerUpdateOperations, { session });
+
+        // commit the transaction only if this function started it
+        if (!_session) {
+            await session.commitTransaction();
+        }
 
         return {
             status: Status.SUCCESS,
@@ -2094,10 +1921,17 @@ export const updateReferredUsersData = async (referrerUserId: string, referredUs
             },
         };
     } catch (err: any) {
+        // abort the transaction if an error occurs
+        if (!_session) {
+            await session.abortTransaction();
+        }
+
         return {
             status: Status.ERROR,
             message: `(updateReferredUsersData) ${err.message}`,
         };
+    } finally {
+        session.endSession();
     }
 };
 

@@ -1,6 +1,6 @@
-import mongoose from 'mongoose';
+import mongoose, { ClientSession } from 'mongoose';
 import { IndirectReferralData, ReferralData, ReferralReward, ReferredUserData, StarterCodeData } from '../models/invite';
-import { StarterCodeModel, SuccessfulIndirectReferralModel, UserLeaderboardDataModel, UserModel } from '../utils/constants/db';
+import { StarterCodeModel, SuccessfulIndirectReferralModel, TEST_CONNECTION, UserLeaderboardDataModel, UserModel } from '../utils/constants/db';
 import { generateObjectId, generateStarterCode } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
 import { ExtendedPointsData, ExtendedXCookieData, PointsSource, UserWallet, XCookieSource } from '../models/user';
@@ -9,6 +9,7 @@ import { WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { updateReferredUsersData } from './user';
 import { CURRENT_SEASON } from '../utils/constants/leaderboard';
 import { REFERRAL_REQUIRED_LEVEL } from '../utils/constants/invite';
+import { addPoints } from './leaderboard';
 
 /**
  * Generates starter codes and stores them in the database.
@@ -71,7 +72,10 @@ export const generateStarterCodes = async (
 /**
  * (User) Claims a user's referral rewards (if any) (For Season 0).
  */
-export const claimReferralRewards = async (twitterId: string): Promise<ReturnValue> => {
+export const claimReferralRewards = async (twitterId: string, _session?: ClientSession): Promise<ReturnValue> => {
+    const session = _session ?? (await TEST_CONNECTION.startSession());
+    if (!_session) session.startTransaction();
+
     try {
         const user = await UserModel.findOne({ twitterId }).lean();
 
@@ -87,11 +91,6 @@ export const claimReferralRewards = async (twitterId: string): Promise<ReturnVal
             $inc: {},
             $push: {},
             $pull: {}
-        }
-
-        const userLeaderboardDataUpdateOperations = {
-            $set: {},
-            $inc: {},
         }
 
         // check if the user's `referralData.claimableReferralRewards` is empty
@@ -120,55 +119,10 @@ export const claimReferralRewards = async (twitterId: string): Promise<ReturnVal
 
         // if the user has claimable points, add to the leaderboard data and reset the claimable leaderboard points
         if (claimableReferralRewards.leaderboardPoints > 0) {
-            // check if the userboard has a leaderboard data for the current season 
-            const leaderboardData = await UserLeaderboardDataModel.findOne({ userId: user._id, season: CURRENT_SEASON }).lean();
-
-            // if the user doesn't have a leaderboard data, we create a new entry
-            if (!leaderboardData) {
-                await UserLeaderboardDataModel.create({
-                    _id: generateObjectId(),
-                    userId: user._id,
-                    username: user.twitterUsername,
-                    twitterProfilePicture: user.twitterProfilePicture,
-                    season: CURRENT_SEASON,
-                    points: claimableReferralRewards.leaderboardPoints
-                });
-
-                const newLevel = GET_PLAYER_LEVEL(claimableReferralRewards.leaderboardPoints);
-
-                // if user levelled up, set the user's `inGameData.level` to the new level
-                if (newLevel > user.inGameData.level) {
-                    userUpdateOperations.$set['inGameData.level'] = newLevel;
-                }
-            } else {
-                // if the user has a leaderboard data, we increment the points
-                userLeaderboardDataUpdateOperations.$inc['points'] = claimableReferralRewards.leaderboardPoints;
-
-                const newLevel = GET_PLAYER_LEVEL(leaderboardData.points + claimableReferralRewards.leaderboardPoints);
-
-                // if user levelled up, set the user's `inGameData.level` to the new level
-                if (newLevel > user.inGameData.level) {
-                    userUpdateOperations.$set['inGameData.level'] = newLevel;
-                }
+            const result =  await addPoints(user._id, { source: PointsSource.REFERRAL_REWARDS, points: claimableReferralRewards.leaderboardPoints, excludeSquad: true }, session);
+            if (result.status !== Status.SUCCESS) {
+                throw new Error(result.message);
             }
-
-            // update the points data for the user too
-            userUpdateOperations.$inc['inventory.pointsData.currentPoints'] = claimableReferralRewards.leaderboardPoints;
-            
-            // check if the source exists in the extended points data
-            const referralRewardsIndex = (user.inventory?.pointsData.extendedPointsData as ExtendedPointsData[]).findIndex(data => data.source === PointsSource.REFERRAL_REWARDS);
-
-            if (referralRewardsIndex !== -1) {
-                userUpdateOperations.$inc[`inventory.pointsData.extendedPointsData.${referralRewardsIndex}.points`] = claimableReferralRewards.leaderboardPoints;
-            } else {
-                userUpdateOperations.$push['inventory.pointsData.extendedPointsData'] = {
-                    points: claimableReferralRewards.leaderboardPoints,
-                    source: PointsSource.REFERRAL_REWARDS
-                }
-            }
-
-            // set the claimable leaderboard points to 0
-            userUpdateOperations.$set['referralData.claimableReferralRewards.leaderboardPoints'] = 0;
         }
 
         // execute the update operations
@@ -182,52 +136,10 @@ export const claimReferralRewards = async (twitterId: string): Promise<ReturnVal
             $pull: userUpdateOperations.$pull
         });
 
-        if (Object.keys(userLeaderboardDataUpdateOperations.$set).length > 0 || Object.keys(userLeaderboardDataUpdateOperations.$inc).length > 0) {
-            UserLeaderboardDataModel.updateOne({ userId: user._id, season: CURRENT_SEASON }, userLeaderboardDataUpdateOperations)
-        }
-
-        // check if the user update operations included a level up
-        const setUserLevel = userUpdateOperations.$set['inGameData.level'];
-
-        // if the user just reached level 3 or 4, give 5 xCookies to the referrer
-        if (setUserLevel && (setUserLevel === 3 || setUserLevel === 4)) {
-            const referrerId: string | null = user.inviteCodeData.referrerId;
-
-            if (referrerId) {
-                // add the rewards to the referrer's `referralData.claimableReferralRewards.xCookies`.
-                const referrer = await UserModel.findOne({ _id: referrerId }).lean();
-
-                // only continue if the referrer exists
-                if (referrer) {
-                    await UserModel.updateOne({ _id: referrerId }, {
-                        $inc: {
-                            'referralData.claimableReferralRewards.xCookies': 5
-                        }
-                    })
-                }
-            }
-        }
-
-        // if it included a level, check if it's set to `REFERRAL_REQUIRED_LEVEL`.
-        // if it is, check if the user has a referrer.
-        // the referrer will then have this user's `hasReachedRequiredLevel` set to true.
-        // if upon dynamic changes of the required level the user's referrer's data is already updated, the `updateReferredUsersData` function will return a success anyway
-        // but do nothing else.
-        if (setUserLevel && setUserLevel >= REFERRAL_REQUIRED_LEVEL) {
-            // check if the user has a referrer
-            const referrerId: string | null = user.inviteCodeData.referrerId;
-
-            if (referrerId) {
-                // update the referrer's referred users data where applicable
-                const { status, message } = await updateReferredUsersData(referrerId, user._id);
-
-                if (status === Status.ERROR) {
-                    return {
-                        status,
-                        message: `(claimDailyRewards) Err from updateReferredUsersData: ${message}`,
-                    };
-                }
-            }
+        // commit the transaction only if this function started it
+        if (!_session) {
+            await session.commitTransaction();
+            session.endSession();
         }
 
         return {
@@ -238,6 +150,12 @@ export const claimReferralRewards = async (twitterId: string): Promise<ReturnVal
             }
         }
     } catch (err: any) {
+        // abort the transaction if an error occurs
+        if (!_session) {
+            await session.abortTransaction();
+            session.endSession();
+        }
+
         return {
             status: Status.ERROR,
             message: `(claimReferralRewards) ${err.message}`

@@ -4,19 +4,20 @@ import { getWallets, updateReferredUsersData } from './user';
 import { KOSExplicitOwnership, KOSMetadata, KOSReward, KOSRewardType } from '../models/kos';
 import fs from 'fs';
 import path from 'path';
-import { KOSClaimableDailyRewardsModel, KOSClaimableWeeklyRewardsModel, SquadLeaderboardModel, SquadModel, UserLeaderboardDataModel, UserModel } from '../utils/constants/db';
+import { KOSClaimableDailyRewardsModel, KOSClaimableWeeklyRewardsModel, SquadLeaderboardModel, SquadModel, TEST_CONNECTION, UserModel } from '../utils/constants/db';
 import { KOS_DAILY_BENEFITS, KOS_WEEKLY_BENEFITS } from '../utils/constants/kos';
 import { ExtendedPointsData, ExtendedXCookieData, InGameData, PointsSource, UserKeyData, UserWallet, XCookieSource } from '../models/user';
 import { Item } from '../models/item';
 import { BoosterItem } from '../models/booster';
 import { generateHashSalt, generateObjectId } from '../utils/crypto';
-import mongoose from 'mongoose';
+import mongoose, { ClientSession } from 'mongoose';
 import * as dotenv from 'dotenv';
 import { BigNumber, ethers } from 'ethers';
 import { dayjs } from '../utils/dayjs';
 import { CURRENT_SEASON } from '../utils/constants/leaderboard';
 import { GET_PLAYER_LEVEL } from '../utils/constants/user';
 import { REFERRAL_REQUIRED_LEVEL } from '../utils/constants/invite';
+import { addPoints } from './leaderboard';
 
 dotenv.config();
 
@@ -219,7 +220,10 @@ export const claimDailyKOSRewards = async (twitterId: string): Promise<ReturnVal
     }
 }
 
-export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnValue> => {
+export const claimWeeklyKOSRewards = async (twitterId: string, _session?: ClientSession): Promise<ReturnValue> => {
+    const session = _session ?? (await TEST_CONNECTION.startSession());
+    if (!_session) session.startTransaction();
+
     try {
         const user = await UserModel.findOne({ twitterId }).lean();
 
@@ -230,39 +234,7 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
             }
         }
 
-        const userLeaderboardData = await UserLeaderboardDataModel.findOne({ userId: user._id, season: CURRENT_SEASON }).lean();
-
-        const latestSquadLeaderboard = await SquadLeaderboardModel.findOne().sort({ week: -1 }).lean();
-
-        if (!latestSquadLeaderboard) {
-            return {
-                status: Status.ERROR,
-                message: `(claimWeeklyKOSRewards) Squad leaderboard not found.`
-            }
-        }
-
         const userUpdateOperations = {
-            $pull: {},
-            $inc: {},
-            $set: {},
-            $push: {}
-        }
-
-        const squadUpdateOperations = {
-            $pull: {},
-            $inc: {},
-            $set: {},
-            $push: {}
-        }
-
-        const squadLeaderboardUpdateOperations = {
-            $pull: {},
-            $inc: {},
-            $set: {},
-            $push: {}
-        }
-
-        const userLeaderboardDataUpdateOperations = {
             $pull: {},
             $inc: {},
             $set: {},
@@ -293,95 +265,11 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
         // filter out rewards with the amount of 0 and map the remaining to add the rewards to the user's account
         rewards.filter(reward => reward.amount > 0).map(async reward => {
             if (reward.type === KOSRewardType.LEADERBOARD_POINTS) {
-                if (!userLeaderboardData) {
-                    // create a new UserLeaderboardData entry for the user
-                    await UserLeaderboardDataModel.create({
-                        _id: generateObjectId(),
-                        userId: user._id,
-                        username: user.twitterUsername,
-                        twitterProfilePicture: user.twitterProfilePicture,
-                        season: CURRENT_SEASON,
-                        points: reward.amount,
-                    });
-
-                    const newLevel = GET_PLAYER_LEVEL(reward.amount);
-
-                    // if user levelled up, set the user's level to the new level
-                    if (newLevel > user.inGameData.level) {
-                        userUpdateOperations.$set['inGameData.level'] = newLevel;
-                    }
-                } else {
-                    // increment the user's points
-                    userLeaderboardDataUpdateOperations.$inc['points'] = reward.amount;
-
-                    const newLevel = GET_PLAYER_LEVEL(userLeaderboardData.points + reward.amount);
-
-                    // if user levelled up, set the user's level to the new level
-                    if (newLevel > user.inGameData.level) {
-                        userUpdateOperations.$set['inGameData.level'] = newLevel;
-                    }
-                }
-                
-                // update the points data for the user too
-                userUpdateOperations.$inc['inventory.pointsData.currentPoints'] = reward.amount;
-
-                // check if the source exists in the extended points data.
-                const rewardIndex = (user.inventory?.pointsData.extendedPointsData as ExtendedPointsData[]).findIndex(data => data.source === PointsSource.KOS_BENEFITS);
-
-                if (rewardIndex !== -1) {
-                    userUpdateOperations.$inc[`inventory.pointsData.extendedPointsData.${rewardIndex}.points`] = reward.amount;
-                } else {
-                    userUpdateOperations.$push['inventory.pointsData.extendedPointsData'] = {
-                        points: reward.amount,
-                        source: PointsSource.KOS_BENEFITS
-                    }
+                const result =  await addPoints(user._id, { source: PointsSource.KOS_BENEFITS, points: reward.amount }, session);
+                if (result.status !== Status.SUCCESS) {
+                    throw new Error(result.message);
                 }
 
-                // if the user also has a squad, add the points to the squad's total points
-                if (user.inGameData.squadId !== null) {
-                    // get the squad
-                    const squad = await SquadModel.findOne({ _id: user.inGameData.squadId }).lean();
-
-                    if (!squad) {
-                        return {
-                            status: Status.ERROR,
-                            message: `(claimWeeklyKOSRewards) Squad not found.`
-                        }
-                    }
-
-                    // add only the reward.amount (i.e. points) to the squad's total points
-                    squadUpdateOperations.$inc['totalSquadPoints'] = reward.amount;
-
-                    // check if the squad exists in the squad leaderboard's `pointsData`. if not, we create a new instance.
-                    const squadIndex = latestSquadLeaderboard.pointsData.findIndex(data => data.squadId === squad._id);
-
-                    if (squadIndex === -1) {
-                        squadLeaderboardUpdateOperations.$push['pointsData'] = {
-                            squadId: squad._id,
-                            squadName: squad.name,
-                            memberPoints: [
-                                {
-                                    userId: user._id,
-                                    username: user.twitterUsername,
-                                    points: reward.amount
-                                }
-                            ]
-                        }
-                    } else {
-                        // otherwise, we increment the points for the user in the squad
-                        const userIndex = latestSquadLeaderboard.pointsData[squadIndex].memberPoints.findIndex(member => member.userId === user._id);
-
-                        if (userIndex !== -1) {
-                            squadLeaderboardUpdateOperations.$inc[`pointsData.${squadIndex}.memberPoints.${userIndex}.points`] = reward.amount;
-                        } else {
-                            squadLeaderboardUpdateOperations.$push[`pointsData.${squadIndex}.memberPoints`] = {
-                                userId: user._id,
-                                username: user.twitterUsername,
-                                points: reward.amount
-                            }
-                        }
-                    }
-                }
                 // if reward is bit orb I or II
             } else if (reward.type === KOSRewardType.BIT_ORB_I || reward.type === KOSRewardType.BIT_ORB_II) {
                 // check if the user's `inventory.items` contain the bit orb type
@@ -474,26 +362,11 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
         // execute the update operations. $set and $inc first, then $push and $pull to avoid conflicts.
         await Promise.all([
             await UserModel.updateOne({ twitterId }, { $set: userUpdateOperations.$set, $inc: userUpdateOperations.$inc }),
-            await UserLeaderboardDataModel.updateOne({ userId: user._id, season: CURRENT_SEASON }, { $set: userLeaderboardDataUpdateOperations.$set, $inc: userLeaderboardDataUpdateOperations.$inc }),
         ]);
 
         await Promise.all([
             await UserModel.updateOne({ twitterId }, { $push: userUpdateOperations.$push, $pull: userUpdateOperations.$pull }),
-            await UserLeaderboardDataModel.updateOne({ userId: user._id, season: CURRENT_SEASON }, { $push: userLeaderboardDataUpdateOperations.$push, $pull: userLeaderboardDataUpdateOperations.$pull }),
         ]);
-
-        // if the user has a squad, update the squad and squad leaderboard models
-        if (user.inGameData.squadId) {
-            await Promise.all([
-                await SquadModel.updateOne({ _id: user.inGameData.squadId }, { $set: squadUpdateOperations.$set, $inc: squadUpdateOperations.$inc }),
-                await SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, { $set: squadLeaderboardUpdateOperations.$set, $inc: squadLeaderboardUpdateOperations.$inc }),
-            ]);
-
-            await Promise.all([
-                await SquadModel.updateOne({ _id: user.inGameData.squadId }, { $push: squadUpdateOperations.$push, $pull: squadUpdateOperations.$pull }),
-                await SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, { $push: squadLeaderboardUpdateOperations.$push, $pull: squadLeaderboardUpdateOperations.$pull }),
-            ]);
-        }
 
         // reset all claimable rewards to 0
         await KOSClaimableWeeklyRewardsModel.updateOne({ userId: user._id }, {
@@ -502,48 +375,10 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
 
         console.log(`(claimWeeklyKOSRewards) Successfully claimed weekly KOS rewards for user ${user.twitterUsername}.`);
 
-        // check if the user update operations included a level up
-        const setUserLevel = userUpdateOperations.$set['inGameData.level'];
-
-        // if the user just reached level 3 or 4, give 5 xCookies to the referrer
-        if (setUserLevel && (setUserLevel === 3 || setUserLevel === 4)) {
-            const referrerId: string | null = user.inviteCodeData.referrerId;
-
-            if (referrerId) {
-                // add the rewards to the referrer's `referralData.claimableReferralRewards.xCookies`.
-                const referrer = await UserModel.findOne({ _id: referrerId }).lean();
-
-                // only continue if the referrer exists
-                if (referrer) {
-                    await UserModel.updateOne({ _id: referrerId }, {
-                        $inc: {
-                            'referralData.claimableReferralRewards.xCookies': 5
-                        }
-                    })
-                }
-            }
-        }
-
-        // if it included a level, check if it's set to `REFERRAL_REQUIRED_LEVEL`.
-        // if it is, check if the user has a referrer.
-        // the referrer will then have this user's `hasReachedRequiredLevel` set to true.
-        // if upon dynamic changes of the required level the user's referrer's data is already updated, the `updateReferredUsersData` function will return a success anyway
-        // but do nothing else.
-        if (setUserLevel && setUserLevel >= REFERRAL_REQUIRED_LEVEL) {
-            // check if the user has a referrer
-            const referrerId: string | null = user.inviteCodeData.referrerId;
-
-            if (referrerId) {
-                // update the referrer's referred users data where applicable
-                const { status, message } = await updateReferredUsersData(referrerId, user._id);
-
-                if (status === Status.ERROR) {
-                    return {
-                        status,
-                        message: `(claimWeeklyKOSRewards) Err from updateReferredUsersData: ${message}`,
-                    };
-                }
-            }
+        // commit the transaction only if this function started it
+        if (!_session) {
+            await session.commitTransaction();
+            session.endSession();
         }
 
         return {
@@ -561,6 +396,12 @@ export const claimWeeklyKOSRewards = async (twitterId: string): Promise<ReturnVa
             }
         }
     } catch (err: any) {
+        // abort the transaction if an error occurs
+        if (!_session) {
+            await session.abortTransaction();
+            session.endSession();
+        }
+
         console.log('error from claimWeeklyKOSRewards: ', err);
         return {
             status: Status.ERROR,

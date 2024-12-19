@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { ClientSession } from 'mongoose';
 import { ReturnValue, Status } from '../utils/retVal';
 import { IslandSchema } from '../schemas/Island';
 import { Island, IslandStatsModifiers, IslandTappingData, IslandTrait, IslandType, RateType, ResourceDropChance, ResourceDropChanceDiff } from '../models/island';
@@ -10,7 +10,7 @@ import { Modifier } from '../models/modifier';
 import { BitSchema } from '../schemas/Bit';
 import { Bit, BitRarity, BitRarityNumeric, BitStatsModifiers, BitTraitEnum, BitTraitData, BitType } from '../models/bit';
 import { generateHashSalt, generateObjectId, generateOpHash } from '../utils/crypto';
-import { BitModel, ConsumedSynthesizingItemModel, IslandModel, SquadLeaderboardModel, SquadModel, UserLeaderboardDataModel, UserModel } from '../utils/constants/db';
+import { BitModel, ConsumedSynthesizingItemModel, IslandModel, SquadLeaderboardModel, SquadModel, TEST_CONNECTION, UserModel } from '../utils/constants/db';
 import { ObtainMethod } from '../models/obtainMethod';
 import { RELOCATION_COOLDOWN } from '../utils/constants/bit';
 import { ExtendedPointsData, ExtendedXCookieData, PlayerEnergy, PlayerMastery, PointsSource, User, XCookieSource } from '../models/user';
@@ -28,6 +28,7 @@ import { ethers } from 'ethers';
 import { CURRENT_SEASON } from '../utils/constants/leaderboard';
 import { GET_PLAYER_LEVEL } from '../utils/constants/user';
 import { REFERRAL_REQUIRED_LEVEL } from '../utils/constants/invite';
+import { addPoints } from './leaderboard';
 
 // /**
 //  * Sets the new owner data and removes the current `owner` field for all islands.
@@ -2457,7 +2458,10 @@ export const getIslandTappingData = async (islandId: number): Promise<ReturnValu
 /**
  * Applies tapping action to an island and updates relevant user and island data.
  */
-export const applyIslandTapping = async (twitterId: string, islandId: number, caressMeter: number, bonus: 'First' | 'Second'): Promise<ReturnValue> => {
+export const applyIslandTapping = async (twitterId: string, islandId: number, caressMeter: number, bonus: 'First' | 'Second', _session?: ClientSession): Promise<ReturnValue> => {
+    const session = _session ?? (await TEST_CONNECTION.startSession());
+    if (!_session) session.startTransaction();
+    
     try {
         const userUpdateOperations = {
             $pull: {},
@@ -2467,13 +2471,6 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
         }
 
         const islandUpdateOperations = {
-            $pull: {},
-            $inc: {},
-            $set: {},
-            $push: {}
-        }
-
-        const userLeaderboardDataUpdateOperations = {
             $pull: {},
             $inc: {},
             $set: {},
@@ -2496,7 +2493,6 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
 
         const user = await UserModel.findOne({ twitterId }).lean();
         const island = await IslandModel.findOne({ islandId: islandId }).lean();
-        const leaderboardData = await UserLeaderboardDataModel.findOne({ userId: user._id, season: CURRENT_SEASON }).lean();
         const latestSquadLeaderboard = await SquadLeaderboardModel.findOne().sort({ week: -1 }).lean();
 
         if (!island) {
@@ -2696,97 +2692,9 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
                 userUpdateOperations.$inc[`inventory.xCookieData.currentXCookies`] = berryDropAmount;
             } else if (secondOptionReward.pointDrop) {
                 // add the points to the user's leaderboard data and the user's `points` in the inventory
-                if (!leaderboardData) {
-                    // create a new leaderboard data instance
-                    await UserLeaderboardDataModel.create({
-                        _id: generateObjectId(),
-                        userId: user._id,
-                        username: user.twitterUsername,
-                        twitterProfilePicture: user.twitterProfilePicture,
-                        season: CURRENT_SEASON,
-                        points: secondOptionReward.pointDrop
-                    });
-
-                    const newLevel = GET_PLAYER_LEVEL(secondOptionReward.pointDrop);
-
-                    // if user levelled up, set the user's `inGameData.level` to the new level
-                    if (newLevel > user.inGameData.level) {
-                        userUpdateOperations.$set['inGameData.level'] = newLevel;
-                    }
-                } else {
-                    // increment the user's points in the leaderboard data
-                    userLeaderboardDataUpdateOperations.$inc['points'] = secondOptionReward.pointDrop;
-
-                    // check if the user is eligible to level up to the next level
-                    const newLevel = GET_PLAYER_LEVEL(leaderboardData.points + secondOptionReward.pointDrop);
-
-                    // if user levelled up, set the user's `inGameData.level` to the new level
-                    if (newLevel > user.inGameData.level) {
-                        userUpdateOperations.$set['inGameData.level'] = newLevel;
-                    }
-                }
-
-                // update the points data for the user too
-                userUpdateOperations.$inc['inventory.pointsData.currentPoints'] = secondOptionReward.pointDrop;
-                
-                // check if the source exists in the extended points data
-                const rewardsIndex = (user.inventory?.pointsData.extendedPointsData as ExtendedPointsData[]).findIndex(data => data.source === PointsSource.ISLAND_TAPPING);
-
-                if (rewardsIndex !== -1) {
-                    // increment the points
-                    userUpdateOperations.$inc[`inventory.pointsData.extendedPointsData.${rewardsIndex}.points`] = secondOptionReward.pointDrop;
-                } else {
-                    // push a new instance to the array
-                    userUpdateOperations.$push[`inventory.pointsData.extendedPointsData`] = {
-                        source: PointsSource.ISLAND_TAPPING,
-                        points: secondOptionReward.pointDrop
-                    }
-                }
-
-                // if the user also has a squad, add the points to the squad's total points
-                if (user.inGameData.squadId !== null) {
-                    // get the squad
-                    const squad = await SquadModel.findOne({ _id: user.inGameData.squadId }).lean();
-
-                    if (!squad) {
-                        return {
-                            status: Status.ERROR,
-                            message: `(getIslandTappingData) Squad not found.`
-                        }
-                    }
-
-                    // add only the reward.amount (i.e. points) to the squad's total points
-                    squadUpdateOperations.$inc['totalSquadPoints'] = secondOptionReward.pointDrop;
-
-                    // check if the squad exists in the squad leaderboard's `pointsData`. if not, we create a new instance.
-                    const squadIndex = latestSquadLeaderboard.pointsData.findIndex(data => data.squadId === squad._id);
-
-                    if (squadIndex === -1) {
-                        squadLeaderboardUpdateOperations.$push['pointsData'] = {
-                            squadId: squad._id,
-                            squadName: squad.name,
-                            memberPoints: [
-                                {
-                                    userId: user._id,
-                                    username: user.twitterUsername,
-                                    points: secondOptionReward.pointDrop
-                                }
-                            ]
-                        }
-                    } else {
-                        // otherwise, we increment the points for the user in the squad
-                        const userIndex = latestSquadLeaderboard.pointsData[squadIndex].memberPoints.findIndex(member => member.userId === user._id);
-
-                        if (userIndex !== -1) {
-                            squadLeaderboardUpdateOperations.$inc[`pointsData.${squadIndex}.memberPoints.${userIndex}.points`] = secondOptionReward.pointDrop;
-                        } else {
-                            squadLeaderboardUpdateOperations.$push[`pointsData.${squadIndex}.memberPoints`] = {
-                                userId: user._id,
-                                username: user.twitterUsername,
-                                points: secondOptionReward.pointDrop
-                            }
-                        }
-                    }
+                const result =  await addPoints(user._id, { source: PointsSource.ISLAND_TAPPING, points: secondOptionReward.pointDrop }, session);
+                if (result.status !== Status.SUCCESS) {
+                    throw new Error(result.message);
                 }
             } else {
                 return {
@@ -2834,11 +2742,6 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
                 $inc: islandUpdateOperations.$inc,
             }),
 
-            UserLeaderboardDataModel.updateOne({ userId: user._id, season: CURRENT_SEASON }, {
-                $set: userLeaderboardDataUpdateOperations.$set,
-                $inc: userLeaderboardDataUpdateOperations.$inc
-            }),
-
             SquadModel.updateOne({ _id: user.inGameData.squadId }, {
                 $set: squadUpdateOperations.$set,
                 $inc: squadUpdateOperations.$inc,
@@ -2861,11 +2764,6 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
                 $pull: islandUpdateOperations.$pull,
             }),
 
-            UserLeaderboardDataModel.updateOne({ userId: user._id, season: CURRENT_SEASON }, {
-                $push: userLeaderboardDataUpdateOperations.$push,
-                $pull: userLeaderboardDataUpdateOperations.$pull
-            }),
-
             SquadModel.updateOne({ _id: user.inGameData.squadId }, {
                 $push: squadUpdateOperations.$push,
                 $pull: squadUpdateOperations.$pull,
@@ -2877,48 +2775,10 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
             })
         ]);
 
-        // check if the user update operations included a level up
-        const setUserLevel = userUpdateOperations.$set['inGameData.level'];
-
-        // if the user just reached level 3 or 4, give 5 xCookies to the referrer
-        if (setUserLevel && (setUserLevel === 3 || setUserLevel === 4)) {
-            const referrerId: string | null = user.inviteCodeData.referrerId;
-
-            if (referrerId) {
-                // add the rewards to the referrer's `referralData.claimableReferralRewards.xCookies`.
-                const referrer = await UserModel.findOne({ _id: referrerId }).lean();
-
-                // only continue if the referrer exists
-                if (referrer) {
-                    await UserModel.updateOne({ _id: referrerId }, {
-                        $inc: {
-                            'referralData.claimableReferralRewards.xCookies': 5
-                        }
-                    })
-                }
-            }
-        }
-
-        // if it included a level, check if it's set to `REFERRAL_REQUIRED_LEVEL`.
-        // if it is, check if the user has a referrer.
-        // the referrer will then have this user's `hasReachedRequiredLevel` set to true.
-        // if upon dynamic changes of the required level the user's referrer's data is already updated, the `updateReferredUsersData` function will return a success anyway
-        // but do nothing else.
-        if (setUserLevel && setUserLevel >= REFERRAL_REQUIRED_LEVEL) {
-            // check if the user has a referrer
-            const referrerId: string | null = user.inviteCodeData.referrerId;
-
-            if (referrerId) {
-                // update the referrer's referred users data where applicable
-                const { status, message } = await updateReferredUsersData(referrerId, user._id);
-
-                if (status === Status.ERROR) {
-                    return {
-                        status,
-                        message: `(applyIslandTapping) Err from updateReferredUsersData: ${message}`,
-                    };
-                }
-            }
+        // commit the transaction only if this function started it
+        if (!_session) {
+            await session.commitTransaction();
+            session.endSession();
         }
 
         return {
@@ -2937,6 +2797,12 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
             }
         };
     } catch (err: any) {
+        // abort the transaction if an error occurs
+        if (!_session) {
+            await session.abortTransaction();
+            session.endSession();
+        }
+
         return {
             status: Status.ERROR,
             message: `(getIslandTappingData) Error: ${err.message}`

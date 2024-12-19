@@ -5,6 +5,8 @@ import { InGameData, PointsData, PointsSource } from '../models/user';
 import { CURRENT_SEASON } from '../utils/constants/leaderboard';
 import { generateObjectId } from '../utils/crypto';
 import { GET_PLAYER_LEVEL } from '../utils/constants/user';
+import { REFERRAL_REQUIRED_LEVEL } from '../utils/constants/invite';
+import { updateReferredUsersData } from './user';
 
 // /**
 //  * Migrates all data from Leaderboard to UserLeaderboardData.
@@ -258,7 +260,8 @@ export const addPoints = async (
     userId: string, 
     pointsData: {
         points: number,
-        source: PointsSource
+        source: PointsSource,
+        excludeSquad?: boolean,
     },
     _session?: ClientSession
 ): Promise<ReturnValue> => {
@@ -355,7 +358,7 @@ export const addPoints = async (
         }
 
         // if the user also has a squad, add the points to the squad's total points
-        if (user.inGameData.squad !== null) {
+        if (!pointsData.excludeSquad && user.inGameData.squad !== null) {
             // get the squad
             const squad = await SquadModel.findOne({ _id: user.inGameData.squadId });
             if (!squad) {
