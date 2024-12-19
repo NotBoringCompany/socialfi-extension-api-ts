@@ -1824,8 +1824,8 @@ export const updateReferredUsersData = async (referrerUserId: string, referredUs
 
     try {
         const [referrer, referredUser] = await Promise.all([
-            UserModel.findOne({ _id: referrerUserId }).lean(),
-            UserModel.findOne({ _id: referredUserUserId }).lean(),
+            UserModel.findOne({ _id: referrerUserId }).session(session).lean(),
+            UserModel.findOne({ _id: referredUserUserId }).session(session).lean(),
         ]);
 
         if (!referrer || !referredUser) {

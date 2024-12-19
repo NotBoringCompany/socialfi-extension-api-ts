@@ -419,6 +419,23 @@ export const addPoints = async (
             }
         }
 
+        await UserModel.updateOne({ _id: user._id }, {
+            $set: userUpdateOperations.$set,
+            $inc: userUpdateOperations.$inc,
+        }, { session });
+
+        await UserModel.updateOne({ _id: user._id }, {
+            $push: userUpdateOperations.$push,
+        }, { session });
+
+        if (Object.keys(userLeaderboardDataUpdateOperations.$inc).length > 0) {
+            await UserLeaderboardDataModel.updateOne(
+                { userId: user._id, season: CURRENT_SEASON }, 
+                userLeaderboardDataUpdateOperations, 
+                { session }
+            );
+        }
+
         // check if the user update operations included a level up
         const setUserLevel = userUpdateOperations.$set['inGameData.level'];
         // // if the user just reached level 3 or 4, give 5 xCookies to the referrer
@@ -449,25 +466,10 @@ export const addPoints = async (
             if (referrerId) {
                 // update the referrer's referred users data where applicable
                 const { status, message } = await updateReferredUsersData(referrerId, user._id, session);
-                throw new Error(`Err from updateReferredUsersData: ${message}`);
+                if (status !== Status.SUCCESS) {
+                    throw new Error(`Err from updateReferredUsersData: ${message}`);
+                }
             }
-        }
-
-        await UserModel.updateOne({ _id: user._id }, {
-            $set: userUpdateOperations.$set,
-            $inc: userUpdateOperations.$inc,
-        }, { session });
-
-        await UserModel.updateOne({ _id: user._id }, {
-            $push: userUpdateOperations.$push,
-        }, { session });
-
-        if (Object.keys(userLeaderboardDataUpdateOperations.$inc).length > 0) {
-            await UserLeaderboardDataModel.updateOne(
-                { userId: user._id, season: CURRENT_SEASON }, 
-                userLeaderboardDataUpdateOperations, 
-                { session }
-            );
         }
 
         // commit the transaction only if this function started it
