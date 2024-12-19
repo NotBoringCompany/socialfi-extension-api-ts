@@ -3,7 +3,7 @@ import { POIName } from '../../models/poi';
 import { BeginnerReward, BeginnerRewardType, DailyLoginReward, DailyLoginRewardType } from '../../models/user';
 
 /** The maximum weight a user's inventory can be */
-export const MAX_INVENTORY_WEIGHT = 50000;
+export const MAX_INVENTORY_WEIGHT = 500;
 
 /** the last day to claim beginner rewards */
 export const MAX_BEGINNER_REWARD_DAY = 7;
