@@ -2477,20 +2477,6 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
             $push: {}
         }
 
-        const squadUpdateOperations = {
-            $pull: {},
-            $inc: {},
-            $set: {},
-            $push: {}
-        }
-
-        const squadLeaderboardUpdateOperations = {
-            $pull: {},
-            $inc: {},
-            $set: {},
-            $push: {}
-        }
-
         const user = await UserModel.findOne({ twitterId }).lean();
         const island = await IslandModel.findOne({ islandId: islandId }).lean();
         const latestSquadLeaderboard = await SquadLeaderboardModel.findOne().sort({ week: -1 }).lean();
@@ -2692,7 +2678,7 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
                 userUpdateOperations.$inc[`inventory.xCookieData.currentXCookies`] = berryDropAmount;
             } else if (secondOptionReward.pointDrop) {
                 // add the points to the user's leaderboard data and the user's `points` in the inventory
-                const result =  await addPoints(user._id, { source: PointsSource.ISLAND_TAPPING, points: secondOptionReward.pointDrop });
+                const result =  await addPoints(user._id, { source: PointsSource.ISLAND_TAPPING, points: secondOptionReward.pointDrop }, session);
                 if (result.status !== Status.SUCCESS) {
                     throw new Error(result.message);
                 }
@@ -2735,44 +2721,24 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
             UserModel.updateOne({ _id: user._id }, {
                 $set: userUpdateOperations.$set,
                 $inc: userUpdateOperations.$inc,
-            }),
+            }, { session }),
 
             IslandModel.updateOne({ islandId: island.islandId }, {
                 $set: islandUpdateOperations.$set,
                 $inc: islandUpdateOperations.$inc,
-            }),
-
-            SquadModel.updateOne({ _id: user.inGameData.squadId }, {
-                $set: squadUpdateOperations.$set,
-                $inc: squadUpdateOperations.$inc,
-            }),
-
-            SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, {
-                $set: squadLeaderboardUpdateOperations.$set,
-                $inc: squadLeaderboardUpdateOperations.$inc
-            })
+            }, { session })
         ]);
 
         await Promise.all([
             UserModel.updateOne({ _id: user._id }, {
                 $push: userUpdateOperations.$push,
                 $pull: userUpdateOperations.$pull,
-            }),
+            }, { session }),
 
             IslandModel.updateOne({ islandId: island.islandId }, {
                 $push: islandUpdateOperations.$push,
                 $pull: islandUpdateOperations.$pull,
-            }),
-
-            SquadModel.updateOne({ _id: user.inGameData.squadId }, {
-                $push: squadUpdateOperations.$push,
-                $pull: squadUpdateOperations.$pull,
-            }),
-
-            SquadLeaderboardModel.updateOne({ week: latestSquadLeaderboard.week }, {
-                $push: squadLeaderboardUpdateOperations.$push,
-                $pull: squadLeaderboardUpdateOperations.$pull,
-            })
+            }, { session }),
         ]);
 
         // commit the transaction only if this function started it
@@ -2807,7 +2773,7 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
         }
     } finally {
         if (!_session) {
-            await session.endSession();
+            session.endSession();
         }
     }
 };

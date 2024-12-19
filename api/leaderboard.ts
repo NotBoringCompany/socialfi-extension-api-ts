@@ -269,7 +269,7 @@ export const addPoints = async (
     if (!_session) session.startTransaction();
 
     try {
-        const user = await UserModel.findOne({ $or: [{ _id: userId }, { twitterId: userId }] }).lean();
+        const user = await UserModel.findOne({ $or: [{ _id: userId }, { twitterId: userId }] }).session(session).lean();
 
         if (!user) {
             throw new Error('User not found.');
@@ -285,7 +285,7 @@ export const addPoints = async (
             $inc: {},
         }
 
-        const userLeaderboardData = await UserLeaderboardDataModel.findOne({ userId, season: CURRENT_SEASON }).lean();
+        const userLeaderboardData = await UserLeaderboardDataModel.findOne({ userId, season: CURRENT_SEASON }).session(session).lean();
         
         if (!userLeaderboardData) {
             // if user leaderboard doesn't exist, we create a new entry.
@@ -360,19 +360,19 @@ export const addPoints = async (
         // if the user also has a squad, add the points to the squad's total points
         if (!pointsData.excludeSquad && user.inGameData.squadId !== null) {
             // get the squad
-            const squad = await SquadModel.findOne({ _id: user.inGameData.squadId });
+            const squad = await SquadModel.findOne({ _id: user.inGameData.squadId }).session(session);
             if (!squad) {
                 throw new Error('Squad not found');
             }
 
-            const latestSquadLeaderboard = await SquadLeaderboardModel.findOne().sort({ week: -1 });
+            const latestSquadLeaderboard = await SquadLeaderboardModel.findOne().sort({ week: -1 }).session(session);
 
             // add only the points to the squad's total points
             await squad.updateOne({
                 $inc: {
                     [`squadPoints`]: pointsData.points
                 }
-            });
+            }, { session });
 
             // check if the squad exists in the squad leaderboard's `pointsData`. if not, we create a new instance.
             const squadIndex = latestSquadLeaderboard.pointsData.findIndex((data) => data.squadId === squad._id);
@@ -392,7 +392,7 @@ export const addPoints = async (
                             ],
                         }
                     }
-                });
+                }, { session });
             } else {
                 // otherwise, we increment the points for the user in the squad
                 const userIndex = latestSquadLeaderboard.pointsData[squadIndex].memberPoints.findIndex(
@@ -404,7 +404,7 @@ export const addPoints = async (
                         $inc: {
                             [`pointsData.${squadIndex}.memberPoints.${userIndex}.points`]: pointsData.points
                         }
-                    });
+                    }, { session });
                 } else {
                     await latestSquadLeaderboard.updateOne({
                         $push: {
@@ -414,26 +414,26 @@ export const addPoints = async (
                                 points: pointsData.points,
                             }
                         }
-                    });
+                    }, { session });
                 }
             }
         }
 
         // check if the user update operations included a level up
         const setUserLevel = userUpdateOperations.$set['inGameData.level'];
-        // if the user just reached level 3 or 4, give 5 xCookies to the referrer
+        // // if the user just reached level 3 or 4, give 5 xCookies to the referrer
         if (setUserLevel && (setUserLevel === 3 || setUserLevel === 4)) {
             const referrerId: string | null = user.inviteCodeData.referrerId;
             if (referrerId) {
                 // add the rewards to the referrer's `referralData.claimableReferralRewards.xCookies`.
-                const referrer = await UserModel.findOne({ _id: referrerId }).lean();
+                const referrer = await UserModel.findOne({ _id: referrerId }).session(session).lean();
                 // only continue if the referrer exists
                 if (referrer) {
                     await UserModel.updateOne({ _id: referrerId }, {
                         $inc: {
                             'referralData.claimableReferralRewards.xCookies': 5
                         }
-                    })
+                    }, { session })
                 }
             }
         }
@@ -448,13 +448,8 @@ export const addPoints = async (
             const referrerId: string | null = user.inviteCodeData.referrerId;
             if (referrerId) {
                 // update the referrer's referred users data where applicable
-                const { status, message } = await updateReferredUsersData(referrerId, user._id);
-                if (status === Status.ERROR) {
-                    return {
-                        status,
-                        message: `(claimDailyRewards) Err from updateReferredUsersData: ${message}`,
-                    };
-                }
+                const { status, message } = await updateReferredUsersData(referrerId, user._id, session);
+                throw new Error(`Err from updateReferredUsersData: ${message}`);
             }
         }
 
@@ -496,7 +491,7 @@ export const addPoints = async (
         };
     } finally {
         if (!_session) {
-            await session.endSession();
+            session.endSession();
         }
     }
 }

@@ -341,18 +341,18 @@ export const claimWeeklyMVPRewards = async (twitterId: string, _session?: Client
             UserModel.updateOne({ twitterId }, {
                 $set: userUpdateOperations.$set,
                 $inc: userUpdateOperations.$inc,
-            })        
+            }, { session })        
         ]);
 
         await Promise.all([
             UserModel.updateOne({ twitterId }, {
                 $push: userUpdateOperations.$push,
                 $pull: userUpdateOperations.$pull,
-            })        
+            }, { session })        
         ])
 
         // set the claimableRewards back to an empty array.
-        await WeeklyMVPClaimableRewardsModel.updateOne({ userId: user._id }, { $set: { claimableRewards: [] } });
+        await WeeklyMVPClaimableRewardsModel.updateOne({ userId: user._id }, { $set: { claimableRewards: [] } }, { session });
 
         // commit the transaction only if this function started it
         if (!_session) {
@@ -378,7 +378,7 @@ export const claimWeeklyMVPRewards = async (twitterId: string, _session?: Client
         }
     } finally {
         if (!_session) {
-            await session.endSession();
+            session.endSession();
         }
     }
 }

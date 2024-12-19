@@ -1816,7 +1816,7 @@ export const updateCraftingLevel = async (
         };
     } finally {
         if (!_session) {
-            await session.endSession();
+            session.endSession();
         }
     }
 };
@@ -2015,7 +2015,7 @@ export const claimCraftedAssetsV2 = async (
         };
     } finally {
         if (!_session) {
-            await session.endSession();
+            session.endSession();
         }
     }
 };

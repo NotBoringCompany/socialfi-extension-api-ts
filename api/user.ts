@@ -1130,7 +1130,7 @@ export const claimDailyRewards = async (twitterId: string, _session?: ClientSess
                     };
                 }
             } else if (reward.type === DailyLoginRewardType.LEADERBOARD_POINTS) {
-                const result =  await addPoints(user._id, { source: PointsSource.DAILY_LOGIN_REWARDS, points: reward.amount });
+                const result =  await addPoints(user._id, { source: PointsSource.DAILY_LOGIN_REWARDS, points: reward.amount }, session);
                 if (result.status !== Status.SUCCESS) {
                     throw new Error(result.message);
                 }
@@ -1160,7 +1160,8 @@ export const claimDailyRewards = async (twitterId: string, _session?: ClientSess
             {
                 $set: userUpdateOperations.$set,
                 $inc: userUpdateOperations.$inc,
-            }
+            },
+            { session }
         );
 
         await UserModel.updateOne(
@@ -1168,7 +1169,8 @@ export const claimDailyRewards = async (twitterId: string, _session?: ClientSess
             {
                 $push: userUpdateOperations.$push,
                 $pull: userUpdateOperations.$pull,
-            }
+            },
+            { session }
         );
 
         // commit the transaction only if this function started it
@@ -1196,7 +1198,7 @@ export const claimDailyRewards = async (twitterId: string, _session?: ClientSess
         };
     } finally {
         if (!_session) {
-            await session.endSession();
+            session.endSession();
         }
     }
 };
@@ -1934,7 +1936,7 @@ export const updateReferredUsersData = async (referrerUserId: string, referredUs
         };
     } finally {
         if (!_session) {
-            await session.endSession();
+            session.endSession();
         }
     }
 };

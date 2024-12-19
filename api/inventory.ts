@@ -97,7 +97,7 @@ export const addToInventory = async (
         };
     } finally {
         if (!_session) {
-            await session.endSession();
+            session.endSession();
         }
     }
 };
@@ -200,7 +200,7 @@ export const batchAddToInventory = async (
         };
     } finally {
         if (!_session) {
-            await session.endSession();
+            session.endSession();
         }
     }
 };
@@ -292,7 +292,7 @@ export const batchDeductFromInventory = async (
         };
     } finally {
         if (!_session) {
-            await session.endSession();
+            session.endSession();
         }
     }
 };

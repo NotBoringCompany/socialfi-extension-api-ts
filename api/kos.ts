@@ -361,17 +361,17 @@ export const claimWeeklyKOSRewards = async (twitterId: string, _session?: Client
 
         // execute the update operations. $set and $inc first, then $push and $pull to avoid conflicts.
         await Promise.all([
-            await UserModel.updateOne({ twitterId }, { $set: userUpdateOperations.$set, $inc: userUpdateOperations.$inc }),
+            await UserModel.updateOne({ twitterId }, { $set: userUpdateOperations.$set, $inc: userUpdateOperations.$inc }, { session }),
         ]);
 
         await Promise.all([
-            await UserModel.updateOne({ twitterId }, { $push: userUpdateOperations.$push, $pull: userUpdateOperations.$pull }),
+            await UserModel.updateOne({ twitterId }, { $push: userUpdateOperations.$push, $pull: userUpdateOperations.$pull }, { session }),
         ]);
 
         // reset all claimable rewards to 0
         await KOSClaimableWeeklyRewardsModel.updateOne({ userId: user._id }, {
             claimableRewards: []
-        });
+        }, { session });
 
         console.log(`(claimWeeklyKOSRewards) Successfully claimed weekly KOS rewards for user ${user.twitterUsername}.`);
 
@@ -407,7 +407,7 @@ export const claimWeeklyKOSRewards = async (twitterId: string, _session?: Client
         }
     } finally {
         if (!_session) {
-            await session.endSession();
+            session.endSession();
         }
     }
 }

@@ -764,11 +764,6 @@ export const sellItemsInPOIShop = async (
         // if we just add the boosts directly, the minimum boost will be 2. this is not what we want (because it means a 2x multiplier). therefore, we subtract 1 at the end.
         const leaderboardPoints = ((itemsPOIPointsBoostData.ownedKOSPointsBoost + itemsPOIPointsBoostData.squadWeeklyRankingPointsBoost) - 1) * baseLeaderboardPoints;
 
-        const result =  await addPoints(user._id, { source: PointsSource.RESOURCE_SELLING, points: leaderboardPoints });
-        if (result.status !== Status.SUCCESS) {
-            throw new Error(result.message);
-        }
-
         // total weight from the user's inventory to reduce if resources are removed.
         let totalWeightToReduce = 0;
 
@@ -903,29 +898,34 @@ export const sellItemsInPOIShop = async (
             userUpdateOperations.$inc[`inventory.weight`] = -totalWeightToReduce;
         }
 
+        const result =  await addPoints(user._id, { source: PointsSource.RESOURCE_SELLING, points: leaderboardPoints }, session);
+        if (result.status !== Status.SUCCESS) {
+            throw new Error(result.message);
+        }
+
         // divide update operations into two; $set and $inc on one, and $push and $pull on the other to prevent conflicts.
         await Promise.all([
             UserModel.updateOne({ twitterId }, {
                 $set: userUpdateOperations.$set,
                 $inc: userUpdateOperations.$inc
-            }),
+            }, { session }),
 
-            await POIModel.updateOne({ name: user.inGameData.location }, {
+            POIModel.updateOne({ name: user.inGameData.location }, {
                 $set: poiUpdateOperations.$set,
                 $inc: poiUpdateOperations.$inc
-            })
+            }, { session })
         ]);
 
         await Promise.all([
-            await UserModel.updateOne({ twitterId }, {
+            UserModel.updateOne({ twitterId }, {
                 $push: userUpdateOperations.$push,
                 $pull: userUpdateOperations.$pull
-            }),
+            }, { session }),
     
-            await POIModel.updateOne({ name: user.inGameData.location }, {
+            POIModel.updateOne({ name: user.inGameData.location }, {
                 $push: poiUpdateOperations.$push,
                 $pull: poiUpdateOperations.$pull
-            })
+            }, { session })
         ]);
 
         // commit the transaction only if this function started it
@@ -956,7 +956,7 @@ export const sellItemsInPOIShop = async (
         }
     } finally {
         if (!_session) {
-            await session.endSession();
+            session.endSession();
         }
     }
 }
