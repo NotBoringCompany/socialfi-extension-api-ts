@@ -197,22 +197,22 @@ export const GET_PLAYER_LEVEL = (points: number): number => {
  * For example, if `maxPlayerEnergy`, this will be the new maxPlayerEnergy the user will have.
  */
 export const GET_PLAYER_LEVEL_REWARDS_AND_UNLOCKS = (newLevel: number): {
-    // the new max player energy at this level
-    maxPlayerEnergy: number;
-    // the new base inventory weight cap at this level
-    baseInventoryWeightCap: number;
+    // increase in max player energy (cumulative) at this level
+    maxPlayerEnergyIncrease: number;
+    // the new base inventory weight cap increase (cumulative) at this level
+    baseInventoryWeightCapIncrease: number;
     // how many diamonds the user earns for reaching this level
     diamonds: number;
 } => {
     // starts at 500, increase of 50 per level until level 9; 1000 at level 10 and stagnant at 1000 after level 10
-    const baseInventoryWeightCap = newLevel <= 9 ? 500 + (newLevel - 1) * 50 : newLevel === 10 ? 1000 : 1000;
-    const maxPlayerEnergy = newLevel >= 6 ? (newLevel - 4) * 5 : 0;
+    const baseInventoryWeightCapIncrease = newLevel <= 9 ? 500 + (newLevel - 1) * 50 : newLevel === 10 ? 1000 : 1000;
+    const maxPlayerEnergyIncrease = newLevel >= 6 ? (newLevel - 4) * 5 : 0;
     // 3 diamonds for levels 2 to 9, 6 diamonds for level 10, else 0
     const diamonds = newLevel >= 2 && newLevel <= 9 ? 3 : newLevel === 10 ? 6 : 0;
 
     return {
-        maxPlayerEnergy,
-        baseInventoryWeightCap,
+        maxPlayerEnergyIncrease,
+        baseInventoryWeightCapIncrease,
         diamonds
     };
 }

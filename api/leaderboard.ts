@@ -4,7 +4,7 @@ import { ReturnValue, Status } from '../utils/retVal';
 import { DiamondData, DiamondSource, InGameData, PointsData, PointsSource } from '../models/user';
 import { CURRENT_SEASON } from '../utils/constants/leaderboard';
 import { generateObjectId } from '../utils/crypto';
-import { GET_PLAYER_LEVEL, GET_PLAYER_LEVEL_REWARDS_AND_UNLOCKS } from '../utils/constants/user';
+import { GET_PLAYER_LEVEL, GET_PLAYER_LEVEL_REWARDS_AND_UNLOCKS, MAX_ENERGY_CAP, MAX_INVENTORY_WEIGHT } from '../utils/constants/user';
 import { REFERRAL_REQUIRED_LEVEL } from '../utils/constants/invite';
 import { updateReferredUsersData } from './user';
 
@@ -297,12 +297,12 @@ export const addPoints = async (
                 userUpdateOperations.$set['inGameData.level'] = newLevel;
 
                 // check for unlocks and rewards at this level
-                const { maxPlayerEnergy, baseInventoryWeightCap, diamonds } = GET_PLAYER_LEVEL_REWARDS_AND_UNLOCKS(newLevel);
+                const { maxPlayerEnergyIncrease, baseInventoryWeightCapIncrease, diamonds } = GET_PLAYER_LEVEL_REWARDS_AND_UNLOCKS(newLevel);
 
                 // we do a hard set so that if the energy goes down because the new level has been updated to a lower level and thus
                 // the max energy is lower, we set it to the new lower max energy, and vice versa. (same with the other variables)
-                userUpdateOperations.$set['inGameData.energy.maxEnergy'] = maxPlayerEnergy;
-                userUpdateOperations.$set['inventory.maxWeight'] = baseInventoryWeightCap;
+                userUpdateOperations.$set['inGameData.energy.maxEnergy'] = MAX_ENERGY_CAP + maxPlayerEnergyIncrease;
+                userUpdateOperations.$set['inventory.maxWeight'] = MAX_INVENTORY_WEIGHT + baseInventoryWeightCapIncrease;
                 userUpdateOperations.$inc['inventory.diamondData.currentDiamonds'] = diamonds;
 
                 // for diamonds, check if the source `LEVELLING_UP` exists. if not, we add it.
@@ -340,12 +340,12 @@ export const addPoints = async (
                 userUpdateOperations.$set['inGameData.level'] = newLevel;
 
                 // check for unlocks and rewards at this level
-                const { maxPlayerEnergy, baseInventoryWeightCap, diamonds } = GET_PLAYER_LEVEL_REWARDS_AND_UNLOCKS(newLevel);
+                const { maxPlayerEnergyIncrease, baseInventoryWeightCapIncrease, diamonds } = GET_PLAYER_LEVEL_REWARDS_AND_UNLOCKS(newLevel);
 
                 // we do a hard set so that if the energy goes down because the new level has been updated to a lower level and thus
                 // the max energy is lower, we set it to the new lower max energy, and vice versa. (same with the other variables)
-                userUpdateOperations.$set['inGameData.energy.maxEnergy'] = maxPlayerEnergy;
-                userUpdateOperations.$set['inventory.maxWeight'] = baseInventoryWeightCap;
+                userUpdateOperations.$set['inGameData.energy.maxEnergy'] = MAX_ENERGY_CAP + maxPlayerEnergyIncrease;
+                userUpdateOperations.$set['inventory.maxWeight'] = MAX_INVENTORY_WEIGHT + baseInventoryWeightCapIncrease;
                 userUpdateOperations.$inc['inventory.diamondData.currentDiamonds'] = diamonds;
 
                 // for diamonds, check if the source `LEVELLING_UP` exists. if not, we add it.
