@@ -5,7 +5,7 @@ import { decryptPrivateKey, encryptPrivateKey, generateHashSalt, generateObjectI
 import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
 import { RANDOMIZE_GENDER, getBitStatsModifiersFromTraits, randomizeBitTraits, randomizeBitType } from '../utils/constants/bit';
 import { ObtainMethod } from '../models/obtainMethod';
-import { IslandModel, SquadLeaderboardModel, SquadModel, StarterCodeModel, TEST_CONNECTION, UserModel, WeeklyMVPClaimableRewardsModel } from '../utils/constants/db';
+import { IslandModel, SquadLeaderboardModel, SquadModel, StarterCodeModel, TEST_CONNECTION, UserLeaderboardDataModel, UserModel, WeeklyMVPClaimableRewardsModel } from '../utils/constants/db';
 import { addIslandToDatabase, getLatestIslandId, randomizeBaseResourceCap } from './island';
 import { POIName } from '../models/poi';
 import { ExtendedResource, SimplifiedResource } from '../models/resource';
@@ -101,6 +101,54 @@ export const renameRequiredLevelReferredUsersLatestMilestone = async (): Promise
         );
     } catch (err: any) {
         console.error(`(renameLevel5ToRequiredLevel) ${err.message}`);
+    }
+}
+
+/**
+ * Recalibrates the user's in-game level.
+ * 
+ * Should only be called when `GET_PLAYER_LEVEL` is updated (formula changes).
+ */
+export const recalibrateUserLevel = async (): Promise<void> => {
+    try {
+        const userUpdateOperations: Array<{
+            userId: string;
+            updateOperations: {
+                $set: {}
+            }
+        }> = [];
+
+        const [users, userLeaderboardData] = await Promise.all([
+            UserModel.find().lean(),
+            UserLeaderboardDataModel.find({ season: CURRENT_SEASON }).lean()
+        ]);
+
+        for (const user of users) {
+            // find the user in the leaderboard data
+            const leaderboardData = userLeaderboardData.find((data) => data.userId === user._id);
+
+            // if leaderboard data is not found, then user is level 1
+            // if found, call `GET_PLAYER_LEVEL`
+            const level = leaderboardData ? GET_PLAYER_LEVEL(leaderboardData.points) : 1;
+
+            userUpdateOperations.push({
+                userId: user._id,
+                updateOperations: {
+                    $set: {
+                        'inGameData.level': level
+                    }
+                }
+            });
+        }
+
+        // execute update promises
+        const promises = userUpdateOperations.map(async (op) => UserModel.updateOne({ _id: op.userId }, op.updateOperations));
+
+        await Promise.all(promises);
+
+        console.log(`(recalibrateUserLevel) Successfully recalibrated user levels.`);
+    } catch (err: any) {
+        console.error(`(recalibrateUserLevel) ${err.message}`);
     }
 }
 
