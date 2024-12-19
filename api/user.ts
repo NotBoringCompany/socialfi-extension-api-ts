@@ -10,13 +10,14 @@ import { addIslandToDatabase, getLatestIslandId, randomizeBaseResourceCap } from
 import { POIName } from '../models/poi';
 import { ExtendedResource, SimplifiedResource } from '../models/resource';
 import { resources } from '../utils/constants/resource';
-import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, PlayerEnergy, UserWallet, XCookieSource, User, InGameData, UserKeyData, UserProfile, PointsData, ExtendedPointsData, PointsSource } from '../models/user';
+import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, PlayerEnergy, UserWallet, XCookieSource, User, InGameData, UserKeyData, UserProfile, PointsData, ExtendedPointsData, PointsSource, DiamondData, DiamondSource } from '../models/user';
 import {
     DAILY_REROLL_BONUS_MILESTONE,
     ENERGY_POTION_RECOVERY,
     GET_BEGINNER_REWARDS,
     GET_DAILY_LOGIN_REWARDS,
     GET_PLAYER_LEVEL,
+    GET_PLAYER_LEVEL_REWARDS_AND_UNLOCKS,
     GET_SEASON_0_REFERRAL_REWARDS,
     MAX_BEGINNER_REWARD_DAY,
     MAX_ENERGY_CAP,
@@ -105,16 +106,18 @@ export const renameRequiredLevelReferredUsersLatestMilestone = async (): Promise
 }
 
 /**
- * Recalibrates the user's in-game level.
+ * Recalibrates the user's in-game level, potentially giving the rewards/unlocks from their new level.
  * 
  * Should only be called when `GET_PLAYER_LEVEL` is updated (formula changes).
  */
-export const recalibrateUserLevel = async (): Promise<void> => {
+export const recalibrateUserLevelAndRewards = async (): Promise<void> => {
     try {
         const userUpdateOperations: Array<{
             userId: string;
             updateOperations: {
-                $set: {}
+                $set: {},
+                $push: {},
+                $inc: {}
             }
         }> = [];
 
@@ -127,16 +130,61 @@ export const recalibrateUserLevel = async (): Promise<void> => {
             // find the user in the leaderboard data
             const leaderboardData = userLeaderboardData.find((data) => data.userId === user._id);
 
+            const oldLevel = user.inGameData.level;
+
             // if leaderboard data is not found, then user is level 1
             // if found, call `GET_PLAYER_LEVEL`
             const level = leaderboardData ? GET_PLAYER_LEVEL(leaderboardData.points) : 1;
 
+            // if the user's level is the same as before, skip
+            if (oldLevel === level) continue;
+
+            // get the rewards and unlocks from the new level (diamonds will be calculated separately because it needs to be accumulated)
+            const { maxPlayerEnergyIncrease, baseInventoryWeightCapIncrease } = GET_PLAYER_LEVEL_REWARDS_AND_UNLOCKS(level);
+
+            // calculate max energy cap
+            const maxEnergyCap = MAX_ENERGY_CAP + maxPlayerEnergyIncrease;
+
+            // calculate max inventory weight
+            const maxInventoryWeight = MAX_INVENTORY_WEIGHT + baseInventoryWeightCapIncrease;
+
+            // diamonds earned per level is currently as follows:
+            // 3 diamonds for levels 2 to 9, 6 diamonds for level 10, else 0
+            // if the user, say, gets a level increase from 1 to 10, they will get 3 + 3 + 3 + 3 + 3 + 3 + 3 + 3 + 3 + 6 = 30 diamonds
+            // if the user, say, gets a level increase from 7 to 9, they will get the rewards from level 1-9 (because previously diamonds weren't given for levelling up)
+            // we need to calculate this manually
+            const diamonds = Array.from({ length: level }, (_, i) => i + 1).reduce((acc, curr) => {
+                return curr >= 2 && curr <= 9 ? acc + 3 : curr === 10 ? acc + 6 : acc;
+            })
+
+            // check if the user already has the source from `LEVELLING_UP` for diamonds. if not, add it.
+            const sourceIndex = (user.inventory?.diamondData as DiamondData).extendedDiamondData.findIndex((data) => data.source === DiamondSource.LEVELLING_UP);
+
+            const $push: any = {};
+            const $inc: any = {};
+
+            if (sourceIndex === -1) {
+                $push['inventory.diamondData.extendedDiamondData'] = {
+                    source: DiamondSource.LEVELLING_UP,
+                    diamonds: 0,
+                    lastUpdated: 0
+                };
+            } else {
+                $inc[`inventory.diamondData.extendedDiamondData.${sourceIndex}.diamonds`] = diamonds;
+            }
+
+            // add the diamonds to the current diamonds
+            $inc['inventory.diamondData.currentDiamonds'] = diamonds;
             userUpdateOperations.push({
                 userId: user._id,
                 updateOperations: {
                     $set: {
-                        'inGameData.level': level
-                    }
+                        'inGameData.level': level,
+                        'inGameData.energy.maxEnergy': maxEnergyCap,
+                        'inventory.maxWeight': maxInventoryWeight
+                    },
+                    $inc,
+                    $push
                 }
             });
         }
