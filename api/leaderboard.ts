@@ -419,6 +419,45 @@ export const addPoints = async (
             }
         }
 
+        // check if the user update operations included a level up
+        const setUserLevel = userUpdateOperations.$set['inGameData.level'];
+        // if the user just reached level 3 or 4, give 5 xCookies to the referrer
+        if (setUserLevel && (setUserLevel === 3 || setUserLevel === 4)) {
+            const referrerId: string | null = user.inviteCodeData.referrerId;
+            if (referrerId) {
+                // add the rewards to the referrer's `referralData.claimableReferralRewards.xCookies`.
+                const referrer = await UserModel.findOne({ _id: referrerId }).lean();
+                // only continue if the referrer exists
+                if (referrer) {
+                    await UserModel.updateOne({ _id: referrerId }, {
+                        $inc: {
+                            'referralData.claimableReferralRewards.xCookies': 5
+                        }
+                    })
+                }
+            }
+        }
+
+        // if it included a level, check if it's set to `REFERRAL_REQUIRED_LEVEL`.
+        // if it is, check if the user has a referrer.
+        // the referrer will then have this user's `hasReachedRequiredLevel` set to true.
+        // if upon dynamic changes of the required level the user's referrer's data is already updated, the `updateReferredUsersData` function will return a success anyway
+        // but do nothing else.
+        if (setUserLevel && setUserLevel >= REFERRAL_REQUIRED_LEVEL) {
+            // check if the user has a referrer
+            const referrerId: string | null = user.inviteCodeData.referrerId;
+            if (referrerId) {
+                // update the referrer's referred users data where applicable
+                const { status, message } = await updateReferredUsersData(referrerId, user._id);
+                if (status === Status.ERROR) {
+                    return {
+                        status,
+                        message: `(claimDailyRewards) Err from updateReferredUsersData: ${message}`,
+                    };
+                }
+            }
+        }
+
         await UserModel.updateOne({ _id: user._id }, {
             $set: userUpdateOperations.$set,
             $inc: userUpdateOperations.$inc,
