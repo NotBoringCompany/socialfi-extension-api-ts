@@ -331,7 +331,7 @@ export const claimWeeklyMVPRewards = async (twitterId: string, _session?: Client
             };
         }
 
-        const result =  await addPoints(user._id, { source: PointsSource.WEEKLY_MVP_REWARDS, points: claimableLeaderboardPoints }, session);
+        const result =  await addPoints(user._id, { source: PointsSource.WEEKLY_MVP_REWARDS, points: claimableLeaderboardPoints });
         if (result.status !== Status.SUCCESS) {
             throw new Error(result.message);
         }

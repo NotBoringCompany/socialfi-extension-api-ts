@@ -2692,7 +2692,7 @@ export const applyIslandTapping = async (twitterId: string, islandId: number, ca
                 userUpdateOperations.$inc[`inventory.xCookieData.currentXCookies`] = berryDropAmount;
             } else if (secondOptionReward.pointDrop) {
                 // add the points to the user's leaderboard data and the user's `points` in the inventory
-                const result =  await addPoints(user._id, { source: PointsSource.ISLAND_TAPPING, points: secondOptionReward.pointDrop }, session);
+                const result =  await addPoints(user._id, { source: PointsSource.ISLAND_TAPPING, points: secondOptionReward.pointDrop });
                 if (result.status !== Status.SUCCESS) {
                     throw new Error(result.message);
                 }

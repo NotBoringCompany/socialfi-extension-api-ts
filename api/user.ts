@@ -1130,7 +1130,7 @@ export const claimDailyRewards = async (twitterId: string, _session?: ClientSess
                     };
                 }
             } else if (reward.type === DailyLoginRewardType.LEADERBOARD_POINTS) {
-                const result =  await addPoints(user._id, { source: PointsSource.DAILY_LOGIN_REWARDS, points: reward.amount }, session);
+                const result =  await addPoints(user._id, { source: PointsSource.DAILY_LOGIN_REWARDS, points: reward.amount });
                 if (result.status !== Status.SUCCESS) {
                     throw new Error(result.message);
                 }

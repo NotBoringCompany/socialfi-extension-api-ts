@@ -119,7 +119,7 @@ export const claimReferralRewards = async (twitterId: string, _session?: ClientS
 
         // if the user has claimable points, add to the leaderboard data and reset the claimable leaderboard points
         if (claimableReferralRewards.leaderboardPoints > 0) {
-            const result =  await addPoints(user._id, { source: PointsSource.REFERRAL_REWARDS, points: claimableReferralRewards.leaderboardPoints, excludeSquad: true }, session);
+            const result =  await addPoints(user._id, { source: PointsSource.REFERRAL_REWARDS, points: claimableReferralRewards.leaderboardPoints, excludeSquad: true });
             if (result.status !== Status.SUCCESS) {
                 throw new Error(result.message);
             }

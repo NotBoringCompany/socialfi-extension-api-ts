@@ -265,7 +265,7 @@ export const claimWeeklyKOSRewards = async (twitterId: string, _session?: Client
         // filter out rewards with the amount of 0 and map the remaining to add the rewards to the user's account
         rewards.filter(reward => reward.amount > 0).map(async reward => {
             if (reward.type === KOSRewardType.LEADERBOARD_POINTS) {
-                const result =  await addPoints(user._id, { source: PointsSource.KOS_BENEFITS, points: reward.amount }, session);
+                const result =  await addPoints(user._id, { source: PointsSource.KOS_BENEFITS, points: reward.amount });
                 if (result.status !== Status.SUCCESS) {
                     throw new Error(result.message);
                 }

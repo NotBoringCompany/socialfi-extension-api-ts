@@ -764,7 +764,7 @@ export const sellItemsInPOIShop = async (
         // if we just add the boosts directly, the minimum boost will be 2. this is not what we want (because it means a 2x multiplier). therefore, we subtract 1 at the end.
         const leaderboardPoints = ((itemsPOIPointsBoostData.ownedKOSPointsBoost + itemsPOIPointsBoostData.squadWeeklyRankingPointsBoost) - 1) * baseLeaderboardPoints;
 
-        const result =  await addPoints(user._id, { source: PointsSource.RESOURCE_SELLING, points: leaderboardPoints }, session);
+        const result =  await addPoints(user._id, { source: PointsSource.RESOURCE_SELLING, points: leaderboardPoints });
         if (result.status !== Status.SUCCESS) {
             throw new Error(result.message);
         }
