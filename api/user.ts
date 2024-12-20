@@ -155,7 +155,7 @@ export const recalibrateUserLevelAndRewards = async (): Promise<void> => {
             // we need to calculate this manually
             const diamonds = Array.from({ length: level }, (_, i) => i + 1).reduce((acc, curr) => {
                 return curr >= 2 && curr <= 9 ? acc + 3 : curr === 10 ? acc + 6 : acc;
-            })
+            }, 0)
 
             // check if the user already has the source from `LEVELLING_UP` for diamonds. if not, add it.
             const sourceIndex = (user.inventory?.diamondData as DiamondData).extendedDiamondData.findIndex((data) => data.source === DiamondSource.LEVELLING_UP);
