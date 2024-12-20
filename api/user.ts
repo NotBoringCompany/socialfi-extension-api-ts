@@ -189,6 +189,8 @@ export const recalibrateUserLevelAndRewards = async (): Promise<void> => {
             });
         }
 
+        console.log(`(recalibrateUserLevelAndRewards) Update operations: ${JSON.stringify(userUpdateOperations, null, 2)}`);
+
         // execute update promises
         const promises = userUpdateOperations.map(async (op) => UserModel.updateOne({ _id: op.userId }, op.updateOperations));
 
