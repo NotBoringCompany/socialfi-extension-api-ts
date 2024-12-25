@@ -22,7 +22,7 @@ export const verifyLineToken = async (accessToken: string): Promise<ReturnValue<
         };
     } catch (err: any) {
         if (err.response) {
-            const { error, error_description } = err.response as LineErrorResponse;
+            const { error, error_description } = err.response.data as LineErrorResponse;
 
             return {
                 status: Status.ERROR,
