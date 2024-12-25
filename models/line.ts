@@ -27,6 +27,6 @@ export interface LineErrorResponse {
 export interface LineProfile {
     userId: string;
     displayName: string;
-    pictureUrl: string;
-    statusMessage: string;
+    pictureUrl?: string;
+    statusMessage?: string;
 }

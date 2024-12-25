@@ -442,6 +442,11 @@ export const createNewUser = async (profile: UserNewProfile,_session?: ClientSes
             throw new Error('Failed to summon island');
         }
 
+        // commit the transaction only if this function started it
+        if (!_session) {
+            await session.commitTransaction();
+        }
+
         // send any necessary mails to the new user (mails with `includeNewUsers` set to true)
         await sendMailsToNewUser(newUser.twitterId);
 
@@ -2867,8 +2872,8 @@ export const handleLineLogin = async (profile: LineProfile) => {
         const newUserResult = await createNewUser({
             id: profile.userId,
             name: profile.displayName,
-            profilePicture: profile.pictureUrl,
-            username: profile.userId,
+            profilePicture: profile.pictureUrl || 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png',
+            username: profile.displayName,
             method: 'line'
         });
 
