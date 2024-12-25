@@ -15,7 +15,7 @@ import { ObtainMethod } from '../models/obtainMethod';
 import { RELOCATION_COOLDOWN } from '../utils/constants/bit';
 import { ExtendedPointsData, ExtendedXCookieData, PlayerEnergy, PlayerMastery, PointsSource, User, XCookieSource } from '../models/user';
 import { resources } from '../utils/constants/resource';
-import { Item } from '../models/item';
+import { Item, TerraCapsulatorType } from '../models/item';
 import { BoosterItem } from '../models/booster';
 import { TAPPING_MASTERY_LEVEL } from '../utils/constants/mastery';
 import { TappingMastery } from '../models/mastery';
@@ -29,6 +29,7 @@ import { CURRENT_SEASON } from '../utils/constants/leaderboard';
 import { GET_PLAYER_LEVEL } from '../utils/constants/user';
 import { REFERRAL_REQUIRED_LEVEL } from '../utils/constants/invite';
 import { addPoints } from './leaderboard';
+import { randomizeTypeFromCapsulator } from '../utils/constants/terraCapsulator';
 
 // /**
 //  * Sets the new owner data and removes the current `owner` field for all islands.
@@ -2992,3 +2993,174 @@ export const cleanUpRarityDeviation = async () => {
         console.error(`(cleanUpRarityDeviation) Error: ${err.message}`);
     }
 };
+
+/**
+ * Summons an island obtained from a Terra Capsulator.
+ */
+export const summonIsland = async (
+    owner: string,
+    terraCapsulatorType: TerraCapsulatorType | IslandType,
+    _session?: ClientSession
+): Promise<ReturnValue<{ island: Island }>> => {
+    const session = _session ?? (await TEST_CONNECTION.startSession());
+    if (!_session) session.startTransaction();
+
+    try {
+        const isIsland = Object.values(IslandType).includes(terraCapsulatorType as IslandType);
+
+        // get the latest island id from the database
+        const { status, message, data } = await getLatestIslandId();
+
+        if (status !== Status.SUCCESS) {
+            return {
+                status,
+                message: `(summonIsland) Error from getLatestIslandId: ${message}`
+            }
+        }
+
+        // get the user's owned bit ids
+        const user = await UserModel.findOne({ _id: owner }).session(session).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(summonIsland) User not found.`
+            }
+        }
+
+        const { tapping } = user.inGameData.mastery as PlayerMastery;
+
+        const latestIslandId = data?.latestIslandId as number;
+
+        const islandType = isIsland ? (terraCapsulatorType as IslandType) : randomizeTypeFromCapsulator(terraCapsulatorType as TerraCapsulatorType);
+
+        // randomize the base resource cap
+        const baseResourceCap = randomizeBaseResourceCap(islandType);
+
+        // randomize the 5 island traits
+        const traits = randomizeIslandTraits();
+
+        const userBitIds = user.inventory?.bitIds as number[];
+
+        const islandStatsModifiers: IslandStatsModifiers = {
+            resourceCapModifiers: [],
+            gatheringRateModifiers: [],
+        }
+
+        // loop through each bit and see if they have these traits:
+        // influential, antagonistic, famous or mannerless
+        // if influential, add 1% to earning and gathering rate modifiers
+        // if antagonistic, reduce 1% to earning and gathering rate modifiers
+        // if famous, add 0.5% to earning and gathering rate modifiers
+        // if mannerless, reduce 0.5% to earning and gathering rate modifiers
+        const bits = await BitModel.find({ bitId: { $in: userBitIds } }).session(session).lean();
+
+        bits.forEach(bit => {
+            const bitTraits = bit.traits as BitTraitData[];
+
+            // check if the `trait` within each bitTraits instance contain the following traits
+            if (
+                bitTraits.some(traitData => {
+                    return traitData.trait === BitTraitEnum.INFLUENTIAL ||
+                        traitData.trait === BitTraitEnum.FAMOUS ||
+                        traitData.trait === BitTraitEnum.MANNERLESS ||
+                        traitData.trait === BitTraitEnum.ANTAGONISTIC
+                })
+            ) {
+                const gatheringRateModifier: Modifier = {
+                    origin: `Bit ID #${bit.bitId}'s Trait: ${
+                        bitTraits.some(traitData => traitData.trait === BitTraitEnum.INFLUENTIAL) ? 'Influential' :
+                        bitTraits.some(traitData => traitData.trait === BitTraitEnum.FAMOUS) ? 'Famous' :
+                        bitTraits.some(traitData => traitData.trait === BitTraitEnum.MANNERLESS) ? 'Mannerless' :
+                        'Antagonistic'
+                    }`,
+                    value: bitTraits.some(traitData => traitData.trait === BitTraitEnum.INFLUENTIAL) ? 1.01 :
+                        bitTraits.some(traitData => traitData.trait === BitTraitEnum.FAMOUS) ? 1.005 :
+                        bitTraits.some(traitData => traitData.trait === BitTraitEnum.MANNERLESS) ? 0.995 :
+                        0.99
+                    };
+
+                islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
+            }
+        });
+
+        const island: Island = {
+            islandId: latestIslandId + 1,
+            type: islandType,
+            usable: true,
+            ownerData: {
+                currentOwnerId: owner,
+                originalOwnerId: owner,
+                currentOwnerAddress: null,
+                inCustody: false,
+                originalOwnerAddress: null
+            },
+            blockchainData: {
+                mintable: false,
+                minted: false,
+                tokenId: null,
+                chain: null,
+                contractAddress: null,
+                mintHash: null,
+            },
+            purchaseDate: Math.floor(Date.now() / 1000),
+            obtainMethod: ObtainMethod.TERRA_CAPSULATOR,
+            currentLevel: 1,
+            placedBitIds: [],
+            traits,
+            islandResourceStats: {
+                baseResourceCap,
+                resourcesGathered: [],
+                dailyBonusResourcesGathered: 0,
+                claimableResources: [],
+                gatheringStart: 0,
+                gatheringEnd: 0,
+                lastClaimed: 0,
+                gatheringProgress: 0,
+                lastUpdatedGatheringProgress: Math.floor(Date.now() / 1000),
+            },
+            islandStatsModifiers,
+            islandTappingData: ISLAND_TAPPING_REQUIREMENT(1, tapping.level),
+        }
+
+        // proceed to create the island
+        await IslandModel.create([island], { session });
+
+        // push created island id to user's inventory
+        await UserModel.updateOne({
+            _id: owner
+        }, {
+            $push: {
+                'inventory.islandIds': island.islandId
+            }
+        });
+
+        // commit the transaction only if this function started it
+        if (!_session) {
+            await session.commitTransaction();
+        }
+
+
+        return {
+            status: Status.SUCCESS,
+            message: `(summonIsland) Island randomized and summoned.`,
+            data: {
+                island
+            }
+        }
+    } catch (err: any) {
+        // abort the transaction if an error occurs
+        if (!_session) {
+            await session.abortTransaction();
+        }
+
+        return {
+            status: Status.ERROR,
+            message: `(summonIsland) Error: ${err.message}`
+        }
+    } finally {
+        if (!_session) {
+            session.endSession();
+        }
+    }
+}

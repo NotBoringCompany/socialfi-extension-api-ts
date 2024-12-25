@@ -2,15 +2,15 @@ import { ReturnValue, Status } from '../utils/retVal';
 import { createUserWallet } from '../utils/wallet';
 import { createRaft } from './raft';
 import { decryptPrivateKey, encryptPrivateKey, generateHashSalt, generateObjectId, generateReferralCode } from '../utils/crypto';
-import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
+import { addBitToDatabase, getLatestBitId, randomizeFarmingStats, summonBit } from './bit';
 import { RANDOMIZE_GENDER, getBitStatsModifiersFromTraits, randomizeBitTraits, randomizeBitType } from '../utils/constants/bit';
 import { ObtainMethod } from '../models/obtainMethod';
 import { IslandModel, SquadLeaderboardModel, SquadModel, StarterCodeModel, TEST_CONNECTION, UserLeaderboardDataModel, UserModel, WeeklyMVPClaimableRewardsModel } from '../utils/constants/db';
-import { addIslandToDatabase, getLatestIslandId, randomizeBaseResourceCap } from './island';
+import { addIslandToDatabase, getLatestIslandId, randomizeBaseResourceCap, summonIsland } from './island';
 import { POIName } from '../models/poi';
 import { ExtendedResource, SimplifiedResource } from '../models/resource';
 import { resources } from '../utils/constants/resource';
-import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, PlayerEnergy, UserWallet, XCookieSource, User, InGameData, UserKeyData, UserProfile, PointsData, ExtendedPointsData, PointsSource, DiamondData, DiamondSource } from '../models/user';
+import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, PlayerEnergy, UserWallet, XCookieSource, User, InGameData, UserKeyData, UserProfile, PointsData, ExtendedPointsData, PointsSource, DiamondData, DiamondSource, UserNewProfile } from '../models/user';
 import {
     DAILY_REROLL_BONUS_MILESTONE,
     ENERGY_POTION_RECOVERY,
@@ -305,6 +305,170 @@ export const getUserData = async (twitterId: string): Promise<ReturnValue> => {
 };
 
 /**
+ * Create a new user
+ */
+export const createNewUser = async (profile: UserNewProfile,_session?: ClientSession): Promise<ReturnValue> => {
+    const session = _session ?? (await TEST_CONNECTION.startSession());
+    if (!_session) session.startTransaction();
+
+    try {
+        // generates a new object id for the user
+        const userObjectId = generateObjectId();
+
+        // creates a new raft for the user with the generated user object id
+        const { status, message, data } = await createRaft(userObjectId);
+        if (status !== Status.SUCCESS) {
+            return {
+                status,
+                message: `(createNewUser) Error from createRaft: ${message}`,
+            };
+        }
+
+        // initialize PlayerEnergy for new user
+        const newEnergy: PlayerEnergy = {
+            currentEnergy: MAX_ENERGY_CAP,
+            maxEnergy: MAX_ENERGY_CAP,
+            dailyEnergyPotion: MAX_ENERGY_POTION_CAP,
+        }
+
+        // creates the wallet for the user
+        const { encryptedPrivateKey, address } = createUserWallet();
+
+        const newUser = new UserModel({
+            _id: userObjectId,
+            twitterId: profile.id,
+            twitterProfilePicture: profile.profilePicture,
+            twitterUsername: profile?.username,
+            twitterDisplayName: profile?.name,
+            method: profile.method,
+            createdTimestamp: Math.floor(Date.now() / 1000),
+            // invite code data will be null until users input their invite code.
+            inviteCodeData: {
+                usedStarterCode: null,
+                usedReferralCode: null,
+                referrerId: null,
+            },
+            referralData: {
+                referralCode: generateReferralCode(),
+                referredUsersData: [],
+                claimableReferralRewards: {
+                    xCookies: 0,
+                    leaderboardPoints: 0,
+                },
+            },
+            wallet: {
+                encryptedPrivateKey,
+                address,
+            },
+            secondaryWallets: [],
+            openedTweetIdsToday: [],
+            inventory: {
+                weight: 0,
+                maxWeight: MAX_INVENTORY_WEIGHT,
+                xCookieData: {
+                    currentXCookies: 0,
+                    extendedXCookieData: [],
+                },
+                resources: [],
+                items: [
+                    {
+                        type: BoosterItem['GATHERING_PROGRESS_BOOSTER_1000'],
+                        amount: 1,
+                    },
+                ],
+                bitCosmeticIds: [],
+                foods: [
+                    {
+                        type: FoodType['BURGER'],
+                        amount: 1,
+                    },
+                ],
+                raftId: data.raft.raftId,
+                islandIds: [],
+                bitIds: [],
+                diamondData: {
+                    currentDiamonds: 0,
+                    totalDiamondsSpent: 0,
+                    weeklyDiamondsSpent: 0,
+                    extendedDiamondData: []
+                }
+            },
+            inGameData: {
+                level: 1,
+                energy: newEnergy,
+                mastery: {
+                    tapping: {
+                        level: 1,
+                        totalExp: 0,
+                        rerollCount: 6,
+                    },
+                    // empty crafting for now (so it can be more flexible)
+                    crafting: {},
+                    // empty berry factory for now (so it can be more flexible)
+                    berryFactory: {},
+                },
+                completedTutorialIds: [],
+                beginnerRewardData: {
+                    lastClaimedTimestamp: 0,
+                    isClaimable: true,
+                    daysClaimed: [],
+                    daysMissed: [],
+                },
+                dailyLoginRewardData: {
+                    lastClaimedTimestamp: 0,
+                    isDailyClaimable: true,
+                    consecutiveDaysClaimed: 0,
+                },
+                squadId: null,
+                lastLeftSquad: 0,
+                location: POIName.HOME,
+                travellingTo: null,
+                destinationArrival: 0,
+            },
+        });
+
+        await newUser.save({ session });
+
+        // summon a starting bit
+        const bitResult = await summonBit(newUser._id, BitRarity.COMMON, session);
+        if (bitResult.status !== Status.SUCCESS) {
+            throw new Error('Failed to summon bit');
+        }
+
+        // summon a starting island
+        const islandResult = await summonIsland(newUser._id, IslandType.PRIMAL_ISLES, session);
+        if (islandResult.status !== Status.SUCCESS) {
+            throw new Error('Failed to summon island');
+        }
+
+        // send any necessary mails to the new user (mails with `includeNewUsers` set to true)
+        await sendMailsToNewUser(newUser.twitterId);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(createNewUser) User created sucessfully`,
+            data: {
+                newUser
+            }
+        }
+    } catch (err: any) {
+         // abort the transaction if an error occurs
+         if (!_session) {
+            await session.abortTransaction();
+        }
+
+        return {
+            status: Status.ERROR,
+            message: `(createNewUser) Error: ${err.message}`
+        }
+    } finally {
+        if (!_session) {
+            session.endSession();
+        }
+    }
+}
+
+/**
  * Twitter login logic. Creates a new user or simply log them in if they already exist.
  *
  * If users sign up, they are required to input an invite code (either from a starter code or a referral code).
@@ -315,7 +479,6 @@ export const getUserData = async (twitterId: string): Promise<ReturnValue> => {
  */
 export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, profile?: ExtendedProfile | null, adminKey?: string): Promise<ReturnValue> => {
     try {
-        let loginType: 'Register' | 'Login';
         // if adminCall, check if the admin key is valid.
         if (adminCall) {
             if (!adminKey || adminKey !== process.env.ADMIN_KEY) {
@@ -331,330 +494,8 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
 
         const user = await UserModel.findOne({ twitterId }).lean();
 
-        // if user doesn't exist, create a new user
-        if (!user) {
-            // generates a new object id for the user
-            const userObjectId = generateObjectId();
-            loginType = 'Register';
-
-            // creates a new raft for the user with the generated user object id
-            const { status, message, data } = await createRaft(userObjectId);
-
-            if (status !== Status.SUCCESS) {
-                return {
-                    status,
-                    message: `(handleTwitterLogin) Error from createRaft: ${message}`,
-                };
-            }
-
-            // get the latest bit ID from the database
-            const { status: bitIdStatus, message: bitIdMessage, data: bitIdData } = await getLatestBitId();
-
-            if (bitIdStatus !== Status.SUCCESS) {
-                return {
-                    status: bitIdStatus,
-                    message: `(handleTwitterLogin) Error from getLatestBitId: ${bitIdMessage}`,
-                };
-            }
-
-            const rarity = BitRarity.COMMON;
-            const bitType = randomizeBitType();
-
-            const traits = randomizeBitTraits(rarity);
-
-            const bitStatsModifiers = getBitStatsModifiersFromTraits(traits.map((trait) => trait.trait));
-
-            // add a premium common bit to the user's inventory (users get 1 for free when they sign up)
-            const {
-                status: bitStatus,
-                message: bitMessage,
-                data: bitData,
-            } = await addBitToDatabase({
-                bitId: bitIdData?.latestBitId + 1,
-                bitType,
-                bitNameData: {
-                    name: bitType,
-                    lastChanged: 0,
-                },
-                rarity,
-                gender: RANDOMIZE_GENDER(),
-                // usable by default
-                usable: true,
-                ownerData: {
-                    currentOwnerId: userObjectId,
-                    originalOwnerId: userObjectId,
-                    currentOwnerAddress: null,
-                    inCustody: false,
-                    originalOwnerAddress: null,
-                },
-                blockchainData: {
-                    mintable: false,
-                    minted: false,
-                    tokenId: null,
-                    chain: null,
-                    contractAddress: null,
-                    mintHash: null,
-                },
-                purchaseDate: Math.floor(Date.now() / 1000),
-                obtainMethod: ObtainMethod.SIGN_UP,
-                placedIslandId: 0,
-                lastRelocationTimestamp: 0,
-                currentFarmingLevel: 1, // starts at level 1
-                traits,
-                equippedCosmetics: {
-                    head: { cosmeticId: null, cosmeticName: null, equippedAt: 0 },
-                    body: { cosmeticId: null, cosmeticName: null, equippedAt: 0 },
-                    arms: { cosmeticId: null, cosmeticName: null, equippedAt: 0 },
-                    back: { cosmeticId: null, cosmeticName: null, equippedAt: 0 },
-                },
-                farmingStats: {
-                    ...randomizeFarmingStats(rarity),
-                    currentEnergy: 50, // set energy to half for tutorial purposes
-                },
-                bitStatsModifiers,
-            });
-
-            if (bitStatus !== Status.SUCCESS) {
-                return {
-                    status: bitStatus,
-                    message: `(handleTwitterLogin) Error from addBitToDatabase: ${bitMessage}`,
-                };
-            }
-
-            const islandStatsModifiers: IslandStatsModifiers = {
-                resourceCapModifiers: [],
-                gatheringRateModifiers: [],
-            };
-
-            // check the bit's traits
-            // if it has influential, antagonistic, famous or mannerless, then:
-            // if influential, add 1% to earning and gathering rate modifiers of the island
-            // if antagonistic, reduce 1% to earning and gathering rate modifiers of the island
-            // if famous, add 0.5% to earning and gathering rate modifiers of the island
-            // if mannerless, reduce 0.5% to earning and gathering rate modifiers of the island
-            if (traits.some((trait) => trait.trait === BitTraitEnum.INFLUENTIAL)) {
-                // add 1% to earning and gathering rate modifiers of the island
-                const gatheringRateModifier: Modifier = {
-                    origin: `Bit ID ${bitData.bit.bitId}'s Trait: Influential`,
-                    value: 1.01,
-                };
-
-                islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
-            }
-
-            // if the bit has antagonistic trait
-            if (traits.some((trait) => trait.trait === BitTraitEnum.ANTAGONISTIC)) {
-                // reduce 1% to earning and gathering rate modifiers of the island
-                const gatheringRateModifier: Modifier = {
-                    origin: `Bit ID ${bitData.bit.bitId}'s Trait: Antagonistic`,
-                    value: 0.99,
-                };
-
-                islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
-            }
-
-            // if the bit has famous trait
-            if (traits.some((trait) => trait.trait === BitTraitEnum.FAMOUS)) {
-                // add 0.5% to earning and gathering rate modifiers of the island
-                const gatheringRateModifier: Modifier = {
-                    origin: `Bit ID ${bitData.bit.bitId}'s Trait: Famous`,
-                    value: 1.005,
-                };
-
-                islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
-            }
-
-            // if the bit has mannerless trait
-            if (traits.some((trait) => trait.trait === BitTraitEnum.MANNERLESS)) {
-                // reduce 0.5% to earning and gathering rate modifiers of the island
-                const gatheringRateModifier: Modifier = {
-                    origin: `Bit ID ${bitData.bit.bitId}'s Trait: Mannerless`,
-                    value: 0.995,
-                };
-
-                islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
-            }
-
-            // creates a free primal island for the user
-            const { status: islandIdStatus, message: islandIdMessage, data: islandIdData } = await getLatestIslandId();
-
-            if (islandIdStatus !== Status.SUCCESS) {
-                return {
-                    status: islandIdStatus,
-                    message: `(handleTwitterLogin) Error from getLatestIslandId: ${islandIdMessage}`,
-                };
-            }
-
-            const {
-                status: islandStatus,
-                message: islandMessage,
-                data: islandData,
-            } = await addIslandToDatabase({
-                islandId: islandIdData?.latestIslandId + 1,
-                type: IslandType.PRIMAL_ISLES,
-                // usable by default
-                usable: true,
-                ownerData: {
-                    currentOwnerId: userObjectId,
-                    originalOwnerId: userObjectId,
-                    currentOwnerAddress: null,
-                    inCustody: false,
-                    originalOwnerAddress: null,
-                },
-                blockchainData: {
-                    mintable: false,
-                    minted: false,
-                    tokenId: null,
-                    chain: null,
-                    contractAddress: null,
-                    mintHash: null,
-                },
-                purchaseDate: Math.floor(Date.now() / 1000),
-                obtainMethod: ObtainMethod.SIGN_UP,
-                currentLevel: 1,
-                placedBitIds: [],
-                traits: randomizeIslandTraits(),
-                islandResourceStats: {
-                    baseResourceCap: randomizeBaseResourceCap(IslandType.PRIMAL_ISLES),
-                    resourcesGathered: [],
-                    dailyBonusResourcesGathered: 0,
-                    claimableResources: [],
-                    gatheringStart: 0,
-                    gatheringEnd: 0,
-                    lastClaimed: 0,
-                    gatheringProgress: 0,
-                    lastUpdatedGatheringProgress: Math.floor(Date.now() / 1000),
-                },
-                islandStatsModifiers,
-                islandTappingData: ISLAND_TAPPING_REQUIREMENT(1, 1),
-            });
-
-            if (islandStatus !== Status.SUCCESS) {
-                return {
-                    status: islandStatus,
-                    message: `(handleTwitterLogin) Error from createBarrenIsland: ${islandMessage}`,
-                };
-            }
-
-            // creates the wallet for the user
-            const { encryptedPrivateKey, address } = createUserWallet();
-
-            // initialize PlayerEnergy for new user
-            const newEnergy: PlayerEnergy = {
-                currentEnergy: MAX_ENERGY_CAP,
-                maxEnergy: MAX_ENERGY_CAP,
-                dailyEnergyPotion: MAX_ENERGY_POTION_CAP,
-            }
-
-            const newUser = new UserModel({
-                _id: userObjectId,
-                twitterId,
-                twitterProfilePicture: profile?.photos[0]?.value ?? '',
-                twitterUsername: profile?.username ?? null,
-                twitterDisplayName: profile?.displayName ?? null,
-                createdTimestamp: Math.floor(Date.now() / 1000),
-                // invite code data will be null until users input their invite code.
-                inviteCodeData: {
-                    usedStarterCode: null,
-                    usedReferralCode: null,
-                    referrerId: null,
-                },
-                referralData: {
-                    referralCode: generateReferralCode(),
-                    referredUsersData: [],
-                    claimableReferralRewards: {
-                        xCookies: 0,
-                        leaderboardPoints: 0,
-                    },
-                },
-                wallet: {
-                    encryptedPrivateKey,
-                    address,
-                },
-                secondaryWallets: [],
-                openedTweetIdsToday: [],
-                inventory: {
-                    weight: 0,
-                    maxWeight: MAX_INVENTORY_WEIGHT,
-                    xCookieData: {
-                        currentXCookies: 0,
-                        extendedXCookieData: [],
-                    },
-                    resources: [],
-                    items: [
-                        {
-                            type: BoosterItem['GATHERING_PROGRESS_BOOSTER_1000'],
-                            amount: 1,
-                        },
-                    ],
-                    bitCosmeticIds: [],
-                    foods: [
-                        {
-                            type: FoodType['BURGER'],
-                            amount: 1,
-                        },
-                    ],
-                    raftId: data.raft.raftId,
-                    islandIds: [islandData.island.islandId],
-                    bitIds: [bitIdData?.latestBitId + 1],
-                    diamondData: {
-                        currentDiamonds: 0,
-                        totalDiamondsSpent: 0,
-                        weeklyDiamondsSpent: 0,
-                        extendedDiamondData: []
-                    }
-                },
-                inGameData: {
-                    level: 1,
-                    energy: newEnergy,
-                    mastery: {
-                        tapping: {
-                            level: 1,
-                            totalExp: 0,
-                            rerollCount: 6,
-                        },
-                        // empty crafting for now (so it can be more flexible)
-                        crafting: {},
-                        // empty berry factory for now (so it can be more flexible)
-                        berryFactory: {},
-                    },
-                    completedTutorialIds: [],
-                    beginnerRewardData: {
-                        lastClaimedTimestamp: 0,
-                        isClaimable: true,
-                        daysClaimed: [],
-                        daysMissed: [],
-                    },
-                    dailyLoginRewardData: {
-                        lastClaimedTimestamp: 0,
-                        isDailyClaimable: true,
-                        consecutiveDaysClaimed: 0,
-                    },
-                    squadId: null,
-                    lastLeftSquad: 0,
-                    location: POIName.HOME,
-                    travellingTo: null,
-                    destinationArrival: 0,
-                },
-            });
-
-            await newUser.save();
-
-            // send any necessary mails to the new user (mails with `includeNewUsers` set to true)
-            await sendMailsToNewUser(twitterId);
-
-            return {
-                status: Status.SUCCESS,
-                message: `(handleTwitterLogin) New user created.`,
-                data: {
-                    userId: newUser._id,
-                    twitterId,
-                    loginType: loginType,
-                },
-            };
-        } else {
-            loginType = 'Login';
-            // update user's Twitter profile information if available
+        // if the user exist then send the correct credential
+        if (user) {
             if (!!profile) {
                 await UserModel.updateOne(
                     { twitterId },
@@ -675,10 +516,34 @@ export const handleTwitterLogin = async (twitterId: string, adminCall: boolean, 
                 data: {
                     userId: user._id,
                     twitterId,
-                    loginType: loginType
+                    loginType: 'Login'
                 },
             };
         }
+
+        // create a new user if the user not found in the database
+        const newUserResult = await createNewUser({
+            id: profile.id,
+            name: profile.displayName,
+            profilePicture: profile.profileUrl,
+            username: profile.username
+        });
+
+        if (newUserResult.status !== Status.SUCCESS) {
+            throw new Error(newUserResult.message);
+        }
+
+        const newUser = newUserResult.data.newUser as User;
+
+        return {
+            status: Status.SUCCESS,
+            message: `(handleTwitterLogin) New user created.`,
+            data: {
+                userId: newUser._id,
+                twitterId: newUser.twitterId,
+                loginType: 'Register',
+            },
+        };
     } catch (err: any) {
         return {
             status: Status.ERROR,
@@ -2714,337 +2579,10 @@ export const restoreUserCurrentEnergyAndResetReroll = async (): Promise<void> =>
  */
 export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']): Promise<ReturnValue> => {
     try {
-        let loginType: 'Register' | 'Login';
-
         const user = await UserModel.findOne({ $or: [{ twitterId: telegramUser.id, method: 'telegram' }, { 'telegramProfile.telegramId': telegramUser.id }] }).lean();
 
-        // if user doesn't exist, create a new user
-        if (!user) {
-            console.log(`creating new telegram user: ${telegramUser.id}`)
-            // generates a new object id for the user
-            const userObjectId = generateObjectId();
-            loginType = 'Register';
-
-            // creates a new raft for the user with the generated user object id
-            const { status, message, data } = await createRaft(userObjectId);
-
-            if (status !== Status.SUCCESS) {
-                return {
-                    status,
-                    message: `(handleTelegramLogin) Error from createRaft: ${message}`,
-                };
-            }
-
-            // get the latest bit ID from the database
-            const { status: bitIdStatus, message: bitIdMessage, data: bitIdData } = await getLatestBitId();
-
-            if (bitIdStatus !== Status.SUCCESS) {
-                return {
-                    status: bitIdStatus,
-                    message: `(handleTelegramLogin) Error from getLatestBitId: ${bitIdMessage}`,
-                };
-            }
-
-            const rarity = BitRarity.COMMON;
-            const bitType = randomizeBitType();
-
-            const traits = randomizeBitTraits(rarity);
-
-            const bitStatsModifiers = getBitStatsModifiersFromTraits(traits.map((trait) => trait.trait));
-
-            // add a premium common bit to the user's inventory (users get 1 for free when they sign up)
-            const {
-                status: bitStatus,
-                message: bitMessage,
-                data: bitData,
-            } = await addBitToDatabase({
-                bitId: bitIdData?.latestBitId + 1,
-                bitType,
-                bitNameData: {
-                    name: bitType,
-                    lastChanged: 0,
-                },
-                rarity,
-                gender: RANDOMIZE_GENDER(),
-                // usable by default
-                usable: true,
-                ownerData: {
-                    currentOwnerId: userObjectId,
-                    originalOwnerId: userObjectId,
-                    currentOwnerAddress: null,
-                    inCustody: false,
-                    originalOwnerAddress: null,
-                },
-                blockchainData: {
-                    mintable: false,
-                    minted: false,
-                    tokenId: null,
-                    chain: null,
-                    contractAddress: null,
-                    mintHash: null,
-                },
-                purchaseDate: Math.floor(Date.now() / 1000),
-                obtainMethod: ObtainMethod.SIGN_UP,
-                placedIslandId: 0,
-                lastRelocationTimestamp: 0,
-                currentFarmingLevel: 1, // starts at level 1
-                traits,
-                equippedCosmetics: {
-                    head: { cosmeticId: null, cosmeticName: null, equippedAt: 0 },
-                    body: { cosmeticId: null, cosmeticName: null, equippedAt: 0 },
-                    arms: { cosmeticId: null, cosmeticName: null, equippedAt: 0 },
-                    back: { cosmeticId: null, cosmeticName: null, equippedAt: 0 },
-                },
-                farmingStats: {
-                    ...randomizeFarmingStats(rarity),
-                    currentEnergy: 50, // set energy to half for tutorial purposes
-                },
-                bitStatsModifiers,
-            });
-
-            if (bitStatus !== Status.SUCCESS) {
-                return {
-                    status: bitStatus,
-                    message: `(handleTelegramLogin) Error from addBitToDatabase: ${bitMessage}`,
-                };
-            }
-
-            const islandStatsModifiers: IslandStatsModifiers = {
-                resourceCapModifiers: [],
-                gatheringRateModifiers: [],
-            };
-
-            // check the bit's traits
-            // if it has influential, antagonistic, famous or mannerless, then:
-            // if influential, add 1% to earning and gathering rate modifiers of the island
-            // if antagonistic, reduce 1% to earning and gathering rate modifiers of the island
-            // if famous, add 0.5% to earning and gathering rate modifiers of the island
-            // if mannerless, reduce 0.5% to earning and gathering rate modifiers of the island
-            if (traits.some((trait) => trait.trait === BitTraitEnum.INFLUENTIAL)) {
-                // add 1% to earning and gathering rate modifiers of the island
-                const gatheringRateModifier: Modifier = {
-                    origin: `Bit ID ${bitData.bit.bitId}'s Trait: Influential`,
-                    value: 1.01,
-                };
-
-                islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
-            }
-
-            // if the bit has antagonistic trait
-            if (traits.some((trait) => trait.trait === BitTraitEnum.ANTAGONISTIC)) {
-                // reduce 1% to earning and gathering rate modifiers of the island
-                const gatheringRateModifier: Modifier = {
-                    origin: `Bit ID ${bitData.bit.bitId}'s Trait: Antagonistic`,
-                    value: 0.99,
-                };
-
-                islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
-            }
-
-            // if the bit has famous trait
-            if (traits.some((trait) => trait.trait === BitTraitEnum.FAMOUS)) {
-                // add 0.5% to earning and gathering rate modifiers of the island
-                const gatheringRateModifier: Modifier = {
-                    origin: `Bit ID ${bitData.bit.bitId}'s Trait: Famous`,
-                    value: 1.005,
-                };
-
-                islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
-            }
-
-            // if the bit has mannerless trait
-            if (traits.some((trait) => trait.trait === BitTraitEnum.MANNERLESS)) {
-                // reduce 0.5% to earning and gathering rate modifiers of the island
-                const gatheringRateModifier: Modifier = {
-                    origin: `Bit ID ${bitData.bit.bitId}'s Trait: Mannerless`,
-                    value: 0.995,
-                };
-
-                islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
-            }
-
-            // creates a free primal island for the user
-            const { status: islandIdStatus, message: islandIdMessage, data: islandIdData } = await getLatestIslandId();
-
-            if (islandIdStatus !== Status.SUCCESS) {
-                return {
-                    status: islandIdStatus,
-                    message: `(handleTwitterLogin) Error from getLatestIslandId: ${islandIdMessage}`,
-                };
-            }
-
-            const {
-                status: islandStatus,
-                message: islandMessage,
-                data: islandData,
-            } = await addIslandToDatabase({
-                islandId: islandIdData?.latestIslandId + 1,
-                type: IslandType.PRIMAL_ISLES,
-                // usable by default
-                usable: true,
-                ownerData: {
-                    currentOwnerId: userObjectId,
-                    originalOwnerId: userObjectId,
-                    currentOwnerAddress: null,
-                    inCustody: false,
-                    originalOwnerAddress: null,
-                },
-                blockchainData: {
-                    mintable: false,
-                    minted: false,
-                    tokenId: null,
-                    chain: null,
-                    contractAddress: null,
-                    mintHash: null,
-                },
-                purchaseDate: Math.floor(Date.now() / 1000),
-                obtainMethod: ObtainMethod.SIGN_UP,
-                currentLevel: 1,
-                placedBitIds: [],
-                traits: randomizeIslandTraits(),
-                islandResourceStats: {
-                    baseResourceCap: randomizeBaseResourceCap(IslandType.PRIMAL_ISLES),
-                    resourcesGathered: [],
-                    dailyBonusResourcesGathered: 0,
-                    claimableResources: [],
-                    gatheringStart: 0,
-                    gatheringEnd: 0,
-                    lastClaimed: 0,
-                    gatheringProgress: 0,
-                    lastUpdatedGatheringProgress: Math.floor(Date.now() / 1000),
-                },
-                islandStatsModifiers,
-                islandTappingData: ISLAND_TAPPING_REQUIREMENT(1, 1),
-            });
-
-            if (islandStatus !== Status.SUCCESS) {
-                return {
-                    status: islandStatus,
-                    message: `(handleTwitterLogin) Error from createBarrenIsland: ${islandMessage}`,
-                };
-            }
-
-            // creates the wallet for the user
-            const { encryptedPrivateKey, address } = createUserWallet();
-
-            // initialize PlayerEnergy for new user
-            const newEnergy: PlayerEnergy = {
-                currentEnergy: MAX_ENERGY_CAP,
-                maxEnergy: MAX_ENERGY_CAP,
-                dailyEnergyPotion: MAX_ENERGY_POTION_CAP,
-            };
-
-            const newUser = new UserModel({
-                _id: userObjectId,
-                twitterId: telegramUser.id,
-                method: 'telegram',
-                twitterProfilePicture: 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png',
-                twitterUsername: telegramUser.username,
-                twitterDisplayName: `${telegramUser.first_name} ${telegramUser.last_name}`.trim(),
-                createdTimestamp: Math.floor(Date.now() / 1000),
-                // invite code data will be null until users input their invite code.
-                inviteCodeData: {
-                    usedStarterCode: null,
-                    usedReferralCode: null,
-                    referrerId: null,
-                },
-                referralData: {
-                    referralCode: generateReferralCode(),
-                    referredUsersData: [],
-                    claimableReferralRewards: {
-                        xCookies: 0,
-                        leaderboardPoints: 0,
-                    },
-                },
-                wallet: {
-                    encryptedPrivateKey,
-                    address,
-                },
-                secondaryWallets: [],
-                openedTweetIdsToday: [],
-                inventory: {
-                    weight: 0,
-                    maxWeight: MAX_INVENTORY_WEIGHT,
-                    xCookieData: {
-                        currentXCookies: 0,
-                        extendedXCookieData: [],
-                    },
-                    resources: [],
-                    items: [
-                        {
-                            type: BoosterItem['GATHERING_PROGRESS_BOOSTER_1000'],
-                            amount: 1,
-                        },
-                    ],
-                    bitCosmeticIds: [],
-                    foods: [
-                        {
-                            type: FoodType['BURGER'],
-                            amount: 1,
-                        },
-                    ],
-                    raftId: data.raft.raftId,
-                    islandIds: [islandData.island.islandId],
-                    bitIds: [bitIdData?.latestBitId + 1],
-                    diamondData: {
-                        currentDiamonds: 0,
-                        totalDiamondsSpent: 0,
-                        weeklyDiamondsSpent: 0,
-                        extendedDiamondData: []
-                    }
-                },
-                inGameData: {
-                    level: 1,
-                    energy: newEnergy,
-                    mastery: {
-                        tapping: {
-                            level: 1,
-                            totalExp: 0,
-                            rerollCount: 6,
-                        },
-                        // empty crafting for now (so it can be more flexible)
-                        crafting: {},
-                        // empty berry factory for now (so it can be more flexible)
-                        berryFactory: {},
-                    },
-                    completedTutorialIds: [],
-                    beginnerRewardData: {
-                        lastClaimedTimestamp: 0,
-                        isClaimable: true,
-                        daysClaimed: [],
-                        daysMissed: [],
-                    },
-                    dailyLoginRewardData: {
-                        lastClaimedTimestamp: 0,
-                        isDailyClaimable: true,
-                        consecutiveDaysClaimed: 0,
-                    },
-                    squadId: null,
-                    lastLeftSquad: 0,
-                    location: POIName.HOME,
-                    travellingTo: null,
-                    destinationArrival: 0,
-                },
-            });
-
-            await newUser.save();
-
-            // send any necessary mails to the new user (mails with `includeNewUsers` set to true)
-            await sendMailsToNewUser(String(telegramUser.id));
-
-            return {
-                status: Status.SUCCESS,
-                message: `(handleTelegramLogin) New user created.`,
-                data: {
-                    userId: newUser._id,
-                    twitterId: telegramUser.id,
-                    loginType: loginType,
-                    referralCode: newUser.referralData.referralCode
-                },
-            };
-        } else {
-            loginType = 'Login';
-
+        // if the user exist then send the correct credential
+        if (user) {
             // user exists, return
             return {
                 status: Status.SUCCESS,
@@ -3052,11 +2590,36 @@ export const handleTelegramLogin = async (telegramUser: TelegramAuthData['user']
                 data: {
                     userId: user._id,
                     twitterId: user.twitterId,
-                    loginType: loginType,
+                    loginType: 'Login',
                     referralCode: user.referralData.referralCode
                 },
             };
         }
+
+        // create a new user if the user not found in the database
+        const newUserResult = await createNewUser({
+            id: telegramUser.id.toString(),
+            name: `${telegramUser.first_name} ${telegramUser.last_name}`.trim(),
+            profilePicture: 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png',
+            username: telegramUser.username,
+            method: 'telegram'
+        });
+
+        if (newUserResult.status !== Status.SUCCESS) {
+            throw new Error(newUserResult.message);
+        }
+
+        const newUser = newUserResult.data.newUser as User;
+
+        return {
+            status: Status.SUCCESS,
+            message: `(handleTelegramLogin) New user created.`,
+            data: {
+                userId: newUser._id,
+                twitterId: newUser.twitterId,
+                loginType: 'Register',
+            },
+        };
     } catch (err: any) {
         return {
             status: Status.ERROR,

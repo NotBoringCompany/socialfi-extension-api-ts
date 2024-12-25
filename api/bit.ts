@@ -10,6 +10,7 @@ import {
     RANDOMIZE_GENDER,
     getBitStatsModifiersFromTraits,
     randomizeBitTraits,
+    randomizeBitType,
 } from '../utils/constants/bit';
 import {
     GATHERING_RATE_EXPONENTIAL_DECAY,
@@ -20,11 +21,14 @@ import { Food, FoodType } from '../models/food';
 import { FOOD_ENERGY_REPLENISHMENT } from '../utils/constants/food';
 import { BarrenResource, ExtendedResource } from '../models/resource';
 import { generateHashSalt, generateObjectId, generateOpHash } from '../utils/crypto';
-import { BitModel, BitTraitDataModel, IslandModel, UserModel } from '../utils/constants/db';
+import { BitModel, BitTraitDataModel, IslandModel, TEST_CONNECTION, UserModel } from '../utils/constants/db';
 import { ObtainMethod } from '../models/obtainMethod';
 import { redis } from '../utils/constants/redis';
 import { DEPLOYER_WALLET, KAIA_TESTNET_PROVIDER, WONDERBITS_CONTRACT } from '../utils/constants/web3';
 import { ethers } from 'ethers';
+import { RANDOMIZE_RARITY_FROM_ORB } from '../utils/constants/bitOrb';
+import { BitOrbType } from '../models/item';
+import { ClientSession } from 'mongoose';
 
 /**
  * Adds the new `blockchainData` field with default values to all bits in the database.
@@ -1088,3 +1092,122 @@ export const getBits = async (bitIds: number[]): Promise<ReturnValue> => {
         };
     }
 };
+
+/**
+ * Summons a Bit obtained from a Bit Orb (I).
+ */
+export const summonBit = async (
+    owner: string,
+    typeOrRarity: BitOrbType | BitRarity,
+    _session?: ClientSession
+): Promise<ReturnValue> => {
+    const session = _session ?? (await TEST_CONNECTION.startSession());
+    if (!_session) session.startTransaction();
+
+    try {
+        // get the latest bit id from the database
+        const { status, message, data } = await getLatestBitId();
+        if (status !== Status.SUCCESS) {
+            return {
+                status,
+                message: `(randomizeBit) Error from getLatestBitId: ${message}`
+            }
+        }
+
+        const latestBitId = data?.latestBitId as number;
+
+        const isRarity = Object.values(BitRarity).includes(typeOrRarity as BitRarity);
+
+        // get the Bit's rarity based on the probability of obtaining it
+        const rarity = isRarity ? typeOrRarity as BitRarity : RANDOMIZE_RARITY_FROM_ORB(typeOrRarity as BitOrbType);
+
+        // randomize the gender 
+        const gender = RANDOMIZE_GENDER();
+
+        // randomize the traits and the resulting stat modifiers for the bit
+        const traits = randomizeBitTraits(rarity);
+        const bitStatsModifiers = getBitStatsModifiersFromTraits(traits.map(trait => trait.trait));
+
+        // summon and return the Bit. DOESN'T SAVE TO DATABASE YET.
+        const bit: Bit = {
+            bitId: latestBitId + 1,
+            bitType: randomizeBitType(),
+            bitNameData: {
+                name: `Bit #${latestBitId + 1}`,
+                lastChanged: 0
+            },
+            rarity,
+            gender,
+            // usable by default
+            usable: true,
+            ownerData: {
+                currentOwnerId: owner,
+                originalOwnerId: owner,
+                currentOwnerAddress: null,
+                inCustody: false,
+                originalOwnerAddress: null
+            },
+            blockchainData: {
+                mintable: false,
+                minted: false,
+                tokenId: null,
+                chain: null,
+                contractAddress: null,
+                mintHash: null,
+            },
+            purchaseDate: Math.floor(Date.now() / 1000),
+            obtainMethod: ObtainMethod.BIT_ORB_I,
+            placedIslandId: 0,
+            lastRelocationTimestamp: 0,
+            currentFarmingLevel: 1,
+            farmingStats: randomizeFarmingStats(rarity),
+            traits,
+            equippedCosmetics: {
+                head: { cosmeticId: null, cosmeticName: null, equippedAt: 0 },
+                body: { cosmeticId: null, cosmeticName: null, equippedAt: 0 },
+                arms: { cosmeticId: null, cosmeticName: null, equippedAt: 0 },
+                back: { cosmeticId: null, cosmeticName: null, equippedAt: 0 },
+            },
+            bitStatsModifiers
+        }
+
+        // proceed to create the bit
+        await BitModel.create([bit], { session });
+
+        // push created bit id to user's inventory
+        await UserModel.updateOne({
+            _id: owner
+        }, {
+            $push: {
+                'inventory.bitIds': bit.bitId
+            }
+        });
+
+        // commit the transaction only if this function started it
+        if (!_session) {
+            await session.commitTransaction();
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(summonBit) Bit randomized and summoned.`,
+            data: {
+                bit
+            }
+        }
+    } catch (err: any) {
+        // abort the transaction if an error occurs
+        if (!_session) {
+            await session.abortTransaction();
+        }
+
+        return {
+            status: Status.ERROR,
+            message: `(summonBit) Error: ${err.message}`
+        }
+    } finally {
+        if (!_session) {
+            session.endSession();
+        }
+    }
+}
