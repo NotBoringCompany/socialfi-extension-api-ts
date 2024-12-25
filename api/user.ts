@@ -48,6 +48,7 @@ import { dayjs } from '../utils/dayjs';
 import { getOwnedKeyIDs } from './kos';
 import { CURRENT_SEASON } from '../utils/constants/leaderboard';
 import { REFERRAL_REQUIRED_LEVEL } from '../utils/constants/invite';
+import { LineProfile } from '../models/line';
 
 /**
  * Renames `hasReachedLevel4` to `hasReachedRequiredLevel` in `referredUsersData` in `referralData`.
@@ -2836,6 +2837,60 @@ export const getUserProfile = async (id: string): Promise<ReturnValue<{ profile:
         return {
             status: Status.ERROR,
             message: `(getUserProfile) ${err.message}`,
+        };
+    }
+}
+
+/**
+ * Handle line session
+ */
+export const handleLineLogin = async (profile: LineProfile) => {
+    try {
+        const user = await UserModel.findOne({ twitterId: profile.userId }).lean();
+
+        // if the user exist then send the correct credential
+        if (user) {
+            // user exists, return
+            return {
+                status: Status.SUCCESS,
+                message: `(handleLineLogin) User found. Logging in.`,
+                data: {
+                    userId: user._id,
+                    twitterId: user.twitterId,
+                    loginType: 'Login',
+                    referralCode: user.referralData.referralCode
+                },
+            };
+        }
+
+        // create a new user if the user not found in the database
+        const newUserResult = await createNewUser({
+            id: profile.userId,
+            name: profile.displayName,
+            profilePicture: profile.pictureUrl,
+            username: profile.userId,
+            method: 'line'
+        });
+
+        if (newUserResult.status !== Status.SUCCESS) {
+            throw new Error(newUserResult.message);
+        }
+
+        const newUser = newUserResult.data.newUser as User;
+
+        return {
+            status: Status.SUCCESS,
+            message: `(handleLineLogin) New user created.`,
+            data: {
+                userId: newUser._id,
+                twitterId: newUser.twitterId,
+                loginType: 'Register',
+            },
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(handleLineLogin) ${err.message}`,
         };
     }
 }
