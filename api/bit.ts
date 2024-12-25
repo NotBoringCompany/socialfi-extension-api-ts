@@ -1181,7 +1181,7 @@ export const summonBit = async (
             $push: {
                 'inventory.bitIds': bit.bitId
             }
-        });
+        }, { session });
 
         // commit the transaction only if this function started it
         if (!_session) {

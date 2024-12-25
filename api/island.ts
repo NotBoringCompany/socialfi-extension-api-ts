@@ -3133,7 +3133,7 @@ export const summonIsland = async (
             $push: {
                 'inventory.islandIds': island.islandId
             }
-        });
+        }, { session });
 
         // commit the transaction only if this function started it
         if (!_session) {
