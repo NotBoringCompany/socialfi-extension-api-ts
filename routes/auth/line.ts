@@ -16,11 +16,16 @@ router.post('/login', async (req, res, next) => {
     }
 
     try {
+        console.log(accessToken);
+        
+
         // validate the access token
         const tokenResult = await verifyLineToken(accessToken);
         if (tokenResult.status !== Status.SUCCESS) {
             return res.status(tokenResult.status).json(tokenResult);
         }
+
+        console.log(tokenResult);
 
         // get user's profile
         const profileResult = await getLineProfile(accessToken);
@@ -28,10 +33,14 @@ router.post('/login', async (req, res, next) => {
             return res.status(profileResult.status).json(profileResult);
         }
 
+        console.log(profileResult);
+
         const loginResult = await handleLineLogin(profileResult.data);
         if (loginResult.status !== Status.SUCCESS) {
             return res.status(loginResult.status).json(loginResult);
         }
+
+        console.log(loginResult);
 
         const token = generateJWT(loginResult.data.twitterId, accessToken, accessToken, Date.now() * 2);
 
