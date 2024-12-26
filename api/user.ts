@@ -3516,12 +3516,15 @@ export const getUserByWallet = async (address: string): Promise<ReturnValue<{ us
     try {
         const user = await UserModel.findOne({ 'secondaryWallets.address': address }).lean();
         if (!user) {
-            throw new Error('User not found');
+            return {
+                status: Status.ERROR,
+                message: `(getUserByWallet) User not found`,
+            };
         }
 
         return {
             status: Status.SUCCESS,
-            message: `(handleLineLogin) New user created.`,
+            message: `(getUserByWallet) User fetched.`,
             data: {
                 user: user as User,
             },
@@ -3529,7 +3532,7 @@ export const getUserByWallet = async (address: string): Promise<ReturnValue<{ us
     } catch (err: any) {
         return {
             status: Status.ERROR,
-            message: `(handleLineLogin) ${err.message}`,
+            message: `(getUserByWallet) ${err.message}`,
         };
     }
 }
