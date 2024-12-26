@@ -10,6 +10,7 @@ import { ExtendedResource, Resource } from './resource';
  * Represents an island.
  */
 export interface Island {
+    _id?: string;
     /** unique id to distinguish the island, starts from 1 */
     islandId: number;
     /** type of island; Raft is also included as an island type when the user has no island */

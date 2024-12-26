@@ -930,6 +930,7 @@ export const summonBit = async (
 
         // summon and return the Bit
         const bit: Bit = {
+            _id: generateObjectId(),
             bitId: latestBitId + 1,
             bitType: randomizeBitType(),
             bitNameData: {

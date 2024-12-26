@@ -9,6 +9,7 @@ import { ObtainMethod } from './obtainMethod';
  * Represents a Bit.
  */
 export interface Bit {
+    _id?: string;
     /** unique id to distinguish the bit, starts from 1 */
     bitId: number;
     /** the bit's name data */

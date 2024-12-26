@@ -2867,6 +2867,7 @@ export const summonIsland = async (
 
         // summon and return the island. DOESN'T SAVE TO DATABASE YET.
         const island: Island = {
+            _id: generateObjectId(),
             islandId: latestIslandId + 1,
             type: islandType,
             owner,
