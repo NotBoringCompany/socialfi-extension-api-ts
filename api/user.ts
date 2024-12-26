@@ -3508,3 +3508,28 @@ export const handleLineLogin = async (profile: LineProfile) => {
         };
     }
 }
+
+/**
+ * Get user by their wallet address
+ */
+export const getUserByWallet = async (address: string): Promise<ReturnValue<{ user: User }>> => {
+    try {
+        const user = await UserModel.findOne({ 'secondaryWallets.address': address }).lean();
+        if (!user) {
+            throw new Error('User not found');
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(handleLineLogin) New user created.`,
+            data: {
+                user: user as User,
+            },
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(handleLineLogin) ${err.message}`,
+        };
+    }
+}
