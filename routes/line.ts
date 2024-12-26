@@ -4,7 +4,7 @@ import { getUserByWallet } from '../api/user';
 
 const router = express.Router();
 
-router.post('/address/:userAddress', authMiddleware(3), async (req, res) => {
+router.get('/address/:userAddress', authMiddleware(3), async (req, res) => {
     const { twitterId } = req.body;
 
     try {
