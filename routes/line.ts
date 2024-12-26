@@ -5,10 +5,10 @@ import { getUserByWallet } from '../api/user';
 const router = express.Router();
 
 router.get('/address/:userAddress', authMiddleware(3), async (req, res) => {
-    const { twitterId } = req.body;
+    const { userAddress } = req.params;
 
     try {
-        const { status, message, data } = await getUserByWallet(twitterId);
+        const { status, message, data } = await getUserByWallet(userAddress);
 
         return res.status(status).json({
             status,
