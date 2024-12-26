@@ -11,6 +11,7 @@ import {
     RANDOMIZE_GENDER,
     getBitStatsModifiersFromTraits,
     randomizeBitTraits,
+    randomizeBitType,
 } from '../utils/constants/bit';
 import {
     GATHERING_RATE_EXPONENTIAL_DECAY,
@@ -20,9 +21,12 @@ import { Food, FoodType } from '../models/food';
 import { FOOD_ENERGY_REPLENISHMENT } from '../utils/constants/food';
 import { BarrenResource, ExtendedResource } from '../models/resource';
 import { generateObjectId } from '../utils/crypto';
-import { BitModel, IslandModel, UserModel } from '../utils/constants/db';
+import { BitModel, IslandModel, UserModel, WONDERBITS_CONNECTION } from '../utils/constants/db';
 import { ObtainMethod } from '../models/obtainMethod';
 import { redis } from '../utils/constants/redis';
+import { RANDOMIZE_RARITY_FROM_ORB } from '../utils/constants/bitOrb';
+import { BitOrbType } from '../models/bitOrb';
+import { ClientSession } from 'mongoose';
 
 /**
  * Gifts a user from Xterio an Xterio bit.
@@ -888,3 +892,101 @@ export const getBits = async (bitIds: number[]): Promise<ReturnValue> => {
         };
     }
 };
+
+/**
+ * Summon a Bit.
+ */
+export const summonBit = async (
+    owner: string,
+    typeOrRarity: BitOrbType | BitRarity,
+    _session?: ClientSession
+): Promise<ReturnValue> => {
+    const session = _session ?? (await WONDERBITS_CONNECTION.startSession());
+    if (!_session) session.startTransaction();
+
+    try {
+        // get the latest bit id from the database
+        const { status, message, data } = await getLatestBitId();
+        if (status !== Status.SUCCESS) {
+            return {
+                status,
+                message: `(randomizeBit) Error from getLatestBitId: ${message}`
+            }
+        }
+
+        const latestBitId = data?.latestBitId as number;
+
+        const isRarity = Object.values(BitRarity).includes(typeOrRarity as BitRarity);
+
+        // get the Bit's rarity based on the probability of obtaining it
+        const rarity = isRarity ? typeOrRarity as BitRarity : RANDOMIZE_RARITY_FROM_ORB(typeOrRarity as BitOrbType);
+
+        // randomize the gender 
+        const gender = RANDOMIZE_GENDER();
+
+        // randomize the traits and the resulting stat modifiers for the bit
+        const traits = randomizeBitTraits(rarity);
+        const bitStatsModifiers = getBitStatsModifiersFromTraits(traits.map(trait => trait.trait));
+
+        // summon and return the Bit
+        const bit: Bit = {
+            bitId: latestBitId + 1,
+            bitType: randomizeBitType(),
+            bitNameData: {
+                name: `Bit #${latestBitId + 1}`,
+                lastChanged: 0
+            },
+            rarity,
+            gender,
+            owner,
+            premium: true,
+            purchaseDate: Math.floor(Date.now() / 1000),
+            obtainMethod: ObtainMethod.BIT_ORB_I,
+            placedIslandId: 0,
+            lastRelocationTimestamp: 0,
+            currentFarmingLevel: 1,
+            farmingStats: randomizeFarmingStats(rarity),
+            traits,
+            bitStatsModifiers
+        }
+
+        // proceed to create the bit
+        await BitModel.create([bit], { session });
+
+        // push created bit id to user's inventory
+        await UserModel.updateOne({
+            _id: owner
+        }, {
+            $push: {
+                'inventory.bitIds': bit.bitId
+            }
+        }, { session });
+
+        // commit the transaction only if this function started it
+        if (!_session) {
+            await session.commitTransaction();
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(summonBit) Bit summoned successfully.`,
+            data: {
+                bit
+            }
+        }
+    } catch (err: any) {
+        // abort the transaction if an error occurs
+        if (!_session) {
+            await session.abortTransaction();
+        }
+
+        return {
+            status: Status.ERROR,
+            message: `(summonBit) Error: ${err.message}`
+        }
+    } finally {
+        if (!_session) {
+            session.endSession();
+        }
+    }
+}

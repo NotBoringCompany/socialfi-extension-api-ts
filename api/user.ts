@@ -2,15 +2,15 @@ import { ReturnValue, Status } from '../utils/retVal';
 import { createUserWallet } from '../utils/wallet';
 import { createRaft } from './raft';
 import { generateHashSalt, generateObjectId, generateReferralCode } from '../utils/crypto';
-import { addBitToDatabase, getLatestBitId, randomizeFarmingStats } from './bit';
+import { addBitToDatabase, getLatestBitId, randomizeFarmingStats, summonBit } from './bit';
 import { RANDOMIZE_GENDER, getBitStatsModifiersFromTraits, randomizeBitTraits, randomizeBitType } from '../utils/constants/bit';
 import { ObtainMethod } from '../models/obtainMethod';
-import { IslandModel, LeaderboardModel, SquadLeaderboardModel, SquadModel, StarterCodeModel, UserModel } from '../utils/constants/db';
-import { addIslandToDatabase, getLatestIslandId, placeBit, randomizeBaseResourceCap } from './island';
+import { IslandModel, LeaderboardModel, SquadLeaderboardModel, SquadModel, StarterCodeModel, UserModel, WONDERBITS_CONNECTION } from '../utils/constants/db';
+import { addIslandToDatabase, getLatestIslandId, placeBit, randomizeBaseResourceCap, summonIsland } from './island';
 import { POIName } from '../models/poi';
 import { ExtendedResource, SimplifiedResource } from '../models/resource';
 import { resources } from '../utils/constants/resource';
-import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, PlayerEnergy, XCookieSource } from '../models/user';
+import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, PlayerEnergy, UserNewProfile, XCookieSource } from '../models/user';
 import {
     DAILY_REROLL_BONUS_MILESTONE,
     ENERGY_POTION_RECOVERY,
@@ -41,6 +41,7 @@ import { ExtendedDiscordProfile, ExtendedProfile } from '../utils/types';
 import * as dotenv from 'dotenv';
 import { TelegramAuthData } from '../utils/telegram';
 import { sendMailsToNewUser } from './mail';
+import { ClientSession } from 'mongoose';
 
 /**
  * Returns the user's data.
@@ -70,6 +71,169 @@ export const getUserData = async (twitterId: string): Promise<ReturnValue> => {
         };
     }
 };
+
+/**
+ * Create a new user
+ */
+export const createNewUser = async (profile: UserNewProfile, _session?: ClientSession): Promise<ReturnValue> => {
+    const session = _session ?? (await WONDERBITS_CONNECTION.startSession());
+    if (!_session) session.startTransaction();
+
+    try {
+        // generates a new object id for the user
+        const userObjectId = generateObjectId();
+
+        // creates a new raft for the user with the generated user object id
+        const { status, message, data } = await createRaft(userObjectId);
+        if (status !== Status.SUCCESS) {
+            return {
+                status,
+                message: `(createNewUser) Error from createRaft: ${message}`,
+            };
+        }
+
+        // initialize PlayerEnergy for new user
+        const newEnergy: PlayerEnergy = {
+            currentEnergy: MAX_ENERGY_CAP,
+            maxEnergy: MAX_ENERGY_CAP,
+            dailyEnergyPotion: MAX_ENERGY_POTION_CAP,
+        }
+
+        // creates the wallet for the user
+        const { privateKey, address } = createUserWallet();
+
+        const newUser = new UserModel({
+            _id: userObjectId,
+            twitterId: profile.id,
+            twitterProfilePicture: profile.profilePicture,
+            twitterUsername: profile?.username,
+            twitterDisplayName: profile?.name,
+            method: profile.method,
+            createdTimestamp: Math.floor(Date.now() / 1000),
+            // invite code data will be null until users input their invite code.
+            inviteCodeData: {
+                usedStarterCode: null,
+                usedReferralCode: null,
+                referrerId: null,
+            },
+            referralData: {
+                referralCode: generateReferralCode(),
+                referredUsersData: [],
+                claimableReferralRewards: {
+                    xCookies: 0,
+                    leaderboardPoints: 0,
+                },
+            },
+            wallet: {
+                privateKey,
+                address,
+            },
+            secondaryWallets: [],
+            openedTweetIdsToday: [],
+            inventory: {
+                weight: 0,
+                maxWeight: MAX_INVENTORY_WEIGHT,
+                xCookieData: {
+                    currentXCookies: 0,
+                    extendedXCookieData: [],
+                },
+                resources: [],
+                items: [
+                    {
+                        type: BoosterItem['GATHERING_PROGRESS_BOOSTER_1000'],
+                        amount: 1,
+                    },
+                ],
+                bitCosmeticIds: [],
+                foods: [
+                    {
+                        type: FoodType['BURGER'],
+                        amount: 1,
+                    },
+                ],
+                raftId: data.raft.raftId,
+                islandIds: [],
+                bitIds: [],
+            },
+            inGameData: {
+                level: 1,
+                energy: newEnergy,
+                mastery: {
+                    tapping: {
+                        level: 1,
+                        totalExp: 0,
+                        rerollCount: 6,
+                    },
+                    // empty crafting for now (so it can be more flexible)
+                    // crafting: {},
+                    // empty berry factory for now (so it can be more flexible)
+                    berryFactory: {},
+                },
+                completedTutorialIds: [],
+                beginnerRewardData: {
+                    lastClaimedTimestamp: 0,
+                    isClaimable: true,
+                    daysClaimed: [],
+                    daysMissed: [],
+                },
+                dailyLoginRewardData: {
+                    lastClaimedTimestamp: 0,
+                    isDailyClaimable: true,
+                    consecutiveDaysClaimed: 0,
+                },
+                squadId: null,
+                lastLeftSquad: 0,
+                location: POIName.HOME,
+                travellingTo: null,
+                destinationArrival: 0,
+            },
+        });
+
+        await newUser.save({ session });
+
+        // summon a starting bit
+        const bitResult = await summonBit(newUser._id, BitRarity.COMMON, session);
+        if (bitResult.status !== Status.SUCCESS) {
+            throw new Error('Failed to summon bit');
+        }
+
+        // summon a starting island
+        const islandResult = await summonIsland(newUser._id, IslandType.PRIMAL_ISLES, session);
+        if (islandResult.status !== Status.SUCCESS) {
+            throw new Error('Failed to summon island');
+        }
+
+        // commit the transaction only if this function started it
+        if (!_session) {
+            await session.commitTransaction();
+        }
+
+        // send any necessary mails to the new user (mails with `includeNewUsers` set to true)
+        await sendMailsToNewUser(newUser.twitterId);
+
+        return {
+            status: Status.SUCCESS,
+            message: `(createNewUser) User created sucessfully`,
+            data: {
+                newUser
+            }
+        }
+    } catch (err: any) {
+         // abort the transaction if an error occurs
+         if (!_session) {
+            await session.abortTransaction();
+        }
+
+        return {
+            status: Status.ERROR,
+            message: `(createNewUser) Error: ${err.message}`
+        }
+    } finally {
+        if (!_session) {
+            session.endSession();
+        }
+    }
+}
 
 /**
  * Twitter login logic. Creates a new user or simply log them in if they already exist.

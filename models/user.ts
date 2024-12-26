@@ -309,3 +309,14 @@ export interface PlayerMastery {
      */
     berryFactory: BerryFactoryMastery;
 }
+
+/**
+ * Represents new user payload
+ */
+export interface UserNewProfile {
+    id: string;
+    name: string;
+    username: string;
+    profilePicture: string;
+    method?: string;
+}

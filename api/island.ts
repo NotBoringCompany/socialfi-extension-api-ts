@@ -10,7 +10,7 @@ import { Modifier } from '../models/modifier';
 import { BitSchema } from '../schemas/Bit';
 import { Bit, BitRarity, BitRarityNumeric, BitStatsModifiers, BitTrait, BitTraitData, BitType } from '../models/bit';
 import { generateObjectId } from '../utils/crypto';
-import { BitModel, IslandModel, LeaderboardModel, SquadLeaderboardModel, SquadModel, UserModel } from '../utils/constants/db';
+import { BitModel, IslandModel, LeaderboardModel, SquadLeaderboardModel, SquadModel, UserModel, WONDERBITS_CONNECTION } from '../utils/constants/db';
 import { ObtainMethod } from '../models/obtainMethod';
 import { RELOCATION_COOLDOWN } from '../utils/constants/bit';
 import { ExtendedXCookieData, PlayerEnergy, PlayerMastery, User, XCookieSource } from '../models/user';
@@ -23,6 +23,9 @@ import { GET_SEASON_0_PLAYER_LEVEL, GET_SEASON_0_PLAYER_LEVEL_REWARDS } from '..
 import { TappingMastery } from '../models/mastery';
 import { updateReferredUsersData } from './user';
 import { redis } from '../utils/constants/redis';
+import { randomizeTypeFromCapsulator } from '../utils/constants/terraCapsulator';
+import { TerraCapsulatorType } from '../models/terraCapsulator';
+import { ClientSession } from 'mongoose';
 
 /**
  * Gifts an Xterio user an Xterio island.
@@ -2771,3 +2774,159 @@ export const resetDailyIslandTappingMilestone = async (): Promise<void> => {
         console.error(`(resetDailyIslandTappingMilestone) Error: ${err.message}`);
     }
 };
+
+/**
+ * Summons an island obtained from a Terra Capsulator.
+ */
+export const summonIsland = async (
+    owner: string,
+    terraCapsulatorType: TerraCapsulatorType | IslandType,
+    _session?: ClientSession
+): Promise<ReturnValue<{ island: Island }>> => {
+    const session = _session ?? (await WONDERBITS_CONNECTION.startSession());
+    if (!_session) session.startTransaction();
+
+    try {
+        const isIsland = Object.values(IslandType).includes(terraCapsulatorType as IslandType);
+
+        // get the latest island id from the database
+        const { status, message, data } = await getLatestIslandId();
+
+        if (status !== Status.SUCCESS) {
+            return {
+                status,
+                message: `(summonIsland) Error from getLatestIslandId: ${message}`
+            }
+        }
+
+        // get the user's owned bit ids
+        const user = await UserModel.findOne({ _id: owner }).session(session).lean();
+
+        if (!user) {
+            return {
+                status: Status.ERROR,
+                message: `(summonIsland) User not found.`
+            }
+        }
+
+        const { tapping } = user.inGameData.mastery as PlayerMastery;
+
+        const latestIslandId = data?.latestIslandId as number;
+
+        const islandType = isIsland ? (terraCapsulatorType as IslandType) : randomizeTypeFromCapsulator(terraCapsulatorType as TerraCapsulatorType);
+
+        // randomize the base resource cap
+        const baseResourceCap = randomizeBaseResourceCap(islandType);
+
+        // randomize the 5 island traits
+        const traits = randomizeIslandTraits();
+
+        const userBitIds = user.inventory?.bitIds as number[];
+
+        const islandStatsModifiers: IslandStatsModifiers = {
+            resourceCapModifiers: [],
+            gatheringRateModifiers: [],
+        }
+
+        // loop through each bit and see if they have these traits:
+        // influential, antagonistic, famous or mannerless
+        // if influential, add 1% to gathering rate modifiers
+        // if antagonistic, reduce 1% to gathering rate modifiers
+        // if famous, add 0.5% to gathering rate modifiers
+        // if mannerless, reduce 0.5% to gathering rate modifiers
+        const bits = await BitModel.find({ bitId: { $in: userBitIds } }).lean();
+
+        bits.forEach(bit => {
+            const bitTraits = bit.traits as BitTraitData[];
+
+            // check if the `trait` within each bitTraits instance contain the following traits
+            if (
+                bitTraits.some(traitData => {
+                    return traitData.trait === BitTrait.INFLUENTIAL ||
+                        traitData.trait === BitTrait.FAMOUS ||
+                        traitData.trait === BitTrait.MANNERLESS ||
+                        traitData.trait === BitTrait.ANTAGONISTIC
+                })
+            ) {
+                const gatheringRateModifier: Modifier = {
+                    origin: `Bit ID #${bit.bitId}'s Trait: ${
+                        bitTraits.some(traitData => traitData.trait === BitTrait.INFLUENTIAL) ? 'Influential' :
+                        bitTraits.some(traitData => traitData.trait === BitTrait.FAMOUS) ? 'Famous' :
+                        bitTraits.some(traitData => traitData.trait === BitTrait.MANNERLESS) ? 'Mannerless' :
+                        'Antagonistic'
+                    }`,
+                    value: bitTraits.some(traitData => traitData.trait === BitTrait.INFLUENTIAL) ? 1.01 :
+                        bitTraits.some(traitData => traitData.trait === BitTrait.FAMOUS) ? 1.005 :
+                        bitTraits.some(traitData => traitData.trait === BitTrait.MANNERLESS) ? 0.995 :
+                        0.99
+                };
+                
+                islandStatsModifiers.gatheringRateModifiers.push(gatheringRateModifier);
+            }
+        });
+
+        // summon and return the island. DOESN'T SAVE TO DATABASE YET.
+        const island: Island = {
+            islandId: latestIslandId + 1,
+            type: islandType,
+            owner,
+            purchaseDate: Math.floor(Date.now() / 1000),
+            obtainMethod: ObtainMethod.TERRA_CAPSULATOR,
+            currentLevel: 1,
+            placedBitIds: [],
+            traits,
+            islandResourceStats: {
+                baseResourceCap,
+                resourcesGathered: [],
+                dailyBonusResourcesGathered: 0,
+                claimableResources: [],
+                gatheringStart: 0,
+                gatheringEnd: 0,
+                lastClaimed: 0,
+                gatheringProgress: 0,
+                lastUpdatedGatheringProgress: Math.floor(Date.now() / 1000),
+            },
+            islandStatsModifiers,
+            islandTappingData: ISLAND_TAPPING_REQUIREMENT(1, tapping.level),
+        };
+
+        // proceed to create the island
+        await IslandModel.create([island], { session });
+
+        // push created island id to user's inventory
+        await UserModel.updateOne({
+            _id: owner
+        }, {
+            $push: {
+                'inventory.islandIds': island.islandId
+            }
+        }, { session });
+
+        // commit the transaction only if this function started it
+        if (!_session) {
+            await session.commitTransaction();
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(summonIsland) Island summoned successfully.`,
+            data: {
+                island
+            }
+        }
+    } catch (err: any) {
+        // abort the transaction if an error occurs
+        if (!_session) {
+            await session.abortTransaction();
+        }
+
+        return {
+            status: Status.ERROR,
+            message: `(summonIsland) Error: ${err.message}`
+        }
+    } finally {
+        if (!_session) {
+            session.endSession();
+        }
+    }
+}
