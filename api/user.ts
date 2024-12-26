@@ -10,7 +10,7 @@ import { addIslandToDatabase, getLatestIslandId, placeBit, randomizeBaseResource
 import { POIName } from '../models/poi';
 import { ExtendedResource, SimplifiedResource } from '../models/resource';
 import { resources } from '../utils/constants/resource';
-import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, PlayerEnergy, UserNewProfile, XCookieSource } from '../models/user';
+import { BeginnerRewardData, BeginnerRewardType, DailyLoginRewardData, DailyLoginRewardType, ExtendedXCookieData, PlayerEnergy, User, UserNewProfile, XCookieSource } from '../models/user';
 import {
     DAILY_REROLL_BONUS_MILESTONE,
     ENERGY_POTION_RECOVERY,
@@ -42,6 +42,7 @@ import * as dotenv from 'dotenv';
 import { TelegramAuthData } from '../utils/telegram';
 import { sendMailsToNewUser } from './mail';
 import { ClientSession } from 'mongoose';
+import { LineProfile } from '../models/line';
 
 /**
  * Returns the user's data.
@@ -3446,6 +3447,60 @@ export const handleTelegramConnect = async (twitterId: string, telegramUser: Tel
         return {
             status: Status.ERROR,
             message: `(handleTelegramConnect) ${err.message}`,
+        };
+    }
+}
+
+/**
+ * Handle line session
+ */
+export const handleLineLogin = async (profile: LineProfile) => {
+    try {
+        const user = await UserModel.findOne({ twitterId: profile.userId }).lean();
+
+        // if the user exist then send the correct credential
+        if (user) {
+            // user exists, return
+            return {
+                status: Status.SUCCESS,
+                message: `(handleLineLogin) User found. Logging in.`,
+                data: {
+                    userId: user._id,
+                    twitterId: user.twitterId,
+                    loginType: 'Login',
+                    referralCode: user.referralData.referralCode
+                },
+            };
+        }
+
+        // create a new user if the user not found in the database
+        const newUserResult = await createNewUser({
+            id: profile.userId,
+            name: profile.displayName,
+            profilePicture: profile.pictureUrl || 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png',
+            username: profile.displayName,
+            method: 'line'
+        });
+
+        if (newUserResult.status !== Status.SUCCESS) {
+            throw new Error(newUserResult.message);
+        }
+
+        const newUser = newUserResult.data.newUser as User;
+
+        return {
+            status: Status.SUCCESS,
+            message: `(handleLineLogin) New user created.`,
+            data: {
+                userId: newUser._id,
+                twitterId: newUser.twitterId,
+                loginType: 'Register',
+            },
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(handleLineLogin) ${err.message}`,
         };
     }
 }
