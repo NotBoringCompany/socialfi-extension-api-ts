@@ -723,24 +723,28 @@ export const generateUnlinkSignatureMessage = (walletAddress: string): string =>
 export const linkSecondaryWallet = async (
     twitterId: string,
     walletAddress: string,
-    signatureMessage: string,
-    signature: Uint8Array | `0x${string}` | Signature
+    provider?: string,
+    signatureMessage?: string,
+    signature?: Uint8Array | `0x${string}` | Signature
 ): Promise<ReturnValue> => {
     try {
-        const recoveredAddress = await recoverMessageAddress({
-            message: signatureMessage,
-            signature,
-        });
-
-        console.log('wallet address: ', walletAddress);
-        console.log('recovered address: ', recoveredAddress);
-
-        if (recoveredAddress.toLowerCase() !== walletAddress.toLowerCase()) {
-            return {
-                status: Status.BAD_REQUEST,
-                message: `(linkSecondaryWallet) Invalid signature.`,
-            };
+        if (provider !== 'line') {
+            const recoveredAddress = await recoverMessageAddress({
+                message: signatureMessage,
+                signature,
+            });
+    
+            console.log('wallet address: ', walletAddress);
+            console.log('recovered address: ', recoveredAddress);
+    
+            if (recoveredAddress.toLowerCase() !== walletAddress.toLowerCase()) {
+                return {
+                    status: Status.BAD_REQUEST,
+                    message: `(linkSecondaryWallet) Invalid signature.`,
+                };
+            }
         }
+
 
         const user = await UserModel.findOne({ twitterId }).lean();
 

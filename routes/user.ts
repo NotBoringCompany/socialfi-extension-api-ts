@@ -324,7 +324,7 @@ router.post('/generate_unlink_signature_message', async (req, res) => {
 })
 
 router.post('/link_secondary_wallet', async (req, res) => {
-    const { walletAddress, signatureMessage, signature } = req.body;
+    const { walletAddress, signatureMessage, signature, provider } = req.body;
     try {
         const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'link_secondary_wallet');
 
@@ -338,6 +338,7 @@ router.post('/link_secondary_wallet', async (req, res) => {
         const { status, message, data } = await linkSecondaryWallet(
             validateData?.twitterId,
             walletAddress,
+            provider,
             signatureMessage,
             signature
         );
