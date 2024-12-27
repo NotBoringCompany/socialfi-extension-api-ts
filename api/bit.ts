@@ -899,7 +899,8 @@ export const getBits = async (bitIds: number[]): Promise<ReturnValue> => {
 export const summonBit = async (
     owner: string,
     typeOrRarity: BitOrbType | BitRarity,
-    _session?: ClientSession
+    _session?: ClientSession,
+    starterBit?: boolean
 ): Promise<ReturnValue> => {
     const session = _session ?? (await WONDERBITS_CONNECTION.startSession());
     if (!_session) session.startTransaction();
@@ -949,6 +950,12 @@ export const summonBit = async (
             farmingStats: randomizeFarmingStats(rarity),
             traits,
             bitStatsModifiers
+        }
+
+        // check if starterBit or not, if true set the energy to 50
+        if (starterBit) {
+            bit.farmingStats.currentEnergy = 50;
+            console.log(`(summonBit), Starter bit detected. Energy set to 50 for bitId: ${bit.bitId}`);
         }
 
         // proceed to create the bit

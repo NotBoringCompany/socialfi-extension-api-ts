@@ -192,8 +192,8 @@ export const createNewUser = async (profile: UserNewProfile, _session?: ClientSe
 
         await newUser.save({ session });
 
-        // summon a starting bit
-        const bitResult = await summonBit(newUser._id, BitRarity.COMMON, session);
+        // summon a starting bit, set last parameter as true
+        const bitResult = await summonBit(newUser._id, BitRarity.COMMON, session, true);
         if (bitResult.status !== Status.SUCCESS) {
             throw new Error('Failed to summon bit');
         }
