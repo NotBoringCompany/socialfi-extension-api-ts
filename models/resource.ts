@@ -137,7 +137,7 @@ export enum WoodResource {
     PINE_WOOD = 'Pine Wood',
     OAK_WOOD = 'Oak Wood',
     MAHOGANY_WOOD = 'Mahogany Wood',
-    TEAK_WOOD = 'TEAK Wood',
+    TEAK_WOOD = 'Teak Wood',
     EBONY_WOOD = 'Ebony Wood',
 }
 
