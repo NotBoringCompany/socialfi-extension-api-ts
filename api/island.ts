@@ -2214,6 +2214,10 @@ export const randomizeResourceFromChances = (
                 if (trait === IslandTrait.FERTILE) {
                     return r.line === ResourceLine.FRUIT && r.rarity === <ResourceRarity>resourceRarity;
                 }
+
+                if (trait === IslandTrait.FORESTRY) {
+                    return r.line === ResourceLine.WOOD && r.rarity === <ResourceRarity>resourceRarity;
+                }
             });
 
             console.log(`(randomizeResourceFromChances) resource is undefined: `, resource === undefined);

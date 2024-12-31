@@ -67,6 +67,7 @@ export enum ResourceLine {
     ORE = 'Ore',
     FRUIT = 'Fruit',
     LIQUID = 'Liquid',
+    WOOD = 'Wood',
 }
 
 /** 
@@ -129,10 +130,21 @@ export enum LiquidResource {
     PHOENIX_TEAR = 'Phoenix Tear',
 }
 
+/**
+ * Lists all wood resources from common-legendary.
+ */
+export enum WoodResource {
+    PINE_WOOD = 'Pine Wood',
+    OAK_WOOD = 'Oak Wood',
+    MAHOGANY_WOOD = 'Mahogany Wood',
+    TEAK_WOOD = 'TEAK Wood',
+    EBONY_WOOD = 'Ebony Wood',
+}
+
 /** 
  * Represents a resource type based on all possible resources.
  */
-export type ResourceType = BarrenResource | OreResource | FruitResource | LiquidResource;
+export type ResourceType = BarrenResource | OreResource | FruitResource | LiquidResource | WoodResource;
 
 /**
  * Lists all possible resources.
@@ -142,4 +154,5 @@ export const CombinedResources = {
     ...OreResource,
     ...FruitResource,
     ...LiquidResource,
+    ...WoodResource
 }

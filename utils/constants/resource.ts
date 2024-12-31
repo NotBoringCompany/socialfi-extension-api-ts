@@ -1,4 +1,4 @@
-import { BarrenResource, FruitResource, LiquidResource, OreResource, Resource, ResourceLine, ResourceRarity, ResourceType } from '../../models/resource';
+import { BarrenResource, FruitResource, LiquidResource, OreResource, Resource, ResourceLine, ResourceRarity, ResourceType, WoodResource } from '../../models/resource';
 
 export const resources: Resource[] = [
     // Ore resources
@@ -19,5 +19,11 @@ export const resources: Resource[] = [
     { type: LiquidResource.HONEY, line: ResourceLine.LIQUID, rarity: ResourceRarity.RARE, weight: 1 },
     { type: LiquidResource.MOONLIGHT_DEW, line: ResourceLine.LIQUID, rarity: ResourceRarity.EPIC, weight: 1 },
     { type: LiquidResource.PHOENIX_TEAR, line: ResourceLine.LIQUID, rarity: ResourceRarity.LEGENDARY, weight: 1 },
+    // Wood resources
+    { type: WoodResource.PINE_WOOD, line: ResourceLine.WOOD, rarity: ResourceRarity.COMMON, weight: 4 },
+    { type: WoodResource.OAK_WOOD, line: ResourceLine.WOOD, rarity: ResourceRarity.UNCOMMON, weight: 4 },
+    { type: WoodResource.MAHOGANY_WOOD, line: ResourceLine.WOOD, rarity: ResourceRarity.RARE, weight: 4 },
+    { type: WoodResource.TEAK_WOOD, line: ResourceLine.WOOD, rarity: ResourceRarity.EPIC, weight: 4 },
+    { type: WoodResource.EBONY_WOOD, line: ResourceLine.WOOD, rarity: ResourceRarity.LEGENDARY, weight: 4 },
 ];
 

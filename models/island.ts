@@ -78,6 +78,8 @@ export enum IslandTrait {
     FERTILE = 'Fertile',
     // produce liquids
     AQUIFER = 'Aquifer',
+    // produce woods
+    FORESTRY = 'Forestry',
 }
 
 /**
