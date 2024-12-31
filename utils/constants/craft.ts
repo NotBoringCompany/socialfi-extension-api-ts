@@ -13,6 +13,7 @@ import { BitRarity } from '../../models/bit';
 import { CraftingMastery, CraftingMasteryStats } from '../../models/mastery';
 import { completeCraft } from '../../api/craft';
 import { Status } from '../retVal';
+import { toPascalCase } from '../strings';
 
 /**
  * this is the base amount of crafting slots users get per crafting line.
@@ -215,11 +216,11 @@ export const GET_PROFESSION_REQUIRED_XP_MULTIPLIER = (line: CraftingRecipeLine):
 export const GET_PROFESSION_REQUIRED_XP = (craftingLine: CraftingRecipeLine, currentLevel: number, craftingMastery: CraftingMastery) => {
     // get the XP multipliers for the given crafting line
     const multipliers = GET_PROFESSION_REQUIRED_XP_MULTIPLIER(craftingLine);
-    let multiplier = 0;
+    let multiplier = 1;
 
     // loop through all crafting lines to calculate the combined multiplier
     for (const [key, value] of Object.entries(craftingMastery)) {
-        const profession = key as CraftingRecipeLine;
+        const profession = toPascalCase(key) as CraftingRecipeLine;
         const stats = value as CraftingMasteryStats;
 
         // skip if the current crafting line is the same with targeted crafting line

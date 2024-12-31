@@ -35,7 +35,7 @@ export const addToInventory = async (
                 { _id: userId },
                 {
                     $inc: {
-                        ['inventory.weight']: resource.weight,
+                        ['inventory.weight']: resource.weight * amount,
                     },
                 },
                 { session, new: true }

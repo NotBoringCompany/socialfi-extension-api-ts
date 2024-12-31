@@ -28,7 +28,7 @@ import { CraftingQueueModel, UserModel, TEST_CONNECTION } from '../utils/constan
 import { resources } from '../utils/constants/resource';
 import { generateObjectId } from '../utils/crypto';
 import { ReturnValue, Status } from '../utils/retVal';
-import { toCamelCase } from '../utils/strings';
+import { toCamelCase, toPascalCase } from '../utils/strings';
 import { batchAddToInventory, batchDeductFromInventory } from './inventory';
 import { addPoints } from './leaderboard';
 import { PointsSource } from '../models/user';
@@ -692,594 +692,6 @@ export const fetchCraftingQueues = async (userId: string): Promise<ReturnValue> 
 };
 
 /**
- * Claims craftable assets either manually or automatically.
- *
- * If `claimType` is `auto`, then the function will attempt to claim ALL claimable crafted assets for the user for each queue.
- * However, if, for example, the user's inventory exceeds the limit and therefore cannot claim all assets, the function will claim as many as possible.
- *
- * If `claimType` is `manual`, then the function will only claim the crafted assets with the specified `craftingQueueIds`.
- * If no `craftingQueueIds` are provided, the function will throw an error.
- */
-export const claimCraftedAssets = async (
-    twitterId: string,
-    claimType: 'manual' | 'auto' = 'auto',
-    // different assets are craftable in different POI locations (e.g. synthesizing is done in Evergreen Village).
-    // therefore, a user can only claim assets of a specific crafting line.
-    craftingLine: CraftingRecipeLine,
-    // MUST be provided if `claimType` is 'manual'
-    craftingQueueIds?: string[]
-): Promise<ReturnValue> => {
-    try {
-        const user = await UserModel.findOne({ twitterId }).lean();
-
-        if (!user) {
-            return {
-                status: Status.ERROR,
-                message: `(claimCraftedAssets) User not found.`,
-            };
-        }
-
-        if (!craftingLine) {
-            return {
-                status: Status.ERROR,
-                message: `(claimCraftedAssets) Crafting line must be provided.`,
-            };
-        }
-
-        // find all claimable crafting queues for a user given the crafting line (which can be queried under `craftingRecipeLine`)
-        // NOTE: `PARTIALLY_CANCELLED_CLAIMABLE` queues also have to be included because the user can still claim the assets before the queue was cancelled.
-        const claimableCraftingQueues = await CraftingQueueModel.find({
-            userId: user._id,
-            craftingRecipeLine: craftingLine,
-            status: { $in: [CraftingQueueStatus.CLAIMABLE, CraftingQueueStatus.PARTIALLY_CANCELLED_CLAIMABLE] },
-        }).lean();
-
-        if (claimableCraftingQueues.length === 0) {
-            return {
-                status: Status.ERROR,
-                message: `(claimCraftedAssets) No claimable crafted assets found for the chosen line: ${craftingLine}.`,
-            };
-        }
-
-        // for each crafting line, check if the user is in the right POI. if not, throw an error.
-        const requiredPOI = REQUIRED_POI_FOR_CRAFTING_LINE(craftingLine);
-
-        if (user.inGameData.location !== requiredPOI) {
-            return {
-                status: Status.ERROR,
-                message: `(claimCraftedAssets) User must be in ${requiredPOI} to claim crafted assets of this line.`,
-            };
-        }
-
-        const userUpdateOperations = {
-            $push: {},
-            $inc: {},
-            $set: {},
-            $pull: {},
-        };
-
-        const craftingQueueUpdateOperations: Array<{
-            queueId: string;
-            updateOperations: {
-                $set?: {};
-                $push?: {};
-                $pull?: {};
-                $inc?: {};
-            };
-        }> = [];
-
-        const fullyClaimedCraftingData: {
-            queueId: string;
-            craftedAsset: string;
-            claimableAmount: number;
-        }[] = [];
-        const partiallyClaimedCraftingData: {
-            queueId: string;
-            craftedAsset: string;
-            claimableAmount: number;
-        }[] = [];
-
-        // initialize $each on the user's inventory items, foods and/or resources.
-        if (!userUpdateOperations.$push['inventory.items']) {
-            userUpdateOperations.$push['inventory.items'] = { $each: [] };
-        }
-
-        if (!userUpdateOperations.$push['inventory.foods']) {
-            userUpdateOperations.$push['inventory.foods'] = { $each: [] };
-        }
-
-        if (!userUpdateOperations.$push['inventory.resources']) {
-            userUpdateOperations.$push['inventory.resources'] = { $each: [] };
-        }
-
-        // we want to calculate how much XP the user has earned so far when claiming all the crafted assets.
-        // we give them XP here instead of in `craftAsset` because the user might exploit crafting lots of assets and cancelling them while still getting XP.
-        // they cannot cancel claimable crafted assets, so we give them the XP here.
-        const craftingLinesToIncrementXP: Array<{
-            craftingLine: CraftingRecipeLine;
-            xp: number;
-        }> = [];
-
-        if (claimType === 'manual') {
-            // `craftingQueueIds` must be provided if `claimType` is 'manual'
-            if (!craftingQueueIds || craftingQueueIds.length === 0) {
-                return {
-                    status: Status.ERROR,
-                    message: `(claimCraftedAssets) Valid crafting queue IDs must be provided when claiming crafted assets manually.`,
-                };
-            }
-
-            // right now, the only limitation is the weight of the assets.
-            // if the claimable assets have a totalWeight > 0, we need to check if the user's inventory weight + the totalWeight of the assets to claim exceeds the limit.
-            // firstly, we need to check if the provided `craftingQueueIds` are valid.
-            // to do this, we will filter the `claimableCraftingQueues` array with the provided `craftingQueueIds`.
-            // if the length of the filtered array is not equal to the length of the provided `craftingQueueIds`, then one or more of the provided IDs are invalid. we throw an error.
-            const filteredClaimableCraftingQueues = claimableCraftingQueues.filter((queue) =>
-                craftingQueueIds.includes(queue._id)
-            );
-
-            if (filteredClaimableCraftingQueues.length !== craftingQueueIds.length) {
-                return {
-                    status: Status.ERROR,
-                    message: `(claimCraftedAssets) One or more of the provided crafting queue IDs are invalid.`,
-                };
-            }
-
-            // get the total weight of the assets to claim
-            const finalizedTotalWeight = filteredClaimableCraftingQueues.reduce((acc, queue) => {
-                // because the total weight depends on the claimable amount per each queue, we will need to calculate the weight for each asset (craftedAssetData.totalWeight / craftedAssetData.amount)
-                // and then multiply it by the claimable amount.
-                return (
-                    acc +
-                    (queue.craftedAssetData.totalWeight / queue.craftedAssetData.amount) *
-                        queue.claimData.claimableAmount
-                );
-            }, 0);
-
-            // check if the user's inventory weight + the totalWeight of the assets to claim exceeds the limit
-            if (user.inventory.weight + finalizedTotalWeight > user.inventory.maxWeight) {
-                return {
-                    status: Status.ERROR,
-                    message: `(claimCraftedAssets) Claiming the assets will exceed the inventory weight limit.`,
-                };
-            }
-
-            // claim the assets
-            for (const queue of filteredClaimableCraftingQueues) {
-                const { asset, assetType, totalWeight } = queue.craftedAssetData;
-                const claimableAmount = queue.claimData.claimableAmount;
-
-                // skip if claimableAmount is 0
-                if (claimableAmount === 0) {
-                    continue;
-                }
-
-                if (assetType === 'item') {
-                    // check if the user owns this asset in their inventory
-                    const itemIndex = (user.inventory?.items as Item[]).findIndex((item) => item.type === asset);
-
-                    // if not found, add the item to the user's inventory (along with the amount). if found, increment the amount.
-                    if (itemIndex === -1) {
-                        userUpdateOperations.$push['inventory.items'].$each.push({
-                            type: asset,
-                            amount: claimableAmount,
-                            totalAmountConsumed: 0,
-                            weeklyAmountConsumed: 0,
-                            mintableAmount: 0,
-                        });
-                    } else {
-                        userUpdateOperations.$inc[`inventory.items.${itemIndex}.amount`] = claimableAmount;
-                    }
-                } else if (assetType === 'food') {
-                    // check if the user owns the food in their inventory
-                    const foodIndex = (user.inventory?.foods as Food[]).findIndex((food) => food.type === asset);
-
-                    // if not found, add the food to the user's inventory (along with the amount). if found, increment the amount.
-                    if (foodIndex === -1) {
-                        userUpdateOperations.$push['inventory.foods'].$each.push({
-                            type: asset,
-                            amount: claimableAmount,
-                            mintableAmount: 0,
-                        });
-                    } else {
-                        userUpdateOperations.$inc[`inventory.foods.${foodIndex}.amount`] = claimableAmount;
-                    }
-                } else if (assetType === 'resource') {
-                    // get the resource data.
-                    const resourceData = resources.find((resource) => resource.type === asset);
-
-                    if (!resourceData) {
-                        return {
-                            status: Status.ERROR,
-                            message: `(claimCraftedAssets) Resource data not found for ${asset}.`,
-                        };
-                    }
-
-                    // check if the user owns the resource in their inventory
-                    const resourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(
-                        (resource) => resource.type === asset
-                    );
-
-                    // if not found, add the resource to the user's inventory (along with the amount). if found, increment the amount.
-                    if (resourceIndex === -1) {
-                        userUpdateOperations.$push['inventory.resources'].$each.push({
-                            ...resourceData,
-                            amount: claimableAmount,
-                            origin: ExtendedResourceOrigin.NORMAL,
-                            mintableAmount: 0,
-                        });
-                    } else {
-                        userUpdateOperations.$inc[`inventory.resources.${resourceIndex}.amount`] = claimableAmount;
-                    }
-                }
-
-                // add the crafting queue data into fullyClaimedCraftingData
-                fullyClaimedCraftingData.push({
-                    queueId: queue._id,
-                    craftedAsset: queue.craftedAssetData.asset,
-                    claimableAmount: queue.claimData.claimableAmount,
-                });
-
-                // do three things to the crafting queue:
-                // 1. reduce the `claimData.claimableAmount` by the `claimableAmount` via $inc
-                // 2. increase the `claimData.claimedAmount` by the `claimableAmount` via $inc
-                craftingQueueUpdateOperations.push({
-                    queueId: queue._id,
-                    updateOperations: {
-                        $inc: {
-                            'claimData.claimableAmount': -claimableAmount,
-                            'claimData.claimedAmount': claimableAmount,
-                        },
-                        $set: {
-                            // 1. check if the previous status was `PARTIALLY_CANCELLED_CLAIMABLE`. if yes, check the following:
-                            // a. if the `claimableAmount` < `claimData.claimableAmount`, keep the status as `PARTIALLY_CANCELLED_CLAIMABLE`. else,
-                            // b. if the `claimableAmount` === `claimData.claimableAmount`, set the status to `PARTIALLY_CANCELLED`. else,
-                            // 2. check if `claimData.claimedAmount` + `claimData.claimableAmount` === `craftedAssetData.amount`. if yes, set the status to `CLAIMED`. else, set the status to `ONGOING`.
-                            status:
-                                queue.status === CraftingQueueStatus.PARTIALLY_CANCELLED_CLAIMABLE
-                                    ? claimableAmount < queue.claimData.claimableAmount
-                                        ? CraftingQueueStatus.PARTIALLY_CANCELLED_CLAIMABLE
-                                        : CraftingQueueStatus.PARTIALLY_CANCELLED
-                                    : queue.claimData.claimedAmount + claimableAmount === queue.craftedAssetData.amount
-                                    ? CraftingQueueStatus.CLAIMED
-                                    : CraftingQueueStatus.ONGOING,
-                        },
-                    },
-                });
-
-                // increase the user's weight
-                userUpdateOperations.$inc['inventory.weight'] = finalizedTotalWeight;
-
-                // get this asset's crafting line and increment the player's crafting XP (and potentially level) for the specific line.
-                const craftingRecipe = CRAFTING_RECIPES.find((recipe) => recipe.craftedAssetData.asset === asset);
-
-                // only if crafting recipe exists we increment the XP
-                if (craftingRecipe) {
-                    // check if the `craftingLinesToIncrementXP` array already has the crafting line. if yes, increment the XP. if not, add the crafting line to the array.
-                    const craftingLineIndex = craftingLinesToIncrementXP.findIndex(
-                        (line) => line.craftingLine === craftingRecipe.craftingRecipeLine
-                    );
-
-                    if (craftingLineIndex !== -1) {
-                        craftingLinesToIncrementXP[craftingLineIndex].xp += craftingRecipe.earnedXP * claimableAmount;
-                    } else {
-                        craftingLinesToIncrementXP.push({
-                            craftingLine: craftingRecipe.craftingRecipeLine,
-                            xp: craftingRecipe.earnedXP * claimableAmount,
-                        });
-                    }
-                }
-            }
-            // if auto, we need to do the following:
-            // 1. check if ALL claimable assets can be claimed based on the user's inventory weight. if yes, then we can just simply claim everything.
-            // 2. we will prioritize older crafting queues first, and then attempt to claim all the claimable amount of assets from each queue.
-            // 2a. for example, if a crafting queue has 8 of Asset A claimable and only 5 can be claimed because of weight limitations, then:
-            // we will simply claim those 5, and update the claimable amount to 3 while leaving it under the `CLAIMABLE` status.
-        } else {
-            let finalizedTotalWeight = 0;
-
-            // sort the claimable crafting queues by the oldest crafting start date.
-            claimableCraftingQueues.sort((a, b) => a.craftingStart - b.craftingStart);
-
-            // loop through each claimable crafting queue.
-            // check if the user's inventory weight + the totalWeight of the assets to claim exceeds the limit.
-            // if not, we can claim all assets from the queue.
-            // if the limit is exceeded, check how many assets can be claimed based on the user's inventory weight.
-            // then, we will break the loop (i.e. other crafting queues won't be handled) and claim the assets that can be claimed.
-            for (const queue of claimableCraftingQueues) {
-                const { asset, assetType, totalWeight, amount: craftedAmount } = queue.craftedAssetData;
-                const claimableAmount = queue.claimData.claimableAmount;
-                let finalizedClaimableAmount: number;
-
-                // skip if claimableAmount is 0
-                if (claimableAmount === 0) {
-                    continue;
-                }
-
-                // calculate the total weight of the assets to claim
-                const queueTotalWeight = (totalWeight / queue.craftedAssetData.amount) * claimableAmount;
-
-                // check if the user's inventory weight + the totalWeight of the assets to claim exceeds the limit
-                if (user.inventory.weight + finalizedTotalWeight + queueTotalWeight > user.inventory.maxWeight) {
-                    // calculate how many assets can be claimed.
-                    // for example, say this queue has `claimableAmount` = 10 and `queueTotalWeight` = 100. this means that 1 of this asset = 10kg.
-                    // say the user's inventory weight now is 95 and the limit is 100. this means that the user CANNOT claim any asset, because claiming one will exceed the inventory weight limit (105kg > 100kg).
-                    // if, however, say, the user's inventory weight is 85, then the user can claim 1 asset (85 + 10 = 95kg < 100kg).
-                    finalizedClaimableAmount = Math.floor(
-                        (user.inventory.maxWeight - user.inventory.weight - finalizedTotalWeight) /
-                            (queueTotalWeight / craftedAmount)
-                    );
-
-                    // if finalizedClaimableAmount is 0, we can't claim any assets from this queue. break the loop.
-                    if (finalizedClaimableAmount === 0) {
-                        break;
-                    }
-
-                    // if finalizedClaimableAmount > 0, we can claim some assets from this queue.
-                    // 1. add the claimable assets to the user's inventory.
-                    // 2. update the crafting queue asset amount to the remaining amount.
-                    // 3. increase the user's weight.
-                    // 4. add the crafting queue ID to the partialClaimedCraftingQueueIDs array.
-                    if (assetType === 'item') {
-                        // check if the user owns this asset in their inventory
-                        const itemIndex = (user.inventory?.items as Item[]).findIndex((item) => item.type === asset);
-
-                        // if not found, add the item to the user's inventory (along with the amount). if found, increment the amount.
-                        if (itemIndex === -1) {
-                            userUpdateOperations.$push['inventory.items'].$each.push({
-                                type: asset,
-                                amount: finalizedClaimableAmount,
-                                totalAmountConsumed: 0,
-                                weeklyAmountConsumed: 0,
-                                mintableAmount: 0,
-                            });
-                        } else {
-                            userUpdateOperations.$inc[`inventory.items.${itemIndex}.amount`] = finalizedClaimableAmount;
-                        }
-                    } else if (assetType === 'food') {
-                        // check if the user owns the food in their inventory
-                        const foodIndex = (user.inventory?.foods as Food[]).findIndex((food) => food.type === asset);
-
-                        // if not found, add the food to the user's inventory (along with the amount). if found, increment the amount.
-                        if (foodIndex === -1) {
-                            userUpdateOperations.$push['inventory.foods'].$each.push({
-                                type: asset,
-                                amount: finalizedClaimableAmount,
-                                mintableAmount: 0,
-                            });
-                        } else {
-                            userUpdateOperations.$inc[`inventory.foods.${foodIndex}.amount`] = finalizedClaimableAmount;
-                        }
-                    } else if (assetType === 'resource') {
-                        // get the resource data.
-                        const resourceData = resources.find((resource) => resource.type === asset);
-
-                        if (!resourceData) {
-                            return {
-                                status: Status.ERROR,
-                                message: `(claimCraftedAssets) Resource data not found for ${asset}.`,
-                            };
-                        }
-
-                        // check if the user owns the resource in their inventory
-                        const resourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(
-                            (resource) => resource.type === asset
-                        );
-
-                        // if not found, add the resource to the user's inventory (along with the amount). if found, increment the amount.
-                        if (resourceIndex === -1) {
-                            userUpdateOperations.$push['inventory.resources'].$each.push({
-                                ...resourceData,
-                                amount: finalizedClaimableAmount,
-                                origin: ExtendedResourceOrigin.NORMAL,
-                                mintableAmount: 0,
-                            });
-                        } else {
-                            userUpdateOperations.$inc[`inventory.resources.${resourceIndex}.amount`] =
-                                finalizedClaimableAmount;
-                        }
-                    }
-
-                    // reduce the claimable amount by `finalizedClaimableAmount`
-                    craftingQueueUpdateOperations.push({
-                        queueId: queue._id,
-                        updateOperations: {
-                            $inc: {
-                                'claimData.claimableAmount': -finalizedClaimableAmount,
-                            },
-                        },
-                    });
-
-                    // update the `finalizedTotalWeight`
-                    finalizedTotalWeight += (queueTotalWeight / craftedAmount) * finalizedClaimableAmount;
-
-                    // add the crafting queue data into partiallyClaimedCraftingData
-                    partiallyClaimedCraftingData.push({
-                        queueId: queue._id,
-                        craftedAsset: queue.craftedAssetData.asset,
-                        claimableAmount: finalizedClaimableAmount,
-                    });
-
-                    break;
-                    // if the user's inventory weight + the totalWeight of the assets to claim does not exceed the limit, we can claim all `claimableAmount` of assets from this queue.
-                } else {
-                    finalizedClaimableAmount = claimableAmount;
-
-                    if (assetType === 'item') {
-                        // check if the user owns this asset in their inventory
-                        const itemIndex = (user.inventory?.items as Item[]).findIndex((item) => item.type === asset);
-
-                        // if not found, add the item to the user's inventory (along with the amount). if found, increment the amount.
-                        if (itemIndex === -1) {
-                            userUpdateOperations.$push['inventory.items'].$each.push({
-                                type: asset,
-                                amount: finalizedClaimableAmount,
-                                totalAmountConsumed: 0,
-                                weeklyAmountConsumed: 0,
-                                mintableAmount: 0,
-                            });
-                        } else {
-                            userUpdateOperations.$inc[`inventory.items.${itemIndex}.amount`] = finalizedClaimableAmount;
-                        }
-                    } else if (assetType === 'food') {
-                        // check if the user owns the food in their inventory
-                        const foodIndex = (user.inventory?.foods as Food[]).findIndex((food) => food.type === asset);
-
-                        // if not found, add the food to the user's inventory (along with the amount). if found, increment the amount.
-                        if (foodIndex === -1) {
-                            userUpdateOperations.$push['inventory.foods'].$each.push({
-                                type: asset,
-                                amount: finalizedClaimableAmount,
-                                mintableAmount: 0,
-                            });
-                        } else {
-                            userUpdateOperations.$inc[`inventory.foods.${foodIndex}.amount`] = finalizedClaimableAmount;
-                        }
-                    } else if (assetType === 'resource') {
-                        // get the resource data.
-                        const resourceData = resources.find((resource) => resource.type === asset);
-
-                        if (!resourceData) {
-                            return {
-                                status: Status.ERROR,
-                                message: `(claimCraftedAssets) Resource data not found for ${asset}.`,
-                            };
-                        }
-
-                        // check if the user owns the resource in their inventory
-                        const resourceIndex = (user.inventory?.resources as ExtendedResource[]).findIndex(
-                            (resource) => resource.type === asset
-                        );
-
-                        // if not found, add the resource to the user's inventory (along with the amount). if found, increment the amount.
-                        if (resourceIndex === -1) {
-                            userUpdateOperations.$push['inventory.resources'].$each.push({
-                                ...resourceData,
-                                amount: finalizedClaimableAmount,
-                                origin: ExtendedResourceOrigin.NORMAL,
-                                mintableAmount: 0,
-                            });
-                        } else {
-                            userUpdateOperations.$inc[`inventory.resources.${resourceIndex}.amount`] =
-                                finalizedClaimableAmount;
-                        }
-                    }
-
-                    // add the crafting queue data into fullyClaimedCraftingData
-                    fullyClaimedCraftingData.push({
-                        queueId: queue._id,
-                        craftedAsset: queue.craftedAssetData.asset,
-                        claimableAmount: finalizedClaimableAmount,
-                    });
-
-                    // 1. reduce the claimableAmount by the `finalizedClaimableAmount`
-                    // 2. increase the claimedAmount by the `finalizedClaimableAmount`
-                    craftingQueueUpdateOperations.push({
-                        queueId: queue._id,
-                        updateOperations: {
-                            $inc: {
-                                'claimData.claimableAmount': -finalizedClaimableAmount,
-                                'claimData.claimedAmount': finalizedClaimableAmount,
-                            },
-                            $set: {
-                                // 1. check if the previous status was `PARTIALLY_CANCELLED_CLAIMABLE`. if yes, check the following:
-                                // a. if the `finalizedClaimableAmount` < `claimData.claimableAmount`, keep the status as `PARTIALLY_CANCELLED_CLAIMABLE`. else,
-                                // b. if the `finalizedClaimableAmount` === `claimData.claimableAmount`, set the status to `PARTIALLY_CANCELLED`. else,
-                                // 2. check if `claimData.claimedAmount` + `claimData.claimableAmount` === `craftedAssetData.amount`. if yes, set the status to `CLAIMED`. else, set the status to `ONGOING`.
-                                status:
-                                    queue.status === CraftingQueueStatus.PARTIALLY_CANCELLED_CLAIMABLE
-                                        ? finalizedClaimableAmount < queue.claimData.claimableAmount
-                                            ? CraftingQueueStatus.PARTIALLY_CANCELLED_CLAIMABLE
-                                            : CraftingQueueStatus.PARTIALLY_CANCELLED
-                                        : queue.claimData.claimedAmount + finalizedClaimableAmount ===
-                                          queue.craftedAssetData.amount
-                                        ? CraftingQueueStatus.CLAIMED
-                                        : CraftingQueueStatus.ONGOING,
-                            },
-                        },
-                    });
-
-                    // update the `finalizedTotalWeight`
-                    finalizedTotalWeight += queueTotalWeight;
-                }
-
-                // get this asset's crafting line and increment the player's crafting XP (and potentially level) for the specific line.
-                const craftingRecipe = CRAFTING_RECIPES.find((recipe) => recipe.craftedAssetData.asset === asset);
-
-                // only if crafting recipe exists we increment the XP
-                if (craftingRecipe) {
-                    // check if the `craftingLinesToIncrementXP` array already has the crafting line. if yes, increment the XP. if not, add the crafting line to the array.
-                    const craftingLineIndex = craftingLinesToIncrementXP.findIndex(
-                        (line) => line.craftingLine === craftingRecipe.craftingRecipeLine
-                    );
-
-                    if (craftingLineIndex !== -1) {
-                        craftingLinesToIncrementXP[craftingLineIndex].xp +=
-                            craftingRecipe.earnedXP * finalizedClaimableAmount;
-                    } else {
-                        craftingLinesToIncrementXP.push({
-                            craftingLine: craftingRecipe.craftingRecipeLine,
-                            xp: craftingRecipe.earnedXP * finalizedClaimableAmount,
-                        });
-                    }
-                }
-            }
-
-            // increase the user's weight
-            userUpdateOperations.$inc['inventory.weight'] = finalizedTotalWeight;
-        }
-
-        await updateCraftingLevel(user._id, craftingLinesToIncrementXP);
-
-        const craftingQueueUpdatePromises =
-            craftingQueueUpdateOperations.length > 0 &&
-            craftingQueueUpdateOperations.map(async (op) => {
-                return CraftingQueueModel.updateOne({ _id: op.queueId }, op.updateOperations);
-            });
-
-        // update the user's inventory and the crafting queues.
-        // divide into $set + $inc, and then $push and $pull.
-        await Promise.all([
-            UserModel.updateOne(
-                { twitterId },
-                {
-                    $set: userUpdateOperations.$set,
-                    $inc: userUpdateOperations.$inc,
-                }
-            ),
-            craftingQueueUpdatePromises,
-        ]);
-
-        await UserModel.updateOne(
-            { twitterId },
-            {
-                $push: userUpdateOperations.$push,
-                $pull: userUpdateOperations.$pull,
-            }
-        );
-
-        return {
-            status: Status.SUCCESS,
-            message: `(claimCraftedAssets) Successfully claimed claimable crafted assets. ${
-                partiallyClaimedCraftingData.length > 0
-                    ? `Some assets from crafting queues could not be claimed fully due to inventory weight limitations.`
-                    : ``
-            }`,
-            data: {
-                fullyClaimedCraftingData: fullyClaimedCraftingData,
-                partiallyClaimedCraftingData: partiallyClaimedCraftingData,
-                poi: user.inGameData.location,
-            },
-        };
-    } catch (err: any) {
-        return {
-            status: Status.ERROR,
-            message: `(claimCraftedAssets) ${err.message}`,
-        };
-    }
-};
-
-/**
  * Cancels a crafting queue. Only available when the asset(s) in the queue is/are still being crafted and not claimable yet.
  *
  * Will cost xCookies. Energy will NOT be refunded.
@@ -1720,38 +1132,98 @@ export const rollCriticalChance = (line: CraftingRecipeLine, level: number, atte
 };
 
 /**
+ * Update user's profession mastery required XP.
+ */
+export const updateMasteryRequiredXP = async (userId: string, _session?: ClientSession) => {
+    let session = _session ?? (await TEST_CONNECTION.startSession());
+    if (!_session) session.startTransaction();
+
+    try {
+        const user = await UserModel.findOne({ $or: [{ twitterId: userId }, { _id: userId }] }).session(session);
+        if (!user) {
+            throw new Error('User not found.');
+        }        
+
+        // get user's current mastery and populate the missing profession line
+        const currentMastery: CraftingMastery = populateCraftingMastery(user?.inGameData?.mastery?.crafting || {});
+
+        // convert the object into array then map to update the required xp for each profession mastery
+        const updatedMastery = Object.fromEntries(
+            Object.entries(currentMastery).map(([line, stats]: [string, CraftingMasteryStats]) => [toCamelCase(line), {
+                ...stats,
+                xpToNextLevel: GET_PROFESSION_REQUIRED_XP(toPascalCase(line) as CraftingRecipeLine, stats.level + 1, currentMastery)
+            }])
+        ) as CraftingMastery;
+
+        // update whole crafting mastery data
+        await user.updateOne(
+            {
+                $set: {
+                    'inGameData.mastery.crafting': updatedMastery
+                },
+            },
+            { session }
+        );
+
+        if (!_session) {
+            await session.commitTransaction();
+        }
+
+        return {
+            status: Status.SUCCESS,
+            message: `(updateMasteryRequiredXP) Profession mastery required XP updated.`,
+        };
+    } catch (err: any) {
+        if (!_session) {
+            await session.abortTransaction();
+        }
+
+        return {
+            status: Status.ERROR,
+            message: `(updateMasteryRequiredXP) ${err.message}`,
+        };
+    } finally {
+        if (!_session) {
+            session.endSession();
+        }
+    }
+}
+
+/**
  * Processes the XP gained by the user through crafting activities
  * and handles leveling up if the required XP threshold is met.
  */
 export const updateCraftingLevel = async (
     userId: string,
-    acquiredXP: Array<{ craftingLine: CraftingRecipeLine; xp: number }>,
+    acquiredXP: Array<{ craftingLine: CraftingRecipeLine | string; xp: number }>,
     _session?: ClientSession
 ) => {
     let session = _session ?? (await TEST_CONNECTION.startSession());
 
-    if (!session) session.startTransaction();
+    if (!_session) session.startTransaction();
 
     try {
-        const user = await UserModel.findOne({ $or: [{ twitterId: userId }, { _id: userId }] }, { session });
+        const user = await UserModel.findOne({ $or: [{ twitterId: userId }, { _id: userId }] }).session(session);
         if (!user) {
             throw new Error('User not found.');
         }
 
-        
         for (const line of acquiredXP) {
             const craftingLine = toCamelCase(line.craftingLine);
-            const currentMastery: CraftingMastery | null = user?.inGameData?.mastery?.crafting ?? null;
-            const currentMasteryStats: CraftingMasteryStats | null = currentMastery[craftingLine] ?? null;
-            const currentXP = currentMasteryStats.xp;
-            
+            const currentMastery: CraftingMastery | null = user?.inGameData?.mastery?.crafting || null;
+            const currentMasteryStats: CraftingMasteryStats | null = currentMastery
+                ? currentMastery[craftingLine] || null
+                : null;
+            const currentXP = currentMasteryStats?.xp || 0;
+
             if (currentMasteryStats) {
+                // get required xp to the next level
                 const requiredXP = GET_PROFESSION_REQUIRED_XP(
-                    line.craftingLine,
+                    line.craftingLine as CraftingRecipeLine,
                     currentMasteryStats.level + 1,
                     currentMastery
                 );
-                
+
                 await user.updateOne(
                     {
                         $inc: {
@@ -1760,25 +1232,23 @@ export const updateCraftingLevel = async (
                     },
                     { session }
                 );
-                
+
+                // handle level up
                 if (currentXP + line.xp >= requiredXP) {
+                    // update the targeted crafting mastery
                     await user.updateOne(
                         {
                             $set: {
-                                [`inGameData.mastery.crafting.${craftingLine}.level`]: currentMasteryStats.level + 2,
-                                // reset xp to 0 each the user level up
-                                [`inGameData.mastery.crafting.${craftingLine}.xp`]: 0,
-                                // update xpToNextLevel
-                                [`inGameData.mastery.crafting.${craftingLine}.xpToNextLevel`]:
-                                GET_PROFESSION_REQUIRED_XP(
-                                    line.craftingLine,
-                                    currentMasteryStats.level,
-                                    currentMastery
-                                ),
+                                [`inGameData.mastery.crafting.${craftingLine}.level`]: currentMasteryStats.level + 1,
+                                // reset xp every time the user level up
+                                [`inGameData.mastery.crafting.${craftingLine}.xp`]: currentXP + line.xp - requiredXP,
                             },
                         },
                         { session }
                     );
+
+                    // update all profession required XP
+                    await updateMasteryRequiredXP(user._id, session);          
                 }
             } else {
                 await user.updateOne(
@@ -1786,9 +1256,14 @@ export const updateCraftingLevel = async (
                         $set: {
                             [`inGameData.mastery.crafting.${craftingLine}`]: {
                                 level: 1,
-                                xp: currentXP,
+                                xp: line.xp,
                                 craftingSlots: BASE_CRAFTING_SLOTS,
                                 craftablePerSlot: BASE_CRAFTABLE_PER_SLOT,
+                                xpToNextLevel: GET_PROFESSION_REQUIRED_XP(
+                                    line.craftingLine as CraftingRecipeLine,
+                                    2, // get required xp to get level 2
+                                    currentMastery || ({} as Record<CraftingRecipeLine, CraftingMasteryStats>)
+                                ),
                             },
                         },
                     },
@@ -1796,8 +1271,8 @@ export const updateCraftingLevel = async (
                 );
             }
         }
-        
-        if (!session) {
+
+        if (!_session) {
             await session.commitTransaction();
         }
 
@@ -1824,7 +1299,7 @@ export const updateCraftingLevel = async (
 /**
  * Manually claim the crafting results from the queue
  */
-export const claimCraftedAssetsV2 = async (
+export const claimCraftedAssets = async (
     twitterId: string,
     claimType: string,
     craftingLine: CraftingRecipeLine,
@@ -1884,7 +1359,7 @@ export const claimCraftedAssetsV2 = async (
 
         // get the total weight of the assets to claim
         const claimableTotalWeight = craftingResults.reduce((prev, curr) => {
-            return prev + curr.weight * curr.amount;
+            return prev + (curr.weight * curr.amount);
         }, 0);
 
         // check if the user's inventory weight + the totalWeight of the assets to claim exceeds the limit
@@ -1973,19 +1448,28 @@ export const claimCraftedAssetsV2 = async (
             );
         }
 
+        console.log('craftingResults', craftingResults);
+        console.log('acquiredXP', acquiredXP);
+        console.log('craftingResults', craftingResults.filter(({ type }) => type !== CraftingResultType.FAILED).map((result) => ({ asset: result.asset, amount: result.amount })));
+        
+
         // add the crafted result and refunded material to the user
         await batchAddToInventory(
             user._id,
-            craftingResults.map((result) => ({ asset: result.asset, amount: result.amount })),
+            craftingResults.filter(({ type }) => type !== CraftingResultType.FAILED).map((result) => ({ asset: result.asset, amount: result.amount })),
             session
         );
 
         // increment user's mastery xp
-        await updateCraftingLevel(
+        const levelResult = await updateCraftingLevel(
             user._id,
             Array.from(acquiredXP, ([craftingLine, xp]) => ({ craftingLine, xp })),
             session
         );
+
+        if (levelResult.status !== Status.SUCCESS) {
+            throw new Error(levelResult.message);
+        }
 
         // update queues status and clear the crafting results
         await Promise.all(queueUpdateOperations);
@@ -2099,4 +1583,23 @@ export const combineCraftingResults = (array1: CraftingResult[], array2: Craftin
 
     // convert the map back to an array
     return Array.from(combinedMap.values());
+};
+
+/**
+ * Function to populate missing recipe lines with default values
+ */
+export const populateCraftingMastery = (mastery: Partial<CraftingMastery>): CraftingMastery => {
+    // create a new CraftingMastery object with all recipe lines
+    const completeMastery: CraftingMastery = Object.values(CraftingRecipeLine).reduce((acc, line) => {
+        acc[toCamelCase(line)] = mastery[toCamelCase(line)] || {
+            level: 1,
+            xp: 0,
+            xpToNextLevel: GET_PROFESSION_REQUIRED_XP(line, 2, mastery as CraftingMastery),
+            craftingSlots: BASE_CRAFTING_SLOTS,
+            craftablePerSlot: BASE_CRAFTABLE_PER_SLOT,
+        }; // Use existing stats or default
+        return acc;
+    }, {} as CraftingMastery);
+
+    return completeMastery;
 };

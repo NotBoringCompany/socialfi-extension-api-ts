@@ -1,7 +1,7 @@
 import express from 'express';
 import { Status } from '../utils/retVal';
 import { validateRequestAuth } from '../utils/auth';
-import { cancelCraft, claimCraftedAssets, craftAsset, fetchCraftingQueues, claimCraftedAssetsV2 } from '../api/craft';
+import { cancelCraft, claimCraftedAssets, craftAsset, fetchCraftingQueues } from '../api/craft';
 import { CRAFTING_RECIPES } from '../utils/constants/craft';
 import { allowMixpanel, mixpanel } from '../utils/mixpanel';
 import { IngotEnum, IngotItem } from '../models/item';
@@ -149,7 +149,7 @@ router.post('/claim_crafted_assets', async (req, res) => {
             })
         }
 
-        const { status, message, data } = await claimCraftedAssetsV2(validateData?.twitterId, claimType, craftingLine, craftingQueueIds);
+        const { status, message, data } = await claimCraftedAssets(validateData?.twitterId, claimType, craftingLine, craftingQueueIds);
 
         if (status === Status.SUCCESS) {
             if (allowMixpanel) {
