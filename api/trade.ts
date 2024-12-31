@@ -184,7 +184,7 @@ export const addListing = async (data: AddListingDTO): Promise<ReturnValue> => {
                 throw new Error(`You don't have the specified item in your inventory.`);
             }
 
-            if ((user.inventory?.items as Item[])[index].amount < data.amount) {
+            if ((user.inventory?.resources as ExtendedResource[])[index].amount < data.amount) {
                 throw new Error(`You don't have enough of this item to list for sale.`);
             }
 
