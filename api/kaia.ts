@@ -1,4 +1,4 @@
-import { KAIA_MAINNET_PROVIDER } from '../utils/constants/web3';
+import { KAIA_TESTNET_PROVIDER } from '../utils/constants/web3';
 import { ReturnValue, Status } from '../utils/retVal';
 
 /**
@@ -18,7 +18,7 @@ export const recoverFromMessage = async (
 
         const blockNumber = 'latest';
 
-        const result = await KAIA_MAINNET_PROVIDER.kaia.recoverFromMessage(
+        const result = await KAIA_TESTNET_PROVIDER.kaia.recoverFromMessage(
             address,
             message,
             signature,
@@ -51,7 +51,7 @@ export const recoverFromMessage = async (
  */
 export const signMessage = async (address: string, message: string): Promise<ReturnValue<{ signature: string }>> => {
     try {
-        const result = await KAIA_MAINNET_PROVIDER.kaia.sign(address, message, {});
+        const result = await KAIA_TESTNET_PROVIDER.kaia.sign(address, message, {});
 
         if (!result) {
             throw new Error('Failed to sign the message');
