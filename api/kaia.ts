@@ -31,6 +31,8 @@ export const recoverFromMessage = async (
             message: `(recoverFromMessage) Signature valid.`,
         };
     } catch (err: any) {
+        console.log(err.message);
+
         return {
             status: Status.ERROR,
             message: `(recoverFromMessage) Signature invalid.`,
