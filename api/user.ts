@@ -3610,7 +3610,10 @@ export const handleAddressLogin = async (address: string, message: string, signa
             name: `user_${userId}`,
             profilePicture: 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png',
             username: `user_${userId}`,
+            method: 'line'
         });
+
+        await linkSecondaryWallet(uid, address, 'line', message, signature as any);
 
         if (newUserResult.status !== Status.SUCCESS) {
             throw new Error(newUserResult.message);
