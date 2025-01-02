@@ -12,6 +12,10 @@ export const recoverFromMessage = async (
     signature: string
 ): Promise<ReturnValue> => {
     try {
+        console.log(`(recoverFromMessage) address: ${address}`);
+        console.log(`(recoverFromMessage) message: ${message}`);
+        console.log(`(recoverFromMessage) signature: ${signature}`);
+
         const blockNumber = 'latest';
 
         const result = await KAIA_TESTNET_PROVIDER.kaia.recoverFromMessage(

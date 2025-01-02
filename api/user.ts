@@ -3582,7 +3582,7 @@ export const handleAddressLogin = async (address: string, message: string, signa
 
         // verify that the address is owned by the user
         if (signatureResult.status !== Status.SUCCESS) {
-            throw new Error('Invalid signature');
+            throw new Error('(handleAddressLogin) Invalid signature');
         }
 
         const user = await UserModel.findOne({ $or: [{ 'wallet.address': address }, { 'secondaryWallets.address': address }] });

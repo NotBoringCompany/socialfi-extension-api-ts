@@ -11,6 +11,8 @@ router.post('/login', async (req, res, next) => {
     try {
         const loginResult = await handleAddressLogin(address, message, signature);
         if (loginResult.status !== Status.SUCCESS) {
+            console.log(`(auth/kaia) loginResult error: ${JSON.stringify(loginResult)}`);
+
             return res.status(loginResult.status).json(loginResult);
         }
 
