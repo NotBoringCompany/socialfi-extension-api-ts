@@ -43,6 +43,8 @@ import { TelegramAuthData } from '../utils/telegram';
 import { sendMailsToNewUser } from './mail';
 import { ClientSession } from 'mongoose';
 import { LineProfile } from '../models/line';
+import { recoverFromMessage } from './kaia';
+import { redis } from '../utils/constants/redis';
 
 /**
  * Returns the user's data.
@@ -3533,6 +3535,102 @@ export const getUserByWallet = async (address: string): Promise<ReturnValue<{ us
         return {
             status: Status.ERROR,
             message: `(getUserByWallet) ${err.message}`,
+        };
+    }
+}
+
+/**
+ * Fetches the latest user id from the database.
+ */
+export const getUserId = async (): Promise<ReturnValue<{ userId: number | string }>> => {
+    try {
+        const userId = await redis.get('counter.userId');
+
+        // check if the userId was already set in Redis
+        if (!userId) {
+            // use document count as the new id
+            const latestUser = await UserModel.countDocuments();
+
+            // set the counter to the latest user
+            await redis.set('counter.userId', latestUser ?? 0);
+        }
+
+        // increment the user id counter
+        const nextUserId = await redis.incr('counter.userId');
+
+        return {
+            status: Status.SUCCESS,
+            message: `(getUserId) Latest user id fetched.`,
+            data: {
+                userId: nextUserId ?? 0,
+            },
+        };
+    } catch (err: any) {        
+        return {
+            status: Status.ERROR,
+            message: `(getUserId) Error: ${err.message}`,
+        };
+    }
+}
+
+/**
+ * Login using their address
+ */
+export const handleAddressLogin = async (address: string, message: string, signature: string) => {
+    try {
+        const signatureResult = await recoverFromMessage(address, message, signature);
+
+        // verify that the address is owned by the user
+        if (signatureResult.status !== Status.SUCCESS) {
+            throw new Error('Invalid signature');
+        }
+
+        const user = await UserModel.findOne({ $or: [{ 'wallet.address': address }, { 'secondaryWallets.address': address }] });
+
+        // if the user exist then send the correct credential
+        if (user) {
+            return {
+                status: Status.SUCCESS,
+                message: `(handleLineLogin) User found. Logging in.`,
+                data: {
+                    userId: user._id,
+                    twitterId: user.twitterId,
+                    loginType: 'Login',
+                    referralCode: user.referralData.referralCode
+                },
+            };
+        }
+
+        const uid = generateObjectId();
+        const { data: { userId } } = await getUserId();
+
+        // create a new user if the user not found in the database
+        const newUserResult = await createNewUser({
+            id: uid,
+            name: `user_${userId}`,
+            profilePicture: 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png',
+            username: `user_${userId}`,
+        });
+
+        if (newUserResult.status !== Status.SUCCESS) {
+            throw new Error(newUserResult.message);
+        }
+
+        const newUser = newUserResult.data.newUser as User;
+
+        return {
+            status: Status.SUCCESS,
+            message: `(handleAddressLogin) New user created.`,
+            data: {
+                userId: newUser._id,
+                twitterId: newUser.twitterId,
+                loginType: 'Register',
+            },
+        };
+    } catch (err: any) {
+        return {
+            status: Status.ERROR,
+            message: `(handleAddressLogin) ${err.message}`,
         };
     }
 }

@@ -1,4 +1,5 @@
 import { ethers } from 'ethers';
+import { JsonRpcProvider as KaiaProvider } from '@kaiachain/ethers-ext';
 import fs from 'fs';
 import path from 'path';
 
@@ -10,6 +11,7 @@ dotenv.config();
 export const BLAST_TESTNET_PROVIDER = new ethers.providers.JsonRpcProvider(`https://sepolia.blast.io`);
 export const ETH_MAINNET_PROVIDER = new ethers.providers.JsonRpcProvider(`https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY!}`);
 export const XPROTOCOL_TESTNET_PROVIDER = new ethers.providers.JsonRpcProvider(`https://rpc-xprotocol-testnet-kzg4iy2205.t.conduit.xyz/${process.env.X_PROTOCOL_TESTNET_API_KEY!}`);
+export const KAIA_TESTNET_PROVIDER = new KaiaProvider('https://public-en-kairos.node.kaia.io');
 
 /// TonWeb instance with API Key
 export const TON_WEB = new TonWeb(new TonWeb.HttpProvider('https://toncenter.com/api/v2/jsonRPC', { apiKey: process.env.TON_API_KEY} ));
