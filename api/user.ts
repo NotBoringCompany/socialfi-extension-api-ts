@@ -3578,12 +3578,12 @@ export const getUserId = async (): Promise<ReturnValue<{ userId: number | string
  */
 export const handleAddressLogin = async (address: string, message: string, signature: string) => {
     try {
-        const signatureResult = await recoverFromMessage(address, message, signature);
+        // const signatureResult = await recoverFromMessage(address, message, signature);
 
         // verify that the address is owned by the user
-        if (signatureResult.status !== Status.SUCCESS) {
-            throw new Error('Invalid signature');
-        }
+        // if (signatureResult.status !== Status.SUCCESS) {
+        //     throw new Error('Invalid signature');
+        // }
 
         const user = await UserModel.findOne({ $or: [{ 'wallet.address': address }, { 'secondaryWallets.address': address }] });
 
