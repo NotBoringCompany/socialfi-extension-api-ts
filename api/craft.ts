@@ -546,8 +546,8 @@ export const craftAsset = async (
         const batchDeductResult = await batchDeductFromInventory(
             user._id,
             [
-                ...requiredAssets.map(({ amount, specificAsset }) => ({ asset: specificAsset, amount })),
-                ...chosenFlexibleRequiredAssets.map(({ amount, specificAsset }) => ({ asset: specificAsset, amount })),
+                ...requiredAssets.map((req) => ({ asset: req.specificAsset, amount: req.amount * amount })),
+                ...chosenFlexibleRequiredAssets.map((req) => ({ asset: req.specificAsset, amount: req.amount * amount })),
             ],
             session
         );
