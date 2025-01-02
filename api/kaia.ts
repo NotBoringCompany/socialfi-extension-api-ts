@@ -26,6 +26,8 @@ export const recoverFromMessage = async (
             {}
         );
 
+        console.log(`(recoverFromMessage) result: ${result}`);
+
         if (!result) {
             throw new Error('Invalid signature');
         }
