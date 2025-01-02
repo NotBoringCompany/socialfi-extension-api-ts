@@ -231,7 +231,16 @@ router.get('/check_invite_code_linked/:twitterId', async (req, res) => {
     const { twitterId } = req.params;
 
     try {
-        const { status, message, data } = await checkInviteCodeLinked(twitterId);
+        const { status: validateStatus, message: validateMessage, data: validateData } = await validateRequestAuth(req, res, 'check_invite_code_linked');
+
+        if (validateStatus !== Status.SUCCESS) {
+            return res.status(validateStatus).json({
+                status: validateStatus,
+                message: validateMessage
+            });
+        }
+
+        const { status, message, data } = await checkInviteCodeLinked(validateData?.twitterId);
 
         return res.status(status).json({
             status,
